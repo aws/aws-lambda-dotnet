@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0"
+    DefaultTargets="full-build"
+    xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">C:\Program Files (x86)\MSBuild\Microsoft\VisualStudio\v14.0</VSToolsPath>
+
+    <UserDirectory Condition="'$(UserDirectory)' == ''">$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))</UserDirectory>
+    <NPMPath Condition="'$(NPMPath)' == ''"></NPMPath>
+    <YeomanCmd Condition="'$(YeomanCmd)' == ''">$(UserDirectory)\AppData\Roaming\npm\yo.cmd</YeomanCmd>
+  </PropertyGroup>
+
+  <Import Project="$(VSToolsPath)\DotNet\Microsoft.DotNet.Props" Condition="'$(VSToolsPath)' != ''" />
+  <Import Project="$(VSToolsPath)\DotNet\Microsoft.DotNet.targets" Condition="'$(VSToolsPath)' != ''" />
+
+  <Target Name="full-build" DependsOnTargets="test-blueprints;package-blueprints;build-nuget-packages">
+
+  </Target>
+
+  <UsingTask TaskName="GetNPMPath" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <NPMPath ParameterType="System.String" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs">
+      <![CDATA[ 
+      if(File.Exists("C:/Program Files/nodejs/npm.cmd"))
+        NPMPath = "C:/Program Files/nodejs/npm.cmd"; 
+      else if(File.Exists("C:/Program Files (x86)/nodejs/npm.cmd"))
+        NPMPath = "C:/Program Files (x86)/nodejs/npm.cmd"; 
+      else
+        throw new Exception("Node.js must be installed to run this build.");
+		]]>
+      </Code>
+    </Task>
+  </UsingTask>
+  <UsingTask TaskName="RemoveNonSymbolsPackages" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <PackagesDir ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+            var symbolsFiles = Directory.GetFiles(PackagesDir, "*.symbols.nupkg");
+            foreach (var file in symbolsFiles)
+            {
+                var newFile = file.Replace(".symbols.nupkg", ".nupkg");
+                Log.LogMessage(string.Format("Moving '{0}' to '{1}'.", file, newFile), MessageImportance.Normal);
+                File.Delete(newFile);
+                File.Move(file, newFile);
+            }
+		]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+
+
+  <Target Name="init" DependsOnTargets="GetSDKToolingInfoTarget">
+
+    <RemoveDir Directories="../Deployment"/>
+    <MakeDir Directories="../Deployment/nuget-packages"/>
+
+    <Exec Command="&quot;$(SDKToolingExe)&quot; restore"
+      WorkingDirectory="..\Libraries"/>
+    <Exec Command="&quot;$(SDKToolingExe)&quot; restore"
+      WorkingDirectory="..\Blueprints\BlueprintPackager"/>
+  </Target>
+
+
+  <Target Name="SetupPathProperties">
+    <GetNPMPath Condition="'$(NPMPath)' == ''">
+      <Output PropertyName="NPMPath" TaskParameter="NPMPath" />
+    </GetNPMPath>
+  </Target>
+
+  <Target Name="package-blueprints" DependsOnTargets="init">
+    <Exec Command="&quot;$(SDKToolingExe)&quot; run"
+      WorkingDirectory="..\Blueprints\BlueprintPackager"/>
+  </Target>
+
+  <Target Name="test-blueprints" DependsOnTargets="package-blueprints;SetupPathProperties;build-nuget-packages">
+
+    <RemoveDir Directories="../Blueprints/YeomanGenerator/TestGenerations"/>
+    <MakeDir Directories="../Blueprints/YeomanGenerator/TestGenerations"/>
+
+    <Exec Command="&quot;$(NPMPath)&quot; link"
+      WorkingDirectory="..\Blueprints\YeomanGenerator\generator-aws-lambda-dotnet"/>
+
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint"
+          Properties="CurrentBlueprint=EmptyFunction"/>
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint"
+        Properties="CurrentBlueprint=EmptyServerless"/>  	
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint"
+        Properties="CurrentBlueprint=DynamoDBBlogAPI"/>  
+	<MSBuild
+        Projects="$(MSBuildProjectFile)"
+        Targets="run-blueprint"
+          Properties="CurrentBlueprint=SimpleDynamoDBFunction"/>
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint"
+          Properties="CurrentBlueprint=SimpleKinesisFunction"/>
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint"
+          Properties="CurrentBlueprint=SimpleS3Function"/>
+
+  </Target>
+
+  <Target Name="run-blueprint" DependsOnTargets="GetSDKToolingInfoTarget;SetupPathProperties">
+
+    <Error Condition="!Exists($(YeomanCmd))" Text="Yeoman not installed!" />
+
+    <Exec Command="&quot;$(YeomanCmd)&quot; aws-lambda-dotnet $(CurrentBlueprint) $(CurrentBlueprint) default us-east-1"
+      WorkingDirectory="..\Blueprints\YeomanGenerator\TestGenerations"/>
+
+    <Exec Command="&quot;$(SDKToolingExe)&quot; restore"
+      WorkingDirectory="../Blueprints/YeomanGenerator/TestGenerations/$(CurrentBlueprint)"/>
+
+    <Exec Command="&quot;$(SDKToolingExe)&quot; build"
+      WorkingDirectory="../Blueprints/YeomanGenerator/TestGenerations/$(CurrentBlueprint)/Test/$(CurrentBlueprint).Tests"/>
+
+  </Target>
+
+
+  <Target Name="run-tests" DependsOnTargets="init">
+    <PropertyGroup>
+      <Command>&quot;$(SDKToolingExe)&quot; test -c $(Configuration)</Command>
+    </PropertyGroup>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\test\Amazon.Lambda.AspNetCoreServer.Test"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\test\Amazon.Lambda.Core.Tests"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\test\Amazon.Lambda.Logging.AspNetCore.Tests"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\test\Amazon.Lambda.Tools.Test"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\test\EventsTests"/>
+  </Target>
+
+  <Target Name="build-nuget-packages" DependsOnTargets="run-tests">
+    <PropertyGroup>
+      <Command>&quot;$(SDKToolingExe)&quot; pack -c $(Configuration) -o ../../../Deployment/nuget-packages</Command>
+    </PropertyGroup>
+
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.APIGatewayEvents"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.AspNetCoreServer"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.CognitoEvents"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.ConfigEvents"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.Core"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.DynamoDBEvents"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisEvents"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.Logging.AspNetCore"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.S3Events"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.Serialization.Json"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.SNSEvents"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.TestUtilities"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.Tools"/>
+
+    <RemoveNonSymbolsPackages
+        PackagesDir="..\Deployment\nuget-packages"
+            />
+  </Target>
+</Project>

@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0-*",
+  "buildOptions": {
+  },
+
+  "dependencies": {
+    "Microsoft.NETCore.App": {
+      "type": "platform",
+      "version": "1.0.0"
+    },
+
+    "Amazon.Lambda.Core": "1.0.0*",
+    "Amazon.Lambda.Serialization.Json": "1.0.0",
+
+    "Amazon.Lambda.Tools" : {
+      "type" :"build",
+      "version":"1.0.0-preview1"
+    }
+  },
+
+  "tools": {
+    "Amazon.Lambda.Tools" : "1.0.0-preview1"
+  },
+
+  "frameworks": {
+    "netcoreapp1.0": {
+      "imports": "dnxcore50"
+    }
+  }
+}

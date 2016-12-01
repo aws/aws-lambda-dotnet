@@ -1,0 +1,36 @@
+{
+  "name": "generator-aws-lambda-dotnet",
+  "version": "1.0.0",
+  "description": "A Collection of Yeoman generators for writing .NET Core AWS Lambda functions",
+  "main": "app/index.js",
+  "homepage": "https://github.com/aws/aws-lambda-dotnet/Blueprints/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aws/aws-lambda-dotnet.git"
+  },
+  "contributors": [
+    "Norm Johanson <normj@amazon.com>"
+  ],
+  "bugs": {
+    "url": "http://github.com/aws/aws-lambda-dotnet/issues",
+    "mail": ""
+  },
+  "engines": {
+    "node": ">=0.10.0"
+  },  
+  "keywords": [
+    "yeoman-generator",
+    "AWS",
+    "Lambda",
+    ".NET"
+  ],
+  "dependencies": {
+    "chalk": "^1.1.3",
+    "uuid": "^2.0.1",
+    "vs_projectname": "^1.0.0",
+    "yeoman-generator": "^0.19.2",
+    "yosay": "^1.2.0"
+  },
+  "author": "Amazon Web Services",
+  "license": "Apache-2.0"
+}

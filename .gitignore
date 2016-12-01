@@ -1,0 +1,27 @@
+######################################
+# Visual Studio per-user settings data
+######################################
+*.suo
+*.user
+
+####################
+# Build/Test folders
+####################
+**/.vs/
+**/bin/
+**/obj/
+**/TestResults/
+**/Temp/
+**/NuGet.exe
+**/buildlogs/
+**/Deployment/
+**/packages
+**/launchSettings.json
+
+**/project.lock.json
+
+
+**/node_modules/
+**/TestGenerations/
+/Blueprints/YeomanGenerator/generator-aws-lambda-dotnet/Blueprints/**
+/Blueprints/YeomanGenerator/generator-aws-lambda-dotnet/app/manifest.js
