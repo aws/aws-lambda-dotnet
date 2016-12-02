@@ -1,6 +1,6 @@
 {
   "name": "Amazon.Lambda.Serialization.Json",
-  "version": "1.0.0-*",
+  "version": "1.0.1-*",
   "title": "Amazon.Lambda.Serialization.Json",
   "authors": [
     "Amazon Web Services"

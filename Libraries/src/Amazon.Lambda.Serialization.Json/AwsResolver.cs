@@ -28,14 +28,41 @@ namespace Amazon.Lambda.Serialization.Json
                     }
                 }
             }
-            // Kinesis events need a custom converter to deserialize the data MemoryStream
             else if (type.FullName.Equals("Amazon.Lambda.KinesisEvents.KinesisEvent+Record", StringComparison.Ordinal))
             {
                 foreach (JsonProperty property in properties)
                 {
                     if (property.PropertyName.Equals("Data", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = new KinesisEventRecordDataConverter();
+                        property.MemberConverter = new JsonToMemoryStreamDataConverter();
+                    }
+                    else if (property.PropertyName.Equals("ApproximateArrivalTimestamp", StringComparison.Ordinal))
+                    {
+                        property.MemberConverter = new JsonNumberToDateTimeDataConverter();
+                    }
+                }
+            }
+            else if (type.FullName.Equals("Amazon.DynamoDBv2.Model.StreamRecord", StringComparison.Ordinal))
+            {
+                foreach (JsonProperty property in properties)
+                {
+                    if (property.PropertyName.Equals("ApproximateCreationDateTime", StringComparison.Ordinal))
+                    {
+                        property.MemberConverter = new JsonNumberToDateTimeDataConverter();
+                    }
+                }
+            }
+            else if (type.FullName.Equals("Amazon.DynamoDBv2.Model.AttributeValue", StringComparison.Ordinal))
+            {
+                foreach (JsonProperty property in properties)
+                {
+                    if (property.PropertyName.Equals("B", StringComparison.Ordinal))
+                    {
+                        property.MemberConverter = new JsonToMemoryStreamDataConverter();
+                    }
+                    else if (property.PropertyName.Equals("BS", StringComparison.Ordinal))
+                    {
+                        property.MemberConverter = new JsonToMemoryStreamListDataConverter();
                     }
                 }
             }

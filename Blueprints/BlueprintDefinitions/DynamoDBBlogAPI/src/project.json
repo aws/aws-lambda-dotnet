@@ -14,7 +14,7 @@
 
     "Amazon.Lambda.Core": "1.0.0",
     "Amazon.Lambda.APIGatewayEvents": "1.0.0",
-    "Amazon.Lambda.Serialization.Json": "1.0.0",
+    "Amazon.Lambda.Serialization.Json": "1.0.1",
 
     "Amazon.Lambda.Tools": {
       "version": "1.0.0-preview1",

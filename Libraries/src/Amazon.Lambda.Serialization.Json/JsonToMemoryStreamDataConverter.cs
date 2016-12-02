@@ -10,7 +10,7 @@ namespace Amazon.Lambda.Serialization.Json
     /// <summary>
     /// Custom JSON converter for handling special event cases.
     /// </summary>
-    internal class KinesisEventRecordDataConverter : JsonConverter
+    internal class JsonToMemoryStreamDataConverter : JsonConverter
     {
         private static readonly TypeInfo MEMORYSTREAM_TYPEINFO = typeof(MemoryStream).GetTypeInfo();
 
@@ -24,9 +24,7 @@ namespace Amazon.Lambda.Serialization.Json
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, NewtonsoftJsonSerializer serializer)
         {
             var dataBase64 = reader.Value as string;
-            var dataBytes = Convert.FromBase64String(dataBase64);
-            MemoryStream stream = new MemoryStream(dataBytes);
-            return stream;
+            return Common.Base64ToMemoryStream(dataBase64);
         }
 
         public override void WriteJson(JsonWriter writer, object value, NewtonsoftJsonSerializer serializer)

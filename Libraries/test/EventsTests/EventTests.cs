@@ -62,32 +62,32 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        string KinesisJson = "{ \"Records\": [ { \"eventID\": \"shardId-000000000000:49545115243490985018280067714973144582180062593244200961\", \"eventVersion\": \"1.0\", \"kinesis\": { \"partitionKey\": \"partitionKey-3\", \"data\": \"SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=\", \"kinesisSchemaVersion\": \"1.0\", \"sequenceNumber\": \"49545115243490985018280067714973144582180062593244200961\" }, \"invokeIdentityArn\": \"arn:aws:iam::EXAMPLE\", \"eventName\": \"aws:kinesis:record\", \"eventSourceARN\": \"arn:aws:kinesis:EXAMPLE\", \"eventSource\": \"aws:kinesis\", \"awsRegion\": \"us-east-1\" } ] }";
-
         [Fact]
         public void KinesisTest()
         {
-            Stream json = new MemoryStream(Encoding.UTF8.GetBytes(KinesisJson));
-            json.Position = 0;
-            var serializer = new JsonSerializer();
-            var kinesisEvent = serializer.Deserialize<KinesisEvent>(json);
-            Assert.Equal(kinesisEvent.Records.Count, 1);
-            var record = kinesisEvent.Records[0];
-            Assert.Equal(record.EventId, "shardId-000000000000:49545115243490985018280067714973144582180062593244200961");
-            Assert.Equal(record.EventVersion, "1.0");
-            Assert.Equal(record.Kinesis.PartitionKey, "partitionKey-3");
-            var dataBytes = record.Kinesis.Data.ToArray();
-            Assert.Equal(Convert.ToBase64String(dataBytes), "SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=");
-            Assert.Equal(Encoding.UTF8.GetString(dataBytes), "Hello, this is a test 123.");
-            Assert.Equal(record.Kinesis.KinesisSchemaVersion, "1.0");
-            Assert.Equal(record.Kinesis.SequenceNumber, "49545115243490985018280067714973144582180062593244200961");
-            Assert.Equal(record.InvokeIdentityArn, "arn:aws:iam::EXAMPLE");
-            Assert.Equal(record.EventName, "aws:kinesis:record");
-            Assert.Equal(record.EventSourceARN, "arn:aws:kinesis:EXAMPLE");
-            Assert.Equal(record.EventSource, "aws:kinesis");
-            Assert.Equal(record.AwsRegion, "us-east-1");
+            using (var fileStream = File.OpenRead("kinesis-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var kinesisEvent = serializer.Deserialize<KinesisEvent>(fileStream);
+                Assert.Equal(kinesisEvent.Records.Count, 2);
+                var record = kinesisEvent.Records[0];
+                Assert.Equal(record.EventId, "shardId-000000000000:49568167373333333333333333333333333333333333333333333333");
+                Assert.Equal(record.EventVersion, "1.0");
+                Assert.Equal(record.Kinesis.PartitionKey, "s1");
+                var dataBytes = record.Kinesis.Data.ToArray();
+                Assert.Equal(Convert.ToBase64String(dataBytes), "SGVsbG8gV29ybGQ=");
+                Assert.Equal(Encoding.UTF8.GetString(dataBytes), "Hello World");
+                Assert.Equal(record.Kinesis.KinesisSchemaVersion, "1.0");
+                Assert.Equal(record.Kinesis.SequenceNumber, "49568167373333333333333333333333333333333333333333333333");
+                Assert.Equal(record.InvokeIdentityArn, "arn:aws:iam::123456789012:role/LambdaRole");
+                Assert.Equal(record.EventName, "aws:kinesis:record");
+                Assert.Equal(record.EventSourceARN, "arn:aws:kinesis:us-east-1:123456789012:stream/simple-stream");
+                Assert.Equal(record.EventSource, "aws:kinesis");
+                Assert.Equal(record.AwsRegion, "us-east-1");
+                Assert.Equal(636162383234770000, record.Kinesis.ApproximateArrivalTimestamp.ToUniversalTime().Ticks);
 
-            Handle(kinesisEvent);
+                Handle(kinesisEvent);
+            }
         }
 
         private void Handle(KinesisEvent kinesisEvent)
@@ -97,68 +97,42 @@ namespace Amazon.Lambda.Tests
                 var kinesisRecord = record.Kinesis;
                 var dataBytes = kinesisRecord.Data.ToArray();
                 var dataText = Encoding.UTF8.GetString(dataBytes);
-                Assert.Equal("Hello, this is a test 123.", dataText);
+                Assert.Equal("Hello World", dataText);
                 Console.WriteLine($"[{record.EventName}] Data = '{dataText}'.");
             }
         }
 
-        string DynamoDbUpdateJson = "{ \"Records\": [ { \"eventID\": \"1\", \"eventVersion\": \"1.0\", \"dynamodb\": { \"Keys\": { \"Id\": { \"N\": \"101\" } }, \"NewImage\": { \"Message\": { \"S\": \"New item!\" }, \"Id\": { \"N\": \"101\" } }, \"StreamViewType\": \"NEW_AND_OLD_IMAGES\", \"SequenceNumber\": \"111\", \"SizeBytes\": 26 }, \"awsRegion\": \"us-west-2\", \"eventName\": \"INSERT\", \"eventSourceARN\": \"arn:aws:dynamodb:us-west-2:account-id:table/ExampleTableWithStream/stream/2015-06-27T00:48:05.899\", \"eventSource\": \"aws:dynamodb\" }, { \"eventID\": \"2\", \"eventVersion\": \"1.0\", \"dynamodb\": { \"OldImage\": { \"Message\": { \"S\": \"New item!\" }, \"Id\": { \"N\": \"101\" } }, \"SequenceNumber\": \"222\", \"Keys\": { \"Id\": { \"N\": \"101\" } }, \"SizeBytes\": 59, \"NewImage\": { \"Message\": { \"S\": \"This item has changed\" }, \"Id\": { \"N\": \"101\" } }, \"StreamViewType\": \"NEW_AND_OLD_IMAGES\" }, \"awsRegion\": \"us-west-2\", \"eventName\": \"MODIFY\", \"eventSourceARN\": \"arn:aws:dynamodb:us-west-2:account-id:table/ExampleTableWithStream/stream/2015-06-27T00:48:05.899\", \"eventSource\": \"aws:dynamodb\" }, { \"eventID\": \"3\", \"eventVersion\": \"1.0\", \"dynamodb\": { \"Keys\": { \"Id\": { \"N\": \"101\" } }, \"SizeBytes\": 38, \"SequenceNumber\": \"333\", \"OldImage\": { \"Message\": { \"S\": \"This item has changed\" }, \"Id\": { \"N\": \"101\" } }, \"StreamViewType\": \"NEW_AND_OLD_IMAGES\" }, \"awsRegion\": \"us-west-2\", \"eventName\": \"REMOVE\", \"eventSourceARN\": \"arn:aws:dynamodb:us-west-2:account-id:table/ExampleTableWithStream/stream/2015-06-27T00:48:05.899\", \"eventSource\": \"aws:dynamodb\" } ] }";
-
         [Fact]
         public void DynamoDbUpdateTest()
         {
-            Stream json = new MemoryStream(Encoding.UTF8.GetBytes(DynamoDbUpdateJson));
+            var jsonText = File.ReadAllText("dynamodb-event.json");
+            Stream json = new MemoryStream(Encoding.UTF8.GetBytes(jsonText));
             json.Position = 0;
             var serializer = new JsonSerializer();
             var dynamodbEvent = serializer.Deserialize<DynamoDBEvent>(json);
-            Assert.Equal(dynamodbEvent.Records.Count, 3);
+            Assert.Equal(dynamodbEvent.Records.Count, 2);
 
             var record = dynamodbEvent.Records[0];
-            Assert.Equal(record.EventID, "1");
-            Assert.Equal(record.EventVersion, "1.0");
-            Assert.Equal(record.Dynamodb.Keys.Count, 1);
-            Assert.Equal(record.Dynamodb.Keys["Id"].N, "101");
-            Assert.Equal(record.Dynamodb.NewImage["Message"].S, "New item!");
-            Assert.Equal(record.Dynamodb.NewImage["Id"].N, "101");
+            Assert.Equal(record.EventID, "f07f8ca4b0b26cb9c4e5e77e69f274ee");
+            Assert.Equal(record.EventVersion, "1.1");
+            Assert.Equal(record.Dynamodb.Keys.Count, 2);
+            Assert.Equal(record.Dynamodb.Keys["key"].S, "binary");
+            Assert.Equal(record.Dynamodb.Keys["val"].S, "data");
+            Assert.Equal(record.Dynamodb.NewImage["val"].S, "data");
+            Assert.Equal(record.Dynamodb.NewImage["key"].S, "binary");
+            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf1"].B), "AAEqQQ==");
+            Assert.Equal(record.Dynamodb.NewImage["asdf2"].BS.Count, 2);
+            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[0]), "AAEqQQ==");
+            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[1]), "QSoBAA==");
             Assert.Equal(record.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
-            Assert.Equal(record.Dynamodb.SequenceNumber, "111");
-            Assert.Equal(record.Dynamodb.SizeBytes, 26);
-            Assert.Equal(record.AwsRegion, "us-west-2");
+            Assert.Equal(record.Dynamodb.SequenceNumber, "1405400000000002063282832");
+            Assert.Equal(record.Dynamodb.SizeBytes, 54);
+            Assert.Equal(record.AwsRegion, "us-east-1");
             Assert.Equal(record.EventName, "INSERT");
-            Assert.Equal(record.EventSourceArn, "arn:aws:dynamodb:us-west-2:account-id:table/ExampleTableWithStream/stream/2015-06-27T00:48:05.899");
+            Assert.Equal(record.EventSourceArn, "arn:aws:dynamodb:us-east-1:123456789012:table/Example-Table/stream/2016-12-01T00:00:00.000");
             Assert.Equal(record.EventSource, "aws:dynamodb");
-
-            record = dynamodbEvent.Records[1];
-            Assert.Equal(record.EventID, "2");
-            Assert.Equal(record.EventVersion, "1.0");
-            Assert.Equal(record.Dynamodb.Keys.Count, 1);
-            Assert.Equal(record.Dynamodb.Keys["Id"].N, "101");
-            Assert.Equal(record.Dynamodb.OldImage["Message"].S, "New item!");
-            Assert.Equal(record.Dynamodb.OldImage["Id"].N, "101");
-            Assert.Equal(record.Dynamodb.NewImage["Message"].S, "This item has changed");
-            Assert.Equal(record.Dynamodb.NewImage["Id"].N, "101");
-            Assert.Equal(record.Dynamodb.SequenceNumber, "222");
-            Assert.Equal(record.Dynamodb.SizeBytes, 59);
-            Assert.Equal(record.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
-            Assert.Equal(record.AwsRegion, "us-west-2");
-            Assert.Equal(record.EventName, "MODIFY");
-            Assert.Equal(record.EventSourceArn, "arn:aws:dynamodb:us-west-2:account-id:table/ExampleTableWithStream/stream/2015-06-27T00:48:05.899");
-            Assert.Equal(record.EventSource, "aws:dynamodb");
-
-            record = dynamodbEvent.Records[2];
-            Assert.Equal(record.EventID, "3");
-            Assert.Equal(record.EventVersion, "1.0");
-            Assert.Equal(record.Dynamodb.Keys.Count, 1);
-            Assert.Equal(record.Dynamodb.Keys["Id"].N, "101");
-            Assert.Equal(record.Dynamodb.OldImage["Message"].S, "This item has changed");
-            Assert.Equal(record.Dynamodb.OldImage["Id"].N, "101");
-            Assert.Equal(record.Dynamodb.SequenceNumber, "333");
-            Assert.Equal(record.Dynamodb.SizeBytes, 38);
-            Assert.Equal(record.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
-            Assert.Equal(record.AwsRegion, "us-west-2");
-            Assert.Equal(record.EventName, "REMOVE");
-            Assert.Equal(record.EventSourceArn, "arn:aws:dynamodb:us-west-2:account-id:table/ExampleTableWithStream/stream/2015-06-27T00:48:05.899");
-            Assert.Equal(record.EventSource, "aws:dynamodb");
+            var recordDateTime = record.Dynamodb.ApproximateCreationDateTime;
+            Assert.Equal(recordDateTime.Ticks, 636162388200000000);
 
             Handle(dynamodbEvent);
         }
@@ -375,6 +349,12 @@ namespace Amazon.Lambda.Tests
             var headers = root["headers"] as JObject;
             Assert.Equal(headers["Header1"], "Value1");
             Assert.Equal(headers["Header2"], "Value2");
+        }
+
+        private string MemoryStreamToBase64String(MemoryStream ms)
+        {
+            var data = ms.ToArray();
+            return Convert.ToBase64String(data);
         }
     }
 }
