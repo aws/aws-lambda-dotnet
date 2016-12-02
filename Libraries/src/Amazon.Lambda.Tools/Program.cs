@@ -107,7 +107,7 @@ namespace Amazon.Lambda.Tools
         {
             const int NAME_WIDTH = 23;
             Console.WriteLine("\t");
-            Console.WriteLine("Commands to deploy and manage AWS Lamdba functions:");
+            Console.WriteLine("Commands to deploy and manage AWS Lambda functions:");
             Console.WriteLine("\t");
             Console.WriteLine($"\t{DeployFunctionCommand.COMMAND_DEPLOY_NAME.PadRight(NAME_WIDTH)} {DeployFunctionCommand.COMMAND_DEPLOY_DESCRIPTION}");
             Console.WriteLine($"\t{InvokeFunctionCommand.COMMAND_NAME.PadRight(NAME_WIDTH)} {InvokeFunctionCommand.COMMAND_DESCRIPTION}");

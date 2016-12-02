@@ -66,7 +66,7 @@ namespace Amazon.Lambda.Tools.Commands
 
                 try
                 {
-                    await this.LamdbaClient.DeleteFunctionAsync(deleteRequest);
+                    await this.LambdaClient.DeleteFunctionAsync(deleteRequest);
                 }
                 catch(Exception e)
                 {

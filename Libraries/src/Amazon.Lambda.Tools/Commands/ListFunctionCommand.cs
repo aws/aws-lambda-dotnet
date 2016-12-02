@@ -41,7 +41,7 @@ namespace Amazon.Lambda.Tools.Commands
 
                     try
                     {
-                        response = await this.LamdbaClient.ListFunctionsAsync(request);
+                        response = await this.LambdaClient.ListFunctionsAsync(request);
                     }
                     catch (Exception e)
                     {
