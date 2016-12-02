@@ -92,7 +92,7 @@ namespace Amazon.Lambda.Tools.Commands
                 InvokeResponse response = null;
                 try
                 {
-                    response = await this.LamdbaClient.InvokeAsync(invokeRequest);
+                    response = await this.LambdaClient.InvokeAsync(invokeRequest);
                 }
                 catch(Exception e)
                 {

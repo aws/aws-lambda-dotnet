@@ -58,7 +58,7 @@ namespace Amazon.Lambda.Tools.Commands
 
                 try
                 {
-                    response = await this.LamdbaClient.GetFunctionConfigurationAsync(this.GetStringValueOrDefault(this.FunctionName, DefinedCommandOptions.ARGUMENT_FUNCTION_NAME, true));
+                    response = await this.LambdaClient.GetFunctionConfigurationAsync(this.GetStringValueOrDefault(this.FunctionName, DefinedCommandOptions.ARGUMENT_FUNCTION_NAME, true));
                 }
                 catch (Exception e)
                 {

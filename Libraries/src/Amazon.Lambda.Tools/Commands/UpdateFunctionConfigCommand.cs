@@ -143,7 +143,7 @@ namespace Amazon.Lambda.Tools.Commands
                 this.Logger.WriteLine($"Updating runtime configuration for function {this.GetStringValueOrDefault(this.FunctionName, DefinedCommandOptions.ARGUMENT_FUNCTION_NAME, true)}");
                 try
                 {
-                    await this.LamdbaClient.UpdateFunctionConfigurationAsync(request);
+                    await this.LambdaClient.UpdateFunctionConfigurationAsync(request);
                 }
                 catch (Exception e)
                 {
@@ -160,7 +160,7 @@ namespace Amazon.Lambda.Tools.Commands
             };
             try
             {
-                var response = await this.LamdbaClient.GetFunctionConfigurationAsync(request);
+                var response = await this.LambdaClient.GetFunctionConfigurationAsync(request);
                 return response;
             }
             catch (ResourceNotFoundException)

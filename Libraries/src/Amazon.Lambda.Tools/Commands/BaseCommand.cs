@@ -88,7 +88,7 @@ namespace Amazon.Lambda.Tools.Commands
         public bool EnableInteractive { get; set; } = false;
 
         IAmazonLambda _lambdaClient;
-        public IAmazonLambda LamdbaClient
+        public IAmazonLambda LambdaClient
         {
             get
             {

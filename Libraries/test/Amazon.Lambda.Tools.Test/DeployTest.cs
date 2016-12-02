@@ -67,7 +67,7 @@ namespace Amazon.Lambda.Tools.Test
                     LogType = LogType.Tail,
                     Payload = "\"hello world\""
                 };
-                var response = await command.LamdbaClient.InvokeAsync(invokeRequest);
+                var response = await command.LambdaClient.InvokeAsync(invokeRequest);
 
                 var payload = new StreamReader(response.Payload).ReadToEnd();
                 var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(response.LogResult));
@@ -75,7 +75,7 @@ namespace Amazon.Lambda.Tools.Test
             }
             finally
             {
-                await command.LamdbaClient.DeleteFunctionAsync(command.FunctionName);
+                await command.LambdaClient.DeleteFunctionAsync(command.FunctionName);
             }
         }
 

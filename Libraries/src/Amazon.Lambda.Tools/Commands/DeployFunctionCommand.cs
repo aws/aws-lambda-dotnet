@@ -184,7 +184,7 @@ namespace Amazon.Lambda.Tools.Commands
 
                         try
                         {
-                            await this.LamdbaClient.CreateFunctionAsync(createRequest);
+                            await this.LambdaClient.CreateFunctionAsync(createRequest);
                             this.Logger.WriteLine("New Lambda function created");
                         }
                         catch (Exception e)
@@ -221,7 +221,7 @@ namespace Amazon.Lambda.Tools.Commands
 
                         try
                         {
-                            await this.LamdbaClient.UpdateFunctionCodeAsync(updateCodeRequest);
+                            await this.LambdaClient.UpdateFunctionCodeAsync(updateCodeRequest);
                         }
                         catch (Exception e)
                         {
