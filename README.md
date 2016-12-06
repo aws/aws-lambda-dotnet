@@ -4,19 +4,19 @@ Repository for the AWS NuGet packages and Blueprints to support writing AWS Lamb
 
 ## NuGet Packages
 
-# Events
+### Events
 
 This packages in this folder contains classes that can be used as input types for Lambda functions that process various AWS events.
 
 These are the packages and their README.md files:
 
-[Amazon.Lambda.APIGatewayEvents](Libraries/Amazon.Lambda.APIGatewayEvents) - [README.md](Libraries/Amazon.Lambda.APIGatewayEvents/README.md)
-[Amazon.Lambda.CognitoEvents](Libraries/Amazon.Lambda.CognitoEvents) - [README.md](Libraries/Amazon.Lambda.CognitoEvents/README.md)
-[Amazon.Lambda.ConfigEvents](Libraries/Amazon.Lambda.ConfigEvents) - [README.md](Libraries/Amazon.Lambda.ConfigEvents/README.md)
-[Amazon.Lambda.DynamoDBEvents](Libraries/Amazon.Lambda.DynamoDBEvents) - [README.md](Libraries/Amazon.Lambda.DynamoDBEvents/README.md)
-[Amazon.Lambda.KinesisEvents](Libraries/Amazon.Lambda.KinesisEvents) - [README.md](Libraries/Amazon.Lambda.KinesisEvents/README.md)
-[Amazon.Lambda.S3Events](Libraries/Amazon.Lambda.S3Events) - [README.md](Libraries/Amazon.Lambda.S3Events/README.md)
-[Amazon.Lambda.SNSEvents](Libraries/Amazon.Lambda.SNSEvents) - [README.md](Libraries/Amazon.Lambda.SNSEvents/README.md)
+* [Amazon.Lambda.APIGatewayEvents](Libraries/Amazon.Lambda.APIGatewayEvents) - [README.md](Libraries/Amazon.Lambda.APIGatewayEvents/README.md)
+* [Amazon.Lambda.CognitoEvents](Libraries/Amazon.Lambda.CognitoEvents) - [README.md](Libraries/Amazon.Lambda.CognitoEvents/README.md)
+* [Amazon.Lambda.ConfigEvents](Libraries/Amazon.Lambda.ConfigEvents) - [README.md](Libraries/Amazon.Lambda.ConfigEvents/README.md)
+* [Amazon.Lambda.DynamoDBEvents](Libraries/Amazon.Lambda.DynamoDBEvents) - [README.md](Libraries/Amazon.Lambda.DynamoDBEvents/README.md)
+* [Amazon.Lambda.KinesisEvents](Libraries/Amazon.Lambda.KinesisEvents) - [README.md](Libraries/Amazon.Lambda.KinesisEvents/README.md)
+* [Amazon.Lambda.S3Events](Libraries/Amazon.Lambda.S3Events) - [README.md](Libraries/Amazon.Lambda.S3Events/README.md)
+* [Amazon.Lambda.SNSEvents](Libraries/Amazon.Lambda.SNSEvents) - [README.md](Libraries/Amazon.Lambda.SNSEvents/README.md)
 
 ### Amazon.Lambda.Tools
 
