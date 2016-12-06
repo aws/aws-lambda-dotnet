@@ -248,10 +248,16 @@ var LambdaDotNetGenerator = yeoman.generators.Base.extend({
 
         this.log('   %s %s', chalk.cyan("create"), path.relative('.', targetFile));
 
-        var content = String(fs.readFileSync(source));
-        var updatedContent = this._applyBlueprintParameters(content);
-        fs.writeFileSync(targetFile, updatedContent);
+        var extension = path.extname(source);
 
+        if(extension === ".jpg" || extension === ".png") {
+            fs.createReadStream(source).pipe(fs.createWriteStream(targetFile));
+        }
+        else {
+            var content = String(fs.readFileSync(source));
+            content = this._applyBlueprintParameters(content);
+            fs.writeFileSync(targetFile, content);
+        }
     },
 
     _applyBlueprintParameters : function(content) {

@@ -4,5 +4,5 @@
     "description": "A project for responding to S3 Event notifications",
     "sort-order" : 101,    
     "hidden-tags" : ["C#","LambdaProject"],
-    "tags":["S3"]
+    "tags":["S3", "Simple"]
 }
