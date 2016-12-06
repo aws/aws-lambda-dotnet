@@ -250,7 +250,7 @@ var LambdaDotNetGenerator = yeoman.generators.Base.extend({
 
         var extension = path.extname(source);
 
-        if(extension === ".jpg" || extension === ".png") {
+        if(extension === ".jpg" || extension === ".jpeg" || extension === ".png") {
             fs.createReadStream(source).pipe(fs.createWriteStream(targetFile));
         }
         else {

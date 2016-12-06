@@ -31,13 +31,14 @@ namespace BLUEPRINT_BASE_NAME
         /// The name of the environment variable to set which will override the default minimum confidence level.
         /// </summary>
         public const string MIN_CONFIDENCE_ENVIRONMENT_VARIABLE_NAME = "MinConfidence";
+
         IAmazonS3 S3Client { get; }
 
         IAmazonRekognition RekognitionClient { get; }
 
         float MinConfidence { get; set; } = DEFAULT_MIN_CONFIDENCE;
 
-        HashSet<string> SupportedImageTypes { get; } = new HashSet<string> { ".png", ".jpg" };
+        HashSet<string> SupportedImageTypes { get; } = new HashSet<string> { ".png", ".jpg", ".jpeg" };
 
         /// <summary>
         /// Default constructor used by AWS Lambda to construct the function. Credentials and Region information will
@@ -85,7 +86,7 @@ namespace BLUEPRINT_BASE_NAME
         }
 
         /// <summary>
-        /// A function for responding to S3 create events. It will determine of the object is an image and use Amazon Rekognition
+        /// A function for responding to S3 create events. It will determine if the object is an image and use Amazon Rekognition
         /// to detect labels and add the labels as tags on the S3 object.
         /// </summary>
         /// <param name="input"></param>
@@ -125,7 +126,7 @@ namespace BLUEPRINT_BASE_NAME
                     }
                     else
                     {
-                        Console.WriteLine($"\tSkipped label {label.Name} with confidence {label.Confidence} because maximum number of tags reached");
+                        Console.WriteLine($"\tSkipped label {label.Name} with confidence {label.Confidence} because the maximum number of tags has been reached");
                     }
                 }
 
