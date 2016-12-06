@@ -30,7 +30,7 @@ namespace BLUEPRINT_BASE_NAME
         /// <summary>
         /// The name of the environment variable to set which will override the default minimum confidence level.
         /// </summary>
-        public const string MIN_CONFIDENCE_ENVIORNMENT_VARIABLE_NAME = "MinConfidence";
+        public const string MIN_CONFIDENCE_ENVIRONMENT_VARIABLE_NAME = "MinConfidence";
         IAmazonS3 S3Client { get; }
 
         IAmazonRekognition RekognitionClient { get; }
@@ -51,7 +51,7 @@ namespace BLUEPRINT_BASE_NAME
             this.S3Client = new AmazonS3Client();
             this.RekognitionClient = new AmazonRekognitionClient();
 
-            var environmentMinConfidence = System.Environment.GetEnvironmentVariable(MIN_CONFIDENCE_ENVIORNMENT_VARIABLE_NAME);
+            var environmentMinConfidence = System.Environment.GetEnvironmentVariable(MIN_CONFIDENCE_ENVIRONMENT_VARIABLE_NAME);
             if(!string.IsNullOrWhiteSpace(environmentMinConfidence))
             {
                 float value;
@@ -97,7 +97,7 @@ namespace BLUEPRINT_BASE_NAME
             {
                 if(!SupportedImageTypes.Contains(Path.GetExtension(record.S3.Object.Key)))
                 {
-                    Console.WriteLine($"Object {record.S3.Bucket.Name}:{record.S3.Object.Key} is not a support image type");
+                    Console.WriteLine($"Object {record.S3.Bucket.Name}:{record.S3.Object.Key} is not a supported image type");
                     continue;
                 }
 
@@ -125,7 +125,7 @@ namespace BLUEPRINT_BASE_NAME
                     }
                     else
                     {
-                        Console.WriteLine($"\tSkipped label {label.Name} with confidence {label.Confidence} because reached the maximum number of tags");
+                        Console.WriteLine($"\tSkipped label {label.Name} with confidence {label.Confidence} because maximum number of tags reached");
                     }
                 }
 
