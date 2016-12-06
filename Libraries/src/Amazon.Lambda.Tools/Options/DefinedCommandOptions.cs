@@ -156,6 +156,15 @@ namespace Amazon.Lambda.Tools.Options
                 ValueType = CommandOption.CommandOptionValueType.CommaDelimitedList,
                 Description = "Comma delimited list of security group ids if your function references resources in a VPC"
             };
+        public static readonly CommandOption ARGUMENT_DEADLETTER_TARGET_ARN =
+            new CommandOption
+            {
+                Name = "Dead Letter Target ARN",
+                ShortSwitch = "-dlta",
+                Switch = "--dead-letter-target-arn",
+                ValueType = CommandOption.CommandOptionValueType.StringValue,
+                Description = "Target ARN of an SNS topic or SQS Queue for the Dead Letter Queue"
+            };
         public static readonly CommandOption ARGUMENT_ENVIRONMENT_VARIABLES =
             new CommandOption
             {

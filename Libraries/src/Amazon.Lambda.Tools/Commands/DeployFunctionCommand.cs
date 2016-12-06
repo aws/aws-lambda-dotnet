@@ -48,6 +48,7 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_FUNCTION_RUNTIME,
             DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS,
             DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS,
+            DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN,
             DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES,
             DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN,
             DefinedCommandOptions.ARGUMENT_S3_BUCKET,
@@ -158,6 +159,12 @@ namespace Amazon.Lambda.Tools.Commands
                                 Variables = environmentVariables
                             };
 
+                        }
+
+                        var deadLetterQueue = this.GetStringValueOrDefault(this.DeadLetterTargetArn, DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN, false);
+                        if(!string.IsNullOrEmpty(deadLetterQueue))
+                        {
+                            createRequest.DeadLetterConfig = new DeadLetterConfig {TargetArn = deadLetterQueue };
                         }
 
                         if (s3Bucket != null)

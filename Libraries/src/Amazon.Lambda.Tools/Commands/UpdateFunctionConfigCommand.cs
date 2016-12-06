@@ -39,6 +39,7 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_FUNCTION_RUNTIME,
             DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS,
             DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS,
+            DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN,
             DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES,
             DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN
         });
@@ -55,6 +56,7 @@ namespace Amazon.Lambda.Tools.Commands
         public Runtime Runtime { get; set; }
         public Dictionary<string, string> EnvironmentVariables { get; set; }
         public string KMSKeyArn { get; set; }
+        public string DeadLetterTargetArn { get; set; }
 
         public UpdateFunctionConfigCommand(IToolLogger logger, string workingDirectory, string[] args)
             : base(logger, workingDirectory, UpdateCommandOptions, args)
@@ -101,6 +103,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.SubnetIds = tuple.Item2.StringValues;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS.Switch)) != null)
                 this.SecurityGroupIds = tuple.Item2.StringValues;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN.Switch)) != null)
+                this.DeadLetterTargetArn = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES.Switch)) != null)
                 this.EnvironmentVariables = tuple.Item2.KeyValuePairs;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN.Switch)) != null)
@@ -264,6 +268,21 @@ namespace Amazon.Lambda.Tools.Commands
                     different = true;
                 }
             }
+
+            if (!string.IsNullOrEmpty(this.DeadLetterTargetArn) && !string.Equals(this.DeadLetterTargetArn, existingConfiguration.DeadLetterConfig?.TargetArn, StringComparison.Ordinal))
+            {
+                request.DeadLetterConfig = existingConfiguration.DeadLetterConfig ?? new DeadLetterConfig();
+                request.DeadLetterConfig.TargetArn = this.DeadLetterTargetArn;
+                different = true;
+            }
+            else if (string.IsNullOrEmpty(this.DeadLetterTargetArn) && !string.IsNullOrEmpty(existingConfiguration.DeadLetterConfig?.TargetArn))
+            {
+                request.DeadLetterConfig = null;
+                request.DeadLetterConfig = existingConfiguration.DeadLetterConfig ?? new DeadLetterConfig();
+                request.DeadLetterConfig.TargetArn = string.Empty;
+                different = true;
+            }
+
 
             if (!string.IsNullOrEmpty(this.KMSKeyArn) && !string.Equals(this.KMSKeyArn, existingConfiguration.KMSKeyArn, StringComparison.Ordinal))
             {
