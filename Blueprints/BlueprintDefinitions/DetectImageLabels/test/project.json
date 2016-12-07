@@ -13,8 +13,8 @@
     "Amazon.Lambda.TestUtilities": "1.0.0*",
 
     "Amazon.Lambda.S3Events": "1.0.0",
-    "AWSSDK.S3": "3.3.4",
-    "AWSSDK.Rekognition": "3.3.0",
+    "AWSSDK.S3": "3.3.4.1",
+    "AWSSDK.Rekognition": "3.3.0.1",
 
 
     "BLUEPRINT_BASE_NAME": "1.0.0",
