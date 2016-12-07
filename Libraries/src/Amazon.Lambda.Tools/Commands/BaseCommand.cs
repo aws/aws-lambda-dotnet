@@ -76,7 +76,7 @@ namespace Amazon.Lambda.Tools.Commands
         private static void SetUserAgentString()
         {
             string version = typeof(BaseCommand).GetTypeInfo().Assembly.GetName().Version.ToString();
-            Util.Internal.InternalSDKUtils.SetUserAgent("AmazonLambdaToolsDotnet",
+            Util.Internal.InternalSDKUtils.SetUserAgent("AWSLambdaToolsDotnet",
                                           version);
         }
 
