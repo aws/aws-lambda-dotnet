@@ -16,7 +16,7 @@ Here is an example implementation of the Lamba function in an ASP.NET Core Web A
 ```
 using System.IO;
 
-using AWS.Lambda.AspNetCoreServer;
+using Amazon.Lambda.AspNetCoreServer;
 using Microsoft.AspNetCore.Hosting;
 
 namespace TestWebApp
