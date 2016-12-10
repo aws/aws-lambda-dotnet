@@ -175,7 +175,7 @@ namespace Amazon.Lambda.Tools
             }
             catch (Exception e)
             {
-                throw new LambdaToolsException($"Error creating IAM Role: {e.Message}");
+                throw new LambdaToolsException($"Error creating IAM Role: {e.Message}", LambdaToolsException.ErrorCode.IAMCreateRole, e);
             }
 
             if (!string.IsNullOrEmpty(managedRole))
@@ -191,7 +191,7 @@ namespace Amazon.Lambda.Tools
                 }
                 catch (Exception e)
                 {
-                    throw new LambdaToolsException($"Error assigning managed IAM Policy: {e.Message}");
+                    throw new LambdaToolsException($"Error assigning managed IAM Policy: {e.Message}", LambdaToolsException.ErrorCode.IAMAttachRole, e);
                 }
             }
 
@@ -223,7 +223,7 @@ namespace Amazon.Lambda.Tools
                 }
                 catch (Exception e)
                 {
-                    throw new LambdaToolsException("Error confirming new role was created: " + e.Message);
+                    throw new LambdaToolsException("Error confirming new role was created: " + e.Message, LambdaToolsException.ErrorCode.IAMGetRole, e);
                 }
             } while (!found);
 

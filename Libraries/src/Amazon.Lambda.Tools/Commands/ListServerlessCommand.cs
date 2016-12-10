@@ -58,7 +58,7 @@ namespace Amazon.Lambda.Tools.Commands
                     }
                     catch (Exception e)
                     {
-                        throw new LambdaToolsException("Error listing AWS Serverless applications: " + e.Message);
+                        throw new LambdaToolsException("Error listing AWS Serverless applications: " + e.Message, LambdaToolsException.ErrorCode.CloudFormationDescribeStack, e);
                     }
 
                     foreach (var stack in response.Stacks)

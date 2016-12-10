@@ -37,7 +37,7 @@ namespace Amazon.Lambda.Tools.Options
                         {
                             if (i + 1 >= arguments.Length)
                             {
-                                throw new LambdaToolsException($"Argument {arguments[i]} must be followed by a value");
+                                throw new LambdaToolsException($"Argument {arguments[i]} must be followed by a value", LambdaToolsException.ErrorCode.CommandLineParseError);
                             }
 
                             switch (option.ValueType)

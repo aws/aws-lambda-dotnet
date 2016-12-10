@@ -96,7 +96,7 @@ namespace Amazon.Lambda.Tools.Commands
                 }
                 catch(Exception e)
                 {
-                    throw new LambdaToolsException("Error invoking Lambda function: " + e.Message);
+                    throw new LambdaToolsException("Error invoking Lambda function: " + e.Message, LambdaToolsException.ErrorCode.LambdaInvokeFunction, e);
                 }
 
                 this.Logger.WriteLine("Payload:");

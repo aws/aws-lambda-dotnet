@@ -66,7 +66,7 @@ namespace Amazon.Lambda.Tools.Commands
                 }
                 catch (Exception e)
                 {
-                    throw new LambdaToolsException("Error deleting CloudFormation stack: " + e.Message);
+                    throw new LambdaToolsException("Error deleting CloudFormation stack: " + e.Message, LambdaToolsException.ErrorCode.CloudFormationDeleteStack, e);
                 }
 
                 this.Logger.WriteLine($"CloudFormation stack {deleteRequest.StackName} deleted");

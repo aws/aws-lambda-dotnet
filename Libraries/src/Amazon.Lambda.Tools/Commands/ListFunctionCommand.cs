@@ -45,7 +45,7 @@ namespace Amazon.Lambda.Tools.Commands
                     }
                     catch (Exception e)
                     {
-                        throw new LambdaToolsException("Error listing Lambda functions: " + e.Message);
+                        throw new LambdaToolsException("Error listing Lambda functions: " + e.Message, LambdaToolsException.ErrorCode.LambdaListFunctions, e);
                     }
 
                     foreach (var function in response.Functions)

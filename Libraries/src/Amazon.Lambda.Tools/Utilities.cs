@@ -64,7 +64,7 @@ namespace Amazon.Lambda.Tools
             }
 
             if (type == null)
-                throw new LambdaToolsException($"Failed to find type {typeName}");
+                throw new ValidateHandlerException(publishLocation, handler, $"Failed to find type {typeName}");
 
             var method = type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.FlattenHierarchy).FirstOrDefault(x =>
             {
@@ -169,7 +169,7 @@ namespace Amazon.Lambda.Tools
             }
             catch(Exception e)
             {
-                throw new LambdaToolsException($"Error uploading to {key} in bucket {bucket}: {e.Message}");
+                throw new LambdaToolsException($"Error uploading to {key} in bucket {bucket}: {e.Message}", LambdaToolsException.ErrorCode.S3UploadError, e);
             }
 
             return key;
@@ -184,7 +184,7 @@ namespace Amazon.Lambda.Tools
             }
             catch(Exception e)
             {
-                throw new LambdaToolsException($"Error determining region for bucket {s3Bucket}: {e.Message}");
+                throw new LambdaToolsException($"Error determining region for bucket {s3Bucket}: {e.Message}", LambdaToolsException.ErrorCode.S3GetBucketLocation, e);
             }
 
             var configuredRegion = s3Client.Config.RegionEndpoint?.SystemName;
@@ -200,7 +200,7 @@ namespace Amazon.Lambda.Tools
             
             if (!string.Equals(bucketRegion, configuredRegion))
             {
-                throw new LambdaToolsException($"Error: S3 bucket must be in the same region as the configured region {configuredRegion}. {s3Bucket} is in the region {bucketRegion}.");
+                throw new LambdaToolsException($"Error: S3 bucket must be in the same region as the configured region {configuredRegion}. {s3Bucket} is in the region {bucketRegion}.", LambdaToolsException.ErrorCode.BucketInDifferentRegionThenStack);
             }
 
         }
@@ -222,7 +222,7 @@ namespace Amazon.Lambda.Tools
             }
             catch(Exception e)
             {
-                throw new LambdaToolsException($"Error determining region for bucket {bucket}: {e.Message}");
+                throw new LambdaToolsException($"Error determining region for bucket {bucket}: {e.Message}", LambdaToolsException.ErrorCode.S3GetBucketLocation, e);
             }
         }
 
@@ -251,7 +251,7 @@ namespace Amazon.Lambda.Tools
 
             if (runtimeVersion < frameworkVersion)
             {
-                throw new LambdaToolsException($"The framework {targetFramework} is a newer version than Lambda runtime {lambdaRuntime} supports");
+                throw new LambdaToolsException($"The framework {targetFramework} is a newer version than Lambda runtime {lambdaRuntime} supports", LambdaToolsException.ErrorCode.FrameworkNewerThanRuntime);
             }
         }
 
@@ -381,7 +381,7 @@ namespace Amazon.Lambda.Tools
                     GetNextToken(option, ';', ref currentPos, out value);
 
                     if(string.IsNullOrEmpty(name))
-                        throw new LambdaToolsException($"Error parsing option ({option}), format should be <key1>=<value1>;<key2>=<value2>");
+                        throw new LambdaToolsException($"Error parsing option ({option}), format should be <key1>=<value1>;<key2>=<value2>", LambdaToolsException.ErrorCode.CommandLineParseError);
 
                     parameters[name] = value ?? string.Empty;
                 }
@@ -392,7 +392,7 @@ namespace Amazon.Lambda.Tools
             }
             catch(Exception e)
             {
-                throw new LambdaToolsException($"Error parsing option ({option}), format should be <key1>=<value1>;<key2>=<value2>: {e.Message}");
+                throw new LambdaToolsException($"Error parsing option ({option}), format should be <key1>=<value1>;<key2>=<value2>: {e.Message}", LambdaToolsException.ErrorCode.CommandLineParseError);
             }
 
 

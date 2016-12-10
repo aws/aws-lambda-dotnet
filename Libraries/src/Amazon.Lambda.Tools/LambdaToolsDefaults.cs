@@ -43,7 +43,7 @@ namespace Amazon.Lambda.Tools
                 }
                 catch (Exception e)
                 {
-                    throw new LambdaToolsException($"Error parsing default config {path}: {e.Message}");
+                    throw new LambdaToolsException($"Error parsing default config {path}: {e.Message}", LambdaToolsException.ErrorCode.DefaultsParseFail, e);
                 }
             }
         }

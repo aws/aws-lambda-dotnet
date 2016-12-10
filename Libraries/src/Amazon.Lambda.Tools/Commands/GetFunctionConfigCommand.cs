@@ -62,7 +62,7 @@ namespace Amazon.Lambda.Tools.Commands
                 }
                 catch (Exception e)
                 {
-                    throw new LambdaToolsException("Error getting configuration for Lambda function: " + e.Message);
+                    throw new LambdaToolsException("Error getting configuration for Lambda function: " + e.Message, LambdaToolsException.ErrorCode.LambdaGetConfiguration, e);
                 }
 
                 const int PAD_SIZE = 20;

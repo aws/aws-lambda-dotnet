@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Amazon.Runtime;
+
 namespace Amazon.Lambda.Tools
 {
     /// <summary>
@@ -11,14 +13,70 @@ namespace Amazon.Lambda.Tools
     /// </summary>
     public class LambdaToolsException : Exception
     {
-        public LambdaToolsException(string message) : base(message) { }
+        public enum ErrorCode {
+
+            BucketInDifferentRegionThenStack,
+
+            CloudFormationCreateChangeSet,
+            CloudFormationCreateStack,
+            CloudFormationDeleteStack,
+            CloudFormationDescribeChangeSet,
+            CloudFormationDescribeStack,
+            CloudFormationDescribeStackEvents,
+
+            CommandLineParseError,
+            DefaultsParseFail,
+            DotnetPublishFail,
+            FrameworkNewerThanRuntime,
+            HandlerValidation,
+            ProfileNotFound,
+            ProfileNotCreateable,
+
+            IAMAttachRole,
+            IAMCreateRole,
+            IAMGetRole,
+
+
+            LambdaCreateFunction,
+            LambdaDeleteFunction,
+            LambdaGetConfiguration,
+            LambdaInvokeFunction,
+            LambdaListFunctions,
+            LambdaUpdateFunctionCode,
+            LambdaUpdateFunctionConfiguration,
+
+            S3GetBucketLocation,
+            S3UploadError,
+
+            ServerlessTemplateNotFound,
+            ServerlessTemplateParseError,
+            WaitingForStackError
+        }
+
+        public LambdaToolsException(string message, ErrorCode code) : base(message)
+        {
+            this.Code = code;
+        }
+
+        public LambdaToolsException(string message, ErrorCode code, Exception e) : this(message, code)
+        {
+            var ae = e as AmazonServiceException;
+            if (ae != null)
+            {
+                this.ServiceCode = $"{ae.ErrorCode}-{ae.StatusCode}";
+            }
+        }
+
+        public ErrorCode Code { get; }
+
+        public string ServiceCode { get; }
     }
 
     public class ValidateHandlerException : LambdaToolsException
     {
         public string ProjectLocation { get; }
         public string Handler { get; }
-        public ValidateHandlerException(string projectLocation, string handler, string message) : base(message)
+        public ValidateHandlerException(string projectLocation, string handler, string message) : base(message, LambdaToolsException.ErrorCode.HandlerValidation)
         {
             this.ProjectLocation = projectLocation;
             this.Handler = handler;
