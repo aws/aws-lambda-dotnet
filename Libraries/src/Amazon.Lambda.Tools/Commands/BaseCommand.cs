@@ -59,6 +59,8 @@ namespace Amazon.Lambda.Tools.Commands
         public IToolLogger Logger { get; protected set; }
         public string WorkingDirectory { get; set; }
 
+        public LambdaToolsException LastToolsException { get; protected set; }
+
 
         LambdaToolsDefaults _defaultConfig;
         public LambdaToolsDefaults DefaultConfig

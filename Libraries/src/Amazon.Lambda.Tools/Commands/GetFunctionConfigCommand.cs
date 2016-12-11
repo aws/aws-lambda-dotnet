@@ -112,6 +112,7 @@ namespace Amazon.Lambda.Tools.Commands
             catch (LambdaToolsException e)
             {
                 this.Logger.WriteLine(e.Message);
+                this.LastToolsException = e;
                 return false;
             }
             catch (Exception e)

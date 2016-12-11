@@ -29,7 +29,7 @@ namespace Amazon.Lambda.Tools.Commands
         // CloudFormation statuses for when the stack is in transition all end with IN_PROGRESS
         const string IN_PROGRESS_SUFFIX = "IN_PROGRESS";
 
-        
+
 
         public static readonly IList<CommandOption> DeployServerlessCommandOptions = BuildLineOptions(new List<CommandOption>
         {
@@ -40,6 +40,7 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE,
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_PARAMETER,
             DefinedCommandOptions.ARGUMENT_STACK_NAME,
+            DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_DISABLE_CAPABILITIES,
             DefinedCommandOptions.ARGUMENT_STACK_WAIT
         });
 
@@ -53,6 +54,8 @@ namespace Amazon.Lambda.Tools.Commands
         public string StackName { get; set; }
         public bool? WaitForStackToComplete { get; set; }
         public Dictionary<string, string> TemplateParameters { get; set; }
+
+        public string[] DisabledCapabilities { get; set; }
 
         /// <summary>
         /// Parse the CommandOptions into the Properties on the command.
@@ -107,7 +110,7 @@ namespace Amazon.Lambda.Tools.Commands
 
                 if (!Path.IsPathRooted(templatePath))
                 {
-                    templatePath = Path.Combine(Utilities.DetemineProjectLocation(this.WorkingDirectory, projectLocation), templatePath );
+                    templatePath = Path.Combine(Utilities.DetemineProjectLocation(this.WorkingDirectory, projectLocation), templatePath);
                 }
 
                 if (!File.Exists(templatePath))
@@ -144,7 +147,7 @@ namespace Amazon.Lambda.Tools.Commands
 
                 // Determine if the stack is in a good state to be updated.
                 ChangeSetType changeSetType;
-                if(existingStack == null || existingStack.StackStatus == StackStatus.REVIEW_IN_PROGRESS || existingStack.StackStatus == StackStatus.DELETE_COMPLETE)
+                if (existingStack == null || existingStack.StackStatus == StackStatus.REVIEW_IN_PROGRESS || existingStack.StackStatus == StackStatus.DELETE_COMPLETE)
                 {
                     changeSetType = ChangeSetType.CREATE;
                 }
@@ -160,7 +163,7 @@ namespace Amazon.Lambda.Tools.Commands
                 else if (existingStack.StackStatus == StackStatus.ROLLBACK_IN_PROGRESS)
                 {
                     existingStack = await WaitForNoLongerInProgress(existingStack.StackName);
-                    if(existingStack != null && existingStack.StackStatus == StackStatus.ROLLBACK_COMPLETE)
+                    if (existingStack != null && existingStack.StackStatus == StackStatus.ROLLBACK_COMPLETE)
                         await DeleteRollbackCompleteStackAsync(existingStack);
 
                     changeSetType = ChangeSetType.CREATE;
@@ -183,7 +186,7 @@ namespace Amazon.Lambda.Tools.Commands
                 {
                     this.Logger.WriteLine($"The stack's current state of {existingStack.StackStatus} is invalid for updating");
                     return false;
-                    
+
                 }
 
                 CreateChangeSetResponse changeSetResponse;
@@ -203,6 +206,18 @@ namespace Amazon.Lambda.Tools.Commands
                         }
                     }
 
+                    var capabilities = new List<string>();
+                    var disabledCapabilties = GetStringValuesOrDefault(this.DisabledCapabilities, DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_DISABLE_CAPABILITIES, false);
+
+                    if (disabledCapabilties?.FirstOrDefault(x => string.Equals(x, "CAPABILITY_IAM", StringComparison.OrdinalIgnoreCase)) == null)
+                    {
+                        capabilities.Add("CAPABILITY_IAM");
+                    }
+                    if (disabledCapabilties?.FirstOrDefault(x => string.Equals(x, "CAPABILITY_NAMED_IAM", StringComparison.OrdinalIgnoreCase)) == null)
+                    {
+                        capabilities.Add("CAPABILITY_NAMED_IAM");
+                    }
+
                     // Create the change set which performs the transformation on the Serverless resources in the template.
                     changeSetResponse = await this.CloudFormationClient.CreateChangeSetAsync(new CreateChangeSetRequest
                     {
@@ -210,13 +225,15 @@ namespace Amazon.Lambda.Tools.Commands
                         Parameters = templateParameters,
                         ChangeSetName = changeSetName,
                         ChangeSetType = changeSetType,
-                        Capabilities = new List<string> { "CAPABILITY_IAM" },
-                        Tags = new List<Tag> { new Tag {Key = Constants.SERVERLESS_TAG_NAME, Value = "true" } },
+                        Capabilities = capabilities,
+                        Tags = new List<Tag> { new Tag { Key = Constants.SERVERLESS_TAG_NAME, Value = "true" } },
                         TemplateURL = this.S3Client.GetPreSignedURL(new S3.Model.GetPreSignedUrlRequest { BucketName = s3Bucket, Key = s3KeyTemplate, Expires = DateTime.Now.AddHours(1) })
                     });
+
+
                     this.Logger.WriteLine("CloudFormation change set created");
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     throw new LambdaToolsException($"Error creating CloudFormation change set: {e.Message}", LambdaToolsException.ErrorCode.CloudFormationCreateStack, e);
                 }
@@ -242,7 +259,7 @@ namespace Amazon.Lambda.Tools.Commands
                     else
                         this.Logger.WriteLine($"Initiated CloudFormation stack update on {stackName}");
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     throw new LambdaToolsException($"Error executing CloudFormation change set: {e.Message}", LambdaToolsException.ErrorCode.CloudFormationCreateChangeSet, e);
                 }
@@ -263,7 +280,7 @@ namespace Amazon.Lambda.Tools.Commands
                     }
                     else
                     {
-                        
+
                         this.Logger.WriteLine($"Stack update failed with status: {updatedStack.StackStatus} ({updatedStack.StackStatusReason})");
                     }
                 }
@@ -273,6 +290,7 @@ namespace Amazon.Lambda.Tools.Commands
             catch (LambdaToolsException e)
             {
                 this.Logger.WriteLine(e.Message);
+                this.LastToolsException = e;
                 return false;
             }
             catch (Exception e)
@@ -294,7 +312,7 @@ namespace Amazon.Lambda.Tools.Commands
             this.Logger.WriteLine("   ");
             this.Logger.WriteLine("Output Name".PadRight(OUTPUT_NAME_WIDTH) + " " + "Value".PadRight(OUTPUT_VALUE_WIDTH));
             this.Logger.WriteLine($"{new string('-', OUTPUT_NAME_WIDTH)} {new string('-', OUTPUT_VALUE_WIDTH)}");
-            foreach(var output in stack.Outputs)
+            foreach (var output in stack.Outputs)
             {
                 string line = output.OutputKey.PadRight(OUTPUT_NAME_WIDTH) + " " + output.OutputValue?.PadRight(OUTPUT_VALUE_WIDTH);
                 this.Logger.WriteLine(line);
@@ -330,7 +348,7 @@ namespace Amazon.Lambda.Tools.Commands
                 if (events.Count > 0)
                     mostRecentEventId = events[0].EventId;
 
-                for(int i = events.Count - 1; i >= 0; i--)
+                for (int i = events.Count - 1; i >= 0; i--)
                 {
                     string line =
                         events[i].Timestamp.ToString("g").PadRight(TIMESTAMP_WIDTH) + " " +
@@ -338,7 +356,7 @@ namespace Amazon.Lambda.Tools.Commands
                         events[i].ResourceStatus.ToString().PadRight(RESOURCE_STATUS);
 
                     // To save screen space only show error messages.
-                    if(!events[i].ResourceStatus.ToString().EndsWith(IN_PROGRESS_SUFFIX) && !string.IsNullOrEmpty(events[i].ResourceStatusReason))
+                    if (!events[i].ResourceStatus.ToString().EndsWith(IN_PROGRESS_SUFFIX) && !string.IsNullOrEmpty(events[i].ResourceStatusReason))
                         line += " " + events[i].ResourceStatusReason;
 
 
@@ -366,7 +384,7 @@ namespace Amazon.Lambda.Tools.Commands
                 {
                     response = await this.CloudFormationClient.DescribeStackEventsAsync(request);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     throw new LambdaToolsException($"Error getting events for stack: {e.Message}", LambdaToolsException.ErrorCode.CloudFormationDescribeStackEvents, e);
                 }
@@ -390,12 +408,12 @@ namespace Amazon.Lambda.Tools.Commands
         {
             try
             {
-                if(stack.StackStatus == StackStatus.ROLLBACK_COMPLETE)
-                    await this.CloudFormationClient.DeleteStackAsync(new DeleteStackRequest {StackName = stack.StackName });
+                if (stack.StackStatus == StackStatus.ROLLBACK_COMPLETE)
+                    await this.CloudFormationClient.DeleteStackAsync(new DeleteStackRequest { StackName = stack.StackName });
 
                 await WaitForNoLongerInProgress(stack.StackName);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw new LambdaToolsException($"Error removing previous failed stack creation {stack.StackName}: {e.Message}", LambdaToolsException.ErrorCode.CloudFormationDeleteStack, e);
             }
@@ -409,7 +427,7 @@ namespace Amazon.Lambda.Tools.Commands
                 Stack currentStack = null;
                 do
                 {
-                    if(currentStack != null)
+                    if (currentStack != null)
                         this.Logger.WriteLine($"... Waiting for stack's state to change from {currentStack.StackStatus}: {TimeSpan.FromTicks(DateTime.Now.Ticks - start).TotalSeconds.ToString("0").PadLeft(3)} secs");
                     currentStack = null;
                     Thread.Sleep(POLLING_PERIOD);
@@ -450,7 +468,7 @@ namespace Amazon.Lambda.Tools.Commands
 
                 return true;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw new LambdaToolsException($"Error getting status of change set: {e.Message}", LambdaToolsException.ErrorCode.CloudFormationDescribeChangeSet, e);
             }
@@ -466,11 +484,11 @@ namespace Amazon.Lambda.Tools.Commands
 
                 return response.Stacks[0];
             }
-            catch(AmazonCloudFormationException)
+            catch (AmazonCloudFormationException)
             {
                 return null;
             }
-        }      
+        }
 
 
         private List<Parameter> GetTemplateParameters(Stack stack)
@@ -486,11 +504,11 @@ namespace Amazon.Lambda.Tools.Commands
                 }
             }
 
-            if(stack != null)
+            if (stack != null)
             {
-                foreach(var existingParameter in stack.Parameters)
+                foreach (var existingParameter in stack.Parameters)
                 {
-                    if(!parameters.Any(x => string.Equals(x.ParameterKey, existingParameter.ParameterKey)))
+                    if (!parameters.Any(x => string.Equals(x.ParameterKey, existingParameter.ParameterKey)))
                     {
                         parameters.Add(new Parameter { ParameterKey = existingParameter.ParameterKey, UsePreviousValue = true });
                     }
@@ -516,14 +534,14 @@ namespace Amazon.Lambda.Tools.Commands
             {
                 root = JsonMapper.ToObject(templateBody) as JsonData;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw new LambdaToolsException($"Error parsing CloudFormation template: {e.Message}", LambdaToolsException.ErrorCode.ServerlessTemplateParseError, e);
             }
-            
+
             var resources = root["Resources"] as JsonData;
 
-            foreach(var field in resources.PropertyNames)
+            foreach (var field in resources.PropertyNames)
             {
                 var resource = resources[field] as JsonData;
                 if (resource == null)
