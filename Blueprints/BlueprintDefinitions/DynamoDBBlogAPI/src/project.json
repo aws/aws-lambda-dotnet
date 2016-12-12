@@ -17,7 +17,7 @@
     "Amazon.Lambda.Serialization.Json": "1.0.1",
 
     "Amazon.Lambda.Tools": {
-      "version": "1.0.1-preview1",
+      "version": "1.0.2-preview1",
       "type": "build"
     },
 
@@ -25,7 +25,7 @@
   },
 
   "tools": {
-    "Amazon.Lambda.Tools": "1.0.1-preview1"
+    "Amazon.Lambda.Tools": "1.0.2-preview1"
   },
 
   "frameworks": {
