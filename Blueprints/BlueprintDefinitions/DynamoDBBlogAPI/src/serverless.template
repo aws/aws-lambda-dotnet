@@ -62,6 +62,35 @@
       }
     },
 
+    "GetBlog" : {
+      "Type" : "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "BLUEPRINT_BASE_NAME::BLUEPRINT_BASE_NAME.Functions::GetBlogAsync",
+        "Runtime": "dotnetcore1.0",
+        "CodeUri": "",
+        "Description": "Function to get a single blog",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [ "AWSLambdaFullAccess" ],
+        "Environment" : {
+          "Variables" : {
+            "BlogTable" : { "Fn::If" : ["CreateBlogTable", {"Ref":"BlogTable"}, { "Ref" : "BlogTableName" } ] }
+          }
+        },
+        "Events": {
+          "PutResource": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/{Id}",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    
+
     "AddBlog" : {
       "Type" : "AWS::Serverless::Function",
       "Properties": {

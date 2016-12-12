@@ -89,8 +89,10 @@ namespace BLUEPRINT_BASE_NAME
         /// <returns></returns>
         public async Task<APIGatewayProxyResponse> GetBlogAsync(APIGatewayProxyRequest request, ILambdaContext context)
         {
-            var blogId = request?.PathParameters[ID_QUERY_STRING_NAME];
-            if (string.IsNullOrEmpty(blogId))
+            string blogId = null;
+            if (request.PathParameters != null && request.PathParameters.ContainsKey(ID_QUERY_STRING_NAME))
+                blogId = request.PathParameters[ID_QUERY_STRING_NAME];
+            else if (request.QueryStringParameters != null && request.QueryStringParameters.ContainsKey(ID_QUERY_STRING_NAME))
                 blogId = request?.QueryStringParameters[ID_QUERY_STRING_NAME];
 
             if (string.IsNullOrEmpty(blogId))
@@ -98,7 +100,7 @@ namespace BLUEPRINT_BASE_NAME
                 return new APIGatewayProxyResponse
                 {
                     StatusCode = (int)HttpStatusCode.BadRequest,
-                    Body = "Missing required parameter blogId"
+                    Body = $"Missing required parameter {ID_QUERY_STRING_NAME}"
                 };
             }
 
