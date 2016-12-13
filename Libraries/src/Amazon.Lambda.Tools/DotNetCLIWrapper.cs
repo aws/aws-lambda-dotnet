@@ -220,12 +220,21 @@ namespace Amazon.Lambda.Tools
             if (File.Exists(command))
                 return Path.GetFullPath(command);
 
+            Func<string, string> quoteRemover = x =>
+            {
+                if (x.StartsWith("\""))
+                    x = x.Substring(1);
+                if (x.EndsWith("\""))
+                    x = x.Substring(0, x.Length - 1);
+                return x;
+            };
+
             var envPath = Environment.GetEnvironmentVariable("PATH");
             foreach (var path in envPath.Split(Path.PathSeparator))
             {
                 try
                 {
-                    var fullPath = Path.Combine(path, command);
+                    var fullPath = Path.Combine(quoteRemover(path), command);
                     if (File.Exists(fullPath))
                         return fullPath;
                 }
@@ -241,4 +250,5 @@ namespace Amazon.Lambda.Tools
             return null;
         }
     }
+}
 }
