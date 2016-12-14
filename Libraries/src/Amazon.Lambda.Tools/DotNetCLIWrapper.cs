@@ -251,4 +251,3 @@ namespace Amazon.Lambda.Tools
         }
     }
 }
-}
