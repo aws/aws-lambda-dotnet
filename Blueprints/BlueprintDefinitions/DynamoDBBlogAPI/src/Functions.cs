@@ -143,7 +143,7 @@ namespace BLUEPRINT_BASE_NAME
             {
                 StatusCode = (int)HttpStatusCode.OK,
                 Body = blog.Id.ToString(),
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                Headers = new Dictionary<string, string> { { "Content-Type", "text/plain" } }
             };
             return response;
         }
