@@ -1,3 +1,9 @@
+### Release 2016-12-16 01:36 UTC
+* **Amazon.Lambda.Tools (1.0.3-preview1)**
+	* Fix issue with quoted strings in users path while searching for the dotnet CLI
+* **Blueprints**
+	* Update DynamoDBBlogAPI blueprint to have mapping for GetBlogAsync operation and change content-type to text/plain for AddBlogAsync which returns the ID of the new blog
+
 ### Release 2016-12-12 07:30 UTC
 * **Amazon.Lambda.Tools (1.0.2-preview1)**
 	* Add CAPABILITY_NAMED_IAM capability when performing serverless deployment
