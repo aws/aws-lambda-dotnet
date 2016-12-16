@@ -5,7 +5,7 @@
   "authors": [
     "Amazon Web Services"
   ],
-  "version": "1.0.2-preview1",
+  "version": "1.0.3-preview1",
 
   "buildOptions": {
     "outputName": "dotnet-lambda",
