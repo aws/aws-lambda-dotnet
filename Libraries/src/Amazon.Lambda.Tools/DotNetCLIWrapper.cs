@@ -220,12 +220,28 @@ namespace Amazon.Lambda.Tools
             if (File.Exists(command))
                 return Path.GetFullPath(command);
 
+            Func<string, string> quoteRemover = x =>
+            {
+                if (x.StartsWith("\""))
+                    x = x.Substring(1);
+                if (x.EndsWith("\""))
+                    x = x.Substring(0, x.Length - 1);
+                return x;
+            };
+
             var envPath = Environment.GetEnvironmentVariable("PATH");
             foreach (var path in envPath.Split(Path.PathSeparator))
             {
-                var fullPath = Path.Combine(path, command);
-                if (File.Exists(fullPath))
-                    return fullPath;
+                try
+                {
+                    var fullPath = Path.Combine(quoteRemover(path), command);
+                    if (File.Exists(fullPath))
+                        return fullPath;
+                }
+                catch (Exception)
+                {
+                    // Catch exceptions and continue if there are invalid characters in the user's path.
+                }
             }
 
             if (KNOWN_LOCATIONS.ContainsKey(command) && File.Exists(KNOWN_LOCATIONS[command]))
