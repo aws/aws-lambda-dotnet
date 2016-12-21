@@ -55,6 +55,11 @@
         public string Body { get; set; }
 
         /// <summary>
+        /// True of the body of the request is base 64 encoded.
+        /// </summary>
+        public bool IsBase64Encoded { get; set; }
+
+        /// <summary>
         /// The ProxyRequestContext contains the information to identify the AWS account and resources invoking the 
         /// Lambda function. It also includes Cognito identity information for the caller.
         /// </summary>

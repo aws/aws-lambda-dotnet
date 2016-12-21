@@ -159,6 +159,20 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                 requestFeatures.Headers["Host"] = $"apigateway-{apiId}-{stage}";
             }
+
+            if(!string.IsNullOrEmpty(apiGatewayRequest.Body))
+            {
+                Byte[] binaryBody;
+                if(apiGatewayRequest.IsBase64Encoded)
+                {
+                    binaryBody = Convert.FromBase64String(apiGatewayRequest.Body);
+                }
+                else
+                {
+                    binaryBody = UTF8Encoding.UTF8.GetBytes(apiGatewayRequest.Body);
+                }
+                requestFeatures.Body = new MemoryStream(binaryBody);
+            }
         }
 
         /// <summary>

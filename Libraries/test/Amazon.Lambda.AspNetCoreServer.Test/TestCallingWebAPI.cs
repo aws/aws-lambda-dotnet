@@ -59,5 +59,20 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
         }
+
+        [Fact]
+        public async Task TestPutWithBody()
+        {
+            var lambdaFunction = new LambdaFunction();
+
+            var requestStr = File.ReadAllText("values-put-withbody-apigatway-request.json");
+            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
+            var response = await lambdaFunction.FunctionHandlerAsync(request, null);
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("Agent, Smith", response.Body);
+            Assert.True(response.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
+        }
     }
 }
