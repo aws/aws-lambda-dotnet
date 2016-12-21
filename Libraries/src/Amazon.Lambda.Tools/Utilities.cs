@@ -455,7 +455,7 @@ namespace Amazon.Lambda.Tools
         /// <param name="logger">Optional logger instance.</param>
         private static void BundleWithZipCLI(string zipCLI, string zipArchivePath, string publishLocation, IToolLogger logger)
         {
-            var args = new StringBuilder(zipArchivePath);
+            var args = new StringBuilder("\"" + zipArchivePath + "\"");
 
             // so that we can archive content in subfolders, take the length of the
             // path to the root publish location and we'll just substring the
@@ -467,7 +467,7 @@ namespace Amazon.Lambda.Tools
             var allFiles = Directory.GetFiles(publishLocation, "*.*", SearchOption.AllDirectories);
             foreach (var f in allFiles)
             {
-                args.AppendFormat(" {0}", f.Substring(publishRootLength));
+                args.AppendFormat(" \"{0}\"", f.Substring(publishRootLength));
             }
 
             var psiZip = new ProcessStartInfo
