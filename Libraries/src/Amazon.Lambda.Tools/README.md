@@ -85,7 +85,7 @@ command line arguments. For example with the following file
   "region" : "us-west-2",
   "configuration" : "Release",
   "framework" : "netcoreapp1.0",
-  "function-runtime":"netcore1.0",
+  "function-runtime":"dotnetcore1.0",
   "function-memory-size" : 256,
   "function-timeout" : 30,
   "function-handler" : "EmptyFunction::EmptyFunction.Function::FunctionHandler"
