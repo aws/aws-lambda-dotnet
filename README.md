@@ -23,7 +23,7 @@ These are the packages and their README.md files:
 ### Amazon.Lambda.Tools
 
 Package adds commands to the dotnet cli that can be used manage Lambda functions including deploying a function from the dotnet cli. 
-For more information see the [README.md](Libraries/Amazon.Lambda.Tools/README.md) file for Amazon.Lambda.Tools.
+For more information see the [README.md](Libraries/src/Amazon.Lambda.Tools/README.md) file for Amazon.Lambda.Tools.
 
 ### Amazon.Lambda.AspNetCoreServer
 
