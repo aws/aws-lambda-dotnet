@@ -343,13 +343,18 @@ namespace Amazon.Lambda.Tools
 
             if(zipArchivePath == null)
                 zipArchivePath = Path.Combine(Directory.GetParent(publishLocation).FullName, new DirectoryInfo(workingDirectory).Name + ".zip");
+
+            zipArchivePath = Path.GetFullPath(zipArchivePath);
             logger.WriteLine($"Zipping publish folder {publishLocation} to {zipArchivePath}");
             if (File.Exists(zipArchivePath))
                 File.Delete(zipArchivePath);
 
             var zipArchiveParentDirectory = Path.GetDirectoryName(zipArchivePath);
             if (!Directory.Exists(zipArchiveParentDirectory))
+            {
+                logger.WriteLine($"Creating directory {zipArchiveParentDirectory}");
                 new DirectoryInfo(zipArchiveParentDirectory).Create();
+            }
 
             var zipCLI = DotNetCLIWrapper.FindExecutableInPath("zip");
             if (!string.IsNullOrEmpty(zipCLI))
