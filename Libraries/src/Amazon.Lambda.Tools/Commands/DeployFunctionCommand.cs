@@ -41,6 +41,7 @@ namespace Amazon.Lambda.Tools.Commands
         {
             DefinedCommandOptions.ARGUMENT_CONFIGURATION,
             DefinedCommandOptions.ARGUMENT_FRAMEWORK,
+            DefinedCommandOptions.ARGUMENT_PACKAGE,
             DefinedCommandOptions.ARGUMENT_FUNCTION_NAME,
             DefinedCommandOptions.ARGUMENT_FUNCTION_DESCRIPTION,
             DefinedCommandOptions.ARGUMENT_FUNCTION_PUBLISH,
@@ -61,6 +62,7 @@ namespace Amazon.Lambda.Tools.Commands
 
         public string Configuration { get; set; }
         public string TargetFramework { get; set; }
+        public string Package { get; set; }
 
         public string S3Bucket { get; set; }
         public string S3Prefix { get; set; }
@@ -96,6 +98,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.Configuration = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_FRAMEWORK.Switch)) != null)
                 this.TargetFramework = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_PACKAGE.Switch)) != null)
+                this.Package = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_S3_BUCKET.Switch)) != null)
                 this.S3Bucket = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_S3_PREFIX.Switch)) != null)
@@ -110,17 +114,31 @@ namespace Amazon.Lambda.Tools.Commands
         {
             try
             {
-                string configuration = this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, true);
-                string targetFramework = this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, true);
                 string projectLocation = this.GetStringValueOrDefault(this.ProjectLocation, DefinedCommandOptions.ARGUMENT_PROJECT_LOCATION, false);
-
-                ValidateTargetFrameworkAndLambdaRuntime();
-
-                string publishLocation;
                 string zipArchivePath = null;
-                Utilities.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
-                if (string.IsNullOrEmpty(zipArchivePath))
-                    return false;
+                string publishLocation = null;
+                string package = this.GetStringValueOrDefault(this.Package, DefinedCommandOptions.ARGUMENT_PACKAGE, false);
+                if(string.IsNullOrEmpty(package))
+                {
+                    string configuration = this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, true);
+                    string targetFramework = this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, true);
+
+                    ValidateTargetFrameworkAndLambdaRuntime();
+
+                    Utilities.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
+                    if (string.IsNullOrEmpty(zipArchivePath))
+                        return false;
+                }
+                else
+                {
+                    if(!File.Exists(package))
+                        throw new LambdaToolsException($"Package {package} does not exist", LambdaToolsException.ErrorCode.InvalidPackage);
+                    if(!string.Equals(Path.GetExtension(package), ".zip", StringComparison.OrdinalIgnoreCase))
+                        throw new LambdaToolsException($"Package {package} must be a zip file", LambdaToolsException.ErrorCode.InvalidPackage);
+
+                    this.Logger.WriteLine($"Skipping compilation and using precompiled package {package}");
+                    zipArchivePath = package;
+                }
 
 
                 using (var stream = new MemoryStream(File.ReadAllBytes(zipArchivePath)))
@@ -192,7 +210,7 @@ namespace Amazon.Lambda.Tools.Commands
                         }
 
 
-                        if (!this.SkipHandlerValidation)
+                        if (!this.SkipHandlerValidation && !string.IsNullOrEmpty(publishLocation))
                         {
                             createRequest.Handler = EnsureFunctionHandlerIsValid(publishLocation, createRequest.Handler);
                         }
@@ -209,7 +227,7 @@ namespace Amazon.Lambda.Tools.Commands
                     }
                     else
                     {
-                        if (!this.SkipHandlerValidation)
+                        if (!this.SkipHandlerValidation && !string.IsNullOrEmpty(publishLocation))
                         {
                             if (!string.IsNullOrEmpty(this.Handler))
                                 this.Handler = EnsureFunctionHandlerIsValid(publishLocation, this.Handler);

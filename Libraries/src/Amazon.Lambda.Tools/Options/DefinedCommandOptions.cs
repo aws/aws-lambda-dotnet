@@ -66,6 +66,15 @@ namespace Amazon.Lambda.Tools.Options
                 ValueType = CommandOption.CommandOptionValueType.StringValue,
                 Description = "Target framework to compile, for example netcoreapp1.0",
             };
+        public static readonly CommandOption ARGUMENT_PACKAGE =
+            new CommandOption
+            {
+                Name = "Package",
+                ShortSwitch = "-pac",
+                Switch = "--package",
+                ValueType = CommandOption.CommandOptionValueType.StringValue,
+                Description = "Application package to use for deployment, skips building the project",
+            };
         public static readonly CommandOption ARGUMENT_FUNCTION_NAME =
             new CommandOption
             {

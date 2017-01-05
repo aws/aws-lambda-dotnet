@@ -27,6 +27,7 @@ namespace Amazon.Lambda.Tools
             CommandLineParseError,
             DefaultsParseFail,
             DotnetPublishFail,
+            InvalidPackage,
             FrameworkNewerThanRuntime,
             HandlerValidation,
             ProfileNotFound,

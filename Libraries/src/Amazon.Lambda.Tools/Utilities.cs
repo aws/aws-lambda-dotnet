@@ -264,17 +264,23 @@ namespace Amazon.Lambda.Tools
         /// <returns></returns>
         public static string DetemineProjectLocation(string workingDirectory, string projectLocation)
         {
+            string location;
             if (string.IsNullOrEmpty(projectLocation))
             {
-                return workingDirectory;
+                location = workingDirectory;
             }
             else
             {
                 if (Path.IsPathRooted(projectLocation))
-                    return projectLocation;
+                    location = projectLocation;
                 else
-                    return Path.Combine(workingDirectory, projectLocation);
+                    location = Path.Combine(workingDirectory, projectLocation);
             }
+
+            if (location.EndsWith(@"\") || location.EndsWith(@"/"))
+                location = location.Substring(0, location.Length - 1);
+
+            return location;
         }
 
         /// <summary>
@@ -323,7 +329,7 @@ namespace Amazon.Lambda.Tools
         /// <param name="configuration"></param>
         /// <param name="publishLocation"></param>
         /// <param name="zipArchivePath"></param>
-        public static void CreateApplicationBundle(LambdaToolsDefaults defaults, IToolLogger logger, string workingDirectory, string projectLocation, string configuration, string targetFramework,
+        public static bool CreateApplicationBundle(LambdaToolsDefaults defaults, IToolLogger logger, string workingDirectory, string projectLocation, string configuration, string targetFramework,
             out string publishLocation, ref string zipArchivePath)
         {
             var cli = new DotNetCLIWrapper(logger, workingDirectory);
@@ -331,7 +337,7 @@ namespace Amazon.Lambda.Tools
             publishLocation = Utilities.DeterminePublishLocation(workingDirectory, projectLocation, configuration, targetFramework);
             logger.WriteLine("Executing publish command");
             if (cli.Publish(defaults, projectLocation, publishLocation, targetFramework, configuration) != 0)
-                return;
+                return false;
 
             var buildLocation = Utilities.DetermineBuildLocation(workingDirectory, projectLocation, configuration, targetFramework);
             foreach(var file in Directory.GetFiles(buildLocation, "*.deps.json", SearchOption.TopDirectoryOnly))
@@ -361,6 +367,8 @@ namespace Amazon.Lambda.Tools
                 BundleWithZipCLI(zipCLI, zipArchivePath, publishLocation, logger);
             else
                 ZipFile.CreateFromDirectory(publishLocation, zipArchivePath);
+
+            return true;
         }
 
         /// <summary>
