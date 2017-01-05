@@ -17,6 +17,7 @@
     "Amazon.Lambda.DynamoDBEvents": { "target": "project" },
     "Amazon.Lambda.KinesisEvents": { "target": "project" },
     "Amazon.Lambda.S3Events": { "target": "project" },
+    "Amazon.Lambda.SimpleEmailEvents": { "target": "project" },
     "Amazon.Lambda.SNSEvents": { "target": "project" },
     "Amazon.Lambda.APIGatewayEvents": { "target": "project" },
     "xunit": "2.2.0-beta2-build3300",

@@ -7,6 +7,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.DynamoDBEvents;
     using Amazon.Lambda.CognitoEvents;
     using Amazon.Lambda.ConfigEvents;
+    using Amazon.Lambda.SimpleEmailEvents;
     using Amazon.Lambda.SNSEvents;
     using Amazon.Lambda.APIGatewayEvents;
 
@@ -211,6 +212,80 @@ namespace Amazon.Lambda.Tests
             Console.WriteLine($"AWS Config rule - {configEvent.ConfigRuleName}");
             Console.WriteLine($"Invoking event JSON - {configEvent.InvokingEvent}");
             Console.WriteLine($"Event version - {configEvent.Version}");
+        }
+
+        [Fact]
+        public void SimpleEmailTest()
+        {
+            using (var fileStream = File.OpenRead("simple-email-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var sesEvent = serializer.Deserialize<SimpleEmailEvent>(fileStream);
+
+                Assert.Equal(sesEvent.Records.Count, 1);
+                var record = sesEvent.Records[0];
+
+                Assert.Equal(record.EventVersion, "1.0");
+                Assert.Equal(record.EventSource, "aws:ses");
+
+                Assert.Equal(record.Ses.Mail.CommonHeaders.From.Count, 1);
+                Assert.Equal(record.Ses.Mail.CommonHeaders.From[0], "Amazon Web Services <aws@amazon.com>");
+                Assert.Equal(record.Ses.Mail.CommonHeaders.To.Count, 1);
+                Assert.Equal(record.Ses.Mail.CommonHeaders.To[0], "lambda@amazon.com");
+                Assert.Equal(record.Ses.Mail.CommonHeaders.ReturnPath, "aws@amazon.com");
+                Assert.Equal(record.Ses.Mail.CommonHeaders.MessageId, "<CAEddw6POFV_On91m+ZoL_SN8B_M2goDe_Ni355owhc7QSjPQSQ@amazon.com>");
+                Assert.Equal(record.Ses.Mail.CommonHeaders.Date, "Mon, 5 Dec 2016 18:40:08 -0800");
+                Assert.Equal(record.Ses.Mail.CommonHeaders.Subject, "Test Subject");
+                Assert.Equal(record.Ses.Mail.Source, "aws@amazon.com");
+                Assert.Equal(record.Ses.Mail.Timestamp.ToUniversalTime(), DateTime.Parse("2016-12-06T02:40:08.000Z").ToUniversalTime());
+                Assert.Equal(record.Ses.Mail.Destination.Count, 1);
+                Assert.Equal(record.Ses.Mail.Destination[0], "lambda@amazon.com");
+                Assert.Equal(record.Ses.Mail.Headers.Count, 10);
+                Assert.Equal(record.Ses.Mail.Headers[0].Name, "Return-Path");
+                Assert.Equal(record.Ses.Mail.Headers[0].Value, "<aws@amazon.com>");
+                Assert.Equal(record.Ses.Mail.Headers[1].Name, "Received");
+                Assert.Equal(record.Ses.Mail.Headers[1].Value, "from mx.amazon.com (mx.amazon.com [127.0.0.1]) by inbound-smtp.us-east-1.amazonaws.com with SMTP id 6n4thuhcbhpfiuf25gshf70rss364fuejrvmqko1 for lambda@amazon.com; Tue, 06 Dec 2016 02:40:10 +0000 (UTC)");
+                Assert.Equal(record.Ses.Mail.Headers[2].Name, "DKIM-Signature");
+                Assert.Equal(record.Ses.Mail.Headers[2].Value, "v=1; a=rsa-sha256; c=relaxed/relaxed; d=iatn.net; s=amazon; h=mime-version:from:date:message-id:subject:to; bh=chlJxa/vZ11+0O9lf4tKDM/CcPjup2nhhdITm+hSf3c=; b=SsoNPK0wX7umtWnw8pln3YSib+E09XO99d704QdSc1TR1HxM0OTti/UaFxVD4e5b0+okBqo3rgVeWgNZ0sWZEUhBaZwSL3kTd/nHkcPexeV0XZqEgms1vmbg75F6vlz9igWflO3GbXyTRBNMM0gUXKU/686hpVW6aryEIfM/rLY=");
+                Assert.Equal(record.Ses.Mail.Headers[3].Name, "MIME-Version");
+                Assert.Equal(record.Ses.Mail.Headers[3].Value, "1.0");
+                Assert.Equal(record.Ses.Mail.Headers[4].Name, "From");
+                Assert.Equal(record.Ses.Mail.Headers[4].Value, "Amazon Web Services <aws@amazon.com>");
+                Assert.Equal(record.Ses.Mail.Headers[5].Name, "Date");
+                Assert.Equal(record.Ses.Mail.Headers[5].Value, "Mon, 5 Dec 2016 18:40:08 -0800");
+                Assert.Equal(record.Ses.Mail.Headers[6].Name, "Message-ID");
+                Assert.Equal(record.Ses.Mail.Headers[6].Value, "<CAEddw6POFV_On91m+ZoL_SN8B_M2goDe_Ni355owhc7QSjPQSQ@amazon.com>");
+                Assert.Equal(record.Ses.Mail.Headers[7].Name, "Subject");
+                Assert.Equal(record.Ses.Mail.Headers[7].Value, "Test Subject");
+                Assert.Equal(record.Ses.Mail.Headers[8].Name, "To");
+                Assert.Equal(record.Ses.Mail.Headers[8].Value, "lambda@amazon.com");
+                Assert.Equal(record.Ses.Mail.Headers[9].Name, "Content-Type");
+                Assert.Equal(record.Ses.Mail.Headers[9].Value, "multipart/alternative; boundary=94eb2c0742269658b10542f452a9");
+                Assert.Equal(record.Ses.Mail.HeadersTruncated, false);
+                Assert.Equal(record.Ses.Mail.MessageId, "6n4thuhcbhpfiuf25gshf70rss364fuejrvmqko1");
+
+                Assert.Equal(record.Ses.Receipt.Recipients.Count, 1);
+                Assert.Equal(record.Ses.Receipt.Recipients[0], "lambda@amazon.com");
+                Assert.Equal(record.Ses.Receipt.Timestamp.ToUniversalTime(), DateTime.Parse("2016-12-06T02:40:08.000Z").ToUniversalTime());
+                Assert.Equal(record.Ses.Receipt.SpamVerdict.Status, "PASS");
+                Assert.Equal(record.Ses.Receipt.DKIMVerdict.Status, "PASS");
+                Assert.Equal(record.Ses.Receipt.SPFVerdict.Status, "PASS");
+                Assert.Equal(record.Ses.Receipt.VirusVerdict.Status, "PASS");
+                Assert.Equal(record.Ses.Receipt.ProcessingTimeMillis, 574);
+                Assert.Equal(record.Ses.Receipt.Action.Type, "Lambda");
+                Assert.Equal(record.Ses.Receipt.Action.InvocationType, "Event");
+                Assert.Equal(record.Ses.Receipt.Action.FunctionArn, "arn:aws:lambda:us-east-1:000000000000:function:my-ses-lambda-function");
+
+                Handle(sesEvent);
+            }
+        }
+        private static void Handle(SimpleEmailEvent sesEvent)
+        {
+            foreach (var record in sesEvent.Records)
+            {
+                var sesRecord = record.Ses;
+                Console.WriteLine($"[{record.EventSource} {sesRecord.Mail.Timestamp}] Subject = {sesRecord.Mail.CommonHeaders.Subject}");
+            }
         }
 
         string SNSJson = "{ \"Records\": [ { \"EventVersion\": \"1.0\", \"EventSubscriptionArn\": \"arn:aws:sns:EXAMPLE\", \"EventSource\": \"aws:sns\", \"Sns\": { \"SignatureVersion\": \"1\", \"Timestamp\": \"1970-01-01T00:00:00.000Z\", \"Signature\": \"EXAMPLE\", \"SigningCertUrl\": \"EXAMPLE\", \"MessageId\": \"95df01b4-ee98-5cb9-9903-4c221d41eb5e\", \"Message\": \"Hello from SNS!\", \"MessageAttributes\": { \"Test\": { \"Type\": \"String\", \"Value\": \"TestString\" }, \"TestBinary\": { \"Type\": \"Binary\", \"Value\": \"TestBinary\" } }, \"Type\": \"Notification\", \"UnsubscribeUrl\": \"EXAMPLE\", \"TopicArn\": \"arn:aws:sns:EXAMPLE\", \"Subject\": \"TestInvoke\" } } ] }";
