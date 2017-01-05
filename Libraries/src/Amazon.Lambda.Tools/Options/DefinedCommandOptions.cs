@@ -282,7 +282,7 @@ namespace Amazon.Lambda.Tools.Options
             new CommandOption
             {
                 Name = "Config File",
-                ShortSwitch = "-cf",
+                ShortSwitch = "-cfg",
                 Switch = "--config-file",
                 ValueType = CommandOption.CommandOptionValueType.StringValue,
                 Description = $"Configuration file storing default values for command line arguments. Default is {LambdaToolsDefaultsReader.DEFAULT_FILE_NAME}"
@@ -291,7 +291,7 @@ namespace Amazon.Lambda.Tools.Options
             new CommandOption
             {
                 Name = "Persist Config File",
-                ShortSwitch = "-pcf",
+                ShortSwitch = "-pcfg",
                 Switch = "--persist-config-file",
                 ValueType = CommandOption.CommandOptionValueType.BoolValue,
                 Description = $"If true the arguments used for a successful deployment are persisted to a config file. Default config file is {LambdaToolsDefaultsReader.DEFAULT_FILE_NAME}"
