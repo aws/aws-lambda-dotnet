@@ -39,6 +39,21 @@ namespace Amazon.Lambda.Tools.Options
         /// The type of value that is expected with this command option
         /// </summary>
         public CommandOptionValueType ValueType { get; set; }
+
+        /// <summary>
+        /// The JSON key used in configuration file.`
+        /// </summary>
+        public string ConfigFileKey
+        {
+            get
+            {
+                var key = this.Switch;
+                if (key.StartsWith("--"))
+                    key = key.Substring(2);
+
+                return key;
+            }
+        }
     }
   
 }

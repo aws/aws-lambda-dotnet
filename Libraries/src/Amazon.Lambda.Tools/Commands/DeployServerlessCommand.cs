@@ -13,6 +13,7 @@ using Amazon.Runtime;
 using System.IO;
 
 using ThirdParty.Json.LitJson;
+using System.Text;
 
 namespace Amazon.Lambda.Tools.Commands
 {
@@ -35,17 +36,20 @@ namespace Amazon.Lambda.Tools.Commands
         {
             DefinedCommandOptions.ARGUMENT_CONFIGURATION,
             DefinedCommandOptions.ARGUMENT_FRAMEWORK,
+            DefinedCommandOptions.ARGUMENT_PACKAGE,
             DefinedCommandOptions.ARGUMENT_S3_BUCKET,
             DefinedCommandOptions.ARGUMENT_S3_PREFIX,
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE,
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_PARAMETER,
             DefinedCommandOptions.ARGUMENT_STACK_NAME,
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_DISABLE_CAPABILITIES,
-            DefinedCommandOptions.ARGUMENT_STACK_WAIT
+            DefinedCommandOptions.ARGUMENT_STACK_WAIT,
+            DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE
         });
 
         public string Configuration { get; set; }
         public string TargetFramework { get; set; }
+        public string Package { get; set; }
 
         public string S3Bucket { get; set; }
         public string S3Prefix { get; set; }
@@ -54,6 +58,9 @@ namespace Amazon.Lambda.Tools.Commands
         public string StackName { get; set; }
         public bool? WaitForStackToComplete { get; set; }
         public Dictionary<string, string> TemplateParameters { get; set; }
+
+        public bool? PersistConfigFile { get; set; }
+
 
         public string[] DisabledCapabilities { get; set; }
 
@@ -74,6 +81,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.Configuration = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_FRAMEWORK.Switch)) != null)
                 this.TargetFramework = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_PACKAGE.Switch)) != null)
+                this.Package = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_S3_BUCKET.Switch)) != null)
                 this.S3Bucket = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_S3_PREFIX.Switch)) != null)
@@ -86,6 +95,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.WaitForStackToComplete = tuple.Item2.BoolValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_PARAMETER.Switch)) != null)
                 this.TemplateParameters = tuple.Item2.KeyValuePairs;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE.Switch)) != null)
+                this.PersistConfigFile = tuple.Item2.BoolValue;
         }
 
 
@@ -98,8 +109,6 @@ namespace Amazon.Lambda.Tools.Commands
         {
             try
             {
-                string configuration = this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, true);
-                string targetFramework = this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, true);
                 string projectLocation = this.GetStringValueOrDefault(this.ProjectLocation, DefinedCommandOptions.ARGUMENT_PROJECT_LOCATION, false);
                 string stackName = this.GetStringValueOrDefault(this.StackName, DefinedCommandOptions.ARGUMENT_STACK_NAME, true);
                 string s3Bucket = this.GetStringValueOrDefault(this.S3Bucket, DefinedCommandOptions.ARGUMENT_S3_BUCKET, true);
@@ -116,12 +125,30 @@ namespace Amazon.Lambda.Tools.Commands
                 if (!File.Exists(templatePath))
                     throw new LambdaToolsException($"Template file {templatePath} cannot be found.", LambdaToolsException.ErrorCode.ServerlessTemplateNotFound);
 
+
                 // Build and bundle up the users project.
                 string publishLocation;
                 string zipArchivePath = null;
-                Utilities.CreateApplicationBundle(this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
-                if (string.IsNullOrEmpty(zipArchivePath))
-                    return false;
+                string package = this.GetStringValueOrDefault(this.Package, DefinedCommandOptions.ARGUMENT_PACKAGE, false);
+                if(string.IsNullOrEmpty(package))
+                {
+                    string configuration = this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, true);
+                    string targetFramework = this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, true);
+                    Utilities.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
+                    if (string.IsNullOrEmpty(zipArchivePath))
+                        return false;
+                }
+                else
+                {
+                    if (!File.Exists(package))
+                        throw new LambdaToolsException($"Package {package} does not exist", LambdaToolsException.ErrorCode.InvalidPackage);
+                    if (!string.Equals(Path.GetExtension(package), ".zip", StringComparison.OrdinalIgnoreCase))
+                        throw new LambdaToolsException($"Package {package} must be a zip file", LambdaToolsException.ErrorCode.InvalidPackage);
+
+                    this.Logger.WriteLine($"Skipping compilation and using precompiled package {package}");
+                    zipArchivePath = package;
+                }
+
 
                 // Upload the app bundle to S3
                 string s3KeyApplicationBundle;
@@ -283,6 +310,11 @@ namespace Amazon.Lambda.Tools.Commands
 
                         this.Logger.WriteLine($"Stack update failed with status: {updatedStack.StackStatus} ({updatedStack.StackStatusReason})");
                     }
+                }
+
+                if (this.GetBoolValueOrDefault(this.PersistConfigFile, DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE, false).GetValueOrDefault())
+                {
+                    this.SaveConfigFile();
                 }
 
                 return true;
@@ -561,5 +593,62 @@ namespace Amazon.Lambda.Tools.Commands
             var json = JsonMapper.ToJson(root);
             return json;
         }
+
+        private void SaveConfigFile()
+        {
+            try
+            {
+                JsonData data;
+                if (File.Exists(this.DefaultConfig.SourceFile))
+                {
+                    data = JsonMapper.ToObject(File.ReadAllText(this.DefaultConfig.SourceFile));
+                }
+                else
+                {
+                    data = new JsonData();
+                }
+
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_AWS_REGION.ConfigFileKey, this.GetStringValueOrDefault(this.Region, DefinedCommandOptions.ARGUMENT_AWS_REGION, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_AWS_PROFILE.ConfigFileKey, this.GetStringValueOrDefault(this.Profile, DefinedCommandOptions.ARGUMENT_AWS_PROFILE, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_AWS_PROFILE_LOCATION.ConfigFileKey, this.GetStringValueOrDefault(this.ProfileLocation, DefinedCommandOptions.ARGUMENT_AWS_PROFILE_LOCATION, false));
+
+
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_CONFIGURATION.ConfigFileKey, this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FRAMEWORK.ConfigFileKey, this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_S3_BUCKET.ConfigFileKey, this.GetStringValueOrDefault(this.S3Bucket, DefinedCommandOptions.ARGUMENT_S3_BUCKET, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_S3_PREFIX.ConfigFileKey, this.GetStringValueOrDefault(this.S3Prefix, DefinedCommandOptions.ARGUMENT_S3_PREFIX, false));
+
+                var template = this.GetStringValueOrDefault(this.CloudFormationTemplate, DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE, false);
+                if(Path.IsPathRooted(template))
+                {
+                    string projectLocation = this.GetStringValueOrDefault(this.ProjectLocation, DefinedCommandOptions.ARGUMENT_PROJECT_LOCATION, false);
+                    var projectRoot = Utilities.DetemineProjectLocation(this.WorkingDirectory, projectLocation);
+                    if(template.StartsWith(projectRoot))
+                    {
+                        template = template.Substring(projectRoot.Length + 1);
+                    }
+                }
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE.ConfigFileKey, template);
+
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_PARAMETER.ConfigFileKey, LambdaToolsDefaults.FormatKeyValue(this.GetKeyValuePairOrDefault(this.TemplateParameters, DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_PARAMETER, false)));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_STACK_NAME.ConfigFileKey, this.GetStringValueOrDefault(this.StackName, DefinedCommandOptions.ARGUMENT_STACK_NAME, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_DISABLE_CAPABILITIES.ConfigFileKey, LambdaToolsDefaults.FormatCommaDelimitedList(this.GetStringValuesOrDefault(this.DisabledCapabilities, DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_DISABLE_CAPABILITIES, false)));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_STACK_WAIT.ConfigFileKey, this.GetBoolValueOrDefault(this.WaitForStackToComplete, DefinedCommandOptions.ARGUMENT_STACK_WAIT, false));
+
+                StringBuilder sb = new StringBuilder();
+                JsonWriter writer = new JsonWriter(sb);
+                writer.PrettyPrint = true;
+                JsonMapper.ToJson(data, writer);
+
+                var json = sb.ToString();
+                File.WriteAllText(this.DefaultConfig.SourceFile, json);
+                this.Logger.WriteLine($"Config settings saved to {this.DefaultConfig.SourceFile}");
+            }
+            catch (Exception e)
+            {
+                throw new LambdaToolsException("Error persisting configuration file: " + e.Message, LambdaToolsException.ErrorCode.PersistConfigError);
+            }
+        }
+
     }
 }

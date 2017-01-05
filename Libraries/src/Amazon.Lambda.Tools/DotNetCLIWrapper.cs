@@ -30,7 +30,7 @@ namespace Amazon.Lambda.Tools
         /// <param name="iisAppPath"></param>
         /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        public int Publish(string projectLocation, string outputLocation, string targetFramework, string configuration)
+        public int Publish(LambdaToolsDefaults defaults, string projectLocation, string outputLocation, string targetFramework, string configuration)
         {
             if (Directory.Exists(outputLocation))
             {
@@ -113,7 +113,7 @@ namespace Amazon.Lambda.Tools
 
             if (exitCode == 0)
             {
-                FlattenKnownPlatformDependencies(Utilities.DetemineProjectLocation(this._workingDirectory, projectLocation), outputLocation);
+                FlattenKnownPlatformDependencies(defaults, Utilities.DetemineProjectLocation(this._workingDirectory, projectLocation), outputLocation);
 
                 var chmodPath = FindExecutableInPath("chmod");
                 if (!string.IsNullOrEmpty(chmodPath) && File.Exists(chmodPath))
@@ -167,12 +167,10 @@ namespace Amazon.Lambda.Tools
 
         };
 
-        private void FlattenKnownPlatformDependencies(string projectLocation, string publishLocation)
+        private void FlattenKnownPlatformDependencies(LambdaToolsDefaults defaults, string projectLocation, string publishLocation)
         {
             var listOfDependencies = KNOWN_PLATFORM_DEPENDENCIES;
 
-
-            var defaults = LambdaToolsDefaultsReader.LoadDefaults(projectLocation);
             var extraDependences = defaults["additional-files"] as string[];
             if (extraDependences != null)
             {

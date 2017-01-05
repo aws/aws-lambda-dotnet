@@ -22,7 +22,7 @@ namespace Amazon.Lambda.Tools.Test
         [Fact]
         public void LoadDefaultsDirectly()
         {
-            var defaults = LambdaToolsDefaultsReader.LoadDefaults("../TestFunction");
+            var defaults = LambdaToolsDefaultsReader.LoadDefaults("../TestFunction", LambdaToolsDefaultsReader.DEFAULT_FILE_NAME);
 
             Assert.Equal(defaults.Region, "us-east-2");
             Assert.Equal(defaults["region"], "us-east-2");

@@ -21,6 +21,9 @@ using Amazon.S3.Model;
 using Amazon.Lambda.Tools.Options;
 using Amazon.Runtime;
 
+using ThirdParty.Json.LitJson;
+using System.Text;
+
 namespace Amazon.Lambda.Tools.Commands
 {
     /// <summary>
@@ -38,6 +41,7 @@ namespace Amazon.Lambda.Tools.Commands
         {
             DefinedCommandOptions.ARGUMENT_CONFIGURATION,
             DefinedCommandOptions.ARGUMENT_FRAMEWORK,
+            DefinedCommandOptions.ARGUMENT_PACKAGE,
             DefinedCommandOptions.ARGUMENT_FUNCTION_NAME,
             DefinedCommandOptions.ARGUMENT_FUNCTION_DESCRIPTION,
             DefinedCommandOptions.ARGUMENT_FUNCTION_PUBLISH,
@@ -52,14 +56,18 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES,
             DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN,
             DefinedCommandOptions.ARGUMENT_S3_BUCKET,
-            DefinedCommandOptions.ARGUMENT_S3_PREFIX
+            DefinedCommandOptions.ARGUMENT_S3_PREFIX,
+            DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE
         });
 
         public string Configuration { get; set; }
         public string TargetFramework { get; set; }
+        public string Package { get; set; }
 
         public string S3Bucket { get; set; }
         public string S3Prefix { get; set; }
+
+        public bool? PersistConfigFile { get; set; }
 
 
         // Disable handler validation for now.
@@ -90,10 +98,14 @@ namespace Amazon.Lambda.Tools.Commands
                 this.Configuration = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_FRAMEWORK.Switch)) != null)
                 this.TargetFramework = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_PACKAGE.Switch)) != null)
+                this.Package = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_S3_BUCKET.Switch)) != null)
                 this.S3Bucket = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_S3_PREFIX.Switch)) != null)
                 this.S3Prefix = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE.Switch)) != null)
+                this.PersistConfigFile = tuple.Item2.BoolValue;
         }
 
 
@@ -102,17 +114,31 @@ namespace Amazon.Lambda.Tools.Commands
         {
             try
             {
-                string configuration = this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, true);
-                string targetFramework = this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, true);
                 string projectLocation = this.GetStringValueOrDefault(this.ProjectLocation, DefinedCommandOptions.ARGUMENT_PROJECT_LOCATION, false);
-
-                ValidateTargetFrameworkAndLambdaRuntime();
-
-                string publishLocation;
                 string zipArchivePath = null;
-                Utilities.CreateApplicationBundle(this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
-                if (string.IsNullOrEmpty(zipArchivePath))
-                    return false;
+                string publishLocation = null;
+                string package = this.GetStringValueOrDefault(this.Package, DefinedCommandOptions.ARGUMENT_PACKAGE, false);
+                if(string.IsNullOrEmpty(package))
+                {
+                    string configuration = this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, true);
+                    string targetFramework = this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, true);
+
+                    ValidateTargetFrameworkAndLambdaRuntime();
+
+                    Utilities.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
+                    if (string.IsNullOrEmpty(zipArchivePath))
+                        return false;
+                }
+                else
+                {
+                    if(!File.Exists(package))
+                        throw new LambdaToolsException($"Package {package} does not exist", LambdaToolsException.ErrorCode.InvalidPackage);
+                    if(!string.Equals(Path.GetExtension(package), ".zip", StringComparison.OrdinalIgnoreCase))
+                        throw new LambdaToolsException($"Package {package} must be a zip file", LambdaToolsException.ErrorCode.InvalidPackage);
+
+                    this.Logger.WriteLine($"Skipping compilation and using precompiled package {package}");
+                    zipArchivePath = package;
+                }
 
 
                 using (var stream = new MemoryStream(File.ReadAllBytes(zipArchivePath)))
@@ -184,7 +210,7 @@ namespace Amazon.Lambda.Tools.Commands
                         }
 
 
-                        if (!this.SkipHandlerValidation)
+                        if (!this.SkipHandlerValidation && !string.IsNullOrEmpty(publishLocation))
                         {
                             createRequest.Handler = EnsureFunctionHandlerIsValid(publishLocation, createRequest.Handler);
                         }
@@ -201,7 +227,7 @@ namespace Amazon.Lambda.Tools.Commands
                     }
                     else
                     {
-                        if (!this.SkipHandlerValidation)
+                        if (!this.SkipHandlerValidation && !string.IsNullOrEmpty(publishLocation))
                         {
                             if (!string.IsNullOrEmpty(this.Handler))
                                 this.Handler = EnsureFunctionHandlerIsValid(publishLocation, this.Handler);
@@ -237,6 +263,12 @@ namespace Amazon.Lambda.Tools.Commands
 
                         await base.UpdateConfigAsync(currentConfiguration);
                     }
+                }
+
+
+                if(this.GetBoolValueOrDefault(this.PersistConfigFile, DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE, false).GetValueOrDefault())
+                {
+                    this.SaveConfigFile();
                 }
 
                 return true;
@@ -275,6 +307,59 @@ namespace Amazon.Lambda.Tools.Commands
             }
 
             return PromptForValue(DefinedCommandOptions.ARGUMENT_FUNCTION_HANDLER);
+        }
+
+        private void SaveConfigFile()
+        {
+            try
+            {
+                JsonData data;
+                if (File.Exists(this.DefaultConfig.SourceFile))
+                {
+                    data = JsonMapper.ToObject(File.ReadAllText(this.DefaultConfig.SourceFile));
+                }
+                else
+                {
+                    data = new JsonData();
+                }
+
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_AWS_REGION.ConfigFileKey, this.GetStringValueOrDefault(this.Region, DefinedCommandOptions.ARGUMENT_AWS_REGION, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_AWS_PROFILE.ConfigFileKey, this.GetStringValueOrDefault(this.Profile, DefinedCommandOptions.ARGUMENT_AWS_PROFILE, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_AWS_PROFILE_LOCATION.ConfigFileKey, this.GetStringValueOrDefault(this.ProfileLocation, DefinedCommandOptions.ARGUMENT_AWS_PROFILE_LOCATION, false));
+
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_CONFIGURATION.ConfigFileKey, this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FRAMEWORK.ConfigFileKey, this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_NAME.ConfigFileKey, this.GetStringValueOrDefault(this.FunctionName, DefinedCommandOptions.ARGUMENT_FUNCTION_NAME, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_DESCRIPTION.ConfigFileKey, this.GetStringValueOrDefault(this.Description, DefinedCommandOptions.ARGUMENT_FUNCTION_DESCRIPTION, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_PUBLISH.ConfigFileKey, this.GetBoolValueOrDefault(this.Publish, DefinedCommandOptions.ARGUMENT_FUNCTION_PUBLISH, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_HANDLER.ConfigFileKey, this.GetStringValueOrDefault(this.Handler, DefinedCommandOptions.ARGUMENT_FUNCTION_HANDLER, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_MEMORY_SIZE.ConfigFileKey, this.GetIntValueOrDefault(this.MemorySize, DefinedCommandOptions.ARGUMENT_FUNCTION_MEMORY_SIZE, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_ROLE.ConfigFileKey, this.GetStringValueOrDefault(this.Role, DefinedCommandOptions.ARGUMENT_FUNCTION_ROLE, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_TIMEOUT.ConfigFileKey, this.GetIntValueOrDefault(this.Timeout, DefinedCommandOptions.ARGUMENT_FUNCTION_TIMEOUT, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_RUNTIME.ConfigFileKey, this.GetStringValueOrDefault(this.Runtime, DefinedCommandOptions.ARGUMENT_FUNCTION_RUNTIME, false));
+
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS.ConfigFileKey, LambdaToolsDefaults.FormatCommaDelimitedList(this.GetStringValuesOrDefault(this.SubnetIds, DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS, false)));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS.ConfigFileKey, LambdaToolsDefaults.FormatCommaDelimitedList(this.GetStringValuesOrDefault(this.SecurityGroupIds, DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS, false)));
+
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN.ConfigFileKey, this.GetStringValueOrDefault(this.DeadLetterTargetArn, DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES.ConfigFileKey, LambdaToolsDefaults.FormatKeyValue(this.GetKeyValuePairOrDefault(this.EnvironmentVariables, DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES, false)));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN.ConfigFileKey, this.GetStringValueOrDefault(this.KMSKeyArn, DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_S3_BUCKET.ConfigFileKey, this.GetStringValueOrDefault(this.S3Bucket, DefinedCommandOptions.ARGUMENT_S3_BUCKET, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_S3_PREFIX.ConfigFileKey, this.GetStringValueOrDefault(this.S3Prefix, DefinedCommandOptions.ARGUMENT_S3_PREFIX, false));
+
+                StringBuilder sb = new StringBuilder();
+                JsonWriter writer = new JsonWriter(sb);
+                writer.PrettyPrint = true;
+                JsonMapper.ToJson(data, writer);
+
+                var json = sb.ToString();
+                File.WriteAllText(this.DefaultConfig.SourceFile, json);
+                this.Logger.WriteLine($"Config settings saved to {this.DefaultConfig.SourceFile}");
+            }
+            catch(Exception e)
+            {
+                throw new LambdaToolsException("Error persisting configuration file: " + e.Message, LambdaToolsException.ErrorCode.PersistConfigError);
+            }
         }
 
     }

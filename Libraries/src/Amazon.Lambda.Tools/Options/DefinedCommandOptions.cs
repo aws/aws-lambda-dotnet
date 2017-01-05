@@ -66,6 +66,15 @@ namespace Amazon.Lambda.Tools.Options
                 ValueType = CommandOption.CommandOptionValueType.StringValue,
                 Description = "Target framework to compile, for example netcoreapp1.0",
             };
+        public static readonly CommandOption ARGUMENT_PACKAGE =
+            new CommandOption
+            {
+                Name = "Package",
+                ShortSwitch = "-pac",
+                Switch = "--package",
+                ValueType = CommandOption.CommandOptionValueType.StringValue,
+                Description = "Application package to use for deployment, skips building the project",
+            };
         public static readonly CommandOption ARGUMENT_FUNCTION_NAME =
             new CommandOption
             {
@@ -266,6 +275,26 @@ namespace Amazon.Lambda.Tools.Options
                 Switch = "--output-package",
                 ValueType = CommandOption.CommandOptionValueType.StringValue,
                 Description = "The output zip file name"
+            };
+
+
+        public static readonly CommandOption ARGUMENT_CONFIG_FILE =
+            new CommandOption
+            {
+                Name = "Config File",
+                ShortSwitch = "-cfg",
+                Switch = "--config-file",
+                ValueType = CommandOption.CommandOptionValueType.StringValue,
+                Description = $"Configuration file storing default values for command line arguments. Default is {LambdaToolsDefaultsReader.DEFAULT_FILE_NAME}"
+            };
+        public static readonly CommandOption ARGUMENT_PERSIST_CONFIG_FILE =
+            new CommandOption
+            {
+                Name = "Persist Config File",
+                ShortSwitch = "-pcfg",
+                Switch = "--persist-config-file",
+                ValueType = CommandOption.CommandOptionValueType.BoolValue,
+                Description = $"If true the arguments used for a successful deployment are persisted to a config file. Default config file is {LambdaToolsDefaultsReader.DEFAULT_FILE_NAME}"
             };
     }
 }
