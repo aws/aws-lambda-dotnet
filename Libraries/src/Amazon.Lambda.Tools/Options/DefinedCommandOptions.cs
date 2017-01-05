@@ -267,5 +267,25 @@ namespace Amazon.Lambda.Tools.Options
                 ValueType = CommandOption.CommandOptionValueType.StringValue,
                 Description = "The output zip file name"
             };
+
+
+        public static readonly CommandOption ARGUMENT_CONFIG_FILE =
+            new CommandOption
+            {
+                Name = "Config File",
+                ShortSwitch = "-cf",
+                Switch = "--config-file",
+                ValueType = CommandOption.CommandOptionValueType.StringValue,
+                Description = $"Configuration file storing default values for command line arguments. Default is {LambdaToolsDefaultsReader.DEFAULT_FILE_NAME}"
+            };
+        public static readonly CommandOption ARGUMENT_PERSIST_CONFIG_FILE =
+            new CommandOption
+            {
+                Name = "Persist Config File",
+                ShortSwitch = "-pcf",
+                Switch = "--persist-config-file",
+                ValueType = CommandOption.CommandOptionValueType.BoolValue,
+                Description = $"If true the arguments used for a successful deployment are persisted to a config file. Default config file is {LambdaToolsDefaultsReader.DEFAULT_FILE_NAME}"
+            };
     }
 }

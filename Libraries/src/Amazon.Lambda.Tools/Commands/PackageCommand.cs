@@ -75,7 +75,7 @@ namespace Amazon.Lambda.Tools.Commands
                     var zipArchivePath = GetStringValueOrDefault(this.OutputPackageFileName, DefinedCommandOptions.ARGUMENT_OUTPUT_PACKAGE, false);
 
                     string publishLocation;
-                    Utilities.CreateApplicationBundle(this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
+                    Utilities.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
                     if (string.IsNullOrEmpty(zipArchivePath))
                         return false;
 

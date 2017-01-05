@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -16,21 +17,13 @@ namespace Amazon.Lambda.Tools
     /// </summary>
     public static class LambdaToolsDefaultsReader
     {
-        const string FILE_NAME = "aws-lambda-tools-defaults.json";
+        public const string DEFAULT_FILE_NAME = "aws-lambda-tools-defaults.json";
 
-        public static LambdaToolsDefaults LoadDefaults(string projectLocation)
+        public static LambdaToolsDefaults LoadDefaults(string projectLocation, string configFile)
         {
-            string path;
-            if (File.Exists(projectLocation))
-            {
-                path = projectLocation;
-            }
-            else
-            {
-                path = Path.Combine(projectLocation, FILE_NAME);
-            }
+            string path = Path.Combine(projectLocation, configFile);
 
-            var defaults = new LambdaToolsDefaults();
+            var defaults = new LambdaToolsDefaults(path);
             if (!File.Exists(path))
                 return defaults;
 
@@ -39,7 +32,7 @@ namespace Amazon.Lambda.Tools
                 try
                 {
                     JsonData data = JsonMapper.ToObject(reader) as JsonData;
-                    return new LambdaToolsDefaults(data);
+                    return new LambdaToolsDefaults(data, path);
                 }
                 catch (Exception e)
                 {
@@ -56,14 +49,23 @@ namespace Amazon.Lambda.Tools
     {
         JsonData _rootData;
 
-        public LambdaToolsDefaults()
-            : this(new JsonData())
+        public LambdaToolsDefaults(string sourceFile)
+            : this(new JsonData(), sourceFile)
         {
         }
 
-        public LambdaToolsDefaults(JsonData data)
+        public LambdaToolsDefaults(JsonData data, string sourceFile)
         {
             this._rootData = data ?? new JsonData();
+            this.SourceFile = sourceFile;
+        }
+
+        /// <summary>
+        /// The file the default values were read from.
+        /// </summary>
+        public string SourceFile
+        {
+            get;
         }
 
         /// <summary>
@@ -286,6 +288,42 @@ namespace Amazon.Lambda.Tools
         public string S3Prefix
         {
             get { return GetValue(DefinedCommandOptions.ARGUMENT_S3_PREFIX)?.ToString(); }
+        }
+
+        public string Configuration
+        {
+            get { return GetValue(DefinedCommandOptions.ARGUMENT_CONFIGURATION)?.ToString(); }
+        }
+
+        public string Framework
+        {
+            get { return GetValue(DefinedCommandOptions.ARGUMENT_FRAMEWORK)?.ToString(); }
+        }
+
+        public static string FormatCommaDelimitedList(string[] values)
+        {
+            if (values == null)
+                return null;
+
+            return string.Join(",", values);
+        }
+
+        public static string FormatKeyValue(IDictionary<string, string> values)
+        {
+            if (values == null)
+                return null;
+
+            StringBuilder sb = new StringBuilder();
+
+            foreach(var kvp in values)
+            {
+                if (sb.Length > 0)
+                    sb.Append(";");
+
+                sb.Append($"\"{kvp.Key}\"=\"{kvp.Value}\"");
+            }
+
+            return sb.ToString();
         }
     }
 }

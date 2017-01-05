@@ -323,14 +323,14 @@ namespace Amazon.Lambda.Tools
         /// <param name="configuration"></param>
         /// <param name="publishLocation"></param>
         /// <param name="zipArchivePath"></param>
-        public static void CreateApplicationBundle(IToolLogger logger, string workingDirectory, string projectLocation, string configuration, string targetFramework,
+        public static void CreateApplicationBundle(LambdaToolsDefaults defaults, IToolLogger logger, string workingDirectory, string projectLocation, string configuration, string targetFramework,
             out string publishLocation, ref string zipArchivePath)
         {
             var cli = new DotNetCLIWrapper(logger, workingDirectory);
 
             publishLocation = Utilities.DeterminePublishLocation(workingDirectory, projectLocation, configuration, targetFramework);
             logger.WriteLine("Executing publish command");
-            if (cli.Publish(projectLocation, publishLocation, targetFramework, configuration) != 0)
+            if (cli.Publish(defaults, projectLocation, publishLocation, targetFramework, configuration) != 0)
                 return;
 
             var buildLocation = Utilities.DetermineBuildLocation(workingDirectory, projectLocation, configuration, targetFramework);

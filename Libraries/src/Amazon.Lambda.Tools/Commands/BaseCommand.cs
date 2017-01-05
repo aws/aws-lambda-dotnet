@@ -29,7 +29,8 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_AWS_REGION,
             DefinedCommandOptions.ARGUMENT_AWS_PROFILE,
             DefinedCommandOptions.ARGUMENT_AWS_PROFILE_LOCATION,
-            DefinedCommandOptions.ARGUMENT_PROJECT_LOCATION
+            DefinedCommandOptions.ARGUMENT_PROJECT_LOCATION,
+            DefinedCommandOptions.ARGUMENT_CONFIG_FILE
         };
 
         public abstract Task<bool> ExecuteAsync();
@@ -53,6 +54,7 @@ namespace Amazon.Lambda.Tools.Commands
         public string ProfileLocation { get; set; }
         public AWSCredentials Credentials { get; set; }
         public string ProjectLocation { get; set; }
+        public string ConfigFile { get; set; }
 
 
 
@@ -69,7 +71,7 @@ namespace Amazon.Lambda.Tools.Commands
             {
                 if (this._defaultConfig == null)
                 {
-                    this._defaultConfig = LambdaToolsDefaultsReader.LoadDefaults(Utilities.DetemineProjectLocation(this.WorkingDirectory, this.ProjectLocation));
+                    this._defaultConfig = LambdaToolsDefaultsReader.LoadDefaults(Utilities.DetemineProjectLocation(this.WorkingDirectory, this.ProjectLocation), this.ConfigFile);
                 }
                 return this._defaultConfig;
             }
@@ -176,6 +178,11 @@ namespace Amazon.Lambda.Tools.Commands
                 this.Region = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_PROJECT_LOCATION.Switch)) != null)
                 this.ProjectLocation = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_CONFIG_FILE.Switch)) != null)
+                this.ConfigFile = tuple.Item2.StringValue;
+
+            if (string.IsNullOrEmpty(this.ConfigFile))
+                this.ConfigFile = LambdaToolsDefaultsReader.DEFAULT_FILE_NAME;
         }
 
         private IAmazonLambda CreateLambdaClient()
@@ -314,6 +321,11 @@ namespace Amazon.Lambda.Tools.Commands
             {
                 return PromptForValue(option);
             }
+            else if (_cachedRequestedValues.ContainsKey(option))
+            {
+                var cachedValue = _cachedRequestedValues[option];
+                return cachedValue;
+            }
 
             return null;
         }
@@ -347,6 +359,12 @@ namespace Amazon.Lambda.Tools.Commands
 
                 return response.SplitByComma();
             }
+            else if (_cachedRequestedValues.ContainsKey(option))
+            {
+                var cachedValue = _cachedRequestedValues[option];
+                return cachedValue?.SplitByComma();
+            }
+
 
             return null;
         }
@@ -372,6 +390,11 @@ namespace Amazon.Lambda.Tools.Commands
                     return null;
 
                 return Utilities.ParseKeyValueOption(response);
+            }
+            else if (_cachedRequestedValues.ContainsKey(option))
+            {
+                var cachedValue = _cachedRequestedValues[option];
+                return cachedValue == null ? null : Utilities.ParseKeyValueOption(cachedValue);
             }
 
             return null;
@@ -402,11 +425,20 @@ namespace Amazon.Lambda.Tools.Commands
                     return null;
 
                 int i;
-                if (int.TryParse(userValue, out i))
+                if (!int.TryParse(userValue, out i))
                 {
                     throw new LambdaToolsException($"{userValue} cannot be parsed into an integer for {option.Name}", LambdaToolsException.ErrorCode.CommandLineParseError);
                 }
                 return i;
+            }
+            else if (_cachedRequestedValues.ContainsKey(option))
+            {
+                var cachedValue = _cachedRequestedValues[option];
+                int i;
+                if(int.TryParse(cachedValue, out i))
+                {
+                    return i;
+                }
             }
 
             return null;
@@ -442,6 +474,15 @@ namespace Amazon.Lambda.Tools.Commands
                     throw new LambdaToolsException($"{userValue} cannot be parsed into a boolean for {option.Name}", LambdaToolsException.ErrorCode.CommandLineParseError);
                 }
                 return i;
+            }
+            else if (_cachedRequestedValues.ContainsKey(option))
+            {
+                var cachedValue = _cachedRequestedValues[option];
+                bool i;
+                if (bool.TryParse(cachedValue, out i))
+                {
+                    return i;
+                }
             }
 
             return null;

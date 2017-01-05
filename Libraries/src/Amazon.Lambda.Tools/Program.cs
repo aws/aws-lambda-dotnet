@@ -198,7 +198,7 @@ namespace Amazon.Lambda.Tools
                 Console.WriteLine($"{new string(' ', INDENT)}dotnet lambda {command} [options]");
             }
 
-            var defaults = LambdaToolsDefaultsReader.LoadDefaults(Directory.GetCurrentDirectory());
+            var defaults = LambdaToolsDefaultsReader.LoadDefaults(Directory.GetCurrentDirectory(), LambdaToolsDefaultsReader.DEFAULT_FILE_NAME);
 
             const int SWITCH_COLUMN_WIDTH = 40;
 

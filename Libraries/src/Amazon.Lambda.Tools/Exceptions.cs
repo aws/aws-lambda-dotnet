@@ -31,6 +31,7 @@ namespace Amazon.Lambda.Tools
             HandlerValidation,
             ProfileNotFound,
             ProfileNotCreateable,
+            PersistConfigError,
 
             IAMAttachRole,
             IAMCreateRole,
