@@ -1,0 +1,33 @@
+{
+  "name": "Amazon.Lambda.SimpleEmailEvents",
+  "version": "1.0.0-*",
+  "title": "Amazon.Lambda.SimpleEmailEvents",
+  "authors": [
+    "Amazon Web Services"
+  ],
+  "packOptions": {
+    "licenseUrl": "http://aws.amazon.com/apache2.0/",
+    "projectUrl": "https://aws.amazon.com/lambda/",
+    "iconUrl": "http://media.amazonwebservices.com/aws_singlebox_01.png",
+    "tags": [
+      "AWS",
+      "Amazon",
+      "Lambda"
+    ]
+  },
+  "description": "Amazon Lambda .NET Core support - SimpleEmailEvents package.",
+  "buildOptions": {
+    "emitEntryPoint": false,
+    "xmlDoc": true,
+    "warningsAsErrors": true
+  },
+  "dependencies": {
+    "System.Runtime": "4.1.0"
+  },
+  "frameworks": {
+    "netstandard1.3": {
+      "imports": "dnxcore50"
+    }
+  }
+}
+
