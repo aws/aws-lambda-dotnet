@@ -1,6 +1,15 @@
+### Release 2017-01-06 00:30 UTC
+* **Amazon.Lambda.Tools (1.0.4-preview1)**
+  * Added command line switches **--config-file** and **--persist-config-file** allowing use of alternative default config files and persisting the current values to the config file.
+  * Added **--package** switch to **deploy-function** and **deploy-serverless** commands to use a precompiled application package that skips building the project.
+  * Fixed issue with **dotnet lambda package** when output file was not a full file path.
+* **Blueprints**
+	* Updated all blueprints to version 1.1.0-preview1 of Amazon.Lambda.Tools
+
+
 ### Release 2016-12-21 08:00 UTC
 * **Amazon.Lambda.Tools (1.0.4-preview1)**
-  * Fix issue with zipping application bundles from paths that contain spaces
+  * Fixed issue with zipping application bundles from paths that contain spaces
 * **Amazon.Lambda.APIGatewayEvents (1.0.1)**
   * Added IsBase64Encoded property to APIGatewayProxyRequest
 * **Amazon.Lambda.AspNetCoreServer (0.8.2-preview1)**
@@ -11,7 +20,7 @@
 
 ### Release 2016-12-16 01:36 UTC
 * **Amazon.Lambda.Tools (1.0.3-preview1)**
-	* Fix issue with quoted strings in users path while searching for the dotnet CLI
+	* Fixed issue with quoted strings in users path while searching for the dotnet CLI
 * **Blueprints**
 	* DynamoDBBlogAPI: Change content-type to text/plain for AddBlogAsync which returns the ID of the new blog
     * Updated all blueprints to version 1.0.3-preview1 of Amazon.Lambda.Tools
