@@ -1,3 +1,7 @@
+### Release 2017-01-06 20:45 UTC
+* **Amazon.Lambda.SimpleEmailEvents (1.0.0)**
+  * New package for AWS Lambda event types for Amazon Simple Email Service. Thanks to [Tom Winzig](https://github.com/winzig) for the pull request.
+
 ### Release 2017-01-06 00:30 UTC
 * **Amazon.Lambda.Tools (1.0.4-preview1)**
   * Added command line switches **--config-file** and **--persist-config-file** allowing use of alternative default config files and persisting the current values to the config file.
