@@ -1,4 +1,4 @@
-# Amazon.Lambda.S3Events
+# Amazon.Lambda.SNSEvents
 
 This package contains classes that can be used as input types for Lambda functions that process Amazon Simple Notification Service (Amazon SNS) events. 
 
