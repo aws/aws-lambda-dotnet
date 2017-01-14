@@ -10,6 +10,7 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http.Features;
 
 using Newtonsoft.Json;
@@ -23,13 +24,13 @@ namespace Amazon.Lambda.AspNetCoreServer
     /// </summary>
     public abstract class APIGatewayProxyFunction
     {
-        IWebHost _host;
-        APIGatewayServer _server;
+        private readonly IWebHost _host;
+        private readonly APIGatewayServer _server;
 
         /// <summary>
         /// Default constructor that AWS Lambda will invoke.
         /// </summary>
-        public APIGatewayProxyFunction()
+        protected APIGatewayProxyFunction()
         {
             var builder = new WebHostBuilder();
             Init(builder);
@@ -71,11 +72,29 @@ namespace Amazon.Lambda.AspNetCoreServer
         public virtual async Task<APIGatewayProxyResponse> FunctionHandlerAsync(APIGatewayProxyRequest request, ILambdaContext lambdaContext)
         {
             lambdaContext?.Logger.Log($"Incoming {request.HttpMethod} requests to {request.Path}");
-
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request);
+            var context = this.CreateContext(features);
+            return await this.ProcessRequest(lambdaContext, context, features);
+        }
 
-            var context = _server.Application.CreateContext(features);
+        /// <summary>
+        /// Creates a <see cref="HostingApplication.Context"/> object using the <see cref="APIGatewayServer"/> field in the class.
+        /// </summary>
+        /// <param name="features"><see cref="IFeatureCollection"/> implementation.</param>
+        protected HostingApplication.Context CreateContext(IFeatureCollection features)
+        {
+            return _server.Application.CreateContext(features);
+        }
+
+        /// <summary>
+        /// Processes the current request.
+        /// </summary>
+        /// <param name="lambdaContext"><see cref="ILambdaContext"/> implementation.</param>
+        /// <param name="context">The hosting application request context object.</param>
+        /// <param name="features">An <see cref="InvokeFeatures"/> instance.</param>
+        protected async Task<APIGatewayProxyResponse> ProcessRequest(ILambdaContext lambdaContext, HostingApplication.Context context, InvokeFeatures features)
+        {
             try
             {
                 await this._server.Application.ProcessRequestAsync(context);
@@ -83,11 +102,11 @@ namespace Amazon.Lambda.AspNetCoreServer
             }
             catch (Exception e)
             {
-                lambdaContext?.Logger.Log($"Unknown error responding to request: {ErrorReport(e)}");
+                lambdaContext?.Logger.Log($"Unknown error responding to request: {this.ErrorReport(e)}");
                 this._server.Application.DisposeContext(context, e);
             }
 
-            var response = MarshallResponse(features);
+            var response = this.MarshallResponse(features);
 
             // ASP.NET Core Web API does not always set the status code if the request was
             // successful
@@ -119,7 +138,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         /// <param name="requestFeatures"></param>
         /// <param name="apiGatewayRequest"></param>
-        private void MarshallRequest(IHttpRequestFeature requestFeatures, APIGatewayProxyRequest apiGatewayRequest)
+        protected void MarshallRequest(IHttpRequestFeature requestFeatures, APIGatewayProxyRequest apiGatewayRequest)
         {
             requestFeatures.Scheme = "https";
             requestFeatures.Path = apiGatewayRequest.Path;
