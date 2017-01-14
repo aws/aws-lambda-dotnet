@@ -1,6 +1,6 @@
 ### Release 2017-01-14 20:45 UTC
 * **Amazon.Lambda.AspNetCoreServer (0.8.3-preview1)**
-  * Pull request GH-32, refactoring base Lambda function to allow sub types to customize the function invoke handling. Thanks to [Justin Yancey](https://github.com/thedevopsmachine) for the pull request.
+  * Pull request #32, refactoring base Lambda function to allow sub types to customize the function invoke handling. Thanks to [Justin Yancey](https://github.com/thedevopsmachine) for the pull request.
 
 ### Release 2017-01-06 20:45 UTC
 * **Amazon.Lambda.SimpleEmailEvents (1.0.0)**
