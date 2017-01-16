@@ -95,6 +95,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="features">An <see cref="InvokeFeatures"/> instance.</param>
         protected async Task<APIGatewayProxyResponse> ProcessRequest(ILambdaContext lambdaContext, HostingApplication.Context context, InvokeFeatures features)
         {
+            var defaultStatusCode = 200;
             try
             {
                 await this._server.Application.ProcessRequestAsync(context);
@@ -104,6 +105,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             {
                 lambdaContext?.Logger.Log($"Unknown error responding to request: {this.ErrorReport(e)}");
                 this._server.Application.DisposeContext(context, e);
+                defaultStatusCode = 500;
             }
 
             var response = this.MarshallResponse(features);
@@ -111,7 +113,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             // ASP.NET Core Web API does not always set the status code if the request was
             // successful
             if (response.StatusCode == 0)
-                response.StatusCode = 200;
+                response.StatusCode = defaultStatusCode;
 
             return response;
         }
