@@ -27,6 +27,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
             var response = await lambdaFunction.FunctionHandlerAsync(request, null);
 
+            Assert.Equal(response.StatusCode, 200);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
@@ -73,6 +74,19 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("Agent, Smith", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
+        }
+
+        [Fact]
+        public async Task TestDefaultResponseErrorCode()
+        {
+            var lambdaFunction = new LambdaFunction();
+
+            var requestStr = File.ReadAllText("values-get-error-apigatway-request.json");
+            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
+            var response = await lambdaFunction.FunctionHandlerAsync(request, null);
+
+            Assert.Equal(response.StatusCode, 500);
+            Assert.Equal(string.Empty, response.Body);
         }
     }
 }
