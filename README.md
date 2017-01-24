@@ -28,7 +28,7 @@ For more information see the [README.md](Libraries/src/Amazon.Lambda.Tools/READM
 
 ### Amazon.Lambda.AspNetCoreServer
 
-Packages makes it easy to run ASP.NET Core Web API applications as Lambda functions.
+Package makes it easy to run ASP.NET Core Web API applications as Lambda functions.
 For more information see the [README.md](Libraries/src/Amazon.Lambda.AspNetCoreServer/README.md) file for Amazon.Lambda.AspNetCoreServer.
 
 ### Amazon.Lambda.TestUtilities
