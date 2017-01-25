@@ -1,3 +1,7 @@
+### Release 2017-01-25 00:00 UTC
+* **Blueprints**
+	* Added a preview ASP.NET Core Web API blueprint
+
 ### Release 2017-01-17 08:00 UTC
 * **Amazon.Lambda.AspNetCoreServer (0.8.4-preview1)**
   * Pull request [#33](https://github.com/aws/aws-lambda-dotnet/pull/33), fixing issue with returning error HTTP status codes. Thanks to [Travis Gosselin](https://github.com/travisgosselin) for the pull request.
