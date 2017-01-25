@@ -105,6 +105,10 @@
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint"
         Properties="CurrentBlueprint=DynamoDBBlogAPI"/>  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint"
+        Properties="CurrentBlueprint=PreviewAspNetCoreWebAPI"/>  
 	<MSBuild
         Projects="$(MSBuildProjectFile)"
         Targets="run-blueprint"
