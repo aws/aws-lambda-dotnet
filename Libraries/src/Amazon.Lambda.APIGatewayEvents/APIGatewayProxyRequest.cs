@@ -106,6 +106,10 @@
             /// </summary>
             public string ApiId { get; set; }
 
+            /// <summary>
+            /// The APIGatewayCustomAuthorizerContext containing the custom properties set by a custom authorizer.
+            /// </summary>
+            public APIGatewayCustomAuthorizerContext Authorizer { get; set; }
         }
 
         /// <summary>

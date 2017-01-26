@@ -102,5 +102,48 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.True(response.Body.Length > 0);
             Assert.Equal("application/json", response.Headers["Content-Type"]);
         }
+
+        [Fact]
+        public void TestGetCustomAuthorizerValue()
+        {
+            var requestStr = File.ReadAllText("values-get-customauthorizer-apigatway-request.json");
+            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
+            Assert.NotNull(request.RequestContext.Authorizer);
+            Assert.NotNull(request.RequestContext.Authorizer.StringKey);
+            Assert.Equal(9, request.RequestContext.Authorizer.NumKey);
+            Assert.True(request.RequestContext.Authorizer.BoolKey);
+        }
+
+        [Fact]
+        public void TestCustomAuthorizerSerialization()
+        {
+            var response = new APIGatewayCustomAuthorizerResponse
+            {
+                PrincipalID = "com.amazon.someuser",
+                Context = new APIGatewayCustomAuthorizerContext
+                {
+                    StringKey = "Hey I'm a string",
+                    BoolKey = true,
+                    NumKey = 9
+                },
+                PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+                {
+                    Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
+                    {
+                        new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                        {
+                            Effect = "Allow",
+                            Action = new HashSet<string> { "execute-api:Invoke" },
+                            Resource = new HashSet<string> { "arn:aws:execute-api:us-west-2:1234567890:apit123d45/Prod/GET/*" }
+                        }
+                    }
+                }
+            };
+
+            var json = JsonConvert.SerializeObject(response);
+            Assert.NotNull(json);
+            var expected = "{\"principalId\":\"com.amazon.someuser\",\"policyDocument\":{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"execute-api:Invoke\"],\"Resource\":[\"arn:aws:execute-api:us-west-2:1234567890:apit123d45/Prod/GET/*\"]}]},\"context\":{\"stringKey\":\"Hey I'm a string\",\"numKey\":9,\"boolKey\":true}}";
+            Assert.Equal(expected, json);
+        }
     }
 }
