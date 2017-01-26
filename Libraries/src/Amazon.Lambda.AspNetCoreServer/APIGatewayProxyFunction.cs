@@ -227,10 +227,17 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             if(responseFeatures.Body != null)
             {
-                responseFeatures.Body.Position = 0;
-                using (StreamReader reader = new StreamReader(responseFeatures.Body, Encoding.UTF8))
+                if (responseFeatures.Body is MemoryStream)
                 {
-                    response.Body =  reader.ReadToEnd();
+                    response.Body = UTF8Encoding.UTF8.GetString(((MemoryStream)responseFeatures.Body).ToArray());
+                }
+                else
+                {
+                    responseFeatures.Body.Position = 0;
+                    using (StreamReader reader = new StreamReader(responseFeatures.Body, Encoding.UTF8))
+                    {
+                        response.Body = reader.ReadToEnd();
+                    }
                 }
             }
 

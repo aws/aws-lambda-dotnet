@@ -21,7 +21,9 @@
     "Amazon.Lambda.Tools": {
       "type": "build",
       "target": "project"
-    }
+    },
+
+    "Swashbuckle.AspNetCore": "1.0.0-rc1"
   },
 
   "tools": {

@@ -1,6 +1,6 @@
 {
   "name": "generator-aws-lambda-dotnet",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "A collection of Yeoman generators for writing .NET Core AWS Lambda functions and AWS Serverless Applications",
   "main": "app/index.js",
   "homepage": "https://github.com/aws/aws-lambda-dotnet/tree/master/Blueprints",

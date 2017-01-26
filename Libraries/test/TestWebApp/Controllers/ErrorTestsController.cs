@@ -7,7 +7,7 @@ namespace TestWebApp.Controllers
     public class ErrorTestsController
     {
         [HttpGet]
-        public string Get(string id)
+        public string Get([FromQuery]string id)
         {
             throw new Exception("Unit test exception, for test conditions.");
         }

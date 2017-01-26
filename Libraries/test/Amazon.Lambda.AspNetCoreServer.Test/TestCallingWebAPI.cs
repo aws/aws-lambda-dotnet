@@ -88,5 +88,19 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal(response.StatusCode, 500);
             Assert.Equal(string.Empty, response.Body);
         }
+
+        [Fact]
+        public async Task TestGettingSwaggerDefinition()
+        {
+            var lambdaFunction = new LambdaFunction();
+
+            var requestStr = File.ReadAllText("swagger-get-apigatway-request.json");
+            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
+            var response = await lambdaFunction.FunctionHandlerAsync(request, null);
+
+            Assert.Equal(response.StatusCode, 200);
+            Assert.True(response.Body.Length > 0);
+            Assert.Equal("application/json", response.Headers["Content-Type"]);
+        }
     }
 }
