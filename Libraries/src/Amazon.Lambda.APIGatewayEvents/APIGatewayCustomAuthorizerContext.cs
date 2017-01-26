@@ -9,7 +9,7 @@
     public class APIGatewayCustomAuthorizerContext
     {
         /// <summary>
-        /// Gets or sets the 'stringKey' property.
+        /// Gets or sets the 'principalId' property.
         /// </summary>
         [DataMember(Name = "principalId", IsRequired = false)]
         public string PrincipalId { get; set; }
