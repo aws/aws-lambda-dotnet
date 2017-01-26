@@ -1,6 +1,10 @@
+### Release 2017-01-26 06:30 UTC
+* **Amazon.Lambda.AspNetCoreServer (0.8.5-preview1)**
+  * Fixed issue with accessing a closed response stream.
+  
 ### Release 2017-01-25 00:00 UTC
 * **Blueprints**
-	* Added a preview ASP.NET Core Web API blueprint
+  * Added a preview ASP.NET Core Web API blueprint
 
 ### Release 2017-01-17 08:00 UTC
 * **Amazon.Lambda.AspNetCoreServer (0.8.4-preview1)**
