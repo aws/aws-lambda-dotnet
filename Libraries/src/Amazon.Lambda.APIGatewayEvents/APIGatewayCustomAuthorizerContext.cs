@@ -11,6 +11,12 @@
         /// <summary>
         /// Gets or sets the 'stringKey' property.
         /// </summary>
+        [DataMember(Name = "principalId", IsRequired = false)]
+        public string PrincipalId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the 'stringKey' property.
+        /// </summary>
         [DataMember(Name = "stringKey", IsRequired = false)]
         public string StringKey { get; set; }
 
