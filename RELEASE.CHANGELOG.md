@@ -1,3 +1,10 @@
+### Release 2017-01-27 18:30 UTC
+* **Amazon.Lambda.APIGatewayEvents (1.0.2)**
+  * Pull request [#42](https://github.com/aws/aws-lambda-dotnet/pull/42), adding custom authorizer support. Thanks to [Justin Yancey](https://github.com/thedevopsmachine) for the pull request.
+* **Amazon.Lambda.AspNetCoreServer (0.8.6-preview1)**
+  * Pull request [#44](https://github.com/aws/aws-lambda-dotnet/pull/44), improve error handling.
+  * Updated dependency of Amazon.Lambda.APIGatewayEvents to version 1.0.2.
+
 ### Release 2017-01-26 06:30 UTC
 * **Amazon.Lambda.AspNetCoreServer (0.8.5-preview1)**
   * Fixed issue with accessing a closed response stream.

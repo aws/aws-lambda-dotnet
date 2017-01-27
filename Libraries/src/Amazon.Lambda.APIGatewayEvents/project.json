@@ -1,6 +1,6 @@
 {
   "name": "Amazon.Lambda.APIGatewayEvents",
-  "version": "1.0.1-*",
+  "version": "1.0.2-*",
   "title": "Amazon.Lambda.APIGatewayEvents",
   "authors": [
     "Amazon Web Services"

@@ -8,6 +8,10 @@
     "Microsoft.NETCore.App": {
       "type": "platform",
       "version": "1.0.1"
+    },
+
+    "Amazon.Lambda.Serialization.Json": {
+      "target" : "project"
     }
   },
 

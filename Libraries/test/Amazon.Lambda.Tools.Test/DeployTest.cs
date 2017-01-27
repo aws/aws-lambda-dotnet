@@ -43,7 +43,7 @@ namespace Amazon.Lambda.Tools.Test
 
 
 
-        [Fact(Skip = "Turn off till accessible in prod")]
+        [Fact]
         public async Task RunDeployCommand()
         {
             
@@ -54,6 +54,8 @@ namespace Amazon.Lambda.Tools.Test
             command.Timeout = 10;
             command.MemorySize = 512;
             command.Role = this._roleArn;
+            command.Configuration = "Release";
+            command.TargetFramework = "netcoreapp1.0";
             command.Runtime = "dotnetcore1.0";
 
             var created = await command.ExecuteAsync();
