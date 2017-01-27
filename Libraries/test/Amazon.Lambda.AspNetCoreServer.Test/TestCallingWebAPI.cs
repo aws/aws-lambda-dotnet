@@ -1,14 +1,11 @@
-﻿using System;
+﻿using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.TestUtilities;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-
-using Amazon.Lambda.APIGatewayEvents;
 using TestWebApp;
 using Xunit;
-
-using Newtonsoft.Json;
 
 namespace Amazon.Lambda.AspNetCoreServer.Test
 {
@@ -21,11 +18,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetAllValues()
         {
-            var lambdaFunction = new LambdaFunction();
-
-            var requestStr = File.ReadAllText("values-get-all-apigatway-request.json");
-            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
-            var response = await lambdaFunction.FunctionHandlerAsync(request, null);
+            var response = await this.InvokeAPIGatewayRequest("values-get-all-apigatway-request.json");
 
             Assert.Equal(response.StatusCode, 200);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
@@ -36,11 +29,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetSingleValue()
         {
-            var lambdaFunction = new LambdaFunction();
-
-            var requestStr = File.ReadAllText("values-get-single-apigatway-request.json");
-            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
-            var response = await lambdaFunction.FunctionHandlerAsync(request, null);
+            var response = await this.InvokeAPIGatewayRequest("values-get-single-apigatway-request.json");
 
             Assert.Equal("value=5", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
@@ -50,11 +39,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetQueryStringValue()
         {
-            var lambdaFunction = new LambdaFunction();
-
-            var requestStr = File.ReadAllText("values-get-querystring-apigatway-request.json");
-            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
-            var response = await lambdaFunction.FunctionHandlerAsync(request, null);
+            var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigatway-request.json");
 
             Assert.Equal("Lewis, Meriwether", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
@@ -64,11 +49,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestPutWithBody()
         {
-            var lambdaFunction = new LambdaFunction();
-
-            var requestStr = File.ReadAllText("values-put-withbody-apigatway-request.json");
-            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
-            var response = await lambdaFunction.FunctionHandlerAsync(request, null);
+            var response = await this.InvokeAPIGatewayRequest("values-put-withbody-apigatway-request.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("Agent, Smith", response.Body);
@@ -79,24 +60,29 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestDefaultResponseErrorCode()
         {
-            var lambdaFunction = new LambdaFunction();
-
-            var requestStr = File.ReadAllText("values-get-error-apigatway-request.json");
-            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
-            var response = await lambdaFunction.FunctionHandlerAsync(request, null);
+            var response = await this.InvokeAPIGatewayRequest("values-get-error-apigatway-request.json");
 
             Assert.Equal(response.StatusCode, 500);
             Assert.Equal(string.Empty, response.Body);
         }
 
+        [Theory]
+        [InlineData("values-get-aggregateerror-apigatway-request.json", "AggregateException")]
+        [InlineData("values-get-typeloaderror-apigatway-request.json", "ReflectionTypeLoadException")]
+        public async Task TestEnhancedExceptions(string requestFileName, string expectedExceptionType)
+        {
+            var response = await this.InvokeAPIGatewayRequest(requestFileName);
+
+            Assert.Equal(response.StatusCode, 500);
+            Assert.Equal(string.Empty, response.Body);
+            Assert.True(response.Headers.ContainsKey("ErrorType"));
+            Assert.Equal(expectedExceptionType, response.Headers["ErrorType"]);
+        }
+
         [Fact]
         public async Task TestGettingSwaggerDefinition()
         {
-            var lambdaFunction = new LambdaFunction();
-
-            var requestStr = File.ReadAllText("swagger-get-apigatway-request.json");
-            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
-            var response = await lambdaFunction.FunctionHandlerAsync(request, null);
+            var response = await this.InvokeAPIGatewayRequest("swagger-get-apigatway-request.json");
 
             Assert.Equal(response.StatusCode, 200);
             Assert.True(response.Body.Length > 0);
@@ -120,7 +106,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var response = new APIGatewayCustomAuthorizerResponse
             {
                 PrincipalID = "com.amazon.someuser",
-                Context = new APIGatewayCustomAuthorizerContext
+                Context = new APIGatewayCustomAuthorizerContextOutput
                 {
                     StringKey = "Hey I'm a string",
                     BoolKey = true,
@@ -144,6 +130,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.NotNull(json);
             var expected = "{\"principalId\":\"com.amazon.someuser\",\"policyDocument\":{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"execute-api:Invoke\"],\"Resource\":[\"arn:aws:execute-api:us-west-2:1234567890:apit123d45/Prod/GET/*\"]}]},\"context\":{\"stringKey\":\"Hey I'm a string\",\"numKey\":9,\"boolKey\":true}}";
             Assert.Equal(expected, json);
+        }
+
+        private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
+        {
+            var context = new TestLambdaContext();
+            var lambdaFunction = new LambdaFunction();
+            var requestStr = File.ReadAllText(fileName);
+            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
+            return await lambdaFunction.FunctionHandlerAsync(request, context);
         }
     }
 }
