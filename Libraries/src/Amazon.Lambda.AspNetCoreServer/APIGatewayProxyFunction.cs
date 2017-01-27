@@ -1,19 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
-using System.Text.Encodings.Web;
-
-using Amazon.Lambda.Core;
-using Amazon.Lambda.APIGatewayEvents;
+﻿using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.AspNetCoreServer.Internal;
-
+using Amazon.Lambda.Core;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http.Features;
-
-using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Threading.Tasks;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -71,7 +68,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         [LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
         public virtual async Task<APIGatewayProxyResponse> FunctionHandlerAsync(APIGatewayProxyRequest request, ILambdaContext lambdaContext)
         {
-            lambdaContext?.Logger.Log($"Incoming {request.HttpMethod} requests to {request.Path}");
+            lambdaContext.Logger.Log($"Incoming {request.HttpMethod} requests to {request.Path}");
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request);
             var context = this.CreateContext(features);
@@ -93,41 +90,86 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="lambdaContext"><see cref="ILambdaContext"/> implementation.</param>
         /// <param name="context">The hosting application request context object.</param>
         /// <param name="features">An <see cref="InvokeFeatures"/> instance.</param>
-        protected async Task<APIGatewayProxyResponse> ProcessRequest(ILambdaContext lambdaContext, HostingApplication.Context context, InvokeFeatures features)
+        /// <param name="rethrowUnhandledError">
+        /// If specified, an unhandled exception will be rethrown for custom error handling.
+        /// Ensure that the error handling code calls 'this.MarshallResponse(features, 500);' after handling the error to return a <see cref="APIGatewayProxyResponse"/> to the user.
+        /// </param>
+        protected async Task<APIGatewayProxyResponse> ProcessRequest(ILambdaContext lambdaContext, HostingApplication.Context context, InvokeFeatures features, bool rethrowUnhandledError = false)
         {
             var defaultStatusCode = 200;
+            Exception ex = null;
             try
             {
                 await this._server.Application.ProcessRequestAsync(context);
-                this._server.Application.DisposeContext(context, null);
+            }
+            catch (AggregateException agex)
+            {
+                ex = agex;
+                lambdaContext.Logger.Log($"Caught AggregateException: '{agex}'");
+                var sb = new StringBuilder();
+                foreach (var newEx in agex.InnerExceptions)
+                {
+                    sb.AppendLine(this.ErrorReport(newEx));
+                }
+
+                lambdaContext.Logger.Log(sb.ToString());
+                defaultStatusCode = 500;
+            }
+            catch (ReflectionTypeLoadException rex)
+            {
+                ex = rex;
+                lambdaContext.Logger.Log($"Caught ReflectionTypeLoadException: '{rex}'");
+                var sb = new StringBuilder();
+                foreach (var loaderException in rex.LoaderExceptions)
+                {
+                    var fileNotFoundException = loaderException as FileNotFoundException;
+                    if (fileNotFoundException != null && !string.IsNullOrEmpty(fileNotFoundException.FileName))
+                    {
+                        sb.AppendLine($"Missing file: {fileNotFoundException.FileName}");
+                    }
+                    else
+                    {
+                        sb.AppendLine(this.ErrorReport(loaderException));
+                    }
+                }
+
+                lambdaContext.Logger.Log(sb.ToString());
+                defaultStatusCode = 500;
             }
             catch (Exception e)
             {
-                lambdaContext?.Logger.Log($"Unknown error responding to request: {this.ErrorReport(e)}");
-                this._server.Application.DisposeContext(context, e);
+                ex = e;
+                if (rethrowUnhandledError) throw;
+                lambdaContext.Logger.Log($"Unknown error responding to request: {this.ErrorReport(e)}");
                 defaultStatusCode = 500;
             }
+            finally
+            {
+                this._server.Application.DisposeContext(context, ex);
+            }
 
-            var response = this.MarshallResponse(features);
+            var response = this.MarshallResponse(features, defaultStatusCode);
 
-            // ASP.NET Core Web API does not always set the status code if the request was
-            // successful
-            if (response.StatusCode == 0)
-                response.StatusCode = defaultStatusCode;
+            if (ex != null)
+                response.Headers.Add(new KeyValuePair<string, string>("ErrorType", ex.GetType().Name));
 
             return response;
         }
 
-        private string ErrorReport(Exception e)
+        /// <summary>
+        /// Formats an Exception into a string, including all inner exceptions.
+        /// </summary>
+        /// <param name="e"><see cref="Exception"/> instance.</param>
+        protected string ErrorReport(Exception e)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
+            sb.AppendLine($"{e.GetType().Name}:\n{e}");
 
             Exception inner = e;
-            while(inner != null)
+            while (inner != null)
             {
-                Console.WriteLine(inner.Message);
-                Console.WriteLine(inner.StackTrace);
-
+                // Append the messages to the StringBuilder.
+                sb.AppendLine($"{inner.GetType().Name}:\n{inner}");
                 inner = inner.InnerException;
             }
 
@@ -201,12 +243,13 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// serialized into the JSON object that API Gateway expects.
         /// </summary>
         /// <param name="responseFeatures"></param>
-        /// <returns></returns>
-        private APIGatewayProxyResponse MarshallResponse(IHttpResponseFeature responseFeatures)
+        /// <param name="statusCodeIfNotSet">Sometimes the ASP.NET server doesn't set the status code correctly when successful, so this parameter will be used when the value is 0.</param>
+        /// <returns><see cref="APIGatewayProxyResponse"/></returns>
+        protected APIGatewayProxyResponse MarshallResponse(IHttpResponseFeature responseFeatures, int statusCodeIfNotSet = 200)
         {
             var response = new APIGatewayProxyResponse
             {
-                StatusCode = responseFeatures.StatusCode
+                StatusCode = responseFeatures.StatusCode != 0 ? responseFeatures.StatusCode : statusCodeIfNotSet
             };
 
             if(responseFeatures.Headers != null)

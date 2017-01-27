@@ -24,6 +24,6 @@
         /// Gets or sets the <see cref="APIGatewayCustomAuthorizerContext"/> property.
         /// </summary>
         [DataMember(Name = "context")]
-        public APIGatewayCustomAuthorizerContext Context { get; set; }
+        public APIGatewayCustomAuthorizerContextOutput Context { get; set; }
     }
 }
