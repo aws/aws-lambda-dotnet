@@ -2,7 +2,7 @@
 
 This package contains classes that can be used as input types for Lambda functions that process Amazon API Gateway events.
 
-API Gateway events consist of a request that was routed to a Lambda function by API Gateway. When this happens, API Gateway expects the result of the function to be the response that API Gateway should respond with. To see a more detailed example of this, take a look at the [Amazon.Lambda.AspNetCoreServer README.md file](Libraries/Amazon.Lambda.AspNetCoreServer/README.md). 
+API Gateway events consist of a request that was routed to a Lambda function by API Gateway. When this happens, API Gateway expects the result of the function to be the response that API Gateway should respond with. To see a more detailed example of this, take a look at the [Amazon.Lambda.AspNetCoreServer README.md file](Libraries/src/Amazon.Lambda.AspNetCoreServer/README.md). 
 
 # Sample Function
 
