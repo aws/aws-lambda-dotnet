@@ -10,7 +10,7 @@ If you are using this package with Amazon Lambda but are not also using `Amazon.
 1. `XAmzRequestId` should be treated as `x-amz-request-id`
 2. `XAmzId2` should be treated as `x-amz-id-2`
 
-A Newtonsoft.Json `IContractResolver` implementation which handles this custom serialization is located in [Amazon.Lambda.Serialization.Json\AwsResolver.cs](Libraries/src/Amazon.Lambda.Serialization.Json/AwsResolver.cs), consult this source for more information. 
+A Newtonsoft.Json `IContractResolver` implementation which handles this custom serialization is located in [Amazon.Lambda.Serialization.Json\AwsResolver.cs](../Amazon.Lambda.Serialization.Json/AwsResolver.cs), consult this source for more information. 
 
 # Sample Function
 
