@@ -9,7 +9,7 @@ framework into the response body that API Gateway Proxy understands.
 
 ## Example Lambda Function
 
-In the ASP.NET Core application add a class that extends from [ApiGatewayFunction](Libraries/src/Amazon.Lambda.AspNetCoreServer/APIGatewayProxyFunction.cs)
+In the ASP.NET Core application add a class that extends from [ApiGatewayFunction](../Amazon.Lambda.AspNetCoreServer/APIGatewayProxyFunction.cs)
 and implement the Init method.
 
 Here is an example implementation of the Lamba function in an ASP.NET Core Web API application.

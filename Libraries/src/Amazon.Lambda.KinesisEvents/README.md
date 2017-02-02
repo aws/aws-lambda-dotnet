@@ -15,7 +15,7 @@ byte[] dataBytes = Convert.FromBase64String(dataBase64);
 MemoryStream stream = new MemoryStream(dataBytes);
 ```
 
-A Newtonsoft.Json `IContractResolver` implementation which handles this custom serialization is located in [Amazon.Lambda.Serialization.Json\AwsResolver.cs](Libraries/src/Amazon.Lambda.Serialization.Json/AwsResolver.cs) and [Amazon.Lambda.Serialization.Json\KinesisEventRecordDataConverter.cs](Libraries/src/Amazon.Lambda.Serialization.Json/KinesisEventRecordDataConverter.cs), consult this source for more information.
+A Newtonsoft.Json `IContractResolver` implementation which handles this custom serialization is located in [Amazon.Lambda.Serialization.Json\AwsResolver.cs](../Amazon.Lambda.Serialization.Json/AwsResolver.cs), consult this source for more information.
 
 # Sample Function
 
