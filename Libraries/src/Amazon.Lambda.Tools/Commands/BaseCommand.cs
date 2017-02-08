@@ -318,7 +318,8 @@ namespace Amazon.Lambda.Tools.Commands
             if (!string.IsNullOrEmpty(propertyValue))
             {
                 // If the user gave the short name of the role and not the ARN then look up the role and get its ARN.
-                if (option == DefinedCommandOptions.ARGUMENT_FUNCTION_ROLE && !propertyValue.StartsWith(Constants.IAM_ARN_PREFIX))
+                if ((option == DefinedCommandOptions.ARGUMENT_FUNCTION_ROLE || option == DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_ROLE)
+                    && !propertyValue.StartsWith(Constants.IAM_ARN_PREFIX))
                 {
                     return RoleHelper.ExpandRoleName(this.IAMClient, propertyValue);
                 }
@@ -328,7 +329,9 @@ namespace Amazon.Lambda.Tools.Commands
             {
                 var configDefault = DefaultConfig[option.Switch] as string;
                 // If the user gave the short name of the role and not the ARN then look up the role and get its ARN.
-                if (configDefault != null && option == DefinedCommandOptions.ARGUMENT_FUNCTION_ROLE && !configDefault.StartsWith(Constants.IAM_ARN_PREFIX))
+                if (configDefault != null && 
+                    (option == DefinedCommandOptions.ARGUMENT_FUNCTION_ROLE || option == DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_ROLE) && 
+                    !configDefault.StartsWith(Constants.IAM_ARN_PREFIX))
                 {
                     return RoleHelper.ExpandRoleName(this.IAMClient, configDefault);
                 }

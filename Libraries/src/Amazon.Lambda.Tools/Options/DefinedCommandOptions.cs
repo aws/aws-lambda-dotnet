@@ -255,6 +255,15 @@ namespace Amazon.Lambda.Tools.Options
                 ValueType = CommandOption.CommandOptionValueType.BoolValue,
                 Description = "If true wait for the Stack to finish updating before exiting. Default is true."
             };
+        public static readonly CommandOption ARGUMENT_CLOUDFORMATION_ROLE =
+            new CommandOption
+            {
+                Name = "CloudFormation Role ARN",
+                ShortSwitch = "-cfrole",
+                Switch = "--cloudformation-role",
+                ValueType = CommandOption.CommandOptionValueType. StringValue,
+                Description = "Optional role that CloudFormation assumes when creating or updated CloudFormation stack."
+            };
 
 
         public static readonly CommandOption ARGUMENT_PAYLOAD =
