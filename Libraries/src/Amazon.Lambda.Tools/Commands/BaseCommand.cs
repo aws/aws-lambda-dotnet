@@ -194,9 +194,7 @@ namespace Amazon.Lambda.Tools.Commands
 
 
             AmazonLambdaConfig config = new AmazonLambdaConfig();
-
-            var regionName = this.GetStringValueOrDefault(this.Region, DefinedCommandOptions.ARGUMENT_AWS_REGION, true);
-            config.RegionEndpoint = RegionEndpoint.GetBySystemName(regionName);
+            config.RegionEndpoint = DetermineAWSRegion();
 
             IAmazonLambda client = new AmazonLambdaClient(DetermineAWSCredentials(), config);
             return client;
@@ -211,8 +209,7 @@ namespace Amazon.Lambda.Tools.Commands
 
             AmazonCloudFormationConfig config = new AmazonCloudFormationConfig();
 
-            var regionName = this.GetStringValueOrDefault(this.Region, DefinedCommandOptions.ARGUMENT_AWS_REGION, true);
-            config.RegionEndpoint = RegionEndpoint.GetBySystemName(regionName);
+            config.RegionEndpoint = DetermineAWSRegion();
 
             var client = new AmazonCloudFormationClient(DetermineAWSCredentials(), config);
             return client;
@@ -222,15 +219,7 @@ namespace Amazon.Lambda.Tools.Commands
         {
             AmazonIdentityManagementServiceConfig config = new AmazonIdentityManagementServiceConfig();
 
-            var regionName = this.GetStringValueOrDefault(this.Region, DefinedCommandOptions.ARGUMENT_AWS_REGION, true);
-            if (!string.IsNullOrEmpty(regionName))
-            {
-                config.RegionEndpoint = RegionEndpoint.GetBySystemName(regionName);
-            }
-            else
-            {
-                config.RegionEndpoint = RegionEndpoint.USEast1;
-            }
+            config.RegionEndpoint = DetermineAWSRegion();
 
             IAmazonIdentityManagementService client = new AmazonIdentityManagementServiceClient(DetermineAWSCredentials(), config);
             return client;
@@ -241,8 +230,7 @@ namespace Amazon.Lambda.Tools.Commands
         {
             AmazonS3Config config = new AmazonS3Config();
 
-            var regionName = this.GetStringValueOrDefault(this.Region, DefinedCommandOptions.ARGUMENT_AWS_REGION, true);
-            config.RegionEndpoint = RegionEndpoint.GetBySystemName(regionName);
+            config.RegionEndpoint = DetermineAWSRegion();
 
             IAmazonS3 client = new AmazonS3Client(DetermineAWSCredentials(), config);
             return client;
@@ -282,6 +270,35 @@ namespace Amazon.Lambda.Tools.Commands
             }
 
             return credentials;
+        }
+
+        private RegionEndpoint DetermineAWSRegion()
+        {
+            // See if a region has been set but don't prompt if not set.
+            var regionName = this.GetStringValueOrDefault(this.Region, DefinedCommandOptions.ARGUMENT_AWS_REGION, false);
+            if(!string.IsNullOrWhiteSpace(regionName))
+            {
+                return RegionEndpoint.GetBySystemName(regionName);
+            }
+
+            // See if we can find a region using the region fallback logic.
+            if(string.IsNullOrWhiteSpace(regionName))
+            {
+                var region = FallbackRegionFactory.GetRegionEndpoint(true);
+                if (region != null)
+                {
+                    return region;
+                }
+            }
+
+            // If we still don't have a region prompt the user for a region.
+            regionName = this.GetStringValueOrDefault(this.Region, DefinedCommandOptions.ARGUMENT_AWS_REGION, true);
+            if (!string.IsNullOrWhiteSpace(regionName))
+            {
+                return RegionEndpoint.GetBySystemName(regionName);
+            }
+
+            throw new LambdaToolsException("Can not determine AWS region. Either configure a default region or use the --region option.", LambdaToolsException.ErrorCode.RegionNotConfigured);
         }
 
         /// <summary>
