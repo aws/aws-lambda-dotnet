@@ -58,7 +58,7 @@ namespace BLUEPRINT_BASE_NAME
             }
             catch(Exception e)
             {
-                context.Logger.LogLine($"Error getting object {s3Event.Bucket.Name} from bucket {s3Event.Object.Key}. Make sure they exist and your bucket is in the same region as this function.");
+                context.Logger.LogLine($"Error getting object {s3Event.Object.Key} from bucket {s3Event.Bucket.Name}. Make sure they exist and your bucket is in the same region as this function.");
                 context.Logger.LogLine(e.Message);
                 context.Logger.LogLine(e.StackTrace);
                 throw;
