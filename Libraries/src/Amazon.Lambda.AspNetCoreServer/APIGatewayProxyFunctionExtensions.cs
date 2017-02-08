@@ -6,11 +6,12 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.AspNetCoreServer;
 
-namespace Amazon.Lambda.AspNetCoreServer
+namespace Amazon.Lambda.TestUtilities
 {
     /// <summary>
-    /// Helper extensions for APIGatewayProxyFunction
+    /// Extension methods for APIGatewayProxyFunction to make it easier to write tests
     /// </summary>
     public static class APIGatewayProxyFunctionExtensions
     {
