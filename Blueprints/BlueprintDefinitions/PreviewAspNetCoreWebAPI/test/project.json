@@ -13,7 +13,7 @@
     "AWSSDK.Extensions.NETCore.Setup": "3.3.0.2",
 
     "Amazon.Lambda.Core": "1.0.0*",
-    "Amazon.Lambda.APIGatewayEvents": "1.0.1",
+    "Amazon.Lambda.APIGatewayEvents": "1.0.2",
     "Amazon.Lambda.TestUtilities": "1.0.0*",
 
 
