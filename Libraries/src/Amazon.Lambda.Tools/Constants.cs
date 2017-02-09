@@ -12,6 +12,8 @@ namespace Amazon.Lambda.Tools
 
         public const string SERVERLESS_TAG_NAME = "AWSServerlessAppNETCore";
 
+        public const int MAX_TEMPLATE_BODY_IN_REQUEST_SIZE = 50000;
+
         /// <summary>
         /// The assume role policy that gives Lambda permission to assume the role. This is used
         /// when the deploy tool creates a new role for a function.

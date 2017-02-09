@@ -249,8 +249,7 @@ namespace Amazon.Lambda.Tools.Commands
                         capabilities.Add("CAPABILITY_NAMED_IAM");
                     }
 
-                    // Create the change set which performs the transformation on the Serverless resources in the template.
-                    changeSetResponse = await this.CloudFormationClient.CreateChangeSetAsync(new CreateChangeSetRequest
+                    var changeSetRequest = new CreateChangeSetRequest
                     {
                         StackName = stackName,
                         Parameters = templateParameters,
@@ -258,9 +257,20 @@ namespace Amazon.Lambda.Tools.Commands
                         ChangeSetType = changeSetType,
                         Capabilities = capabilities,
                         RoleARN = this.GetStringValueOrDefault(this.CloudFormationRole, DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_ROLE, false),
-                        Tags = new List<Tag> { new Tag { Key = Constants.SERVERLESS_TAG_NAME, Value = "true" } },
-                        TemplateURL = this.S3Client.GetPreSignedURL(new S3.Model.GetPreSignedUrlRequest { BucketName = s3Bucket, Key = s3KeyTemplate, Expires = DateTime.Now.AddHours(1) })
-                    });
+                        Tags = new List<Tag> { new Tag { Key = Constants.SERVERLESS_TAG_NAME, Value = "true" } }
+                    };
+
+                    if(new FileInfo(templatePath).Length < Constants.MAX_TEMPLATE_BODY_IN_REQUEST_SIZE)
+                    {
+                        changeSetRequest.TemplateBody = templateBody;
+                    }
+                    else
+                    {
+                        changeSetRequest.TemplateURL = this.S3Client.GetPreSignedURL(new S3.Model.GetPreSignedUrlRequest { BucketName = s3Bucket, Key = s3KeyTemplate, Expires = DateTime.Now.AddHours(1) });
+                    }
+
+                    // Create the change set which performs the transformation on the Serverless resources in the template.
+                    changeSetResponse = await this.CloudFormationClient.CreateChangeSetAsync(changeSetRequest);
 
 
                     this.Logger.WriteLine("CloudFormation change set created");
