@@ -11,7 +11,11 @@ using Amazon.Lambda.AspNetCoreServer;
 namespace Amazon.Lambda.TestUtilities
 {
     /// <summary>
-    /// Extension methods for APIGatewayProxyFunction to make it easier to write tests
+    /// Extension methods for APIGatewayProxyFunction to make it easier to write tests.
+    /// <para>
+    /// This extension method was mainly added to help compatibility with existing tests when the signature for the FunctionHandlerAsync method from APIGatewayProxyFunction
+    /// was change use streams to support logging.
+    /// </para>
     /// </summary>
     public static class APIGatewayProxyFunctionExtensions
     {
