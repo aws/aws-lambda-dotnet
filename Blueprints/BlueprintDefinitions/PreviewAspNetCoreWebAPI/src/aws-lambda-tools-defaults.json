@@ -15,5 +15,5 @@
 	"framework"     : "netcoreapp1.0",
 	"s3-prefix"     : "BLUEPRINT_BASE_NAME/",
 	"template"      : "serverless.template",
-	"template-parameters" : ""
+	"template-parameters" : "ShouldCreateBucket=true;BucketName="
 }
