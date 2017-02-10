@@ -1,3 +1,20 @@
+### Release 2017-02-10 06:00 UTC
+* **Amazon.Lambda.Tools (1.2.0-preview1)**
+  * Reworked how the AWS region is determined. New logic follows the following pattern:
+    * Use region specified on command line
+    * Use region specified in aws-lambda-tools-defaults.json
+    * Determine region using the AWS SDK for .NET [default region lookup](https://aws.amazon.com/blogs/developer/updates-to-credential-and-region-handling/)
+    * Ask user for region
+  * Added **--cloudformation-role** commandline switch for the **deploy-serverless** command to specify an IAM role for 
+CloudFormation to assume when creating or updating CloudFormation stacks.
+  * Changed **deploy-serverless** command to upload CloudFormation template directly to CloudFormation instead of S3 if the template size was less then 50,000 bytes.
+This was done to help users that were running into issues with the presigned URL to the template being too long for CloudFormation.
+* **Amazon.Lambda.AspNetCoreServer (0.9.0-preview1)**
+  * Add **EnableRequestLogging** and **EnableResponseLogging** properties to **APIGatewayProxyFunction**. If set to 
+true the request and/or response will be logged to the associated CloudWatchLogs. This required the method signature for
+**FunctionHandlerAsync** to be changed to use Streams so the raw request data could be captured. An extension method
+was added in the **Amazon.Lambda.TestUtilities** namespace with the previous signature to help testing.
+
 ### Release 2017-01-27 18:30 UTC
 * **Amazon.Lambda.APIGatewayEvents (1.0.2)**
   * Pull request [#42](https://github.com/aws/aws-lambda-dotnet/pull/42), adding custom authorizer support. Thanks to [Justin Yancey](https://github.com/thedevopsmachine) for the pull request.
@@ -26,7 +43,7 @@
   * New package for AWS Lambda event types for Amazon Simple Email Service. Thanks to [Tom Winzig](https://github.com/winzig) for the pull request.
 
 ### Release 2017-01-06 00:30 UTC
-* **Amazon.Lambda.Tools (1.0.4-preview1)**
+* **Amazon.Lambda.Tools (1.1.0-preview1)**
   * Added command line switches **--config-file** and **--persist-config-file** allowing use of alternative default config files and persisting the current values to the config file.
   * Added **--package** switch to **deploy-function** and **deploy-serverless** commands to use a precompiled application package that skips building the project.
   * Fixed issue with **dotnet lambda package** when output file was not a full file path.
