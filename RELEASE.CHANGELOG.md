@@ -1,3 +1,9 @@
+### Release 2017-02-11 05:30 UTC
+* **Amazon.Lambda.Tools (1.2.1-preview1)**
+  * Pull request [#60](https://github.com/aws/aws-lambda-dotnet/pull/60), fixing issue with subnet ids in aws-lambda-tools-defaults.json . Thanks to [Scott Brady](https://github.com/scott-brady) for the pull request.
+* **Blueprints**
+	* Updated all blueprints to version 1.2.1-preview1 of Amazon.Lambda.Tools
+
 ### Release 2017-02-10 06:00 UTC
 * **Amazon.Lambda.Tools (1.2.0-preview1)**
   * Reworked how the AWS region is determined. New logic follows the following pattern:
