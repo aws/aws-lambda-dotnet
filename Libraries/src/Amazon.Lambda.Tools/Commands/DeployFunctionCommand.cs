@@ -173,7 +173,7 @@ namespace Amazon.Lambda.Tools.Commands
                             VpcConfig = new VpcConfig
                             {
                                 SubnetIds = this.GetStringValuesOrDefault(this.SubnetIds, DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS, false)?.ToList(),
-                                SecurityGroupIds = this.GetStringValuesOrDefault(this.SecurityGroupIds, DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS, false)?.ToList()
+                                SecurityGroupIds = this.GetStringValuesOrDefault(this.SecurityGroupIds, DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS, false)?.ToList()
                             }
                         };
 
