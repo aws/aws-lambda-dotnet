@@ -10,6 +10,8 @@
       "version": "1.0.1"
     },
 
+    "System.IO.Compression.ZipFile": "4.0.1",
+
     "Amazon.Lambda.Tools": { "target": "project" },
     "xunit": "2.1.0-*",
     "dotnet-test-xunit": "2.2.0-*",
