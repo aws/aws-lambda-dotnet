@@ -113,7 +113,7 @@ namespace Amazon.Lambda.Tools
 
             if (exitCode == 0)
             {
-                FlattenKnownPlatformDependencies(defaults, Utilities.DetermineProjectLocation(this._workingDirectory, projectLocation), outputLocation);
+                ProcessAdditionalFiles(defaults, Utilities.DetermineProjectLocation(this._workingDirectory, projectLocation), outputLocation);
 
                 var chmodPath = FindExecutableInPath("chmod");
                 if (!string.IsNullOrEmpty(chmodPath) && File.Exists(chmodPath))
@@ -160,16 +160,9 @@ namespace Amazon.Lambda.Tools
             return exitCode;
         }
 
-        static IList<string> KNOWN_PLATFORM_DEPENDENCIES = new List<string>
+        private void ProcessAdditionalFiles(LambdaToolsDefaults defaults, string projectLocation, string publishLocation)
         {
-            $"runtimes{Path.DirectorySeparatorChar}unix{Path.DirectorySeparatorChar}lib{Path.DirectorySeparatorChar}netstandard1.3{Path.DirectorySeparatorChar}System.Data.SqlClient.dll",
-            $"runtimes{Path.DirectorySeparatorChar}unix{Path.DirectorySeparatorChar}lib{Path.DirectorySeparatorChar}netstandard1.3{Path.DirectorySeparatorChar}System.IO.Pipes.dll"
-
-        };
-
-        private void FlattenKnownPlatformDependencies(LambdaToolsDefaults defaults, string projectLocation, string publishLocation)
-        {
-            var listOfDependencies = KNOWN_PLATFORM_DEPENDENCIES;
+            var listOfDependencies = new List<string>();
 
             var extraDependences = defaults["additional-files"] as string[];
             if (extraDependences != null)

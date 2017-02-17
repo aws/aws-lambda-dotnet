@@ -11,18 +11,19 @@
 
     "Amazon.Lambda.Core": "1.0.0*",
     "Amazon.Lambda.Serialization.Json": "1.0.1",
-    "Amazon.Lambda.KinesisEvents": "1.0.0",
 
-    "Amazon.Lambda.Tools" : {
-      "type" :"build",
-      "version":"1.3.0-preview1"
+    "System.Diagnostics.TraceSource": "4.0.0",
+    "Libuv": "1.9.1",
+
+    "Amazon.Lambda.Tools": {
+      "target": "project",
+      "type": "build"
     }
   },
 
   "tools": {
-    "Amazon.Lambda.Tools" : "1.3.0-preview1"
+    "Amazon.Lambda.Tools" : "1.2.1-preview1"
   },
-
 
   "frameworks": {
     "netcoreapp1.0": {

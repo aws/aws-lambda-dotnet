@@ -54,6 +54,14 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "TestFunction", "test\TestFu
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.SimpleEmailEvents", "src\Amazon.Lambda.SimpleEmailEvents\Amazon.Lambda.SimpleEmailEvents.xproj", "{A6348510-7948-46B1-A2C4-396B8C55440C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FlattenDependencyTestProjects", "FlattenDependencyTestProjects", "{13F5531E-542D-400C-9D24-E57380F2EF6E}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NpgsqlExample", "test\FlattenDependencyTestProjects\NpgsqlExample\NpgsqlExample.xproj", "{A1E8DE21-6A03-499B-A711-7510901B0CA5}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "SQLServerClientExample", "test\FlattenDependencyTestProjects\SQLServerClientExample\SQLServerClientExample.xproj", "{6F77443A-7DB8-4B42-81C1-2D0792CBA8E7}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NativeDependencyExample", "test\FlattenDependencyTestProjects\NativeDependencyExample\NativeDependencyExample.xproj", "{44DFB572-8F64-414E-991E-FB5BC5970712}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -144,6 +152,18 @@ Global
 		{A6348510-7948-46B1-A2C4-396B8C55440C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A6348510-7948-46B1-A2C4-396B8C55440C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A6348510-7948-46B1-A2C4-396B8C55440C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1E8DE21-6A03-499B-A711-7510901B0CA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1E8DE21-6A03-499B-A711-7510901B0CA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1E8DE21-6A03-499B-A711-7510901B0CA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1E8DE21-6A03-499B-A711-7510901B0CA5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F77443A-7DB8-4B42-81C1-2D0792CBA8E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F77443A-7DB8-4B42-81C1-2D0792CBA8E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F77443A-7DB8-4B42-81C1-2D0792CBA8E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F77443A-7DB8-4B42-81C1-2D0792CBA8E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44DFB572-8F64-414E-991E-FB5BC5970712}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44DFB572-8F64-414E-991E-FB5BC5970712}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44DFB572-8F64-414E-991E-FB5BC5970712}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44DFB572-8F64-414E-991E-FB5BC5970712}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -170,5 +190,9 @@ Global
 		{06804AE7-14E9-494D-A1F7-258EA6432C09} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{11A53C8D-A49B-4477-BFD9-E00C77D1291C} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{A6348510-7948-46B1-A2C4-396B8C55440C} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{13F5531E-542D-400C-9D24-E57380F2EF6E} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{A1E8DE21-6A03-499B-A711-7510901B0CA5} = {13F5531E-542D-400C-9D24-E57380F2EF6E}
+		{6F77443A-7DB8-4B42-81C1-2D0792CBA8E7} = {13F5531E-542D-400C-9D24-E57380F2EF6E}
+		{44DFB572-8F64-414E-991E-FB5BC5970712} = {13F5531E-542D-400C-9D24-E57380F2EF6E}
 	EndGlobalSection
 EndGlobal

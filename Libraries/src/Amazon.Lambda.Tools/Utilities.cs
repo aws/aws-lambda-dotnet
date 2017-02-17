@@ -319,57 +319,7 @@ namespace Amazon.Lambda.Tools
             return path;
         }
 
-        /// <summary>
-        /// Execute the dotnet publish command and zip up the resulting publish folder.
-        /// </summary>
-        /// <param name="logger"></param>
-        /// <param name="workingDirectory"></param>
-        /// <param name="projectLocation"></param>
-        /// <param name="targetFramework"></param>
-        /// <param name="configuration"></param>
-        /// <param name="publishLocation"></param>
-        /// <param name="zipArchivePath"></param>
-        public static bool CreateApplicationBundle(LambdaToolsDefaults defaults, IToolLogger logger, string workingDirectory, string projectLocation, string configuration, string targetFramework,
-            out string publishLocation, ref string zipArchivePath)
-        {
-            var cli = new DotNetCLIWrapper(logger, workingDirectory);
 
-            publishLocation = Utilities.DeterminePublishLocation(workingDirectory, projectLocation, configuration, targetFramework);
-            logger.WriteLine("Executing publish command");
-            if (cli.Publish(defaults, projectLocation, publishLocation, targetFramework, configuration) != 0)
-                return false;
-
-            var buildLocation = Utilities.DetermineBuildLocation(workingDirectory, projectLocation, configuration, targetFramework);
-            foreach(var file in Directory.GetFiles(buildLocation, "*.deps.json", SearchOption.TopDirectoryOnly))
-            {
-                var destinationPath = Path.Combine(publishLocation, Path.GetFileName(file));
-                if(!File.Exists(destinationPath))
-                    File.Copy(file, destinationPath);
-            }
-
-            if(zipArchivePath == null)
-                zipArchivePath = Path.Combine(Directory.GetParent(publishLocation).FullName, new DirectoryInfo(workingDirectory).Name + ".zip");
-
-            zipArchivePath = Path.GetFullPath(zipArchivePath);
-            logger.WriteLine($"Zipping publish folder {publishLocation} to {zipArchivePath}");
-            if (File.Exists(zipArchivePath))
-                File.Delete(zipArchivePath);
-
-            var zipArchiveParentDirectory = Path.GetDirectoryName(zipArchivePath);
-            if (!Directory.Exists(zipArchiveParentDirectory))
-            {
-                logger.WriteLine($"Creating directory {zipArchiveParentDirectory}");
-                new DirectoryInfo(zipArchiveParentDirectory).Create();
-            }
-
-            var zipCLI = DotNetCLIWrapper.FindExecutableInPath("zip");
-            if (!string.IsNullOrEmpty(zipCLI))
-                BundleWithZipCLI(zipCLI, zipArchivePath, publishLocation, logger);
-            else
-                ZipFile.CreateFromDirectory(publishLocation, zipArchivePath);
-
-            return true;
-        }
 
         /// <summary>
         /// A utility method for parsing KeyValue pair CommandOptions.
@@ -458,67 +408,5 @@ namespace Amazon.Lambda.Tools
             currentPos++;
         }
 
-        /// <summary>
-        /// Creates the deployment bundle using the native zip tool installed
-        /// on the system (default /usr/bin/zip).
-        /// </summary>
-        /// <param name="zipCLI">The path to the located zip binary.</param>
-        /// <param name="zipArchivePath">The path and name of the zip archive to create.</param>
-        /// <param name="publishLocation">The location to be bundled.</param>
-        /// <param name="logger">Optional logger instance.</param>
-        private static void BundleWithZipCLI(string zipCLI, string zipArchivePath, string publishLocation, IToolLogger logger)
-        {
-            var args = new StringBuilder("\"" + zipArchivePath + "\"");
-
-            // so that we can archive content in subfolders, take the length of the
-            // path to the root publish location and we'll just substring the
-            // found files so the subpaths are retained
-            var publishRootLength = publishLocation.Length;
-            if (publishLocation[publishRootLength-1] != Path.DirectorySeparatorChar)
-                publishRootLength++;
-
-            var allFiles = Directory.GetFiles(publishLocation, "*.*", SearchOption.AllDirectories);
-            foreach (var f in allFiles)
-            {
-                args.AppendFormat(" \"{0}\"", f.Substring(publishRootLength));
-            }
-
-            var psiZip = new ProcessStartInfo
-            {
-                FileName = zipCLI,
-                Arguments = args.ToString(),
-                WorkingDirectory = publishLocation,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            var handler = (DataReceivedEventHandler)((o, e) =>
-            {
-                if (string.IsNullOrEmpty(e.Data))
-                    return;
-                logger?.WriteLine("... publish: " + e.Data);
-            });
-
-            using (var proc = new Process())
-            {
-                proc.StartInfo = psiZip;
-                proc.Start();
-
-                proc.ErrorDataReceived += handler;
-                proc.OutputDataReceived += handler;
-                proc.BeginOutputReadLine();
-                proc.BeginErrorReadLine();
-
-                proc.EnableRaisingEvents = true;
-                proc.WaitForExit();
-
-                if (proc.ExitCode == 0)
-                {
-                    logger?.WriteLine(string.Format("Created publish archive ({0}).", zipArchivePath));
-                }
-            }
-        }
     }
 }

@@ -187,9 +187,9 @@ namespace Amazon.Lambda.Tools.Commands
 
         private IAmazonLambda CreateLambdaClient()
         {
-            // If the Lambda client is being created then the LambdaTools
+            // If the client is being created then the LambdaTools
             // is not being invoked from the VS toolkit. The toolkit will pass in
-            // its configured Lambda client.
+            // its configured client.
             SetUserAgentString();
 
 
@@ -202,9 +202,9 @@ namespace Amazon.Lambda.Tools.Commands
 
         private IAmazonCloudFormation CreateCloudFormationClient()
         {
-            // If the CloudFormation client is being created then the LambdaTools
+            // If the client is being created then the LambdaTools
             // is not being invoked from the VS toolkit. The toolkit will pass in
-            // its configured CloudFormation client.
+            // its configured client.
             SetUserAgentString();
 
             AmazonCloudFormationConfig config = new AmazonCloudFormationConfig();
@@ -217,6 +217,11 @@ namespace Amazon.Lambda.Tools.Commands
 
         private IAmazonIdentityManagementService CreateIAMClient()
         {
+            // If the client is being created then the LambdaTools
+            // is not being invoked from the VS toolkit. The toolkit will pass in
+            // its configured Lambda client.
+            SetUserAgentString();
+
             AmazonIdentityManagementServiceConfig config = new AmazonIdentityManagementServiceConfig();
 
             config.RegionEndpoint = DetermineAWSRegion();
@@ -228,6 +233,11 @@ namespace Amazon.Lambda.Tools.Commands
 
         private IAmazonS3 CreateS3Client()
         {
+            // If the client is being created then the LambdaTools
+            // is not being invoked from the VS toolkit. The toolkit will pass in
+            // its configured client.
+            SetUserAgentString();
+
             AmazonS3Config config = new AmazonS3Config();
 
             config.RegionEndpoint = DetermineAWSRegion();

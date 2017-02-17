@@ -5,12 +5,15 @@
   "authors": [
     "Amazon Web Services"
   ],
-  "version": "1.2.1-preview1",
+  "version": "1.3.0-preview1",
 
   "buildOptions": {
     "outputName": "dotnet-lambda",
     "emitEntryPoint": true,
-    "warningsAsErrors": true
+    "warningsAsErrors": true,
+    "embed": [
+      "Resources/netcore.runtime.hierarchy.json"
+    ]
   },
 
   "dependencies": {
