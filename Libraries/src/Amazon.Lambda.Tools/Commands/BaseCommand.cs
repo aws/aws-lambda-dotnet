@@ -71,7 +71,7 @@ namespace Amazon.Lambda.Tools.Commands
             {
                 if (this._defaultConfig == null)
                 {
-                    this._defaultConfig = LambdaToolsDefaultsReader.LoadDefaults(Utilities.DetemineProjectLocation(this.WorkingDirectory, this.ProjectLocation), this.ConfigFile);
+                    this._defaultConfig = LambdaToolsDefaultsReader.LoadDefaults(Utilities.DetermineProjectLocation(this.WorkingDirectory, this.ProjectLocation), this.ConfigFile);
                 }
                 return this._defaultConfig;
             }

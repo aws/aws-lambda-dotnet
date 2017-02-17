@@ -56,7 +56,7 @@ namespace Amazon.Lambda.Tools
             StringBuilder arguments = new StringBuilder("publish");
             if (!string.IsNullOrEmpty(projectLocation))
             {
-                arguments.Append($" \"{Utilities.DetemineProjectLocation(this._workingDirectory, projectLocation)}\"");
+                arguments.Append($" \"{Utilities.DetermineProjectLocation(this._workingDirectory, projectLocation)}\"");
             }
             if (!string.IsNullOrEmpty(outputLocation))
             {
@@ -113,7 +113,7 @@ namespace Amazon.Lambda.Tools
 
             if (exitCode == 0)
             {
-                FlattenKnownPlatformDependencies(defaults, Utilities.DetemineProjectLocation(this._workingDirectory, projectLocation), outputLocation);
+                FlattenKnownPlatformDependencies(defaults, Utilities.DetermineProjectLocation(this._workingDirectory, projectLocation), outputLocation);
 
                 var chmodPath = FindExecutableInPath("chmod");
                 if (!string.IsNullOrEmpty(chmodPath) && File.Exists(chmodPath))

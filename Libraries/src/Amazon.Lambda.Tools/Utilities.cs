@@ -262,7 +262,7 @@ namespace Amazon.Lambda.Tools
         /// <param name="workingDirectory"></param>
         /// <param name="projectLocation"></param>
         /// <returns></returns>
-        public static string DetemineProjectLocation(string workingDirectory, string projectLocation)
+        public static string DetermineProjectLocation(string workingDirectory, string projectLocation)
         {
             string location;
             if (string.IsNullOrEmpty(projectLocation))
@@ -294,7 +294,7 @@ namespace Amazon.Lambda.Tools
         public static string DetermineBuildLocation(string workingDirectory, string projectLocation, string configuration, string targetFramework)
         {
             var path = Path.Combine(
-                    DetemineProjectLocation(workingDirectory, projectLocation),
+                    DetermineProjectLocation(workingDirectory, projectLocation),
                     "bin",
                     configuration,
                     targetFramework);
@@ -311,7 +311,7 @@ namespace Amazon.Lambda.Tools
         /// <returns></returns>
         public static string DeterminePublishLocation(string workingDirectory, string projectLocation, string configuration, string targetFramework)
         {
-            var path = Path.Combine(DetemineProjectLocation(workingDirectory, projectLocation),
+            var path = Path.Combine(DetermineProjectLocation(workingDirectory, projectLocation),
                     "bin",
                     configuration,
                     targetFramework,
