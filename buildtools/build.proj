@@ -15,7 +15,7 @@
   <Import Project="$(VSToolsPath)\DotNet\Microsoft.DotNet.Props" Condition="'$(VSToolsPath)' != ''" />
   <Import Project="$(VSToolsPath)\DotNet\Microsoft.DotNet.targets" Condition="'$(VSToolsPath)' != ''" />
 
-  <Target Name="full-build" DependsOnTargets="test-blueprints;package-blueprints;build-nuget-packages">
+  <Target Name="full-build" DependsOnTargets="test-blueprints;package-blueprints;run-tests;build-nuget-packages">
 
   </Target>
 
@@ -140,7 +140,7 @@
   </Target>
 
 
-  <Target Name="run-tests" DependsOnTargets="init">
+  <Target Name="run-tests" DependsOnTargets="build-nuget-packages">
     <PropertyGroup>
       <Command>&quot;$(SDKToolingExe)&quot; test -c $(Configuration)</Command>
     </PropertyGroup>
@@ -156,7 +156,7 @@
         WorkingDirectory="..\Libraries\test\EventsTests"/>
   </Target>
 
-  <Target Name="build-nuget-packages" DependsOnTargets="run-tests">
+  <Target Name="build-nuget-packages" DependsOnTargets="init">
     <PropertyGroup>
       <Command>&quot;$(SDKToolingExe)&quot; pack -c $(Configuration) -o ../../../Deployment/nuget-packages</Command>
     </PropertyGroup>
