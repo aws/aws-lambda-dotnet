@@ -16,7 +16,11 @@ namespace Amazon.Lambda.Tools
 
         // The .NET Core 1.0 version of the runtime hierarchies for .NET Core taken from the corefx repository
         // https://github.com/dotnet/corefx/blob/release/1.0.0/pkg/Microsoft.NETCore.Platforms/runtime.json
+#if NETCORE
         internal const string RUNTIME_HIERARCHY = "Amazon.Lambda.Tools.Resources.netcore.runtime.hierarchy.json";
+#else
+        internal const string RUNTIME_HIERARCHY = "Amazon.AWSToolkit.Lambda.LambdaTools.Resources.netcore.runtime.hierarchy.json";
+#endif
 
         // The closest match to Amazon Linux
         internal const string RUNTIME_HIERARCHY_STARTING_POINT = "rhel.7.2-x64";
