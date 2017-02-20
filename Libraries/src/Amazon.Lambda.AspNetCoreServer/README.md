@@ -3,7 +3,7 @@
 This package makes it easy to run ASP.NET Core Web API applications as a Lambda function with API Gateway. This allows .NET Core developers to
 create "serverless" applications using the ASP.NET Core Web API framework. 
 
-The function takes expects a request from an [API Gateway Proxy](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy.html)
+The function takes a request from an [API Gateway Proxy](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy.html)
 and converts that request into the classes the ASP.NET Core framework expects and then converts the response from the ASP.NET Core
 framework into the response body that API Gateway Proxy understands.
 
