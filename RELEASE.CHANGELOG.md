@@ -1,3 +1,9 @@
+### Release 2017-02-20 20:30
+* **Amazon.Lambda.Tools (1.3.0-preview1)
+	* Flatten the publish runtime folder to help the Lambda runtime resolve platform specific dependencies. This also reduces the size of the Lambda package bundle by only including the dependencies needed for the Lambda environment.
+* **Blueprints**
+	* Updated all blueprints to version 1.3.0-preview1 of Amazon.Lambda.Tools
+
 ### Release 2017-02-11 05:30 UTC
 * **Amazon.Lambda.Tools (1.2.1-preview1)**
   * Pull request [#60](https://github.com/aws/aws-lambda-dotnet/pull/60), fixing issue with subnet ids in aws-lambda-tools-defaults.json . Thanks to [Scott Brady](https://github.com/scott-brady) for the pull request.
