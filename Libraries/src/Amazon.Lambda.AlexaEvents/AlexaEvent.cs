@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Amazon.Lambda.AlexaEvents
 {
@@ -13,7 +10,7 @@ namespace Amazon.Lambda.AlexaEvents
         /// <summary>
         /// The event version.
         /// </summary>
-        public string EventVersion { get; set; }
+        public string Version { get; set; }
 
         /// <summary>
         /// The session.

@@ -19,6 +19,7 @@ namespace Amazon.Lambda.Tests
     using System.Text;
     using Xunit;
     using System.Linq;
+    using AlexaEvents;
 
     public class EventTest
     {
@@ -286,6 +287,30 @@ namespace Amazon.Lambda.Tests
                 var sesRecord = record.Ses;
                 Console.WriteLine($"[{record.EventSource} {sesRecord.Mail.Timestamp}] Subject = {sesRecord.Mail.CommonHeaders.Subject}");
             }
+        }
+
+        [Fact]
+        public void AlexaEventTest()
+        {
+            using (var fileStream = File.OpenRead("alexa-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var alexaEvent = serializer.Deserialize<AlexaEvent>(fileStream);
+
+                Assert.Equal(alexaEvent.Session.SessionId, "SessionId.46918D9D-184F-4670-90AC-078616F7547C");
+                Assert.Equal(alexaEvent.Session.Application.ApplicationId, "amzn1.ask.skill.46918D9D-184F-4670-90AC-078616F7547C");
+                Assert.Equal(alexaEvent.Session.User.UserId, "amzn1.ask.account.YYYUSKJREQXXXXSD6BWCO2MBD7VMLSYKWGEP4A2PZDRDFSMVXFJXL3FCGMBVIBVKS43HXVOJ3CKIGEZ44JZGURWQJ6JRF65ZXIVLTXREKR4LB7AHSQTLXKNCG7LUGS5SFMIUHVUUFPDLGPG2J64HBGE2COB021XA3IM6VM7ZDZOHWSP62JWOM2OUGVS52YDMFWG6CSQUKPGOLK7LA");
+                Assert.Equal(alexaEvent.Session.New, true);
+                Assert.Equal(alexaEvent.Request.Type, "IntentRequest");
+                Assert.Equal(alexaEvent.Request.RequestId, "EdwRequestId.46918D9D-184F-4670-90AC-078616F7547C");
+                Assert.Equal(alexaEvent.Request.Locale, "en-US");
+                Assert.Equal(alexaEvent.Request.Timestamp.ToString("yyyy-MM-ddTHH:mm:ssZ"), "2017-02-21T03:45:04Z");
+                Handle(alexaEvent);
+            }
+        }
+        private static void Handle(AlexaEvent alexaEvent)
+        {
+            Console.WriteLine($"Intent = {alexaEvent.Request.Intent.Name}");
         }
 
         string SNSJson = "{ \"Records\": [ { \"EventVersion\": \"1.0\", \"EventSubscriptionArn\": \"arn:aws:sns:EXAMPLE\", \"EventSource\": \"aws:sns\", \"Sns\": { \"SignatureVersion\": \"1\", \"Timestamp\": \"1970-01-01T00:00:00.000Z\", \"Signature\": \"EXAMPLE\", \"SigningCertUrl\": \"EXAMPLE\", \"MessageId\": \"95df01b4-ee98-5cb9-9903-4c221d41eb5e\", \"Message\": \"Hello from SNS!\", \"MessageAttributes\": { \"Test\": { \"Type\": \"String\", \"Value\": \"TestString\" }, \"TestBinary\": { \"Type\": \"Binary\", \"Value\": \"TestBinary\" } }, \"Type\": \"Notification\", \"UnsubscribeUrl\": \"EXAMPLE\", \"TopicArn\": \"arn:aws:sns:EXAMPLE\", \"Subject\": \"TestInvoke\" } } ] }";

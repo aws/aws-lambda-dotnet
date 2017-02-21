@@ -2,18 +2,12 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-// General Information about an assembly is controlled through the following
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Amazon.Lambda.AlexaEvents")]
-[assembly: AssemblyTrademark("")]
-
-// Setting ComVisible to false makes the types in this assembly not visible
-// to COM components.  If you need to access a type in this assembly from
-// COM, set the ComVisible attribute to true on that type.
+[assembly: AssemblyTitle("Amazon.Lambda.AlexaEvents")]
+[assembly: AssemblyDescription("Lambda event interfaces for Alexa event source.")]
+[assembly: AssemblyProduct("Amazon Web Services Lambda Interface for .NET")]
+[assembly: AssemblyCompany("Amazon.com, Inc")]
+[assembly: AssemblyCopyright("Copyright 2009-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.")]
 [assembly: ComVisible(false)]
-
-// The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("ef25c764-90fa-4e2a-8ea1-3f1577bc75d9")]
+[assembly: System.CLSCompliant(true)]
+[assembly: AssemblyVersion("1.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
