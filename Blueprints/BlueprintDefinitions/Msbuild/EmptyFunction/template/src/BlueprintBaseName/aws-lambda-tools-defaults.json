@@ -8,12 +8,12 @@
     "All the command line options for the Lambda command can be specified in this file."
   ],
 
-  "profile":"",
-  "region" : "",
+  "profile":"DefaultProfile",
+  "region" : "DefaultRegion",
   "configuration" : "Release",
   "framework" : "netcoreapp1.0",
   "function-runtime":"dotnetcore1.0",
   "function-memory-size" : 256,
   "function-timeout" : 30,
-  "function-handler" : "BLUEPRINT_BASE_NAME::BLUEPRINT_BASE_NAME.Function::FunctionHandler"
+  "function-handler" : "BlueprintBaseName::BlueprintBaseName.Function::FunctionHandler"
 }

@@ -29,18 +29,18 @@ Once you have edited your function you can use the following command lines to bu
 
 Restore dependencies
 ```
-    cd "EmptyFunction"
+    cd "BlueprintBaseName"
     dotnet restore
 ```
 
 Execute unit tests
 ```
-    cd "EmptyFunction/test/EmptyFunction.Tests"
+    cd "BlueprintBaseName/test/BlueprintBaseName.Tests"
     dotnet test
 ```
 
 Deploy function to AWS Lambda
 ```
-    cd "EmptyFunction/src/EmptyFunction"
+    cd "BlueprintBaseName/src/BlueprintBaseName"
     dotnet lambda deploy-function
 ```
