@@ -7,9 +7,9 @@ using Xunit;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestUtilities;
 
-using BLUEPRINT_BASE_NAME;
+using BlueprintBaseName;
 
-namespace BLUEPRINT_BASE_NAME.Tests
+namespace BlueprintBaseName.Tests
 {
     public class FunctionTest
     {

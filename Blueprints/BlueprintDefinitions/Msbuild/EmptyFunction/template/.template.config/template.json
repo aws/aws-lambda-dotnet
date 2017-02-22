@@ -1,0 +1,33 @@
+{
+  "author": "AWS",
+  "classifications": ["AWS", "Lambda"],
+  "name": "Lambda Empty Function",
+  "identity": "AWS.Lambda.Function.Empty",
+  "shortName": "lambda.EmptyFunction",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "BlueprintBaseName",
+  "preferNameDirectory": true,
+  "symbols": {
+    "sdkVersion": {
+      "type": "bind",
+      "binding": "dotnet-cli-version",
+      "replaces": "1.0.0-preview5-004445"
+    },
+    "profile": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces" : "DefaultProfile",
+      "defaultValue": ""
+    },
+    "region": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces" : "DefaultRegion",
+      "defaultValue": "us-east-1"
+    }
+  },
+  "primaryOutputs": [ { "path": "./src/BlueprintBaseName/BlueprintBaseName.csproj" } ]
+}
