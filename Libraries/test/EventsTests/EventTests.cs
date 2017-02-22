@@ -297,6 +297,7 @@ namespace Amazon.Lambda.Tests
                 var serializer = new JsonSerializer();
                 var alexaEvent = serializer.Deserialize<AlexaEvent>(fileStream);
 
+                Assert.Equal(alexaEvent.Version, "1.0");
                 Assert.Equal(alexaEvent.Session.SessionId, "SessionId.46918D9D-184F-4670-90AC-078616F7547C");
                 Assert.Equal(alexaEvent.Session.Application.ApplicationId, "amzn1.ask.skill.46918D9D-184F-4670-90AC-078616F7547C");
                 Assert.Equal(alexaEvent.Session.User.UserId, "amzn1.ask.account.YYYUSKJREQXXXXSD6BWCO2MBD7VMLSYKWGEP4A2PZDRDFSMVXFJXL3FCGMBVIBVKS43HXVOJ3CKIGEZ44JZGURWQJ6JRF65ZXIVLTXREKR4LB7AHSQTLXKNCG7LUGS5SFMIUHVUUFPDLGPG2J64HBGE2COB021XA3IM6VM7ZDZOHWSP62JWOM2OUGVS52YDMFWG6CSQUKPGOLK7LA");
