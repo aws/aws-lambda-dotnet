@@ -1,0 +1,37 @@
+{
+  "author": "AWS",
+  "classifications": ["Lambda"],
+  "name": "Lambda Empty Function",
+  "groupIdentity": "AWS.Lambda.Function",
+  "identity": "AWS.Lambda.Function.Empty",
+  "shortName": "lambda.EmptyFunction",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "EmptyFunction",
+  "preferNameDirectory": true,
+  "symbols": {
+    "sdkVersion": {
+      "type": "bind",
+      "binding": "dotnet-cli-version",
+      "replaces": "1.0.0-preview5-004445"
+    },
+    "Framework": {
+      "type": "parameter",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "netcoreapp1.0",
+          "description": "Target netcoreapp1.0"
+        },
+        {
+          "choice": "netcoreapp1.1",
+          "description": "Target netcoreapp1.1"
+        }
+      ],
+      "defaultValue": "netcoreapp1.1"
+    }
+  },
+  "primaryOutputs": [ { "path": "EmptyFunction.csproj" } ]
+}
