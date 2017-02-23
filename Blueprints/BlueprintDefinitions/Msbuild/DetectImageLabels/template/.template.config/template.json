@@ -1,9 +1,9 @@
 {
   "author": "AWS",
   "classifications": ["AWS", "Lambda"],
-  "name": "Lambda Empty Function",
-  "identity": "AWS.Lambda.Function.Empty",
-  "shortName": "lambda.EmptyFunction",
+  "name": "Lambda Detect Image Labels",
+  "identity": "AWS.Lambda.Function.DetectImageLabels",
+  "shortName": "lambda.Detect",
   "tags": {
     "language": "C#",
     "type": "project"
