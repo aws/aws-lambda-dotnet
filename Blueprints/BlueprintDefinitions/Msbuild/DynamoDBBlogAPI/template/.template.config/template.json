@@ -1,10 +1,10 @@
 {
   "author": "AWS",
-  "classifications": ["AWS", "Lambda", "Function"],
-  "name": "Lambda Detect Image Labels",
-  "identity": "AWS.Lambda.Function.DetectImageLabels.CSharp",
-  "groupIdentity": "AWS.Lambda.Function.DetectImageLabels",
-  "shortName": "lambda.DetectImageLabels",
+  "classifications": ["AWS", "Lambda", "Serverless"],
+  "name": "Lambda DynamoDB Blog API",
+  "identity": "AWS.Lambda.Serverless.DynamoDBBlogAPI.CSharp",
+  "groupIdentity": "AWS.Lambda.Serverless.DynamoDBBlogAPI",
+  "shortName": "lambda.DynamoDBBlogAPI",
   "tags": {
     "language": "C#",
     "type": "project"

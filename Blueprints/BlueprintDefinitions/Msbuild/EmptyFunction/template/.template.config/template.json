@@ -1,8 +1,9 @@
 {
   "author": "AWS",
-  "classifications": ["AWS", "Lambda"],
+  "classifications": ["AWS", "Lambda", "Function"],
   "name": "Lambda Empty Function",
-  "identity": "AWS.Lambda.Function.Empty",
+  "identity": "AWS.Lambda.Function.Empty.CSharp",
+  "groupIdentity": "AWS.Lambda.Function.Empty",  
   "shortName": "lambda.EmptyFunction",
   "tags": {
     "language": "C#",
@@ -21,7 +22,7 @@
       "type": "parameter",
       "datatype": "string",
       "replaces" : "DefaultRegion",
-      "defaultValue": "us-east-1"
+      "defaultValue": ""
     }
   },
   "primaryOutputs": [ { "path": "./src/BlueprintBaseName/BlueprintBaseName.csproj" } ]
