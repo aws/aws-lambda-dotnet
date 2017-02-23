@@ -1,0 +1,29 @@
+{
+  "author": "AWS",
+  "classifications": ["AWS", "Lambda", "Function"],
+  "name": "Lambda Simple Kinesis Function",
+  "identity": "AWS.Lambda.Simple.Kinesis.CSharp",
+  "groupIdentity": "AWS.Lambda.Simple.Kinesis",
+  "shortName": "lambda.Kinesis",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "BlueprintBaseName",
+  "preferNameDirectory": true,
+  "symbols": {
+    "profile": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces" : "DefaultProfile",
+      "defaultValue": ""
+    },
+    "region": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces" : "DefaultRegion",
+      "defaultValue": ""
+    }
+  },
+  "primaryOutputs": [ { "path": "./src/BlueprintBaseName/BlueprintBaseName.csproj" } ]
+}
