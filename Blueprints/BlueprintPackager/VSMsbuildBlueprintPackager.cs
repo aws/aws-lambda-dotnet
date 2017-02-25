@@ -11,15 +11,15 @@ using Newtonsoft.Json;
 
 namespace Packager
 {
-    public class VSBlueprintPackager : BaseBlueprintPackager
+    public class VSMsbuildBlueprintPackager : BaseBlueprintPackager
     {
         
         string _outputDirectory;
 
-        public VSBlueprintPackager(string blueprintRoot, string outputDirectory)
+        public VSMsbuildBlueprintPackager(string blueprintRoot, string outputDirectory)
             : base(blueprintRoot)
         {
-            _outputDirectory = Path.Combine(outputDirectory, "VisualStudioBlueprints");
+            _outputDirectory = Path.Combine(outputDirectory, "VisualStudioBlueprintsMsbuild");
             if(!Directory.Exists(_outputDirectory))
                 new DirectoryInfo(_outputDirectory).Create();
         }
@@ -50,35 +50,8 @@ namespace Packager
         {
             Console.WriteLine($"Processing blueprint manifest {manifest}");
 
-            var srcZip = Path.Combine(Path.GetTempPath(), "src.zip");
-            {
-                var srcSource = Path.Combine(Directory.GetParent(manifest).FullName, "src");
-                if (File.Exists(srcZip))
-                {
-                    File.Delete(srcZip);
-                }
-                ZipFile.CreateFromDirectory(srcSource, srcZip);
-            }
-
-
-            var testZip = Path.Combine(Path.GetTempPath(), "test.zip");
-            {
-                var testSource = Path.Combine(Directory.GetParent(manifest).FullName, "test");
-                if (File.Exists(testZip))
-                {
-                    File.Delete(testZip);
-                }
-
-                ZipFile.CreateFromDirectory(testSource, testZip);
-            }
-
             var blueprintZip = Path.Combine(_outputDirectory, Directory.GetParent(manifest).Name + ".zip");
-            using (var stream = File.Create(blueprintZip))
-            using (var archive = new ZipArchive(stream, ZipArchiveMode.Create))
-            {
-                archive.CreateEntryFromFile(srcZip, "src.zip");
-                archive.CreateEntryFromFile(testZip, "test.zip");
-            }
+            ZipFile.CreateFromDirectory(Path.Combine(Directory.GetParent(manifest).FullName, "template"), blueprintZip);
 
             var blueprintManifest = JsonConvert.DeserializeObject<BlueprintManifest>(File.ReadAllText(manifest));
             vsManifestWriter.WriteStartElement("Blueprint");

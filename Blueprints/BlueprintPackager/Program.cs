@@ -8,15 +8,19 @@ namespace Packager
         public static void Main(string[] args)
         {
             var outputDirectory = Path.GetFullPath(@"../../Deployment/Blueprints");
-            var blueprintRoot = Path.GetFullPath(@"../BlueprintDefinitions");
+            var msbuildBasedBlueprints = Path.GetFullPath(@"../BlueprintDefinitions/Msbuild");
+            var projectJsonBasedBlueprints = Path.GetFullPath(@"../BlueprintDefinitions/ProjectJson");
             try
             {
                 Init(outputDirectory);
 
-                var vsPackager = new VSBlueprintPackager(blueprintRoot, outputDirectory);
-                vsPackager.Execute();
+                var vsMsbuildPackager = new VSMsbuildBlueprintPackager(msbuildBasedBlueprints, outputDirectory);
+                vsMsbuildPackager.Execute();
 
-                var yeomanPackager = new YeomanBlueprintPackager(blueprintRoot, outputDirectory);
+                var vsProjectJsonPackager = new VSProjectJsonBlueprintPackager(projectJsonBasedBlueprints, outputDirectory);
+                vsProjectJsonPackager.Execute();
+
+                var yeomanPackager = new YeomanBlueprintPackager(projectJsonBasedBlueprints, outputDirectory);
                 yeomanPackager.Execute();
             }
             catch(Exception e)
