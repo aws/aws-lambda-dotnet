@@ -1,7 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputType>exe</OutputType>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFramework>netcoreapp1.0</TargetFramework>
+    <OutputTypeEx>exe</OutputTypeEx>
   </PropertyGroup>
 
   <ItemGroup>
