@@ -57,7 +57,7 @@ namespace Packager
                 {
                     File.Delete(srcZip);
                 }
-                ZipFile.CreateFromDirectory(srcSource, srcZip);
+                Utilities.ZipCode(srcSource, srcZip);
             }
 
 
@@ -69,7 +69,7 @@ namespace Packager
                     File.Delete(testZip);
                 }
 
-                ZipFile.CreateFromDirectory(testSource, testZip);
+                Utilities.ZipCode(testSource, testZip);
             }
 
             var blueprintZip = Path.Combine(_outputDirectory, Directory.GetParent(manifest).Name + ".zip");

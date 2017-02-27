@@ -51,8 +51,7 @@ namespace Packager
             Console.WriteLine($"Processing blueprint manifest {manifest}");
 
             var blueprintZip = Path.Combine(_outputDirectory, Directory.GetParent(manifest).Name + ".zip");
-            ZipFile.CreateFromDirectory(Path.Combine(Directory.GetParent(manifest).FullName, "template"), blueprintZip);
-
+            Utilities.ZipCode(Path.Combine(Directory.GetParent(manifest).FullName, "template"), blueprintZip);
             var blueprintManifest = JsonConvert.DeserializeObject<BlueprintManifest>(File.ReadAllText(manifest));
             vsManifestWriter.WriteStartElement("Blueprint");
             vsManifestWriter.WriteElementString("Name", blueprintManifest.DisplayName);
