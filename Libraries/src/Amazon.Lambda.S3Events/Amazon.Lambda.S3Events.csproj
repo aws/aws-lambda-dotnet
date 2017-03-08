@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Amazon Lambda .NET Core support - S3Events package.</Description>
+    <AssemblyTitle>Amazon.Lambda.S3Events</AssemblyTitle>
+    <Authors>Amazon Web Services</Authors>
+    <TargetFramework>netstandard1.3</TargetFramework>
+    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AssemblyName>Amazon.Lambda.S3Events</AssemblyName>
+    <OutputType>Library</OutputType>
+    <PackageId>Amazon.Lambda.S3Events</PackageId>
+    <PackageTags>AWS;Amazon;Lambda</PackageTags>
+    <PackageIconUrl>http://media.amazonwebservices.com/aws_singlebox_01.png</PackageIconUrl>
+    <PackageProjectUrl>https://aws.amazon.com/lambda/</PackageProjectUrl>
+    <PackageLicenseUrl>http://aws.amazon.com/apache2.0/</PackageLicenseUrl>
+    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Runtime" Version="4.1.0" />
+    <PackageReference Include="AWSSDK.S3" Version="[3.3.4, 3.4)" />
+  </ItemGroup>
+
+</Project>

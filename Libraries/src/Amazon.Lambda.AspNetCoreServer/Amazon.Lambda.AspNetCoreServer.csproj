@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Amazon.Lambda.AspNetCoreServer makes it easy to run ASP.NET Core Web API applications as AWS Lambda functions.</Description>
+    <AssemblyTitle>Amazon.Lambda.AspNetCoreServer</AssemblyTitle>
+    <VersionPrefix>0.9.0-preview1</VersionPrefix>
+    <Authors>Amazon Web Services</Authors>
+    <TargetFramework>netstandard1.3</TargetFramework>
+    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AssemblyName>Amazon.Lambda.AspNetCoreServer</AssemblyName>
+    <PackageId>Amazon.Lambda.AspNetCoreServer</PackageId>
+    <PackageTags>AWS;Amazon;Lambda;aspnetcore</PackageTags>
+    <PackageIconUrl>http://media.amazonwebservices.com/aws_singlebox_01.png</PackageIconUrl>
+    <PackageProjectUrl>https://aws.amazon.com/lambda/</PackageProjectUrl>
+    <PackageLicenseUrl>http://aws.amazon.com/apache2.0/</PackageLicenseUrl>
+    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
+    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
+    <ProjectReference Include="..\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.csproj" />
+    <ProjectReference Include="..\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="1.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="4.0.0" />
+  </ItemGroup>
+
+</Project>

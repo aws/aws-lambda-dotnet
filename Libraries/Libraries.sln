@@ -1,66 +1,63 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A101C2F7-C63F-4FDE-94BB-DFA637EBEA44}"
-	ProjectSection(SolutionItems) = preProject
-		global.json = global.json
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.Core", "src\Amazon.Lambda.Core\Amazon.Lambda.Core.xproj", "{51F5E824-CAE2-4EF4-9131-13256BFD28B6}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.Logging.AspNetCore", "src\Amazon.Lambda.Logging.AspNetCore\Amazon.Lambda.Logging.AspNetCore.xproj", "{201AC4EB-48D8-4E4A-A336-BB16DD630A19}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.Core.Tests", "test\Amazon.Lambda.Core.Tests\Amazon.Lambda.Core.Tests.xproj", "{C148726C-9555-4347-89B4-B9A514EBB02C}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.Serialization.Json", "src\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.xproj", "{13A0F4C9-69EC-4B8E-A00F-7BAE23CC16E7}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.AspNetCoreServer", "src\Amazon.Lambda.AspNetCoreServer\Amazon.Lambda.AspNetCoreServer.xproj", "{25813AAC-F0B3-4591-AA99-67983394623B}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.APIGatewayEvents", "src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.xproj", "{480D89E0-4334-4903-82CD-1B8ADF09D019}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.CognitoEvents", "src\Amazon.Lambda.CognitoEvents\Amazon.Lambda.CognitoEvents.xproj", "{105B1BBB-4114-4D86-812E-EFFBB6E47CE5}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.ConfigEvents", "src\Amazon.Lambda.ConfigEvents\Amazon.Lambda.ConfigEvents.xproj", "{6BF4EC9F-FB9E-4898-81F7-B392BF83D2B0}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.DynamoDBEvents", "src\Amazon.Lambda.DynamoDBEvents\Amazon.Lambda.DynamoDBEvents.xproj", "{CB170908-F770-4554-A974-9653562F1042}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.KinesisEvents", "src\Amazon.Lambda.KinesisEvents\Amazon.Lambda.KinesisEvents.xproj", "{3ED92849-4103-4AEF-B406-FF856C134C4B}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.S3Events", "src\Amazon.Lambda.S3Events\Amazon.Lambda.S3Events.xproj", "{D4B8939E-9684-4237-861C-2288EB5DD4E8}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.SNSEvents", "src\Amazon.Lambda.SNSEvents\Amazon.Lambda.SNSEvents.xproj", "{D05BF033-DA2C-463C-BB98-64D28E1A4A75}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.TestUtilities", "src\Amazon.Lambda.TestUtilities\Amazon.Lambda.TestUtilities.xproj", "{0083B713-6399-479D-AA06-58D3E87F167D}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.AspNetCoreServer.Test", "test\Amazon.Lambda.AspNetCoreServer.Test\Amazon.Lambda.AspNetCoreServer.Test.xproj", "{5B48AEA8-5702-45A8-9D89-CEB986E6DBC1}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "TestWebApp", "test\TestWebApp\TestWebApp.xproj", "{101ABE51-390D-41DF-A70B-2BD3B08B2CC7}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.Logging.AspNetCore.Tests", "test\Amazon.Lambda.Logging.AspNetCore.Tests\Amazon.Lambda.Logging.AspNetCore.Tests.xproj", "{A612EC01-6595-4EA6-B0EF-FF00E4FB331D}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "EventsTests", "test\EventsTests\EventsTests.xproj", "{D96E1572-C079-413A-BFA0-235000700DDB}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.Tools", "src\Amazon.Lambda.Tools\Amazon.Lambda.Tools.xproj", "{95294EBA-F227-4FE7-AD93-8BEAB8E1CC70}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.Tools.Test", "test\Amazon.Lambda.Tools.Test\Amazon.Lambda.Tools.Test.xproj", "{06804AE7-14E9-494D-A1F7-258EA6432C09}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "TestFunction", "test\TestFunction\TestFunction.xproj", "{11A53C8D-A49B-4477-BFD9-E00C77D1291C}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Amazon.Lambda.SimpleEmailEvents", "src\Amazon.Lambda.SimpleEmailEvents\Amazon.Lambda.SimpleEmailEvents.xproj", "{A6348510-7948-46B1-A2C4-396B8C55440C}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FlattenDependencyTestProjects", "FlattenDependencyTestProjects", "{13F5531E-542D-400C-9D24-E57380F2EF6E}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NpgsqlExample", "test\FlattenDependencyTestProjects\NpgsqlExample\NpgsqlExample.xproj", "{A1E8DE21-6A03-499B-A711-7510901B0CA5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Core", "src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj", "{51F5E824-CAE2-4EF4-9131-13256BFD28B6}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "SQLServerClientExample", "test\FlattenDependencyTestProjects\SQLServerClientExample\SQLServerClientExample.xproj", "{6F77443A-7DB8-4B42-81C1-2D0792CBA8E7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Logging.AspNetCore", "src\Amazon.Lambda.Logging.AspNetCore\Amazon.Lambda.Logging.AspNetCore.csproj", "{201AC4EB-48D8-4E4A-A336-BB16DD630A19}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NativeDependencyExample", "test\FlattenDependencyTestProjects\NativeDependencyExample\NativeDependencyExample.xproj", "{44DFB572-8F64-414E-991E-FB5BC5970712}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Core.Tests", "test\Amazon.Lambda.Core.Tests\Amazon.Lambda.Core.Tests.csproj", "{C148726C-9555-4347-89B4-B9A514EBB02C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Serialization.Json", "src\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.csproj", "{13A0F4C9-69EC-4B8E-A00F-7BAE23CC16E7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.AspNetCoreServer", "src\Amazon.Lambda.AspNetCoreServer\Amazon.Lambda.AspNetCoreServer.csproj", "{25813AAC-F0B3-4591-AA99-67983394623B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.APIGatewayEvents", "src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj", "{480D89E0-4334-4903-82CD-1B8ADF09D019}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.CognitoEvents", "src\Amazon.Lambda.CognitoEvents\Amazon.Lambda.CognitoEvents.csproj", "{105B1BBB-4114-4D86-812E-EFFBB6E47CE5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.ConfigEvents", "src\Amazon.Lambda.ConfigEvents\Amazon.Lambda.ConfigEvents.csproj", "{6BF4EC9F-FB9E-4898-81F7-B392BF83D2B0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.DynamoDBEvents", "src\Amazon.Lambda.DynamoDBEvents\Amazon.Lambda.DynamoDBEvents.csproj", "{CB170908-F770-4554-A974-9653562F1042}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.KinesisEvents", "src\Amazon.Lambda.KinesisEvents\Amazon.Lambda.KinesisEvents.csproj", "{3ED92849-4103-4AEF-B406-FF856C134C4B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.S3Events", "src\Amazon.Lambda.S3Events\Amazon.Lambda.S3Events.csproj", "{D4B8939E-9684-4237-861C-2288EB5DD4E8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.SNSEvents", "src\Amazon.Lambda.SNSEvents\Amazon.Lambda.SNSEvents.csproj", "{D05BF033-DA2C-463C-BB98-64D28E1A4A75}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestUtilities", "src\Amazon.Lambda.TestUtilities\Amazon.Lambda.TestUtilities.csproj", "{0083B713-6399-479D-AA06-58D3E87F167D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.AspNetCoreServer.Test", "test\Amazon.Lambda.AspNetCoreServer.Test\Amazon.Lambda.AspNetCoreServer.Test.csproj", "{5B48AEA8-5702-45A8-9D89-CEB986E6DBC1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestWebApp", "test\TestWebApp\TestWebApp.csproj", "{101ABE51-390D-41DF-A70B-2BD3B08B2CC7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Logging.AspNetCore.Tests", "test\Amazon.Lambda.Logging.AspNetCore.Tests\Amazon.Lambda.Logging.AspNetCore.Tests.csproj", "{A612EC01-6595-4EA6-B0EF-FF00E4FB331D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventsTests", "test\EventsTests\EventsTests.csproj", "{D96E1572-C079-413A-BFA0-235000700DDB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Tools", "src\Amazon.Lambda.Tools\Amazon.Lambda.Tools.csproj", "{95294EBA-F227-4FE7-AD93-8BEAB8E1CC70}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Tools.Test", "test\Amazon.Lambda.Tools.Test\Amazon.Lambda.Tools.Test.csproj", "{06804AE7-14E9-494D-A1F7-258EA6432C09}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestFunction", "test\TestFunction\TestFunction.csproj", "{11A53C8D-A49B-4477-BFD9-E00C77D1291C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.SimpleEmailEvents", "src\Amazon.Lambda.SimpleEmailEvents\Amazon.Lambda.SimpleEmailEvents.csproj", "{A6348510-7948-46B1-A2C4-396B8C55440C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NpgsqlExample", "test\FlattenDependencyTestProjects\NpgsqlExample\NpgsqlExample.csproj", "{A1E8DE21-6A03-499B-A711-7510901B0CA5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLServerClientExample", "test\FlattenDependencyTestProjects\SQLServerClientExample\SQLServerClientExample.csproj", "{6F77443A-7DB8-4B42-81C1-2D0792CBA8E7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NativeDependencyExample", "test\FlattenDependencyTestProjects\NativeDependencyExample\NativeDependencyExample.csproj", "{44DFB572-8F64-414E-991E-FB5BC5970712}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -169,6 +166,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{13F5531E-542D-400C-9D24-E57380F2EF6E} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{51F5E824-CAE2-4EF4-9131-13256BFD28B6} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{201AC4EB-48D8-4E4A-A336-BB16DD630A19} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{C148726C-9555-4347-89B4-B9A514EBB02C} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
@@ -190,7 +188,6 @@ Global
 		{06804AE7-14E9-494D-A1F7-258EA6432C09} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{11A53C8D-A49B-4477-BFD9-E00C77D1291C} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{A6348510-7948-46B1-A2C4-396B8C55440C} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
-		{13F5531E-542D-400C-9D24-E57380F2EF6E} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{A1E8DE21-6A03-499B-A711-7510901B0CA5} = {13F5531E-542D-400C-9D24-E57380F2EF6E}
 		{6F77443A-7DB8-4B42-81C1-2D0792CBA8E7} = {13F5531E-542D-400C-9D24-E57380F2EF6E}
 		{44DFB572-8F64-414E-991E-FB5BC5970712} = {13F5531E-542D-400C-9D24-E57380F2EF6E}
