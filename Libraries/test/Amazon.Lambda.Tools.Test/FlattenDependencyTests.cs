@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -14,10 +15,17 @@ namespace Amazon.Lambda.Tools.Test
 {
     public class FlattenDependencyTests
     {
+        private string GetTestProjectPath(string project)
+        {
+            var assembly = this.GetType().GetTypeInfo().Assembly;
+            var fullPath = Path.GetFullPath(Path.GetDirectoryName(assembly.Location) + "../../../../../FlattenDependencyTestProjects/" + project);
+            return fullPath;
+        }
+
         [Fact]
         public async Task NpgsqlTest()
         {
-            var fullPath = Path.GetFullPath("../FlattenDependencyTestProjects/NpgsqlExample");
+            var fullPath = GetTestProjectPath("NpgsqlExample");
             var command = new PackageCommand(new ConsoleToolLogger(), fullPath, new string[0]);
             command.EnableInteractive = false;
             command.Configuration = "Release";
@@ -48,7 +56,7 @@ namespace Amazon.Lambda.Tools.Test
         [Fact]
         public async Task SqlClientTest()
         {
-            var fullPath = Path.GetFullPath("../FlattenDependencyTestProjects/SQLServerClientExample");
+            var fullPath = GetTestProjectPath("SQLServerClientExample");
             var command = new PackageCommand(new ConsoleToolLogger(), fullPath, new string[0]);
             command.EnableInteractive = false;
             command.Configuration = "Release";
@@ -82,7 +90,7 @@ namespace Amazon.Lambda.Tools.Test
         [Fact]
         public async Task NativeDependencyExample()
         {
-            var fullPath = Path.GetFullPath("../FlattenDependencyTestProjects/NativeDependencyExample");
+            var fullPath = GetTestProjectPath("NativeDependencyExample");
             var command = new PackageCommand(new ConsoleToolLogger(), fullPath, new string[0]);
             command.EnableInteractive = false;
             command.Configuration = "Release";

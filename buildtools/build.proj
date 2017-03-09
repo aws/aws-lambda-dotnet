@@ -67,9 +67,9 @@
     <RemoveDir Directories="../Deployment"/>
     <MakeDir Directories="../Deployment/nuget-packages"/>
 
-    <Exec Command="&quot;$(SDKToolingExe)&quot; restore"
+    <Exec Command="&quot;$(SDKToolingExe)&quot; restore Libraries.sln"
       WorkingDirectory="..\Libraries"/>
-    <Exec Command="&quot;$(SDKToolingExe)&quot; restore"
+    <Exec Command="&quot;$(SDKToolingExe)&quot; restore BlueprintPackager.sln"
       WorkingDirectory="..\Blueprints\BlueprintPackager"/>
   </Target>
 
