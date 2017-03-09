@@ -6,6 +6,9 @@ using System.IO;
 using System.Threading.Tasks;
 using TestWebApp;
 using Xunit;
+using System;
+using System.Linq;
+using System.Net;
 
 namespace Amazon.Lambda.AspNetCoreServer.Test
 {
@@ -130,6 +133,29 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.NotNull(json);
             var expected = "{\"principalId\":\"com.amazon.someuser\",\"policyDocument\":{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"execute-api:Invoke\"],\"Resource\":[\"arn:aws:execute-api:us-west-2:1234567890:apit123d45/Prod/GET/*\"]}]},\"context\":{\"stringKey\":\"Hey I'm a string\",\"numKey\":9,\"boolKey\":true}}";
             Assert.Equal(expected, json);
+        }
+
+        [Fact]
+        public async Task TestGetBinaryContent()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-get-binary-apigatway-request.json");
+            
+            Assert.Equal((int)HttpStatusCode.OK, response.StatusCode);
+
+            string contentType;
+            Assert.True(response.Headers.TryGetValue("Content-Type", out contentType),
+                    "Content-Type response header exists");
+            Assert.Equal("application/octet-stream", contentType);
+            Assert.NotNull(response.Body);
+            Assert.True(response.Body.Length > 0,
+                    "Body content is not empty");
+
+            Assert.True(response.IsBase64Encoded, "Response IsBase64Encoded");
+
+            // Compute a 256-byte array, with values 0-255
+            var binExpected = new byte[byte.MaxValue].Select((val, index) => (byte)index).ToArray();
+            var binActual = Convert.FromBase64String(response.Body);
+            Assert.Equal(binExpected, binActual);
         }
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
