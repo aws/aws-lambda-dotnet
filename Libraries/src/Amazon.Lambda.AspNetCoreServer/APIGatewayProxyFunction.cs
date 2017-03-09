@@ -11,6 +11,8 @@ using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using System.Net.Http.Headers;
+using System.Linq;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -35,6 +37,16 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// If true the response JSON coming sent to API Gateway will be logged. This is used to help debugging and not meant to be enabled for production.
         /// </summary>
         public bool EnableResponseLogging { get; set; }
+
+        /// <summary>
+        /// If true then all response content will be Base64-encoded before being returned.
+        /// </summary>
+        public bool EnableBinaryResponseContent { get; set; }
+
+        /// <summary>
+        /// An optional set of Content-Types that will trigger encoding the response content in Base64.
+        /// </summary>
+        public IEnumerable<string> BinaryResponseContentTypes { get; set; }
 
         /// <summary>
         /// Default constructor that AWS Lambda will invoke.
@@ -289,6 +301,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 StatusCode = responseFeatures.StatusCode != 0 ? responseFeatures.StatusCode : statusCodeIfNotSet
             };
 
+            string contentType = null;
             if (responseFeatures.Headers != null)
             {
                 response.Headers = new Dictionary<string, string>();
@@ -302,12 +315,42 @@ namespace Amazon.Lambda.AspNetCoreServer
                     {
                         response.Headers[kvp.Key] = string.Join(",", kvp.Value);
                     }
+
+                    // Remember the Content-Type for possible later use
+                    if (kvp.Key.Equals("Content-Type", StringComparison.CurrentCultureIgnoreCase))
+                        contentType = response.Headers[kvp.Key];
                 }
             }
 
             if (responseFeatures.Body != null)
             {
-                if (responseFeatures.Body is MemoryStream)
+                // Figure out if we need to Base64-encode the literal response content
+                var b64Encode = EnableBinaryResponseContent;
+                if (!b64Encode && BinaryResponseContentTypes != null && contentType != null)
+                {
+                    b64Encode = BinaryResponseContentTypes.Contains(contentType);
+                }
+                
+                if (b64Encode)
+                {
+                    // We want to read the response content "raw" and then Base64 encode it
+                    byte[] bodyBytes;
+                    if (responseFeatures.Body is MemoryStream)
+                    {
+                        bodyBytes = ((MemoryStream)responseFeatures.Body).ToArray();
+                    }
+                    else
+                    {
+                        using (var ms = new MemoryStream())
+                        {
+                            responseFeatures.Body.CopyTo(ms);
+                            bodyBytes = ms.ToArray();
+                        }
+                    }
+                    response.Body = Convert.ToBase64String(bodyBytes);
+                    response.IsBase64Encoded = true;
+                }
+                else if (responseFeatures.Body is MemoryStream)
                 {
                     response.Body = UTF8Encoding.UTF8.GetString(((MemoryStream)responseFeatures.Body).ToArray());
                 }
