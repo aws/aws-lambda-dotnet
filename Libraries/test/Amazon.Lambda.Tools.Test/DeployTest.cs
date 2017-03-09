@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -46,8 +47,9 @@ namespace Amazon.Lambda.Tools.Test
         [Fact]
         public async Task RunDeployCommand()
         {
-            
-            var fullPath = Path.GetFullPath("../TestFunction");
+            var assembly = this.GetType().GetTypeInfo().Assembly;
+
+            var fullPath = Path.GetFullPath(Path.GetDirectoryName(assembly.Location) + "../../../../../TestFunction");
             var command = new DeployFunctionCommand(new ConsoleToolLogger(), fullPath, new string[0]);
             command.FunctionName = "test-function-" + DateTime.Now.Ticks;
             command.Handler = "TestFunction::TestFunction.Function::ToUpper";
@@ -77,7 +79,10 @@ namespace Amazon.Lambda.Tools.Test
             }
             finally
             {
-                await command.LambdaClient.DeleteFunctionAsync(command.FunctionName);
+                if (created)
+                {
+                    await command.LambdaClient.DeleteFunctionAsync(command.FunctionName);
+                }
             }
         }
 

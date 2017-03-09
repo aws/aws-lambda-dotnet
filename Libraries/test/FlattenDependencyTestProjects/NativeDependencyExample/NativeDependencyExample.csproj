@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Diagnostics.TraceSource" Version="4.0.0" />
-    <PackageReference Include="Libuv" Version="1.9.1" />
+    <PackageReference Include="Libuv" Version="1.9.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -15,10 +16,17 @@ namespace Amazon.Lambda.Tools.Test
     {
         string _testFunctionProjectLocation;
 
+        private string GetTestProjectPath()
+        {
+            var assembly = this.GetType().GetTypeInfo().Assembly;
+            var fullPath = Path.GetFullPath(Path.GetDirectoryName(assembly.Location) + "../../../../../TestFunction/");
+            return fullPath;
+        }
+
         public ValidateHandlerTests()
         {
-            var debugVersion = new FileInfo(Path.Combine(Path.GetFullPath("../TestFunction"), "bin/Debug/netcoreapp1.0/TestFunction.dll"));
-            var releaseVersion = new FileInfo(Path.Combine(Path.GetFullPath("../TestFunction"), "bin/Release/netcoreapp1.0/TestFunction.dll"));
+            var debugVersion = new FileInfo(Path.Combine(GetTestProjectPath(), "bin/Debug/netcoreapp1.0/TestFunction.dll"));
+            var releaseVersion = new FileInfo(Path.Combine(GetTestProjectPath(), "bin/Release/netcoreapp1.0/TestFunction.dll"));
 
             if (!debugVersion.Exists && !releaseVersion.Exists)
                 throw new Exception("TestFunction wasn't compiled succesfully");

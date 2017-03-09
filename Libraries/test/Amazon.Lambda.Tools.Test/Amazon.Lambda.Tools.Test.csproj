@@ -14,6 +14,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.Tools\Amazon.Lambda.Tools.csproj" />
     <ProjectReference Include="..\TestFunction\TestFunction.csproj" />
   </ItemGroup>
