@@ -11,8 +11,6 @@ using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using System.Net.Http.Headers;
-using System.Linq;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
