@@ -43,7 +43,7 @@ Once the function is deployed configure API Gateway with a HTTP Proxy to call th
 
 The interface between the API Gateway and Lambda provides for and assumes repsonse content to be returned as a UTF-8 string.
 In order to return binary content it is necessary to encode the raw response content in Base64 and to set a flag in the
-response object that Base64-encoded has been applied.
+response object that Base64-encoding has been applied.
 
 In order to facilitate this mechanism, the `APIGatewayProxyFunction` base class maintains a registry of MIME content types
 and how they should be transformed before being returned to the calling API Gateway.  For any binary content types that are
@@ -90,3 +90,30 @@ In order to use this mechanism to return binary response content, in addition to
 MIME content types that will be returned by your application, it also necessary to register those same
 content types with the API Gateway using either the [console](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-configure-with-console.html)
 or the [REST interface](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-configure-with-control-service-api.html).
+
+### Default Registered Content Types
+
+By default several commonly used MIME types that are typically used with Web API services
+are already pre-registered.  You can make use of these content types without any further
+changes in your code, *however*, for any binary content types, you do still need to make
+the necessary adjustments in the API Gateway as described above.
+
+
+MIME Content Type | Response Content Encoding
+------------------|--------------------------
+`text/plain`               | Default (UTF-8)
+`text/xml`                 | Default (UTF-8)
+`application/xml`          | Default (UTF-8)
+`application/json`         | Default (UTF-8)
+`text/html`                | Default (UTF-8)
+`text/css`                 | Default (UTF-8)
+`text/javascript`          | Default (UTF-8)
+`text/ecmascript`          | Default (UTF-8)
+`text/markdown`            | Default (UTF-8)
+`text/csv`                 | Default (UTF-8)
+`application/octet-stream` | Base64
+`image/png`                | Base64
+`image/gif`                | Base64
+`image/jpeg`               | Base64
+`application/zip`          | Base64
+`application/pdf`          | Base64
