@@ -11,8 +11,6 @@ namespace TestWebApp
 
         protected override void Init(IWebHostBuilder builder)
         {
-            base.BinaryResponseContentTypes = new string[] { BinaryContentType };
-
             builder
                 .UseApiGateway()
                 .UseContentRoot(Directory.GetCurrentDirectory())
