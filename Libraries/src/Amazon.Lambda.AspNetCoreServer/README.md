@@ -41,10 +41,6 @@ Once the function is deployed configure API Gateway with a HTTP Proxy to call th
 
 ## Supporting Binary Response Content
 
-The interface between the API Gateway and Lambda normally assumes a response that by default includes string
-content (i.e. UTF-8 compatible).  In order to support returning binary response content from a controller action,
-the proxy function 
-
 The interface between the API Gateway and Lambda provides for and assumes repsonse content to be returned as a UTF-8 string.
 In order to return binary content it is necessary to encode the raw response content in Base64 and to set a flag in the
 response object that Base64-encoded has been applied.
