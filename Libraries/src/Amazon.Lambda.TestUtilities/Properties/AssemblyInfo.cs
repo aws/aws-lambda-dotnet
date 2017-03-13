@@ -2,18 +2,12 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-// General Information about an assembly is controlled through the following
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+
 [assembly: AssemblyProduct("Amazon.Lambda.TestUtilities")]
-[assembly: AssemblyTrademark("")]
-
-// Setting ComVisible to false makes the types in this assembly not visible
-// to COM components.  If you need to access a type in this assembly from
-// COM, set the ComVisible attribute to true on that type.
+[assembly: AssemblyDescription("Amazon.Lambda.TestUtilties includes stub implementations of interfaces defined in Amazon.Lambda.Core and helper methods.")]
+[assembly: AssemblyCompany("Amazon.com, Inc")]
+[assembly: AssemblyCopyright("Copyright 2009-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.")]
 [assembly: ComVisible(false)]
-
-// The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("0083b713-6399-479d-aa06-58d3e87f167d")]
+[assembly: System.CLSCompliant(true)]
+[assembly: AssemblyVersion("1.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]

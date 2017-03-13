@@ -2,18 +2,12 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-// General Information about an assembly is controlled through the following
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("AWS.Lambda.AspNetCoreServer")]
-[assembly: AssemblyTrademark("")]
-
-// Setting ComVisible to false makes the types in this assembly not visible
-// to COM components.  If you need to access a type in this assembly from
-// COM, set the ComVisible attribute to true on that type.
+[assembly: AssemblyTitle("Amazon.Lambda.AspNetCoreServer")]
+[assembly: AssemblyDescription("Amazon.Lambda.AspNetCoreServer makes it easy to run ASP.NET Core Web API applications as AWS Lambda functions.")]
+[assembly: AssemblyProduct("Amazon Web Services Lambda Interface for .NET")]
+[assembly: AssemblyCompany("Amazon.com, Inc")]
+[assembly: AssemblyCopyright("Copyright 2009-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.")]
 [assembly: ComVisible(false)]
-
-// The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("25813aac-f0b3-4591-aa99-67983394623b")]
+[assembly: System.CLSCompliant(true)]
+[assembly: AssemblyVersion("1.0")]
+[assembly: AssemblyFileVersion("0.9.0")]

@@ -1,23 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\..\buildtools\common.props" />
+
   <PropertyGroup>
     <Description>Amazon.Lambda.TestUtilties includes stub implementations of interfaces defined in Amazon.Lambda.Core and helper methods.</Description>
     <AssemblyTitle>Amazon.Lambda.TestUtilities</AssemblyTitle>
-    <Authors>Amazon Web Services</Authors>
-    <TargetFramework>netstandard1.3</TargetFramework>
-    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <VersionPrefix>1.0.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.TestUtilities</AssemblyName>
     <PackageId>Amazon.Lambda.TestUtilities</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-    <PackageIconUrl>http://media.amazonwebservices.com/aws_singlebox_01.png</PackageIconUrl>
-    <PackageProjectUrl>https://aws.amazon.com/lambda/</PackageProjectUrl>
-    <PackageLicenseUrl>http://aws.amazon.com/apache2.0/</PackageLicenseUrl>
-    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
   </PropertyGroup>
 
   <ItemGroup>
