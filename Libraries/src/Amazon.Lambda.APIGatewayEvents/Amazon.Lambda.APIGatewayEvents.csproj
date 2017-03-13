@@ -1,29 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\..\buildtools\common.props" />
+
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - API Gateway package.</Description>
     <AssemblyTitle>Amazon.Lambda.APIGatewayEvents</AssemblyTitle>
     <VersionPrefix>1.0.2</VersionPrefix>
-    <Authors>Amazon Web Services</Authors>
-    <TargetFramework>netstandard1.3</TargetFramework>
-    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Amazon.Lambda.APIGatewayEvents</AssemblyName>
-    <OutputType>Library</OutputType>
     <PackageId>Amazon.Lambda.APIGatewayEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-    <PackageIconUrl>http://media.amazonwebservices.com/aws_singlebox_01.png</PackageIconUrl>
-    <PackageProjectUrl>https://aws.amazon.com/lambda/</PackageProjectUrl>
-    <PackageLicenseUrl>http://aws.amazon.com/apache2.0/</PackageLicenseUrl>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
-    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
   </PropertyGroup>
 
   <ItemGroup>

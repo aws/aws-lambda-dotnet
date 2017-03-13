@@ -1,25 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\..\buildtools\common.props" />
+
   <PropertyGroup>
     <Description>Amazon.Lambda.Tools adds commands to the dotnet cli to deploy AWS Lambda functions.</Description>
     <AssemblyTitle>Amazon.Lambda.Tools</AssemblyTitle>
     <VersionPrefix>1.3.0-preview1</VersionPrefix>
-    <Authors>Amazon Web Services</Authors>
     <TargetFramework>netcoreapp1.0</TargetFramework>
-    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AssemblyName>dotnet-lambda</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>Amazon.Lambda.Tools</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-    <PackageIconUrl>http://media.amazonwebservices.com/aws_singlebox_01.png</PackageIconUrl>
-    <PackageProjectUrl>https://aws.amazon.com/lambda/</PackageProjectUrl>
-    <PackageLicenseUrl>http://aws.amazon.com/apache2.0/</PackageLicenseUrl>
-    <RuntimeFrameworkVersion>1.0.4</RuntimeFrameworkVersion>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <PackageType>DotnetCliTool</PackageType>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
