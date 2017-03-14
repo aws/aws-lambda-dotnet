@@ -1,46 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
 using System.IO;
 using System.Reflection;
 using Microsoft.Extensions.PlatformAbstractions;
 
 namespace BLUEPRINT_BASE_NAME.Tests
 {
-    /// <summary>
-    /// This class extends from APIGatewayProxyFunction which contains the method FunctionHandlerAsync which is the 
-    /// actual Lambda function entry point. The Lambda handler field should be set to
-    /// 
-    /// BLUEPRINT_BASE_NAME::BLUEPRINT_BASE_NAME.LambdaEntryPoint::FunctionHandlerAsync
-    /// </summary>
-    public class TestLambdaEntryPoint : Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction
+    public static class TestUtils
     {
-        protected override void Init(IWebHostBuilder builder)
-        {
-            var contentRoot = GetProjectPath(Path.Combine(string.Empty));
-
-            builder
-                .UseContentRoot(contentRoot)
-                .UseStartup<Startup>()
-                .UseApiGateway();
-        }
-
         /// <summary>
-        /// Gets the full path to the target project path that we wish to test
+        ///     Gets the full path to the target project path that we wish to test
         /// </summary>
         /// <param name="solutionRelativePath">
-        /// The parent directory of the target project.
-        /// e.g. src, samples, test, or test/Websites
+        ///     The parent directory of the target project.
+        ///     e.g. src, samples, test, or test/Websites
         /// </param>
         /// <returns>The full path to the target project.</returns>
         public static string GetProjectPath(string solutionRelativePath)
         {
             // Get the target project's assembly.
             var startupAssembly = typeof(Startup).GetTypeInfo().Assembly;
-            
+
             // Get name of the target project which we want to test
             var projectName = startupAssembly.GetName().Name;
 
@@ -59,10 +38,15 @@ namespace BLUEPRINT_BASE_NAME.Tests
                 }
 
                 directoryInfo = directoryInfo.Parent;
-            }
-            while (directoryInfo.Parent != null);
+            } while (directoryInfo.Parent != null);
 
             throw new Exception($"Solution root could not be located using application root {applicationBasePath}.");
+        }
+
+        // Returns a path relative to the current project directory
+        public static string GetRelativeToProjectPath(string path)
+        {
+            return Path.Combine(PlatformServices.Default.Application.ApplicationBasePath, path);
         }
     }
 }

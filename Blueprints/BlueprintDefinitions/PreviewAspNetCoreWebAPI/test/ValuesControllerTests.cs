@@ -25,7 +25,7 @@ namespace BLUEPRINT_BASE_NAME.Tests
         {
             var lambdaFunction = new TestLambdaEntryPoint();
 
-            var requestStr = File.ReadAllText("./SampleRequests/ValuesController-Get.json");
+            var requestStr = File.ReadAllText(TestUtils.GetRelativeToProjectPath("SampleRequests/ValuesController-Get.json"));
             var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
             var context = new TestLambdaContext();
             var response = await lambdaFunction.FunctionHandlerAsync(request, context);
