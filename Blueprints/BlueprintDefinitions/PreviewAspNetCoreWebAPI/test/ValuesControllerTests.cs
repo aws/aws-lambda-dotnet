@@ -23,7 +23,7 @@ namespace BLUEPRINT_BASE_NAME.Tests
         [Fact]
         public async Task TestGet()
         {
-            var lambdaFunction = new LambdaEntryPoint();
+            var lambdaFunction = new TestLambdaEntryPoint();
 
             var requestStr = File.ReadAllText("./SampleRequests/ValuesController-Get.json");
             var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);

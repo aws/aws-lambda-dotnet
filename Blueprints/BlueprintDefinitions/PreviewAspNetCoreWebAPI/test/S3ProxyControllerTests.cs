@@ -33,7 +33,7 @@ namespace BLUEPRINT_BASE_NAME.Tests
         public S3ProxyControllerTests()
         {
             var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
+                .SetBasePath(TestLambdaEntryPoint.GetProjectPath(Path.Combine(string.Empty)))
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
             this.Configuration = builder.Build();
@@ -49,7 +49,7 @@ namespace BLUEPRINT_BASE_NAME.Tests
         [Fact]
         public async Task TestSuccessWorkFlow()
         {
-            var lambdaFunction = new LambdaEntryPoint();
+            var lambdaFunction = new TestLambdaEntryPoint();
             Startup.Configuration[Startup.AppS3BucketKey] = this.BucketName;
 
             // Use sample API Gateway request that uploads an object with object key "foo.txt" and content of "Hello World".
