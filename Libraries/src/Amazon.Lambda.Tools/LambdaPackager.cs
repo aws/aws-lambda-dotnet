@@ -26,6 +26,7 @@ namespace Amazon.Lambda.Tools
         /// <summary>
         /// Execute the dotnet publish command and zip up the resulting publish folder.
         /// </summary>
+        /// <param name="defaults"></param>
         /// <param name="logger"></param>
         /// <param name="workingDirectory"></param>
         /// <param name="projectLocation"></param>
@@ -226,6 +227,7 @@ namespace Amazon.Lambda.Tools
         /// This will skip all files in the runtimes folder because they have already been flatten to the root.
         /// </summary>
         /// <param name="publishLocation"></param>
+        /// <param name="flattenRuntime">If true the runtimes folder will be flatten</param>
         /// <returns></returns>
         private static IDictionary<string, string> GetFilesToIncludeInArchive(string publishLocation, bool flattenRuntime)
         {
@@ -253,6 +255,7 @@ namespace Amazon.Lambda.Tools
         /// </summary>
         /// <param name="zipArchivePath">The path and name of the zip archive to create.</param>
         /// <param name="publishLocation">The location to be bundled.</param>
+        /// <param name="flattenRuntime">If true the runtimes folder will be flatten</param>
         /// <param name="logger">Logger instance.</param>
         private static void BundleWithDotNetCompression(string zipArchivePath, string publishLocation, bool flattenRuntime, IToolLogger logger)
         {
@@ -275,6 +278,7 @@ namespace Amazon.Lambda.Tools
         /// <param name="zipCLI">The path to the located zip binary.</param>
         /// <param name="zipArchivePath">The path and name of the zip archive to create.</param>
         /// <param name="publishLocation">The location to be bundled.</param>
+        /// <param name="flattenRuntime">If true the runtimes folder will be flatten</param>
         /// <param name="logger">Logger instance.</param>
         private static void BundleWithZipCLI(string zipCLI, string zipArchivePath, string publishLocation, bool flattenRuntime, IToolLogger logger)
         {
