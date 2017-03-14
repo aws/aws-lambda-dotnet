@@ -33,7 +33,7 @@ namespace BLUEPRINT_BASE_NAME.Tests
         public S3ProxyControllerTests()
         {
             var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
+                .SetBasePath(TestUtils.GetProjectPath(Path.Combine(string.Empty)))
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
             this.Configuration = builder.Build();
@@ -49,52 +49,52 @@ namespace BLUEPRINT_BASE_NAME.Tests
         [Fact]
         public async Task TestSuccessWorkFlow()
         {
-            var lambdaFunction = new LambdaEntryPoint();
+            var lambdaFunction = new TestLambdaEntryPoint();
             Startup.Configuration[Startup.AppS3BucketKey] = this.BucketName;
 
             // Use sample API Gateway request that uploads an object with object key "foo.txt" and content of "Hello World".
-            var requestStr = File.ReadAllText("./SampleRequests/S3ProxyController-Put.json");
+            var requestStr = File.ReadAllText(TestUtils.GetRelativeToProjectPath("SampleRequests/S3ProxyController-Put.json"));
             var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
             var context = new TestLambdaContext();
             var response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
 
             // Get with no object key in the resource path does an object list call
-            requestStr = File.ReadAllText("./SampleRequests/S3ProxyController-Get.json");
+            requestStr = File.ReadAllText(TestUtils.GetRelativeToProjectPath("SampleRequests/S3ProxyController-Get.json"));
             request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
             Assert.Equal("text/json", response.Headers["Content-Type"]);
             Assert.True(response.Body.Contains("foo.txt"));
 
             // Return the content of the new s3 object foo.txt
-            requestStr = File.ReadAllText("./SampleRequests/S3ProxyController-GetByKey.json");
+            requestStr = File.ReadAllText(TestUtils.GetRelativeToProjectPath("SampleRequests/S3ProxyController-GetByKey.json"));
             request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
             Assert.Equal("text/plain", response.Headers["Content-Type"]);
             Assert.Equal("Hello World", response.Body);
 
             // Delete the object
-            requestStr = File.ReadAllText("./SampleRequests/S3ProxyController-Delete.json");
+            requestStr = File.ReadAllText(TestUtils.GetRelativeToProjectPath("SampleRequests/S3ProxyController-Delete.json"));
             request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
 
             // Make sure the object was deleted
-            requestStr = File.ReadAllText("./SampleRequests/S3ProxyController-GetByKey.json");
+            requestStr = File.ReadAllText(TestUtils.GetRelativeToProjectPath("SampleRequests/S3ProxyController-GetByKey.json"));
             request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
-            Assert.Equal(response.StatusCode, 404);
+            Assert.Equal(404, response.StatusCode);
         }
 
 
