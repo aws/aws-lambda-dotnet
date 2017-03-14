@@ -58,7 +58,7 @@ namespace BLUEPRINT_BASE_NAME.Tests
             var context = new TestLambdaContext();
             var response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
 
             // Get with no object key in the resource path does an object list call
             requestStr = File.ReadAllText(TestUtils.GetRelativeToProjectPath("SampleRequests/S3ProxyController-Get.json"));
@@ -66,7 +66,7 @@ namespace BLUEPRINT_BASE_NAME.Tests
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
             Assert.Equal("text/json", response.Headers["Content-Type"]);
             Assert.True(response.Body.Contains("foo.txt"));
 
@@ -76,7 +76,7 @@ namespace BLUEPRINT_BASE_NAME.Tests
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
             Assert.Equal("text/plain", response.Headers["Content-Type"]);
             Assert.Equal("Hello World", response.Body);
 
@@ -86,7 +86,7 @@ namespace BLUEPRINT_BASE_NAME.Tests
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
 
             // Make sure the object was deleted
             requestStr = File.ReadAllText(TestUtils.GetRelativeToProjectPath("SampleRequests/S3ProxyController-GetByKey.json"));
@@ -94,7 +94,7 @@ namespace BLUEPRINT_BASE_NAME.Tests
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
-            Assert.Equal(response.StatusCode, 404);
+            Assert.Equal(404, response.StatusCode);
         }
 
 
