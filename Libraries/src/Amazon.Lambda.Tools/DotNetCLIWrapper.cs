@@ -25,11 +25,11 @@ namespace Amazon.Lambda.Tools
         /// <summary>
         /// Generates deployment manifest for staged content
         /// </summary>
+        /// <param name="defaults"></param>
+        /// <param name="projectLocation"></param>
         /// <param name="outputLocation"></param>
         /// <param name="targetFramework"></param>
-        /// <param name="iisAppPath"></param>
         /// <param name="configuration"></param>
-        /// <param name="logger"></param>
         public int Publish(LambdaToolsDefaults defaults, string projectLocation, string outputLocation, string targetFramework, string configuration)
         {
             if (Directory.Exists(outputLocation))
