@@ -151,8 +151,8 @@
   
   <Target Name="test-blueprints-yeoman" DependsOnTargets="package-blueprints;SetupPathProperties;build-nuget-packages">
 
-    <RemoveDir Directories="../Blueprints/YeomanGenerator/TestGenerations"/>
-    <MakeDir Directories="../Blueprints/YeomanGenerator/TestGenerations"/>
+    <RemoveDir Directories="../Deployment/BlueprintGenerationTests/YeomanGenerator"/>
+    <MakeDir Directories="../Deployment/BlueprintGenerationTests/YeomanGenerator"/>
 
     <Exec Command="&quot;$(NPMPath)&quot; link"
       WorkingDirectory="..\Blueprints\YeomanGenerator\generator-aws-lambda-dotnet"/>
@@ -193,13 +193,13 @@
     <Error Condition="!Exists($(YeomanCmd))" Text="Yeoman not installed!" />
 
     <Exec Command="&quot;$(YeomanCmd)&quot; aws-lambda-dotnet $(CurrentBlueprint) $(CurrentBlueprint) default us-east-1"
-      WorkingDirectory="..\Blueprints\YeomanGenerator\TestGenerations"/>
+      WorkingDirectory="../Deployment/BlueprintGenerationTests/YeomanGenerator"/>
 
     <Exec Command="&quot;$(SDKToolingExe)&quot; restore"
-      WorkingDirectory="../Blueprints/YeomanGenerator/TestGenerations/$(CurrentBlueprint)"/>
+      WorkingDirectory="../Deployment/BlueprintGenerationTests/YeomanGenerator/$(CurrentBlueprint)"/>
 
     <Exec Command="&quot;$(SDKToolingExe)&quot; build"
-      WorkingDirectory="../Blueprints/YeomanGenerator/TestGenerations/$(CurrentBlueprint)/Test/$(CurrentBlueprint).Tests"/>
+      WorkingDirectory="../Deployment/BlueprintGenerationTests/YeomanGenerator/$(CurrentBlueprint)/Test/$(CurrentBlueprint).Tests"/>
 
   </Target>
   
