@@ -15,7 +15,7 @@
   <Import Project="$(VSToolsPath)\DotNet\Microsoft.DotNet.Props" Condition="'$(VSToolsPath)' != ''" />
   <Import Project="$(VSToolsPath)\DotNet\Microsoft.DotNet.targets" Condition="'$(VSToolsPath)' != ''" />
 
-  <Target Name="full-build" DependsOnTargets="test-blueprints;package-blueprints;run-tests;build-nuget-packages">
+  <Target Name="full-build" DependsOnTargets="test-blueprints-dotnetnew;test-blueprints-yeoman;package-blueprints;run-tests;build-nuget-packages">
 
   </Target>
 
@@ -83,9 +83,73 @@
   <Target Name="package-blueprints" DependsOnTargets="init">
     <Exec Command="&quot;$(SDKToolingExe)&quot; run"
       WorkingDirectory="..\Blueprints\BlueprintPackager"/>
+	  
+	<Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages"
+	  WorkingDirectory="../Blueprints/BlueprintDefinitions/Msbuild"/>
   </Target>
 
-  <Target Name="test-blueprints" DependsOnTargets="package-blueprints;SetupPathProperties;build-nuget-packages">
+  <!-- package-blueprints;build-nuget-packages -->
+  <Target Name="test-blueprints-dotnetnew" DependsOnTargets="package-blueprints;build-nuget-packages">
+  
+    <RemoveDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew"/>
+    <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew"/>	
+  
+	<Exec Command="&quot;$(SDKToolingExe)&quot; new -i Blueprints\BlueprintDefinitions\Msbuild"
+		WorkingDirectory="..\"/>  
+		
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabels"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.EmptyFunction;ProjectName=EmptyFunction"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.DynamoDB;ProjectName=DynamoDBFunction"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.Kinesis;ProjectName=KinesisFunction"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.S3;ProjectName=S3Function"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPI"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.DynamoDBBlogAPI;ProjectName=DynamoDBBlogAPI"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.EmptyServerless;ProjectName=EmptyServerless"/>		  
+	  		
+  </Target>
+  
+  <Target Name="run-blueprint-dotnetnew" DependsOnTargets="GetSDKToolingInfoTarget">
+
+
+    <Exec Command="&quot;$(SDKToolingExe)&quot; new $(TemplateName) -n $(ProjectName) --profile default --region us-east-1"
+      WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/"/>
+	  
+    <Exec Command="&quot;$(SDKToolingExe)&quot; restore"
+      WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(ProjectName)/src/$(ProjectName)"/>
+
+    <Exec Command="&quot;$(SDKToolingExe)&quot; restore"
+      WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(ProjectName)/Test/$(ProjectName).Tests"/>
+	  
+    <Exec Command="&quot;$(SDKToolingExe)&quot; build"
+      WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(ProjectName)/Test/$(ProjectName).Tests"/>
+
+  </Target>   
+  
+  <Target Name="test-blueprints-yeoman" DependsOnTargets="package-blueprints;SetupPathProperties;build-nuget-packages">
 
     <RemoveDir Directories="../Blueprints/YeomanGenerator/TestGenerations"/>
     <MakeDir Directories="../Blueprints/YeomanGenerator/TestGenerations"/>
@@ -95,36 +159,36 @@
 
     <MSBuild
           Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint"
+          Targets="run-blueprint-yeoman"
           Properties="CurrentBlueprint=EmptyFunction"/>
     <MSBuild
           Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint"
+          Targets="run-blueprint-yeoman"
         Properties="CurrentBlueprint=EmptyServerless"/>  	
     <MSBuild
           Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint"
+          Targets="run-blueprint-yeoman"
         Properties="CurrentBlueprint=DynamoDBBlogAPI"/>  
     <MSBuild
           Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint"
+          Targets="run-blueprint-yeoman"
         Properties="CurrentBlueprint=PreviewAspNetCoreWebAPI"/>  
 	<MSBuild
         Projects="$(MSBuildProjectFile)"
-        Targets="run-blueprint"
+        Targets="run-blueprint-yeoman"
           Properties="CurrentBlueprint=SimpleDynamoDBFunction"/>
     <MSBuild
           Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint"
+          Targets="run-blueprint-yeoman"
           Properties="CurrentBlueprint=SimpleKinesisFunction"/>
     <MSBuild
           Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint"
+          Targets="run-blueprint-yeoman"
           Properties="CurrentBlueprint=SimpleS3Function"/>
 
   </Target>
 
-  <Target Name="run-blueprint" DependsOnTargets="GetSDKToolingInfoTarget;SetupPathProperties">
+  <Target Name="run-blueprint-yeoman" DependsOnTargets="GetSDKToolingInfoTarget;SetupPathProperties">
 
     <Error Condition="!Exists($(YeomanCmd))" Text="Yeoman not installed!" />
 
@@ -138,7 +202,7 @@
       WorkingDirectory="../Blueprints/YeomanGenerator/TestGenerations/$(CurrentBlueprint)/Test/$(CurrentBlueprint).Tests"/>
 
   </Target>
-
+  
 
   <Target Name="run-tests" DependsOnTargets="build-nuget-packages">
     <PropertyGroup>
