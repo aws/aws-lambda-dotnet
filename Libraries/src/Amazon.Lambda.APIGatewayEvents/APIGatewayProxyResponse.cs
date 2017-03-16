@@ -27,5 +27,11 @@
         /// </summary>
         [DataMember(Name = "body")]
         public string Body { get; set; }
+
+        /// <summary>
+        /// Flag indicating whether the body should be treated as a base64-encoded string
+        /// </summary>
+        [DataMember(Name = "isBase64Encoded")]
+        public bool IsBase64Encoded { get; set; }
     }
 }
