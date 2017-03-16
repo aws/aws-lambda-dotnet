@@ -9,11 +9,12 @@
     <AssemblyName>Amazon.Lambda.S3Events</AssemblyName>
     <PackageId>Amazon.Lambda.S3Events</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Runtime" Version="4.1.0" />
-    <PackageReference Include="AWSSDK.S3" Version="[3.3.4, 3.4)" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.5.10" />
   </ItemGroup>
 
 </Project>

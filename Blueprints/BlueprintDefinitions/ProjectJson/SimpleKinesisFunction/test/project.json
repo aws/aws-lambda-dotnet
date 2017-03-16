@@ -11,7 +11,7 @@
 
     "Amazon.Lambda.Core": "1.0.0*",
     "Amazon.Lambda.TestUtilities": "1.0.0*",
-    "Amazon.Lambda.KinesisEvents": "1.0.0",
+    "Amazon.Lambda.KinesisEvents": "1.0.1",
 
     "BLUEPRINT_BASE_NAME": "1.0.0",
 

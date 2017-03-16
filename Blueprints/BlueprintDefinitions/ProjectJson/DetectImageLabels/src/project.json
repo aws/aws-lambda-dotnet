@@ -9,21 +9,21 @@
       "version": "1.0.0"
     },
 
-    "AWSSDK.S3": "3.3.4.1",
-    "AWSSDK.Rekognition": "3.3.0.1",
+    "AWSSDK.S3": "3.3.5.10",
+    "AWSSDK.Rekognition": "3.3.1.3",
 
     "Amazon.Lambda.Core": "1.0.0*",
     "Amazon.Lambda.Serialization.Json": "1.0.1",
-    "Amazon.Lambda.S3Events": "1.0.0",
+    "Amazon.Lambda.S3Events": "1.0.1",
 
     "Amazon.Lambda.Tools" : {
       "type" :"build",
-      "version":"1.3.0-preview1"
+      "version":"1.4.0"
     }
   },
 
   "tools": {
-    "Amazon.Lambda.Tools" : "1.3.0-preview1"
+    "Amazon.Lambda.Tools" : "1.4.0"
   },
 
   "frameworks": {

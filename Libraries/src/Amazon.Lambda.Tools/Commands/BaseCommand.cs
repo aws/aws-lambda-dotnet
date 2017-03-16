@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 using Amazon;
 using Amazon.Runtime;
+using Amazon.Runtime.CredentialManagement;
 using Amazon.Lambda;
 
 using Amazon.CloudFormation;
@@ -263,15 +264,11 @@ namespace Amazon.Lambda.Tools.Commands
 
                 if (!string.IsNullOrEmpty(profile))
                 {
-                    if (!StoredProfileAWSCredentials.IsProfileKnown(profile, this.ProfileLocation))
+                    var chain = new CredentialProfileStoreChain(this.ProfileLocation);
+                    if (!chain.TryGetAWSCredentials(profile, out credentials))
                     {
-                        throw new LambdaToolsException($"Profile {profile} cannot be found", LambdaToolsException.ErrorCode.ProfileNotFound);
+                        throw new LambdaToolsException($"Credentials for profile {profile} cannot be found", LambdaToolsException.ErrorCode.ProfileNotFound);
                     }
-                    if (!StoredProfileAWSCredentials.CanCreateFrom(profile, this.ProfileLocation))
-                    {
-                        throw new LambdaToolsException($"Cannot create AWS credentials for profile {profile}", LambdaToolsException.ErrorCode.ProfileNotCreateable);
-                    }
-                    credentials = new StoredProfileAWSCredentials(profile, this.ProfileLocation);
                 }
                 else
                 {
