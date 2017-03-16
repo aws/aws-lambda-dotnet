@@ -17,7 +17,7 @@
     <PackageReference Include="Amazon.Lambda.TestUtilities" Version="1.0.0" />
 
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.0.1" />
-    <PackageReference Include="Amazon.Lambda.S3Events" Version="1.0.0" />
+    <PackageReference Include="Amazon.Lambda.S3Events" Version="1.0.1" />
 
     <PackageReference Include="xunit" Version="2.2.0" />
 
