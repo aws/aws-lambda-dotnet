@@ -30,7 +30,7 @@ namespace BLUEPRINT_BASE_NAME.Controllers
             this.S3Client = s3Client;
 
             this.BucketName = Startup.Configuration[Startup.AppS3BucketKey];
-            if(this.BucketName == null)
+            if(string.IsNullOrEmpty(this.BucketName))
             {
                 logger.LogCritical("Missing configuration for S3 bucket. The AppS3Bucket configuration must be set to a S3 bucket.");
                 throw new Exception("Missing configuration for S3 bucket. The AppS3Bucket configuration must be set to a S3 bucket.");
