@@ -10,7 +10,7 @@
 	* Update to latest version of AWS SDK for .NET
 * **Amazon.Lambda.Templates (1.0.0)**
 	* New NuGet package adding the Lambda blueprints to the dotnet CLI
-		* To install: ** dotnet new -i Amazon.Lambda.Templates::* **
+		* To install: dotnet new -i Amazon.Lambda.Templates::*
 * **Blueprints**
 	* Updated dependencies to latest AWS SDK for .NET dependencies and Amazon.Lambda.* dependencies.
 	* Fixed issue with **AspNetCoreWebAPI** not correctly checking if the BucketName property was set.
