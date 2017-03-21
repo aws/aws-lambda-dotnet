@@ -7,6 +7,8 @@
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">C:\Program Files (x86)\MSBuild\Microsoft\VisualStudio\v14.0</VSToolsPath>
 
+    <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
+
     <UserDirectory Condition="'$(UserDirectory)' == ''">$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))</UserDirectory>
     <NPMPath Condition="'$(NPMPath)' == ''"></NPMPath>
     <YeomanCmd Condition="'$(YeomanCmd)' == ''">$(UserDirectory)\AppData\Roaming\npm\yo.cmd</YeomanCmd>
@@ -221,8 +223,12 @@
   </Target>
 
   <Target Name="build-nuget-packages" DependsOnTargets="init">
+
+    <Exec Command="&quot;$(SDKToolingExe)&quot; msbuild Libraries.sln /t:Rebuild /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile)"
+        WorkingDirectory="..\Libraries"/>
+
     <PropertyGroup>
-      <Command>&quot;$(SDKToolingExe)&quot; pack -c $(Configuration) -o ../../../Deployment/nuget-packages</Command>
+      <Command>&quot;$(SDKToolingExe)&quot; pack --no-build -c $(Configuration) -o ../../../Deployment/nuget-packages</Command>
     </PropertyGroup>
 
     <Exec Command="$(Command)"
