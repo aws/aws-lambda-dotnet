@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
 
     <Authors>Amazon Web Services</Authors>
