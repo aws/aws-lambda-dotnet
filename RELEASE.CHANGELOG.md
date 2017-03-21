@@ -1,3 +1,22 @@
+### Release 2017-03-21 06:00
+* **Amazon.Lambda.Tools (1.4.0)**
+	* Update to latest AWSSDK.Core to pull in latest AWS SDK for .NET [credential enhancments](https://aws.amazon.com/blogs/developer/aws-sdk-dot-net-credential-profiles/)
+	* Promote to GA release
+* **Amazon.Lambda.DynamoDBEvents (1.0.1)**
+	* Update to latest version of AWS SDK for .NET
+* **Amazon.Lambda.KinesisEvents (1.0.1)**
+	* Update to latest version of AWS SDK for .NET
+* **Amazon.Lambda.S3Events (1.0.1)**
+	* Update to latest version of AWS SDK for .NET
+* **Amazon.Lambda.Templates (1.0.0)**
+	* New NuGet package adding the Lambda blueprints to the dotnet CLI
+		* To install: ** dotnet new -i Amazon.Lambda.Templates::* **
+* **Blueprints**
+	* Updated dependencies to latest AWS SDK for .NET dependencies and Amazon.Lambda.* dependencies.
+	* Fixed issue with **AspNetCoreWebAPI** not correctly checking if the BucketName property was set.
+    * Migrate blueprints to new msbuild project system.
+* Projects all migrated Visual Studio 2017
+	
 ### Release 2017-02-20 20:30
 * **Amazon.Lambda.Tools (1.3.0-preview1)
 	* Flatten the publish runtime folder to help the Lambda runtime resolve platform specific dependencies. This also reduces the size of the Lambda package bundle by only including the dependencies needed for the Lambda environment.
