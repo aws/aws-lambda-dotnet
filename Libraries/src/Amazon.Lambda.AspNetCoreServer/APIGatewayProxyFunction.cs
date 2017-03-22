@@ -24,6 +24,35 @@ namespace Amazon.Lambda.AspNetCoreServer
         private readonly IWebHost _host;
         private readonly APIGatewayServer _server;
 
+        // Defines a mapping from registered content types to the response encoding format
+        // which dictates what transformations should be applied before returning response content
+        private Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentType = new Dictionary<string, ResponseContentEncoding>
+        {
+            // The complete list of registered MIME content-types can be found at:
+            //    http://www.iana.org/assignments/media-types/media-types.xhtml
+
+            // Here we just include a few commonly used content types found in
+            // Web API responses and allow users to add more as needed below
+
+            ["text/plain"] = ResponseContentEncoding.Default,
+            ["text/xml"] = ResponseContentEncoding.Default,
+            ["application/xml"] = ResponseContentEncoding.Default,
+            ["application/json"] = ResponseContentEncoding.Default,
+            ["text/html"] = ResponseContentEncoding.Default,
+            ["text/css"] = ResponseContentEncoding.Default,
+            ["text/javascript"] = ResponseContentEncoding.Default,
+            ["text/ecmascript"] = ResponseContentEncoding.Default,
+            ["text/markdown"] = ResponseContentEncoding.Default,
+            ["text/csv"] = ResponseContentEncoding.Default,
+
+            ["application/octet-stream"] = ResponseContentEncoding.Base64,
+            ["image/png"] = ResponseContentEncoding.Base64,
+            ["image/gif"] = ResponseContentEncoding.Base64,
+            ["image/jpeg"] = ResponseContentEncoding.Base64,
+            ["application/zip"] = ResponseContentEncoding.Base64,
+            ["application/pdf"] = ResponseContentEncoding.Base64,
+        };
+
         // Manage the serialization so the raw requests and responses can be logged.
         ILambdaSerializer _serializer = new Amazon.Lambda.Serialization.Json.JsonSerializer();
 
@@ -35,6 +64,12 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// If true the response JSON coming sent to API Gateway will be logged. This is used to help debugging and not meant to be enabled for production.
         /// </summary>
         public bool EnableResponseLogging { get; set; }
+
+
+        /// <summary>
+        /// Defines the default treatment of response content.
+        /// </summary>
+        public ResponseContentEncoding DefaultResponseContentEncoding { get; set; } = ResponseContentEncoding.Base64;
 
         /// <summary>
         /// Default constructor that AWS Lambda will invoke.
@@ -110,6 +145,35 @@ namespace Amazon.Lambda.AspNetCoreServer
 
 
             return responseStream;
+        }
+
+        /// <summary>
+        /// Registers a mapping from a MIME content type to a <see cref="ResponseContentEncoding"/>.
+        /// </summary>
+        /// <remarks>
+        /// The mappings in combination with the <see cref="DefaultResponseContentEncoding"/>
+        /// setting will dictate if and how response content should be transformed before being
+        /// returned to the calling API Gateway instance.
+        /// <para>
+        /// The interface between the API Gateway and Lambda provides for repsonse content to
+        /// be returned as a UTF-8 string.  In order to return binary content without incurring
+        /// any loss or corruption due to transformations to the UTF-8 encoding, it is necessary
+        /// to encode the raw response content in Base64 and to annotate the response that it is
+        /// Base64-encoded.
+        /// </para><para>
+        /// <b>NOTE:</b>  In order to use this mechanism to return binary response content, in
+        /// addition to registering here any binary MIME content types that will be returned by
+        /// your application, it also necessary to register those same content types with the API
+        /// Gateway using either the <see
+        /// cref="http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-configure-with-console.html"
+        /// >console</see> or the <see
+        /// cref="http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-configure-with-control-service-api.html"
+        /// >REST interface</see>.
+        /// </para>
+        /// </remarks>
+        public void RegisterResponseContentEncodingForContentType(string contentType, ResponseContentEncoding encoding)
+        {
+            _responseContentEncodingForContentType[contentType] = encoding;
         }
 
         /// <summary>
@@ -289,6 +353,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 StatusCode = responseFeatures.StatusCode != 0 ? responseFeatures.StatusCode : statusCodeIfNotSet
             };
 
+            string contentType = null;
             if (responseFeatures.Headers != null)
             {
                 response.Headers = new Dictionary<string, string>();
@@ -302,12 +367,44 @@ namespace Amazon.Lambda.AspNetCoreServer
                     {
                         response.Headers[kvp.Key] = string.Join(",", kvp.Value);
                     }
+
+                    // Remember the Content-Type for possible later use
+                    if (kvp.Key.Equals("Content-Type", StringComparison.CurrentCultureIgnoreCase))
+                        contentType = response.Headers[kvp.Key];
                 }
             }
 
             if (responseFeatures.Body != null)
             {
-                if (responseFeatures.Body is MemoryStream)
+                // Figure out how we should treat the response content
+                var rcEncoding = DefaultResponseContentEncoding;
+                if (contentType != null
+                        && _responseContentEncodingForContentType.ContainsKey(contentType))
+                {
+                    rcEncoding = _responseContentEncodingForContentType[contentType];
+                }
+
+                // Do we encode the response content in Base64 or treat it as UTF-8
+                if (rcEncoding == ResponseContentEncoding.Base64)
+                {
+                    // We want to read the response content "raw" and then Base64 encode it
+                    byte[] bodyBytes;
+                    if (responseFeatures.Body is MemoryStream)
+                    {
+                        bodyBytes = ((MemoryStream)responseFeatures.Body).ToArray();
+                    }
+                    else
+                    {
+                        using (var ms = new MemoryStream())
+                        {
+                            responseFeatures.Body.CopyTo(ms);
+                            bodyBytes = ms.ToArray();
+                        }
+                    }
+                    response.Body = Convert.ToBase64String(bodyBytes);
+                    response.IsBase64Encoded = true;
+                }
+                else if (responseFeatures.Body is MemoryStream)
                 {
                     response.Body = UTF8Encoding.UTF8.GetString(((MemoryStream)responseFeatures.Body).ToArray());
                 }

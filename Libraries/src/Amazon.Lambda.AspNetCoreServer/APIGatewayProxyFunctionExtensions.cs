@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.AspNetCoreServer;
+using System.Text;
 
 namespace Amazon.Lambda.TestUtilities
 {
@@ -40,6 +41,18 @@ namespace Amazon.Lambda.TestUtilities
 
             var response = serializer.Deserialize<APIGatewayProxyResponse>(responseStream);
             return response;
+        }
+
+        /// <summary>
+        /// Returns the response body content as a string, applying any necessary transformations
+        /// dictated by the response flags, such as Base64 decoding.
+        /// </summary>
+        public static string BodyAsString(this APIGatewayProxyResponse response)
+        {
+            if (!string.IsNullOrEmpty(response.Body) && response.IsBase64Encoded)
+                return Encoding.UTF8.GetString(Convert.FromBase64String(response.Body));
+            else
+                return response.Body;
         }
     }
 }
