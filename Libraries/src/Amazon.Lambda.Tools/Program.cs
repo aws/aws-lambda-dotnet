@@ -55,6 +55,9 @@ namespace Amazon.Lambda.Tools
                     case PackageCommand.COMMAND_NAME:
                         command = new PackageCommand(new ConsoleToolLogger(), Directory.GetCurrentDirectory(), args.Skip(1).ToArray());
                         break;
+                    case PackageServerlessCommand.COMMAND_NAME:
+                        command = new PackageServerlessCommand(new ConsoleToolLogger(), Directory.GetCurrentDirectory(), args.Skip(1).ToArray());
+                        break;
                     case "--help":
                     case "--h":
                     case "help":
@@ -123,6 +126,7 @@ namespace Amazon.Lambda.Tools
             Console.WriteLine($"\t{DeployServerlessCommand.COMMAND_NAME.PadRight(NAME_WIDTH)} {DeployServerlessCommand.COMMAND_DESCRIPTION}");
             Console.WriteLine($"\t{ListServerlessCommand.COMMAND_NAME.PadRight(NAME_WIDTH)} {ListServerlessCommand.COMMAND_DESCRIPTION}");
             Console.WriteLine($"\t{DeleteServerlessCommand.COMMAND_NAME.PadRight(NAME_WIDTH)} {DeleteServerlessCommand.COMMAND_DESCRIPTION}");
+            Console.WriteLine($"\t{PackageServerlessCommand.COMMAND_NAME.PadRight(NAME_WIDTH)} {PackageServerlessCommand.COMMAND_DESCRIPTION}");
             Console.WriteLine("\t");
 
             Console.WriteLine("\t");

@@ -305,5 +305,15 @@ namespace Amazon.Lambda.Tools.Options
                 ValueType = CommandOption.CommandOptionValueType.BoolValue,
                 Description = $"If true the arguments used for a successful deployment are persisted to a config file. Default config file is {LambdaToolsDefaultsReader.DEFAULT_FILE_NAME}"
             };
+        public static readonly CommandOption ARGUMENT_OUTPUT_CLOUDFORMATION_TEMPLATE =
+            new CommandOption
+            {
+                Name = "CloudFormation Ouptut Template",
+                ShortSwitch = "-ot",
+                Switch = "--output-template",
+                ValueType = CommandOption.CommandOptionValueType.StringValue,
+                Description = "Path to write updated serverless template with CodeURI fields updated to where the project was upload to S3"
+            };
+
     }
 }
