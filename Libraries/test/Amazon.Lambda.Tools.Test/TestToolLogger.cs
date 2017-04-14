@@ -10,7 +10,6 @@ namespace Amazon.Lambda.Tools.Test
         public void WriteLine(string message)
         {
             this._buffer.AppendLine(message);
-            Console.WriteLine(message);
         }
 
         public void ClearBuffer()
