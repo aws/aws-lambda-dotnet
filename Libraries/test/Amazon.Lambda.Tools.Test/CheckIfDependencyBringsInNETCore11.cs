@@ -29,7 +29,7 @@ namespace Amazon.Lambda.Tools.Test
         public async Task UseNewtonsoft10()
         {
             var fullPath = GetTestProjectPath("UseNewtonsoft10");
-            var logger = new ConsoleToolLogger();
+            var logger = new TestToolLogger();
             var command = new PackageCommand(logger, fullPath, new string[0]);
             command.EnableInteractive = false;
             command.Configuration = "Release";
@@ -39,6 +39,29 @@ namespace Amazon.Lambda.Tools.Test
 
             var created = await command.ExecuteAsync();
             Assert.False(created);
+
+            Assert.True(logger.Buffer.Contains("Error: NETStandard.Library 1.6.1 is used for target framework netcoreapp1.1"));
+            Assert.True(logger.Buffer.Contains("Error: 	newtonsoft.json : 10.0.2"));
+        }
+
+        [Fact]
+        public async Task Use11ASPNetCoreDependencies()
+        {
+            var fullPath = GetTestProjectPath("Use11ASPNetCoreDependencies");
+            var logger = new TestToolLogger();
+            var command = new PackageCommand(logger, fullPath, new string[0]);
+            command.EnableInteractive = false;
+            command.Configuration = "Release";
+            command.TargetFramework = "netcoreapp1.0";
+
+            command.OutputPackageFileName = Path.GetTempFileName() + ".zip";
+
+            var created = await command.ExecuteAsync();
+            Assert.False(created);
+
+            Assert.True(logger.Buffer.Contains("Error: NETStandard.Library 1.6.1 is used for target framework netcoreapp1.1"));
+            Assert.True(logger.Buffer.Contains("Error: 	microsoft.aspnetcore.diagnostics : 1.1.1"));
+            Assert.True(logger.Buffer.Contains("Error: 	microsoft.extensions.fileproviders.embedded : 1.1.0"));
         }
     }
 }
