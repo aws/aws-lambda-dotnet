@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Http;
@@ -14,11 +15,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 {
     public class InvokeFeatures : IFeatureCollection,
                              IHttpRequestFeature,
-                             IHttpResponseFeature
+                             IHttpResponseFeature,
+                             IHttpConnectionFeature
     /*
     ,
                          IHttpUpgradeFeature,
-                         IHttpConnectionFeature,
                          IHttpRequestLifetimeFeature*/
     {
 
@@ -26,6 +27,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         {
             _features[typeof(IHttpRequestFeature)] = this;
             _features[typeof(IHttpResponseFeature)] = this;
+            _features[typeof(IHttpConnectionFeature)] = this;
         }
 
         #region IFeatureCollection
@@ -146,5 +148,18 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         }
         #endregion
 
+        #region IHttpConnectionFeature
+
+        string IHttpConnectionFeature.ConnectionId { get; set; }
+
+        IPAddress IHttpConnectionFeature.RemoteIpAddress { get; set; }
+
+        IPAddress IHttpConnectionFeature.LocalIpAddress { get; set; }
+
+        int IHttpConnectionFeature.RemotePort { get; set; }
+
+        int IHttpConnectionFeature.LocalPort { get; set; }
+
+        #endregion
     }
 }
