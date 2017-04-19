@@ -21,6 +21,16 @@ namespace Amazon.Lambda.AspNetCoreServer
     /// </summary>
     public abstract class APIGatewayProxyFunction
     {
+        /// <summary>
+        /// Key to access the ILambdaContext object from the HttpContext.Items collection.
+        /// </summary>
+        public const string LAMBDA_CONTEXT = "LambdaContext";
+
+        /// <summary>
+        /// Key to access the APIGatewayProxyRequest object from the HttpContext.Items collection.
+        /// </summary>
+        public const string APIGATEWAY_REQUEST = "APIGatewayRequest";
+
         private readonly IWebHost _host;
         private readonly APIGatewayServer _server;
 
@@ -93,6 +103,10 @@ namespace Amazon.Lambda.AspNetCoreServer
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request);
             var context = this.CreateContext(features);
+
+            // Add along the Lambda objects to the HttpContext to give access to Lambda to them in the ASP.NET Core application
+            context.HttpContext.Items[LAMBDA_CONTEXT] = lambdaContext;
+            context.HttpContext.Items[APIGATEWAY_REQUEST] = request;
 
             var response = await this.ProcessRequest(lambdaContext, context, features);
 
