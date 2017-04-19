@@ -289,10 +289,18 @@ namespace Amazon.Lambda.AspNetCoreServer
                 }
                 requestFeatures.Body = new MemoryStream(binaryBody);
             }
+
             // set up connection features
             var connectionFeatures = (IHttpConnectionFeature)features;
-            connectionFeatures.RemoteIpAddress = IPAddress.Parse(apiGatewayRequest.RequestContext.Identity.SourceIp);
-            if (apiGatewayRequest.Headers?.ContainsKey("X-Forwarded-Port") == true)
+
+            IPAddress remoteIpAddress;
+            if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Identity?.SourceIp) &&
+                IPAddress.TryParse(apiGatewayRequest.RequestContext.Identity.SourceIp, out remoteIpAddress))
+            {
+                connectionFeatures.RemoteIpAddress = remoteIpAddress;
+            }
+
+            if (apiGatewayRequest?.Headers?.ContainsKey("X-Forwarded-Port") == true)
             {
                 connectionFeatures.RemotePort = int.Parse(apiGatewayRequest.Headers["X-Forwarded-Port"]);
             }
