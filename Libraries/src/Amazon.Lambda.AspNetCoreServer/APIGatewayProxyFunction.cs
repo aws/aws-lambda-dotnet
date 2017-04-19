@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http.Features;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -228,13 +229,14 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         /// <summary>
-        /// Convert the JSON document received from API Gateway in the ASP.NET Core IHttpRequestFeature object.
-        /// IHttpRequestFeature is then passed into IHttpApplication to create the ASP.NET Core request objects.
+        /// Convert the JSON document received from API Gateway into the InvokeFeatures object.
+        /// InvokeFeatures is then passed into IHttpApplication to create the ASP.NET Core request objects.
         /// </summary>
-        /// <param name="requestFeatures"></param>
+        /// <param name="features"></param>
         /// <param name="apiGatewayRequest"></param>
-        protected void MarshallRequest(IHttpRequestFeature requestFeatures, APIGatewayProxyRequest apiGatewayRequest)
+        protected void MarshallRequest(InvokeFeatures features, APIGatewayProxyRequest apiGatewayRequest)
         {
+            var requestFeatures = (IHttpRequestFeature)features;
             requestFeatures.Scheme = "https";
             requestFeatures.Path = apiGatewayRequest.Path;
             requestFeatures.Method = apiGatewayRequest.HttpMethod;
@@ -286,6 +288,13 @@ namespace Amazon.Lambda.AspNetCoreServer
                     binaryBody = UTF8Encoding.UTF8.GetBytes(apiGatewayRequest.Body);
                 }
                 requestFeatures.Body = new MemoryStream(binaryBody);
+            }
+            // set up connection features
+            var connectionFeatures = (IHttpConnectionFeature)features;
+            connectionFeatures.RemoteIpAddress = IPAddress.Parse(apiGatewayRequest.RequestContext.Identity.SourceIp);
+            if (apiGatewayRequest.Headers?.ContainsKey("X-Forwarded-Port") == true)
+            {
+                connectionFeatures.RemotePort = int.Parse(apiGatewayRequest.Headers["X-Forwarded-Port"]);
             }
         }
 
