@@ -25,7 +25,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var response = await this.InvokeAPIGatewayRequest("values-get-all-apigatway-request.json");
 
             Assert.Equal(response.StatusCode, 200);
-            Assert.Equal("[\"value1\",\"value2\"]", response.BodyAsString());
+            Assert.Equal("[\"value1\",\"value2\"]", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
         }
@@ -35,7 +35,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var response = await this.InvokeAPIGatewayRequest("values-get-single-apigatway-request.json");
 
-            Assert.Equal("value=5", response.BodyAsString());
+            Assert.Equal("value=5", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
         }
@@ -45,7 +45,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigatway-request.json");
 
-            Assert.Equal("Lewis, Meriwether", response.BodyAsString());
+            Assert.Equal("Lewis, Meriwether", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
         }
@@ -56,7 +56,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var response = await this.InvokeAPIGatewayRequest("values-put-withbody-apigatway-request.json");
 
             Assert.Equal(200, response.StatusCode);
-            Assert.Equal("Agent, Smith", response.BodyAsString());
+            Assert.Equal("Agent, Smith", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
         }
@@ -67,7 +67,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var response = await this.InvokeAPIGatewayRequest("values-get-error-apigatway-request.json");
 
             Assert.Equal(response.StatusCode, 500);
-            Assert.Equal(string.Empty, response.BodyAsString());
+            Assert.Equal(string.Empty, response.Body);
         }
 
         [Theory]
@@ -78,7 +78,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var response = await this.InvokeAPIGatewayRequest(requestFileName);
 
             Assert.Equal(response.StatusCode, 500);
-            Assert.Equal(string.Empty, response.BodyAsString());
+            Assert.Equal(string.Empty, response.Body);
             Assert.True(response.Headers.ContainsKey("ErrorType"));
             Assert.Equal(expectedExceptionType, response.Headers["ErrorType"]);
         }
@@ -89,7 +89,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var response = await this.InvokeAPIGatewayRequest("swagger-get-apigatway-request.json");
 
             Assert.Equal(response.StatusCode, 200);
-            Assert.True(response.BodyAsString().Length > 0);
+            Assert.True(response.Body.Length > 0);
             Assert.Equal("application/json", response.Headers["Content-Type"]);
         }
 

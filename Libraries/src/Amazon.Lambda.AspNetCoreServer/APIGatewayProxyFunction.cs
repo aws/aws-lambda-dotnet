@@ -69,7 +69,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <summary>
         /// Defines the default treatment of response content.
         /// </summary>
-        public ResponseContentEncoding DefaultResponseContentEncoding { get; set; } = ResponseContentEncoding.Base64;
+        public ResponseContentEncoding DefaultResponseContentEncoding { get; set; } = ResponseContentEncoding.Default;
 
         /// <summary>
         /// Default constructor that AWS Lambda will invoke.
