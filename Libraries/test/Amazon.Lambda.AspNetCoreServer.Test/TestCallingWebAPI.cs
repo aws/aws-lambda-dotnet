@@ -6,6 +6,10 @@ using System.IO;
 using System.Threading.Tasks;
 using TestWebApp;
 using Xunit;
+using System;
+using System.Linq;
+using System.Net;
+using System.Reflection;
 
 namespace Amazon.Lambda.AspNetCoreServer.Test
 {
@@ -132,11 +136,35 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal(expected, json);
         }
 
+        [Fact]
+        public async Task TestGetBinaryContent()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-get-binary-apigatway-request.json");
+            
+            Assert.Equal((int)HttpStatusCode.OK, response.StatusCode);
+
+            string contentType;
+            Assert.True(response.Headers.TryGetValue("Content-Type", out contentType),
+                    "Content-Type response header exists");
+            Assert.Equal("application/octet-stream", contentType);
+            Assert.NotNull(response.Body);
+            Assert.True(response.Body.Length > 0,
+                    "Body content is not empty");
+
+            Assert.True(response.IsBase64Encoded, "Response IsBase64Encoded");
+
+            // Compute a 256-byte array, with values 0-255
+            var binExpected = new byte[byte.MaxValue].Select((val, index) => (byte)index).ToArray();
+            var binActual = Convert.FromBase64String(response.Body);
+            Assert.Equal(binExpected, binActual);
+        }
+
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
         {
             var context = new TestLambdaContext();
             var lambdaFunction = new LambdaFunction();
-            var requestStr = File.ReadAllText(fileName);
+            var filePath = Path.Combine(Path.GetDirectoryName(this.GetType().GetTypeInfo().Assembly.Location), fileName);
+            var requestStr = File.ReadAllText(filePath);
             var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
             return await lambdaFunction.FunctionHandlerAsync(request, context);
         }

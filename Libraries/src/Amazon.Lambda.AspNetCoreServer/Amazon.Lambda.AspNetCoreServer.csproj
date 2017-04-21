@@ -11,6 +11,8 @@
     <PackageTags>AWS;Amazon;Lambda;aspnetcore</PackageTags>
 
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+    <Version>0.10.0-preview1</Version>
   </PropertyGroup>
 
   <ItemGroup>
