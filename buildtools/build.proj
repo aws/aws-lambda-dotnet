@@ -244,6 +244,8 @@
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.DynamoDBEvents"/>
     <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.LexEvents"/>
+    <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisEvents"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.Logging.AspNetCore"/>
