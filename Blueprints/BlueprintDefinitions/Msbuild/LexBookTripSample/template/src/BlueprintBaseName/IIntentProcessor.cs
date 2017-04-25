@@ -12,7 +12,7 @@ namespace BlueprintBaseName
     public interface IIntentProcessor
     {
         /// <summary>
-        /// Main method for proccessing the lex event for the intent.
+        /// Main method for processing the Lex event for the intent.
         /// </summary>
         /// <param name="lexEvent"></param>
         /// <param name="context"></param>

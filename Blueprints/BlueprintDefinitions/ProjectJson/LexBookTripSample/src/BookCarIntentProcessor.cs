@@ -23,7 +23,7 @@ namespace BLUEPRINT_BASE_NAME
         /// 
         /// Beyond fulfillment, the implementation for this intent demonstrates the following:
         /// 1) Use of elicitSlot in slot validation and re-prompting
-        /// 2) Use of sessionAttributes to pass information that can be used to guide conversation
+        /// 2) Use of sessionAttributes to pass information that can be used to guide the conversation
         /// </summary>
         /// <param name="lexEvent"></param>
         /// <returns></returns>
@@ -83,8 +83,8 @@ namespace BLUEPRINT_BASE_NAME
                     return ElicitSlot(sessionAttributes, lexEvent.CurrentIntent.Name, slots, validateResult.ViolationSlot, validateResult.Message);
                 }
 
-                // Determine if the intent (and current slot settings) has been denied.  The messaging will be different
-                // if the user is denying a reservation he initiated or an auto-populated suggestion.
+                // Determine if the intent (and current slot settings) have been denied.  The messaging will be different
+                // if the user is denying a reservation they initiated or an auto-populated suggestion.
                 if (string.Equals(lexEvent.CurrentIntent.ConfirmationStatus, "Denied", StringComparison.Ordinal))
                 {
                     sessionAttributes.Remove("confirmationContext");
@@ -216,7 +216,7 @@ namespace BLUEPRINT_BASE_NAME
 
 
         /// <summary>
-        /// Validated that any values for slots in the intent are valid values.
+        /// Verifies that any values for slots in the intent are valid.
         /// </summary>
         /// <param name="reservation"></param>
         /// <returns></returns>

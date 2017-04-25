@@ -12,7 +12,7 @@ namespace BLUEPRINT_BASE_NAME
     public interface IIntentProcessor
     {
         /// <summary>
-        /// Main method for proccessing the lex event for the intent.
+        /// Main method for proccessing the Lex event for the intent.
         /// </summary>
         /// <param name="lexEvent"></param>
         /// <param name="context"></param>

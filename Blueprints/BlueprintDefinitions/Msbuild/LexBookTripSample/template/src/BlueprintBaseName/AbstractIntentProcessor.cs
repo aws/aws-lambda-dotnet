@@ -44,7 +44,6 @@ namespace BlueprintBaseName
         {
             return new LexResponse
             {
-                //SessionAttributes = new Dictionary<string,string>(),
                 SessionAttributes = sessionAttributes,
                 DialogAction = new LexResponse.LexDialogAction
                 {

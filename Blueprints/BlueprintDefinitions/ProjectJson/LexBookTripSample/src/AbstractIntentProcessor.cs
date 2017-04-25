@@ -20,7 +20,7 @@ namespace BLUEPRINT_BASE_NAME
         internal const string MESSAGE_CONTENT_TYPE = "PlainText";
 
         /// <summary>
-        /// Main method for proccessing the lex event for the intent.
+        /// Main method for proccessing the Lex event for the intent.
         /// </summary>
         /// <param name="lexEvent"></param>
         /// <param name="context"></param>
@@ -44,7 +44,6 @@ namespace BLUEPRINT_BASE_NAME
         {
             return new LexResponse
             {
-                //SessionAttributes = new Dictionary<string,string>(),
                 SessionAttributes = sessionAttributes,
                 DialogAction = new LexResponse.LexDialogAction
                 {

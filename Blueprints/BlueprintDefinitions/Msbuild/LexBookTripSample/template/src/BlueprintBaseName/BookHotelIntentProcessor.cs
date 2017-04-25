@@ -19,7 +19,7 @@ namespace BlueprintBaseName
         /// 
         /// Beyond fulfillment, the implementation for this intent demonstrates the following:
         /// 1) Use of elicitSlot in slot validation and re-prompting
-        /// 2) Use of sessionAttributes to pass information that can be used to guide conversation
+        /// 2) Use of sessionAttributes to pass information that can be used to guide the conversation
         /// </summary>
         /// <param name="lexEvent"></param>
         /// <param name="context"></param>
@@ -95,7 +95,7 @@ namespace BlueprintBaseName
 
 
         /// <summary>
-        /// Validated that any values for slots in the intent are valid values.
+        /// Verifies that any values for slots in the intent are valid.
         /// </summary>
         /// <param name="reservation"></param>
         /// <returns></returns>
