@@ -5,10 +5,15 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
-namespace BlueprintBaseName
+namespace BLUEPRINT_BASE_NAME
 {
     public class BookHotelIntentProcessor : AbstractIntentProcessor
     {
+        public const string LOCATION_SLOT = "Location";
+        public const string CHECK_IN_DATE_SLOT = "CheckInDate";
+        public const string NIGHTS_SLOT = "Nights";
+        public const string ROOM_TYPE_SLOT = "RoomType";
+
         /// <summary>
         /// Performs dialog management and fulfillment for booking a hotel.
         /// 
@@ -27,13 +32,13 @@ namespace BlueprintBaseName
             Reservation reservation = new Reservation
             {
                 ReservationType = "Hotel",
-                Location = slots.ContainsKey("Location") ? slots["Location"] : null,
-                CheckInDate = slots.ContainsKey("CheckInDate") ? slots["CheckInDate"] : null,
-                Nights = slots.ContainsKey("Nights") ? slots["Nights"] : null,
-                RoomType = slots.ContainsKey("RoomType") ? slots["RoomType"] : null
+                Location = slots.ContainsKey(LOCATION_SLOT) ? slots[LOCATION_SLOT] : null,
+                CheckInDate = slots.ContainsKey(CHECK_IN_DATE_SLOT) ? slots[CHECK_IN_DATE_SLOT] : null,
+                Nights = slots.ContainsKey(NIGHTS_SLOT) ? slots[NIGHTS_SLOT] : null,
+                RoomType = slots.ContainsKey(ROOM_TYPE_SLOT) ? slots[ROOM_TYPE_SLOT] : null
             };
 
-            sessionAttributes["currentReservation"] = SerializeReservation(reservation);
+            sessionAttributes[CURRENT_RESERVATION_SESSION_ATTRIBUTE] = SerializeReservation(reservation);
 
             if (string.Equals(lexEvent.InvocationSource, "DialogCodeHook", StringComparison.Ordinal))
             {
@@ -52,11 +57,11 @@ namespace BlueprintBaseName
                     var price = GeneratePrice(reservation);
                     context.Logger.LogLine($"Generated price: {price}");
 
-                    sessionAttributes["currentReservationPrice"] = price.ToString(CultureInfo.InvariantCulture);
+                    sessionAttributes[CURRENT_RESERVATION_PRICE_SESSION_ATTRIBUTE] = price.ToString(CultureInfo.InvariantCulture);
                 }
                 else
                 {
-                    sessionAttributes.Remove("currentReservationPrice");
+                    sessionAttributes.Remove(CURRENT_RESERVATION_PRICE_SESSION_ATTRIBUTE);
                 }
 
 
@@ -67,22 +72,22 @@ namespace BlueprintBaseName
             // Booking the hotel.  In a real application, this would likely involve a call to a backend service.
             context.Logger.LogLine($"Book hotel at = {SerializeReservation(reservation)}");
 
-            if (sessionAttributes.ContainsKey("currentReservationPrice"))
+            if (sessionAttributes.ContainsKey(CURRENT_RESERVATION_PRICE_SESSION_ATTRIBUTE))
             {
-                context.Logger.LogLine($"Book hotel price = {sessionAttributes["currentReservationPrice"]}");
+                context.Logger.LogLine($"Book hotel price = {sessionAttributes[CURRENT_RESERVATION_PRICE_SESSION_ATTRIBUTE]}");
             }
 
-            sessionAttributes.Remove("currentReservationPrice");
-            sessionAttributes.Remove("currentReservation");
+            sessionAttributes.Remove(CURRENT_RESERVATION_PRICE_SESSION_ATTRIBUTE);
+            sessionAttributes.Remove(CURRENT_RESERVATION_SESSION_ATTRIBUTE);
 
-            sessionAttributes["lastConfirmedReservation"] = SerializeReservation(reservation);
+            sessionAttributes[LAST_CONFIRMED_RESERVATION_SESSION_ATTRIBUTE] = SerializeReservation(reservation);
 
             return Close(
                         sessionAttributes,
                         "Fulfilled",
                         new LexResponse.LexMessage
                         {
-                            ContentType = "PlainText",
+                            ContentType = MESSAGE_CONTENT_TYPE,
                             Content = "Thanks, I have placed your hotel reservation."
                         }
                     );
@@ -98,7 +103,7 @@ namespace BlueprintBaseName
         {
             if (!string.IsNullOrEmpty(reservation.Location) && !TypeValidators.IsValidCity(reservation.Location))
             {
-                return new ValidationResult(false, "Location",
+                return new ValidationResult(false, LOCATION_SLOT,
                     $"We currently do not support {reservation.Location} as a valid destination.  Can you try a different city?");
             }
 
@@ -107,12 +112,12 @@ namespace BlueprintBaseName
                 DateTime checkinDate = DateTime.MinValue;
                 if (!DateTime.TryParse(reservation.CheckInDate, out checkinDate))
                 {
-                    return new ValidationResult(false, "CheckInDate",
+                    return new ValidationResult(false, CHECK_IN_DATE_SLOT,
                         "I did not understand your check in date.  When would you like to check in?");
                 }
                 if (checkinDate < DateTime.Today)
                 {
-                    return new ValidationResult(false, "CheckInDate",
+                    return new ValidationResult(false, CHECK_IN_DATE_SLOT,
                         "Reservations must be scheduled at least one day in advance.  Can you try a different date?");
                 }
             }
@@ -122,12 +127,12 @@ namespace BlueprintBaseName
                 int nights;
                 if (!int.TryParse(reservation.Nights, out nights))
                 {
-                    return new ValidationResult(false, "Nights",
+                    return new ValidationResult(false, NIGHTS_SLOT,
                         "I did not understand the number of nights.  Can you enter the number of nights again again?");
                 }
                 if (nights < 1 || nights > 30)
                 {
-                    return new ValidationResult(false, "Nights",
+                    return new ValidationResult(false, NIGHTS_SLOT,
                         "You can make a reservations for from one to thirty nights.  How many nights would you like to stay for?");
                 }
             }
@@ -162,4 +167,5 @@ namespace BlueprintBaseName
             return int.Parse(reservation.Nights, CultureInfo.InvariantCulture) * (100 + costOfLiving + (100 + roomTypeIndex));
         }
     }
+
 }

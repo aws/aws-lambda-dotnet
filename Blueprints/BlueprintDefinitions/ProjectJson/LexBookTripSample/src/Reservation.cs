@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BlueprintBaseName
+namespace BLUEPRINT_BASE_NAME
 {
     /// <summary>
     /// A utility class to store all the current values from the intent's slots.

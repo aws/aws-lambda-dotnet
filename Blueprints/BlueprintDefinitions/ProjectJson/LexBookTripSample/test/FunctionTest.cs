@@ -11,9 +11,9 @@ using Amazon.Lambda.LexEvents;
 
 using Newtonsoft.Json;
 
-using BlueprintBaseName;
+using BLUEPRINT_BASE_NAME;
 
-namespace BlueprintBaseName.Tests
+namespace BLUEPRINT_BASE_NAME.Tests
 {
     public class FunctionTest
     {

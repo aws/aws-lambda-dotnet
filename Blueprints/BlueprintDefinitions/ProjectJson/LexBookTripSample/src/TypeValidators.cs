@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
 
-namespace BlueprintBaseName
+namespace BLUEPRINT_BASE_NAME
 {
     /// <summary>
     /// Stub implementation that validates input values. A real implementation would check a datastore.

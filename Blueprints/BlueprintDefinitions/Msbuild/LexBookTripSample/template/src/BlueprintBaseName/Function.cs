@@ -21,7 +21,7 @@ namespace BlueprintBaseName
     {
 
         /// <summary>
-        /// Then entry pointn for the Lambda function that looks at the current intent and calls the appropriate intent process.
+        /// Then entry point for the Lambda function that looks at the current intent and calls the appropriate intent process.
         /// </summary>
         /// <param name="input"></param>
         /// <param name="context"></param>

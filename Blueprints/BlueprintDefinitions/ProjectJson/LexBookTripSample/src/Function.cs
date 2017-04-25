@@ -15,13 +15,13 @@ using System.IO;
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 
-namespace BlueprintBaseName
+namespace BLUEPRINT_BASE_NAME
 {
     public class Function
     {
 
         /// <summary>
-        /// Then entry pointn for the Lambda function that looks at the current intent and calls the appropriate intent process.
+        /// Then entry point for the Lambda function that looks at the current intent and calls the appropriate intent process.
         /// </summary>
         /// <param name="input"></param>
         /// <param name="context"></param>

@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BlueprintBaseName
+namespace BLUEPRINT_BASE_NAME
 {
     /// <summary>
     /// Represents an intent processor that the Lambda function will invoke to process the event.

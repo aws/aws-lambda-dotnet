@@ -6,13 +6,19 @@ using System.Text;
 
 using Newtonsoft.Json;
 
-namespace BlueprintBaseName
+namespace BLUEPRINT_BASE_NAME
 {
     /// <summary>
     /// Base class for intent processors.
     /// </summary>
     public abstract class AbstractIntentProcessor : IIntentProcessor
     {
+        internal const string CURRENT_RESERVATION_PRICE_SESSION_ATTRIBUTE = "currentReservationPrice";
+        internal const string CURRENT_RESERVATION_SESSION_ATTRIBUTE = "currentReservation";
+        internal const string LAST_CONFIRMED_RESERVATION_SESSION_ATTRIBUTE = "lastConfirmedReservation";
+
+        internal const string MESSAGE_CONTENT_TYPE = "PlainText";
+
         /// <summary>
         /// Main method for proccessing the lex event for the intent.
         /// </summary>

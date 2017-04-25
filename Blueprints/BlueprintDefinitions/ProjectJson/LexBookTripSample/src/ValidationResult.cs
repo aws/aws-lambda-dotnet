@@ -4,7 +4,7 @@ using System.Text;
 
 using Amazon.Lambda.LexEvents;
 
-namespace BlueprintBaseName
+namespace BLUEPRINT_BASE_NAME
 {
     /// <summary>
     /// This class contains the results of validating the current state of all slot values. This is used to send information

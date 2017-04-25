@@ -9,6 +9,15 @@ namespace BlueprintBaseName
 {
     public class BookCarIntentProcessor : AbstractIntentProcessor
     {
+        public const string PICK_UP_CITY_SLOT = "PickUpCity";
+        public const string PICK_UP_DATE_SLOT = "PickUpDate";
+        public const string RETURN_DATE_SLOT = "ReturnDate";
+        public const string DRIVER_AGE_SLOT = "DriverAge";
+        public const string CAR_TYPE_SLOT = "CarType";
+
+
+
+
         /// <summary>
         /// Performs dialog management and fulfillment for booking a car.
         /// 
@@ -27,24 +36,24 @@ namespace BlueprintBaseName
             Reservation reservation = new Reservation
             {
                 ReservationType = "Car",
-                PickUpCity = slots.ContainsKey("PickUpCity") ? slots["PickUpCity"] : null,
-                PickUpDate = slots.ContainsKey("PickUpDate") ? slots["PickUpDate"] : null,
-                ReturnDate = slots.ContainsKey("ReturnDate") ? slots["ReturnDate"] : null,
-                DriverAge = slots.ContainsKey("DriverAge") ? slots["DriverAge"] : null,
-                CarType = slots.ContainsKey("CarType") ? slots["CarType"] : null,
+                PickUpCity = slots.ContainsKey(PICK_UP_CITY_SLOT) ? slots[PICK_UP_CITY_SLOT] : null,
+                PickUpDate = slots.ContainsKey(PICK_UP_DATE_SLOT) ? slots[PICK_UP_DATE_SLOT] : null,
+                ReturnDate = slots.ContainsKey(RETURN_DATE_SLOT) ? slots[RETURN_DATE_SLOT] : null,
+                DriverAge = slots.ContainsKey(DRIVER_AGE_SLOT) ? slots[DRIVER_AGE_SLOT] : null,
+                CarType = slots.ContainsKey(CAR_TYPE_SLOT) ? slots[CAR_TYPE_SLOT] : null,
             };
 
             string confirmationStaus = lexEvent.CurrentIntent.ConfirmationStatus;
 
             Reservation lastConfirmedReservation = null;
-            if (slots.ContainsKey("lastConfirmedReservation"))
+            if (slots.ContainsKey(LAST_CONFIRMED_RESERVATION_SESSION_ATTRIBUTE))
             {
-                lastConfirmedReservation = DeserializeReservation(slots["lastConfirmedReservation"]);
+                lastConfirmedReservation = DeserializeReservation(slots[LAST_CONFIRMED_RESERVATION_SESSION_ATTRIBUTE]);
             }
 
             string confirmationContext = sessionAttributes.ContainsKey("confirmationContext") ? sessionAttributes["confirmationContext"] : null;
 
-            sessionAttributes["currentReservation"] = SerializeReservation(reservation);
+            sessionAttributes[CURRENT_RESERVATION_SESSION_ATTRIBUTE] = SerializeReservation(reservation);
 
             var validateResult = Validate(reservation);
             context.Logger.LogLine($"Has required fields: {reservation.HasRequiredCarFields}, Has valid values {validateResult.IsValid}");
@@ -58,11 +67,11 @@ namespace BlueprintBaseName
                 var price = GeneratePrice(reservation);
                 context.Logger.LogLine($"Generated price: {price}");
 
-                sessionAttributes["currentReservationPrice"] = price.ToString(CultureInfo.InvariantCulture);
+                sessionAttributes[CURRENT_RESERVATION_PRICE_SESSION_ATTRIBUTE] = price.ToString(CultureInfo.InvariantCulture);
             }
             else
             {
-                sessionAttributes.Remove("currentReservationPrice");
+                sessionAttributes.Remove(CURRENT_RESERVATION_PRICE_SESSION_ATTRIBUTE);
             }
 
             if (string.Equals(lexEvent.InvocationSource, "DialogCodeHook", StringComparison.Ordinal))
@@ -79,7 +88,7 @@ namespace BlueprintBaseName
                 if (string.Equals(lexEvent.CurrentIntent.ConfirmationStatus, "Denied", StringComparison.Ordinal))
                 {
                     sessionAttributes.Remove("confirmationContext");
-                    sessionAttributes.Remove("currentReservation");
+                    sessionAttributes.Remove(CURRENT_RESERVATION_SESSION_ATTRIBUTE);
 
                     if (string.Equals(confirmationContext, "AutoPopulate", StringComparison.Ordinal))
                     {
@@ -87,16 +96,16 @@ namespace BlueprintBaseName
                                             lexEvent.CurrentIntent.Name,
                                             new Dictionary<string, string>
                                             {
-                                                {"PickUpCity", null },
-                                                {"PickUpDate", null },
-                                                {"ReturnDate", null },
-                                                {"DriverAge", null },
-                                                {"CarType", null }
+                                                {PICK_UP_CITY_SLOT, null },
+                                                {PICK_UP_DATE_SLOT, null },
+                                                {RETURN_DATE_SLOT, null },
+                                                {DRIVER_AGE_SLOT, null },
+                                                {CAR_TYPE_SLOT, null }
                                             },
-                                            "PickUpCity",
+                                            PICK_UP_CITY_SLOT,
                                             new LexResponse.LexMessage
                                             {
-                                                ContentType = "PlainText",
+                                                ContentType = MESSAGE_CONTENT_TYPE,
                                                 Content = "Where would you like to make your car reservation?"
                                             }
                                         );
@@ -125,15 +134,15 @@ namespace BlueprintBaseName
                                     lexEvent.CurrentIntent.Name,
                                     new Dictionary<string, string>
                                     {
-                                        {"PickUpCity", lastConfirmedReservation.PickUpCity },
-                                        {"PickUpDate", lastConfirmedReservation.CheckInDate },
-                                        {"ReturnDate", DateTime.Parse(lastConfirmedReservation.CheckInDate).AddDays(int.Parse(lastConfirmedReservation.Nights)).ToUniversalTime().ToString(CultureInfo.InvariantCulture) },
-                                        {"CarType", null },
-                                        {"DriverAge", null },
+                                        {PICK_UP_CITY_SLOT, lastConfirmedReservation.PickUpCity },
+                                        {PICK_UP_DATE_SLOT, lastConfirmedReservation.CheckInDate },
+                                        {RETURN_DATE_SLOT, DateTime.Parse(lastConfirmedReservation.CheckInDate).AddDays(int.Parse(lastConfirmedReservation.Nights)).ToUniversalTime().ToString(CultureInfo.InvariantCulture) },
+                                        {CAR_TYPE_SLOT, null },
+                                        {DRIVER_AGE_SLOT, null },
                                     },
                                     new LexResponse.LexMessage
                                     {
-                                        ContentType = "PlainText",
+                                        ContentType = MESSAGE_CONTENT_TYPE,
                                         Content = $"Is this car rental for your {lastConfirmedReservation.Nights} night stay in {lastConfirmedReservation.Location} on {lastConfirmedReservation.CheckInDate}?"
                                     }
                                 );
@@ -156,10 +165,10 @@ namespace BlueprintBaseName
                             return ElicitSlot(sessionAttributes,
                                                 lexEvent.CurrentIntent.Name,
                                                 slots,
-                                                "DriverAge",
+                                                DRIVER_AGE_SLOT,
                                                 new LexResponse.LexMessage
                                                 {
-                                                    ContentType = "PlainText",
+                                                    ContentType = MESSAGE_CONTENT_TYPE,
                                                     Content = "How old is the driver of this car rental?"
                                                 }
                                              );
@@ -169,10 +178,10 @@ namespace BlueprintBaseName
                             return ElicitSlot(sessionAttributes,
                                                 lexEvent.CurrentIntent.Name,
                                                 slots,
-                                                "CarType",
+                                                CAR_TYPE_SLOT,
                                                 new LexResponse.LexMessage
                                                 {
-                                                    ContentType = "PlainText",
+                                                    ContentType = MESSAGE_CONTENT_TYPE,
                                                     Content = "What type of car would you like? Popular models are economy, midsize, and luxury."
                                                 }
                                              );
@@ -185,21 +194,21 @@ namespace BlueprintBaseName
 
             context.Logger.LogLine($"Book car at = {SerializeReservation(reservation)}");
 
-            if (sessionAttributes.ContainsKey("currentReservationPrice"))
+            if (sessionAttributes.ContainsKey(CURRENT_RESERVATION_PRICE_SESSION_ATTRIBUTE))
             {
-                context.Logger.LogLine($"Book car price = {sessionAttributes["currentReservationPrice"]}");
+                context.Logger.LogLine($"Book car price = {sessionAttributes[CURRENT_RESERVATION_PRICE_SESSION_ATTRIBUTE]}");
             }
 
-            sessionAttributes.Remove("currentReservationPrice");
-            sessionAttributes.Remove("currentReservation");
-            sessionAttributes["lastConfirmedReservation"] = SerializeReservation(reservation);
+            sessionAttributes.Remove(CURRENT_RESERVATION_PRICE_SESSION_ATTRIBUTE);
+            sessionAttributes.Remove(CURRENT_RESERVATION_SESSION_ATTRIBUTE);
+            sessionAttributes[LAST_CONFIRMED_RESERVATION_SESSION_ATTRIBUTE] = SerializeReservation(reservation);
 
             return Close(
                         sessionAttributes,
                         "Fulfilled",
                         new LexResponse.LexMessage
                         {
-                            ContentType = "PlainText",
+                            ContentType = MESSAGE_CONTENT_TYPE,
                             Content = "Thanks, I have placed your reservation."
                         }
                     );
@@ -215,7 +224,7 @@ namespace BlueprintBaseName
         {
             if (!string.IsNullOrEmpty(reservation.PickUpCity) && !TypeValidators.IsValidCity(reservation.PickUpCity))
             {
-                return new ValidationResult(false, "PickupCity",
+                return new ValidationResult(false, PICK_UP_CITY_SLOT,
                     $"We currently do not support {reservation.PickUpCity} as a valid destination.  Can you try a different city?");
             }
 
@@ -224,12 +233,12 @@ namespace BlueprintBaseName
             {
                 if (!DateTime.TryParse(reservation.PickUpDate, out pickupDate))
                 {
-                    return new ValidationResult(false, "PickUpDate",
+                    return new ValidationResult(false, PICK_UP_DATE_SLOT,
                         "I did not understand your departure date.  When would you like to pick up your car rental?");
                 }
                 if (pickupDate < DateTime.Today)
                 {
-                    return new ValidationResult(false, "PickUpDate",
+                    return new ValidationResult(false, PICK_UP_DATE_SLOT,
                         "Your pick up date is in the past!  Can you try a different date?");
                 }
             }
@@ -239,7 +248,7 @@ namespace BlueprintBaseName
             {
                 if (!DateTime.TryParse(reservation.ReturnDate, out returnDate))
                 {
-                    return new ValidationResult(false, "ReturnDate",
+                    return new ValidationResult(false, RETURN_DATE_SLOT,
                         "I did not understand your return date.  When would you like to return your car rental?");
                 }
             }
@@ -248,14 +257,14 @@ namespace BlueprintBaseName
             {
                 if (returnDate <= pickupDate)
                 {
-                    return new ValidationResult(false, "ReturnDate",
+                    return new ValidationResult(false, RETURN_DATE_SLOT,
                         "Your return date must be after your pick up date.  Can you try a different return date?");
                 }
 
                 var ts = returnDate.Date - pickupDate.Date;
                 if (ts.Days > 30)
                 {
-                    return new ValidationResult(false, "ReturnDate",
+                    return new ValidationResult(false, RETURN_DATE_SLOT,
                         "You can reserve a car for up to thirty days.  Can you try a different return date?");
                 }
             }
@@ -265,19 +274,19 @@ namespace BlueprintBaseName
             {
                 if (!int.TryParse(reservation.DriverAge, out age))
                 {
-                    return new ValidationResult(false, "DriverAge",
+                    return new ValidationResult(false, DRIVER_AGE_SLOT,
                         "I did not understand the driver's age.  Can you enter the driver's age again?");
                 }
                 if (age < 18)
                 {
-                    return new ValidationResult(false, "DriverAge",
+                    return new ValidationResult(false, DRIVER_AGE_SLOT,
                         "Your driver must be at least eighteen to rent a car.  Can you provide the age of a different driver?");
                 }
             }
 
             if (!string.IsNullOrEmpty(reservation.CarType) && !TypeValidators.IsValidCarType(reservation.CarType))
             {
-                return new ValidationResult(false, "CarType",
+                return new ValidationResult(false, CAR_TYPE_SLOT,
                     "I did not recognize that model.  What type of car would you like to rent?  " +
                     "Popular cars are economy, midsize, or luxury");
             }
@@ -316,4 +325,5 @@ namespace BlueprintBaseName
             return days * ((100 + baseLocationCost) + ((carTypeIndex * 50) * ageMultiplier));
         }
     }
+
 }
