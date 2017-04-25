@@ -68,16 +68,6 @@ namespace Amazon.Lambda.AspNetCoreServer
         ILambdaSerializer _serializer = new Amazon.Lambda.Serialization.Json.JsonSerializer();
 
         /// <summary>
-        /// If true the request JSON coming from API Gateway will be logged. This is used to help debugging and not meant to be enabled for production.
-        /// </summary>
-        public bool EnableRequestLogging { get; set; }
-        /// <summary>
-        /// If true the response JSON coming sent to API Gateway will be logged. This is used to help debugging and not meant to be enabled for production.
-        /// </summary>
-        public bool EnableResponseLogging { get; set; }
-
-
-        /// <summary>
         /// Defines the default treatment of response content.
         /// </summary>
         public ResponseContentEncoding DefaultResponseContentEncoding { get; set; } = ResponseContentEncoding.Default;
@@ -120,21 +110,11 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <summary>
         /// This method is what the Lambda function handler points to.
         /// </summary>
-        /// <param name="requestStream">Takes in a Stream instead of APIGatewayProxyRequest to get access to the raw event for logging purposes.</param>
+        /// <param name="request"></param>
         /// <param name="lambdaContext"></param>
         /// <returns></returns>
-        public virtual async Task<Stream> FunctionHandlerAsync(Stream requestStream, ILambdaContext lambdaContext)
+        public virtual async Task<APIGatewayProxyResponse> FunctionHandlerAsync(APIGatewayProxyRequest request, ILambdaContext lambdaContext)
         {
-            if (this.EnableRequestLogging)
-            {
-                StreamReader reader = new StreamReader(requestStream);
-                string json = reader.ReadToEnd();
-                lambdaContext.Logger.LogLine(json);
-                requestStream.Position = 0;
-            }
-
-            var request = this._serializer.Deserialize<APIGatewayProxyRequest>(requestStream);
-
             lambdaContext.Logger.LogLine($"Incoming {request.HttpMethod} requests to {request.Path}");
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request);
@@ -146,20 +126,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             var response = await this.ProcessRequest(lambdaContext, context, features);
 
-            var responseStream = new MemoryStream();
-            this._serializer.Serialize<APIGatewayProxyResponse>(response, responseStream);
-            responseStream.Position = 0;
-
-            if (this.EnableResponseLogging)
-            {
-                StreamReader reader = new StreamReader(responseStream);
-                string json = reader.ReadToEnd();
-                lambdaContext.Logger.LogLine(json);
-                responseStream.Position = 0;
-            }
-
-
-            return responseStream;
+            return response;
         }
 
         /// <summary>
