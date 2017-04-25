@@ -131,6 +131,10 @@
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
           Properties="TemplateName=lambda.EmptyServerless;ProjectName=EmptyServerless"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.LexBookTripSample;ProjectName=LexBookTripSample"/>		  
 	  		
   </Target>
   
@@ -187,6 +191,10 @@
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-yeoman"
           Properties="CurrentBlueprint=SimpleS3Function"/>
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-yeoman"
+          Properties="CurrentBlueprint=LexBookTripSample"/>
 
   </Target>
 
