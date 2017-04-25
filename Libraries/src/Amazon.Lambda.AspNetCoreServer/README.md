@@ -41,13 +41,13 @@ Once the function is deployed configure API Gateway with a HTTP Proxy to call th
 
 ## Supporting Binary Response Content
 
-The interface between the API Gateway and Lambda provides for and assumes repsonse content to be returned as a UTF-8 string.
+The interface between the API Gateway and Lambda provides for and assumes response content to be returned as a UTF-8 string.
 In order to return binary content it is necessary to encode the raw response content in Base64 and to set a flag in the
 response object that Base64-encoding has been applied.
 
 In order to facilitate this mechanism, the `APIGatewayProxyFunction` base class maintains a registry of MIME content types
 and how they should be transformed before being returned to the calling API Gateway.  For any binary content types that are
-returned by your applicaiton, you should register them for Base64 tranformation and then the framework will take care of
+returned by your application, you should register them for Base64 tranformation and then the framework will take care of
 intercepting any such responses and making an necessary transformations to preserve the binary content.  For example:
 
 ```csharp
