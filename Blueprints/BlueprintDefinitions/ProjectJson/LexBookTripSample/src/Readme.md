@@ -14,7 +14,7 @@ Bot, Intent, and Slot models which are compatible with this sample can be found 
 as part of the 'BookTrip' template.
 
 For instructions on how to set up and test this bot, as well as additional samples,
-visit the Lex Getting Started documentation http://docs.aws.amazon.com/lex/latest/dg/getting-started.html.
+visit the Lex Getting Started documentation https://docs.aws.amazon.com/lex/latest/dg/getting-started.html.
 
 
 ## Here are some steps to follow to deploy:
