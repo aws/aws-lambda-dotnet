@@ -9,7 +9,7 @@
       "version": "1.0.0"
     },
 
-    "AWSSDK.S3": "3.3.5.10",
+    "AWSSDK.S3": "3.3.5.13",
     "Amazon.Lambda.Core": "1.0.0*",
     "Amazon.Lambda.TestUtilities": "1.0.0*",
     "Amazon.Lambda.S3Events": "1.0.1",

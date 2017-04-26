@@ -10,7 +10,7 @@
     <PackageReference Include="Amazon.Lambda.TestUtilities" Version="1.0.0" />
 
     <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="1.0.1" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.3.4.3" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.3.4.7" />
 
     <PackageReference Include="xunit" Version="2.2.0" />
 
