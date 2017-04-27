@@ -6,7 +6,7 @@ This starter project consists of:
 
 You may also have a test project depending on the options selected.
 
-The generated function handler performs data transformation on records written an Amazon Kinesis Firehose delivery stream. Replace the body of this method, and parameters, to suit your needs.
+The generated function handler performs data transformation on records written to an Amazon Kinesis Firehose delivery stream. Replace the body of this method, and parameters, to suit your needs.
 
 After deploying your function you must configure an Amazon Kinesis Firehose delivery stream to enable data transformations and use the deployed Lambda function.
 
