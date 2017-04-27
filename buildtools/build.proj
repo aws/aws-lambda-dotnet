@@ -190,6 +190,10 @@
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-yeoman"
+          Properties="CurrentBlueprint=SimpleKinesisFirehoseFunction"/>
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-yeoman"
           Properties="CurrentBlueprint=SimpleKinesisFunction"/>
     <MSBuild
           Projects="$(MSBuildProjectFile)"
