@@ -118,6 +118,10 @@
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.KinesisFirehose;ProjectName=KinesisFirehoseFunction"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
           Properties="TemplateName=lambda.S3;ProjectName=S3Function"/>		  
     <MSBuild
           Projects="$(MSBuildProjectFile)"
@@ -255,6 +259,8 @@
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.LexEvents"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisEvents"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisFirehoseEvents"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.Logging.AspNetCore"/>
     <Exec Command="$(Command)"
