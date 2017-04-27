@@ -16,7 +16,7 @@ A Newtonsoft.Json `IContractResolver` implementation which handles this custom s
 
 Below is a sample class and Lambda function that illustrates how an S3Event can be used. The function logs a summary of the events it received, including the type and time of event, bucket, and key. (Note that by default anything written to Console will be logged as CloudWatch Logs events.)
 
-```
+```csharp
 public class Function
 {
     public string Handler(S3Event s3Event)

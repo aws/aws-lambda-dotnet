@@ -6,7 +6,7 @@ This package contains classes that can be used as input and response types for L
 
 The following is a sample class and Lambda function that receives Amazon Lex event as an input and returns back a response.)
 
-```
+```csharp
 public class Function
 {
     public LexResponse Handler(LexEvent lexEvent)

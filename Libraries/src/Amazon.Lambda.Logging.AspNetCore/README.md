@@ -9,7 +9,7 @@ The two below examples set the same logging options, but do it either through co
 
 ## Configuration through code
 
-```
+```csharp
 public void Configure(ILoggerFactory loggerFactory)
 {
     // Create and populate LambdaLoggerOptions object
@@ -44,7 +44,7 @@ public void Configure(ILoggerFactory loggerFactory)
 ## Configuration through IConfiguration
 
 Configuration file, `appsettings.json`:
-```
+```json
 {
   "Lambda.Logging": {
     "IncludeCategory": false,
@@ -59,7 +59,7 @@ Configuration file, `appsettings.json`:
 ```
 
 Creating `LambdaLoggerOptions` from the configuration file:
-```
+```csharp
 public void Configure(ILoggerFactory loggerFactory)
 {
     var configuration = new ConfigurationBuilder()

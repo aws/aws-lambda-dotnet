@@ -10,7 +10,7 @@ Here is an example of setting this attribute on the assembly.
 ```
 
 And this is how the method can be applied to the handler method.
-```
+```csharp
 [Amazon.Lambda.Core.LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 public Response CustomSerializerMethod(Request input)
 {

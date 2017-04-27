@@ -6,7 +6,7 @@ This package contains classes that can be used for AWS Lambda functions that per
 
 The following is a sample class and Lambda function that transforms Kinesis Firehose records by doing a ToUpper on the data.
 
-```
+```csharp
 public class Function
 {
 
