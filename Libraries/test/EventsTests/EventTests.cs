@@ -11,6 +11,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.SNSEvents;
     using Amazon.Lambda.APIGatewayEvents;
     using Amazon.Lambda.LexEvents;
+    using Amazon.Lambda.KinesisFirehoseEvents;
 
     using Newtonsoft.Json.Linq;
 
@@ -494,6 +495,52 @@ namespace Amazon.Lambda.Tests
                 var json = new StreamReader(ms).ReadToEnd();
 
                 var original = JObject.Parse(File.ReadAllText("lex-response.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+
+            }
+        }
+
+        [Fact]
+        public void KinesisFirehoseEvent()
+        {
+            using (var fileStream = File.OpenRead("kinesis-firehose-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var kinesisEvent = serializer.Deserialize<KinesisFirehoseEvent>(fileStream);
+                Assert.Equal("00540a87-5050-496a-84e4-e7d92bbaf5e2", kinesisEvent.InvocationId);
+                Assert.Equal("arn:aws:firehose:us-east-1:AAAAAAAAAAAA:deliverystream/lambda-test", kinesisEvent.DeliveryStreamArn);
+                Assert.Equal("us-east-1", kinesisEvent.Region);
+                Assert.Equal(1, kinesisEvent.Records.Count);
+
+                Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisEvent.Records[0].RecordId);
+                Assert.Equal("aGVsbG8gd29ybGQ=", kinesisEvent.Records[0].Base64EncodedData);
+                Assert.Equal(1493276938812, kinesisEvent.Records[0].ApproximateArrivalEpoch);
+
+            }
+        }
+
+        [Fact]
+        public void KinesisFirehoseResponseTest()
+        {
+            using (var fileStream = File.OpenRead("kinesis-firehose-response.json"))
+            {
+                var serializer = new JsonSerializer();
+                var kinesisResponse = serializer.Deserialize<KinesisFirehoseResponse>(fileStream);
+
+                Assert.Equal(1, kinesisResponse.Records.Count);
+                Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisResponse.Records[0].RecordId);
+                Assert.Equal(KinesisFirehoseResponse.TRANSFORMED_STATE_OK, kinesisResponse.Records[0].Result);
+                Assert.Equal("SEVMTE8gV09STEQ=", kinesisResponse.Records[0].Base64EncodedData);
+
+
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<KinesisFirehoseResponse>(kinesisResponse, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("kinesis-firehose-response.json"));
                 var serialized = JObject.Parse(json);
                 Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
 
