@@ -1,15 +1,14 @@
-# AWS Lambda Simple Kinesis Function Project
+# AWS Lambda Simple Kinesis Firehose Function Project
 
 This starter project consists of:
 * Function.cs - class file containing a class with a single function handler method
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
-* project.json - .NET Core project file with build and tool declarations for the Amazon.Lambda.Tools Nuget package
 
 You may also have a test project depending on the options selected.
 
-The generated function handler responds to events on an Amazon Kinesis stream and serializes the record data to a string which is then written to the function's execution log. Replace the body of this method, and parameters, to suit your needs.
+The generated function handler performs data transformation on records written an Amazon Kinesis Firehose delivery stream. Replace the body of this method, and parameters, to suit your needs.
 
-After deploying your function you must configure an Amazon Kinesis stream as an event source to trigger your Lambda function.
+After deploying your function you must configure an Amazon Kinesis Firehose delivery stream to enable data transformations and use the deployed Lambda function.
 
 ## Here are some steps to follow from Visual Studio:
 
@@ -27,22 +26,22 @@ To view execution logs of invocations of your function use the Logs tab in the o
 
 ## Here are some steps to follow to get started from the command line:
 
-Once you have edited your function you can use the following command lines to build, test and deploy your function to AWS Lambda from the command line (these examples assume the project name is *SimpleKinesisFunction*):
+Once you have edited your function you can use the following command lines to build, test and deploy your function to AWS Lambda from the command line:
 
 Restore dependencies
 ```
-    cd "SimpleKinesisFunction"
+    cd "BlueprintBaseName"
     dotnet restore
 ```
 
 Execute unit tests
 ```
-    cd "SimpleKinesisFunction/test/SimpleKinesisFunction.Tests"
+    cd "BlueprintBaseName/test/BlueprintBaseName.Tests"
     dotnet test
 ```
 
 Deploy function to AWS Lambda
 ```
-    cd "SimpleKinesisFunction/src/SimpleKinesisFunction"
+    cd "BlueprintBaseName/src/BlueprintBaseName"
     dotnet lambda deploy-function
 ```

@@ -4,5 +4,5 @@
     "description": "A skeleton Lambda function to get started responding to Amazon Kinesis Firehose events",
     "sort-order" : 101,    
     "hidden-tags" : ["C#","LambdaProject"],
-    "tags":["Kinesis", "Simple"]
+    "tags":["KinesisFirehose", "Simple"]
 }
