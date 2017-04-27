@@ -1,3 +1,11 @@
+### Release 2017-04-27 18:00
+* **Amazon.Lambda.KinesisFirehoseEvents (1.0.0)**
+	* New package for AWS Lambda event types for Amazon Kinesis Firehose.
+* **Blueprints**
+    * New Amazon Kinesis Firehose blueprint.
+    *  **Amazon.Lambda.Templates (1.2.0)** released with latest blueprints.
+
+
 ### Release 2017-04-26 05:30
 * **Amazon.Lambda.Tools (1.5.0)**
 	* Added validation to stop deploying .NET Core 1.0 AWS Lambda functions if the project includes .NET Core 1.1 dependencies.
@@ -37,7 +45,7 @@
 * Projects all migrated Visual Studio 2017
 	
 ### Release 2017-02-20 20:30
-* **Amazon.Lambda.Tools (1.3.0-preview1)
+* **Amazon.Lambda.Tools (1.3.0-preview1)**
 	* Flatten the publish runtime folder to help the Lambda runtime resolve platform specific dependencies. This also reduces the size of the Lambda package bundle by only including the dependencies needed for the Lambda environment.
 * **Blueprints**
 	* Updated all blueprints to version 1.3.0-preview1 of Amazon.Lambda.Tools
