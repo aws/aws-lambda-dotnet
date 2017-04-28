@@ -9,4 +9,4 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright 2009-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.")]
 [assembly: ComVisible(false)]
 [assembly: AssemblyVersion("1.0")]
-[assembly: AssemblyFileVersion("0.10.0")]
+[assembly: AssemblyFileVersion("0.10.1")]

@@ -113,6 +113,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="request"></param>
         /// <param name="lambdaContext"></param>
         /// <returns></returns>
+        [LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
         public virtual async Task<APIGatewayProxyResponse> FunctionHandlerAsync(APIGatewayProxyRequest request, ILambdaContext lambdaContext)
         {
             lambdaContext.Logger.LogLine($"Incoming {request.HttpMethod} requests to {request.Path}");
