@@ -1,3 +1,10 @@
+### Release 2017-04-28 18:21
+* **Amazon.Lambda.AspNetCoreServer (0.10.1-preview1)**
+	* Fixed issue with not registering the JSON serializer.
+* **Blueprints**
+    * Updated ASP.NET Core WebAPI blueprints to use version **Amazon.Lambda.AspNetCoreServer (0.10.1-preview1)**.
+    *  **Amazon.Lambda.Templates (1.2.1)** released with latest blueprints.
+      
 ### Release 2017-04-27 18:00
 * **Amazon.Lambda.KinesisFirehoseEvents (1.0.0)**
 	* New package for AWS Lambda event types for Amazon Kinesis Firehose.
