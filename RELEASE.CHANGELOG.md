@@ -1,3 +1,37 @@
+### Release 2017-04-28 18:21
+* **Amazon.Lambda.AspNetCoreServer (0.10.1-preview1)**
+	* Fixed issue with not registering the JSON serializer.
+* **Blueprints**
+    * Updated ASP.NET Core WebAPI blueprints to use version **Amazon.Lambda.AspNetCoreServer (0.10.1-preview1)**.
+    *  **Amazon.Lambda.Templates (1.2.1)** released with latest blueprints.
+      
+### Release 2017-04-27 18:00
+* **Amazon.Lambda.KinesisFirehoseEvents (1.0.0)**
+	* New package for AWS Lambda event types for Amazon Kinesis Firehose.
+* **Blueprints**
+    * New Amazon Kinesis Firehose blueprint.
+    *  **Amazon.Lambda.Templates (1.2.0)** released with latest blueprints.
+
+
+### Release 2017-04-26 05:30
+* **Amazon.Lambda.Tools (1.5.0)**
+	* Added validation to stop deploying .NET Core 1.0 AWS Lambda functions if the project includes .NET Core 1.1 dependencies.
+* **Amazon.Lambda.LexEvents (1.0.0)**
+	* New package for AWS Lambda event types for Amazon Lex	
+* **Amazon.Lambda.Serialization.Json (1.1.0)**
+	* Added serialization logging which can be enabled by setting the environment variable **LAMBDA_NET_SERIALIZER_DEBUG = true**
+* **Amazon.Lambda.AspNetCoreServer (0.10.0-preview1)**
+	* Pull request [#75](https://github.com/aws/aws-lambda-dotnet/pull/75), adding binary support. Check the [README.md](https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.AspNetCoreServer/README.md) for details. Thanks to [Eugene Bekker](https://github.com/ebekker).
+    * Pull request [#89](https://github.com/aws/aws-lambda-dotnet/pull/89), populate RemoteIpAddress and RemotePort on HttpContext.Connection. Thanks to [Marcus Lum](https://github.com/Marcus-L).
+    * Added the **APIGatewayProxyRequest** and **ILambdaContext** to the **HttpContext.Items** collection with the collection keys **APIGatewayRequest** and **LambdaContext**.
+	* Removed request and response logging and rely on the new logging available in **Amazon.Lambda.Serialization.Json**. This allowed the method signature to be changed back to directly use the **Amazon.Lambda.APIGatewayEvents** class.
+* **Amazon.Lambda.APIGatewayEvents (1.1.0)**
+    * Added IsBase64Encoded property to APIGatewayProxyResponse as part of the binary support for **Amazon.Lambda.AspNetCoreServer**.
+* **Blueprints**
+    * New Amazon Lex blueprint for the Lex Book Trip getting started [sample](http://docs.aws.amazon.com/lex/latest/dg/ex-book-trip.html).
+    * Updated all blueprints to latest version of the Amazon NuGet packages.
+    * **Amazon.Lambda.Templates (1.1.0)** released with latest blueprints.
+ 
 ### Release 2017-03-21 06:00
 * **Amazon.Lambda.Tools (1.4.0)**
 	* Update to latest AWSSDK.Core to pull in latest AWS SDK for .NET [credential enhancments](https://aws.amazon.com/blogs/developer/aws-sdk-dot-net-credential-profiles/)
@@ -18,7 +52,7 @@
 * Projects all migrated Visual Studio 2017
 	
 ### Release 2017-02-20 20:30
-* **Amazon.Lambda.Tools (1.3.0-preview1)
+* **Amazon.Lambda.Tools (1.3.0-preview1)**
 	* Flatten the publish runtime folder to help the Lambda runtime resolve platform specific dependencies. This also reduces the size of the Lambda package bundle by only including the dependencies needed for the Lambda environment.
 * **Blueprints**
 	* Updated all blueprints to version 1.3.0-preview1 of Amazon.Lambda.Tools

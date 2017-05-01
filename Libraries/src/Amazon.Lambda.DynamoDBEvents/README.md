@@ -8,7 +8,7 @@ This package has a dependency on the [AWS SDK for .NET package DynamoDBv2](https
 
 The following is a sample class and Lambda function that receives Amazon DynamoDB event record data as an input and writes some of the incoming event data to CloudWatch Logs. (Note that by default anything written to Console will be logged as CloudWatch Logs events.)
 
-```
+```csharp
 public class Function
 {
     public void Handler(DynamoDBEvent ddbEvent)

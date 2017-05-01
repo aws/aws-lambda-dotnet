@@ -19,7 +19,7 @@
       "cognitoIdentityId": null,
       "caller": "BBBBBBBBBBBB",
       "apiKey": "test-invoke-api-key",
-      "sourceIp": "test-invoke-source-ip",
+      "sourceIp": "127.0.0.1",
       "cognitoAuthenticationType": null,
       "cognitoAuthenticationProvider": null,
       "userArn": "arn:aws:iam::AAAAAAAAAAAA:root",

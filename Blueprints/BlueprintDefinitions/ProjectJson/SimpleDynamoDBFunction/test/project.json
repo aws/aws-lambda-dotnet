@@ -12,7 +12,7 @@
     "Amazon.Lambda.Core": "1.0.0*",
     "Amazon.Lambda.TestUtilities": "1.0.0*",
     "Amazon.Lambda.DynamoDBEvents": "1.0.1",
-    "AWSSDK.DynamoDBv2": "3.3.4.3",
+    "AWSSDK.DynamoDBv2": "3.3.4.7",
 
     "BLUEPRINT_BASE_NAME": "1.0.0",
 

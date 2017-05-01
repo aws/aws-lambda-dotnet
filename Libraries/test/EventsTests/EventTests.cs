@@ -10,6 +10,8 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.SimpleEmailEvents;
     using Amazon.Lambda.SNSEvents;
     using Amazon.Lambda.APIGatewayEvents;
+    using Amazon.Lambda.LexEvents;
+    using Amazon.Lambda.KinesisFirehoseEvents;
 
     using Newtonsoft.Json.Linq;
 
@@ -19,6 +21,7 @@ namespace Amazon.Lambda.Tests
     using System.Text;
     using Xunit;
     using System.Linq;
+
 
     public class EventTest
     {
@@ -424,6 +427,124 @@ namespace Amazon.Lambda.Tests
             var headers = root["headers"] as JObject;
             Assert.Equal(headers["Header1"], "Value1");
             Assert.Equal(headers["Header2"], "Value2");
+        }
+
+
+        [Fact]
+        public void LexEvent()
+        {
+            using (var fileStream = File.OpenRead("lex-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var lexEvent = serializer.Deserialize<LexEvent>(fileStream);
+                Assert.Equal("1.0", lexEvent.MessageVersion);
+                Assert.Equal("FulfillmentCodeHook or DialogCodeHook", lexEvent.InvocationSource);
+                Assert.Equal("user-id specified in the POST request to Amazon Lex.", lexEvent.UserId);
+                Assert.Equal(2, lexEvent.SessionAttributes.Count);
+                Assert.Equal("value1", lexEvent.SessionAttributes["key1"]);
+                Assert.Equal("value2", lexEvent.SessionAttributes["key2"]);
+                Assert.Equal("bot-name", lexEvent.Bot.Name);
+                Assert.Equal("bot-alias", lexEvent.Bot.Alias);
+                Assert.Equal("bot-version", lexEvent.Bot.Version);
+                Assert.Equal("Text or Voice, based on ContentType request header in runtime API request", lexEvent.OutputDialogMode);
+                Assert.Equal("intent-name", lexEvent.CurrentIntent.Name);
+                Assert.Equal(3, lexEvent.CurrentIntent.Slots.Count);
+                Assert.Equal("value1", lexEvent.CurrentIntent.Slots["slot-name1"]);
+                Assert.Equal("value2", lexEvent.CurrentIntent.Slots["slot-name2"]);
+                Assert.Equal("value3", lexEvent.CurrentIntent.Slots["slot-name3"]);
+                Assert.Equal("None, Confirmed, or Denied (intent confirmation, if configured)", lexEvent.CurrentIntent.ConfirmationStatus);
+                Assert.Equal("Text used to process the request", lexEvent.CurrentIntent.InputTranscript);
+            }
+        }
+
+        [Fact]
+        public void LexResponse()
+        {
+            using (var fileStream = File.OpenRead("lex-response.json"))
+            {
+                var serializer = new JsonSerializer();
+                var lexResponse = serializer.Deserialize<LexResponse>(fileStream);
+
+                Assert.Equal(2, lexResponse.SessionAttributes.Count);
+                Assert.Equal("value1", lexResponse.SessionAttributes["key1"]);
+                Assert.Equal("value2", lexResponse.SessionAttributes["key2"]);
+                Assert.Equal("ElicitIntent, ElicitSlot, ConfirmIntent, Delegate, or Close", lexResponse.DialogAction.Type);
+                Assert.Equal("Fulfilled or Failed", lexResponse.DialogAction.FulfillmentState);
+                Assert.Equal("PlainText or SSML", lexResponse.DialogAction.Message.ContentType);
+                Assert.Equal("message to convey to the user", lexResponse.DialogAction.Message.Content);
+                Assert.Equal("intent-name", lexResponse.DialogAction.IntentName);
+                Assert.Equal(3, lexResponse.DialogAction.Slots.Count);
+                Assert.Equal("value1", lexResponse.DialogAction.Slots["slot-name1"]);
+                Assert.Equal("value2", lexResponse.DialogAction.Slots["slot-name2"]);
+                Assert.Equal("value3", lexResponse.DialogAction.Slots["slot-name3"]);
+                Assert.Equal("slot-name", lexResponse.DialogAction.SlotToElicit);
+                Assert.Equal(3, lexResponse.DialogAction.ResponseCard.Version);
+                Assert.Equal("application/vnd.amazonaws.card.generic", lexResponse.DialogAction.ResponseCard.ContentType);
+                Assert.Equal(1, lexResponse.DialogAction.ResponseCard.GenericAttachments.Count);
+                Assert.Equal("card-title", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Title);
+                Assert.Equal("card-sub-title", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].SubTitle);
+                Assert.Equal("URL of the image to be shown", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].ImageUrl);
+                Assert.Equal("URL of the attachment to be associated with the card", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].AttachmentLinkUrl);
+                Assert.Equal(1, lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons.Count);
+                Assert.Equal("button-text", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons[0].Text);
+                Assert.Equal("value sent to server on button click", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons[0].Value);
+
+                MemoryStream ms = new MemoryStream();                
+                serializer.Serialize<LexResponse>(lexResponse, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("lex-response.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+
+            }
+        }
+
+        [Fact]
+        public void KinesisFirehoseEvent()
+        {
+            using (var fileStream = File.OpenRead("kinesis-firehose-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var kinesisEvent = serializer.Deserialize<KinesisFirehoseEvent>(fileStream);
+                Assert.Equal("00540a87-5050-496a-84e4-e7d92bbaf5e2", kinesisEvent.InvocationId);
+                Assert.Equal("arn:aws:firehose:us-east-1:AAAAAAAAAAAA:deliverystream/lambda-test", kinesisEvent.DeliveryStreamArn);
+                Assert.Equal("us-east-1", kinesisEvent.Region);
+                Assert.Equal(1, kinesisEvent.Records.Count);
+
+                Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisEvent.Records[0].RecordId);
+                Assert.Equal("aGVsbG8gd29ybGQ=", kinesisEvent.Records[0].Base64EncodedData);
+                Assert.Equal(1493276938812, kinesisEvent.Records[0].ApproximateArrivalEpoch);
+
+            }
+        }
+
+        [Fact]
+        public void KinesisFirehoseResponseTest()
+        {
+            using (var fileStream = File.OpenRead("kinesis-firehose-response.json"))
+            {
+                var serializer = new JsonSerializer();
+                var kinesisResponse = serializer.Deserialize<KinesisFirehoseResponse>(fileStream);
+
+                Assert.Equal(1, kinesisResponse.Records.Count);
+                Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisResponse.Records[0].RecordId);
+                Assert.Equal(KinesisFirehoseResponse.TRANSFORMED_STATE_OK, kinesisResponse.Records[0].Result);
+                Assert.Equal("SEVMTE8gV09STEQ=", kinesisResponse.Records[0].Base64EncodedData);
+
+
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<KinesisFirehoseResponse>(kinesisResponse, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("kinesis-firehose-response.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+
+            }
         }
 
         private string MemoryStreamToBase64String(MemoryStream ms)

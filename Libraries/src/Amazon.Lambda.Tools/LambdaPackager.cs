@@ -23,6 +23,12 @@ namespace Amazon.Lambda.Tools
     /// </summary>
     public static class LambdaPackager
     {
+        static IDictionary<string, Version> NETSTANDARD_LIBRARY_VERSIONS = new Dictionary<string, Version>
+        {
+            { "netcoreapp1.0", Version.Parse("1.6.0") },
+            { "netcoreapp1.1", Version.Parse("1.6.1") }
+        };
+
         /// <summary>
         /// Execute the dotnet publish command and zip up the resulting publish folder.
         /// </summary>
@@ -55,7 +61,21 @@ namespace Amazon.Lambda.Tools
                     File.Copy(file, destinationPath);
             }
 
-            bool flattenRuntime = FlattenRuntimeFolder(logger, publishLocation);
+            bool flattenRuntime = false;
+            var depsJsonTargetNode = GetDepsJsonTargetNode(logger, publishLocation);
+            // If there is no target node then this means the tool is being used on a future version of .NET Core
+            // then was available when the this tool was written. Go ahead and continue the deployment with warnings so the
+            // user can see if the future version will work.
+            if (depsJsonTargetNode != null)
+            {
+                // Make sure the project is not pulling in dependencies requiring a later version of .NET Core then the declared target framework
+                if (!ValidateDependencies(logger, targetFramework, depsJsonTargetNode))
+                    return false;
+
+                // Flatten the runtime folder which reduces the package size by not including native dependencies
+                // for other platforms.
+                flattenRuntime = FlattenRuntimeFolder(logger, publishLocation, depsJsonTargetNode);
+            }
 
             if (zipArchivePath == null)
                 zipArchivePath = Path.Combine(Directory.GetParent(publishLocation).FullName, new DirectoryInfo(workingDirectory).Name + ".zip");
@@ -83,17 +103,152 @@ namespace Amazon.Lambda.Tools
         }
 
         /// <summary>
+        /// Return the targets node which declares all the dependencies for the project along with the dependency's dependencies.
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="publishLocation"></param>
+        /// <returns></returns>
+        private static JsonData GetDepsJsonTargetNode(IToolLogger logger, string publishLocation)
+        {
+            var depsJsonFilepath = Directory.GetFiles(publishLocation, "*.deps.json", SearchOption.TopDirectoryOnly).FirstOrDefault();
+            if (!File.Exists(depsJsonFilepath))
+            {
+                logger?.WriteLine($"Missing deps.json file. Skipping flattening runtime folder because {depsJsonFilepath} is an unrecognized format");
+                return null;
+            }
+
+            var depsRootData = JsonMapper.ToObject(File.ReadAllText(depsJsonFilepath));
+            var runtimeTargetNode = depsRootData["runtimeTarget"];
+            if (runtimeTargetNode == null)
+            {
+                logger?.WriteLine($"Missing runtimeTarget node. Skipping flattening runtime folder because {depsJsonFilepath} is an unrecognized format");
+                return null;
+            }
+
+            string runtimeTarget;
+            if (runtimeTargetNode.IsString)
+            {
+                runtimeTarget = runtimeTargetNode.ToString();
+            }
+            else
+            {
+                runtimeTarget = runtimeTargetNode["name"]?.ToString();
+            }
+
+            if (runtimeTarget == null)
+            {
+                logger?.WriteLine($"Missing runtimeTarget name. Skipping flattening runtime folder because {depsJsonFilepath} is an unrecognized format");
+                return null;
+            }
+
+            var target = depsRootData["targets"]?[runtimeTarget];
+            if (target == null)
+            {
+                logger?.WriteLine($"Missing targets node. Skipping flattening runtime folder because {depsJsonFilepath} is an unrecognized format");
+                return null;
+            }
+
+            return target;
+        }
+
+        /// <summary>
+        /// Check to see if any of the dependencies listed in the deps.json file are pulling in later version of NETStandard.Library
+        /// then the target framework supports.
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="targetFramework"></param>
+        /// <param name="depsJsonTargetNode"></param>
+        /// <returns></returns>
+        private static bool ValidateDependencies(IToolLogger logger, string targetFramework, JsonData depsJsonTargetNode)
+        {
+            Version maxNETStandardLibraryVersion;
+            // If we don't know the NETStandard.Library NuGet package version then skip validation. This is to handle
+            // the case we are packaging up for a future target framework verion then this version of the tooling knows about.
+            // Skip validation so the tooling doesn't get in the way.
+            if (!NETSTANDARD_LIBRARY_VERSIONS.TryGetValue(targetFramework, out maxNETStandardLibraryVersion))
+                return true;
+
+            var dependenciesUsingNETStandard = new List<string>();
+            Version referencedNETStandardLibrary = null;
+
+            foreach (KeyValuePair<string, JsonData> dependencyNode in depsJsonTargetNode)
+            {
+                var nameAndVersion = dependencyNode.Key.Split('/');
+                if (nameAndVersion.Length != 2)
+                    continue;
+
+                if (string.Equals(nameAndVersion[0], "netstandard.library", StringComparison.OrdinalIgnoreCase))
+                {
+                    if(!Version.TryParse(nameAndVersion[1], out referencedNETStandardLibrary))
+                    {
+                        logger.WriteLine($"Error parsing version number for declared NETStandard.Library: {nameAndVersion[1]}");
+                        return true;
+                    }
+                }
+                // Collect the dependencies that are pulling in the NETStandard.Library metapackage
+                else
+                {
+                    var subDependencies = dependencyNode.Value["dependencies"] as JsonData;
+                    if (subDependencies != null)
+                    {
+                        foreach (KeyValuePair<string, JsonData> subDependency in subDependencies)
+                        {
+                            if (string.Equals(subDependency.Key, "netstandard.library", StringComparison.OrdinalIgnoreCase))
+                            {
+                                dependenciesUsingNETStandard.Add(nameAndVersion[0] + " : " + nameAndVersion[1]);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // If true the project is pulling in a new version of NETStandard.Library then the target framework supports.
+            if(referencedNETStandardLibrary != null && maxNETStandardLibraryVersion < referencedNETStandardLibrary)
+            {
+                logger?.WriteLine($"Error: Project is referencing NETStandard.Library version {referencedNETStandardLibrary.ToString()}. Max version supported by {targetFramework} is {maxNETStandardLibraryVersion.ToString()}.");
+
+                // See if we can find the target framework that does support the version the project is pulling in.
+                // This can help the user know what framework their dependencies are targeting instead of understanding NuGet version numbers.
+                var matchingTargetFramework = NETSTANDARD_LIBRARY_VERSIONS.FirstOrDefault(x =>
+                {
+                    return x.Value.Equals(referencedNETStandardLibrary);
+                });
+
+                if(!string.IsNullOrEmpty(matchingTargetFramework.Key))
+                {
+                    logger?.WriteLine($"Error: NETStandard.Library {referencedNETStandardLibrary.ToString()} is used for target framework {matchingTargetFramework.Key}.");
+                }
+
+                if (dependenciesUsingNETStandard.Count != 0)
+                {
+                    logger?.WriteLine($"Error: Check the following dependencies for versions compatible with {targetFramework}:");
+                    foreach(var dependency in dependenciesUsingNETStandard)
+                    {
+                        logger?.WriteLine($"Error: \t{dependency}");
+                    }
+                }
+
+                return false;
+            }
+
+
+            return true;
+        }
+
+        /// <summary>
         /// Process the runtime folder from the dotnet publish to flatten the platform specific dependencies to the
         /// root.
         /// </summary>
         /// <param name="logger"></param>
         /// <param name="publishLocation"></param>
+        /// <param name="depsJsonTargetNode"></param>
         /// <returns>
         /// Returns true if flattening was successful. If the publishing folder changes in the future then flattening might fail. 
         /// In that case we want to publish the archive untouched so the tooling doesn't get in the way and let the user see if the  
         /// Lambda runtime has been updated to support the future changes. Warning messages will be written in case of failures.
         /// </returns>
-        private static bool FlattenRuntimeFolder(IToolLogger logger, string publishLocation)
+        private static bool FlattenRuntimeFolder(IToolLogger logger, string publishLocation, JsonData depsJsonTargetNode)
         {
 
             bool flattenAny = false;
@@ -118,49 +273,11 @@ namespace Amazon.Lambda.Tools
                 File.Copy(sourceFullPath, targetFullPath);
             });
 
-            var depsJsonFilepath = Directory.GetFiles(publishLocation, "*.deps.json", SearchOption.TopDirectoryOnly).FirstOrDefault();
-            if (!File.Exists(depsJsonFilepath))
-            {
-                logger?.WriteLine($"Missing deps.json file. Skipping flattening runtime folder because {depsJsonFilepath} is an unrecognized format");
-                return false;
-            }
-
-            var depsRootData = JsonMapper.ToObject(File.ReadAllText(depsJsonFilepath));
-            var runtimeTargetNode = depsRootData["runtimeTarget"];
-            if (runtimeTargetNode == null)
-            {
-                logger?.WriteLine($"Missing runtimeTarget node. Skipping flattening runtime folder because {depsJsonFilepath} is an unrecognized format");
-                return false;
-            }
-
-            string runtimeTarget;
-            if (runtimeTargetNode.IsString)
-            {
-                runtimeTarget = runtimeTargetNode.ToString();
-            }
-            else
-            {
-                runtimeTarget = runtimeTargetNode["name"]?.ToString();
-            }
-
-            if (runtimeTarget == null)
-            {
-                logger?.WriteLine($"Missing runtimeTarget name. Skipping flattening runtime folder because {depsJsonFilepath} is an unrecognized format");
-                return false;
-            }
-
-            var target = depsRootData["targets"]?[runtimeTarget];
-            if (target == null)
-            {
-                logger?.WriteLine($"Missing targets node. Skipping flattening runtime folder because {depsJsonFilepath} is an unrecognized format");
-                return false;
-            }
-
             var runtimeHierarchy = CalculateRuntimeHierarchy();
             // Loop through all the valid runtimes in precedence order so we copy over the first match
             foreach (var runtime in runtimeHierarchy)
             {
-                foreach (KeyValuePair<string, JsonData> dependencyNode in target)
+                foreach (KeyValuePair<string, JsonData> dependencyNode in depsJsonTargetNode)
                 {
                     var depRuntimeTargets = dependencyNode.Value["runtimeTargets"];
                     if (depRuntimeTargets == null)

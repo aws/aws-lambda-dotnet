@@ -118,6 +118,10 @@
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.KinesisFirehose;ProjectName=KinesisFirehoseFunction"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
           Properties="TemplateName=lambda.S3;ProjectName=S3Function"/>		  
     <MSBuild
           Projects="$(MSBuildProjectFile)"
@@ -131,6 +135,10 @@
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
           Properties="TemplateName=lambda.EmptyServerless;ProjectName=EmptyServerless"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.LexBookTripSample;ProjectName=LexBookTripSample"/>		  
 	  		
   </Target>
   
@@ -182,11 +190,19 @@
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-yeoman"
+          Properties="CurrentBlueprint=SimpleKinesisFirehoseFunction"/>
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-yeoman"
           Properties="CurrentBlueprint=SimpleKinesisFunction"/>
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-yeoman"
           Properties="CurrentBlueprint=SimpleS3Function"/>
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-yeoman"
+          Properties="CurrentBlueprint=LexBookTripSample"/>
 
   </Target>
 
@@ -244,7 +260,11 @@
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.DynamoDBEvents"/>
     <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.LexEvents"/>
+    <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisEvents"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisFirehoseEvents"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.Logging.AspNetCore"/>
     <Exec Command="$(Command)"

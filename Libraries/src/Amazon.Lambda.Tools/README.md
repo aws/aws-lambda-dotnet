@@ -3,9 +3,19 @@
 This package adds commands to the .NET Core CLI that can be used to manage AWS Lambda functions including deploying a function from the CLI. The
 [AWS Toolkit for Visual Studio](https://aws.amazon.com/visualstudio/) also uses Amazon.Lambda.Tools to deploy Lambda functions.
 
- 
-To add Amazon.Lambda.Tools to a project it must be set in both the dependencies and tools section of the project.json file. For example:
+### Adding the Package
+
+To add Amazon.Lambda.Tools to a msbuild based project edit the csproj file by adding the following section. Update the version filled to the latest released version.
+
+```xml
+<ItemGroup>
+	<DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="1.5.0" />
+</ItemGroup>
 ```
+
+#### Project.json based projects (Visual Studio 2015)
+To add Amazon.Lambda.Tools to a project.json based project it must be set in both the dependencies and tools section of the project.json file. For example:
+```json
 {
   "version": "1.0.0-*",
 
@@ -18,12 +28,12 @@ To add Amazon.Lambda.Tools to a project it must be set in both the dependencies 
  
     "Amazon.Lambda.Tools" : {
       "type" :"build",
-      "version":"1.0.0-preview1"
+      "version":"1.5.0"
     }
   },
 
   "tools": {
-    "Amazon.Lambda.Tools" : "1.0.0-preview1"
+    "Amazon.Lambda.Tools" : "1.5.0"
   },
 
   "frameworks": {
@@ -79,7 +89,7 @@ dotnet lambda help deploy-function
 The aws-lambda-tools-defaults.json file can be used to simplify the use of Amazon.Lambda.Tools. Amazon.Lambda.Tools will
 search for this file in the project root and use the settings present in the file as default values for the
 command line arguments. For example with the following file
-```
+```json
 {
   "profile":"default",
   "region" : "us-west-2",

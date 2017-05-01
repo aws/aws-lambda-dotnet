@@ -8,7 +8,7 @@ The `Amazon.Lambda.Core.ILambdaContext` interface can be used in your handler fu
 
 Here is an example of how this interface can be used in your handler function.
 The function performs a simple ToUpper content transformation, while writing some context data to Console.  
-```
+```csharp
 public string ToUpper(string input, ILambdaContext context)
 {
     Console.WriteLine("Function name: " + context.FunctionName);
@@ -43,7 +43,7 @@ The `Amazon.Lambda.Core.ILambdaLogger` interface allows your function to log dat
 
 Here is an example of how this interface can be used in your handler function.
 The function performs a simple ToUpper content transformation, while logging the context data.  
-```
+```csharp
 public string ToUpper(string input, ILambdaContext context)
 {
     context.Logger.Log("Function name: " + context.FunctionName);
@@ -68,12 +68,12 @@ The `Amazon.Lambda.Core.LambdaSerializerAttribute` is an attribute that can is u
 This attribute can be present on the assembly or on the handler method. If you specify both, the method attribute takes priority.
 
 Here is an example of setting this attribute on the assembly.
-```
+```csharp
 [assembly: Amazon.Lambda.Core.LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 ```
 
 And this is how the method can be applied to the handler method.
-```
+```csharp
 [LambdaSerializer(typeof(XmlSerializer))]
 public Response CustomSerializerMethod(Request input)
 {

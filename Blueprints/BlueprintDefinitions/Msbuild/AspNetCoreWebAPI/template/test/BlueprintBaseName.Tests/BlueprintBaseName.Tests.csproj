@@ -20,7 +20,7 @@
 
     <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
     <PackageReference Include="Amazon.Lambda.TestUtilities" Version="1.0.0" />
-    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="1.0.2" />
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="1.1.0" />
 
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="1.0.0" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.3.0.3" />
