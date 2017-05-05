@@ -9,6 +9,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 
 using Amazon.CloudFormation.Model;
 using Amazon.Util;
@@ -91,13 +92,26 @@ namespace Amazon.Lambda.Tools
                 logger?.WriteLine($"Creating directory {zipArchiveParentDirectory}");
                 new DirectoryInfo(zipArchiveParentDirectory).Create();
             }
-
-            // Use the native zip utility if it exist which will maintain linux/osx file permissions
-            var zipCLI = DotNetCLIWrapper.FindExecutableInPath("zip");
-            if (!string.IsNullOrEmpty(zipCLI))
-                BundleWithZipCLI(zipCLI, zipArchivePath, publishLocation, flattenRuntime, logger);
-            else
+            
+            
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
                 BundleWithDotNetCompression(zipArchivePath, publishLocation, flattenRuntime, logger);
+            }
+            else
+            {
+                // Use the native zip utility if it exist which will maintain linux/osx file permissions
+                var zipCLI = DotNetCLIWrapper.FindExecutableInPath("zip");
+                if (!string.IsNullOrEmpty(zipCLI))
+                {
+                    BundleWithZipCLI(zipCLI, zipArchivePath, publishLocation, flattenRuntime, logger);
+                }
+                else
+                {
+                    throw new LambdaToolsException("Failed to find the \"zip\" utility program in path. This program is required to maintain Linux file permissions in the zip archive.", LambdaToolsException.ErrorCode.FailedToFindZipProgram);
+                }
+            }
+                
 
             return true;
         }
