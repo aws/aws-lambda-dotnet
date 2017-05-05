@@ -54,7 +54,9 @@ namespace Amazon.Lambda.Tools
 
             ServerlessTemplateNotFound,
             ServerlessTemplateParseError,
-            WaitingForStackError
+            WaitingForStackError,
+
+            FailedToFindZipProgram
         }
 
         public LambdaToolsException(string message, ErrorCode code) : base(message)
