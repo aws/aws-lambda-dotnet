@@ -9,12 +9,21 @@ using Amazon.Lambda.Tools.Options;
 
 namespace Amazon.Lambda.Tools.Commands
 {
-    public class PackageServerlessCommand : BaseCommand
+    public class PackageCICommand : BaseCommand
     {
-        public const string COMMAND_NAME = "package-serverless";
-        public const string COMMAND_DESCRIPTION = "Command to servlerless pipeline.";
+        public const string COMMAND_NAME = "package-ci";
+        public const string COMMAND_SYNOPSIS = "Command to use as part of a continious integration system.";
+        public const string COMMAND_DESCRIPTION =
+            "Command for use as part of the build step in a continious integration pipeline. This command requires a CloudFormation template like the one created for Serverless projects to perform the deployment. " +
+            "The command performs the following actions: \n" +
+            "\t 1) Build and package .NET Core project\n" +
+            "\t 2) Upload build archive to Amazon S3\n" +
+            "\t 3) Read in AWS CloudFormation template\n" +
+            "\t 4) Update AWS::Lambda::Function and AWS::Serverless::Function resources to the location of the uploaded build archive\n" +
+            "\t 5) Write out updated CloudFormation template\n\n" +
+            "The outputted CloudFormation template should be used as the build step's output artifact. The deployment stage of the pipeline will use the outputted template to create a CloudFormation ChangeSet and then execute ChangeSet.";
 
-        public static readonly IList<CommandOption> ServerlessPackageCommandOptions = BuildLineOptions(new List<CommandOption>
+        public static readonly IList<CommandOption> PackageCICommandOptions = BuildLineOptions(new List<CommandOption>
         {
             DefinedCommandOptions.ARGUMENT_CONFIGURATION,
             DefinedCommandOptions.ARGUMENT_FRAMEWORK,
@@ -57,8 +66,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.S3Prefix = tuple.Item2.StringValue;
         }
 
-        public PackageServerlessCommand(IToolLogger logger, string workingDirectory, string[] args)
-            : base(logger, workingDirectory, ServerlessPackageCommandOptions, args)
+        public PackageCICommand(IToolLogger logger, string workingDirectory, string[] args)
+            : base(logger, workingDirectory, PackageCICommandOptions, args)
         {
         }
 

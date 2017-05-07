@@ -109,7 +109,7 @@ namespace Amazon.Lambda.Tools.Test
             var assembly = this.GetType().GetTypeInfo().Assembly;
 
             var fullPath = Path.GetFullPath(Path.GetDirectoryName(assembly.Location) + "../../../../../TestWebApp");
-            var command = new PackageServerlessCommand(new ConsoleToolLogger(), fullPath, new string[0]);
+            var command = new PackageCICommand(new ConsoleToolLogger(), fullPath, new string[0]);
             command.Region = "us-east-1";
             command.Configuration = "Release";
             command.TargetFramework = "netcoreapp1.0";
