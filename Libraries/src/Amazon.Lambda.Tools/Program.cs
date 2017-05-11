@@ -21,9 +21,9 @@ namespace Amazon.Lambda.Tools
                 {
                     attribute = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
                 }
-                catch (AmbiguousMatchException e)
+                catch (AmbiguousMatchException)
                 {
-                    Console.Error.WriteLine(e.Message);
+                    // Catch exception and continue if multiple attributes are found.
                 }
                 return attribute?.InformationalVersion;
             }
