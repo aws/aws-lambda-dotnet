@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
 using Amazon.Lambda.Tools.Commands;
 using Amazon.Lambda.Tools.Options;
@@ -12,6 +12,23 @@ namespace Amazon.Lambda.Tools
 {
     public class Program
     {
+        private static string Version
+        {
+            get
+            {
+                AssemblyInformationalVersionAttribute attribute = null;
+                try
+                {
+                    attribute = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+                }
+                catch (AmbiguousMatchException)
+                {
+                    // Catch exception and continue if multiple attributes are found.
+                }
+                return attribute?.InformationalVersion;
+            }
+        }
+
         public static void Main(string[] args)
         {
             try
@@ -98,7 +115,13 @@ namespace Amazon.Lambda.Tools
 
         private static void PrintUsageHeader()
         {
-            Console.WriteLine("AWS Lambda Tools for .NET Core functions");
+            var sb = new StringBuilder("AWS Lambda Tools for .NET Core functions");
+            var version = Version;
+            if (!string.IsNullOrEmpty(version))
+            {
+                sb.Append($" ({version})");
+            }
+            Console.WriteLine(sb.ToString());
             Console.WriteLine("Project Home: https://github.com/aws/aws-lambda-dotnet");
             Console.WriteLine("\t");
         }
