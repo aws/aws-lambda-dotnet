@@ -79,7 +79,7 @@ namespace Amazon.Lambda.Tests
 
                 // check extras that were added mid-way
                 int numberOfExtraBits = count - countAtChange;
-                
+
                 // count levels
                 var logLevelStrings = Enum.GetNames(typeof(LogLevel)).Select(ll => $"[{ll}").ToList();
                 Assert.Equal(numberOfExtraBits, CountMultipleOccurences(text, logLevelStrings));
@@ -117,8 +117,8 @@ namespace Amazon.Lambda.Tests
                 // Should match:
                 //   "Foo.*": "Information"
                 var foobarLogger = loggerfactory.CreateLogger("Foo.Bar");
-                foobarLogger.LogTrace(SHOULD_NOT_APPEAR );
-                foobarLogger.LogDebug(SHOULD_NOT_APPEAR );
+                foobarLogger.LogTrace(SHOULD_NOT_APPEAR);
+                foobarLogger.LogDebug(SHOULD_NOT_APPEAR);
                 foobarLogger.LogInformation(SHOULD_APPEAR + (count++));
                 foobarLogger.LogWarning(SHOULD_APPEAR + (count++));
                 foobarLogger.LogError(SHOULD_APPEAR + (count++));
@@ -170,6 +170,60 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        [Fact]
+        public void TestOnlyOneWildcardSupported()
+        {
+            var dict = new Dictionary<string, string>
+            {
+                { "Lambda.Logging:LogLevel:*.*", "Information" }
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(dict)
+                .Build();
+
+            ArgumentOutOfRangeException exception = null;
+            try
+            {
+                var loggerOptions = new LambdaLoggerOptions(configuration);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                exception = ex;
+            }
+
+            // check that there are no unexpected strings in the text
+            Assert.NotNull(exception);
+            Assert.True(exception.Message.Contains("only 1 wildcard is supported in a category"));
+        }
+
+        [Fact]
+        public void TestOnlyTerminatingWildcardsSupported()
+        {
+            var dict = new Dictionary<string, string>
+            {
+                { "Lambda.Logging:LogLevel:Foo.*.Bar", "Information" }
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(dict)
+                .Build();
+
+            ArgumentException exception = null;
+            try
+            {
+                var loggerOptions = new LambdaLoggerOptions(configuration);
+            }
+            catch (ArgumentException ex)
+            {
+                exception = ex;
+            }
+
+            // check that there are no unexpected strings in the text
+            Assert.NotNull(exception);
+            Assert.True(exception.Message.Contains("wilcards are only supported at the end of a category"));
+        }
+
         private static string GetAppSettingsPath(string fileName)
         {
             return Path.Combine(APPSETTINGS_DIR, fileName);
@@ -203,7 +257,7 @@ namespace Amazon.Lambda.Tests
         private static int CountMultipleOccurences(string text, IEnumerable<string> substrings)
         {
             int total = 0;
-            foreach(var substring in substrings)
+            foreach (var substring in substrings)
             {
                 total += CountOccurences(text, substring);
             }

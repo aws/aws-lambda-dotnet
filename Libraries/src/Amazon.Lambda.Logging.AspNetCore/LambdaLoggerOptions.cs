@@ -164,11 +164,18 @@ namespace Microsoft.Extensions.Logging
 
                 if (category.Contains("*"))
                 {
+                    var wildcardCount = category.Count(x => x == '*');
+                    // Only 1 wildcard is supported
+                    if (wildcardCount > 1)
+                    {
+                        throw new ArgumentOutOfRangeException($"Category '{category}' is invalid - only 1 wildcard is supported in a category.");
+                    }
+
                     var wildcardLocation = category.IndexOf('*');
                     // Wildcards are only supported at the end of a Category name!
                     if (wildcardLocation != category.Length - 1)
                     {
-                        throw new InvalidCastException($"Category '{category}' is invalid - wilcards are only supported at the end of a category.");
+                        throw new ArgumentException($"Category '{category}' is invalid - wilcards are only supported at the end of a category.");
                     }
 
                     var trimmedCategory = category.TrimEnd('*');
