@@ -15,7 +15,7 @@ namespace Amazon.Lambda.Tests
     {
         private const string SHOULD_APPEAR = "TextThatShouldAppear";
         private const string SHOULD_NOT_APPEAR = "TextThatShouldNotAppear";
-        private static string APPSETTINGS_PATH = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
+        private static string APPSETTINGS_DIR = Directory.GetCurrentDirectory();
 
         [Fact]
         public void TestConfiguration()
@@ -25,7 +25,7 @@ namespace Amazon.Lambda.Tests
                 ConnectLoggingActionToLogger(message => writer.Write(message));
 
                 var configuration = new ConfigurationBuilder()
-                    .AddJsonFile(APPSETTINGS_PATH)
+                    .AddJsonFile(GetAppSettingsPath("appsettings.json"))
                     .Build();
 
                 var loggerOptions = new LambdaLoggerOptions(configuration);
@@ -79,7 +79,7 @@ namespace Amazon.Lambda.Tests
 
                 // check extras that were added mid-way
                 int numberOfExtraBits = count - countAtChange;
-                
+
                 // count levels
                 var logLevelStrings = Enum.GetNames(typeof(LogLevel)).Select(ll => $"[{ll}").ToList();
                 Assert.Equal(numberOfExtraBits, CountMultipleOccurences(text, logLevelStrings));
@@ -93,6 +93,141 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        [Fact]
+        public void TestWilcardConfiguration()
+        {
+            using (var writer = new StringWriter())
+            {
+                ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                var configuration = new ConfigurationBuilder()
+                    .AddJsonFile(GetAppSettingsPath("appsettings.wildcard.json"))
+                    .Build();
+
+                var loggerOptions = new LambdaLoggerOptions(configuration);
+                Assert.False(loggerOptions.IncludeCategory);
+                Assert.False(loggerOptions.IncludeLogLevel);
+                Assert.False(loggerOptions.IncludeNewline);
+
+                var loggerfactory = new TestLoggerFactory()
+                    .AddLambdaLogger(loggerOptions);
+
+                int count = 0;
+
+                // Should match:
+                //   "Foo.*": "Information"
+                var foobarLogger = loggerfactory.CreateLogger("Foo.Bar");
+                foobarLogger.LogTrace(SHOULD_NOT_APPEAR);
+                foobarLogger.LogDebug(SHOULD_NOT_APPEAR);
+                foobarLogger.LogInformation(SHOULD_APPEAR + (count++));
+                foobarLogger.LogWarning(SHOULD_APPEAR + (count++));
+                foobarLogger.LogError(SHOULD_APPEAR + (count++));
+                foobarLogger.LogCritical(SHOULD_APPEAR + (count++));
+
+                // Should match:
+                //   "Foo.Bar.Baz": "Critical"
+                var foobarbazLogger = loggerfactory.CreateLogger("Foo.Bar.Baz");
+                foobarbazLogger.LogTrace(SHOULD_NOT_APPEAR);
+                foobarbazLogger.LogDebug(SHOULD_NOT_APPEAR);
+                foobarbazLogger.LogInformation(SHOULD_NOT_APPEAR);
+                foobarbazLogger.LogWarning(SHOULD_NOT_APPEAR);
+                foobarbazLogger.LogError(SHOULD_NOT_APPEAR);
+                foobarbazLogger.LogCritical(SHOULD_APPEAR + (count++));
+
+                // Should match:
+                //   "Foo.Bar.*": "Warning"
+                var foobarbuzzLogger = loggerfactory.CreateLogger("Foo.Bar.Buzz");
+                foobarbuzzLogger.LogTrace(SHOULD_NOT_APPEAR);
+                foobarbuzzLogger.LogDebug(SHOULD_NOT_APPEAR);
+                foobarbuzzLogger.LogInformation(SHOULD_NOT_APPEAR);
+                foobarbuzzLogger.LogWarning(SHOULD_APPEAR + (count++));
+                foobarbuzzLogger.LogError(SHOULD_APPEAR + (count++));
+                foobarbuzzLogger.LogCritical(SHOULD_APPEAR + (count++));
+
+
+                // Should match:
+                //   "*": "Error"
+                var somethingLogger = loggerfactory.CreateLogger("something");
+                somethingLogger.LogTrace(SHOULD_NOT_APPEAR);
+                somethingLogger.LogDebug(SHOULD_NOT_APPEAR);
+                somethingLogger.LogInformation(SHOULD_NOT_APPEAR);
+                somethingLogger.LogWarning(SHOULD_NOT_APPEAR);
+                somethingLogger.LogError(SHOULD_APPEAR + (count++));
+                somethingLogger.LogCritical(SHOULD_APPEAR + (count++));
+
+                // get text and verify
+                var text = writer.ToString();
+
+                // check that there are no unexpected strings in the text
+                Assert.False(text.Contains(SHOULD_NOT_APPEAR));
+
+                // check that all expected strings are in the text
+                for (int i = 0; i < count; i++)
+                {
+                    var expected = SHOULD_APPEAR + i;
+                    Assert.True(text.Contains(expected), $"Expected to find '{expected}' in '{text}'");
+                }
+            }
+        }
+
+        [Fact]
+        public void TestOnlyOneWildcardSupported()
+        {
+            var dict = new Dictionary<string, string>
+            {
+                { "Lambda.Logging:LogLevel:*.*", "Information" }
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(dict)
+                .Build();
+
+            ArgumentOutOfRangeException exception = null;
+            try
+            {
+                var loggerOptions = new LambdaLoggerOptions(configuration);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                exception = ex;
+            }
+
+            // check that there are no unexpected strings in the text
+            Assert.NotNull(exception);
+            Assert.True(exception.Message.Contains("only 1 wildcard is supported in a category"));
+        }
+
+        [Fact]
+        public void TestOnlyTerminatingWildcardsSupported()
+        {
+            var dict = new Dictionary<string, string>
+            {
+                { "Lambda.Logging:LogLevel:Foo.*.Bar", "Information" }
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(dict)
+                .Build();
+
+            ArgumentException exception = null;
+            try
+            {
+                var loggerOptions = new LambdaLoggerOptions(configuration);
+            }
+            catch (ArgumentException ex)
+            {
+                exception = ex;
+            }
+
+            // check that there are no unexpected strings in the text
+            Assert.NotNull(exception);
+            Assert.True(exception.Message.Contains("wilcards are only supported at the end of a category"));
+        }
+
+        private static string GetAppSettingsPath(string fileName)
+        {
+            return Path.Combine(APPSETTINGS_DIR, fileName);
+        }
         private static void ConnectLoggingActionToLogger(Action<string> loggingAction)
         {
             var lambdaLoggerType = typeof(Amazon.Lambda.Core.LambdaLogger);
@@ -122,7 +257,7 @@ namespace Amazon.Lambda.Tests
         private static int CountMultipleOccurences(string text, IEnumerable<string> substrings)
         {
             int total = 0;
-            foreach(var substring in substrings)
+            foreach (var substring in substrings)
             {
                 total += CountOccurences(text, substring);
             }

@@ -151,7 +151,8 @@ namespace Microsoft.Extensions.Logging
 
             // Populate mapping of category to LogLevel
             var logLevelsMapping = new Dictionary<string, LogLevel>(StringComparer.Ordinal);
-            foreach(var logLevel in logLevels)
+            var wildcardLogLevelsMapping = new Dictionary<string, LogLevel>(StringComparer.Ordinal);
+            foreach (var logLevel in logLevels)
             {
                 var category = logLevel.Key;
                 var minLevelValue = logLevel.Value;
@@ -161,20 +162,59 @@ namespace Microsoft.Extensions.Logging
                     throw new InvalidCastException($"Unable to convert level '{minLevelValue}' for category '{category}' to LogLevel.");
                 }
 
-                logLevelsMapping[category] = minLevel;
+                if (category.Contains("*"))
+                {
+                    var wildcardCount = category.Count(x => x == '*');
+                    // Only 1 wildcard is supported
+                    if (wildcardCount > 1)
+                    {
+                        throw new ArgumentOutOfRangeException($"Category '{category}' is invalid - only 1 wildcard is supported in a category.");
+                    }
+
+                    var wildcardLocation = category.IndexOf('*');
+                    // Wildcards are only supported at the end of a Category name!
+                    if (wildcardLocation != category.Length - 1)
+                    {
+                        throw new ArgumentException($"Category '{category}' is invalid - wilcards are only supported at the end of a category.");
+                    }
+
+                    var trimmedCategory = category.TrimEnd('*');
+                    wildcardLogLevelsMapping[trimmedCategory] = minLevel;
+                }
+                else
+                {
+                    logLevelsMapping[category] = minLevel;
+                }
             }
+
+            // Extract a reverse sorted list of wildcard categories.  This allows us to quickly search for most specific match
+            // to least specific.
+            var wildcardCategories = wildcardLogLevelsMapping.Keys.OrderByDescending(x => x).ToList();
 
             // Filter lambda that examines mapping
             return (string category, LogLevel logLevel) =>
             {
                 LogLevel minLevel;
+
+                // Exact match takes priority
                 if (logLevelsMapping.TryGetValue(category, out minLevel))
                 {
                     return (logLevel >= minLevel);
                 }
                 else
                 {
-                    return true;
+                    // Find the most specific wildcard category that matches the logger category
+                    var matchedCategory = wildcardCategories.FirstOrDefault(filterCategory => category.StartsWith(filterCategory));
+                    if (matchedCategory != null)
+                    {
+                        minLevel = wildcardLogLevelsMapping[matchedCategory];
+                        return (logLevel >= minLevel);
+                    }
+                    else
+                    {
+                        // If no log filters then default to logging the log message.
+                        return true;
+                    }
                 }
             };
         }
