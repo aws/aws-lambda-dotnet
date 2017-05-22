@@ -12,9 +12,9 @@ namespace Amazon.Lambda.Tools.Commands
     public class PackageCICommand : BaseCommand
     {
         public const string COMMAND_NAME = "package-ci";
-        public const string COMMAND_SYNOPSIS = "Command to use as part of a continious integration system.";
+        public const string COMMAND_SYNOPSIS = "Command to use as part of a continuous integration system.";
         public const string COMMAND_DESCRIPTION =
-            "Command for use as part of the build step in a continious integration pipeline. This command requires a CloudFormation template like the one created for Serverless projects to perform the deployment. " +
+            "Command for use as part of the build step in a continuous integration pipeline. This command requires a CloudFormation template like the one created for Serverless projects to perform the deployment. " +
             "The command performs the following actions: \n" +
             "\t 1) Build and package .NET Core project\n" +
             "\t 2) Upload build archive to Amazon S3\n" +
@@ -106,7 +106,7 @@ namespace Amazon.Lambda.Tools.Commands
                 s3KeyApplicationBundle = await Utilities.UploadToS3Async(this.Logger, this.S3Client, s3Bucket, s3Prefix, Path.GetFileName(zipArchivePath), stream);
             }
 
-            this.Logger.WriteLine($"Updating cloudformation template to point to application bundle: s3://{s3Bucket}/{s3KeyApplicationBundle}");
+            this.Logger.WriteLine($"Updating CloudFormation template to point to application bundle: s3://{s3Bucket}/{s3KeyApplicationBundle}");
             var templateBody = File.ReadAllText(templatePath);
             var transformedBody = DeployServerlessCommand.UpdateCodeLocationInTemplate(templateBody, s3Bucket, s3KeyApplicationBundle);
 
