@@ -14,14 +14,14 @@ namespace Amazon.Lambda.Tools.Commands
         public const string COMMAND_NAME = "package-ci";
         public const string COMMAND_SYNOPSIS = "Command to use as part of a continuous integration system.";
         public const string COMMAND_DESCRIPTION =
-            "Command for use as part of the build step in a continuous integration pipeline. This command requires a CloudFormation template like the one created for Serverless projects to perform the deployment. " +
+            "Command for use as part of the build step in a continuous integration pipeline. To perform the deployment this command requires a CloudFormation template similar to the one used by Serverless projects. " +
             "The command performs the following actions: \n" +
             "\t 1) Build and package .NET Core project\n" +
             "\t 2) Upload build archive to Amazon S3\n" +
             "\t 3) Read in AWS CloudFormation template\n" +
             "\t 4) Update AWS::Lambda::Function and AWS::Serverless::Function resources to the location of the uploaded build archive\n" +
             "\t 5) Write out updated CloudFormation template\n\n" +
-            "The outputted CloudFormation template should be used as the build step's output artifact. The deployment stage of the pipeline will use the outputted template to create a CloudFormation ChangeSet and then execute ChangeSet.";
+            "The output CloudFormation template should be used as the build step's output artifact. The deployment stage of the pipeline will use the outputted template to create a CloudFormation ChangeSet and then execute ChangeSet.";
 
         public static readonly IList<CommandOption> PackageCICommandOptions = BuildLineOptions(new List<CommandOption>
         {

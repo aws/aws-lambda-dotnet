@@ -312,7 +312,7 @@ namespace Amazon.Lambda.Tools.Options
                 ShortSwitch = "-ot",
                 Switch = "--output-template",
                 ValueType = CommandOption.CommandOptionValueType.StringValue,
-                Description = "Path to write updated serverless template with CodeURI fields updated to where the project was upload to S3"
+                Description = "Path to write updated serverless template with CodeURI fields updated to the location of the packaged build artifacts in S3."
             };
 
     }
