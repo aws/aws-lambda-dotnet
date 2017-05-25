@@ -270,18 +270,21 @@ namespace Amazon.Lambda.Tools.Commands
                 }
             }
 
-            if (!string.IsNullOrEmpty(this.DeadLetterTargetArn) && !string.Equals(this.DeadLetterTargetArn, existingConfiguration.DeadLetterConfig?.TargetArn, StringComparison.Ordinal))
+            if(this.DeadLetterTargetArn != null)
             {
-                request.DeadLetterConfig = existingConfiguration.DeadLetterConfig ?? new DeadLetterConfig();
-                request.DeadLetterConfig.TargetArn = this.DeadLetterTargetArn;
-                different = true;
-            }
-            else if (string.IsNullOrEmpty(this.DeadLetterTargetArn) && !string.IsNullOrEmpty(existingConfiguration.DeadLetterConfig?.TargetArn))
-            {
-                request.DeadLetterConfig = null;
-                request.DeadLetterConfig = existingConfiguration.DeadLetterConfig ?? new DeadLetterConfig();
-                request.DeadLetterConfig.TargetArn = string.Empty;
-                different = true;
+                if (!string.IsNullOrEmpty(this.DeadLetterTargetArn) && !string.Equals(this.DeadLetterTargetArn, existingConfiguration.DeadLetterConfig?.TargetArn, StringComparison.Ordinal))
+                {
+                    request.DeadLetterConfig = existingConfiguration.DeadLetterConfig ?? new DeadLetterConfig();
+                    request.DeadLetterConfig.TargetArn = this.DeadLetterTargetArn;
+                    different = true;
+                }
+                else if (string.IsNullOrEmpty(this.DeadLetterTargetArn) && !string.IsNullOrEmpty(existingConfiguration.DeadLetterConfig?.TargetArn))
+                {
+                    request.DeadLetterConfig = null;
+                    request.DeadLetterConfig = existingConfiguration.DeadLetterConfig ?? new DeadLetterConfig();
+                    request.DeadLetterConfig.TargetArn = string.Empty;
+                    different = true;
+                }
             }
 
 

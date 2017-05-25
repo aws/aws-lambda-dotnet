@@ -16,11 +16,14 @@ using Amazon.Lambda.Tools.Commands;
 using Amazon.IdentityManagement;
 using Amazon.IdentityManagement.Model;
 
+using Amazon.SQS;
+using Amazon.SQS.Model;
+
 namespace Amazon.Lambda.Tools.Test
 {
     public class DeployTest : IDisposable
     {
-        const string LAMBDATOOL_TEST_ROLE = "lambdatools-test-role";
+        const string LAMBDATOOL_TEST_ROLE = "lambdatools-test-role2";
         IAmazonIdentityManagementService _iamCient;
         string _roleArn;
         public DeployTest()
@@ -37,9 +40,11 @@ namespace Amazon.Lambda.Tools.Test
                 {
                     // Role is not found so create a role with no permissions other then Lambda can assume the role. 
                     // The role is deleted and reused in other runs of the test to make the test run faster.
-                    this._roleArn = new RoleHelper(this._iamCient).CreateDefaultRole(LAMBDATOOL_TEST_ROLE, null);
+                    this._roleArn = new RoleHelper(this._iamCient).CreateDefaultRole(LAMBDATOOL_TEST_ROLE, "arn:aws:iam::aws:policy/PowerUserAccess");
                 }
             }).Wait();
+
+            
         }
 
 
@@ -83,6 +88,78 @@ namespace Amazon.Lambda.Tools.Test
                 {
                     await command.LambdaClient.DeleteFunctionAsync(command.FunctionName);
                 }
+            }
+        }
+
+        [Fact]
+        public async Task FixIssueOfDLQBeingCleared()
+        {
+            var sqsClient = new AmazonSQSClient(RegionEndpoint.USEast2);
+
+            var queueUrl = (await sqsClient.CreateQueueAsync("lambda-test-" + DateTime.Now.Ticks)).QueueUrl;
+            var queueArn = (await sqsClient.GetQueueAttributesAsync(queueUrl, new List<string> { "QueueArn" })).QueueARN;
+            try
+            {
+
+                var assembly = this.GetType().GetTypeInfo().Assembly;
+
+                var fullPath = Path.GetFullPath(Path.GetDirectoryName(assembly.Location) + "../../../../../TestFunction");
+                var initialDeployCommand = new DeployFunctionCommand(new ConsoleToolLogger(), fullPath, new string[0]);
+                initialDeployCommand.FunctionName = "test-function-" + DateTime.Now.Ticks;
+                initialDeployCommand.Handler = "TestFunction::TestFunction.Function::ToUpper";
+                initialDeployCommand.Timeout = 10;
+                initialDeployCommand.MemorySize = 512;
+                initialDeployCommand.Role = this._roleArn;
+                initialDeployCommand.Configuration = "Release";
+                initialDeployCommand.TargetFramework = "netcoreapp1.0";
+                initialDeployCommand.Runtime = "dotnetcore1.0";
+                initialDeployCommand.DeadLetterTargetArn = queueArn;
+
+
+                var created = await initialDeployCommand.ExecuteAsync();
+                try
+                {
+                    Assert.True(created);
+
+                    var funcConfig = await initialDeployCommand.LambdaClient.GetFunctionConfigurationAsync(initialDeployCommand.FunctionName);
+                    Assert.Equal(queueArn, funcConfig.DeadLetterConfig?.TargetArn);
+
+                    var redeployCommand = new DeployFunctionCommand(new ConsoleToolLogger(), fullPath, new string[0]);
+                    redeployCommand.FunctionName = initialDeployCommand.FunctionName;
+                    redeployCommand.Configuration = "Release";
+                    redeployCommand.TargetFramework = "netcoreapp1.0";
+                    redeployCommand.Runtime = "dotnetcore1.0";
+
+                    var redeployed = await redeployCommand.ExecuteAsync();
+                    Assert.True(redeployed);
+
+                    funcConfig = await initialDeployCommand.LambdaClient.GetFunctionConfigurationAsync(initialDeployCommand.FunctionName);
+                    Assert.Equal(queueArn, funcConfig.DeadLetterConfig?.TargetArn);
+
+                    redeployCommand = new DeployFunctionCommand(new ConsoleToolLogger(), fullPath, new string[0]);
+                    redeployCommand.FunctionName = initialDeployCommand.FunctionName;
+                    redeployCommand.Configuration = "Release";
+                    redeployCommand.TargetFramework = "netcoreapp1.0";
+                    redeployCommand.Runtime = "dotnetcore1.0";
+                    redeployCommand.DeadLetterTargetArn = "";
+
+                    redeployed = await redeployCommand.ExecuteAsync();
+                    Assert.True(redeployed);
+
+                    funcConfig = await initialDeployCommand.LambdaClient.GetFunctionConfigurationAsync(initialDeployCommand.FunctionName);
+                    Assert.Null(funcConfig.DeadLetterConfig?.TargetArn);
+                }
+                finally
+                {
+                    if (created)
+                    {
+                        await initialDeployCommand.LambdaClient.DeleteFunctionAsync(initialDeployCommand.FunctionName);
+                    }
+                }
+            }
+            finally
+            {
+                await sqsClient.DeleteQueueAsync(queueUrl);
             }
         }
 
