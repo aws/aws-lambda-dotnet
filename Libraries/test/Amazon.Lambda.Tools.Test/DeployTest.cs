@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -17,7 +18,13 @@ using Amazon.IdentityManagement;
 using Amazon.IdentityManagement.Model;
 
 using Amazon.SQS;
-using Amazon.SQS.Model;
+
+using Amazon.CloudFormation;
+using Amazon.CloudFormation.Model;
+
+using Amazon.S3;
+using Amazon.S3.Model;
+using Amazon.S3.Util;
 
 namespace Amazon.Lambda.Tools.Test
 {
@@ -160,6 +167,62 @@ namespace Amazon.Lambda.Tools.Test
             finally
             {
                 await sqsClient.DeleteQueueAsync(queueUrl);
+            }
+        }
+
+        [Fact]
+        public async Task DeployStepFunctionWithTemplateSubstitution()
+        {
+            var cfClient = new AmazonCloudFormationClient(RegionEndpoint.USEast2);
+            var s3Client = new AmazonS3Client(RegionEndpoint.USEast2);
+
+            var bucketName = "deploy-step-functions-" + DateTime.Now.Ticks;
+            await s3Client.PutBucketAsync(bucketName);
+            try
+            {
+
+
+                var assembly = this.GetType().GetTypeInfo().Assembly;
+
+                var fullPath = Path.GetFullPath(Path.GetDirectoryName(assembly.Location) + "../../../../../TemplateSubstitutionTestProjects/StateMachineDefinitionStringTest");
+                var command = new DeployServerlessCommand(new ConsoleToolLogger(), fullPath, new string[0]);
+                command.Configuration = "Release";
+                command.TargetFramework = "netcoreapp1.0";
+                command.StackName = "DeployStepFunctionWithTemplateSubstitution-" + DateTime.Now.Ticks;
+                command.S3Bucket = bucketName;
+                command.WaitForStackToComplete = true;
+                var created = await command.ExecuteAsync();
+                try
+                {
+                    Assert.True(created);
+
+                    var describeResponse = await cfClient.DescribeStacksAsync(new DescribeStacksRequest
+                    {
+                        StackName = command.StackName
+                    });
+
+                    Assert.Equal(StackStatus.CREATE_COMPLETE, describeResponse.Stacks[0].StackStatus);
+                }
+                finally
+                {
+                    if (created)
+                    {
+                        try
+                        {
+                            var deleteCommand = new DeleteServerlessCommand(new ConsoleToolLogger(), fullPath, new string[0]);
+                            deleteCommand.StackName = command.StackName;
+                            await deleteCommand.ExecuteAsync();
+                        }
+                        catch
+                        {
+                            // Bury exception because we don't want to lose any exceptions during the deploy stage.
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                await AmazonS3Util.DeleteS3BucketWithObjectsAsync(s3Client, bucketName);
             }
         }
 

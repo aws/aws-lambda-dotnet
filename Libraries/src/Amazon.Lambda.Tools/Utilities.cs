@@ -412,24 +412,29 @@ namespace Amazon.Lambda.Tools
             currentPos++;
         }
 
-        public static string ProcessTemplateSubstitions(string templateBody, IDictionary<string, string> substitutions, string workingDirectory)
+        public static string ProcessTemplateSubstitions(IToolLogger logger, string templateBody, IDictionary<string, string> substitutions, string workingDirectory)
         {
             if (substitutions == null || substitutions.Count == 0)
                 return templateBody;
 
-
+            logger?.WriteLine($"Processing {substitutions.Count} substitutions.");
             var root = JsonConvert.DeserializeObject(templateBody) as JObject;
 
             foreach(var kvp in substitutions)
             {
-                var value = root.SelectToken(kvp.Key) as JValue;
-                if (value == null)
+                logger?.WriteLine($"Processing substitution: {kvp.Key}");
+                var token = root.SelectToken(kvp.Key);
+                if (token == null)
                     throw new LambdaToolsException($"Failed to locate JSONPath {kvp.Key} for template substitution.", LambdaToolsException.ErrorCode.ServerlessTemplateSubstitutionError);
 
+                logger?.WriteLine($"\tFound element of type {token.Type}");
+
                 string replacementValue;
-                if (File.Exists(Path.Combine(workingDirectory, kvp.Value)))
+                if (workingDirectory != null && File.Exists(Path.Combine(workingDirectory, kvp.Value)))
                 {
-                    replacementValue = File.ReadAllText(Path.Combine(workingDirectory, kvp.Value));
+                    var path = Path.Combine(workingDirectory, kvp.Value);
+                    logger?.WriteLine($"\tReading: {path}");
+                    replacementValue = File.ReadAllText(path);
                 }
                 else
                 {
@@ -438,23 +443,62 @@ namespace Amazon.Lambda.Tools
 
                 try
                 {
-                    switch(value.Type)
+                    switch(token.Type)
                     {
                         case JTokenType.String:
-                            value.Value = replacementValue;
+                            ((JValue)token).Value = replacementValue;
                             break;
                         case JTokenType.Boolean:
-                            value.Value = bool.Parse(replacementValue);
+                            if(bool.TryParse(replacementValue, out bool b))
+                            {
+                                ((JValue)token).Value = b;
+                            }
+                            else
+                            {
+                                throw new LambdaToolsException($"Failed to convert {replacementValue} to a bool", LambdaToolsException.ErrorCode.ServerlessTemplateSubstitutionError);
+                            }
+                            
                             break;
                         case JTokenType.Integer:
-                            value.Value = int.Parse(replacementValue);
+                            if (int.TryParse(replacementValue, out int i))
+                            {
+                                ((JValue)token).Value = i;
+                            }
+                            else
+                            {
+                                throw new LambdaToolsException($"Failed to convert {replacementValue} to a int", LambdaToolsException.ErrorCode.ServerlessTemplateSubstitutionError);
+                            }
                             break;
                         case JTokenType.Float:
-                            value.Value = double.Parse(replacementValue);
+                            if (double.TryParse(replacementValue, out double d))
+                            {
+                                ((JValue)token).Value = d;
+                            }
+                            else
+                            {
+                                throw new LambdaToolsException($"Failed to convert {replacementValue} to a double", LambdaToolsException.ErrorCode.ServerlessTemplateSubstitutionError);
+                            }
                             break;
+                        case JTokenType.Array:
                         case JTokenType.Object:
-                            value.Value = JsonConvert.DeserializeObject(replacementValue);
+                            var jcon = token as JContainer;
+                            var jprop = jcon.Parent as JProperty;
+                            JToken subData;
+                            try
+                            {
+                                subData = JsonConvert.DeserializeObject(replacementValue) as JToken;
+                            }
+                            catch(Exception e)
+                            {
+                                throw new LambdaToolsException($"Failed to parse substitue JSON data: {e.Message}", LambdaToolsException.ErrorCode.ServerlessTemplateSubstitutionError);
+                            }
+                            jprop.Value = subData;
                             break;
+                        default:
+                            throw new LambdaToolsException($"Unable to determine how to convert substitute value into the template. " +
+                                                            "Make sure to have a default value in the template which is used to determine the type. " +
+                                                            "For example \"\" for string fields or {} for JSON objects.", 
+                                                            LambdaToolsException.ErrorCode.ServerlessTemplateSubstitutionError);
                     }
                 }
                 catch(Exception e)
@@ -462,7 +506,6 @@ namespace Amazon.Lambda.Tools
                     throw new LambdaToolsException($"Error setting property {kvp.Key} with value {kvp.Value}: {e.Message}", LambdaToolsException.ErrorCode.ServerlessTemplateSubstitutionError);
                 }
             }
-
 
             var json = JsonConvert.SerializeObject(root);
             return json;

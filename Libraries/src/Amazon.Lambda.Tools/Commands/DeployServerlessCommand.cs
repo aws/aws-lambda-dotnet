@@ -169,7 +169,7 @@ namespace Amazon.Lambda.Tools.Commands
                 string templateBody = File.ReadAllText(templatePath);
 
                 // Process any template substitutions
-                templateBody = Utilities.ProcessTemplateSubstitions(templateBody, this.GetKeyValuePairOrDefault(this.TemplateSubstitutions, DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS, false), Utilities.DetermineProjectLocation(this.WorkingDirectory, projectLocation));
+                templateBody = Utilities.ProcessTemplateSubstitions(this.Logger, templateBody, this.GetKeyValuePairOrDefault(this.TemplateSubstitutions, DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS, false), Utilities.DetermineProjectLocation(this.WorkingDirectory, projectLocation));
 
                 templateBody = UpdateCodeLocationInTemplate(templateBody, s3Bucket, s3KeyApplicationBundle);
 
