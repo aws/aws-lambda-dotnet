@@ -41,6 +41,7 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_S3_PREFIX,
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE,
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_PARAMETER,
+            DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS,
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_ROLE,
             DefinedCommandOptions.ARGUMENT_STACK_NAME,
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_DISABLE_CAPABILITIES,
@@ -60,6 +61,7 @@ namespace Amazon.Lambda.Tools.Commands
         public bool? WaitForStackToComplete { get; set; }
         public string CloudFormationRole { get; set; }
         public Dictionary<string, string> TemplateParameters { get; set; }
+        public Dictionary<string, string> TemplateSubstitutions { get; set; }
 
         public bool? PersistConfigFile { get; set; }
 
@@ -97,6 +99,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.WaitForStackToComplete = tuple.Item2.BoolValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_PARAMETER.Switch)) != null)
                 this.TemplateParameters = tuple.Item2.KeyValuePairs;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS.Switch)) != null)
+                this.TemplateSubstitutions = tuple.Item2.KeyValuePairs;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE.Switch)) != null)
                 this.PersistConfigFile = tuple.Item2.BoolValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_ROLE.Switch)) != null)
@@ -163,6 +167,10 @@ namespace Amazon.Lambda.Tools.Commands
 
                 // Read in the serverless template and update all the locations for Lambda functions to point to the app bundle that was just uploaded.
                 string templateBody = File.ReadAllText(templatePath);
+
+                // Process any template substitutions
+                templateBody = Utilities.ProcessTemplateSubstitions(templateBody, this.GetKeyValuePairOrDefault(this.TemplateSubstitutions, DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS, false), Utilities.DetermineProjectLocation(this.WorkingDirectory, projectLocation));
+
                 templateBody = UpdateCodeLocationInTemplate(templateBody, s3Bucket, s3KeyApplicationBundle);
 
                 // Upload the template to S3 instead of sending it straight to CloudFormation to avoid the size limitation

@@ -18,6 +18,10 @@ using System.Text;
 using System.Runtime.Loader;
 #endif
 
+
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 namespace Amazon.Lambda.Tools
 {
     public static class Utilities
@@ -406,6 +410,62 @@ namespace Amazon.Lambda.Tools
                 token = option.Substring(tokenStart, tokenEnd - tokenStart);
 
             currentPos++;
+        }
+
+        public static string ProcessTemplateSubstitions(string templateBody, IDictionary<string, string> substitutions, string workingDirectory)
+        {
+            if (substitutions == null || substitutions.Count == 0)
+                return templateBody;
+
+
+            var root = JsonConvert.DeserializeObject(templateBody) as JObject;
+
+            foreach(var kvp in substitutions)
+            {
+                var value = root.SelectToken(kvp.Key) as JValue;
+                if (value == null)
+                    throw new LambdaToolsException($"Failed to locate JSONPath {kvp.Key} for template substitution.", LambdaToolsException.ErrorCode.ServerlessTemplateSubstitutionError);
+
+                string replacementValue;
+                if (File.Exists(Path.Combine(workingDirectory, kvp.Value)))
+                {
+                    replacementValue = File.ReadAllText(Path.Combine(workingDirectory, kvp.Value));
+                }
+                else
+                {
+                    replacementValue = kvp.Value;
+                }
+
+                try
+                {
+                    switch(value.Type)
+                    {
+                        case JTokenType.String:
+                            value.Value = replacementValue;
+                            break;
+                        case JTokenType.Boolean:
+                            value.Value = bool.Parse(replacementValue);
+                            break;
+                        case JTokenType.Integer:
+                            value.Value = int.Parse(replacementValue);
+                            break;
+                        case JTokenType.Float:
+                            value.Value = double.Parse(replacementValue);
+                            break;
+                        case JTokenType.Object:
+                            value.Value = JsonConvert.DeserializeObject(replacementValue);
+                            break;
+                    }
+                }
+                catch(Exception e)
+                {
+                    throw new LambdaToolsException($"Error setting property {kvp.Key} with value {kvp.Value}: {e.Message}", LambdaToolsException.ErrorCode.ServerlessTemplateSubstitutionError);
+                }
+            }
+
+
+            var json = JsonConvert.SerializeObject(root);
+            return json;
         }
 
     }

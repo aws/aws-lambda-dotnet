@@ -237,6 +237,15 @@ namespace Amazon.Lambda.Tools.Options
                 ValueType = CommandOption.CommandOptionValueType.KeyValuePairs,
                 Description = "CloudFormation template parameters. Format is <key1>=<value1>;<key2>=<value2>"
             };
+        public static readonly CommandOption ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS =
+            new CommandOption
+            {
+                Name = "CloudFormation Template Substitutions",
+                ShortSwitch = "-ts",
+                Switch = "--template-substitutions",
+                ValueType = CommandOption.CommandOptionValueType.KeyValuePairs,
+                Description = "CloudFormation template substitutions. Format is <key1>=<value1>;<key2>=<value2>"
+            };
         public static readonly CommandOption ARGUMENT_CLOUDFORMATION_DISABLE_CAPABILITIES =
             new CommandOption
             {

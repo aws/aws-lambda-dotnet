@@ -1,0 +1,101 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Transform" : "AWS::Serverless-2016-10-31",
+  "Description" : "An AWS Serverless Application.",
+
+  "Resources" : {
+
+
+    "LambdaRole" : {
+        "Type" : "AWS::IAM::Role",
+        "Properties" : {
+            "ManagedPolicyArns" : [
+                "arn:aws:iam::aws:policy/PowerUserAccess",
+                "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+                "arn:aws:iam::aws:policy/service-role/AWSLambdaDynamoDBExecutionRole"
+            ],
+            "AssumeRolePolicyDocument" : {
+                "Version" : "2012-10-17",
+                "Statement" : [
+                    {
+                        "Action" : [
+                            "sts:AssumeRole"
+                        ],
+                        "Effect" : "Allow",
+                        "Principal" : {
+                            "Service" : [
+                                "lambda.amazonaws.com"
+                            ]
+                        }
+                    }
+                ]
+            }
+		}
+    },
+
+    "LambdaInvoke" : {
+        "Type" : "AWS::IAM::Policy",
+        "Properties" : {
+            "PolicyDocument" : {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "lambda:InvokeFunction"
+                        ],
+                        "Resource": "*"
+                    }
+                ]
+            },
+            "PolicyName"     : "StepFunctionLambdaInvoke"
+        }
+    },
+
+    "StepFunctionRole" : {
+        "Type" : "AWS::IAM::Role",
+        "Properties" : {
+            "Policies" : [{ "Ref" : "LambdaInvoke" }],
+            "AssumeRolePolicyDocument" : {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": {"Fn::Join" : [ "", [ "states.", { "Ref" : "AWS::Region" }, ".amazonaws.com" ] ]}
+                  },
+                  "Action": "sts:AssumeRole"
+                }
+              ]
+            }
+        }
+    },
+
+    "LambdaTask" : {
+        "Type" : "AWS::Lambda::Function",
+        "Properties" : {
+            "Handler" : "StateMachineDefinitionStringTest::StateMachineDefinitionStringTest.Functions::Processor",
+            "Role"    : { "Ref" : "LambdaRole" },
+            "Runtime" : "dotnetcore1.0",
+            "MemorySize" : 256,
+            "Timeout" : 30,
+            "Code" : {
+                "S3Bucket" : "",
+                "S3Key" : ""
+            }
+        }
+    },
+
+    "WorkFlow" : {
+        "Type" : "AWS::StepFunctions::StateMachine",
+        "Properties" : {
+            "DefinitionString" : "",
+            "RoleArn"          : { "Ref" : "StepFunctionRole" }
+        }
+    }
+
+  },
+
+  "Outputs" : {
+  }
+}
