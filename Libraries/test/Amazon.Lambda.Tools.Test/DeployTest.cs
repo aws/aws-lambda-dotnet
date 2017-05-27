@@ -14,6 +14,10 @@ using Amazon.Lambda.Model;
 using Amazon.Lambda.Tools;
 using Amazon.Lambda.Tools.Commands;
 
+using Amazon.S3;
+using Amazon.S3.Model;
+using Amazon.S3.Util;
+
 using Amazon.IdentityManagement;
 using Amazon.IdentityManagement.Model;
 
@@ -237,6 +241,37 @@ namespace Amazon.Lambda.Tools.Test
             Assert.Throws(typeof(LambdaToolsException), (() => Utilities.ValidateTargetFrameworkAndLambdaRuntime("dotnetcore1.0", "netcoreapp1.1")));
             Assert.Throws(typeof(LambdaToolsException), (() => Utilities.ValidateTargetFrameworkAndLambdaRuntime("dotnetcore1.0", "netcoreapp2.0")));
             Assert.Throws(typeof(LambdaToolsException), (() => Utilities.ValidateTargetFrameworkAndLambdaRuntime("dotnetcore1.1", "netcoreapp2.0")));
+        }
+
+        [Fact]
+        public async Task TestServerlessPackage()
+        {
+            var assembly = this.GetType().GetTypeInfo().Assembly;
+
+            var fullPath = Path.GetFullPath(Path.GetDirectoryName(assembly.Location) + "../../../../../TestWebApp");
+            var command = new PackageCICommand(new ConsoleToolLogger(), fullPath, new string[0]);
+            command.Region = "us-east-1";
+            command.Configuration = "Release";
+            command.TargetFramework = "netcoreapp1.0";
+            command.CloudFormationTemplate = "serverless.template";
+            command.CloudFormationOutputTemplate = Path.Combine(Path.GetTempPath(),  "output-serverless.template");
+            command.S3Bucket = "serverless-package-test-" + DateTime.Now.Ticks;
+
+            if (File.Exists(command.CloudFormationOutputTemplate))
+                File.Delete(command.CloudFormationOutputTemplate);
+
+
+            await command.S3Client.PutBucketAsync(command.S3Bucket);
+            try
+            {
+                Assert.True(await command.ExecuteAsync());
+                Assert.True(File.Exists(command.CloudFormationOutputTemplate));
+            }
+            finally
+            {
+                await AmazonS3Util.DeleteS3BucketWithObjectsAsync(command.S3Client, command.S3Bucket);
+            }
+
         }
 
         #region IDisposable Support

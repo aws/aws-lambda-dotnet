@@ -72,6 +72,9 @@ namespace Amazon.Lambda.Tools
                     case PackageCommand.COMMAND_NAME:
                         command = new PackageCommand(new ConsoleToolLogger(), Directory.GetCurrentDirectory(), args.Skip(1).ToArray());
                         break;
+                    case PackageCICommand.COMMAND_NAME:
+                        command = new PackageCICommand(new ConsoleToolLogger(), Directory.GetCurrentDirectory(), args.Skip(1).ToArray());
+                        break;
                     case "--help":
                     case "--h":
                     case "help":
@@ -152,6 +155,7 @@ namespace Amazon.Lambda.Tools
             Console.WriteLine("Other Commands:");
             Console.WriteLine("\t");
             Console.WriteLine($"\t{PackageCommand.COMMAND_NAME.PadRight(NAME_WIDTH)} {PackageCommand.COMMAND_DESCRIPTION}");
+            Console.WriteLine($"\t{PackageCICommand.COMMAND_NAME.PadRight(NAME_WIDTH)} {PackageCICommand.COMMAND_SYNOPSIS}");
             Console.WriteLine("\t");
             Console.WriteLine("\t");
 
@@ -192,6 +196,9 @@ namespace Amazon.Lambda.Tools
                     break;
                 case PackageCommand.COMMAND_NAME:
                     PrintUsage(PackageCommand.COMMAND_NAME, PackageCommand.COMMAND_DESCRIPTION, PackageCommand.PackageCommandOptions, PackageCommand.COMMAND_ARGUMENTS);
+                    break;
+                case PackageCICommand.COMMAND_NAME:
+                    PrintUsage(PackageCICommand.COMMAND_NAME, PackageCICommand.COMMAND_DESCRIPTION, PackageCICommand.PackageCICommandOptions, null);
                     break;
                 default:
                     Console.Error.WriteLine($"Unknown command {command}");
