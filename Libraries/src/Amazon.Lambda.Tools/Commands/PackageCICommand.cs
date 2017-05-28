@@ -28,6 +28,7 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_CONFIGURATION,
             DefinedCommandOptions.ARGUMENT_FRAMEWORK,
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE,
+            DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS,
             DefinedCommandOptions.ARGUMENT_OUTPUT_CLOUDFORMATION_TEMPLATE,
             DefinedCommandOptions.ARGUMENT_S3_BUCKET,
             DefinedCommandOptions.ARGUMENT_S3_PREFIX
@@ -40,6 +41,7 @@ namespace Amazon.Lambda.Tools.Commands
         public string S3Prefix { get; set; }
 
         public string CloudFormationTemplate { get; set; }
+        public Dictionary<string, string> TemplateSubstitutions { get; set; }
 
         public string CloudFormationOutputTemplate { get; set; }
 
@@ -58,6 +60,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.TargetFramework = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE.Switch)) != null)
                 this.CloudFormationTemplate = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS.Switch)) != null)
+                this.TemplateSubstitutions = tuple.Item2.KeyValuePairs;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_OUTPUT_CLOUDFORMATION_TEMPLATE.Switch)) != null)
                 this.CloudFormationOutputTemplate = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_S3_BUCKET.Switch)) != null)
@@ -108,6 +112,10 @@ namespace Amazon.Lambda.Tools.Commands
 
             this.Logger.WriteLine($"Updating CloudFormation template to point to application bundle: s3://{s3Bucket}/{s3KeyApplicationBundle}");
             var templateBody = File.ReadAllText(templatePath);
+
+            // Process any template substitutions
+            templateBody = Utilities.ProcessTemplateSubstitions(this.Logger, templateBody, this.GetKeyValuePairOrDefault(this.TemplateSubstitutions, DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS, false), Utilities.DetermineProjectLocation(this.WorkingDirectory, projectLocation));
+
             var transformedBody = DeployServerlessCommand.UpdateCodeLocationInTemplate(templateBody, s3Bucket, s3KeyApplicationBundle);
 
             this.Logger.WriteLine($"Writing updated template: {outputTemplatePath}");

@@ -606,15 +606,23 @@ namespace Amazon.Lambda.Tools.Commands
                 if (resource == null)
                     continue;
 
-                var type = resource["Type"]?.ToString();
-                if (!string.Equals(type, "AWS::Serverless::Function", StringComparison.Ordinal))
-                    continue;
-
                 var properties = resource["Properties"] as JsonData;
                 if (properties == null)
                     continue;
 
-                properties["CodeUri"] = s3Url;
+                var type = resource["Type"]?.ToString();
+                if (string.Equals(type, "AWS::Serverless::Function", StringComparison.Ordinal))
+                {
+                    properties["CodeUri"] = s3Url;
+                }
+
+                if (string.Equals(type, "AWS::Lambda::Function", StringComparison.Ordinal))
+                {
+                    var code = new JsonData();
+                    code["S3Bucket"] = s3Bucket;
+                    code["S3Key"] = s3Key;
+                    properties["Code"] = code;
+                }
             }
 
             var json = JsonMapper.ToJson(root);

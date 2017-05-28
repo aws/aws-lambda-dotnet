@@ -10,7 +10,7 @@
         "Type" : "AWS::IAM::Role",
         "Properties" : {
             "ManagedPolicyArns" : [
-                "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+                "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
             ],
             "AssumeRolePolicyDocument" : {
                 "Version" : "2012-10-17",
@@ -31,29 +31,9 @@
 		}
     },
 
-    "LambdaInvoke" : {
-        "Type" : "AWS::IAM::Policy",
-        "Properties" : {
-            "PolicyDocument" : {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": [
-                            "lambda:InvokeFunction"
-                        ],
-                        "Resource": "*"
-                    }
-                ]
-            },
-            "PolicyName"     : "StepFunctionLambdaInvoke"
-        }
-    },
-
     "StepFunctionRole" : {
         "Type" : "AWS::IAM::Role",
         "Properties" : {
-            "Policies" : [{ "Ref" : "LambdaInvoke" }],
             "AssumeRolePolicyDocument" : {
               "Version": "2012-10-17",
               "Statement": [
@@ -65,7 +45,22 @@
                   "Action": "sts:AssumeRole"
                 }
               ]
-            }
+            },
+            "Policies" : [{
+                "PolicyName": "StepFunctionLambdaInvoke",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "lambda:InvokeFunction"
+                      ],
+                      "Resource": "*"
+                    }
+                  ]
+                }
+            }]
         }
     },
 
@@ -73,7 +68,7 @@
         "Type" : "AWS::Lambda::Function",
         "Properties" : {
             "Handler" : "StateMachineDefinitionStringTest::StateMachineDefinitionStringTest.Functions::Processor",
-            "Role"    : { "Ref" : "LambdaRole" },
+            "Role"    : {"Fn::GetAtt" : [ "LambdaRole", "Arn"]},
             "Runtime" : "dotnetcore1.0",
             "MemorySize" : 256,
             "Timeout" : 30,
@@ -86,10 +81,10 @@
 
     "WorkFlow" : {
         "Type" : "AWS::StepFunctions::StateMachine",
-        "Properties" : {
-            "DefinitionString" : "",
-            "RoleArn"          : { "Ref" : "StepFunctionRole" }
-        }
+      "Properties": {
+        "DefinitionString": { "Fn::Sub": "" },
+        "RoleArn": { "Fn::GetAtt": [ "StepFunctionRole", "Arn" ] }
+      }
     }
 
   },

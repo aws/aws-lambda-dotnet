@@ -14,5 +14,5 @@
   "s3-prefix": "StateMachineDefinitionStringTest/",
   "template": "serverless.template",
   "template-parameters": "",
-  "template-substitutions": "$.Resources.WorkFlow.Properties.DefinitionString=state-machine.json"
+  "template-substitutions": "$.Resources.WorkFlow.Properties.DefinitionString.Fn::Sub=state-machine.json"
 }

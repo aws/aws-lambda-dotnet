@@ -30,13 +30,13 @@ namespace Amazon.Lambda.Tools.Test
             var templateBody = File.ReadAllText(Path.Combine(fullPath, "serverless.template"));
             var substitutions = new Dictionary<string, string>
             {
-                {"$.Resources.WorkFlow.Properties.DefinitionString", "state-machine.json" }
+                {"$.Resources.WorkFlow.Properties.DefinitionString.Fn::Sub", "state-machine.json" }
             };
 
             var newTemplateBody = Utilities.ProcessTemplateSubstitions(null, templateBody, substitutions, fullPath);
 
             var root = JsonConvert.DeserializeObject(newTemplateBody) as JObject;
-            var value = root.SelectToken("$.Resources.WorkFlow.Properties.DefinitionString") as JValue;
+            var value = root.SelectToken("$.Resources.WorkFlow.Properties.DefinitionString.Fn::Sub") as JValue;
             Assert.NotNull(value);
             Assert.Equal(value.Type, JTokenType.String);
 
