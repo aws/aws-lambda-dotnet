@@ -414,7 +414,7 @@ namespace Amazon.Lambda.Tools
 
         public static string ProcessTemplateSubstitions(IToolLogger logger, string templateBody, IDictionary<string, string> substitutions, string workingDirectory)
         {
-            if (substitutions == null || substitutions.Count == 0)
+            if (substitutions == null || !substitutions.Any())
                 return templateBody;
 
             logger?.WriteLine($"Processing {substitutions.Count} substitutions.");
@@ -466,7 +466,7 @@ namespace Amazon.Lambda.Tools
                             }
                             else
                             {
-                                throw new LambdaToolsException($"Failed to convert {replacementValue} to a int", LambdaToolsException.ErrorCode.ServerlessTemplateSubstitutionError);
+                                throw new LambdaToolsException($"Failed to convert {replacementValue} to an int", LambdaToolsException.ErrorCode.ServerlessTemplateSubstitutionError);
                             }
                             break;
                         case JTokenType.Float:
