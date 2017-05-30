@@ -92,8 +92,9 @@ namespace Amazon.Lambda.Tools
                 logger?.WriteLine($"Creating directory {zipArchiveParentDirectory}");
                 new DirectoryInfo(zipArchiveParentDirectory).Create();
             }
-            
-            
+
+
+#if NETCORE
             if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 BundleWithDotNetCompression(zipArchivePath, publishLocation, flattenRuntime, logger);
@@ -111,7 +112,11 @@ namespace Amazon.Lambda.Tools
                     throw new LambdaToolsException("Failed to find the \"zip\" utility program in path. This program is required to maintain Linux file permissions in the zip archive.", LambdaToolsException.ErrorCode.FailedToFindZipProgram);
                 }
             }
-                
+#else
+            BundleWithDotNetCompression(zipArchivePath, publishLocation, flattenRuntime, logger);
+#endif
+
+
 
             return true;
         }
