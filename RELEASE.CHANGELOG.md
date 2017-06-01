@@ -1,3 +1,16 @@
+### Release 2017-06-01 06:21
+* **Amazon.Lambda.Tools (1.6.0)**
+    * Add new **package-ci** command to use for deployment with [AWS CodePipeline](https://aws.amazon.com/codepipeline/). This is the .NET Core Lambda equivalent of the AWS CLI command [aws cloudformation package](http://docs.aws.amazon.com/cli/latest/reference/cloudformation/package.html).
+    * Add **--template-substitutions** option to **deploy-serverless** and **package-ci** commands allowing parts of the serverless-template to be defined in separate files.
+    * Fixed issue with dead letter queue configuration getting cleared out during redeploy.
+	* Pull request [#117](https://github.com/aws/aws-lambda-dotnet/pull/117), displaying tool version number. Thanks to [Corey Coto](https://github.com/coreycoto).
+* **Amazon.Lambda.Logging.AspNetCore (1.1.0)**
+	* Pull request [#110](https://github.com/aws/aws-lambda-dotnet/pull/110), adding support for log category wildcards. Thanks to [Cris Barbero](https://github.com/cfbarbero).
+* **Blueprints**
+    * Update dependency reference for **Amazon.Lambda.Tools** and **Amazon.Lambda.Logging.AspNetCore**
+    *  **Amazon.Lambda.Templates (1.2.0)** released with latest blueprints.
+
+
 ### Release 2017-04-28 18:21
 * **Amazon.Lambda.AspNetCoreServer (0.10.1-preview1)**
 	* Fixed issue with not registering the JSON serializer.
