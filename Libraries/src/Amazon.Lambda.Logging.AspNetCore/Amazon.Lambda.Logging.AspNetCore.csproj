@@ -9,6 +9,7 @@
     <AssemblyName>Amazon.Lambda.Logging.AspNetCore</AssemblyName>
     <PackageId>Amazon.Lambda.Logging.AspNetCore</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Logging</PackageTags>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

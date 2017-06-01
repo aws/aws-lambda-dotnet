@@ -35,11 +35,11 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.1.0" />
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="0.10.1-preview1" />
-    <PackageReference Include="Amazon.Lambda.Logging.AspNetCore" Version="1.0.0" />
+    <PackageReference Include="Amazon.Lambda.Logging.AspNetCore" Version="1.1.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="1.5.0" />
+    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="1.6.0" />
   </ItemGroup>
 
 </Project>
