@@ -31,6 +31,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestGetAllValuesWithCustomPath()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-get-different-proxypath-apigatway-request.json");
+
+            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal("[\"value1\",\"value2\"]", response.Body);
+            Assert.True(response.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
+        }
+
+        [Fact]
         public async Task TestGetSingleValue()
         {
             var response = await this.InvokeAPIGatewayRequest("values-get-single-apigatway-request.json");

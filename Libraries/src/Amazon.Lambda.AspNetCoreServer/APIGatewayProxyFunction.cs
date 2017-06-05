@@ -270,8 +270,20 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
             var requestFeatures = (IHttpRequestFeature)features;
             requestFeatures.Scheme = "https";
-            requestFeatures.Path = WebUtility.UrlDecode(apiGatewayRequest.Path);
             requestFeatures.Method = apiGatewayRequest.HttpMethod;
+
+            string path;
+            if(apiGatewayRequest.PathParameters == null || !apiGatewayRequest.PathParameters.TryGetValue("proxy", out path))
+            {
+                path = apiGatewayRequest.Path;
+            }
+
+            if(!path.StartsWith("/"))
+            {
+                path = "/" + path;
+            }
+
+            requestFeatures.Path = WebUtility.UrlDecode(path);
 
             // API Gateway delivers the query string in a dictionary but must be reconstructed into the full query string
             // before passing into ASP.NET Core framework.

@@ -7,7 +7,7 @@
     "id": "typeload-test"
   },
   "pathParameters": {
-    "proxy": "api/values"
+    "proxy": "api/errortests"
   },
   "stageVariables": null,
   "requestContext": {

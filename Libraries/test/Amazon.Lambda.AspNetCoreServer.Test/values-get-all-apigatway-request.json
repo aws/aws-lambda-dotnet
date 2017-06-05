@@ -5,7 +5,7 @@
   "headers": null,
   "queryStringParameters": null,
   "pathParameters": {
-    "proxy": "api/values"
+    "proxy": "api/resourcepath"
   },
   "stageVariables": null,
   "requestContext": {
