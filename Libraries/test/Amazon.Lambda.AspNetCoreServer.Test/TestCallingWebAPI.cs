@@ -51,6 +51,16 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestGetQueryStringWithSpacesValue()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-escape-querystring-apigatway-request.json");
+
+            Assert.Equal("Norman Ivar, Johanson", response.Body);
+            Assert.True(response.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
+        }
+
+        [Fact]
         public async Task TestPutWithBody()
         {
             var response = await this.InvokeAPIGatewayRequest("values-put-withbody-apigatway-request.json");
@@ -157,6 +167,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var binExpected = new byte[byte.MaxValue].Select((val, index) => (byte)index).ToArray();
             var binActual = Convert.FromBase64String(response.Body);
             Assert.Equal(binExpected, binActual);
+        }
+
+        [Fact]
+        public async Task TestEscapeCharacterInResourcePath()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-escape-path-apigatway-request.json");
+
+            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal("value=query string", response.Body);
         }
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
