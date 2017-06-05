@@ -7,7 +7,7 @@
     "id": "error-expected"
   },
   "pathParameters": {
-    "proxy": "api/values"
+    "proxy": "api/errortests"
   },
   "stageVariables": null,
   "requestContext": {

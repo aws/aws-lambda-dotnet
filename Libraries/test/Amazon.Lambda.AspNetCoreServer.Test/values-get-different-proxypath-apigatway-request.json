@@ -1,11 +1,11 @@
 ﻿{
   "resource": "/{proxy+}",
-  "path": "/api/resourcepath/5",
+  "path": "/test/api/resourcepath",
   "httpMethod": "GET",
   "headers": null,
   "queryStringParameters": null,
   "pathParameters": {
-    "proxy": "api/resourcepath/5"
+    "proxy": "api/resourcepath"
   },
   "stageVariables": null,
   "requestContext": {
@@ -25,11 +25,6 @@
       "userArn": "arn:aws:iam::AAAAAAAAAAAA:root",
       "userAgent": "Apache-HttpClient/4.5.x (Java/1.8.0_102)",
       "user": "AAAAAAAAAAAA"
-    },
-    "authorizer": {
-      "stringKey": "Hey there I'm a string!",
-      "numKey": 9,
-      "boolKey": true
     },
     "resourcePath": "/{proxy+}",
     "httpMethod": "GET",
