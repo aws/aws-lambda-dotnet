@@ -270,7 +270,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
             var requestFeatures = (IHttpRequestFeature)features;
             requestFeatures.Scheme = "https";
-            requestFeatures.Path = apiGatewayRequest.Path;
+            requestFeatures.Path = WebUtility.UrlDecode(apiGatewayRequest.Path);
             requestFeatures.Method = apiGatewayRequest.HttpMethod;
 
             // API Gateway delivers the query string in a dictionary but must be reconstructed into the full query string
@@ -279,14 +279,13 @@ namespace Amazon.Lambda.AspNetCoreServer
             if (queryStringParameters != null)
             {
                 StringBuilder sb = new StringBuilder("?");
-                var encoder = UrlEncoder.Default;
                 foreach (var kvp in queryStringParameters)
                 {
                     if (sb.Length > 1)
                     {
                         sb.Append("&");
                     }
-                    sb.Append($"{encoder.Encode(kvp.Key)}={encoder.Encode(kvp.Value.ToString())}");
+                    sb.Append($"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(kvp.Value.ToString())}");
                 }
                 requestFeatures.QueryString = sb.ToString();
             }
