@@ -4,6 +4,7 @@
     * Add **--template-substitutions** option to **deploy-serverless** and **package-ci** commands allowing parts of the serverless-template to be defined in separate files.
     * Fixed issue with dead letter queue configuration getting cleared out during redeploy.
 	* Pull request [#117](https://github.com/aws/aws-lambda-dotnet/pull/117), displaying tool version number. Thanks to [Corey Coto](https://github.com/coreycoto).
+	* Add error check when deploying from Linux and the `zip` command line utility is not found. The `zip` tool is required on Linux to maintain file permissions.
 * **Amazon.Lambda.Logging.AspNetCore (1.1.0)**
 	* Pull request [#110](https://github.com/aws/aws-lambda-dotnet/pull/110), adding support for log category wildcards. Thanks to [Cris Barbero](https://github.com/cfbarbero).
 * **Blueprints**
