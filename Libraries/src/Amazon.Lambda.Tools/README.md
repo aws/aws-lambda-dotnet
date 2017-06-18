@@ -9,7 +9,7 @@ To add Amazon.Lambda.Tools to a msbuild based project edit the csproj file by ad
 
 ```xml
 <ItemGroup>
-	<DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="1.5.0" />
+	<DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="1.6.0" />
 </ItemGroup>
 ```
 
@@ -33,7 +33,7 @@ To add Amazon.Lambda.Tools to a project.json based project it must be set in bot
   },
 
   "tools": {
-    "Amazon.Lambda.Tools" : "1.5.0"
+    "Amazon.Lambda.Tools" : "1.6.0"
   },
 
   "frameworks": {
