@@ -272,8 +272,14 @@ namespace Amazon.Lambda.AspNetCoreServer
             requestFeatures.Scheme = "https";
             requestFeatures.Method = apiGatewayRequest.HttpMethod;
 
-            string path;
-            if(apiGatewayRequest.PathParameters == null || !apiGatewayRequest.PathParameters.TryGetValue("proxy", out path))
+            string path = null;
+            if(apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy"))
+            {
+                var proxyPath = apiGatewayRequest.PathParameters["proxy"];
+                path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);
+            }
+
+            if(string.IsNullOrEmpty(path))
             {
                 path = apiGatewayRequest.Path;
             }
