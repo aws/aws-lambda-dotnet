@@ -1,3 +1,9 @@
+### Release 2017-06-23 00:30
+* **Amazon.Lambda.AspNetCoreServer (0.10.2-preview1)**
+	* Fixed issue computing resource path for custom domains.
+	* Fixed issue with resource path not being URL decoded.
+
+
 ### Release 2017-06-01 06:21
 * **Amazon.Lambda.Tools (1.6.0)**
     * Add new **package-ci** command to use for deployment with [AWS CodePipeline](https://aws.amazon.com/codepipeline/). This is the .NET Core Lambda equivalent of the AWS CLI command [aws cloudformation package](http://docs.aws.amazon.com/cli/latest/reference/cloudformation/package.html).
