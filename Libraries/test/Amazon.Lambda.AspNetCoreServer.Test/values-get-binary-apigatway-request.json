@@ -5,7 +5,7 @@
   "headers": null,
   "queryStringParameters": null,
   "pathParameters": {
-    "proxy": "api/values"
+    "proxy": "api/binary"
   },
   "stageVariables": null,
   "requestContext": {

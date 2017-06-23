@@ -8,7 +8,7 @@
     "lastName": "Meriwether"
   },
   "pathParameters": {
-    "proxy": "api/values"
+    "proxy": "api/querystring"
   },
   "stageVariables": null,
   "requestContext": {

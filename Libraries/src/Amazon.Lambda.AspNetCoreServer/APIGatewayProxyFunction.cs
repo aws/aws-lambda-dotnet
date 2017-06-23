@@ -270,8 +270,26 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
             var requestFeatures = (IHttpRequestFeature)features;
             requestFeatures.Scheme = "https";
-            requestFeatures.Path = apiGatewayRequest.Path;
             requestFeatures.Method = apiGatewayRequest.HttpMethod;
+
+            string path = null;
+            if(apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy"))
+            {
+                var proxyPath = apiGatewayRequest.PathParameters["proxy"];
+                path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);
+            }
+
+            if(string.IsNullOrEmpty(path))
+            {
+                path = apiGatewayRequest.Path;
+            }
+
+            if(!path.StartsWith("/"))
+            {
+                path = "/" + path;
+            }
+
+            requestFeatures.Path = WebUtility.UrlDecode(path);
 
             // API Gateway delivers the query string in a dictionary but must be reconstructed into the full query string
             // before passing into ASP.NET Core framework.
@@ -279,14 +297,13 @@ namespace Amazon.Lambda.AspNetCoreServer
             if (queryStringParameters != null)
             {
                 StringBuilder sb = new StringBuilder("?");
-                var encoder = UrlEncoder.Default;
                 foreach (var kvp in queryStringParameters)
                 {
                     if (sb.Length > 1)
                     {
                         sb.Append("&");
                     }
-                    sb.Append($"{encoder.Encode(kvp.Key)}={encoder.Encode(kvp.Value.ToString())}");
+                    sb.Append($"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(kvp.Value.ToString())}");
                 }
                 requestFeatures.QueryString = sb.ToString();
             }
