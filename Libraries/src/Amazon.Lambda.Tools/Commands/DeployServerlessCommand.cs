@@ -336,6 +336,7 @@ namespace Amazon.Lambda.Tools.Commands
                     {
 
                         this.Logger.WriteLine($"Stack update failed with status: {updatedStack.StackStatus} ({updatedStack.StackStatusReason})");
+                        return false;
                     }
                 }
 
