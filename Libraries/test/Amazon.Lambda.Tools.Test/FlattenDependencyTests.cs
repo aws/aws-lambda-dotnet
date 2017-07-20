@@ -27,7 +27,7 @@ namespace Amazon.Lambda.Tools.Test
         {
             var fullPath = GetTestProjectPath("NpgsqlExample");
             var command = new PackageCommand(new ConsoleToolLogger(), fullPath, new string[0]);
-            command.EnableInteractive = false;
+            command.DisableInteractive = true;
             command.Configuration = "Release";
             command.TargetFramework = "netcoreapp1.0";
 
@@ -58,7 +58,7 @@ namespace Amazon.Lambda.Tools.Test
         {
             var fullPath = GetTestProjectPath("SQLServerClientExample");
             var command = new PackageCommand(new ConsoleToolLogger(), fullPath, new string[0]);
-            command.EnableInteractive = false;
+            command.DisableInteractive = true;
             command.Configuration = "Release";
             command.TargetFramework = "netcoreapp1.0";
 
@@ -92,7 +92,7 @@ namespace Amazon.Lambda.Tools.Test
         {
             var fullPath = GetTestProjectPath("NativeDependencyExample");
             var command = new PackageCommand(new ConsoleToolLogger(), fullPath, new string[0]);
-            command.EnableInteractive = false;
+            command.DisableInteractive = true;
             command.Configuration = "Release";
             command.TargetFramework = "netcoreapp1.0";
 

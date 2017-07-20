@@ -13,7 +13,7 @@ namespace Amazon.Lambda.Tools.Commands
         /// <summary>
         /// If enabled the tool will prompt for required fields if they are not already given.
         /// </summary>
-        bool EnableInteractive { get; set; }
+        bool DisableInteractive { get; set; }
 
         Task<bool> ExecuteAsync();
     }

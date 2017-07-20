@@ -78,7 +78,7 @@ namespace Amazon.Lambda.Tools.Commands
         public override async Task<bool> ExecuteAsync()
         {
             // Disable interactive since this command is intended to be run as part of a pipeline.
-            EnableInteractive = false;
+            DisableInteractive = true;
 
             string projectLocation = this.GetStringValueOrDefault(this.ProjectLocation, DefinedCommandOptions.ARGUMENT_PROJECT_LOCATION, false);
             string s3Bucket = this.GetStringValueOrDefault(this.S3Bucket, DefinedCommandOptions.ARGUMENT_S3_BUCKET, true);

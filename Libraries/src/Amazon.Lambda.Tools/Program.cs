@@ -94,7 +94,6 @@ namespace Amazon.Lambda.Tools
 
                 if (command != null)
                 {
-                    command.EnableInteractive = true;
                     var success = command.ExecuteAsync().Result;
                     if (!success)
                     {

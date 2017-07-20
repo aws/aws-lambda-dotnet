@@ -27,6 +27,7 @@ namespace Amazon.Lambda.Tools.Commands
         /// </summary>
         protected static readonly IList<CommandOption> CommonOptions = new List<CommandOption>
         {
+            DefinedCommandOptions.ARGUMENT_DISABLE_INTERACTIVE,
             DefinedCommandOptions.ARGUMENT_AWS_REGION,
             DefinedCommandOptions.ARGUMENT_AWS_PROFILE,
             DefinedCommandOptions.ARGUMENT_AWS_PROFILE_LOCATION,
@@ -57,6 +58,12 @@ namespace Amazon.Lambda.Tools.Commands
         public string ProjectLocation { get; set; }
         public string ConfigFile { get; set; }
 
+        /// <summary>
+        /// Disable all Console.Read operations to make sure the command is never blocked waiting for input. This is 
+        /// used by the AWS Visual Studio Toolkit to make sure it never gets blocked.
+        /// </summary>
+        public bool DisableInteractive { get; set; } = false;
+
 
 
         public IToolLogger Logger { get; protected set; }
@@ -85,12 +92,6 @@ namespace Amazon.Lambda.Tools.Commands
                                           version);
         }
 
-
-        /// <summary>
-        /// Disable all Console.Read operations to make sure the command is never blocked waiting for input. This is 
-        /// used by the AWS Visual Studio Toolkit to make sure it never gets blocked.
-        /// </summary>
-        public bool EnableInteractive { get; set; } = false;
 
         IAmazonLambda _lambdaClient;
         public IAmazonLambda LambdaClient
@@ -171,6 +172,8 @@ namespace Amazon.Lambda.Tools.Commands
         protected virtual void ParseCommandArguments(CommandOptions values)
         {
             Tuple<CommandOption, CommandOptionValue> tuple;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_DISABLE_INTERACTIVE.Switch)) != null)
+                this.DisableInteractive = tuple.Item2.BoolValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_AWS_PROFILE.Switch)) != null)
                 this.Profile = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_AWS_PROFILE_LOCATION.Switch)) != null)
@@ -344,7 +347,7 @@ namespace Amazon.Lambda.Tools.Commands
                 }
                 return configDefault;
             }
-            else if (required && this.EnableInteractive)
+            else if (required && !this.DisableInteractive)
             {
                 return PromptForValue(option);
             }
@@ -378,7 +381,7 @@ namespace Amazon.Lambda.Tools.Commands
 
                 return configDefault.SplitByComma();
             }
-            else if (required && this.EnableInteractive)
+            else if (required && !this.DisableInteractive)
             {
                 var response = PromptForValue(option);
                 if (string.IsNullOrEmpty(response))
@@ -410,7 +413,7 @@ namespace Amazon.Lambda.Tools.Commands
 
                 return Utilities.ParseKeyValueOption(configDefault);
             }
-            else if (required && this.EnableInteractive)
+            else if (required && !this.DisableInteractive)
             {
                 var response = PromptForValue(option);
                 if (string.IsNullOrEmpty(response))
@@ -445,7 +448,7 @@ namespace Amazon.Lambda.Tools.Commands
                 var configDefault = (int)DefaultConfig[option.Switch];
                 return configDefault;
             }
-            else if (required && this.EnableInteractive)
+            else if (required && !this.DisableInteractive)
             {
                 var userValue = PromptForValue(option);
                 if (string.IsNullOrWhiteSpace(userValue))
@@ -489,7 +492,7 @@ namespace Amazon.Lambda.Tools.Commands
                 var configDefault = (bool)DefaultConfig[option.Switch];
                 return configDefault;
             }
-            else if (required && this.EnableInteractive)
+            else if (required && !this.DisableInteractive)
             {
                 var userValue = PromptForValue(option);
                 if (string.IsNullOrWhiteSpace(userValue))

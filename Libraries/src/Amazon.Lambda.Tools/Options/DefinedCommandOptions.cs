@@ -11,6 +11,15 @@ namespace Amazon.Lambda.Tools.Options
     /// </summary>
     public static class DefinedCommandOptions
     {
+        public static readonly CommandOption ARGUMENT_DISABLE_INTERACTIVE =
+            new CommandOption
+            {
+                Name = "Disable Interactive",
+                Switch = "--disable-interactive",
+                ValueType = CommandOption.CommandOptionValueType.BoolValue,
+                Description = "When set to true missing required parameters will not be prompted for"
+            };
+
         public static readonly CommandOption ARGUMENT_AWS_PROFILE =
             new CommandOption
             {

@@ -31,7 +31,7 @@ namespace Amazon.Lambda.Tools.Test
             var fullPath = GetTestProjectPath("UseNewtonsoft10");
             var logger = new TestToolLogger();
             var command = new PackageCommand(logger, fullPath, new string[0]);
-            command.EnableInteractive = false;
+            command.DisableInteractive = true;
             command.Configuration = "Release";
             command.TargetFramework = "netcoreapp1.0";
 
@@ -40,8 +40,8 @@ namespace Amazon.Lambda.Tools.Test
             var created = await command.ExecuteAsync();
             Assert.False(created);
 
-            Assert.True(logger.Buffer.Contains("Error: NETStandard.Library 1.6.1 is used for target framework netcoreapp1.1"));
-            Assert.True(logger.Buffer.Contains("Error: 	newtonsoft.json : 10.0.2"));
+            Assert.True(logger.Buffer.ToLower().Contains("error: netstandard.library 1.6.1 is used for target framework netcoreapp1.1"));
+            Assert.True(logger.Buffer.ToLower().Contains("error: 	newtonsoft.json : 10.0.2"));
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace Amazon.Lambda.Tools.Test
             var fullPath = GetTestProjectPath("Use11ASPNetCoreDependencies");
             var logger = new TestToolLogger();
             var command = new PackageCommand(logger, fullPath, new string[0]);
-            command.EnableInteractive = false;
+            command.DisableInteractive = true;
             command.Configuration = "Release";
             command.TargetFramework = "netcoreapp1.0";
 
@@ -59,9 +59,9 @@ namespace Amazon.Lambda.Tools.Test
             var created = await command.ExecuteAsync();
             Assert.False(created);
 
-            Assert.True(logger.Buffer.Contains("Error: NETStandard.Library 1.6.1 is used for target framework netcoreapp1.1"));
-            Assert.True(logger.Buffer.Contains("Error: 	microsoft.aspnetcore.diagnostics : 1.1.1"));
-            Assert.True(logger.Buffer.Contains("Error: 	microsoft.extensions.fileproviders.embedded : 1.1.0"));
+            Assert.True(logger.Buffer.ToLower().Contains("error: netstandard.library 1.6.1 is used for target framework netcoreapp1.1"));
+            Assert.True(logger.Buffer.ToLower().Contains("error: 	microsoft.aspnetcore.diagnostics : 1.1.1"));
+            Assert.True(logger.Buffer.ToLower().Contains("error: 	microsoft.extensions.fileproviders.embedded : 1.1.0"));
         }
     }
 }
