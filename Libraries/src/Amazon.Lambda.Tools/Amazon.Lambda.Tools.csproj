@@ -12,7 +12,7 @@
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
     <PackageType>DotnetCliTool</PackageType>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <Version>1.6.0</Version>
+    <Version>1.7.0</Version>
     <RuntimeFrameworkVersion>1.0.0</RuntimeFrameworkVersion>
   </PropertyGroup>
 
