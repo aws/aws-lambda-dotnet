@@ -18,12 +18,12 @@
 
     "Amazon.Lambda.Tools" : {
       "type" :"build",
-      "version":"1.6.0"
+      "version":"1.7.0"
     }
   },
 
   "tools": {
-    "Amazon.Lambda.Tools" : "1.6.0"
+    "Amazon.Lambda.Tools" : "1.7.0"
   },
 
 
