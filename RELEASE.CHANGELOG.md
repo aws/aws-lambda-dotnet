@@ -1,3 +1,11 @@
+### Release 2017-07-26 21:30
+* **Amazon.Lambda.Tools (1.7.0)**
+    * Add **--disable-interactive** switch for use in CI systems to prevent the tooling from blocking waiting missing required parameters.
+    * Fixed issue with serverless deployment that was not returning a failed exit code when the CloudFormation stack failed to be created.
+* **Blueprints**
+    * Update dependency reference for **Amazon.Lambda.Tools**
+    *  **Amazon.Lambda.Templates (1.3.1)** released with latest blueprints.
+
 ### Release 2017-06-23 00:30
 * **Amazon.Lambda.AspNetCoreServer (0.10.2-preview1)**
 	* Fixed issue computing resource path for custom domains.
