@@ -58,13 +58,13 @@ yo aws-lambda-dotnet
 Assuming you are NOT using visual studio and you have installed the latest version of dotnet you will need to migrate from `project.json`-based project to MSBuild/`.csproj` based. To do this, go into the directory containing the `global.json` file and run `dotnet migrate`.  For more information see: https://docs.microsoft.com/en-us/dotnet/core/tools/#migration-from-projectjson
 
 ```
-$ cd ProjectName
+cd ProjectName
 dotnet migrate
 ```
 
 After that, you should be able to pull down the dependencies:
 
 ```
-$ cd src/ProjectName
+cd src/ProjectName
 dotnet restore
 ```
