@@ -17,6 +17,11 @@
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.csproj" />
@@ -25,7 +30,6 @@
 
   <ItemGroup>
     <PackageReference Include="System.Diagnostics.TraceSource" Version="4.0.0" />
-    <PackageReference Include="Libuv" Version="1.9.0" />
   </ItemGroup>
 
   <ItemGroup>

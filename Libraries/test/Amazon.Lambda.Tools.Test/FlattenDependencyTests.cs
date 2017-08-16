@@ -106,11 +106,9 @@ namespace Amazon.Lambda.Tools.Test
                 using (var archive = ZipFile.OpenRead(command.OutputPackageFileName))
                 {
                     Assert.True(archive.GetEntry("System.Diagnostics.TraceSource.dll") != null, "Failed to find System.Diagnostics.TraceSource.dll");
-                    Assert.True(archive.GetEntry("libuv.so") != null, "Failed to find libuv.so");
                     ValidateNoRuntimeFolder(archive);
 
                     MakeSureCorrectAssemblyWasPicked(archive, fullPath, "System.Diagnostics.TraceSource.dll", "runtimes/unix/lib/netstandard1.3");
-                    MakeSureCorrectAssemblyWasPicked(archive, fullPath, "libuv.so", "runtimes/rhel-x64/native");
                 }
             }
             finally
