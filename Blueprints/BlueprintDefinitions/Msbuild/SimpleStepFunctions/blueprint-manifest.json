@@ -1,0 +1,8 @@
+{
+    "display-name":"Simple Step Functions",
+    "system-name":"SimpleStepFunctions",
+    "description": "A simple example of how to build a .NET Core Lambda Step Function project.",
+    "sort-order" : 101,    
+    "hidden-tags" : ["C#","ServerlessProject"],
+    "tags":["Custom"]
+}
