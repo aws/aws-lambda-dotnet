@@ -139,6 +139,10 @@
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
           Properties="TemplateName=lambda.LexBookTripSample;ProjectName=LexBookTripSample"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorld"/>		  
 	  		
   </Target>
   

@@ -1,10 +1,10 @@
 {
   "author": "AWS",
   "classifications": ["AWS", "Lambda", "Serverless"],
-  "name": "Simple Step Functions",
-  "identity": "AWS.Lambda.Serverless.SimpleStepFunctions.CSharp",
-  "groupIdentity": "AWS.Lambda.Serverless.SimpleStepFunctions",
-  "shortName": "lambda.SimpleStepFunctions",
+  "name": "Step Functions Hello World",
+  "identity": "AWS.Lambda.Serverless.StepFunctionsHelloWorld.CSharp",
+  "groupIdentity": "AWS.Lambda.Serverless.StepFunctionsHelloWorld",
+  "shortName": "lambda.StepFunctionsHelloWorld",
   "tags": {
     "language": "C#",
     "type": "project"
