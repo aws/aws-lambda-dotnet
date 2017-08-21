@@ -10,7 +10,7 @@ This starter project consists of:
 You may also have a test project depending on the options selected.
 
 The generated project is a simple hello world Step Functions example. It generates 2 Lambda functions that are called as tasks in a state machine. 
-In the state-machine.json file the Step Function state machine is defined that tells Step Function in 
+In the state-machine.json file the Step Function state machine is defined that tells the Step Function service in 
 what order to call the Lambda functions. The Step Function execution's state is maintained in the State object which the
 Lambda functions read from, populate and return. In this example first Lambda function also returns back a wait time to show how to configure
 a wait in the state machine.
