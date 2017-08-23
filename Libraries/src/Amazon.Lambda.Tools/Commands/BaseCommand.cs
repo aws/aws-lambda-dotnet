@@ -357,6 +357,11 @@ namespace Amazon.Lambda.Tools.Commands
                 return cachedValue;
             }
 
+            if(required)
+            {
+                throw new LambdaToolsException($"Missing required parameter: {option.Switch}", LambdaToolsException.ErrorCode.MissingRequiredParameter);
+            }
+
             return null;
         }
 
