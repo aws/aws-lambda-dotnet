@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Text;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Amazon.Lambda.Tools
 {
@@ -210,6 +211,22 @@ namespace Amazon.Lambda.Tools
 
             if (File.Exists(command))
                 return Path.GetFullPath(command);
+
+            if(string.Equals(command, "dotnet.exe"))
+            {
+                if(!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    command = "dotnet";
+                }
+
+                var mainModule = Process.GetCurrentProcess().MainModule;
+                if (!string.IsNullOrEmpty(mainModule?.FileName)
+                    && Path.GetFileName(mainModule.FileName).Equals(command, StringComparison.OrdinalIgnoreCase))
+                {
+                    return mainModule.FileName;
+                }
+            }
+
 
             Func<string, string> quoteRemover = x =>
             {
