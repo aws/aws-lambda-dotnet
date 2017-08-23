@@ -1,3 +1,11 @@
+### Release 2017-08-23 20:30
+* **Amazon.Lambda.Tools (1.7.1)**
+    * Fixed error message when missing required parameters.
+    * Improved logic for searching for the current dotnet CLI
+    * Added **--disable-version-check** switch for users that want to try running with libraries that declare .NET Core 1.1 dependencies.
+        * Note, running with these libraries can have unforeseen side effects so only recommended for advanced cases with lots of testing done on the functions.
+
+
 ### Release 2017-08-22 18:00
 * **Blueprints**
     * Added new AWS Step Function Hello World blueprint.
