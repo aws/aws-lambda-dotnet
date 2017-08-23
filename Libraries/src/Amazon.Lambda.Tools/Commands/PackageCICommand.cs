@@ -31,7 +31,8 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS,
             DefinedCommandOptions.ARGUMENT_OUTPUT_CLOUDFORMATION_TEMPLATE,
             DefinedCommandOptions.ARGUMENT_S3_BUCKET,
-            DefinedCommandOptions.ARGUMENT_S3_PREFIX
+            DefinedCommandOptions.ARGUMENT_S3_PREFIX,
+            DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK
         });
 
         public string Configuration { get; set; }
@@ -42,6 +43,8 @@ namespace Amazon.Lambda.Tools.Commands
 
         public string CloudFormationTemplate { get; set; }
         public Dictionary<string, string> TemplateSubstitutions { get; set; }
+
+        public bool? DisableVersionCheck { get; set; }
 
         public string CloudFormationOutputTemplate { get; set; }
 
@@ -68,6 +71,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.S3Bucket = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_S3_PREFIX.Switch)) != null)
                 this.S3Prefix = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK.Switch)) != null)
+                this.DisableVersionCheck = tuple.Item2.BoolValue;
         }
 
         public PackageCICommand(IToolLogger logger, string workingDirectory, string[] args)
@@ -99,8 +104,9 @@ namespace Amazon.Lambda.Tools.Commands
             string zipArchivePath = null;
             string configuration = this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, true);
             string targetFramework = this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, true);
+            bool disableVersionCheck = this.GetBoolValueOrDefault(this.DisableVersionCheck, DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK, false).GetValueOrDefault();
             string publishLocation;
-            LambdaPackager.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
+            LambdaPackager.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, disableVersionCheck, out publishLocation, ref zipArchivePath);
             if (string.IsNullOrEmpty(zipArchivePath))
                 return false;
 

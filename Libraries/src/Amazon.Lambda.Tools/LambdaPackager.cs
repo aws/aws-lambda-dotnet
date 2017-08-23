@@ -39,9 +39,11 @@ namespace Amazon.Lambda.Tools
         /// <param name="projectLocation"></param>
         /// <param name="targetFramework"></param>
         /// <param name="configuration"></param>
+        /// <param name="disableVersionCheck"></param>
         /// <param name="publishLocation"></param>
         /// <param name="zipArchivePath"></param>
-        public static bool CreateApplicationBundle(LambdaToolsDefaults defaults, IToolLogger logger, string workingDirectory, string projectLocation, string configuration, string targetFramework,
+        public static bool CreateApplicationBundle(LambdaToolsDefaults defaults, IToolLogger logger, string workingDirectory, 
+            string projectLocation, string configuration, string targetFramework, bool disableVersionCheck,
             out string publishLocation, ref string zipArchivePath)
         {
             var cli = new DotNetCLIWrapper(logger, workingDirectory);
@@ -70,7 +72,7 @@ namespace Amazon.Lambda.Tools
             if (depsJsonTargetNode != null)
             {
                 // Make sure the project is not pulling in dependencies requiring a later version of .NET Core then the declared target framework
-                if (!ValidateDependencies(logger, targetFramework, depsJsonTargetNode))
+                if (!ValidateDependencies(logger, targetFramework, depsJsonTargetNode, disableVersionCheck))
                     return false;
 
                 // Flatten the runtime folder which reduces the package size by not including native dependencies
@@ -177,8 +179,9 @@ namespace Amazon.Lambda.Tools
         /// <param name="logger"></param>
         /// <param name="targetFramework"></param>
         /// <param name="depsJsonTargetNode"></param>
+        /// <param name="disableVersionCheck"></param>
         /// <returns></returns>
-        private static bool ValidateDependencies(IToolLogger logger, string targetFramework, JsonData depsJsonTargetNode)
+        private static bool ValidateDependencies(IToolLogger logger, string targetFramework, JsonData depsJsonTargetNode, bool disableVersionCheck)
         {
             Version maxNETStandardLibraryVersion;
             // If we don't know the NETStandard.Library NuGet package version then skip validation. This is to handle
@@ -190,6 +193,8 @@ namespace Amazon.Lambda.Tools
             var dependenciesUsingNETStandard = new List<string>();
             Version referencedNETStandardLibrary = null;
 
+            var errorLevel = disableVersionCheck ? "Warning" : "Error";
+
             foreach (KeyValuePair<string, JsonData> dependencyNode in depsJsonTargetNode)
             {
                 var nameAndVersion = dependencyNode.Key.Split('/');
@@ -200,7 +205,7 @@ namespace Amazon.Lambda.Tools
                 {
                     if(!Version.TryParse(nameAndVersion[1], out referencedNETStandardLibrary))
                     {
-                        logger.WriteLine($"Error parsing version number for declared NETStandard.Library: {nameAndVersion[1]}");
+                        logger.WriteLine($"{errorLevel} parsing version number for declared NETStandard.Library: {nameAndVersion[1]}");
                         return true;
                     }
                 }
@@ -225,7 +230,7 @@ namespace Amazon.Lambda.Tools
             // If true the project is pulling in a new version of NETStandard.Library then the target framework supports.
             if(referencedNETStandardLibrary != null && maxNETStandardLibraryVersion < referencedNETStandardLibrary)
             {
-                logger?.WriteLine($"Error: Project is referencing NETStandard.Library version {referencedNETStandardLibrary.ToString()}. Max version supported by {targetFramework} is {maxNETStandardLibraryVersion.ToString()}.");
+                logger?.WriteLine($"{errorLevel}: Project is referencing NETStandard.Library version {referencedNETStandardLibrary.ToString()}. Max version supported by {targetFramework} is {maxNETStandardLibraryVersion.ToString()}.");
 
                 // See if we can find the target framework that does support the version the project is pulling in.
                 // This can help the user know what framework their dependencies are targeting instead of understanding NuGet version numbers.
@@ -236,19 +241,21 @@ namespace Amazon.Lambda.Tools
 
                 if(!string.IsNullOrEmpty(matchingTargetFramework.Key))
                 {
-                    logger?.WriteLine($"Error: NETStandard.Library {referencedNETStandardLibrary.ToString()} is used for target framework {matchingTargetFramework.Key}.");
+                    logger?.WriteLine($"{errorLevel}: NETStandard.Library {referencedNETStandardLibrary.ToString()} is used for target framework {matchingTargetFramework.Key}.");
                 }
 
                 if (dependenciesUsingNETStandard.Count != 0)
                 {
-                    logger?.WriteLine($"Error: Check the following dependencies for versions compatible with {targetFramework}:");
+                    logger?.WriteLine($"{errorLevel}: Check the following dependencies for versions compatible with {targetFramework}:");
                     foreach(var dependency in dependenciesUsingNETStandard)
                     {
-                        logger?.WriteLine($"Error: \t{dependency}");
+                        logger?.WriteLine($"{errorLevel}: \t{dependency}");
                     }
                 }
 
-                return false;
+                // If disable version check is true still write the warning messages 
+                // but return true to continue deployment.
+                return false || disableVersionCheck;
             }
 
 

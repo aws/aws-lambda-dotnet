@@ -25,6 +25,7 @@ namespace Amazon.Lambda.Tools
             CloudFormationDescribeStackEvents,
 
             CommandLineParseError,
+            MissingRequiredParameter,
             DefaultsParseFail,
             DotnetPublishFail,
             InvalidPackage,

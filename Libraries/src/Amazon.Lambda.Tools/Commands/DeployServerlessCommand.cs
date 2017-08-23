@@ -46,7 +46,8 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_STACK_NAME,
             DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_DISABLE_CAPABILITIES,
             DefinedCommandOptions.ARGUMENT_STACK_WAIT,
-            DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE
+            DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE,
+            DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK
         });
 
         public string Configuration { get; set; }
@@ -65,6 +66,7 @@ namespace Amazon.Lambda.Tools.Commands
 
         public bool? PersistConfigFile { get; set; }
 
+        public bool? DisableVersionCheck { get; set; }
 
         public string[] DisabledCapabilities { get; set; }
 
@@ -105,6 +107,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.PersistConfigFile = tuple.Item2.BoolValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_ROLE.Switch)) != null)
                 this.CloudFormationRole = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK.Switch)) != null)
+                this.DisableVersionCheck = tuple.Item2.BoolValue;
         }
 
 
@@ -142,7 +146,9 @@ namespace Amazon.Lambda.Tools.Commands
                 {
                     string configuration = this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, true);
                     string targetFramework = this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, true);
-                    LambdaPackager.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
+                    bool disableVersionCheck = this.GetBoolValueOrDefault(this.DisableVersionCheck, DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK, false).GetValueOrDefault();
+
+                    LambdaPackager.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, disableVersionCheck, out publishLocation, ref zipArchivePath);
                     if (string.IsNullOrEmpty(zipArchivePath))
                         return false;
                 }

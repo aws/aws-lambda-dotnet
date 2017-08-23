@@ -75,6 +75,15 @@ namespace Amazon.Lambda.Tools.Options
                 ValueType = CommandOption.CommandOptionValueType.StringValue,
                 Description = "Target framework to compile, for example netcoreapp1.0",
             };
+        public static readonly CommandOption ARGUMENT_DISABLE_VERSION_CHECK =
+            new CommandOption
+            {
+                Name = "Disable Version Check",
+                ShortSwitch = "-dvc",
+                Switch = "--disable-version-check",
+                ValueType = CommandOption.CommandOptionValueType.BoolValue,
+                Description = "Disable the .NET Core version check. Only for advanced usage.",
+            };
         public static readonly CommandOption ARGUMENT_PACKAGE =
             new CommandOption
             {

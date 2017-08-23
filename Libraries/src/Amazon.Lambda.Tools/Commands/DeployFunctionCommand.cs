@@ -57,7 +57,8 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN,
             DefinedCommandOptions.ARGUMENT_S3_BUCKET,
             DefinedCommandOptions.ARGUMENT_S3_PREFIX,
-            DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE
+            DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE,
+            DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK
         });
 
         public string Configuration { get; set; }
@@ -68,6 +69,8 @@ namespace Amazon.Lambda.Tools.Commands
         public string S3Prefix { get; set; }
 
         public bool? PersistConfigFile { get; set; }
+
+        public bool? DisableVersionCheck { get; set; }
 
 
         // Disable handler validation for now.
@@ -106,6 +109,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.S3Prefix = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE.Switch)) != null)
                 this.PersistConfigFile = tuple.Item2.BoolValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK.Switch)) != null)
+                this.DisableVersionCheck = tuple.Item2.BoolValue;
         }
 
 
@@ -125,7 +130,8 @@ namespace Amazon.Lambda.Tools.Commands
 
                     ValidateTargetFrameworkAndLambdaRuntime();
 
-                    LambdaPackager.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
+                    bool disableVersionCheck = this.GetBoolValueOrDefault(this.DisableVersionCheck, DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK, false).GetValueOrDefault();
+                    LambdaPackager.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, disableVersionCheck, out publishLocation, ref zipArchivePath);
                     if (string.IsNullOrEmpty(zipArchivePath))
                         return false;
                 }

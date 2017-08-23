@@ -20,12 +20,16 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_PROJECT_LOCATION,
             DefinedCommandOptions.ARGUMENT_CONFIGURATION,
             DefinedCommandOptions.ARGUMENT_FRAMEWORK,
-            DefinedCommandOptions.ARGUMENT_OUTPUT_PACKAGE
+            DefinedCommandOptions.ARGUMENT_OUTPUT_PACKAGE,
+            DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK
         };
 
         public string Configuration { get; set; }
         public string TargetFramework { get; set; }
         public string OutputPackageFileName { get; set; }
+
+        public bool? DisableVersionCheck { get; set; }
+
 
         /// <summary>
         /// If the value for Payload points to an existing file then the contents of the file is sent, otherwise
@@ -59,6 +63,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.TargetFramework = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_OUTPUT_PACKAGE.Switch)) != null)
                 this.OutputPackageFileName = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK.Switch)) != null)
+                this.DisableVersionCheck = tuple.Item2.BoolValue;
         }
 
         public override Task<bool> ExecuteAsync()
@@ -74,11 +80,12 @@ namespace Amazon.Lambda.Tools.Commands
                     string configuration = this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, true);
                     string targetFramework = this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, true);
                     string projectLocation = this.GetStringValueOrDefault(this.ProjectLocation, DefinedCommandOptions.ARGUMENT_PROJECT_LOCATION, false);
+                    bool disableVersionCheck = this.GetBoolValueOrDefault(this.DisableVersionCheck, DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK, false).GetValueOrDefault();
 
                     var zipArchivePath = GetStringValueOrDefault(this.OutputPackageFileName, DefinedCommandOptions.ARGUMENT_OUTPUT_PACKAGE, false);
 
                     string publishLocation;
-                    bool success = LambdaPackager.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, out publishLocation, ref zipArchivePath);
+                    bool success = LambdaPackager.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, disableVersionCheck, out publishLocation, ref zipArchivePath);
                     if (!success)
                     {
                         this.Logger.WriteLine("Failed to create application package");
