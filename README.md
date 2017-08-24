@@ -42,7 +42,67 @@ For more information see the [README.md](Libraries/src/Amazon.Lambda.TestUtiliti
 
 Blueprints in this repository are .NET Core Lambda functions that can used to get started. In Visual Studio the Blueprints are avalible when creating a new project and selecting the AWS Lambda Project.
 
-### Yeoman
+
+### Dotnet CLI Templates
+
+New .NET Core projects can be created with the **dotnet new** command. By 
+installing the **Amazon.Lambda.Templates** NuGet package the AWS Lamdba blueprints 
+can be created from the **dotnet new** command. To install the template execute the following command:
+```
+dotnet new -i Amazon.Lambda.Templates::*
+```
+
+The ::* on the end of the command indicates the latest version of the NuGet package.
+
+To see a list of the Lambda templates execute **dotnet new lambda --list**
+
+```
+> dotnet new lambda --list                                                                                             
+Templates                                    Short Name                      Language      Tags                    
+----------------------------------------------------------------------------------------------------------------   
+Lambda Detect Image Labels                   lambda.DetectImageLabels        [C#]          AWS/Lambda/Function     
+Lambda Empty Function                        lambda.EmptyFunction            [C#]          AWS/Lambda/Function     
+Lex Book Trip Sample                         lambda.LexBookTripSample        [C#]          AWS/Lambda/Function     
+Lambda Simple DynamoDB Function              lambda.DynamoDB                 [C#]          AWS/Lambda/Function     
+Lambda Simple Kinesis Firehose Function      lambda.KinesisFirehose          [C#]          AWS/Lambda/Function     
+Lambda Simple Kinesis Function               lambda.Kinesis                  [C#]          AWS/Lambda/Function     
+Lambda Simple S3 Function                    lambda.S3                       [C#]          AWS/Lambda/Function     
+Lambda ASP.NET Core Web API                  lambda.AspNetCoreWebAPI         [C#]          AWS/Lambda/Serverless   
+Lambda DynamoDB Blog API                     lambda.DynamoDBBlogAPI          [C#]          AWS/Lambda/Serverless   
+Lambda Empty Serverless                      lambda.EmptyServerless          [C#]          AWS/Lambda/Serverless   
+Simple Step Functions                        lambda.SimpleStepFunctions      [C#]          AWS/Lambda/Serverless   
+```
+
+To get details about a template, you can use the help command.
+
+**dotnet new lambda.EmptyFunction –help**
+
+```
+Template Instantiation Commands for .NET Core CLI.                                                                                          
+                                                                                                                                           
+Lambda Empty Function (C#)                                                                                                                  
+Author: AWS                                                                                                                                 
+Options:                                                                                                                                    
+  -p|--profile  The AWS credentials profile set in aws-lambda-tools-defaults.json and used as the default profile when interacting with AWS.
+                string - Optional                                                                                                           
+                                                                                                                                           
+  -r|--region   The AWS region set in aws-lambda-tools-defaults.json and used as the default region when interacting with AWS.              
+                string - Optional  
+```
+
+The templates take two optional parameters to set the profile and region. These values are written to the aws-lambda-tools-default.json.
+
+To create a function, run the following command
+
+```
+dotnet new lambda.EmptyFunction --name BlogFunction --profile default --region us-east-2
+```
+
+
+### Yeoman (Deprecated)
+
+The Yeoman generators have been deprecated in favor of the new **dotnet new** templates. They will not be migrated from the older project.json based project system.
+
 For developers not using Visual Studio the Blueprints can be used with a Yeoman generator. To use Yeoman, Node.js and npm must be installed which can be obtain from [nodejs.org](https://nodejs.org/en/download/)
 
 Once npm is installed the Yeoman generator can be installed using the following command.
