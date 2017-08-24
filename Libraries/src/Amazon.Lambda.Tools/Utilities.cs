@@ -449,7 +449,8 @@ namespace Amazon.Lambda.Tools
                             ((JValue)token).Value = replacementValue;
                             break;
                         case JTokenType.Boolean:
-                            if(bool.TryParse(replacementValue, out bool b))
+                            bool b;
+                            if(bool.TryParse(replacementValue, out b))
                             {
                                 ((JValue)token).Value = b;
                             }
@@ -460,7 +461,8 @@ namespace Amazon.Lambda.Tools
                             
                             break;
                         case JTokenType.Integer:
-                            if (int.TryParse(replacementValue, out int i))
+                            int i;
+                            if (int.TryParse(replacementValue, out i))
                             {
                                 ((JValue)token).Value = i;
                             }
@@ -470,7 +472,8 @@ namespace Amazon.Lambda.Tools
                             }
                             break;
                         case JTokenType.Float:
-                            if (double.TryParse(replacementValue, out double d))
+                            double d;
+                            if (double.TryParse(replacementValue, out d))
                             {
                                 ((JValue)token).Value = d;
                             }
