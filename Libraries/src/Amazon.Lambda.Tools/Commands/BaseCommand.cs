@@ -400,6 +400,10 @@ namespace Amazon.Lambda.Tools.Commands
                 return cachedValue?.SplitByComma();
             }
 
+            if (required)
+            {
+                throw new LambdaToolsException($"Missing required parameter: {option.Switch}", LambdaToolsException.ErrorCode.MissingRequiredParameter);
+            }
 
             return null;
         }
@@ -430,6 +434,11 @@ namespace Amazon.Lambda.Tools.Commands
             {
                 var cachedValue = _cachedRequestedValues[option];
                 return cachedValue == null ? null : Utilities.ParseKeyValueOption(cachedValue);
+            }
+
+            if (required)
+            {
+                throw new LambdaToolsException($"Missing required parameter: {option.Switch}", LambdaToolsException.ErrorCode.MissingRequiredParameter);
             }
 
             return null;
@@ -476,6 +485,11 @@ namespace Amazon.Lambda.Tools.Commands
                 }
             }
 
+            if (required)
+            {
+                throw new LambdaToolsException($"Missing required parameter: {option.Switch}", LambdaToolsException.ErrorCode.MissingRequiredParameter);
+            }
+
             return null;
         }
 
@@ -518,6 +532,11 @@ namespace Amazon.Lambda.Tools.Commands
                 {
                     return i;
                 }
+            }
+
+            if (required)
+            {
+                throw new LambdaToolsException($"Missing required parameter: {option.Switch}", LambdaToolsException.ErrorCode.MissingRequiredParameter);
             }
 
             return null;
