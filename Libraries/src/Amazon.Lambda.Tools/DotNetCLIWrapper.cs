@@ -212,7 +212,8 @@ namespace Amazon.Lambda.Tools
             if (File.Exists(command))
                 return Path.GetFullPath(command);
 
-            if(string.Equals(command, "dotnet.exe"))
+#if NETCORE
+            if (string.Equals(command, "dotnet.exe"))
             {
                 if(!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
@@ -226,7 +227,7 @@ namespace Amazon.Lambda.Tools
                     return mainModule.FileName;
                 }
             }
-
+#endif
 
             Func<string, string> quoteRemover = x =>
             {
