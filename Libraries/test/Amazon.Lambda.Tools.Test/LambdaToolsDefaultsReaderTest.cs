@@ -34,6 +34,10 @@ namespace Amazon.Lambda.Tools.Test
 
             Assert.Equal(defaults.Region, "us-east-2");
             Assert.Equal(defaults["region"], "us-east-2");
+
+            Assert.Equal(defaults["disable-version-check"], true);
+            Assert.Equal(defaults["function-memory-size"], 128);
+
         }
 
         [Fact]

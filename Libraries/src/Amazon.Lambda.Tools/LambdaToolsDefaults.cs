@@ -87,7 +87,9 @@ namespace Amazon.Lambda.Tools
                     return this._rootData[fullSwitchName].ToString();
                 if (this._rootData[fullSwitchName].IsInt)
                     return (int)this._rootData[fullSwitchName];
-                if(this._rootData[fullSwitchName].IsArray)
+                if (this._rootData[fullSwitchName].IsBoolean)
+                    return (bool)this._rootData[fullSwitchName];
+                if (this._rootData[fullSwitchName].IsArray)
                 {
                     var items = new string[this._rootData[fullSwitchName].Count];
                     for(int i = 0; i < items.Length; i++)
