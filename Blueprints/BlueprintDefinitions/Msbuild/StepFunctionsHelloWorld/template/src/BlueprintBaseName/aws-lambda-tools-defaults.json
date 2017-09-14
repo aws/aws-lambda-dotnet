@@ -14,7 +14,6 @@
     "template"      : "serverless.template",
     "template-parameters" : "",
     "template-substitutions" : "$.Resources.StateMachine.Properties.DefinitionString.Fn::Sub=state-machine.json",
-    "s3-bucket"              : "normj-data",
-    "stack-name"             : "StepTest",
-    "stack-wait"             : false
+    "s3-bucket"              : "",
+    "stack-name"             : ""
 }
