@@ -122,7 +122,7 @@ namespace Amazon.Lambda.Tools.Commands
             // Process any template substitutions
             templateBody = Utilities.ProcessTemplateSubstitions(this.Logger, templateBody, this.GetKeyValuePairOrDefault(this.TemplateSubstitutions, DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS, false), Utilities.DetermineProjectLocation(this.WorkingDirectory, projectLocation));
 
-            var transformedBody = DeployServerlessCommand.UpdateCodeLocationInTemplate(templateBody, s3Bucket, s3KeyApplicationBundle);
+            var transformedBody = Utilities.UpdateCodeLocationInTemplate(templateBody, s3Bucket, s3KeyApplicationBundle);
 
             this.Logger.WriteLine($"Writing updated template: {outputTemplatePath}");
             File.WriteAllText(outputTemplatePath, transformedBody);

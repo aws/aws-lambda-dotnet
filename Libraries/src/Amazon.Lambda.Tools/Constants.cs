@@ -5,6 +5,10 @@ using System.Threading.Tasks;
 
 namespace Amazon.Lambda.Tools
 {
+
+    internal enum TemplateFormat { Json, Yaml }
+
+
     public static class Constants
     {
         public const string IAM_ARN_PREFIX = "arn:aws:iam::";

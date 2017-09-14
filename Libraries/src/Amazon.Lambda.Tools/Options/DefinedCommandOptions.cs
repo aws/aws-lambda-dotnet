@@ -262,7 +262,7 @@ namespace Amazon.Lambda.Tools.Options
                 ShortSwitch = "-ts",
                 Switch = "--template-substitutions",
                 ValueType = CommandOption.CommandOptionValueType.KeyValuePairs,
-                Description = "CloudFormation template substitutions. Format is <JSONPath>=<Substitution>;<JSONPath>=..."
+                Description = "JSON based CloudFormation template substitutions. Format is <JSONPath>=<Substitution>;<JSONPath>=..."
             };
         public static readonly CommandOption ARGUMENT_CLOUDFORMATION_DISABLE_CAPABILITIES =
             new CommandOption

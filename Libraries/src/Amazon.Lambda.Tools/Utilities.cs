@@ -18,9 +18,11 @@ using System.Text;
 using System.Runtime.Loader;
 #endif
 
+using YamlDotNet.Serialization;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ThirdParty.Json.LitJson;
 
 namespace Amazon.Lambda.Tools
 {
@@ -414,7 +416,7 @@ namespace Amazon.Lambda.Tools
 
         public static string ProcessTemplateSubstitions(IToolLogger logger, string templateBody, IDictionary<string, string> substitutions, string workingDirectory)
         {
-            if (substitutions == null || !substitutions.Any())
+            if (DetermineTemplateFormat(templateBody) != TemplateFormat.Json || substitutions == null || !substitutions.Any())
                 return templateBody;
 
             logger?.WriteLine($"Processing {substitutions.Count} substitutions.");
@@ -514,5 +516,129 @@ namespace Amazon.Lambda.Tools
             return json;
         }
 
+
+        /// <summary>
+        /// Search for the CloudFormation resources that references the app bundle sent to S3 and update them.
+        /// </summary>
+        /// <param name="templateBody"></param>
+        /// <param name="s3Bucket"></param>
+        /// <param name="s3Key"></param>
+        /// <returns></returns>
+        public static string UpdateCodeLocationInTemplate(string templateBody, string s3Bucket, string s3Key)
+        {
+            switch (Utilities.DetermineTemplateFormat(templateBody))
+            {
+                case TemplateFormat.Json:
+                    return UpdateCodeLocationInJsonTemplate(templateBody, s3Bucket, s3Key);
+                case TemplateFormat.Yaml:
+                    return UpdateCodeLocationInYamlTemplate(templateBody, s3Bucket, s3Key);
+                default:
+                    throw new LambdaToolsException("Unable to determine template file format", LambdaToolsException.ErrorCode.ServerlessTemplateParseError);
+            }
+        }
+
+        public static string UpdateCodeLocationInJsonTemplate(string templateBody, string s3Bucket, string s3Key)
+        {
+            var s3Url = $"s3://{s3Bucket}/{s3Key}";
+            JsonData root;
+            try
+            {
+                root = JsonMapper.ToObject(templateBody) as JsonData;
+            }
+            catch (Exception e)
+            {
+                throw new LambdaToolsException($"Error parsing CloudFormation template: {e.Message}", LambdaToolsException.ErrorCode.ServerlessTemplateParseError, e);
+            }
+
+            var resources = root["Resources"] as JsonData;
+
+            foreach (var field in resources.PropertyNames)
+            {
+                var resource = resources[field] as JsonData;
+                if (resource == null)
+                    continue;
+
+                var properties = resource["Properties"] as JsonData;
+                if (properties == null)
+                    continue;
+
+                var type = resource["Type"]?.ToString();
+                if (string.Equals(type, "AWS::Serverless::Function", StringComparison.Ordinal))
+                {
+                    properties["CodeUri"] = s3Url;
+                }
+
+                if (string.Equals(type, "AWS::Lambda::Function", StringComparison.Ordinal))
+                {
+                    var code = new JsonData();
+                    code["S3Bucket"] = s3Bucket;
+                    code["S3Key"] = s3Key;
+                    properties["Code"] = code;
+                }
+            }
+
+            var json = JsonMapper.ToJson(root);
+            return json;
+        }
+
+        public static string UpdateCodeLocationInYamlTemplate(string templateBody, string s3Bucket, string s3Key)
+        {
+            var s3Url = $"s3://{s3Bucket}/{s3Key}";
+            var deserialize = new YamlDotNet.Serialization.Deserializer();
+
+            var root = deserialize.Deserialize(new StringReader(templateBody)) as Dictionary<object, object>;
+            if (root == null)
+                return templateBody;
+
+            if (!root.ContainsKey("Resources"))
+                return templateBody;
+
+            var resources = root["Resources"] as IDictionary<object, object>;
+
+
+            foreach(var kvp in resources)
+            {
+                var resource = kvp.Value as IDictionary<object, object>;
+                if (resource == null)
+                    continue;
+
+                if (!resource.ContainsKey("Properties"))
+                    continue;
+                var properties = resource["Properties"] as IDictionary<object, object>;
+
+
+                if (!resource.ContainsKey("Type"))
+                    continue;
+
+                var type = resource["Type"]?.ToString();
+                if (string.Equals(type, "AWS::Serverless::Function", StringComparison.Ordinal))
+                {
+                    properties["CodeUri"] = s3Url;
+                }
+
+                if (string.Equals(type, "AWS::Lambda::Function", StringComparison.Ordinal))
+                {
+                    var code = new Dictionary<object, object>();
+                    code["S3Bucket"] = s3Bucket;
+                    code["S3Key"] = s3Key;
+                    properties["Code"] = code;
+                }
+            }
+
+            var serializer = new Serializer();
+            var updatedTemplateBody = serializer.Serialize(root);
+
+            return updatedTemplateBody;
+        }
+
+
+        internal static TemplateFormat DetermineTemplateFormat(string templateBody)
+        {
+            templateBody = templateBody.Trim();
+            if (templateBody.Length > 0 && templateBody[0] == '{')
+                return TemplateFormat.Json;
+
+            return TemplateFormat.Yaml;
+        }
     }
 }

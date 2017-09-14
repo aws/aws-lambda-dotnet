@@ -28,6 +28,7 @@
     <PackageReference Include="AWSSDK.Lambda" Version="3.3.2.9" />
     <PackageReference Include="AWSSDK.IdentityManagement" Version="3.3.2.3" />
     <PackageReference Include="AWSSDK.S3" Version="3.3.5.10" />
+    <PackageReference Include="YamlDotNet.Signed" Version="4.2.1" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp1.0' ">

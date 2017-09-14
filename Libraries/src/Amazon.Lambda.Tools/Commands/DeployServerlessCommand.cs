@@ -177,7 +177,7 @@ namespace Amazon.Lambda.Tools.Commands
                 // Process any template substitutions
                 templateBody = Utilities.ProcessTemplateSubstitions(this.Logger, templateBody, this.GetKeyValuePairOrDefault(this.TemplateSubstitutions, DefinedCommandOptions.ARGUMENT_CLOUDFORMATION_TEMPLATE_SUBSTITUTIONS, false), Utilities.DetermineProjectLocation(this.WorkingDirectory, projectLocation));
 
-                templateBody = UpdateCodeLocationInTemplate(templateBody, s3Bucket, s3KeyApplicationBundle);
+                templateBody = Utilities.UpdateCodeLocationInTemplate(templateBody, s3Bucket, s3KeyApplicationBundle);
 
                 // Upload the template to S3 instead of sending it straight to CloudFormation to avoid the size limitation
                 string s3KeyTemplate;
@@ -584,57 +584,6 @@ namespace Amazon.Lambda.Tools.Commands
             return parameters;
         }
 
-
-        /// <summary>
-        /// Search for the CloudFormation resources that references the app bundle sent to S3 and update them.
-        /// </summary>
-        /// <param name="templateBody"></param>
-        /// <param name="s3Bucket"></param>
-        /// <param name="s3Key"></param>
-        /// <returns></returns>
-        public static string UpdateCodeLocationInTemplate(string templateBody, string s3Bucket, string s3Key)
-        {
-            var s3Url = $"s3://{s3Bucket}/{s3Key}";
-            JsonData root;
-            try
-            {
-                root = JsonMapper.ToObject(templateBody) as JsonData;
-            }
-            catch (Exception e)
-            {
-                throw new LambdaToolsException($"Error parsing CloudFormation template: {e.Message}", LambdaToolsException.ErrorCode.ServerlessTemplateParseError, e);
-            }
-
-            var resources = root["Resources"] as JsonData;
-
-            foreach (var field in resources.PropertyNames)
-            {
-                var resource = resources[field] as JsonData;
-                if (resource == null)
-                    continue;
-
-                var properties = resource["Properties"] as JsonData;
-                if (properties == null)
-                    continue;
-
-                var type = resource["Type"]?.ToString();
-                if (string.Equals(type, "AWS::Serverless::Function", StringComparison.Ordinal))
-                {
-                    properties["CodeUri"] = s3Url;
-                }
-
-                if (string.Equals(type, "AWS::Lambda::Function", StringComparison.Ordinal))
-                {
-                    var code = new JsonData();
-                    code["S3Bucket"] = s3Bucket;
-                    code["S3Key"] = s3Key;
-                    properties["Code"] = code;
-                }
-            }
-
-            var json = JsonMapper.ToJson(root);
-            return json;
-        }
 
         private void SaveConfigFile()
         {
