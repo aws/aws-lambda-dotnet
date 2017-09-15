@@ -1,3 +1,11 @@
+### Release 2017-09-15 23:00
+* **Amazon.Lambda.Tools (1.8.0)**
+    * Add support using YAML formatted CloudFormation templates.
+* **Blueprints**
+    * Update dependency reference for **Amazon.Lambda.Tools**
+    *  **Amazon.Lambda.Templates (1.4.1)** released with latest blueprints.
+
+
 ### Release 2017-08-23 20:30
 * **Amazon.Lambda.Tools (1.7.1)**
     * Fixed error message when missing required parameters.
