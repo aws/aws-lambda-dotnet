@@ -289,6 +289,14 @@ namespace Amazon.Lambda.Tools.Commands
             {
                 this.Logger.WriteLine($"Unknown error executing Lambda deployment: {e.Message}");
                 this.Logger.WriteLine(e.StackTrace);
+                var inner = e.InnerException;
+                for (var i = 1; inner != null; i++)
+                {
+                    this.Logger.WriteLine(new string('\t', i) + inner.Message);
+                    this.Logger.WriteLine(new string('\t', i) + inner.StackTrace);
+                    inner = inner.InnerException;
+                }
+
                 return false;
             }
         }

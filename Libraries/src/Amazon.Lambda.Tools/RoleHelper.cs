@@ -134,7 +134,7 @@ namespace Amazon.Lambda.Tools
 
         public static string ExpandRoleName(IAmazonIdentityManagementService iamClient, string roleName)
         {
-            if (roleName.StartsWith("arn:aws:iam"))
+            if (roleName.StartsWith("arn:aws"))
                 return roleName;
 
             // Wrapping this in a task to avoid dealing with aggregate exception.
@@ -142,7 +142,7 @@ namespace Amazon.Lambda.Tools
             {
                 try
                 {
-                    var request = new GetRoleRequest { RoleName = roleName };
+                    var request = new GetRoleRequest {RoleName = roleName};
                     var response = await iamClient.GetRoleAsync(request).ConfigureAwait(false);
                     return response.Role.Arn;
                 }
@@ -150,7 +150,6 @@ namespace Amazon.Lambda.Tools
                 {
                     return null;
                 }
-
             });
 
             if(task.Result == null)
