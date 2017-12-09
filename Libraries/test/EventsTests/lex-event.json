@@ -19,7 +19,7 @@
       "slot-name2": "value2",
       "slot-name3": "value3"
     },
-    "confirmationStatus": "None, Confirmed, or Denied (intent confirmation, if configured)",
-    "inputTranscript": "Text used to process the request"
-  }
+    "confirmationStatus": "None, Confirmed, or Denied (intent confirmation, if configured)"
+  },
+  "inputTranscript": "Text used to process the request"
 }

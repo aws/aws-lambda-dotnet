@@ -453,7 +453,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("value2", lexEvent.CurrentIntent.Slots["slot-name2"]);
                 Assert.Equal("value3", lexEvent.CurrentIntent.Slots["slot-name3"]);
                 Assert.Equal("None, Confirmed, or Denied (intent confirmation, if configured)", lexEvent.CurrentIntent.ConfirmationStatus);
-                Assert.Equal("Text used to process the request", lexEvent.CurrentIntent.InputTranscript);
+                Assert.Equal("Text used to process the request", lexEvent.InputTranscript);
             }
         }
 
