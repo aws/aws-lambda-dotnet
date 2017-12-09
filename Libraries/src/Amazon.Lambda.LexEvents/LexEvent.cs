@@ -27,6 +27,11 @@ namespace Amazon.Lambda.LexEvents
         public string UserId { get; set; }
 
         /// <summary>
+        /// The text used to process the request.
+        /// </summary>
+        public string InputTranscript { get; set; }
+        
+        /// <summary>
         /// Application-specific session attributes that the client sent in the request. If you want 
         /// Amazon Lex to include them in the response to the client, your Lambda function should 
         /// send these back to Amazon Lex in response.
@@ -76,11 +81,6 @@ namespace Amazon.Lambda.LexEvents
             /// The ConfirmationStatus provides the user response to a confirmation prompt, if there is one. 
             /// </summary>
             public string ConfirmationStatus { get; set; }
-
-            /// <summary>
-            /// The text used to process the request.
-            /// </summary>
-            public string InputTranscript { get; set; }
         }
 
 
