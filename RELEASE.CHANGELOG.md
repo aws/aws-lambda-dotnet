@@ -1,3 +1,10 @@
+### Release 2017-12-12 00:30
+* **Amazon.Lambda.LexEvents (1.0.1)**
+    * Pull request [#184](https://github.com/aws/aws-lambda-dotnet/pull/184), fixing issue with InputTranscript property on the wrong class. Thanks to [jmeijon](https://github.com/jmeijon).
+* **Blueprints**
+    * Update dependency reference for **Amazon.Lambda.LexEvents**
+    *  **Amazon.Lambda.Templates (1.4.2)** released with latest blueprints.
+
 ### Release 2017-10-12 18:00
 * **Amazon.Lambda.Tools (1.8.1)**
     * Fixed issue deploying to AWS Lambda in the US GovCloud region.
