@@ -2,6 +2,10 @@
 <Project ToolsVersion="14.0"
     DefaultTargets="full-build"
     xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	
+  <ItemGroup>  
+    <DeploymentNuGetConfig Include="NuGet.Config"/>  
+  </ItemGroup>  	
 
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
@@ -68,6 +72,12 @@
 
     <RemoveDir Directories="../Deployment"/>
     <MakeDir Directories="../Deployment/nuget-packages"/>
+	
+	<Copy  
+            SourceFiles="@(DeploymentNuGetConfig)"  
+            DestinationFolder="../Deployment"  
+        />
+	
 
     <Exec Command="&quot;$(SDKToolingExe)&quot; restore Libraries.sln"
       WorkingDirectory="..\Libraries"/>
