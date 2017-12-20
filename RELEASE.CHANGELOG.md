@@ -1,3 +1,10 @@
+### Release 2017-12-20 18:30
+* **Amazon.Lambda.LexEvents (1.0.2)**
+    * Add slot details and request attributes to LexEvent.
+* **Blueprints**
+    * Update dependency reference for **Amazon.Lambda.LexEvents**
+    *  **Amazon.Lambda.Templates (1.4.3)** released with latest blueprints.
+
 ### Release 2017-12-12 00:30
 * **Amazon.Lambda.LexEvents (1.0.1)**
     * Pull request [#184](https://github.com/aws/aws-lambda-dotnet/pull/184), fixing issue with InputTranscript property on the wrong class. Thanks to [jmeijon](https://github.com/jmeijon).
