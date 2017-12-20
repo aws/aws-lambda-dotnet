@@ -39,6 +39,12 @@ namespace Amazon.Lambda.LexEvents
         public IDictionary<string, string> SessionAttributes { get; set; }
 
         /// <summary>
+        /// Request-specific attributes that the client sends in the request. Use request attributes to 
+        /// pass information that doesn't need to persist for the entire session.
+        /// </summary>
+        public IDictionary<string, string> RequestAttributes { get; set; }
+
+        /// <summary>
         /// The Lex bot invoking the Lambda function
         /// </summary>
         public LexBot Bot { get; set; }
@@ -78,11 +84,26 @@ namespace Amazon.Lambda.LexEvents
             public IDictionary<string, string> Slots { get; set; }
 
             /// <summary>
+            /// Provides additional information about a slot value.
+            /// </summary>
+            public IDictionary<string, SlotDetail> SlotDetails { get; set; }
+
+            /// <summary>
             /// The ConfirmationStatus provides the user response to a confirmation prompt, if there is one. 
             /// </summary>
             public string ConfirmationStatus { get; set; }
         }
 
+        /// <summary>
+        /// The class representing the information for a SlotDetail
+        /// </summary>
+        public class SlotDetail
+        {
+            /// <summary>
+            /// The resolutions array contains a list of additional values recognized for the slot.
+            /// </summary>
+            public IList<Dictionary<string, string>> Resolutions { get; set; }
+        }
 
         /// <summary>
         /// The class identifies the Lex bot that is invoking the Lambda function.

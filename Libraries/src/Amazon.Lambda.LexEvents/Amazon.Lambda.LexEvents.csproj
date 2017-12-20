@@ -9,6 +9,7 @@
     <AssemblyName>Amazon.Lambda.LexEvents</AssemblyName>
     <PackageId>Amazon.Lambda.LexEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Lex</PackageTags>
+    <Version>1.0.2</Version>
   </PropertyGroup>
   
   <ItemGroup>

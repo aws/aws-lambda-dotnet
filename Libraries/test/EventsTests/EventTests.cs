@@ -439,21 +439,31 @@ namespace Amazon.Lambda.Tests
                 var lexEvent = serializer.Deserialize<LexEvent>(fileStream);
                 Assert.Equal("1.0", lexEvent.MessageVersion);
                 Assert.Equal("FulfillmentCodeHook or DialogCodeHook", lexEvent.InvocationSource);
-                Assert.Equal("user-id specified in the POST request to Amazon Lex.", lexEvent.UserId);
+                Assert.Equal("User ID specified in the POST request to Amazon Lex.", lexEvent.UserId);
                 Assert.Equal(2, lexEvent.SessionAttributes.Count);
                 Assert.Equal("value1", lexEvent.SessionAttributes["key1"]);
                 Assert.Equal("value2", lexEvent.SessionAttributes["key2"]);
-                Assert.Equal("bot-name", lexEvent.Bot.Name);
-                Assert.Equal("bot-alias", lexEvent.Bot.Alias);
-                Assert.Equal("bot-version", lexEvent.Bot.Version);
+                Assert.Equal("bot name", lexEvent.Bot.Name);
+                Assert.Equal("bot alias", lexEvent.Bot.Alias);
+                Assert.Equal("bot version", lexEvent.Bot.Version);
                 Assert.Equal("Text or Voice, based on ContentType request header in runtime API request", lexEvent.OutputDialogMode);
                 Assert.Equal("intent-name", lexEvent.CurrentIntent.Name);
-                Assert.Equal(3, lexEvent.CurrentIntent.Slots.Count);
-                Assert.Equal("value1", lexEvent.CurrentIntent.Slots["slot-name1"]);
-                Assert.Equal("value2", lexEvent.CurrentIntent.Slots["slot-name2"]);
-                Assert.Equal("value3", lexEvent.CurrentIntent.Slots["slot-name3"]);
+                Assert.Equal(2, lexEvent.CurrentIntent.Slots.Count);
+                Assert.Equal("value1", lexEvent.CurrentIntent.Slots["slot name1"]);
+                Assert.Equal("value2", lexEvent.CurrentIntent.Slots["slot name2"]);
                 Assert.Equal("None, Confirmed, or Denied (intent confirmation, if configured)", lexEvent.CurrentIntent.ConfirmationStatus);
                 Assert.Equal("Text used to process the request", lexEvent.InputTranscript);
+
+                Assert.Equal(2, lexEvent.RequestAttributes.Count);
+                Assert.Equal("value1", lexEvent.RequestAttributes["key1"]);
+                Assert.Equal("value2", lexEvent.RequestAttributes["key2"]);
+
+                Assert.Equal(2, lexEvent.CurrentIntent.SlotDetails.Count);
+                Assert.Equal("resolved value1", lexEvent.CurrentIntent.SlotDetails["slot name1"].Resolutions[0]["value1"]);
+                Assert.Equal("resolved value2", lexEvent.CurrentIntent.SlotDetails["slot name1"].Resolutions[1]["value2"]);
+
+                Assert.Equal("resolved value1", lexEvent.CurrentIntent.SlotDetails["slot name2"].Resolutions[0]["value1"]);
+                Assert.Equal("resolved value2", lexEvent.CurrentIntent.SlotDetails["slot name2"].Resolutions[1]["value2"]);
             }
         }
 
