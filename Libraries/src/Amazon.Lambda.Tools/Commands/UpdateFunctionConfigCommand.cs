@@ -41,7 +41,8 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS,
             DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN,
             DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES,
-            DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN
+            DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN, 
+            DefinedCommandOptions.ARGUMENT_APPLY_DEFAULTS_FOR_UPDATE
         });
 
         public string FunctionName { get; set; }
@@ -57,6 +58,7 @@ namespace Amazon.Lambda.Tools.Commands
         public Dictionary<string, string> EnvironmentVariables { get; set; }
         public string KMSKeyArn { get; set; }
         public string DeadLetterTargetArn { get; set; }
+        public bool? ApplyDefaultsForUpdate { get; set; }
 
         public UpdateFunctionConfigCommand(IToolLogger logger, string workingDirectory, string[] args)
             : base(logger, workingDirectory, UpdateCommandOptions, args)
@@ -109,6 +111,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.EnvironmentVariables = tuple.Item2.KeyValuePairs;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN.Switch)) != null)
                 this.KMSKeyArn = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_APPLY_DEFAULTS_FOR_UPDATE.Switch)) != null)
+                this.ApplyDefaultsForUpdate = tuple.Item2.BoolValue;
         }
 
 
@@ -186,25 +190,34 @@ namespace Amazon.Lambda.Tools.Commands
         /// <returns></returns>
         private UpdateFunctionConfigurationRequest CreateConfigurationRequestIfDifferent(GetFunctionConfigurationResponse existingConfiguration)
         {
+            bool applyDefaultsFile = this.GetBoolValueOrDefault(this.ApplyDefaultsForUpdate, DefinedCommandOptions.ARGUMENT_APPLY_DEFAULTS_FOR_UPDATE, false).GetValueOrDefault();
+
+            if(applyDefaultsFile)
+            {
+                this.Logger.WriteLine("Apply defaults values from defaults file while updating function configuration");
+            }
+
             bool different = false;
             var request = new UpdateFunctionConfigurationRequest
             {
                 FunctionName = this.GetStringValueOrDefault(this.FunctionName, DefinedCommandOptions.ARGUMENT_FUNCTION_NAME, true)
             };
 
-            if (!string.IsNullOrEmpty(this.Description) && !string.Equals(this.Description, existingConfiguration.Description, StringComparison.Ordinal))
+            var description = applyDefaultsFile ? this.GetStringValueOrDefault(this.Description, DefinedCommandOptions.ARGUMENT_FUNCTION_DESCRIPTION, false) : Description;
+            if (!string.IsNullOrEmpty(description) && !string.Equals(description, existingConfiguration.Description, StringComparison.Ordinal))
             {
-                request.Description = Description;
+                request.Description = description;
                 different = true;
             }
 
-            if (!string.IsNullOrEmpty(this.Role))
+            var role = applyDefaultsFile ? this.GetStringValueOrDefault(this.Role, DefinedCommandOptions.ARGUMENT_FUNCTION_ROLE, false) : this.Role;
+            if (!string.IsNullOrEmpty(role))
             {
                 string fullRole;
-                if (this.Role.StartsWith(Constants.IAM_ARN_PREFIX))
-                    fullRole = this.Role;
+                if (role.StartsWith(Constants.IAM_ARN_PREFIX))
+                    fullRole = role;
                 else
-                    fullRole = RoleHelper.ExpandRoleName(this.IAMClient, this.Role);
+                    fullRole = RoleHelper.ExpandRoleName(this.IAMClient, role);
 
                 if (!string.Equals(fullRole, existingConfiguration.Role, StringComparison.Ordinal))
                 {
@@ -213,72 +226,80 @@ namespace Amazon.Lambda.Tools.Commands
                 }
             }
 
-            if (!string.IsNullOrEmpty(this.Handler) && !string.Equals(this.Handler, existingConfiguration.Handler, StringComparison.Ordinal))
+            var handler = applyDefaultsFile ? this.GetStringValueOrDefault(this.Handler, DefinedCommandOptions.ARGUMENT_FUNCTION_HANDLER, false) : this.Handler;
+            if (!string.IsNullOrEmpty(handler) && !string.Equals(handler, existingConfiguration.Handler, StringComparison.Ordinal))
             {
-                request.Handler = Handler;
+                request.Handler = handler;
                 different = true;
             }
 
-            if(MemorySize.HasValue && MemorySize.Value != existingConfiguration.MemorySize)
+            var memorySize = applyDefaultsFile ? this.GetIntValueOrDefault(this.MemorySize, DefinedCommandOptions.ARGUMENT_FUNCTION_MEMORY_SIZE, false) : this.MemorySize;
+            if(memorySize.HasValue && memorySize.Value != existingConfiguration.MemorySize)
             {
-                request.MemorySize = MemorySize.Value;
+                request.MemorySize = memorySize.Value;
                 different = true;
             }
 
-            if (Runtime != null && Runtime != existingConfiguration.Runtime)
+            var runtime = applyDefaultsFile ? this.GetStringValueOrDefault(this.Runtime, DefinedCommandOptions.ARGUMENT_FUNCTION_RUNTIME, false) : this.Runtime?.Value;
+            if (runtime != null && runtime != existingConfiguration.Runtime)
             {
-                request.Runtime = Runtime;
+                request.Runtime = runtime;
                 different = true;
             }
 
-            if (Timeout.HasValue && Timeout.Value != existingConfiguration.Timeout)
+            var timeout = applyDefaultsFile ? this.GetIntValueOrDefault(this.Timeout, DefinedCommandOptions.ARGUMENT_FUNCTION_TIMEOUT, false) : this.Timeout;
+            if (timeout.HasValue && timeout.Value != existingConfiguration.Timeout)
             {
-                request.Timeout = Timeout.Value;
+                request.Timeout = timeout.Value;
                 different = true;
             }
 
-            if(this.SubnetIds != null)
+            var subnetIds = applyDefaultsFile ? this.GetStringValuesOrDefault(this.SubnetIds, DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS, false) : this.SubnetIds;
+            if (subnetIds != null)
             {
                 if(request.VpcConfig == null)
                 {
                     request.VpcConfig = new VpcConfig
                     {
-                        SubnetIds = this.SubnetIds.ToList()
+                        SubnetIds = subnetIds.ToList()
                     };
                     different = true;
                 }
-                if(AreDifferent(this.SubnetIds, request.VpcConfig.SubnetIds))
+                if(AreDifferent(subnetIds, request.VpcConfig.SubnetIds))
                 {
-                    request.VpcConfig.SubnetIds = this.SubnetIds.ToList();
+                    request.VpcConfig.SubnetIds = subnetIds.ToList();
                     different = true;
                 }
             }
-            if (this.SecurityGroupIds != null)
+
+            var securityGroupIds = applyDefaultsFile ? this.GetStringValuesOrDefault(this.SecurityGroupIds, DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS, false) : this.SecurityGroupIds;
+            if (securityGroupIds != null)
             {
                 if (request.VpcConfig == null)
                 {
                     request.VpcConfig = new VpcConfig
                     {
-                        SecurityGroupIds = this.SecurityGroupIds.ToList()
+                        SecurityGroupIds = securityGroupIds.ToList()
                     };
                     different = true;
                 }
-                if (AreDifferent(this.SecurityGroupIds, request.VpcConfig.SecurityGroupIds))
+                if (AreDifferent(securityGroupIds, request.VpcConfig.SecurityGroupIds))
                 {
-                    request.VpcConfig.SecurityGroupIds = this.SecurityGroupIds.ToList();
+                    request.VpcConfig.SecurityGroupIds = securityGroupIds.ToList();
                     different = true;
                 }
             }
 
-            if(this.DeadLetterTargetArn != null)
+            var deadLetterTargetArn = applyDefaultsFile ? this.GetStringValueOrDefault(this.DeadLetterTargetArn, DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN, false) : this.DeadLetterTargetArn;
+            if (deadLetterTargetArn != null)
             {
-                if (!string.IsNullOrEmpty(this.DeadLetterTargetArn) && !string.Equals(this.DeadLetterTargetArn, existingConfiguration.DeadLetterConfig?.TargetArn, StringComparison.Ordinal))
+                if (!string.IsNullOrEmpty(deadLetterTargetArn) && !string.Equals(deadLetterTargetArn, existingConfiguration.DeadLetterConfig?.TargetArn, StringComparison.Ordinal))
                 {
                     request.DeadLetterConfig = existingConfiguration.DeadLetterConfig ?? new DeadLetterConfig();
-                    request.DeadLetterConfig.TargetArn = this.DeadLetterTargetArn;
+                    request.DeadLetterConfig.TargetArn = deadLetterTargetArn;
                     different = true;
                 }
-                else if (string.IsNullOrEmpty(this.DeadLetterTargetArn) && !string.IsNullOrEmpty(existingConfiguration.DeadLetterConfig?.TargetArn))
+                else if (string.IsNullOrEmpty(deadLetterTargetArn) && !string.IsNullOrEmpty(existingConfiguration.DeadLetterConfig?.TargetArn))
                 {
                     request.DeadLetterConfig = null;
                     request.DeadLetterConfig = existingConfiguration.DeadLetterConfig ?? new DeadLetterConfig();
@@ -288,14 +309,17 @@ namespace Amazon.Lambda.Tools.Commands
             }
 
 
-            if (!string.IsNullOrEmpty(this.KMSKeyArn) && !string.Equals(this.KMSKeyArn, existingConfiguration.KMSKeyArn, StringComparison.Ordinal))
+            var kmsKeyArn = applyDefaultsFile ? this.GetStringValueOrDefault(this.KMSKeyArn, DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN, false) : this.KMSKeyArn;
+            if (!string.IsNullOrEmpty(kmsKeyArn) && !string.Equals(kmsKeyArn, existingConfiguration.KMSKeyArn, StringComparison.Ordinal))
             {
-                request.KMSKeyArn = this.KMSKeyArn;
+                request.KMSKeyArn = kmsKeyArn;
                 different = true;
             }
-            if(this.EnvironmentVariables != null && AreDifferent(this.EnvironmentVariables, existingConfiguration?.Environment?.Variables))
+
+            var environmentVariables = applyDefaultsFile ? this.GetKeyValuePairOrDefault(this.EnvironmentVariables, DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES, false) : this.EnvironmentVariables;
+            if(environmentVariables != null && AreDifferent(environmentVariables, existingConfiguration?.Environment?.Variables))
             {
-                request.Environment = new Model.Environment { Variables = this.EnvironmentVariables };
+                request.Environment = new Model.Environment { Variables = environmentVariables };
                 different = true;
             }
 

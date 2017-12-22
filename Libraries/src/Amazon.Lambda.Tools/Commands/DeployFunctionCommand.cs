@@ -55,6 +55,7 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN,
             DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES,
             DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN,
+            DefinedCommandOptions.ARGUMENT_APPLY_DEFAULTS_FOR_UPDATE,
             DefinedCommandOptions.ARGUMENT_S3_BUCKET,
             DefinedCommandOptions.ARGUMENT_S3_PREFIX,
             DefinedCommandOptions.ARGUMENT_PERSIST_CONFIG_FILE,
