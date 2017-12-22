@@ -39,7 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="1.8.0" />
+    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="1.9.0" />
   </ItemGroup>
 
 </Project>
