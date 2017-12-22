@@ -73,7 +73,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TemplateSubstitutionTestPro
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateMachineDefinitionStringTest", "test\TemplateSubstitutionTestProjects\StateMachineDefinitionStringTest\StateMachineDefinitionStringTest.csproj", "{D25486BF-E79F-4DFF-AEA4-D91ABFF71039}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.CloudWatchLogsEvents", "src\Amazon.Lambda.CloudWatchLogsEvents\Amazon.Lambda.CloudWatchLogsEvents.csproj", "{32827626-2128-49A0-A2A9-2F5076AADDAD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.CloudWatchLogsEvents", "src\Amazon.Lambda.CloudWatchLogsEvents\Amazon.Lambda.CloudWatchLogsEvents.csproj", "{32827626-2128-49A0-A2A9-2F5076AADDAD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
