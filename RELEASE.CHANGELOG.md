@@ -1,3 +1,16 @@
+### Release 2017-12-22 23:50
+* **Amazon.Lambda.CloudWatchLogsEvents (1.0.0)**
+    * Pull request [#188](https://github.com/aws/aws-lambda-dotnet/pull/188). New event package for CloudWatch Logs. Thanks to [Toshinori Sugita](https://github.com/toshi0607).
+* **Amazon.Lambda.Tools (1.9.0)**
+    * Added new **--apply-defaults** switch. If set to true from either the command 
+    line or aws-lambda-tools-defaults.json, values from the aws-lambda-tools-defaults.json 
+    file will be applied when updating an existing function. By default function 
+    configuration values from aws-lambda-tools-defaults.json are ignored when 
+    updating an existing function to avoid unattended changes to production functions.
+* **Blueprints**
+    * Update dependency reference for **Amazon.Lambda.Tools** to 1.9.0
+    *  **Amazon.Lambda.Templates (1.4.4)** released with latest blueprints.
+
 ### Release 2017-12-20 18:30
 * **Amazon.Lambda.LexEvents (1.0.2)**
     * Add slot details and request attributes to LexEvent.
