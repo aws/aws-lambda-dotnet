@@ -21,7 +21,10 @@ namespace Amazon.Lambda.Tests
     using System.Text;
     using Xunit;
     using System.Linq;
+    using Amazon.Lambda.CloudWatchLogsEvents;
+    using Newtonsoft.Json;
 
+    using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
 
     public class EventTest
     {
@@ -553,6 +556,25 @@ namespace Amazon.Lambda.Tests
                 var original = JObject.Parse(File.ReadAllText("kinesis-firehose-response.json"));
                 var serialized = JObject.Parse(json);
                 Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+
+            }
+        }
+
+        [Fact]
+        public void CloudWatchLogEvent()
+        {
+            using (var fileStream = File.OpenRead("logs-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var evnt = serializer.Deserialize<CloudWatchLogsEvent>(fileStream);
+
+                Assert.NotNull(evnt.Awslogs);
+
+                var data = evnt.Awslogs.DecodedData;
+                Assert.NotNull(data);
+
+                var jobject = JsonConvert.DeserializeObject(data) as JObject;
+                Assert.Equal("DATA_MESSAGE", jobject["messageType"].ToString());
 
             }
         }
