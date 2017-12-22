@@ -266,6 +266,8 @@
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.AspNetCoreServer"/>
     <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.CloudWatchLogsEvents"/>
+    <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.CognitoEvents"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.ConfigEvents"/>
