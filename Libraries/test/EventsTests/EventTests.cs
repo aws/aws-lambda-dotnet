@@ -570,7 +570,7 @@ namespace Amazon.Lambda.Tests
 
                 Assert.NotNull(evnt.Awslogs);
 
-                var data = evnt.Awslogs.DecodedData;
+                var data = evnt.Awslogs.DecodeData();
                 Assert.NotNull(data);
 
                 var jobject = JsonConvert.DeserializeObject(data) as JObject;

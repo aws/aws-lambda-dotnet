@@ -33,30 +33,27 @@ namespace Amazon.Lambda.CloudWatchLogsEvents
             public string EncodedData { get; set; }
 
             /// <summary>
-            /// The data written to CloudWatch Logs that is has been base64 decoded and uncompressed.
+            /// Decodes the data stored in the EncodedData property.
             /// </summary>
-            public string DecodedData
+            public string DecodeData()
             {
-                get
+                if (string.IsNullOrEmpty(this.EncodedData))
+                    return this.EncodedData;
+
+                var bytes = Convert.FromBase64String(this.EncodedData);
+                var uncompressedBytes = new List<byte>();
+
+                using (var stream = new GZipStream(new MemoryStream(bytes), CompressionMode.Decompress))
                 {
-                    if (string.IsNullOrEmpty(this.EncodedData))
-                        return this.EncodedData;
-
-                    var bytes = Convert.FromBase64String(this.EncodedData);
-                    var uncompressedBytes = new List<byte>();
-
-                    using (var stream = new GZipStream(new MemoryStream(bytes), CompressionMode.Decompress))
+                    int b;
+                    while((b = stream.ReadByte()) != -1)
                     {
-                        int b;
-                        while((b = stream.ReadByte()) != -1)
-                        {
-                            uncompressedBytes.Add((byte)b);
-                        }
+                        uncompressedBytes.Add((byte)b);
                     }
-
-                    var decodedString = Encoding.UTF8.GetString(uncompressedBytes.ToArray());
-                    return decodedString;
                 }
+
+                var decodedString = Encoding.UTF8.GetString(uncompressedBytes.ToArray());
+                return decodedString;
             }
 	    }
     }
