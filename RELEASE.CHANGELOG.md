@@ -1,4 +1,12 @@
 ### Release 2017-12-22 23:50
+* **Amazon.Lambda.S3Events (1.0.2)**
+    * Updated to use latest AWSSDK.S3 to fix issue with comparing EventName property to the SDK EventType constants.
+* **Blueprints**
+    * Update S3 blueprint to use latest Amazon.Lambda.S3Events.
+    *  **Amazon.Lambda.Templates (1.4.5)** released with latest blueprints.
+
+
+### Release 2017-12-22 23:50
 * **Amazon.Lambda.CloudWatchLogsEvents (1.0.0)**
     * Pull request [#188](https://github.com/aws/aws-lambda-dotnet/pull/188). New event package for CloudWatch Logs. Thanks to [Toshinori Sugita](https://github.com/toshi0607).
 * **Amazon.Lambda.Tools (1.9.0)**
