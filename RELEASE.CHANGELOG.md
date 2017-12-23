@@ -1,4 +1,4 @@
-### Release 2017-12-22 23:50
+### Release 2017-12-23 07:30
 * **Amazon.Lambda.S3Events (1.0.2)**
     * Updated to use latest AWSSDK.S3 to fix issue with comparing EventName property to the SDK EventType constants.
 * **Blueprints**
