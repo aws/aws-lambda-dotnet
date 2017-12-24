@@ -293,39 +293,40 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        string SNSJson = "{ \"Records\": [ { \"EventVersion\": \"1.0\", \"EventSubscriptionArn\": \"arn:aws:sns:EXAMPLE\", \"EventSource\": \"aws:sns\", \"Sns\": { \"SignatureVersion\": \"1\", \"Timestamp\": \"1970-01-01T00:00:00.000Z\", \"Signature\": \"EXAMPLE\", \"SigningCertUrl\": \"EXAMPLE\", \"MessageId\": \"95df01b4-ee98-5cb9-9903-4c221d41eb5e\", \"Message\": \"Hello from SNS!\", \"MessageAttributes\": { \"Test\": { \"Type\": \"String\", \"Value\": \"TestString\" }, \"TestBinary\": { \"Type\": \"Binary\", \"Value\": \"TestBinary\" } }, \"Type\": \"Notification\", \"UnsubscribeUrl\": \"EXAMPLE\", \"TopicArn\": \"arn:aws:sns:EXAMPLE\", \"Subject\": \"TestInvoke\" } } ] }";
-
         [Fact]
         public void SNSTest()
         {
-            Stream json = new MemoryStream(Encoding.UTF8.GetBytes(SNSJson));
-            json.Position = 0;
-            var serializer = new JsonSerializer();
-            var snsEvent = serializer.Deserialize<SNSEvent>(json);
-            Assert.Equal(snsEvent.Records.Count, 1);
-            var record = snsEvent.Records[0];
-            Assert.Equal(record.EventVersion, "1.0");
-            Assert.Equal(record.EventSubscriptionArn, "arn:aws:sns:EXAMPLE");
-            Assert.Equal(record.EventSource, "aws:sns");
-            Assert.Equal(record.Sns.SignatureVersion, "1");
-            Assert.Equal(record.Sns.Timestamp.ToUniversalTime(), DateTime.Parse("1970-01-01T00:00:00.000Z").ToUniversalTime());
-            Assert.Equal(record.Sns.Signature, "EXAMPLE");
-            Assert.Equal(record.Sns.SigningCertUrl, "EXAMPLE");
-            Assert.Equal(record.Sns.MessageId, "95df01b4-ee98-5cb9-9903-4c221d41eb5e");
-            Assert.Equal(record.Sns.Message, "Hello from SNS!");
-            Assert.True(record.Sns.MessageAttributes.ContainsKey("Test"));
-            Assert.Equal(record.Sns.MessageAttributes["Test"].Type, "String");
-            Assert.Equal(record.Sns.MessageAttributes["Test"].Value, "TestString");
-            Assert.True(record.Sns.MessageAttributes.ContainsKey("TestBinary"));
-            Assert.Equal(record.Sns.MessageAttributes["TestBinary"].Type, "Binary");
-            Assert.Equal(record.Sns.MessageAttributes["TestBinary"].Value, "TestBinary");
-            Assert.Equal(record.Sns.Type, "Notification");
-            Assert.Equal(record.Sns.UnsubscribeUrl, "EXAMPLE");
-            Assert.Equal(record.Sns.TopicArn, "arn:aws:sns:EXAMPLE");
-            Assert.Equal(record.Sns.Subject, "TestInvoke");
+            using (var fileStream = File.OpenRead("sns-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var snsEvent = serializer.Deserialize<SNSEvent>(fileStream);
 
-            Handle(snsEvent);
+                Assert.Equal(snsEvent.Records.Count, 1);
+                var record = snsEvent.Records[0];
+                Assert.Equal(record.EventVersion, "1.0");
+                Assert.Equal(record.EventSubscriptionArn, "arn:aws:sns:EXAMPLE");
+                Assert.Equal(record.EventSource, "aws:sns");
+                Assert.Equal(record.Sns.SignatureVersion, "1");
+                Assert.Equal(record.Sns.Timestamp.ToUniversalTime(), DateTime.Parse("1970-01-01T00:00:00.000Z").ToUniversalTime());
+                Assert.Equal(record.Sns.Signature, "EXAMPLE");
+                Assert.Equal(record.Sns.SigningCertUrl, "EXAMPLE");
+                Assert.Equal(record.Sns.MessageId, "95df01b4-ee98-5cb9-9903-4c221d41eb5e");
+                Assert.Equal(record.Sns.Message, "Hello from SNS!");
+                Assert.True(record.Sns.MessageAttributes.ContainsKey("Test"));
+                Assert.Equal(record.Sns.MessageAttributes["Test"].Type, "String");
+                Assert.Equal(record.Sns.MessageAttributes["Test"].Value, "TestString");
+                Assert.True(record.Sns.MessageAttributes.ContainsKey("TestBinary"));
+                Assert.Equal(record.Sns.MessageAttributes["TestBinary"].Type, "Binary");
+                Assert.Equal(record.Sns.MessageAttributes["TestBinary"].Value, "TestBinary");
+                Assert.Equal(record.Sns.Type, "Notification");
+                Assert.Equal(record.Sns.UnsubscribeUrl, "EXAMPLE");
+                Assert.Equal(record.Sns.TopicArn, "arn:aws:sns:EXAMPLE");
+                Assert.Equal(record.Sns.Subject, "TestInvoke");
+
+                Handle(snsEvent);
+            }
         }
+
         private static void Handle(SNSEvent snsEvent)
         {
             foreach (var record in snsEvent.Records)
