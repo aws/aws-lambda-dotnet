@@ -154,28 +154,27 @@ namespace Amazon.Lambda.Tests
             Console.WriteLine($"Successfully processed {ddbEvent.Records.Count} records.");
         }
 
-        String CognitoEvent = "{ \"datasetName\": \"datasetName\", \"eventType\": \"SyncTrigger\", \"region\": \"us-east-1\", \"identityId\": \"identityId\", \"datasetRecords\": { \"SampleKey1\": { \"newValue\": \"newValue1\", \"oldValue\": \"oldValue1\", \"op\": \"replace\" } }, \"identityPoolId\": \"identityPoolId\", \"version\": 2 }";
-
         [Fact]
         public void CognitoTest()
         {
-            Stream json = new MemoryStream(Encoding.UTF8.GetBytes(CognitoEvent));
-            json.Position = 0;
-            var serializer = new JsonSerializer();
-            var cognitoEvent = serializer.Deserialize<CognitoEvent>(json);
-            Assert.Equal(cognitoEvent.Version, 2);
-            Assert.Equal(cognitoEvent.EventType, "SyncTrigger");
-            Assert.Equal(cognitoEvent.Region, "us-east-1");
-            Assert.Equal(cognitoEvent.DatasetName, "datasetName");
-            Assert.Equal(cognitoEvent.IdentityPoolId, "identityPoolId");
-            Assert.Equal(cognitoEvent.IdentityId, "identityId");
-            Assert.Equal(cognitoEvent.DatasetRecords.Count, 1);
-            Assert.True(cognitoEvent.DatasetRecords.ContainsKey("SampleKey1"));
-            Assert.Equal(cognitoEvent.DatasetRecords["SampleKey1"].NewValue, "newValue1");
-            Assert.Equal(cognitoEvent.DatasetRecords["SampleKey1"].OldValue, "oldValue1");
-            Assert.Equal(cognitoEvent.DatasetRecords["SampleKey1"].Op, "replace");
+            using (var fileStream = File.OpenRead("cognito-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var cognitoEvent = serializer.Deserialize<CognitoEvent>(fileStream);
+                Assert.Equal(cognitoEvent.Version, 2);
+                Assert.Equal(cognitoEvent.EventType, "SyncTrigger");
+                Assert.Equal(cognitoEvent.Region, "us-east-1");
+                Assert.Equal(cognitoEvent.DatasetName, "datasetName");
+                Assert.Equal(cognitoEvent.IdentityPoolId, "identityPoolId");
+                Assert.Equal(cognitoEvent.IdentityId, "identityId");
+                Assert.Equal(cognitoEvent.DatasetRecords.Count, 1);
+                Assert.True(cognitoEvent.DatasetRecords.ContainsKey("SampleKey1"));
+                Assert.Equal(cognitoEvent.DatasetRecords["SampleKey1"].NewValue, "newValue1");
+                Assert.Equal(cognitoEvent.DatasetRecords["SampleKey1"].OldValue, "oldValue1");
+                Assert.Equal(cognitoEvent.DatasetRecords["SampleKey1"].Op, "replace");
 
-            Handle(cognitoEvent);
+                Handle(cognitoEvent);
+            }
         }
 
         private static void Handle(CognitoEvent cognitoEvent)
