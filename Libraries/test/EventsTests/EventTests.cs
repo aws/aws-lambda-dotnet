@@ -28,36 +28,36 @@ namespace Amazon.Lambda.Tests
 
     public class EventTest
     {
-        string S3PutJson = "{ \"Records\": [ { \"eventVersion\": \"2.0\", \"eventTime\": \"1970-01-01T00:00:00.000Z\", \"requestParameters\": { \"sourceIPAddress\": \"127.0.0.1\" }, \"s3\": { \"configurationId\": \"testConfigRule\", \"object\": { \"eTag\": \"0123456789abcdef0123456789abcdef\", \"sequencer\": \"0A1B2C3D4E5F678901\", \"key\": \"HappyFace.jpg\", \"size\": 1024 }, \"bucket\": { \"arn\": \"arn:aws:s3:::mybucket\", \"name\": \"sourcebucket\", \"ownerIdentity\": { \"principalId\": \"EXAMPLE\" } }, \"s3SchemaVersion\": \"1.0\" }, \"responseElements\": { \"x-amz-id-2\": \"EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH\", \"x-amz-request-id\": \"EXAMPLE123456789\" }, \"awsRegion\": \"us-east-1\", \"eventName\": \"ObjectCreated:Put\", \"userIdentity\": { \"principalId\": \"EXAMPLE\" }, \"eventSource\": \"aws:s3\" } ] }";
-
         [Fact]
         public void S3PutTest()
         {
-            Stream json = new MemoryStream(Encoding.UTF8.GetBytes(S3PutJson));
-            json.Position = 0;
-            var serializer = new JsonSerializer();
-            var s3Event = serializer.Deserialize<S3Event>(json);
-            Assert.Equal(s3Event.Records.Count, 1);
-            var record = s3Event.Records[0];
-            Assert.Equal(record.EventVersion, "2.0");
-            Assert.Equal(record.EventTime.ToUniversalTime(), DateTime.Parse("1970-01-01T00:00:00.000Z").ToUniversalTime());
-            Assert.Equal(record.RequestParameters.SourceIPAddress, "127.0.0.1");
-            Assert.Equal(record.S3.ConfigurationId, "testConfigRule");
-            Assert.Equal(record.S3.Object.ETag, "0123456789abcdef0123456789abcdef");
-            Assert.Equal(record.S3.Object.Key, "HappyFace.jpg");
-            Assert.Equal(record.S3.Object.Size, 1024);
-            Assert.Equal(record.S3.Bucket.Arn, "arn:aws:s3:::mybucket");
-            Assert.Equal(record.S3.Bucket.Name, "sourcebucket");
-            Assert.Equal(record.S3.Bucket.OwnerIdentity.PrincipalId, "EXAMPLE");
-            Assert.Equal(record.S3.S3SchemaVersion, "1.0");
-            Assert.Equal(record.ResponseElements.XAmzId2, "EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH");
-            Assert.Equal(record.ResponseElements.XAmzRequestId, "EXAMPLE123456789");
-            Assert.Equal(record.AwsRegion, "us-east-1");
-            Assert.Equal(record.EventName, "ObjectCreated:Put");
-            Assert.Equal(record.UserIdentity.PrincipalId, "EXAMPLE");
-            Assert.Equal(record.EventSource, "aws:s3");
+            using (var fileStream = File.OpenRead("s3-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var s3Event = serializer.Deserialize<S3Event>(fileStream);
 
-            Handle(s3Event);
+                Assert.Equal(s3Event.Records.Count, 1);
+                var record = s3Event.Records[0];
+                Assert.Equal(record.EventVersion, "2.0");
+                Assert.Equal(record.EventTime.ToUniversalTime(), DateTime.Parse("1970-01-01T00:00:00.000Z").ToUniversalTime());
+                Assert.Equal(record.RequestParameters.SourceIPAddress, "127.0.0.1");
+                Assert.Equal(record.S3.ConfigurationId, "testConfigRule");
+                Assert.Equal(record.S3.Object.ETag, "0123456789abcdef0123456789abcdef");
+                Assert.Equal(record.S3.Object.Key, "HappyFace.jpg");
+                Assert.Equal(record.S3.Object.Size, 1024);
+                Assert.Equal(record.S3.Bucket.Arn, "arn:aws:s3:::mybucket");
+                Assert.Equal(record.S3.Bucket.Name, "sourcebucket");
+                Assert.Equal(record.S3.Bucket.OwnerIdentity.PrincipalId, "EXAMPLE");
+                Assert.Equal(record.S3.S3SchemaVersion, "1.0");
+                Assert.Equal(record.ResponseElements.XAmzId2, "EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH");
+                Assert.Equal(record.ResponseElements.XAmzRequestId, "EXAMPLE123456789");
+                Assert.Equal(record.AwsRegion, "us-east-1");
+                Assert.Equal(record.EventName, "ObjectCreated:Put");
+                Assert.Equal(record.UserIdentity.PrincipalId, "EXAMPLE");
+                Assert.Equal(record.EventSource, "aws:s3");
+
+                Handle(s3Event);
+            }
         }
 
         private void Handle(S3Event s3Event)
