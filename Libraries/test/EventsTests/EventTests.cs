@@ -188,28 +188,28 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        String ConfigEvent = "{ \"configRuleId\": \"config-rule-0123456\", \"version\": \"1.0\", \"configRuleName\": \"periodic-config-rule\", \"configRuleArn\": \"arn:aws:config:us-east-1:012345678912:config-rule/config-rule-0123456\", \"invokingEvent\": \"{\\\"configSnapshotId\\\":\\\"00000000-0000-0000-0000-000000000000\\\",\\\"s3ObjectKey\\\":\\\"AWSLogs/000000000000/Config/us-east-1/2016/2/24/ConfigSnapshot/000000000000_Config_us-east-1_ConfigSnapshot_20160224T182319Z_00000000-0000-0000-0000-000000000000.json.gz\\\",\\\"s3Bucket\\\":\\\"config-bucket\\\",\\\"notificationCreationTime\\\":\\\"2016-02-24T18:23:20.328Z\\\",\\\"messageType\\\":\\\"ConfigurationSnapshotDeliveryCompleted\\\",\\\"recordVersion\\\":\\\"1.1\\\"}\", \"resultToken\": \"myResultToken\", \"eventLeftScope\": false, \"ruleParameters\": \"{\\\"<myParameterKey>\\\":\\\"<myParameterValue>\\\"}\", \"executionRoleArn\": \"arn:aws:iam::012345678912:role/config-role\", \"accountId\": \"012345678912\" }";
         String ConfigInvokingEvent = "{\"configSnapshotId\":\"00000000-0000-0000-0000-000000000000\",\"s3ObjectKey\":\"AWSLogs/000000000000/Config/us-east-1/2016/2/24/ConfigSnapshot/000000000000_Config_us-east-1_ConfigSnapshot_20160224T182319Z_00000000-0000-0000-0000-000000000000.json.gz\",\"s3Bucket\":\"config-bucket\",\"notificationCreationTime\":\"2016-02-24T18:23:20.328Z\",\"messageType\":\"ConfigurationSnapshotDeliveryCompleted\",\"recordVersion\":\"1.1\"}";
 
         [Fact]
         public void ConfigTest()
         {
-            Stream json = new MemoryStream(Encoding.UTF8.GetBytes(ConfigEvent));
-            json.Position = 0;
-            var serializer = new JsonSerializer();
-            var configEvent = serializer.Deserialize<ConfigEvent>(json);
-            Assert.Equal(configEvent.ConfigRuleId, "config-rule-0123456");
-            Assert.Equal(configEvent.Version, "1.0");
-            Assert.Equal(configEvent.ConfigRuleName, "periodic-config-rule");
-            Assert.Equal(configEvent.ConfigRuleArn, "arn:aws:config:us-east-1:012345678912:config-rule/config-rule-0123456");
-            Assert.Equal(configEvent.InvokingEvent, ConfigInvokingEvent);
-            Assert.Equal(configEvent.ResultToken, "myResultToken");
-            Assert.Equal(configEvent.EventLeftScope, false);
-            Assert.Equal(configEvent.RuleParameters, "{\"<myParameterKey>\":\"<myParameterValue>\"}");
-            Assert.Equal(configEvent.ExecutionRoleArn, "arn:aws:iam::012345678912:role/config-role");
-            Assert.Equal(configEvent.AccountId, "012345678912");
+            using (var fileStream = File.OpenRead("config-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var configEvent = serializer.Deserialize<ConfigEvent>(fileStream);
+                Assert.Equal(configEvent.ConfigRuleId, "config-rule-0123456");
+                Assert.Equal(configEvent.Version, "1.0");
+                Assert.Equal(configEvent.ConfigRuleName, "periodic-config-rule");
+                Assert.Equal(configEvent.ConfigRuleArn, "arn:aws:config:us-east-1:012345678912:config-rule/config-rule-0123456");
+                Assert.Equal(configEvent.InvokingEvent, ConfigInvokingEvent);
+                Assert.Equal(configEvent.ResultToken, "myResultToken");
+                Assert.Equal(configEvent.EventLeftScope, false);
+                Assert.Equal(configEvent.RuleParameters, "{\"<myParameterKey>\":\"<myParameterValue>\"}");
+                Assert.Equal(configEvent.ExecutionRoleArn, "arn:aws:iam::012345678912:role/config-role");
+                Assert.Equal(configEvent.AccountId, "012345678912");
 
-            Handle(configEvent);
+                Handle(configEvent);
+            }
         }
 
         private static void Handle(ConfigEvent configEvent)
