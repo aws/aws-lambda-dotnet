@@ -10,7 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="*.json">
+    <Content Include="*.json" Exclude="config-event.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="config-event.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -55,5 +58,8 @@
     <None Update="proxy-event.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="config-event.json" />
   </ItemGroup>
 </Project>
