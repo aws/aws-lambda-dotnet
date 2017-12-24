@@ -336,56 +336,55 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        string APIGatewayProxyRequestJson = "{ \"resource\": \"/{proxy+}\",   \"path\": \"/hello/world\",   \"httpMethod\": \"POST\",   \"headers\": {     \"Accept\": \"*/*\",     \"Accept-Encoding\": \"gzip, deflate\",     \"cache-control\": \"no-cache\",     \"CloudFront-Forwarded-Proto\": \"https\",     \"CloudFront-Is-Desktop-Viewer\": \"true\",     \"CloudFront-Is-Mobile-Viewer\": \"false\",     \"CloudFront-Is-SmartTV-Viewer\": \"false\",     \"CloudFront-Is-Tablet-Viewer\": \"false\",     \"CloudFront-Viewer-Country\": \"US\",     \"Content-Type\": \"application/json\",     \"headerName\": \"headerValue\",     \"Host\": \"gy415nuibc.execute-api.us-east-1.amazonaws.com\",     \"Postman-Token\": \"9f583ef0-ed83-4a38-aef3-eb9ce3f7a57f\",     \"User-Agent\": \"PostmanRuntime/2.4.5\",     \"Via\": \"1.1 d98420743a69852491bbdea73f7680bd.cloudfront.net (CloudFront)\",     \"X-Amz-Cf-Id\": \"pn-PWIJc6thYnZm5P0NMgOUglL1DYtl0gdeJky8tqsg8iS_sgsKD1A==\",     \"X-Forwarded-For\": \"54.240.196.186, 54.182.214.83\",     \"X-Forwarded-Port\": \"443\",     \"X-Forwarded-Proto\": \"https\"   },   \"queryStringParameters\": {     \"name\": \"me\"   },   \"pathParameters\": {     \"proxy\": \"hello/world\"   },   \"stageVariables\": {     \"stageVariableName\": \"stageVariableValue\"   },   \"requestContext\": {     \"accountId\": \"12345678912\",     \"resourceId\": \"roq9wj\",     \"stage\": \"testStage\",     \"requestId\": \"deef4878-7910-11e6-8f14-25afc3e9ae33\",     \"identity\": {       \"cognitoIdentityPoolId\": \"theCognitoIdentityPoolId\",       \"accountId\": \"theAccountId\",       \"cognitoIdentityId\": \"theCognitoIdentityId\",       \"caller\": \"theCaller\",       \"apiKey\": \"theApiKey\",       \"sourceIp\": \"192.168.196.186\",       \"cognitoAuthenticationType\": \"theCognitoAuthenticationType\",       \"cognitoAuthenticationProvider\": \"theCognitoAuthenticationProvider\",       \"userArn\": \"theUserArn\",       \"userAgent\": \"PostmanRuntime/2.4.5\",       \"user\": \"theUser\"     },     \"resourcePath\": \"/{proxy+}\",     \"httpMethod\": \"POST\",     \"apiId\": \"gy415nuibc\"   },   \"body\": \"{\\r\\n\\t\\\"a\\\": 1\\r\\n}\" }";
-
         [Fact]
         public void APIGatewayProxyRequestTest()
         {
-            Stream json = new MemoryStream(Encoding.UTF8.GetBytes(APIGatewayProxyRequestJson));
-            json.Position = 0;
-            var serializer = new JsonSerializer();
-            var proxyEvent = serializer.Deserialize<APIGatewayProxyRequest>(json);
+            using (var fileStream = File.OpenRead("proxy-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var proxyEvent = serializer.Deserialize<APIGatewayProxyRequest>(fileStream);
 
-            Assert.Equal(proxyEvent.Resource, "/{proxy+}");
-            Assert.Equal(proxyEvent.Path, "/hello/world");
-            Assert.Equal(proxyEvent.HttpMethod, "POST");
-            Assert.Equal(proxyEvent.Body, "{\r\n\t\"a\": 1\r\n}");
+                Assert.Equal(proxyEvent.Resource, "/{proxy+}");
+                Assert.Equal(proxyEvent.Path, "/hello/world");
+                Assert.Equal(proxyEvent.HttpMethod, "POST");
+                Assert.Equal(proxyEvent.Body, "{\r\n\t\"a\": 1\r\n}");
 
-            var headers = proxyEvent.Headers;
-            Assert.Equal(headers["Accept"], "*/*");
-            Assert.Equal(headers["Accept-Encoding"], "gzip, deflate");
-            Assert.Equal(headers["cache-control"], "no-cache");
-            Assert.Equal(headers["CloudFront-Forwarded-Proto"], "https");
+                var headers = proxyEvent.Headers;
+                Assert.Equal(headers["Accept"], "*/*");
+                Assert.Equal(headers["Accept-Encoding"], "gzip, deflate");
+                Assert.Equal(headers["cache-control"], "no-cache");
+                Assert.Equal(headers["CloudFront-Forwarded-Proto"], "https");
 
-            var queryStringParameters = proxyEvent.QueryStringParameters;
-            Assert.Equal(queryStringParameters["name"], "me");
+                var queryStringParameters = proxyEvent.QueryStringParameters;
+                Assert.Equal(queryStringParameters["name"], "me");
 
-            var pathParameters = proxyEvent.PathParameters;
-            Assert.Equal(pathParameters["proxy"], "hello/world");
+                var pathParameters = proxyEvent.PathParameters;
+                Assert.Equal(pathParameters["proxy"], "hello/world");
 
-            var stageVariables = proxyEvent.StageVariables;
-            Assert.Equal(stageVariables["stageVariableName"], "stageVariableValue");
+                var stageVariables = proxyEvent.StageVariables;
+                Assert.Equal(stageVariables["stageVariableName"], "stageVariableValue");
 
-            var requestContext = proxyEvent.RequestContext;
-            Assert.Equal(requestContext.AccountId, "12345678912");
-            Assert.Equal(requestContext.ResourceId, "roq9wj");
-            Assert.Equal(requestContext.Stage, "testStage");
-            Assert.Equal(requestContext.RequestId, "deef4878-7910-11e6-8f14-25afc3e9ae33");
+                var requestContext = proxyEvent.RequestContext;
+                Assert.Equal(requestContext.AccountId, "12345678912");
+                Assert.Equal(requestContext.ResourceId, "roq9wj");
+                Assert.Equal(requestContext.Stage, "testStage");
+                Assert.Equal(requestContext.RequestId, "deef4878-7910-11e6-8f14-25afc3e9ae33");
 
-            var identity = requestContext.Identity;
-            Assert.Equal(identity.CognitoIdentityPoolId, "theCognitoIdentityPoolId");
-            Assert.Equal(identity.AccountId, "theAccountId");
-            Assert.Equal(identity.CognitoIdentityId, "theCognitoIdentityId");
-            Assert.Equal(identity.Caller, "theCaller");
-            Assert.Equal(identity.ApiKey, "theApiKey");
-            Assert.Equal(identity.SourceIp, "192.168.196.186");
-            Assert.Equal(identity.CognitoAuthenticationType, "theCognitoAuthenticationType");
-            Assert.Equal(identity.CognitoAuthenticationProvider, "theCognitoAuthenticationProvider");
-            Assert.Equal(identity.UserArn, "theUserArn");
-            Assert.Equal(identity.UserAgent, "PostmanRuntime/2.4.5");
-            Assert.Equal(identity.User, "theUser");
+                var identity = requestContext.Identity;
+                Assert.Equal(identity.CognitoIdentityPoolId, "theCognitoIdentityPoolId");
+                Assert.Equal(identity.AccountId, "theAccountId");
+                Assert.Equal(identity.CognitoIdentityId, "theCognitoIdentityId");
+                Assert.Equal(identity.Caller, "theCaller");
+                Assert.Equal(identity.ApiKey, "theApiKey");
+                Assert.Equal(identity.SourceIp, "192.168.196.186");
+                Assert.Equal(identity.CognitoAuthenticationType, "theCognitoAuthenticationType");
+                Assert.Equal(identity.CognitoAuthenticationProvider, "theCognitoAuthenticationProvider");
+                Assert.Equal(identity.UserArn, "theUserArn");
+                Assert.Equal(identity.UserAgent, "PostmanRuntime/2.4.5");
+                Assert.Equal(identity.User, "theUser");
 
-            Handle(proxyEvent);
+                Handle(proxyEvent);
+            }
         }
 
         private static APIGatewayProxyResponse Handle(APIGatewayProxyRequest apigProxyEvent)
