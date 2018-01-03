@@ -217,11 +217,6 @@ namespace Amazon.Lambda.Tools.Commands
                         }
 
 
-                        if (!this.SkipHandlerValidation && !string.IsNullOrEmpty(publishLocation))
-                        {
-                            createRequest.Handler = EnsureFunctionHandlerIsValid(publishLocation, createRequest.Handler);
-                        }
-
                         try
                         {
                             await this.LambdaClient.CreateFunctionAsync(createRequest);
@@ -234,14 +229,6 @@ namespace Amazon.Lambda.Tools.Commands
                     }
                     else
                     {
-                        if (!this.SkipHandlerValidation && !string.IsNullOrEmpty(publishLocation))
-                        {
-                            if (!string.IsNullOrEmpty(this.Handler))
-                                this.Handler = EnsureFunctionHandlerIsValid(publishLocation, this.Handler);
-                            else
-                                this.Handler = EnsureFunctionHandlerIsValid(publishLocation, currentConfiguration.Handler);
-                        }
-
                         this.Logger.WriteLine($"Updating code for existing function {this.FunctionName}");
 
                         var updateCodeRequest = new UpdateFunctionCodeRequest
@@ -307,21 +294,6 @@ namespace Amazon.Lambda.Tools.Commands
             string runtimeName = this.GetStringValueOrDefault(this.Runtime, DefinedCommandOptions.ARGUMENT_FUNCTION_RUNTIME, true);
             string frameworkName = this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, true);
             Utilities.ValidateTargetFrameworkAndLambdaRuntime(runtimeName, frameworkName);
-        }
-
-        private string EnsureFunctionHandlerIsValid(string publishLocation, string handler)
-        {
-            try
-            {
-                Utilities.ValidateHandler(publishLocation, handler);
-                return handler;
-            }
-            catch (ValidateHandlerException e)
-            {
-                Console.Error.WriteLine($"Error validating function handler {e.Handler} - {e.Message}");
-            }
-
-            return PromptForValue(DefinedCommandOptions.ARGUMENT_FUNCTION_HANDLER);
         }
 
         private void SaveConfigFile()
