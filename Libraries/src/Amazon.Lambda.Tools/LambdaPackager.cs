@@ -69,7 +69,7 @@ namespace Amazon.Lambda.Tools
             // If there is no target node then this means the tool is being used on a future version of .NET Core
             // then was available when the this tool was written. Go ahead and continue the deployment with warnings so the
             // user can see if the future version will work.
-            if (depsJsonTargetNode != null)
+            if (depsJsonTargetNode != null && string.Equals(targetFramework, "netcoreapp1.0", StringComparison.OrdinalIgnoreCase))
             {
                 // Make sure the project is not pulling in dependencies requiring a later version of .NET Core then the declared target framework
                 if (!ValidateDependencies(logger, targetFramework, depsJsonTargetNode, disableVersionCheck))
