@@ -77,6 +77,7 @@ namespace Amazon.Lambda.Tools
             if (!string.Equals("netcoreapp1.0", targetFramework, StringComparison.OrdinalIgnoreCase))
             {
                 arguments.Append(" /p:GenerateRuntimeConfigurationFiles=true");
+                arguments.Append(" -r linux-x64");
             }
 
             var psi = new ProcessStartInfo
