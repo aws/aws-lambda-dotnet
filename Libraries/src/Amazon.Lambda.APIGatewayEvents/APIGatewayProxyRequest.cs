@@ -66,6 +66,11 @@
         public class ProxyRequestContext
         {
             /// <summary>
+            /// The resource full path including the API Gateway stage
+            /// </summary>
+            public string Path { get; set; }
+
+            /// <summary>
             /// The account id that owns the executing Lambda function
             /// </summary>
             public string AccountId { get; set; }
