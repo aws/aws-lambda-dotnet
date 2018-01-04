@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Hosting.Server;
@@ -26,9 +27,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         {
         }
 
-        public void Start<TContext>(IHttpApplication<TContext> application)
+        public Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken)
         {
             this.Application = application as IHttpApplication<HostingApplication.Context>;
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
         }
     }
 }
