@@ -8,5 +8,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCompany("Amazon.com, Inc")]
 [assembly: AssemblyCopyright("Copyright 2009-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.")]
 [assembly: ComVisible(false)]
-[assembly: AssemblyVersion("1.0")]
-[assembly: AssemblyFileVersion("0.10.2")]
+[assembly: AssemblyVersion("2.0")]
+[assembly: AssemblyFileVersion("2.0.0")]

@@ -3,6 +3,8 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
+    <TargetFramework>netstandard1.3</TargetFramework>
+    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
     <Description>Amazon Lambda .NET Core support - API Gateway package.</Description>
     <AssemblyTitle>Amazon.Lambda.APIGatewayEvents</AssemblyTitle>
     <VersionPrefix>1.0.2</VersionPrefix>

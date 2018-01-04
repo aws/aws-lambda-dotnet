@@ -4,6 +4,8 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - Amazon Lex package.</Description>
+    <TargetFramework>netstandard1.3</TargetFramework>
+    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
     <AssemblyTitle>Amazon.Lambda.LexEvents</AssemblyTitle>
     <VersionPrefix>1.0.1</VersionPrefix>
     <AssemblyName>Amazon.Lambda.LexEvents</AssemblyName>

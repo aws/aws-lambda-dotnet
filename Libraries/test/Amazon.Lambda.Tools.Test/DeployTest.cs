@@ -250,9 +250,9 @@ namespace Amazon.Lambda.Tools.Test
 
             var fullPath = Path.GetFullPath(Path.GetDirectoryName(assembly.Location) + "../../../../../TestWebApp");
             var command = new PackageCICommand(new ConsoleToolLogger(), fullPath, new string[0]);
-            command.Region = "us-east-1";
+            command.Region = "us-west-2";
             command.Configuration = "Release";
-            command.TargetFramework = "netcoreapp1.0";
+            command.TargetFramework = "netcoreapp2.0";
             command.CloudFormationTemplate = "serverless.template";
             command.CloudFormationOutputTemplate = Path.Combine(Path.GetTempPath(),  "output-serverless.template");
             command.S3Bucket = "serverless-package-test-" + DateTime.Now.Ticks;

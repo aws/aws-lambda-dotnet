@@ -4,6 +4,8 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - SimpleEmailEvents package.</Description>
+    <TargetFramework>netstandard1.3</TargetFramework>
+    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
     <AssemblyTitle>Amazon.Lambda.SimpleEmailEvents</AssemblyTitle>
     <VersionPrefix>1.0.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.SimpleEmailEvents</AssemblyName>

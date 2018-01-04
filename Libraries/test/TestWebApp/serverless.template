@@ -9,7 +9,7 @@
       "Type" : "AWS::Serverless::Function",
       "Properties": {
         "Handler": "TestWebApp::TestWebApp.LambdaFunction::FunctionHandlerAsync",
-        "Runtime": "dotnetcore1.0",
+        "Runtime": "dotnetcore2.0",
         "CodeUri": "",
         "Description": "Default function",
         "MemorySize": 256,
