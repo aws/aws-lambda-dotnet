@@ -289,6 +289,12 @@ namespace Amazon.Lambda.AspNetCoreServer
                 path = "/" + path;
             }
 
+            requestFeatures.PathBase = string.Empty;
+            if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Path) && apiGatewayRequest.RequestContext.Path.EndsWith(path))
+            {
+                requestFeatures.PathBase = apiGatewayRequest.RequestContext.Path.Substring(0, path.Length);
+            }
+
             requestFeatures.Path = WebUtility.UrlDecode(path);
 
             // API Gateway delivers the query string in a dictionary but must be reconstructed into the full query string
@@ -306,6 +312,10 @@ namespace Amazon.Lambda.AspNetCoreServer
                     sb.Append($"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(kvp.Value.ToString())}");
                 }
                 requestFeatures.QueryString = sb.ToString();
+            }
+            else
+            {
+                requestFeatures.QueryString = string.Empty;
             }
 
             var headers = apiGatewayRequest.Headers;
