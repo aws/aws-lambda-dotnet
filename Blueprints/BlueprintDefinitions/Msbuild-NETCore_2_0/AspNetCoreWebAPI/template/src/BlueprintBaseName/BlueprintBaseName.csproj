@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputType>exe</OutputType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp1.0</TargetFramework>
+    <OutputTypeEx>exe</OutputTypeEx>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>  
+  
+  <ItemGroup>
+
+    <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="1.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="1.0.1" />
+
+    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="1.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Routing" Version="1.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="1.0.0" />
+
+
+    <PackageReference Include="AWSSDK.S3" Version="3.3.5.13" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.3.0.3" />
+
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="0.10.1-preview1" />
+    <PackageReference Include="Amazon.Lambda.Logging.AspNetCore" Version="1.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="1.9.0" />
+  </ItemGroup>
+
+</Project>

@@ -95,18 +95,22 @@
   <Target Name="package-blueprints" DependsOnTargets="init">
     <Exec Command="&quot;$(SDKToolingExe)&quot; run"
       WorkingDirectory="..\Blueprints\BlueprintPackager"/>
-	  
-	<Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages"
-	  WorkingDirectory="../Blueprints/BlueprintDefinitions/Msbuild"/>
+
+    <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages"
+      WorkingDirectory="../Blueprints/BlueprintDefinitions/Msbuild-NETCore_1_0"/>
+
+    <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages"
+      WorkingDirectory="../Blueprints/BlueprintDefinitions/Msbuild-NETCore_2_0"/>
   </Target>
 
+  
   <!-- package-blueprints;build-nuget-packages -->
   <Target Name="test-blueprints-dotnetnew" DependsOnTargets="package-blueprints;build-nuget-packages">
   
     <RemoveDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew"/>
     <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew"/>	
   
-	<Exec Command="&quot;$(SDKToolingExe)&quot; new -i Blueprints\BlueprintDefinitions\Msbuild"
+	<Exec Command="&quot;$(SDKToolingExe)&quot; new -i Blueprints\BlueprintDefinitions\Msbuild-NETCore_2_0"
 		WorkingDirectory="..\"/>  
 		
     <MSBuild
