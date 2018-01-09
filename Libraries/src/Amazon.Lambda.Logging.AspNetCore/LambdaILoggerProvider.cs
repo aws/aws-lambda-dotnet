@@ -3,12 +3,19 @@ using System;
 
 namespace Microsoft.Extensions.Logging
 {
+    /// <summary>
+    /// The ILoggerProvider implementation that is added to the ASP.NET Core logging system to create loggers
+    /// that will send the messages to the CloudWatch LogGroup associated with this Lambda function.
+    /// </summary>
     internal class LambdaILoggerProvider : ILoggerProvider
     {
         // Private fields
         private readonly LambdaLoggerOptions _options;
 
-        // Constructor
+        /// <summary>
+        /// Creates the provider
+        /// </summary>
+        /// <param name="options"></param>
         public LambdaILoggerProvider(LambdaLoggerOptions options)
         {
             if (options == null)
@@ -19,11 +26,19 @@ namespace Microsoft.Extensions.Logging
             _options = options;
         }
 
-        // Interface methods
+        /// <summary>
+        /// Creates the logger with the specified category.
+        /// </summary>
+        /// <param name="categoryName"></param>
+        /// <returns></returns>
         public ILogger CreateLogger(string categoryName)
         {
             return new LambdaILogger(categoryName, _options);
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public void Dispose()
         {
         }

@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
+    <ProjectReference Include="..\Amazon.Lambda.Logging.AspNetCore\Amazon.Lambda.Logging.AspNetCore.csproj" />
     <ProjectReference Include="..\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.csproj" />
     <ProjectReference Include="..\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
   </ItemGroup>

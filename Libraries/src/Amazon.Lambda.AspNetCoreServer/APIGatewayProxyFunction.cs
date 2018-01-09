@@ -139,12 +139,15 @@ namespace Amazon.Lambda.AspNetCoreServer
                 })
                 .ConfigureLogging((hostingContext, logging) =>
                 {
-                    logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-                    logging.AddConsole();
-
                     if (hostingContext.HostingEnvironment.IsDevelopment())
                     {
+                        logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
+                        logging.AddConsole();
                         logging.AddDebug();
+                    }
+                    else
+                    {
+                        logging.AddLambdaLogger(hostingContext.Configuration, "Logging");
                     }
                 })
                 .UseDefaultServiceProvider((hostingContext, options) =>
