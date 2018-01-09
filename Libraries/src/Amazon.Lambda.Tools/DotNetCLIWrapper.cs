@@ -54,10 +54,16 @@ namespace Amazon.Lambda.Tools
             if (string.IsNullOrEmpty(dotnetCLI))
                 throw new Exception("Failed to locate dotnet CLI executable. Make sure the dotnet CLI is installed in the environment PATH.");
 
+            var fullProjectLocation = this._workingDirectory;
+            if (!string.IsNullOrEmpty(projectLocation))
+            {
+                fullProjectLocation = Utilities.DetermineProjectLocation(this._workingDirectory, projectLocation);
+            }
+
             StringBuilder arguments = new StringBuilder("publish");
             if (!string.IsNullOrEmpty(projectLocation))
             {
-                arguments.Append($" \"{Utilities.DetermineProjectLocation(this._workingDirectory, projectLocation)}\"");
+                arguments.Append($" \"{fullProjectLocation}\"");
             }
             if (!string.IsNullOrEmpty(outputLocation))
             {
@@ -77,7 +83,13 @@ namespace Amazon.Lambda.Tools
             if (!string.Equals("netcoreapp1.0", targetFramework, StringComparison.OrdinalIgnoreCase))
             {
                 arguments.Append(" /p:GenerateRuntimeConfigurationFiles=true");
-                arguments.Append(" -r linux-x64");
+
+                // If you set the runtime linux-x64 it will trim out the Windows and Mac OS specific dependencies but Razor view precompilation
+                // will not run. So only do this packaging optimization if there are no Razor views.
+                if(Directory.GetFiles(fullProjectLocation, "*.cshtml", SearchOption.AllDirectories).Length == 0)
+                {
+                    arguments.Append(" -r linux-x64 --self-contained false");
+                }
             }
 
             var psi = new ProcessStartInfo
