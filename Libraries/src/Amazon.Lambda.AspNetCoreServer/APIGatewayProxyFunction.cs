@@ -1,9 +1,12 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.Core;
+using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -77,35 +80,82 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         protected APIGatewayProxyFunction()
         {
-            var builder = new WebHostBuilder();
+            var builder = CreateWebHostBuilder();
             Init(builder);
 
-            // Add the API Gateway services in case the override Init method didn't add it. UseApiGateway will
-            // not add anything if API Gateway has already been added.
-            builder.UseApiGateway();
 
             _host = builder.Build();
             _host.Start();
 
             _server = _host.Services.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as APIGatewayServer;
+            if(_server == null)
+            {
+                throw new Exception("Failed to find the implementation APIGatewayServer for the IServer registration. This can happen if UseApiGateway was not called.");
+            }
         }
 
         /// <summary>
         /// Method to initialize the web builder before starting the web host. In a typical Web API this is similar to the main function. 
+        /// Setting the Startup class is required in this method.
         /// </summary>
         /// <example>
         /// <code>
         /// protected override void Init(IWebHostBuilder builder)
         /// {
         ///     builder
-        ///         .UseApiGateway()
-        ///         .UseContentRoot(Directory.GetCurrentDirectory())
         ///         .UseStartup&lt;Startup&gt;();
         /// }
         /// </code>
         /// </example>
         /// <param name="builder"></param>
         protected abstract void Init(IWebHostBuilder builder);
+
+        /// <summary>
+        /// Creates the IWebHostBuilder similar to WebHost.CreateDefaultBuilder but replacing the registration of the Kestrel web server with a 
+        /// registration for ApiGateway.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual IWebHostBuilder CreateWebHostBuilder()
+        {
+            var builder = new WebHostBuilder()
+                .UseContentRoot(Directory.GetCurrentDirectory())
+                .ConfigureAppConfiguration((hostingContext, config) =>
+                {
+                    var env = hostingContext.HostingEnvironment;
+
+                    config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                          .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
+                    if (env.IsDevelopment())
+                    {
+                        var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
+                        if (appAssembly != null)
+                        {
+                            config.AddUserSecrets(appAssembly, optional: true);
+                        }
+                    }
+
+                    config.AddEnvironmentVariables();
+                })
+                .ConfigureLogging((hostingContext, logging) =>
+                {
+                    logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
+                    logging.AddConsole();
+
+                    if (hostingContext.HostingEnvironment.IsDevelopment())
+                    {
+                        logging.AddDebug();
+                    }
+                })
+                .UseDefaultServiceProvider((hostingContext, options) =>
+                {
+                    options.ValidateScopes = hostingContext.HostingEnvironment.IsDevelopment();
+                })
+                .UseApiGateway();
+
+
+            return builder;
+        }
 
         /// <summary>
         /// This method is what the Lambda function handler points to.
@@ -117,8 +167,11 @@ namespace Amazon.Lambda.AspNetCoreServer
         public virtual async Task<APIGatewayProxyResponse> FunctionHandlerAsync(APIGatewayProxyRequest request, ILambdaContext lambdaContext)
         {
             lambdaContext.Logger.LogLine($"Incoming {request.HttpMethod} requests to {request.Path}");
+
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request);
+            lambdaContext.Logger.LogLine($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
+
             var context = this.CreateContext(features);
 
             // Add along the Lambda objects to the HttpContext to give access to Lambda to them in the ASP.NET Core application
@@ -289,13 +342,26 @@ namespace Amazon.Lambda.AspNetCoreServer
                 path = "/" + path;
             }
 
+            requestFeatures.Path = WebUtility.UrlDecode(path);
+
             requestFeatures.PathBase = string.Empty;
-            if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Path) && apiGatewayRequest.RequestContext.Path.EndsWith(path))
+            if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Path))
             {
-                requestFeatures.PathBase = apiGatewayRequest.RequestContext.Path.Substring(0, path.Length);
+                // This is to cover the case where the request coming in is https://myapigatewayid.execute-api.us-west-2.amazonaws.com/Prod where
+                // Prod is the stage name and there is no ending '/'. Path will be set to '/' so to make sure we detect the correct base path
+                // append '/' on the end to make the later EndsWith and substring work correctly.
+                var decodedRequestContextPath = WebUtility.UrlDecode(apiGatewayRequest.RequestContext.Path);
+                if (path.EndsWith("/") && !decodedRequestContextPath.EndsWith("/"))
+                {
+                    decodedRequestContextPath += "/";
+                }
+
+                if (decodedRequestContextPath.EndsWith(path))
+                {
+                    requestFeatures.PathBase = decodedRequestContextPath.Substring(0, decodedRequestContextPath.Length - requestFeatures.Path.Length);
+                }
             }
 
-            requestFeatures.Path = WebUtility.UrlDecode(path);
 
             // API Gateway delivers the query string in a dictionary but must be reconstructed into the full query string
             // before passing into ASP.NET Core framework.
