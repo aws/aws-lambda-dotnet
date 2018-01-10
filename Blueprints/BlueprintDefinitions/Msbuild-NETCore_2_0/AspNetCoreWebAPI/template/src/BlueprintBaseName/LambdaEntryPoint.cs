@@ -19,9 +19,7 @@ namespace BlueprintBaseName
         protected override void Init(IWebHostBuilder builder)
         {
             builder
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<Startup>()
-                .UseApiGateway();
+                .UseStartup<Startup>();
         }
     }
 }

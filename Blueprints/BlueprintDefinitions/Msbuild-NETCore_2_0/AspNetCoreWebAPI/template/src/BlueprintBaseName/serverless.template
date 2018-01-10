@@ -23,11 +23,11 @@
 
   "Resources" : {
 
-    "Get" : {
+    "ProxyFunction" : {
       "Type" : "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName::BlueprintBaseName.LambdaEntryPoint::FunctionHandlerAsync",
-        "Runtime": "dotnetcore1.0",
+        "Runtime": "dotnetcore2.0",
         "CodeUri": "",
         "MemorySize": 256,
         "Timeout": 30,

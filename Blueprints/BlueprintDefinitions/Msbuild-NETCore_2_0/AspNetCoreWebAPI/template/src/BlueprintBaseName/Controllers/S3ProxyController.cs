@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 using Amazon.S3;
@@ -24,12 +25,12 @@ namespace BlueprintBaseName.Controllers
 
         string BucketName { get; set; }
 
-        public S3ProxyController(ILogger<S3ProxyController> logger, IAmazonS3 s3Client)
+        public S3ProxyController(IConfiguration configuration, ILogger<S3ProxyController> logger, IAmazonS3 s3Client)
         {
             this.Logger = logger;
             this.S3Client = s3Client;
 
-            this.BucketName = Startup.Configuration[Startup.AppS3BucketKey];
+            this.BucketName = configuration[Startup.AppS3BucketKey];
             if(string.IsNullOrEmpty(this.BucketName))
             {
                 logger.LogCritical("Missing configuration for S3 bucket. The AppS3Bucket configuration must be set to a S3 bucket.");
