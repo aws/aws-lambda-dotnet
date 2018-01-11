@@ -3,7 +3,7 @@
   "classifications": ["AWS", "Lambda", "Serverless"],
   "name": "Lambda ASP.NET Core Web Application with Razor Pages",
   "identity": "AWS.Lambda.Serverless.AspNetCoreWebApp.CSharp",
-  "groupIdentity": "AWS.Lambda.AspNetCoreWebAPI.Serverless",
+  "groupIdentity": "AWS.Lambda.AspNetCoreWebApp.Serverless",
   "shortName": "lambda.AspNetCoreWebApp",
   "tags": {
     "language": "C#",
