@@ -68,7 +68,7 @@ namespace Amazon.Lambda.Tests
                 var text = writer.ToString();
 
                 // check that there are no unexpected strings in the text
-                Assert.False(text.Contains(SHOULD_NOT_APPEAR));
+                Assert.DoesNotContain(SHOULD_NOT_APPEAR, text);
 
                 // check that all expected strings are in the text
                 for (int i = 0; i < count; i++)
@@ -159,7 +159,7 @@ namespace Amazon.Lambda.Tests
                 var text = writer.ToString();
 
                 // check that there are no unexpected strings in the text
-                Assert.False(text.Contains(SHOULD_NOT_APPEAR));
+                Assert.DoesNotContain(SHOULD_NOT_APPEAR, text);
 
                 // check that all expected strings are in the text
                 for (int i = 0; i < count; i++)
@@ -194,7 +194,7 @@ namespace Amazon.Lambda.Tests
 
             // check that there are no unexpected strings in the text
             Assert.NotNull(exception);
-            Assert.True(exception.Message.Contains("only 1 wildcard is supported in a category"));
+            Assert.Contains("only 1 wildcard is supported in a category", exception.Message);
         }
 
         [Fact]
@@ -221,7 +221,7 @@ namespace Amazon.Lambda.Tests
 
             // check that there are no unexpected strings in the text
             Assert.NotNull(exception);
-            Assert.True(exception.Message.Contains("wilcards are only supported at the end of a category"));
+            Assert.Contains("wilcards are only supported at the end of a category", exception.Message);
         }
 
         private static string GetAppSettingsPath(string fileName)

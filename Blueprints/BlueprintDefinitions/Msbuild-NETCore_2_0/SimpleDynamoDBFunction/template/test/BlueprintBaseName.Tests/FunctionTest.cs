@@ -47,7 +47,7 @@ namespace BlueprintBaseName.Tests
             function.FunctionHandler(evnt, context);
 
             var testLogger = context.Logger as TestLambdaLogger;
-            Assert.True(testLogger.Buffer.ToString().Contains("Stream processing complete"));
+			Assert.Contains("Stream processing complete", testLogger.Buffer.ToString());
         }  
     }
 }

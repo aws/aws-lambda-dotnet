@@ -26,9 +26,6 @@ using Amazon.SQS;
 using Amazon.CloudFormation;
 using Amazon.CloudFormation.Model;
 
-using Amazon.S3;
-using Amazon.S3.Model;
-using Amazon.S3.Util;
 
 namespace Amazon.Lambda.Tools.Test
 {

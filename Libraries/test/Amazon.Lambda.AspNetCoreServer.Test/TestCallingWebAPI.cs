@@ -24,7 +24,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var response = await this.InvokeAPIGatewayRequest("values-get-all-apigatway-request.json");
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
@@ -35,7 +35,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var response = await this.InvokeAPIGatewayRequest("values-get-different-proxypath-apigatway-request.json");
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
@@ -87,7 +87,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var response = await this.InvokeAPIGatewayRequest("values-get-error-apigatway-request.json");
 
-            Assert.Equal(response.StatusCode, 500);
+            Assert.Equal(500, response.StatusCode);
             Assert.Equal(string.Empty, response.Body);
         }
 
@@ -98,7 +98,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var response = await this.InvokeAPIGatewayRequest(requestFileName);
 
-            Assert.Equal(response.StatusCode, 500);
+            Assert.Equal(500, response.StatusCode);
             Assert.Equal(string.Empty, response.Body);
             Assert.True(response.Headers.ContainsKey("ErrorType"));
             Assert.Equal(expectedExceptionType, response.Headers["ErrorType"]);
@@ -109,7 +109,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var response = await this.InvokeAPIGatewayRequest("swagger-get-apigatway-request.json");
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
             Assert.True(response.Body.Length > 0);
             Assert.Equal("application/json", response.Headers["Content-Type"]);
         }
@@ -185,7 +185,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var response = await this.InvokeAPIGatewayRequest("values-escape-path-apigatway-request.json");
 
-            Assert.Equal(response.StatusCode, 200);
+            Assert.Equal(200, response.StatusCode);
             Assert.Equal("value=query string", response.Body);
         }
 

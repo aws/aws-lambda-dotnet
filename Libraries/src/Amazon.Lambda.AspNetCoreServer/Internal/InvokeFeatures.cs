@@ -33,10 +33,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         #region IFeatureCollection
         public bool IsReadOnly => false;
 
-        private int _featureRevision;
         IDictionary<Type, object> _features = new Dictionary<Type, object>();
 
-        public int Revision => _featureRevision;
+        public int Revision => 0;
 
         public object this[Type key]
         {
