@@ -256,6 +256,23 @@ namespace Amazon.Lambda.Tools.Commands
                         }
 
                         await base.UpdateConfigAsync(currentConfiguration);
+
+                        var publish = this.GetBoolValueOrDefault(this.Publish, DefinedCommandOptions.ARGUMENT_FUNCTION_PUBLISH, false).GetValueOrDefault();
+                        if(publish)
+                        {
+                            try
+                            {
+                                var response = await this.LambdaClient.PublishVersionAsync(new PublishVersionRequest
+                                {
+                                    FunctionName = updateCodeRequest.FunctionName
+                                });
+                                this.Logger.WriteLine("Published new Lambda function version: " + response.Version);
+                            }
+                            catch (Exception e)
+                            {
+                                throw new LambdaToolsException($"Error publishing Lambda function: {e.Message}", LambdaToolsException.ErrorCode.LambdaPublishFunction, e);
+                            }
+                        }
                     }
                 }
 
