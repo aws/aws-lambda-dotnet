@@ -25,7 +25,6 @@ public void ConfigureServices(IServiceCollection services)
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
 * LambdaEntryPoint.cs - class that derives from **Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction**. The code in this file bootstraps the ASP.NET Core hosting framework. The Lambda function is defined in the base class.
 * LocalEntryPoint.cs - for local development this contains the executable Main function which bootstraps the ASP.NET Core hosting framework with Kestrel, as for typical ASP.NET Core applications.
-* project.json - .NET Core project file with build and tool declarations for the Amazon.Lambda.Tools Nuget package
 * Startup.cs - usual ASP.NET Core Startup class used to configure the services ASP.NET Core will use.
 * web.config - used for local development.
 * Controllers\S3ProxyController - Web API controller for proxying an S3 bucket

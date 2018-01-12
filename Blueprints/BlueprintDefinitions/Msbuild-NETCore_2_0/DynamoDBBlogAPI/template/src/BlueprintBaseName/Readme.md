@@ -5,7 +5,6 @@ This starter project consists of:
 * Function.cs - class file containing the C# methods mapped to the Serverless functions declared in the template file
 * Blog.cs - file containing a C# class representing a blog entry in the DynamoDB table
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
-* project.json - .NET Core project file with build and tool declarations for the Amazon.Lambda.Tools Nuget package
 
 You may also have a test project depending on the options selected.
 
