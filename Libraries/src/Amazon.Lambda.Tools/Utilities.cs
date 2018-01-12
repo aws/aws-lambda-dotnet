@@ -327,7 +327,7 @@ namespace Amazon.Lambda.Tools
                 }
 
                 throw new LambdaToolsException($"Project is referencing version {projectAspNetCoreVersion} of {ASPNET_CORE_ALL} which is newer " + 
-                    $"then {latestLambdaDeployedVersion} the latest version available in the Lambda Runtime environment. Please update your project to " + 
+                    $"than {latestLambdaDeployedVersion}, the latest version available in the Lambda Runtime environment. Please update your project to " + 
                     $"use version {latestLambdaDeployedVersion} and then redeploy your Lambda function.", LambdaToolsException.ErrorCode.AspNetCoreAllValidation);
             }
             catch(LambdaToolsException)
