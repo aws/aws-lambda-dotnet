@@ -31,7 +31,7 @@ namespace Amazon.Lambda.Tools
         /// <param name="outputLocation"></param>
         /// <param name="targetFramework"></param>
         /// <param name="configuration"></param>
-        public int Publish(LambdaToolsDefaults defaults, string projectLocation, string outputLocation, string targetFramework, string configuration)
+        public int Publish(LambdaToolsDefaults defaults, string projectLocation, string outputLocation, string targetFramework, string configuration, string deploymentTargetPackageStoreManifestContent)
         {
             if (Directory.Exists(outputLocation))
             {
@@ -80,6 +80,7 @@ namespace Amazon.Lambda.Tools
                 arguments.Append($" --framework \"{targetFramework}\"");
             }
 
+            string manifestPath = null;
             if (!string.Equals("netcoreapp1.0", targetFramework, StringComparison.OrdinalIgnoreCase))
             {
                 arguments.Append(" /p:GenerateRuntimeConfigurationFiles=true");
@@ -89,6 +90,16 @@ namespace Amazon.Lambda.Tools
                 if (Directory.GetFiles(fullProjectLocation, "*.cshtml", SearchOption.AllDirectories).Length == 0)
                 {
                     arguments.Append(" -r linux-x64 --self-contained false /p:PreserveCompilationContext=false");
+                }
+
+                // If we have a manifest of packages already deploy in target deployment environment then write it to disk and add the 
+                // command line switch
+                if(!string.IsNullOrEmpty(deploymentTargetPackageStoreManifestContent))
+                {
+                    manifestPath = Path.GetTempFileName();
+                    File.WriteAllText(manifestPath, deploymentTargetPackageStoreManifestContent);
+
+                    arguments.Append($" --manifest \"{manifestPath}\"");
                 }
             }
 
@@ -127,6 +138,12 @@ namespace Amazon.Lambda.Tools
                 proc.WaitForExit();
 
                 exitCode = proc.ExitCode;
+            }
+
+            // If we wrote a temporary manifest file then clean it up after dotnet publish has executed.
+            if(manifestPath != null && File.Exists(manifestPath))
+            {
+                File.Delete(manifestPath);
             }
 
             if (exitCode == 0)

@@ -46,14 +46,17 @@ namespace Amazon.Lambda.Tools
             string projectLocation, string configuration, string targetFramework, bool disableVersionCheck,
             out string publishLocation, ref string zipArchivePath)
         {
-
-            Utilities.ValidateMicrosoftAspNetCoreAllReference(logger, Utilities.DetermineProjectLocation(workingDirectory, projectLocation));
+            string lambdaRuntimePackageStoreManifestContent = null;
+            if (!disableVersionCheck)
+            {
+                Utilities.ValidateMicrosoftAspNetCoreAllReference(logger, Utilities.DetermineProjectLocation(workingDirectory, projectLocation), out lambdaRuntimePackageStoreManifestContent);
+            }
 
             var cli = new DotNetCLIWrapper(logger, workingDirectory);
 
             publishLocation = Utilities.DeterminePublishLocation(workingDirectory, projectLocation, configuration, targetFramework);
             logger?.WriteLine("Executing publish command");
-            if (cli.Publish(defaults, projectLocation, publishLocation, targetFramework, configuration) != 0)
+            if (cli.Publish(defaults, projectLocation, publishLocation, targetFramework, configuration, lambdaRuntimePackageStoreManifestContent) != 0)
                 return false;
 
             var buildLocation = Utilities.DetermineBuildLocation(workingDirectory, projectLocation, configuration, targetFramework);

@@ -11,6 +11,8 @@ namespace Amazon.Lambda.Tools
 
     public static class Constants
     {
+        public const string ENV_DOTNET_LAMBDA_CLI_LOCAL_MANIFEST_OVERRIDE = "DOTNET_LAMBDA_CLI_LOCAL_MANIFEST_OVERRIDE";
+
         public const string IAM_ARN_PREFIX = "arn:aws:iam::";
         public const string AWS_MANAGED_POLICY_ARN_PREFIX = "arn:aws:iam::aws:policy";
 

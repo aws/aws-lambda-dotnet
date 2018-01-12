@@ -231,9 +231,32 @@ namespace Amazon.Lambda.Tools
             return path;
         }
 
-        public static void ValidateMicrosoftAspNetCoreAllReference(IToolLogger logger, string csprofPath)
+        public static void ValidateMicrosoftAspNetCoreAllReference(IToolLogger logger, string csprofPath, out string manifestContent)
         {
-            if(Directory.Exists(csprofPath))
+            if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(Constants.ENV_DOTNET_LAMBDA_CLI_LOCAL_MANIFEST_OVERRIDE)))
+            {
+                var filePath = Environment.GetEnvironmentVariable(Constants.ENV_DOTNET_LAMBDA_CLI_LOCAL_MANIFEST_OVERRIDE);
+                if(File.Exists(filePath))
+                {
+                    logger?.WriteLine($"Using local manifest override: {filePath}");
+                    manifestContent = File.ReadAllText(filePath);
+                }
+                else
+                {
+                    logger?.WriteLine("Using local manifest override");
+                    manifestContent = null;
+                }
+            }
+            else
+            {
+                manifestContent = ToolkitConfigFileFetcher.Instance.GetFileContentAsync(logger, "LambdaPackageStoreManifest.xml").Result;
+            }
+            if (string.IsNullOrEmpty(manifestContent))
+            {
+                return;
+            }
+
+            if (Directory.Exists(csprofPath))
             {
                 var projectFiles = Directory.GetFiles(csprofPath, "*.csproj", SearchOption.TopDirectoryOnly);
                 if(projectFiles.Length != 1)
@@ -251,15 +274,8 @@ namespace Amazon.Lambda.Tools
 
             var projectContent = File.ReadAllText(csprofPath);
 
-            var manifestContent = ToolkitConfigFileFetcher.Instance.GetFileContentAsync(logger, "LambdaPackageStoreManifest.xml").Result;
-            if (!string.IsNullOrEmpty(manifestContent))
-            {
-                ValidateMicrosoftAspNetCoreAllReference(logger, manifestContent, projectContent);
-            }
-            else
-            {
-                logger.WriteLine("Skipping Microsoft.AspNetCore.All validation because error while downloading Lambda runtime store manifest.");
-            }
+            
+            ValidateMicrosoftAspNetCoreAllReference(logger, manifestContent, projectContent);
         }
 
         /// <summary>
@@ -326,11 +342,11 @@ namespace Amazon.Lambda.Tools
                     }
                 }
 
-                throw new LambdaToolsException($"Project is referencing version {projectAspNetCoreVersion} of {ASPNET_CORE_ALL} which is newer " + 
-                    $"than {latestLambdaDeployedVersion}, the latest version available in the Lambda Runtime environment. Please update your project to " + 
+                throw new LambdaToolsException($"Project is referencing version {projectAspNetCoreVersion} of {ASPNET_CORE_ALL} which is newer " +
+                    $"than {latestLambdaDeployedVersion}, the latest version available in the Lambda Runtime environment. Please update your project to " +
                     $"use version {latestLambdaDeployedVersion} and then redeploy your Lambda function.", LambdaToolsException.ErrorCode.AspNetCoreAllValidation);
             }
-            catch(LambdaToolsException)
+            catch (LambdaToolsException)
             {
                 throw;
             }
