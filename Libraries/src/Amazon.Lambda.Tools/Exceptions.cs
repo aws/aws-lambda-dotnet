@@ -37,6 +37,8 @@ namespace Amazon.Lambda.Tools
             RegionNotConfigured,
             RoleNotFound,
 
+            AspNetCoreAllValidation,
+
             IAMAttachRole,
             IAMCreateRole,
             IAMGetRole,

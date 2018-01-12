@@ -46,6 +46,9 @@ namespace Amazon.Lambda.Tools
             string projectLocation, string configuration, string targetFramework, bool disableVersionCheck,
             out string publishLocation, ref string zipArchivePath)
         {
+
+            Utilities.ValidateMicrosoftAspNetCoreAllReference(logger, Utilities.DetermineProjectLocation(workingDirectory, projectLocation));
+
             var cli = new DotNetCLIWrapper(logger, workingDirectory);
 
             publishLocation = Utilities.DeterminePublishLocation(workingDirectory, projectLocation, configuration, targetFramework);

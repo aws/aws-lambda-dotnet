@@ -23,6 +23,7 @@ using YamlDotNet.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ThirdParty.Json.LitJson;
+using System.Xml.Linq;
 
 namespace Amazon.Lambda.Tools
 {
@@ -228,6 +229,115 @@ namespace Amazon.Lambda.Tools
                     targetFramework,
                     "publish");
             return path;
+        }
+
+        public static void ValidateMicrosoftAspNetCoreAllReference(IToolLogger logger, string csprofPath)
+        {
+            if(Directory.Exists(csprofPath))
+            {
+                var projectFiles = Directory.GetFiles(csprofPath, "*.csproj", SearchOption.TopDirectoryOnly);
+                if(projectFiles.Length != 1)
+                {
+                    logger.WriteLine("Unable to determine csproj project file when validating version of Microsoft.AspNetCore.All");
+                    return;
+                }
+                csprofPath = projectFiles[0];
+            }
+
+            // If the file is not a csproj file then skip validation. This could happen
+            // if the project is an F# project or an older style project.json.
+            if (!string.Equals(Path.GetExtension(csprofPath), ".csproj"))
+                return;
+
+            var projectContent = File.ReadAllText(csprofPath);
+
+            var manifestContent = ToolkitConfigFileFetcher.Instance.GetFileContentAsync(logger, "LambdaPackageStoreManifest.xml").Result;
+            if (!string.IsNullOrEmpty(manifestContent))
+            {
+                ValidateMicrosoftAspNetCoreAllReference(logger, manifestContent, projectContent);
+            }
+            else
+            {
+                logger.WriteLine("Skipping Microsoft.AspNetCore.All validation because error while downloading Lambda runtime store manifest.");
+            }
+        }
+
+        /// <summary>
+        /// Make sure that if the project references the Microsoft.AspNetCore.All package which is in implicit package store
+        /// that the Lambda runtime has that store available. Otherwise the Lambda function will fail with an Internal server error.
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="manifestContent"></param>
+        /// <param name="csprojContent"></param>
+        public static void ValidateMicrosoftAspNetCoreAllReference(IToolLogger logger, string manifestContent, string csprojContent)
+        {
+            const string ASPNET_CORE_ALL = "Microsoft.AspNetCore.All";
+            try
+            {
+                XDocument csprojXmlDoc = XDocument.Parse(csprojContent);
+
+                Func<string> searchForAspNetCoreAllVersion = () =>
+                {
+                    // Not using XPath because to avoid adding an addition dependency for a simple one time use.
+                    foreach (XElement group in csprojXmlDoc.Root.Elements("ItemGroup"))
+                    {
+                        foreach (XElement packageReference in group.Elements("PackageReference"))
+                        {
+                            var name = packageReference.Attribute("Include")?.Value;
+                            if (string.Equals(name, ASPNET_CORE_ALL, StringComparison.Ordinal))
+                            {
+                                return packageReference.Attribute("Version")?.Value;
+                            }
+                        }
+                    }
+
+                    return null;
+                };
+
+                var projectAspNetCoreVersion = searchForAspNetCoreAllVersion();
+
+                if (string.IsNullOrEmpty(projectAspNetCoreVersion))
+                {
+                    // Project is not using Microsoft.AspNetCore.All so skip validation.
+                    return;
+                }
+
+
+                XDocument manifestXmlDoc = XDocument.Parse(manifestContent);
+
+                string latestLambdaDeployedVersion = null;
+                foreach (var element in manifestXmlDoc.Root.Elements("Package"))
+                {
+                    var name = element.Attribute("Id")?.Value;
+                    if (string.Equals(name, ASPNET_CORE_ALL, StringComparison.Ordinal))
+                    {
+                        var version = element.Attribute("Version")?.Value;
+                        if (string.Equals(projectAspNetCoreVersion, version, StringComparison.Ordinal))
+                        {
+                            // Version specifed in project file is available in Lambda Runtime
+                            return;
+                        }
+
+                        // Record latest supported version to provide meaningful error message.
+                        if (latestLambdaDeployedVersion == null || Version.Parse(latestLambdaDeployedVersion) < Version.Parse(version))
+                        {
+                            latestLambdaDeployedVersion = version;
+                        }
+                    }
+                }
+
+                throw new LambdaToolsException($"Project is referencing version {projectAspNetCoreVersion} of {ASPNET_CORE_ALL} which is newer " + 
+                    $"then {latestLambdaDeployedVersion} the latest version available in the Lambda Runtime environment. Please update your project to " + 
+                    $"use version {latestLambdaDeployedVersion} and then redeploy your Lambda function.", LambdaToolsException.ErrorCode.AspNetCoreAllValidation);
+            }
+            catch(LambdaToolsException)
+            {
+                throw;
+            }
+            catch(Exception e)
+            {
+                logger?.WriteLine($"Unknown error validating version of {ASPNET_CORE_ALL}: {e.Message}");
+            }
         }
 
 

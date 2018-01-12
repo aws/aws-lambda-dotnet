@@ -18,6 +18,28 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="ManifestTestFiles\CurrentAspNetCoreReference.xml" />
+    <None Remove="ManifestTestFiles\NewerAspNetCoreReference.xml" />
+    <None Remove="ManifestTestFiles\NotUsingAspNetCore.xml" />
+    <None Remove="ManifestTestFiles\SampleManifest.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ManifestTestFiles\CurrentAspNetCoreReference.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ManifestTestFiles\NotUsingAspNetCore.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ManifestTestFiles\NewerAspNetCoreReference.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ManifestTestFiles\SampleManifest.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.Tools\Amazon.Lambda.Tools.csproj" />
     <ProjectReference Include="..\TestFunction\TestFunction.csproj" />
   </ItemGroup>
