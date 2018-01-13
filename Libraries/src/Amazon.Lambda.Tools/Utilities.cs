@@ -275,7 +275,7 @@ namespace Amazon.Lambda.Tools
             var projectContent = File.ReadAllText(csprofPath);
 
             
-            ValidateMicrosoftAspNetCoreAllReference(logger, manifestContent, projectContent);
+            ValidateMicrosoftAspNetCoreAllReferenceWithManifest(logger, manifestContent, projectContent);
         }
 
         /// <summary>
@@ -285,7 +285,7 @@ namespace Amazon.Lambda.Tools
         /// <param name="logger"></param>
         /// <param name="manifestContent"></param>
         /// <param name="csprojContent"></param>
-        public static void ValidateMicrosoftAspNetCoreAllReference(IToolLogger logger, string manifestContent, string csprojContent)
+        public static void ValidateMicrosoftAspNetCoreAllReferenceWithManifest(IToolLogger logger, string manifestContent, string csprojContent)
         {
             const string ASPNET_CORE_ALL = "Microsoft.AspNetCore.All";
             try
