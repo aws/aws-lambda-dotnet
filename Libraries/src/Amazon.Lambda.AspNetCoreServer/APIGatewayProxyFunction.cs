@@ -10,8 +10,10 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
@@ -176,6 +178,15 @@ namespace Amazon.Lambda.AspNetCoreServer
             lambdaContext.Logger.LogLine($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
 
             var context = this.CreateContext(features);
+
+            if (request?.RequestContext?.Authorizer?.Claims != null)
+            {
+                var identity = new ClaimsIdentity(request.RequestContext.Authorizer.Claims.Select(
+                    entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
+
+                lambdaContext.Logger.LogLine($"Configuring HttpContext.User with {request.RequestContext.Authorizer.Claims.Count} claims coming from API Gateway's Request Context");
+                context.HttpContext.User = new ClaimsPrincipal(identity);
+            }
 
             // Add along the Lambda objects to the HttpContext to give access to Lambda to them in the ASP.NET Core application
             context.HttpContext.Items[LAMBDA_CONTEXT] = lambdaContext;

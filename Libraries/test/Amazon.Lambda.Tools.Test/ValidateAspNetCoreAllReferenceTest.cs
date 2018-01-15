@@ -18,7 +18,7 @@ namespace Amazon.Lambda.Tools.Test
             var manifest = File.ReadAllText(@"ManifestTestFiles/SampleManifest.xml");
             var projectFile = File.ReadAllText(@"ManifestTestFiles/NewerAspNetCoreReference.xml");
 
-            Assert.Throws<AmazonLambdaException>(() => Utilities.ValidateMicrosoftAspNetCoreAllReferenceWithManifest(logger, manifest, projectFile));
+            Assert.Throws<LambdaToolsException>(() => Utilities.ValidateMicrosoftAspNetCoreAllReferenceWithManifest(logger, manifest, projectFile));
         }
 
         [Fact]

@@ -40,6 +40,11 @@ namespace TestWebApp
                 c.SwaggerDoc("v1", new Info { Title = "My API", Version = "v1" });
             });
 
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("YouAreSpecial", policy => policy.RequireClaim("you_are_special"));
+            });
+
             // Add framework services.
             services.AddApplicationInsightsTelemetry(Configuration);
 

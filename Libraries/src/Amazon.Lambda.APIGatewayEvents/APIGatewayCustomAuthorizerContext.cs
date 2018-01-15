@@ -1,35 +1,139 @@
 ﻿namespace Amazon.Lambda.APIGatewayEvents
 {
+    using System;
+    using System.Collections.Generic;
     using System.Runtime.Serialization;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// An object representing the expected format of an API Gateway custom authorizer response.
     /// </summary>
     [DataContract]
-    public class APIGatewayCustomAuthorizerContext
+    public class APIGatewayCustomAuthorizerContext : Dictionary<string, object>
     {
         /// <summary>
         /// Gets or sets the 'principalId' property.
         /// </summary>
-        [DataMember(Name = "principalId", IsRequired = false)]
-        public string PrincipalId { get; set; }
+        [Obsolete("This property is obsolete. Code should be updated to use the string index property like authorizer[\"principalId\"]")]
+        public string PrincipalId
+        {
+            get
+            {
+                object value;
+                if (this.TryGetValue("principalId", out value))
+                    return value.ToString();
+                return null;
+            }
+            set
+            {
+                this["principalId"] = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the 'stringKey' property.
         /// </summary>
-        [DataMember(Name = "stringKey", IsRequired = false)]
-        public string StringKey { get; set; }
+        [Obsolete("This property is obsolete. Code should be updated to use the string index property like authorizer[\"stringKey\"]")]
+        public string StringKey
+        {
+            get
+            {
+                object value;
+                if (this.TryGetValue("stringKey", out value))
+                    return value.ToString();
+                return null;
+            }
+            set
+            {
+                this["stringKey"] = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the 'numKey' property.
         /// </summary>
-        [DataMember(Name = "numKey", IsRequired = false)]
-        public int? NumKey { get; set; }
+        [Obsolete("This property is obsolete. Code should be updated to use the string index property like authorizer[\"numKey\"]")]
+        public int? NumKey
+        {
+            get
+            {
+                object value;
+                if (this.TryGetValue("numKey", out value))
+                {
+                    int i;
+                    if (int.TryParse(value?.ToString(), out i))
+                    {
+                        return i;
+                    }
+                }
+
+                return null;
+            }
+            set
+            {
+                this["numKey"] = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the 'boolKey' property.
         /// </summary>
-        [DataMember(Name = "boolKey", IsRequired = false)]
-        public bool? BoolKey { get; set; }
+        [Obsolete("This property is obsolete. Code should be updated to use the string index property like authorizer[\"boolKey\"]")]
+        public bool? BoolKey
+        {
+            get
+            {
+                object value;
+                if (this.TryGetValue("boolKey", out value))
+                {
+                    bool b;
+                    if(bool.TryParse(value?.ToString(), out b))
+                    {
+                        return b;
+                    }
+                }
+                    
+                return null;
+            }
+            set
+            {
+                this["boolKey"] = value;
+            }
+        }
+
+        Dictionary<string, string> _claims;
+        /// <summary>
+        /// Gets or sets the claims coming from Cognito
+        /// </summary>
+        public Dictionary<string, string> Claims
+        {
+            get
+            {
+                if(_claims == null)
+                {
+                    _claims = new Dictionary<string, string>();
+
+                    object value;
+                    if(this.TryGetValue("claims", out value))
+                    {
+                        JObject jsonClaims = value as JObject;
+                        if (jsonClaims != null)
+                        {
+                            foreach (JProperty property in jsonClaims.Properties())
+                            {
+                                _claims[property.Name] = property.Value?.ToString();
+
+                            }
+                        }
+                    }
+                }
+
+                return _claims;
+            }
+            set
+            {
+                this._claims = value;
+            }
+        }
     }
 }

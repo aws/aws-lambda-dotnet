@@ -189,6 +189,24 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("value=query string", response.Body);
         }
 
+        [Fact]
+        public async Task TestAuthTestAccess()
+        {
+            var response = await this.InvokeAPIGatewayRequest("authtest-access-request.json");
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("You Have Access", response.Body);
+        }
+
+
+        [Fact]
+        public async Task TestAuthTestNoAccess()
+        {
+            var response = await this.InvokeAPIGatewayRequest("authtest-noaccess-request.json");
+
+            Assert.NotEqual(200, response.StatusCode);
+        }
+
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
         {
             var context = new TestLambdaContext();
