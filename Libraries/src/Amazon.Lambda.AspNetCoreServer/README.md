@@ -26,8 +26,6 @@ namespace TestWebApp
         protected override void Init(IWebHostBuilder builder)
         {
             builder
-                .UseApiGateway()
-                .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Startup>();
         }
     }
