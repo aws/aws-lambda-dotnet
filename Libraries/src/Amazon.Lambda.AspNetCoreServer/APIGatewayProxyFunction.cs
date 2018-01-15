@@ -174,7 +174,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             lambdaContext.Logger.LogLine($"Incoming {request.HttpMethod} requests to {request.Path}");
 
             InvokeFeatures features = new InvokeFeatures();
-            MarshallRequest(features, request);
+            MarshallRequest(features, request, lambdaContext);
             lambdaContext.Logger.LogLine($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
 
             var context = this.CreateContext(features);
@@ -191,6 +191,9 @@ namespace Amazon.Lambda.AspNetCoreServer
             // Add along the Lambda objects to the HttpContext to give access to Lambda to them in the ASP.NET Core application
             context.HttpContext.Items[LAMBDA_CONTEXT] = lambdaContext;
             context.HttpContext.Items[APIGATEWAY_REQUEST] = request;
+
+            // Allow the context to be customized before passing the request to ASP.NET Core.
+            PostCreateContext(context, request, lambdaContext);
 
             var response = await this.ProcessRequest(lambdaContext, context, features);
 
@@ -298,7 +301,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 this._server.Application.DisposeContext(context, ex);
             }
 
-            var response = this.MarshallResponse(features, defaultStatusCode);
+            var response = this.MarshallResponse(features, lambdaContext, defaultStatusCode);
             lambdaContext.Logger.LogLine($"Response Base 64 Encoded: {response.IsBase64Encoded}");
 
             if (ex != null)
@@ -334,7 +337,8 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         /// <param name="aspNetCoreRequestFeature"></param>
         /// <param name="apiGatewayRequest"></param>
-        protected virtual void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, APIGatewayProxyRequest apiGatewayRequest)
+        /// <param name="lambdaContext"></param>
+        protected virtual void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
 
         }
@@ -346,7 +350,8 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         /// <param name="aspNetCoreConnectionFeature"></param>
         /// <param name="apiGatewayRequest"></param>
-        protected virtual void PostMarshallConnectionFeature(IHttpConnectionFeature aspNetCoreConnectionFeature, APIGatewayProxyRequest apiGatewayRequest)
+        /// <param name="lambdaContext"></param>
+        protected virtual void PostMarshallConnectionFeature(IHttpConnectionFeature aspNetCoreConnectionFeature, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
 
         }
@@ -358,7 +363,20 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         /// <param name="aspNetCoreResponseFeature"></param>
         /// <param name="apiGatewayResponse"></param>
-        protected virtual void PostMarshallResponseFeature(IHttpResponseFeature aspNetCoreResponseFeature, APIGatewayProxyResponse apiGatewayResponse)
+        /// <param name="lambdaContext"></param>
+        protected virtual void PostMarshallResponseFeature(IHttpResponseFeature aspNetCoreResponseFeature, APIGatewayProxyResponse apiGatewayResponse, ILambdaContext lambdaContext)
+        {
+
+        }
+
+        /// <summary>
+        /// This method is called after the HostingApplication.Context has been created. Derived classes can overwrite this method to alter
+        /// the context before passing the request to ASP.NET Core to process the request.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="apiGatewayRequest"></param>
+        /// <param name="lambdaContext"></param>
+        protected virtual void PostCreateContext(HostingApplication.Context context, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
 
         }
@@ -368,8 +386,9 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// InvokeFeatures is then passed into IHttpApplication to create the ASP.NET Core request objects.
         /// </summary>
         /// <param name="features"></param>
-        /// <param name="apiGatewayRequest"></param>
-        protected void MarshallRequest(InvokeFeatures features, APIGatewayProxyRequest apiGatewayRequest)
+        /// <param name="apiGatewayRequest"></param
+        /// <param name="lambdaContext"></param>
+        protected void MarshallRequest(InvokeFeatures features, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
             {
                 var requestFeatures = (IHttpRequestFeature)features;
@@ -469,7 +488,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                 // Call consumers customize method in case they want to change how API Gateway's request
                 // was marshalled into ASP.NET Core request.
-                PostMarshallRequestFeature(requestFeatures, apiGatewayRequest);
+                PostMarshallRequestFeature(requestFeatures, apiGatewayRequest, lambdaContext);
             }
 
 
@@ -491,7 +510,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                 // Call consumers customize method in case they want to change how API Gateway's request
                 // was marshalled into ASP.NET Core request.
-                PostMarshallConnectionFeature(connectionFeatures, apiGatewayRequest);
+                PostMarshallConnectionFeature(connectionFeatures, apiGatewayRequest, lambdaContext);
             }
 
         }
@@ -502,8 +521,9 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         /// <param name="responseFeatures"></param>
         /// <param name="statusCodeIfNotSet">Sometimes the ASP.NET server doesn't set the status code correctly when successful, so this parameter will be used when the value is 0.</param>
+        /// <param name="lambdaContext"></param>
         /// <returns><see cref="APIGatewayProxyResponse"/></returns>
-        protected APIGatewayProxyResponse MarshallResponse(IHttpResponseFeature responseFeatures, int statusCodeIfNotSet = 200)
+        protected APIGatewayProxyResponse MarshallResponse(IHttpResponseFeature responseFeatures, ILambdaContext lambdaContext, int statusCodeIfNotSet = 200)
         {
             var response = new APIGatewayProxyResponse
             {
@@ -580,7 +600,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 }
             }
 
-            PostMarshallResponseFeature(responseFeatures, response);
+            PostMarshallResponseFeature(responseFeatures, response, lambdaContext);
 
             return response;
         }
