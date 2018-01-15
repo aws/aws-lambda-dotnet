@@ -386,7 +386,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// InvokeFeatures is then passed into IHttpApplication to create the ASP.NET Core request objects.
         /// </summary>
         /// <param name="features"></param>
-        /// <param name="apiGatewayRequest"></param
+        /// <param name="apiGatewayRequest"></param>
         /// <param name="lambdaContext"></param>
         protected void MarshallRequest(InvokeFeatures features, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
