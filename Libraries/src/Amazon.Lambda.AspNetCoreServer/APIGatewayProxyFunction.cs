@@ -328,6 +328,42 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         /// <summary>
+        /// This method is called after the APIGatewayProxyFunction has marshalled the incoming API Gateway request
+        /// into ASP.NET Core's IHttpRequestFeature. Derived classes can overwrite this method to alter
+        /// the how the marshalling was done.
+        /// </summary>
+        /// <param name="aspNetCoreRequestFeature"></param>
+        /// <param name="apiGatewayRequest"></param>
+        protected virtual void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, APIGatewayProxyRequest apiGatewayRequest)
+        {
+
+        }
+
+        /// <summary>
+        /// This method is called after the APIGatewayProxyFunction has marshalled the incoming API Gateway request
+        /// into ASP.NET Core's IHttpConnectionFeature. Derived classes can overwrite this method to alter
+        /// the how the marshalling was done.
+        /// </summary>
+        /// <param name="aspNetCoreConnectionFeature"></param>
+        /// <param name="apiGatewayRequest"></param>
+        protected virtual void PostMarshallConnectionFeature(IHttpConnectionFeature aspNetCoreConnectionFeature, APIGatewayProxyRequest apiGatewayRequest)
+        {
+
+        }
+
+        /// <summary>
+        /// This method is called after the APIGatewayProxyFunction has marshalled IHttpResponseFeature that came
+        /// back from making the request into ASP.NET Core into API Gateway's response object APIGatewayProxyResponse. Derived classes can overwrite this method to alter
+        /// the how the marshalling was done.
+        /// </summary>
+        /// <param name="aspNetCoreResponseFeature"></param>
+        /// <param name="apiGatewayResponse"></param>
+        protected virtual void PostMarshallResponseFeature(IHttpResponseFeature aspNetCoreResponseFeature, APIGatewayProxyResponse apiGatewayResponse)
+        {
+
+        }
+
+        /// <summary>
         /// Convert the JSON document received from API Gateway into the InvokeFeatures object.
         /// InvokeFeatures is then passed into IHttpApplication to create the ASP.NET Core request objects.
         /// </summary>
@@ -335,114 +371,129 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="apiGatewayRequest"></param>
         protected void MarshallRequest(InvokeFeatures features, APIGatewayProxyRequest apiGatewayRequest)
         {
-            var requestFeatures = (IHttpRequestFeature)features;
-            requestFeatures.Scheme = "https";
-            requestFeatures.Method = apiGatewayRequest.HttpMethod;
-
-            string path = null;
-            if(apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy"))
             {
-                var proxyPath = apiGatewayRequest.PathParameters["proxy"];
-                path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);
-            }
+                var requestFeatures = (IHttpRequestFeature)features;
+                requestFeatures.Scheme = "https";
+                requestFeatures.Method = apiGatewayRequest.HttpMethod;
 
-            if(string.IsNullOrEmpty(path))
-            {
-                path = apiGatewayRequest.Path;
-            }
-
-            if(!path.StartsWith("/"))
-            {
-                path = "/" + path;
-            }
-
-            requestFeatures.Path = WebUtility.UrlDecode(path);
-
-            requestFeatures.PathBase = string.Empty;
-            if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Path))
-            {
-                // This is to cover the case where the request coming in is https://myapigatewayid.execute-api.us-west-2.amazonaws.com/Prod where
-                // Prod is the stage name and there is no ending '/'. Path will be set to '/' so to make sure we detect the correct base path
-                // append '/' on the end to make the later EndsWith and substring work correctly.
-                var decodedRequestContextPath = WebUtility.UrlDecode(apiGatewayRequest.RequestContext.Path);
-                if (path.EndsWith("/") && !decodedRequestContextPath.EndsWith("/"))
+                string path = null;
+                if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy"))
                 {
-                    decodedRequestContextPath += "/";
+                    var proxyPath = apiGatewayRequest.PathParameters["proxy"];
+                    path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);
                 }
 
-                if (decodedRequestContextPath.EndsWith(path))
+                if (string.IsNullOrEmpty(path))
                 {
-                    requestFeatures.PathBase = decodedRequestContextPath.Substring(0, decodedRequestContextPath.Length - requestFeatures.Path.Length);
+                    path = apiGatewayRequest.Path;
                 }
-            }
 
-
-            // API Gateway delivers the query string in a dictionary but must be reconstructed into the full query string
-            // before passing into ASP.NET Core framework.
-            var queryStringParameters = apiGatewayRequest.QueryStringParameters;
-            if (queryStringParameters != null)
-            {
-                StringBuilder sb = new StringBuilder("?");
-                foreach (var kvp in queryStringParameters)
+                if (!path.StartsWith("/"))
                 {
-                    if (sb.Length > 1)
+                    path = "/" + path;
+                }
+
+                requestFeatures.Path = WebUtility.UrlDecode(path);
+
+                requestFeatures.PathBase = string.Empty;
+                if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Path))
+                {
+                    // This is to cover the case where the request coming in is https://myapigatewayid.execute-api.us-west-2.amazonaws.com/Prod where
+                    // Prod is the stage name and there is no ending '/'. Path will be set to '/' so to make sure we detect the correct base path
+                    // append '/' on the end to make the later EndsWith and substring work correctly.
+                    var decodedRequestContextPath = WebUtility.UrlDecode(apiGatewayRequest.RequestContext.Path);
+                    if (path.EndsWith("/") && !decodedRequestContextPath.EndsWith("/"))
                     {
-                        sb.Append("&");
+                        decodedRequestContextPath += "/";
                     }
-                    sb.Append($"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(kvp.Value.ToString())}");
+
+                    if (decodedRequestContextPath.EndsWith(path))
+                    {
+                        requestFeatures.PathBase = decodedRequestContextPath.Substring(0, decodedRequestContextPath.Length - requestFeatures.Path.Length);
+                    }
                 }
-                requestFeatures.QueryString = sb.ToString();
-            }
-            else
-            {
-                requestFeatures.QueryString = string.Empty;
-            }
 
-            var headers = apiGatewayRequest.Headers;
-            if (headers != null)
-            {
-                foreach (var kvp in headers)
+
+                // API Gateway delivers the query string in a dictionary but must be reconstructed into the full query string
+                // before passing into ASP.NET Core framework.
+                var queryStringParameters = apiGatewayRequest.QueryStringParameters;
+                if (queryStringParameters != null)
                 {
-                    requestFeatures.Headers[kvp.Key] = kvp.Value?.ToString();
-                }
-            }
-
-            if (!requestFeatures.Headers.ContainsKey("Host"))
-            {
-                var apiId = apiGatewayRequest.RequestContext?.ApiId ?? "";
-                var stage = apiGatewayRequest.RequestContext?.Stage ?? "";
-
-                requestFeatures.Headers["Host"] = $"apigateway-{apiId}-{stage}";
-            }
-
-            if (!string.IsNullOrEmpty(apiGatewayRequest.Body))
-            {
-                Byte[] binaryBody;
-                if (apiGatewayRequest.IsBase64Encoded)
-                {
-                    binaryBody = Convert.FromBase64String(apiGatewayRequest.Body);
+                    StringBuilder sb = new StringBuilder("?");
+                    foreach (var kvp in queryStringParameters)
+                    {
+                        if (sb.Length > 1)
+                        {
+                            sb.Append("&");
+                        }
+                        sb.Append($"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(kvp.Value.ToString())}");
+                    }
+                    requestFeatures.QueryString = sb.ToString();
                 }
                 else
                 {
-                    binaryBody = UTF8Encoding.UTF8.GetBytes(apiGatewayRequest.Body);
+                    requestFeatures.QueryString = string.Empty;
                 }
-                requestFeatures.Body = new MemoryStream(binaryBody);
+
+                var headers = apiGatewayRequest.Headers;
+                if (headers != null)
+                {
+                    foreach (var kvp in headers)
+                    {
+                        requestFeatures.Headers[kvp.Key] = kvp.Value?.ToString();
+                    }
+                }
+
+                if (!requestFeatures.Headers.ContainsKey("Host"))
+                {
+                    var apiId = apiGatewayRequest.RequestContext?.ApiId ?? "";
+                    var stage = apiGatewayRequest.RequestContext?.Stage ?? "";
+
+                    requestFeatures.Headers["Host"] = $"apigateway-{apiId}-{stage}";
+                }
+
+
+                if (!string.IsNullOrEmpty(apiGatewayRequest.Body))
+                {
+                    Byte[] binaryBody;
+                    if (apiGatewayRequest.IsBase64Encoded)
+                    {
+                        binaryBody = Convert.FromBase64String(apiGatewayRequest.Body);
+                    }
+                    else
+                    {
+                        binaryBody = UTF8Encoding.UTF8.GetBytes(apiGatewayRequest.Body);
+                    }
+                    requestFeatures.Body = new MemoryStream(binaryBody);
+                }
+
+                // Call consumers customize method in case they want to change how API Gateway's request
+                // was marshalled into ASP.NET Core request.
+                PostMarshallRequestFeature(requestFeatures, apiGatewayRequest);
             }
 
-            // set up connection features
-            var connectionFeatures = (IHttpConnectionFeature)features;
 
-            IPAddress remoteIpAddress;
-            if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Identity?.SourceIp) &&
-                IPAddress.TryParse(apiGatewayRequest.RequestContext.Identity.SourceIp, out remoteIpAddress))
             {
-                connectionFeatures.RemoteIpAddress = remoteIpAddress;
+                // set up connection features
+                var connectionFeatures = (IHttpConnectionFeature)features;
+
+                IPAddress remoteIpAddress;
+                if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Identity?.SourceIp) &&
+                    IPAddress.TryParse(apiGatewayRequest.RequestContext.Identity.SourceIp, out remoteIpAddress))
+                {
+                    connectionFeatures.RemoteIpAddress = remoteIpAddress;
+                }
+
+                if (apiGatewayRequest?.Headers?.ContainsKey("X-Forwarded-Port") == true)
+                {
+                    connectionFeatures.RemotePort = int.Parse(apiGatewayRequest.Headers["X-Forwarded-Port"]);
+                }
+
+                // Call consumers customize method in case they want to change how API Gateway's request
+                // was marshalled into ASP.NET Core request.
+                PostMarshallConnectionFeature(connectionFeatures, apiGatewayRequest);
             }
 
-            if (apiGatewayRequest?.Headers?.ContainsKey("X-Forwarded-Port") == true)
-            {
-                connectionFeatures.RemotePort = int.Parse(apiGatewayRequest.Headers["X-Forwarded-Port"]);
-            }
         }
 
         /// <summary>
@@ -528,6 +579,8 @@ namespace Amazon.Lambda.AspNetCoreServer
                     }
                 }
             }
+
+            PostMarshallResponseFeature(responseFeatures, response);
 
             return response;
         }
