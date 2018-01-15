@@ -1,3 +1,30 @@
+### Release 2018-01-15 22:00
+* **Amazon.Lambda.Tools (2.0.0)**
+  * Added support for **.NET Core 2.0** runtime in AWS Lambda.
+  * Add Validation if project is using a newer version of **Microsoft.AspNetCore.All** than is currently available in Lambda.
+  * Ignore, with warning, passed-in template parameters that are not declared in serverless.template.
+  * Fixed issue with **--function-publish** switch not working during function update.
+* **Amazon.Lambda.APIGatewayEvents (1.1.1)**
+  * Deserialize incoming claims and custom authorizer properties to **APIGatewayCustomAuthorizerContext**
+  * Add missing **Path** property on **ProxyRequestContext**
+* **Amazon.Lambda.AspNetCoreServer (2.0.0)**
+  * Updated target framework to **.NET Standard 2.0** and **ASP.NET Core 2.0**
+  * If Cognito claims are found on an incoming API Gateway request create a **ClaimsPrincipal** with the claims for the **HttpContext.User**.
+  * Added virtual methods **PostMarshallRequestFeature**, **PostMarshallConnectionFeature**, **PostMarshallResponseFeature** and **PostCreateContext** 
+to allow derived classes a chance to alter how requests and responses are marshalled. 
+  * Mimic **WebHost.CreateDefaultBuilder** when creating the IWebHostBuilder and replace Kestrel registration with API Gateway. 
+  * When not in development switch out the Console logger with **Amazon.Lambda.Logger.AspNetCore** to make sure
+application logging goes to the associated CloudWatch Logs without ANSI Console colors syntax.
+  * Fixed issue with not setting PathBase when marshalling request.
+  * Updated implementation of **Microsoft.AspNetCore.Hosting.Server.IServer** to match ASP.NET Core 2.0 declaration.
+* **Amazon.Lambda.Logging.AspNetCore (2.0.0)**  
+  * Updated target framework to **.NET Standard 2.0** and **ASP.NET Core 2.0**.
+  * Added registration extension methods to **Microsoft.Extensions.Logging.ILoggingBuilder**.
+* **Blueprints**
+    * New blueprint for an ASP.NET Core Web Application with Razor Pages.
+    *  **Amazon.Lambda.Templates (2.0.0)** released with latest .NET Core 2.0 blueprints.
+
+
 ### Release 2017-12-23 07:30
 * **Amazon.Lambda.S3Events (1.0.2)**
     * Updated to use latest AWSSDK.S3 to fix issue with comparing EventName property to the SDK EventType constants.
@@ -24,7 +51,7 @@
     * Add slot details and request attributes to LexEvent.
 * **Blueprints**
     * Update dependency reference for **Amazon.Lambda.LexEvents**
-    *  **Amazon.Lambda.Templates (1.4.3)** released with latest blueprints.
+    * **Amazon.Lambda.Templates (1.4.3)** released with latest blueprints.
 
 ### Release 2017-12-12 00:30
 * **Amazon.Lambda.LexEvents (1.0.1)**
