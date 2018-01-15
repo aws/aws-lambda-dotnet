@@ -15,6 +15,8 @@ using System.IO;
 using ThirdParty.Json.LitJson;
 using System.Text;
 
+using Newtonsoft.Json.Linq;
+
 namespace Amazon.Lambda.Tools.Commands
 {
     /// <summary>
@@ -237,7 +239,8 @@ namespace Amazon.Lambda.Tools.Commands
                 CreateChangeSetResponse changeSetResponse;
                 try
                 {
-                    var templateParameters = GetTemplateParameters(changeSetType == ChangeSetType.UPDATE ? existingStack : null);
+                    var definedParameters = GetTemplateDefinedParameters(templateBody);
+                    var templateParameters = GetTemplateParameters(changeSetType == ChangeSetType.UPDATE ? existingStack : null, definedParameters);
                     if (templateParameters?.Count > 0)
                     {
                         var setParameters = templateParameters.Where(x => !x.UsePreviousValue);
@@ -364,6 +367,35 @@ namespace Amazon.Lambda.Tools.Commands
                 this.Logger.WriteLine($"Unknown error executing AWS Serverless deployment: {e.Message}");
                 this.Logger.WriteLine(e.StackTrace);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// If the template is a JSON document get the list of parameters to make sure the passed in parameters are valid for the template.
+        /// </summary>
+        /// <param name="templateBody"></param>
+        /// <returns></returns>
+        private HashSet<string> GetTemplateDefinedParameters(string templateBody)
+        {
+            try
+            {
+                var root = Newtonsoft.Json.JsonConvert.DeserializeObject(templateBody) as JObject;
+                var parameters = root["Parameters"] as JObject;
+
+                var set = new HashSet<string>();
+                if (parameters != null)
+                {
+                    foreach (var property in parameters.Properties())
+                    {
+                        set.Add(property.Name);
+                    }
+                }
+
+                return set;
+            }
+            catch
+            {
+                return null;
             }
         }
 
@@ -557,7 +589,7 @@ namespace Amazon.Lambda.Tools.Commands
         }
 
 
-        private List<Parameter> GetTemplateParameters(Stack stack)
+        private List<Parameter> GetTemplateParameters(Stack stack, HashSet<string> definedParameters)
         {
             var parameters = new List<Parameter>();
 
@@ -566,7 +598,14 @@ namespace Amazon.Lambda.Tools.Commands
             {
                 foreach (var kvp in map)
                 {
-                    parameters.Add(new Parameter { ParameterKey = kvp.Key, ParameterValue = kvp.Value ?? "" });
+                    if (definedParameters != null && !definedParameters.Contains(kvp.Key))
+                    {
+                        this.Logger.WriteLine($"Skipping passed in template parameter {kvp.Key} because the template does not define that parameter");
+                    }
+                    else
+                    {
+                        parameters.Add(new Parameter { ParameterKey = kvp.Key, ParameterValue = kvp.Value ?? "" });
+                    }
                 }
             }
 

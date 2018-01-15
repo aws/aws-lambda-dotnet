@@ -186,12 +186,15 @@ namespace Amazon.Lambda.Tools.Test
                 var assembly = this.GetType().GetTypeInfo().Assembly;
 
                 var fullPath = Path.GetFullPath(Path.GetDirectoryName(assembly.Location) + "../../../../../TemplateSubstitutionTestProjects/StateMachineDefinitionStringTest");
-                var command = new DeployServerlessCommand(new ConsoleToolLogger(), fullPath, new string[0]);
+                var command = new DeployServerlessCommand(new TestToolLogger(), fullPath, new string[0]);
                 command.Configuration = "Release";
                 command.TargetFramework = "netcoreapp1.0";
                 command.StackName = "DeployStepFunctionWithTemplateSubstitution-" + DateTime.Now.Ticks;
                 command.S3Bucket = bucketName;
                 command.WaitForStackToComplete = true;
+
+                command.TemplateParameters = new Dictionary<string, string> { { "NonExisting", "Parameter" } };
+
                 var created = await command.ExecuteAsync();
                 try
                 {

@@ -3,6 +3,13 @@
   "Transform" : "AWS::Serverless-2016-10-31",
   "Description" : "An AWS Serverless Application.",
 
+  "Parameters" : {
+	"StubParameter" : {
+	    "Type" : "String",
+        "Default" : "Foo"
+	}
+  },
+
   "Resources" : {
 
 
