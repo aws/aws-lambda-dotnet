@@ -1,3 +1,9 @@
+### Release 2018-01-16 08:00
+* **Amazon.Lambda.Tools (2.0.1)**
+  * Fixed issue with .NET Core 2.0 version requiring .NET Core 1.0 runtime being installed
+* **Blueprints**
+    *  **Amazon.Lambda.Templates (2.0.1)** released with Amazon.Lambda.Tools reference bumped to 2.0.1 in blueprints.
+
 ### Release 2018-01-15 22:00
 * **Amazon.Lambda.Tools (2.0.0)**
   * Added support for **.NET Core 2.0** runtime in AWS Lambda.
