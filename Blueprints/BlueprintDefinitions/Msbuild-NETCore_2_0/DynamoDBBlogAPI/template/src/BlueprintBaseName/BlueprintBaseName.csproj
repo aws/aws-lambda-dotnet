@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.0.0" />
+    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.0.1" />
   </ItemGroup>
 
 </Project>
