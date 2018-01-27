@@ -192,6 +192,15 @@ namespace Amazon.Lambda.Tools.Options
                 ValueType = CommandOption.CommandOptionValueType.StringValue,
                 Description = "Target ARN of an SNS topic or SQS Queue for the Dead Letter Queue"
             };
+        public static readonly CommandOption ARGUMENT_TRACING_MODE =
+            new CommandOption
+            {
+                Name = "Tracing Mode",
+                ShortSwitch = "-tm",
+                Switch = "--tracing-mode",
+                ValueType = CommandOption.CommandOptionValueType.StringValue,
+                Description = "Configures when AWS X-Ray should trace the function. Valid values: PassThrough or Active"
+            };
         public static readonly CommandOption ARGUMENT_ENVIRONMENT_VARIABLES =
             new CommandOption
             {

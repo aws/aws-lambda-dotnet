@@ -53,6 +53,7 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS,
             DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS,
             DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN,
+            DefinedCommandOptions.ARGUMENT_TRACING_MODE,
             DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES,
             DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN,
             DefinedCommandOptions.ARGUMENT_APPLY_DEFAULTS_FOR_UPDATE,
@@ -200,6 +201,12 @@ namespace Amazon.Lambda.Tools.Commands
                             createRequest.DeadLetterConfig = new DeadLetterConfig {TargetArn = deadLetterQueue };
                         }
 
+                        var tracingMode = this.GetStringValueOrDefault(this.TracingMode, DefinedCommandOptions.ARGUMENT_TRACING_MODE, false);
+                        if(!string.IsNullOrEmpty(tracingMode))
+                        {
+                            createRequest.TracingConfig = new TracingConfig { Mode = tracingMode };
+                        }
+
                         if (s3Bucket != null)
                         {
                             createRequest.Code = new FunctionCode
@@ -335,6 +342,7 @@ namespace Amazon.Lambda.Tools.Commands
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS.ConfigFileKey, LambdaToolsDefaults.FormatCommaDelimitedList(this.GetStringValuesOrDefault(this.SecurityGroupIds, DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS, false)));
 
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN.ConfigFileKey, this.GetStringValueOrDefault(this.DeadLetterTargetArn, DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_TRACING_MODE.ConfigFileKey, this.GetStringValueOrDefault(this.TracingMode, DefinedCommandOptions.ARGUMENT_TRACING_MODE, false));
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES.ConfigFileKey, LambdaToolsDefaults.FormatKeyValue(this.GetKeyValuePairOrDefault(this.EnvironmentVariables, DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES, false)));
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN.ConfigFileKey, this.GetStringValueOrDefault(this.KMSKeyArn, DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN, false));
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_S3_BUCKET.ConfigFileKey, this.GetStringValueOrDefault(this.S3Bucket, DefinedCommandOptions.ARGUMENT_S3_BUCKET, false));

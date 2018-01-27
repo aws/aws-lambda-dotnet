@@ -302,6 +302,16 @@ namespace Amazon.Lambda.Tools
             get { return GetValue(DefinedCommandOptions.ARGUMENT_FRAMEWORK)?.ToString(); }
         }
 
+        public string DeadLetterTargetArn
+        {
+            get { return GetValue(DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN)?.ToString(); }
+        }
+
+        public string TracingMode
+        {
+            get { return GetValue(DefinedCommandOptions.ARGUMENT_TRACING_MODE)?.ToString(); }
+        }
+
         public static string FormatCommaDelimitedList(string[] values)
         {
             if (values == null)

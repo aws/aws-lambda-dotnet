@@ -40,6 +40,7 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS,
             DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS,
             DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN,
+            DefinedCommandOptions.ARGUMENT_TRACING_MODE,
             DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES,
             DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN, 
             DefinedCommandOptions.ARGUMENT_APPLY_DEFAULTS_FOR_UPDATE
@@ -58,6 +59,7 @@ namespace Amazon.Lambda.Tools.Commands
         public Dictionary<string, string> EnvironmentVariables { get; set; }
         public string KMSKeyArn { get; set; }
         public string DeadLetterTargetArn { get; set; }
+        public string TracingMode { get; set; }
         public bool? ApplyDefaultsForUpdate { get; set; }
 
         public UpdateFunctionConfigCommand(IToolLogger logger, string workingDirectory, string[] args)
@@ -107,6 +109,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.SecurityGroupIds = tuple.Item2.StringValues;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN.Switch)) != null)
                 this.DeadLetterTargetArn = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_TRACING_MODE.Switch)) != null)
+                this.TracingMode = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_ENVIRONMENT_VARIABLES.Switch)) != null)
                 this.EnvironmentVariables = tuple.Item2.KeyValuePairs;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN.Switch)) != null)
@@ -330,6 +334,17 @@ namespace Amazon.Lambda.Tools.Commands
                 }
             }
 
+            var tracingMode = applyDefaultsFile ? this.GetStringValueOrDefault(this.TracingMode, DefinedCommandOptions.ARGUMENT_TRACING_MODE, false) : this.TracingMode;
+            if (tracingMode != null)
+            {
+                var eTraceMode = Amazon.Lambda.TracingMode.FindValue(tracingMode);
+                if (eTraceMode != existingConfiguration.TracingConfig?.Mode)
+                {
+                    request.TracingConfig = new TracingConfig();
+                    request.TracingConfig.Mode = eTraceMode;
+                    different = true;
+                }
+            }
 
             var kmsKeyArn = applyDefaultsFile ? this.GetStringValueOrDefault(this.KMSKeyArn, DefinedCommandOptions.ARGUMENT_KMS_KEY_ARN, false) : this.KMSKeyArn;
             if (!string.IsNullOrEmpty(kmsKeyArn) && !string.Equals(kmsKeyArn, existingConfiguration.KMSKeyArn, StringComparison.Ordinal))
