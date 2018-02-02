@@ -33,7 +33,9 @@ namespace Amazon.Lambda.Tools
         {
             try
             {
-                if(args.Length == 0)
+                PrintToolTitle();
+
+                if (args.Length == 0)
                 {
                     PrintUsage();
                     Environment.Exit(-1);
@@ -78,8 +80,6 @@ namespace Amazon.Lambda.Tools
                     case "--help":
                     case "--h":
                     case "help":
-                        PrintUsageHeader();
-
                         if (args.Length > 1)
                             PrintUsage(args[1]);
                         else
@@ -115,7 +115,7 @@ namespace Amazon.Lambda.Tools
             }
         }
 
-        private static void PrintUsageHeader()
+        private static void PrintToolTitle()
         {
             var sb = new StringBuilder("AWS Lambda Tools for .NET Core functions");
             var version = Version;
