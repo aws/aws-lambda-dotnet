@@ -37,6 +37,7 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_FUNCTION_ROLE,
             DefinedCommandOptions.ARGUMENT_FUNCTION_TIMEOUT,
             DefinedCommandOptions.ARGUMENT_FUNCTION_RUNTIME,
+            DefinedCommandOptions.ARGUMENT_FUNCTION_TAGS,
             DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS,
             DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS,
             DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN,
@@ -57,6 +58,7 @@ namespace Amazon.Lambda.Tools.Commands
         public string[] SecurityGroupIds { get; set; }
         public Runtime Runtime { get; set; }
         public Dictionary<string, string> EnvironmentVariables { get; set; }
+        public Dictionary<string, string> Tags { get; set; }
         public string KMSKeyArn { get; set; }
         public string DeadLetterTargetArn { get; set; }
         public string TracingMode { get; set; }
@@ -103,6 +105,8 @@ namespace Amazon.Lambda.Tools.Commands
                 this.Timeout = tuple.Item2.IntValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_FUNCTION_RUNTIME.Switch)) != null)
                 this.Runtime = tuple.Item2.StringValue;
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_FUNCTION_TAGS.Switch)) != null)
+                this.Tags = tuple.Item2.KeyValuePairs;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS.Switch)) != null)
                 this.SubnetIds = tuple.Item2.StringValues;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS.Switch)) != null)
@@ -131,6 +135,8 @@ namespace Amazon.Lambda.Tools.Commands
                     return false;
                 }
                 await UpdateConfigAsync(currentConfiguration);
+
+                await ApplyTags(currentConfiguration.FunctionArn);
 
                 var publish = this.GetBoolValueOrDefault(this.Publish, DefinedCommandOptions.ARGUMENT_FUNCTION_PUBLISH, false).GetValueOrDefault();
                 if (publish)
@@ -167,6 +173,29 @@ namespace Amazon.Lambda.Tools.Commands
             catch (Exception e)
             {
                 throw new LambdaToolsException($"Error publishing Lambda function: {e.Message}", LambdaToolsException.ErrorCode.LambdaPublishFunction, e);
+            }
+        }
+
+        protected async Task ApplyTags(string functionArn)
+        {
+            try
+            {
+                var tags = this.GetKeyValuePairOrDefault(this.Tags, DefinedCommandOptions.ARGUMENT_FUNCTION_TAGS, false);
+                if (tags == null || tags.Count == 0)
+                    return;
+
+                var tagRequest = new TagResourceRequest
+                {
+                    Resource = functionArn,
+                    Tags = tags
+                };
+
+                await this.LambdaClient.TagResourceAsync(tagRequest);
+                this.Logger?.WriteLine($"Applying {tags.Count} tag(s) to function");
+            }
+            catch (Exception e)
+            {
+                throw new LambdaToolsException($"Error tagging Lambda function: {e.Message}", LambdaToolsException.ErrorCode.LambdaTaggingFunction, e);
             }
         }
 

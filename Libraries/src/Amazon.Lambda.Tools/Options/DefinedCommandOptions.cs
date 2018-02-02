@@ -210,6 +210,14 @@ namespace Amazon.Lambda.Tools.Options
                 ValueType = CommandOption.CommandOptionValueType.KeyValuePairs,
                 Description = "Environment variables set for the function. Format is <key1>=<value1>;<key2>=<value2>"
             };
+        public static readonly CommandOption ARGUMENT_FUNCTION_TAGS =
+            new CommandOption
+            {
+                Name = "Function Tags",
+                Switch = "--tags",
+                ValueType = CommandOption.CommandOptionValueType.KeyValuePairs,
+                Description = "Tags applied to the function. Format is <name1>=<value1>;<name2>=<value2>"
+            };
         public static readonly CommandOption ARGUMENT_KMS_KEY_ARN =
             new CommandOption
             {

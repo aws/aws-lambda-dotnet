@@ -50,6 +50,7 @@ namespace Amazon.Lambda.Tools.Commands
             DefinedCommandOptions.ARGUMENT_FUNCTION_ROLE,
             DefinedCommandOptions.ARGUMENT_FUNCTION_TIMEOUT,
             DefinedCommandOptions.ARGUMENT_FUNCTION_RUNTIME,
+            DefinedCommandOptions.ARGUMENT_FUNCTION_TAGS,
             DefinedCommandOptions.ARGUMENT_FUNCTION_SUBNETS,
             DefinedCommandOptions.ARGUMENT_FUNCTION_SECURITY_GROUPS,
             DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN,
@@ -195,6 +196,12 @@ namespace Amazon.Lambda.Tools.Commands
 
                         }
 
+                        var tags = this.GetKeyValuePairOrDefault(this.Tags, DefinedCommandOptions.ARGUMENT_FUNCTION_TAGS, false);
+                        if(tags != null && tags.Count > 0)
+                        {
+                            createRequest.Tags = tags;
+                        }
+
                         var deadLetterQueue = this.GetStringValueOrDefault(this.DeadLetterTargetArn, DefinedCommandOptions.ARGUMENT_DEADLETTER_TARGET_ARN, false);
                         if(!string.IsNullOrEmpty(deadLetterQueue))
                         {
@@ -264,6 +271,8 @@ namespace Amazon.Lambda.Tools.Commands
 
                         await base.UpdateConfigAsync(currentConfiguration);
 
+                        await base.ApplyTags(currentConfiguration.FunctionArn);
+
                         var publish = this.GetBoolValueOrDefault(this.Publish, DefinedCommandOptions.ARGUMENT_FUNCTION_PUBLISH, false).GetValueOrDefault();
                         if(publish)
                         {
@@ -331,6 +340,7 @@ namespace Amazon.Lambda.Tools.Commands
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FRAMEWORK.ConfigFileKey, this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, false));
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_NAME.ConfigFileKey, this.GetStringValueOrDefault(this.FunctionName, DefinedCommandOptions.ARGUMENT_FUNCTION_NAME, false));
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_DESCRIPTION.ConfigFileKey, this.GetStringValueOrDefault(this.Description, DefinedCommandOptions.ARGUMENT_FUNCTION_DESCRIPTION, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_TAGS.ConfigFileKey, LambdaToolsDefaults.FormatKeyValue(this.GetKeyValuePairOrDefault(this.Tags, DefinedCommandOptions.ARGUMENT_FUNCTION_TAGS, false)));
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_PUBLISH.ConfigFileKey, this.GetBoolValueOrDefault(this.Publish, DefinedCommandOptions.ARGUMENT_FUNCTION_PUBLISH, false));
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_HANDLER.ConfigFileKey, this.GetStringValueOrDefault(this.Handler, DefinedCommandOptions.ARGUMENT_FUNCTION_HANDLER, false));
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FUNCTION_MEMORY_SIZE.ConfigFileKey, this.GetIntValueOrDefault(this.MemorySize, DefinedCommandOptions.ARGUMENT_FUNCTION_MEMORY_SIZE, false));

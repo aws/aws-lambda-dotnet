@@ -52,6 +52,7 @@ namespace Amazon.Lambda.Tools
             LambdaUpdateFunctionCode,
             LambdaUpdateFunctionConfiguration,
             LambdaPublishFunction,
+            LambdaTaggingFunction,
 
             S3GetBucketLocation,
             S3UploadError,
