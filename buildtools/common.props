@@ -11,7 +11,7 @@
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 	
-    <PackageIconUrl>http://media.amazonwebservices.com/aws_singlebox_01.png</PackageIconUrl>
+    <PackageIconUrl>https://sdk-for-net.amazonwebservices.com/images/AWSLogo128x128.png</PackageIconUrl>
     <PackageProjectUrl>https://aws.amazon.com/lambda/</PackageProjectUrl>
     <PackageLicenseUrl>http://aws.amazon.com/apache2.0/</PackageLicenseUrl>
 

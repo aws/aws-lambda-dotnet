@@ -9,6 +9,7 @@
     <language>en-US</language>
     <projectUrl>https://github.com/aws/aws-lambda-dotnet</projectUrl>
     <licenseUrl>https://aws.amazon.com/apache-2-0/</licenseUrl>
+    <iconUrl>https://sdk-for-net.amazonwebservices.com/images/AWSLogo128x128.png</iconUrl>
     <packageTypes>
       <packageType name="Template" />
     </packageTypes>
