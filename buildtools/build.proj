@@ -97,9 +97,6 @@
       WorkingDirectory="..\Blueprints\BlueprintPackager"/>
 
     <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages"
-      WorkingDirectory="../Blueprints/BlueprintDefinitions/Msbuild-NETCore_1_0"/>
-
-    <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages"
       WorkingDirectory="../Blueprints/BlueprintDefinitions/Msbuild-NETCore_2_0"/>
   </Target>
 
