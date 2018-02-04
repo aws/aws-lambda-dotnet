@@ -55,5 +55,10 @@ namespace Amazon.Lambda.Tools.Options
 
             return new Tuple<CommandOption, CommandOptionValue>(option, _values[option]);
         }
+
+        /// <summary>
+        /// MSBuild parameters that will be passed to the 'dotnet publish' command
+        /// </summary>
+        public string MSBuildParameters { get; set; }
     }
 }

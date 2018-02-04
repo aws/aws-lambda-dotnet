@@ -32,7 +32,7 @@ namespace Amazon.Lambda.Tools
         /// <param name="targetFramework"></param>
         /// <param name="configuration"></param>
         /// <param name="deploymentTargetPackageStoreManifestContent"></param>
-        public int Publish(LambdaToolsDefaults defaults, string projectLocation, string outputLocation, string targetFramework, string configuration, string deploymentTargetPackageStoreManifestContent)
+        public int Publish(LambdaToolsDefaults defaults, string projectLocation, string outputLocation, string targetFramework, string configuration, string msbuildParameters, string deploymentTargetPackageStoreManifestContent)
         {
             if (Directory.Exists(outputLocation))
             {
@@ -79,6 +79,11 @@ namespace Amazon.Lambda.Tools
             if (!string.IsNullOrEmpty(targetFramework))
             {
                 arguments.Append($" --framework \"{targetFramework}\"");
+            }
+
+            if (!string.IsNullOrEmpty(msbuildParameters))
+            {
+                arguments.Append($" {msbuildParameters}");
             }
 
             string manifestPath = null;

@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Xunit;
 
 using Amazon.CloudFormation.Model;
+using Amazon.Lambda.Tools.Commands;
+using Amazon.Lambda.Tools.Options;
 
 namespace Amazon.Lambda.Tools.Test
 {
@@ -70,6 +72,20 @@ namespace Amazon.Lambda.Tools.Test
         public void ParseErrors()
         {
             Assert.Throws(typeof(LambdaToolsException), () => Utilities.ParseKeyValueOption("=aaa"));
+        }
+
+        [Fact]
+        public void ParseMSBuildParameters()
+        {
+            var values = CommandLineParser.ParseArguments(DeployFunctionCommand.DeployCommandOptions,
+                new[] {"myfunc", "--region", "us-west-2", "/p:Foo=bar;Version=1.2.3"});
+            
+            Assert.Equal("myfunc", values.Arguments[0]);
+            Assert.Equal("/p:Foo=bar;Version=1.2.3", values.MSBuildParameters);
+
+            var param = values.FindCommandOption("--region");
+            Assert.NotNull(param);
+            Assert.Equal("us-west-2", param.Item2.StringValue);
         }
     }
 }

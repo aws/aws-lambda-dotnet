@@ -38,6 +38,7 @@ namespace Amazon.Lambda.Tools.Commands
         {
             DefinedCommandOptions.ARGUMENT_CONFIGURATION,
             DefinedCommandOptions.ARGUMENT_FRAMEWORK,
+            DefinedCommandOptions.ARGUMENT_MSBUILD_PARAMETERS,
             DefinedCommandOptions.ARGUMENT_PACKAGE,
             DefinedCommandOptions.ARGUMENT_S3_BUCKET,
             DefinedCommandOptions.ARGUMENT_S3_PREFIX,
@@ -55,6 +56,7 @@ namespace Amazon.Lambda.Tools.Commands
         public string Configuration { get; set; }
         public string TargetFramework { get; set; }
         public string Package { get; set; }
+        public string MSBuildParameters { get; set; }
 
         public string S3Bucket { get; set; }
         public string S3Prefix { get; set; }
@@ -111,6 +113,17 @@ namespace Amazon.Lambda.Tools.Commands
                 this.CloudFormationRole = tuple.Item2.StringValue;
             if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK.Switch)) != null)
                 this.DisableVersionCheck = tuple.Item2.BoolValue;
+
+            if ((tuple = values.FindCommandOption(DefinedCommandOptions.ARGUMENT_MSBUILD_PARAMETERS.Switch)) != null)
+                this.MSBuildParameters = tuple.Item2.StringValue;
+
+            if (!string.IsNullOrEmpty(values.MSBuildParameters))
+            {
+                if (this.MSBuildParameters == null)
+                    this.MSBuildParameters = values.MSBuildParameters;
+                else
+                    this.MSBuildParameters += " " + values.MSBuildParameters;
+            }
         }
 
 
@@ -148,9 +161,10 @@ namespace Amazon.Lambda.Tools.Commands
                 {
                     string configuration = this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, true);
                     string targetFramework = this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, true);
+                    string msbuildParameters = this.GetStringValueOrDefault(this.MSBuildParameters, DefinedCommandOptions.ARGUMENT_MSBUILD_PARAMETERS, false);
                     bool disableVersionCheck = this.GetBoolValueOrDefault(this.DisableVersionCheck, DefinedCommandOptions.ARGUMENT_DISABLE_VERSION_CHECK, false).GetValueOrDefault();
 
-                    LambdaPackager.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, disableVersionCheck, out publishLocation, ref zipArchivePath);
+                    LambdaPackager.CreateApplicationBundle(this.DefaultConfig, this.Logger, this.WorkingDirectory, projectLocation, configuration, targetFramework, msbuildParameters, disableVersionCheck, out publishLocation, ref zipArchivePath);
                     if (string.IsNullOrEmpty(zipArchivePath))
                         return false;
                 }
@@ -645,6 +659,7 @@ namespace Amazon.Lambda.Tools.Commands
 
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_CONFIGURATION.ConfigFileKey, this.GetStringValueOrDefault(this.Configuration, DefinedCommandOptions.ARGUMENT_CONFIGURATION, false));
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_FRAMEWORK.ConfigFileKey, this.GetStringValueOrDefault(this.TargetFramework, DefinedCommandOptions.ARGUMENT_FRAMEWORK, false));
+                data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_MSBUILD_PARAMETERS.ConfigFileKey, this.GetStringValueOrDefault(this.MSBuildParameters, DefinedCommandOptions.ARGUMENT_MSBUILD_PARAMETERS, false));
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_S3_BUCKET.ConfigFileKey, this.GetStringValueOrDefault(this.S3Bucket, DefinedCommandOptions.ARGUMENT_S3_BUCKET, false));
                 data.SetIfNotNull(DefinedCommandOptions.ARGUMENT_S3_PREFIX.ConfigFileKey, this.GetStringValueOrDefault(this.S3Prefix, DefinedCommandOptions.ARGUMENT_S3_PREFIX, false));
 

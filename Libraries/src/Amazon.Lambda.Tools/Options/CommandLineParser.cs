@@ -19,14 +19,9 @@ namespace Amazon.Lambda.Tools.Options
         {
             CommandOptions values = new CommandOptions();
 
-            for (int i = 0; i < arguments.Length; i++)
+            for (var i = 0; i < arguments.Length; i++)
             {
-                // Collect arguments that are not attached to a switch. This is currently always the function name.
-                if (!arguments[i].StartsWith("-"))
-                {
-                    values.Arguments.Add(arguments[i]);
-                }
-                else
+                if(arguments[i].StartsWith("-"))
                 {
                     var option = FindCommandOption(options, arguments[i]);
                     if (option != null)
@@ -69,6 +64,23 @@ namespace Amazon.Lambda.Tools.Options
 
                         values.AddOption(option, value);
                     }
+                }
+                // Arguments starting /p: are msbuild parameters that should be passed into the dotnet package command
+                else if (arguments[i].StartsWith("/p:"))
+                {
+                    if (string.IsNullOrEmpty(values.MSBuildParameters))
+                    {
+                        values.MSBuildParameters = arguments[i];
+                    }
+                    else
+                    {
+                        values.MSBuildParameters += " " + arguments[i];
+                    }
+                }
+                // Collect arguments that are not attached to a switch. This is currently always the function name.
+                else
+                {
+                    values.Arguments.Add(arguments[i]);
                 }
             }
 

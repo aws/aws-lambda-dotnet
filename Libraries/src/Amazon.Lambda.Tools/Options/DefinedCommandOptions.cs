@@ -73,7 +73,15 @@ namespace Amazon.Lambda.Tools.Options
                 ShortSwitch = "-f",
                 Switch = "--framework",
                 ValueType = CommandOption.CommandOptionValueType.StringValue,
-                Description = "Target framework to compile, for example netcoreapp1.0",
+                Description = "Target framework to compile, for example netcoreapp2.0",
+            };
+        public static readonly CommandOption ARGUMENT_MSBUILD_PARAMETERS =
+            new CommandOption
+            {
+                Name = "MSBuild Parameters",
+                Switch = "--msbuild-parameters",
+                ValueType = CommandOption.CommandOptionValueType.StringValue,
+                Description = "Additional msbuild parameters passed to the 'dotnet publish' command",
             };
         public static readonly CommandOption ARGUMENT_DISABLE_VERSION_CHECK =
             new CommandOption
