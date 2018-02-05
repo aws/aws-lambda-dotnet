@@ -1,3 +1,16 @@
+### Release 2018-02-05 18:00
+* **Amazon.Lambda.APIGatewayEvents (1.1.2)**
+  * **APIGatewayCustomAuthorizerRequest** updated to have the parameters for a [request](https://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html#api-gateway-custom-authorizer-types) type custom authorizer.
+  * **APIGatewayCustomAuthorizerContextOutput** Updated to support custom return fields.
+
+* **Amazon.Lambda.Tools (2.1.0)**
+  * Add new **tracing-mode** switch for AWS X-Ray support
+  * Add new **tags** switch to set tags on deployed functions
+  * Add new **msbuild-parameters** switch to pass in additional arguments to the **dotnet publish** command. 
+Also any arguments passed in on the commandline starting with **/p:** are assumed to be parameters to be passed to **dotnet publish**.
+For example `dotnet lambdda deploy-function TestFunc /p:Version=2.0.0`
+
+
 ### Release 2018-01-16 08:00
 * **Amazon.Lambda.Tools (2.0.1)**
   * Fixed issue with .NET Core 2.0 version requiring .NET Core 1.0 runtime being installed
