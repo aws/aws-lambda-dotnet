@@ -8,7 +8,7 @@
   * Add new **tags** switch to set tags on deployed functions
   * Add new **msbuild-parameters** switch to pass in additional arguments to the **dotnet publish** command. 
 Also any arguments passed in on the commandline starting with **/p:** are assumed to be parameters to be passed to **dotnet publish**.
-For example `dotnet lambdda deploy-function TestFunc /p:Version=2.0.0`
+For example `dotnet lambda deploy-function TestFunc /p:Version=2.0.0`
 
 
 ### Release 2018-01-16 08:00
