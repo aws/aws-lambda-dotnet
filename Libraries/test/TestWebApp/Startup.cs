@@ -58,6 +58,7 @@ namespace TestWebApp
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
+            app.UseMiddleware<Middleware>();
 
             app.UseMvc();
         }

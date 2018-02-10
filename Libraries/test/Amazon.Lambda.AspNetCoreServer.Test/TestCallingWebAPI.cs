@@ -22,12 +22,16 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetAllValues()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-get-all-apigatway-request.json");
+            var context = new TestLambdaContext();
+
+            var response = await this.InvokeAPIGatewayRequest(context, "values-get-all-apigatway-request.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
+
+            Assert.Contains("OnStarting Called", ((TestLambdaLogger)context.Logger).Buffer.ToString());
         }
 
         [Fact]
@@ -209,7 +213,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
         {
-            var context = new TestLambdaContext();
+            return await InvokeAPIGatewayRequest(new TestLambdaContext(), fileName);
+        }
+
+        private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(TestLambdaContext context, string fileName)
+        {
             var lambdaFunction = new LambdaFunction();
             var filePath = Path.Combine(Path.GetDirectoryName(this.GetType().GetTypeInfo().Assembly.Location), fileName);
             var requestStr = File.ReadAllText(filePath);

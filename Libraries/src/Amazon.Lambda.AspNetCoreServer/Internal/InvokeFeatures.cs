@@ -138,13 +138,60 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             set;
         } = new MemoryStream();
 
+        internal EventCallbacks ResponseStartingEvents { get; private set; }
         void IHttpResponseFeature.OnStarting(Func<object, Task> callback, object state)
         {
+            if (ResponseStartingEvents == null)
+                this.ResponseStartingEvents = new EventCallbacks();
+
+            this.ResponseStartingEvents.Add(callback, state);
         }
 
+        internal EventCallbacks ResponseCompletedEvents { get; private set; }
         void IHttpResponseFeature.OnCompleted(Func<object, Task> callback, object state)
         {
+            if (this.ResponseCompletedEvents == null)
+                this.ResponseCompletedEvents = new EventCallbacks();
+
+            this.ResponseCompletedEvents.Add(callback, state);
         }
+
+        internal class EventCallbacks
+        {
+            List<EventCallback> _callbacks = new List<EventCallback>();
+
+            internal void Add(Func<object, Task> callback, object state)
+            {
+                this._callbacks.Add(new EventCallback(callback, state));
+            }
+
+            internal async Task ExecuteAsync()
+            {
+                foreach(var callback in _callbacks)
+                {
+                    await callback.ExecuteAsync();
+                }
+            }
+
+            internal class EventCallback
+            {
+                internal EventCallback(Func<object, Task> callback, object state)
+                {
+                    this.Callback = callback;
+                    this.State = state;
+                }
+
+                Func<object, Task> Callback { get; }
+                object State { get; }
+
+                internal Task ExecuteAsync()
+                {
+                    var task = Callback(this.State);
+                    return task;
+                }
+            }
+        }
+
         #endregion
 
         #region IHttpConnectionFeature

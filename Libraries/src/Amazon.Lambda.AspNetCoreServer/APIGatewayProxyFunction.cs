@@ -301,11 +301,21 @@ namespace Amazon.Lambda.AspNetCoreServer
                 this._server.Application.DisposeContext(context, ex);
             }
 
+            if(features.ResponseStartingEvents != null)
+            {
+                await features.ResponseStartingEvents.ExecuteAsync();
+            }
             var response = this.MarshallResponse(features, lambdaContext, defaultStatusCode);
+
             lambdaContext.Logger.LogLine($"Response Base 64 Encoded: {response.IsBase64Encoded}");
 
             if (ex != null)
                 response.Headers.Add(new KeyValuePair<string, string>("ErrorType", ex.GetType().Name));
+
+            if (features.ResponseCompletedEvents != null)
+            {
+                await features.ResponseCompletedEvents.ExecuteAsync();
+            }
 
             return response;
         }
