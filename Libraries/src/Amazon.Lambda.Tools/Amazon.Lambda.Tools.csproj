@@ -12,7 +12,7 @@
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
     <PackageType>DotnetCliTool</PackageType>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <Version>2.1.0</Version>
+    <Version>2.1.1</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp1.0'">
@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.SecurityToken" Version="3.3.3.3" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
     <PackageReference Include="System.IO.Compression.ZipFile" Version="4.0.1" />
     <PackageReference Include="System.Runtime.Loader" Version="4.0.0" />
