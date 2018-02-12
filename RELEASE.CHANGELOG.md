@@ -1,3 +1,14 @@
+### Release 2018-02-12 21:00
+* **Amazon.Lambda.AspNetCoreServer (2.0.1)**
+  * Implemented the OnStarting and OnCompleted callbacks for an HttpResponse.
+  * Fixed marshalling issue with API Gateway request to ASP.NET Core request.
+
+* **Amazon.Lambda.Tools (2.1.1)**
+  * Add dependency to **AWSSDK.SecurityToken** to support profiles that use assume role features of Security Token Service.
+
+* **Blueprints**
+    *  **Amazon.Lambda.Templates (2.0.3)** released with updated NuGet dependencies for the blueprints.
+
 ### Release 2018-02-05 18:00
 * **Amazon.Lambda.APIGatewayEvents (1.1.2)**
   * **APIGatewayCustomAuthorizerRequest** updated to have the parameters for a [request](https://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html#api-gateway-custom-authorizer-types) type custom authorizer.
