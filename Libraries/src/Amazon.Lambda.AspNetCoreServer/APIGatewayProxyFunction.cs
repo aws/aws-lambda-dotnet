@@ -406,7 +406,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 requestFeatures.Method = apiGatewayRequest.HttpMethod;
 
                 string path = null;
-                if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy"))
+                if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy") && !string.IsNullOrEmpty(apiGatewayRequest.Resource))
                 {
                     var proxyPath = apiGatewayRequest.PathParameters["proxy"];
                     path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);

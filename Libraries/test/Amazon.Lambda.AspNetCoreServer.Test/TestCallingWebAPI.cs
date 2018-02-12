@@ -211,6 +211,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.NotEqual(200, response.StatusCode);
         }
 
+        // Covers the test case when using a custom proxy request, probbaly for testing, and doesn't specify the resource
+        [Fact]
+        public async Task TestMissingResourceInRequest()
+        {
+            var response = await this.InvokeAPIGatewayRequest("missing-resource-request.json");
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.True(response.Body.Length > 0);
+            Assert.Contains("application/json", response.Headers["Content-Type"]);
+        }
+
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
         {
             return await InvokeAPIGatewayRequest(new TestLambdaContext(), fileName);

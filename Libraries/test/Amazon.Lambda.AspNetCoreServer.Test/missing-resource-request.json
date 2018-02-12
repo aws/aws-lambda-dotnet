@@ -1,0 +1,9 @@
+﻿{
+  "headers": {
+    "Accept": "application/json",
+    "Host": "1234567890.execute-api.us-east-1.amazonaws.com"
+  },
+  "pathParameters": { "proxy": "/api/resourcepath" },
+  "httpMethod": "GET",
+  "path": "/api/resourcepath"
+}
