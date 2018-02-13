@@ -20,6 +20,10 @@
 
 **/project.lock.json
 
+**/.vscode
+**/.idea
+*.userprefs
+
 
 **/node_modules/
 **/TestGenerations/
