@@ -4,8 +4,8 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - Serialization.Json package.</Description>
-    <TargetFramework>netstandard1.3</TargetFramework>
-    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
+    <TargetFramework>netstandard1.6</TargetFramework>
+    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
     <AssemblyTitle>Amazon.Lambda.Serialization.Json</AssemblyTitle>
     <VersionPrefix>1.0.1</VersionPrefix>
     <AssemblyName>Amazon.Lambda.Serialization.Json</AssemblyName>
@@ -19,9 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Runtime" Version="4.1.0" />
-    <PackageReference Include="System.Reflection" Version="4.1.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="System.Runtime" Version="4.3.0" />
+    <PackageReference Include="System.Reflection" Version="4.3.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="FSharp.Core" Version="4.2.3" />
+    <PackageReference Include="Fable.JsonConverter" Version="1.0.7" />    
   </ItemGroup>
 
 </Project>

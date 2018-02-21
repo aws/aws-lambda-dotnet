@@ -7,14 +7,14 @@ namespace Amazon.Lambda.Serialization.Json
 {
     /// <summary>
     /// Custom ILambdaSerializer implementation which uses Newtonsoft.Json 10.0.3
-    /// for serialization.
+    /// for serialization + Fable.JsonConverter to handle F# types.
     /// 
     /// <para>
     /// If the environment variable LAMBDA_NET_SERIALIZER_DEBUG is set to true the JSON coming
     /// in from Lambda and being sent back to Lambda will be logged.
     /// </para>
     /// </summary>
-    public class JsonSerializer : ILambdaSerializer
+    public class FSharpJsonSerializer : ILambdaSerializer
     {
         private const string DEBUG_ENVIRONMENT_VARIABLE_NAME = "LAMBDA_NET_SERIALIZER_DEBUG";
         private Newtonsoft.Json.JsonSerializer serializer;
@@ -23,12 +23,13 @@ namespace Amazon.Lambda.Serialization.Json
         /// <summary>
         /// Constructs instance of serializer.
         /// </summary>
-        public JsonSerializer()
+        public FSharpJsonSerializer()
         {
 
             JsonSerializerSettings settings = new JsonSerializerSettings();
             settings.ContractResolver = new AwsResolver();
             serializer = Newtonsoft.Json.JsonSerializer.Create(settings);
+            serializer.Converters.Add(new Fable.JsonConverter());
 
             if (string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true", StringComparison.OrdinalIgnoreCase))
             {
@@ -65,7 +66,7 @@ namespace Amazon.Lambda.Serialization.Json
         }
 
         /// <summary>
-        /// Deserializes a stream to a particular type.
+        /// Deserialize a stream to a particular type.
         /// </summary>
         /// <typeparam name="T">Type of object to deserialize to.</typeparam>
         /// <param name="requestStream">Stream to serialize.</param>
