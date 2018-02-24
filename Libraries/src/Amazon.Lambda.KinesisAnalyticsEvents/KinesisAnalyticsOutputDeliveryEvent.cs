@@ -72,7 +72,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
                 /// Gets or sets the retry hint.
                 /// </summary>
                 /// <value>
-                /// The retry hint.
+                /// The retryHint is a value that increases for every delivery failure of the record.
                 /// </value>
                 [DataMember(Name = "retryHint")]
                 public long RetryHint { get; set; }

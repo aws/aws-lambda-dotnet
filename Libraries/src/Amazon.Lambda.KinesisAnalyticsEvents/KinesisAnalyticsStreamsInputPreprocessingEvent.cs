@@ -95,13 +95,23 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
                 public string PartitionKey { get; set; }
 
                 /// <summary>
-                /// Gets or sets the approximate arrival timestamp.
+                /// The approximate time the record was sent to Kinesis Steam.
                 /// </summary>
-                /// <value>
-                /// The approximate arrival timestamp.
-                /// </value>
+                [IgnoreDataMember]
+                public DateTime ApproximateArrivalTimestamp
+                {
+                    get
+                    {
+                        var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                        return epoch.AddMilliseconds(ApproximateArrivalEpoch);
+                    }
+                }
+
+                /// <summary>
+                /// The approximate time the record was sent to Kinesis stream in epoch.
+                /// </summary>
                 [DataMember(Name = "approximateArrivalTimestamp")]
-                public long ApproximateArrivalTimestamp { get; set; }
+                public long ApproximateArrivalEpoch { get; set; }
 
                 /// <summary>
                 /// Gets or sets the shard identifier.
