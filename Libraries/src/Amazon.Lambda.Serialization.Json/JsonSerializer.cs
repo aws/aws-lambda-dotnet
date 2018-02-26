@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Amazon.Lambda.Core;
 using Newtonsoft.Json;
 
@@ -29,6 +30,26 @@ namespace Amazon.Lambda.Serialization.Json
             JsonSerializerSettings settings = new JsonSerializerSettings();
             settings.ContractResolver = new AwsResolver();
             serializer = Newtonsoft.Json.JsonSerializer.Create(settings);
+
+            if (string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true", StringComparison.OrdinalIgnoreCase))
+            {
+                this.debug = true;
+            }
+        }
+
+                /// <summary>
+        /// Constructs instance of serializer.
+        /// </summary>
+        public JsonSerializer(IEnumerable<JsonConverter> converters)
+        {
+
+            JsonSerializerSettings settings = new JsonSerializerSettings();
+            settings.ContractResolver = new AwsResolver();
+            serializer = Newtonsoft.Json.JsonSerializer.Create(settings);
+            foreach (var c in converters)
+            {
+                serializer.Converters.Add(c);
+            }
 
             if (string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true", StringComparison.OrdinalIgnoreCase))
             {
