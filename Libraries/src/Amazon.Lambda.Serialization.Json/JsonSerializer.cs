@@ -26,7 +26,6 @@ namespace Amazon.Lambda.Serialization.Json
         /// </summary>
         public JsonSerializer()
         {
-
             JsonSerializerSettings settings = new JsonSerializerSettings();
             settings.ContractResolver = new AwsResolver();
             serializer = Newtonsoft.Json.JsonSerializer.Create(settings);
@@ -37,23 +36,18 @@ namespace Amazon.Lambda.Serialization.Json
             }
         }
 
-                /// <summary>
-        /// Constructs instance of serializer.
+        /// <summary>
+        /// Constructs instance of serializer using custom converters.
         /// </summary>
         public JsonSerializer(IEnumerable<JsonConverter> converters)
+                :this()
         {
-
-            JsonSerializerSettings settings = new JsonSerializerSettings();
-            settings.ContractResolver = new AwsResolver();
-            serializer = Newtonsoft.Json.JsonSerializer.Create(settings);
-            foreach (var c in converters)
+            if(converters != null)
             {
-                serializer.Converters.Add(c);
-            }
-
-            if (string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true", StringComparison.OrdinalIgnoreCase))
-            {
-                this.debug = true;
+                foreach (var c in converters)
+                {
+                    serializer.Converters.Add(c);
+                }
             }
         }
 
