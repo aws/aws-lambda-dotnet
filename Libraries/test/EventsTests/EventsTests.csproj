@@ -16,8 +16,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="kinesis-analytics-inputpreprocessing-event.json" />
+    <None Remove="kinesis-analytics-inputpreprocessing-response.json" />
+    <None Remove="kinesis-analytics-outputdelivery-event.json" />
+    <None Remove="kinesis-analytics-outputdelivery-response.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.CloudWatchLogsEvents\Amazon.Lambda.CloudWatchLogsEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.KinesisAnalyticsEvents\Amazon.Lambda.KinesisAnalyticsEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.KinesisFirehoseEvents\Amazon.Lambda.KinesisFirehoseEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.LexEvents\Amazon.Lambda.LexEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.csproj" />
