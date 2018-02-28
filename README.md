@@ -18,6 +18,7 @@ These are the packages and their README.md files:
 * [Amazon.Lambda.ConfigEvents](Libraries/src/Amazon.Lambda.ConfigEvents) - [README.md](Libraries/src/Amazon.Lambda.ConfigEvents/README.md)
 * [Amazon.Lambda.DynamoDBEvents](Libraries/src/Amazon.Lambda.DynamoDBEvents) - [README.md](Libraries/src/Amazon.Lambda.DynamoDBEvents/README.md)
 * [Amazon.Lambda.LexEvents](Libraries/src/Amazon.Lambda.LexEvents) - [README.md](Libraries/src/Amazon.Lambda.LexEvents/README.md)
+* [Amazon.Lambda.KinesisAnalyticsEvents](Libraries/src/Amazon.Lambda.KinesisAnalyticsEvents) - [README.md](Libraries/src/Amazon.Lambda.KinesisAnalyticsEvents/README.md)
 * [Amazon.Lambda.KinesisEvents](Libraries/src/Amazon.Lambda.KinesisEvents) - [README.md](Libraries/src/Amazon.Lambda.KinesisEvents/README.md)
 * [Amazon.Lambda.KinesisFirehoseEvents](Libraries/src/Amazon.Lambda.KinesisFirehoseEvents) - [README.md](Libraries/src/Amazon.Lambda.KinesisFirehoseEvents/README.md)
 * [Amazon.Lambda.S3Events](Libraries/src/Amazon.Lambda.S3Events) - [README.md](Libraries/src/Amazon.Lambda.S3Events/README.md)
