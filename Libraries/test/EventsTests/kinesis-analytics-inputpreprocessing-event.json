@@ -1,0 +1,11 @@
+﻿{
+  "invocationId": "00540a87-5050-496a-84e4-e7d92bbaf5e2",
+  "applicationArn": "arn:aws:kinesisanalytics:us-east-1:12345678911:application/lambda-test",
+  "streamArn": "arn:aws:kinesis:us-east-1:AAAAAAAAAAAA:stream/lambda-test",
+  "records": [
+    {
+      "recordId": "49572672223665514422805246926656954630972486059535892482",
+      "data": "aGVsbG8gd29ybGQ="
+    }
+  ]
+}
