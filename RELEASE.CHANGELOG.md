@@ -1,3 +1,8 @@
+### Release 2018-02-28 23:00
+* **Amazon.Lambda.KinesisAnalyticsEvents (1.0.0)**
+    * Pull request [#232](https://github.com/aws/aws-lambda-dotnet/pull/232). New event package for Kinesis Analytics.
+
+
 ### Release 2018-02-12 21:00
 * **Amazon.Lambda.AspNetCoreServer (2.0.1)**
   * Implemented the OnStarting and OnCompleted callbacks for an HttpResponse.
