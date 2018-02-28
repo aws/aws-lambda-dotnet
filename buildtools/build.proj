@@ -280,6 +280,8 @@
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.LexEvents"/>
     <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisAnalyticsEvents"/>
+    <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisEvents"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisFirehoseEvents"/>
