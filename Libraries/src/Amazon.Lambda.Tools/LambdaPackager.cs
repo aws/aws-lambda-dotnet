@@ -102,30 +102,24 @@ namespace Amazon.Lambda.Tools
                 new DirectoryInfo(zipArchiveParentDirectory).Create();
             }
 
-
-#if NETCORE
-            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                BundleWithDotNetCompression(zipArchivePath, publishLocation, flattenRuntime, logger);
-            }
-            else
+#if NATIVE_ZIP
+            if(!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // Use the native zip utility if it exist which will maintain linux/osx file permissions
                 var zipCLI = DotNetCLIWrapper.FindExecutableInPath("zip");
                 if (!string.IsNullOrEmpty(zipCLI))
                 {
                     BundleWithZipCLI(zipCLI, zipArchivePath, publishLocation, flattenRuntime, logger);
+                    return true;
                 }
                 else
                 {
                     throw new LambdaToolsException("Failed to find the \"zip\" utility program in path. This program is required to maintain Linux file permissions in the zip archive.", LambdaToolsException.ErrorCode.FailedToFindZipProgram);
                 }
             }
-#else
-            BundleWithDotNetCompression(zipArchivePath, publishLocation, flattenRuntime, logger);
 #endif
 
-
+            BundleWithDotNetCompression(zipArchivePath, publishLocation, flattenRuntime, logger);
 
             return true;
         }
