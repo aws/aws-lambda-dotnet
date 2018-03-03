@@ -37,8 +37,9 @@ namespace Amazon.Lambda.Tools
         /// <param name="logger"></param>
         /// <param name="workingDirectory"></param>
         /// <param name="projectLocation"></param>
-        /// <param name="targetFramework"></param>
         /// <param name="configuration"></param>
+        /// <param name="targetFramework"></param>
+        /// <param name="msbuildParameters"></param>
         /// <param name="disableVersionCheck"></param>
         /// <param name="publishLocation"></param>
         /// <param name="zipArchivePath"></param>
