@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2027
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}"
 EndProject
@@ -76,6 +76,14 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.CloudWatchLogsEvents", "src\Amazon.Lambda.CloudWatchLogsEvents\Amazon.Lambda.CloudWatchLogsEvents.csproj", "{32827626-2128-49A0-A2A9-2F5076AADDAD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.KinesisAnalyticsEvents", "src\Amazon.Lambda.KinesisAnalyticsEvents\Amazon.Lambda.KinesisAnalyticsEvents.csproj", "{EAC0F95B-B43A-49EB-A6DF-D0353DAD4593}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TestFunctionFSharp", "TestFunctionFSharp", "{BB021F02-D90F-469C-8D56-919771B7F4DE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FSharpJsonSerializer", "test\TestFunctionFSharp\FSharpJsonSerializer\FSharpJsonSerializer.csproj", "{8C9EA16D-6055-421B-ABE7-1B0E35259DFC}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TestFunctionFSharp", "test\TestFunctionFSharp\TestFunctionFSharp\TestFunctionFSharp.fsproj", "{CB38FA21-5814-4573-94C7-3672D61BC8B8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestFunctionCSharp", "test\TestFunctionFSharp\TestFunctionCSharp\TestFunctionCSharp.csproj", "{2810A66B-3A03-4889-A4D0-0E8838474A4A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -207,6 +215,18 @@ Global
 		{EAC0F95B-B43A-49EB-A6DF-D0353DAD4593}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAC0F95B-B43A-49EB-A6DF-D0353DAD4593}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAC0F95B-B43A-49EB-A6DF-D0353DAD4593}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C9EA16D-6055-421B-ABE7-1B0E35259DFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C9EA16D-6055-421B-ABE7-1B0E35259DFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C9EA16D-6055-421B-ABE7-1B0E35259DFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C9EA16D-6055-421B-ABE7-1B0E35259DFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CB38FA21-5814-4573-94C7-3672D61BC8B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB38FA21-5814-4573-94C7-3672D61BC8B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB38FA21-5814-4573-94C7-3672D61BC8B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CB38FA21-5814-4573-94C7-3672D61BC8B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2810A66B-3A03-4889-A4D0-0E8838474A4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2810A66B-3A03-4889-A4D0-0E8838474A4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2810A66B-3A03-4889-A4D0-0E8838474A4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2810A66B-3A03-4889-A4D0-0E8838474A4A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -246,6 +266,10 @@ Global
 		{D25486BF-E79F-4DFF-AEA4-D91ABFF71039} = {EE7F2FF6-2C90-465C-AF91-153090863D4E}
 		{32827626-2128-49A0-A2A9-2F5076AADDAD} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{EAC0F95B-B43A-49EB-A6DF-D0353DAD4593} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{BB021F02-D90F-469C-8D56-919771B7F4DE} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{8C9EA16D-6055-421B-ABE7-1B0E35259DFC} = {BB021F02-D90F-469C-8D56-919771B7F4DE}
+		{CB38FA21-5814-4573-94C7-3672D61BC8B8} = {BB021F02-D90F-469C-8D56-919771B7F4DE}
+		{2810A66B-3A03-4889-A4D0-0E8838474A4A} = {BB021F02-D90F-469C-8D56-919771B7F4DE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}

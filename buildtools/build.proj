@@ -252,6 +252,10 @@
         WorkingDirectory="..\Libraries\test\Amazon.Lambda.Tools.Test"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\test\EventsTests"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\test\TestFunctionFSharp\TestFunctionCSharp"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\test\TestFunctionFSharp\TestFunctionFSharp"/>
   </Target>
 
   <Target Name="build-nuget-packages" DependsOnTargets="init">
