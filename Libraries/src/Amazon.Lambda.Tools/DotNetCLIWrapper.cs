@@ -31,6 +31,7 @@ namespace Amazon.Lambda.Tools
         /// <param name="outputLocation"></param>
         /// <param name="targetFramework"></param>
         /// <param name="configuration"></param>
+        /// <param name="msbuildParameters"></param>
         /// <param name="deploymentTargetPackageStoreManifestContent"></param>
         public int Publish(LambdaToolsDefaults defaults, string projectLocation, string outputLocation, string targetFramework, string configuration, string msbuildParameters, string deploymentTargetPackageStoreManifestContent)
         {
