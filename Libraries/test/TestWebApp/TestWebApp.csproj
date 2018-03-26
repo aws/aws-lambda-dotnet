@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.AspNetCoreServer\Amazon.Lambda.AspNetCoreServer.csproj" />
-    <ProjectReference Include="..\..\src\Amazon.Lambda.Tools\Amazon.Lambda.Tools.csproj" />
   </ItemGroup>
 
   <ItemGroup>
