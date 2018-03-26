@@ -1,3 +1,11 @@
+### Release 2018-03-26 21:00
+* **Amazon.Lambda.AspNetCoreServer (2.0.2)**
+    * Fixed issue with encoding HTTP request resource path
+* **Amazon.Lambda.Serialization.Json**
+    * Pull request [#234](https://github.com/aws/aws-lambda-dotnet/pull/234). Added constructor to allow passing in custom converters. 
+This was needed to support F# specific converters. Thanks to [rfrerebe](https://github.com/rfrerebe).
+
+
 ### Release 2018-02-28 23:00
 * **Amazon.Lambda.KinesisAnalyticsEvents (1.0.0)**
     * Pull request [#232](https://github.com/aws/aws-lambda-dotnet/pull/232). New event package for Kinesis Analytics.
