@@ -4,9 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using Swashbuckle.AspNetCore.Swagger;
 
 namespace TestWebApp
@@ -61,6 +63,28 @@ namespace TestWebApp
             app.UseMiddleware<Middleware>();
 
             app.UseMvc();
+
+            app.Run(async (context) =>
+            {
+                var root = new JObject();
+                root["Path"] = new JValue(context.Request.Path);
+                root["PathBase"] = new JValue(context.Request.PathBase);
+
+                var query = new JObject();
+                foreach(var queryKey in context.Request.Query.Keys)
+                {
+                    var variables = new JArray();
+                    foreach(var v in context.Request.Query[queryKey])
+                    {
+                        variables.Add(new JValue(v));
+                    }
+                    query[queryKey] = variables;
+                }
+                root["QueryVariables"] = query;
+
+                context.Response.Headers["Content-Type"] = "application/json";
+                await context.Response.WriteAsync(root.ToString());
+            });
         }
     }
 }

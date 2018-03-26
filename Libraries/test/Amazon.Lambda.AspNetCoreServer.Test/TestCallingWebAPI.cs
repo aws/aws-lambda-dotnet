@@ -11,6 +11,9 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 namespace Amazon.Lambda.AspNetCoreServer.Test
 {
     public class TestCallingWebAPI
@@ -61,16 +64,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigatway-request.json");
 
             Assert.Equal("Lewis, Meriwether", response.Body);
-            Assert.True(response.Headers.ContainsKey("Content-Type"));
-            Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
-        }
-
-        [Fact]
-        public async Task TestGetQueryStringWithSpacesValue()
-        {
-            var response = await this.InvokeAPIGatewayRequest("values-escape-querystring-apigatway-request.json");
-
-            Assert.Equal("Norman Ivar, Johanson", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
         }
@@ -185,12 +178,28 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
-        public async Task TestEscapeCharacterInResourcePath()
+        public async Task TestEncodePlusInResourcePath()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-escape-path-apigatway-request.json");
+            var response = await this.InvokeAPIGatewayRequest("encode-plus-in-resource-path.json");
 
             Assert.Equal(200, response.StatusCode);
-            Assert.Equal("value=query string", response.Body);
+
+            var root = JObject.Parse(response.Body);
+            Assert.Equal("/foo+bar", root["Path"]?.ToString());
+        }
+
+        [Fact]
+        public async Task TestSpaceInResourcePathAndQueryString()
+        {
+            var response = await this.InvokeAPIGatewayRequest("encode-space-in-resource-path-and-query.json");
+
+            Assert.Equal(200, response.StatusCode);
+
+            var root = JObject.Parse(response.Body);
+            Assert.Equal("/foo%20bar", root["Path"]?.ToString());
+
+            var query = root["QueryVariables"]["greeting"] as JArray;
+            Assert.Equal("hello world", query[0].ToString());
         }
 
         [Fact]

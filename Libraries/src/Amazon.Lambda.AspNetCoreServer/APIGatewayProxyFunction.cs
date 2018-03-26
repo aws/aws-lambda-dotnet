@@ -422,7 +422,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                     path = "/" + path;
                 }
 
-                requestFeatures.Path = WebUtility.UrlDecode(path);
+                requestFeatures.Path = path;
 
                 requestFeatures.PathBase = string.Empty;
                 if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Path))
@@ -430,15 +430,15 @@ namespace Amazon.Lambda.AspNetCoreServer
                     // This is to cover the case where the request coming in is https://myapigatewayid.execute-api.us-west-2.amazonaws.com/Prod where
                     // Prod is the stage name and there is no ending '/'. Path will be set to '/' so to make sure we detect the correct base path
                     // append '/' on the end to make the later EndsWith and substring work correctly.
-                    var decodedRequestContextPath = WebUtility.UrlDecode(apiGatewayRequest.RequestContext.Path);
-                    if (path.EndsWith("/") && !decodedRequestContextPath.EndsWith("/"))
+                    var requestContextPath = apiGatewayRequest.RequestContext.Path;
+                    if (path.EndsWith("/") && !requestContextPath.EndsWith("/"))
                     {
-                        decodedRequestContextPath += "/";
+                        requestContextPath += "/";
                     }
 
-                    if (decodedRequestContextPath.EndsWith(path))
+                    if (requestContextPath.EndsWith(path))
                     {
-                        requestFeatures.PathBase = decodedRequestContextPath.Substring(0, decodedRequestContextPath.Length - requestFeatures.Path.Length);
+                        requestFeatures.PathBase = requestContextPath.Substring(0, requestContextPath.Length - requestFeatures.Path.Length);
                     }
                 }
 
