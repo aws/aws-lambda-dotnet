@@ -249,8 +249,6 @@
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\test\Amazon.Lambda.Logging.AspNetCore.Tests"/>
     <Exec Command="$(Command)"
-        WorkingDirectory="..\Libraries\test\Amazon.Lambda.Tools.Test"/>
-    <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\test\EventsTests"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\test\TestFunctionFSharp\TestFunctionCSharp"/>
@@ -301,8 +299,6 @@
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.SNSEvents"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.TestUtilities"/>
-    <Exec Command="$(Command)"
-        WorkingDirectory="..\Libraries\src\Amazon.Lambda.Tools"/>
 
     <RemoveNonSymbolsPackages
         PackagesDir="..\Deployment\nuget-packages"
