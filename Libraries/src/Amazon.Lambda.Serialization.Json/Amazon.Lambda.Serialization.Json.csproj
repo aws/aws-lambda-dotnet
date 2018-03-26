@@ -11,7 +11,7 @@
     <AssemblyName>Amazon.Lambda.Serialization.Json</AssemblyName>
     <PackageId>Amazon.Lambda.Serialization.Json</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
