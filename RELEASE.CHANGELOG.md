@@ -1,9 +1,12 @@
 ### Release 2018-03-26 21:00
 * **Amazon.Lambda.AspNetCoreServer (2.0.2)**
     * Fixed issue with encoding HTTP request resource path
-* **Amazon.Lambda.Serialization.Json**
+* **Amazon.Lambda.Serialization.Json (1.2.0)**
     * Pull request [#234](https://github.com/aws/aws-lambda-dotnet/pull/234). Added constructor to allow passing in custom converters. 
 This was needed to support F# specific converters. Thanks to [rfrerebe](https://github.com/rfrerebe).
+* **Amazon.Lambda.Tools (2.1.2)**
+    * Moved this package to the [AWS Extensons for .NET CLI](https://github.com/aws/aws-extensions-for-dotnet-cli) repository 
+along with the Amazon Elastic Container Service and AWS Elastic Beanstalk CLI extensions.
 
 
 ### Release 2018-02-28 23:00
