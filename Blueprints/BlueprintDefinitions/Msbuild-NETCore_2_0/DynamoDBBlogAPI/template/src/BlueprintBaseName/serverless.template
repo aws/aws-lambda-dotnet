@@ -97,7 +97,7 @@
         "Handler": "BlueprintBaseName::BlueprintBaseName.Functions::AddBlogAsync",
         "Runtime": "dotnetcore2.0",
         "CodeUri": "",
-        "Description": "Function to get add a blog",
+        "Description": "Function to add a blog",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
