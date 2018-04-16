@@ -15,5 +15,5 @@
   "function-runtime": "dotnetcore2.0",
   "function-memory-size": 256,
   "function-timeout": 30,
-  "function-handler": "BlueprintBaseName.1::BlueprintBaseName.1.Function::FunctionHandler"
+  "function-handler": "BlueprintBaseName.1::BlueprintBaseName._1.Function::FunctionHandler"
 }

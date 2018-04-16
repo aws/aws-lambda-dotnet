@@ -9,7 +9,7 @@
     "GreetingTask" : {
         "Type" : "AWS::Lambda::Function",
         "Properties" : {
-            "Handler" : "BlueprintBaseName.1::BlueprintBaseName.1.StepFunctionTasks::Greeting",
+            "Handler" : "BlueprintBaseName.1::BlueprintBaseName._1.StepFunctionTasks::Greeting",
             "Role"    : {"Fn::GetAtt" : [ "LambdaRole", "Arn"]},
             "Runtime" : "dotnetcore2.0",
             "MemorySize" : 256,
@@ -24,7 +24,7 @@
     "SalutationsTask" : {
         "Type" : "AWS::Lambda::Function",
         "Properties" : {
-            "Handler" : "BlueprintBaseName.1::BlueprintBaseName.1.StepFunctionTasks::Salutations",            
+            "Handler" : "BlueprintBaseName.1::BlueprintBaseName._1.StepFunctionTasks::Salutations",            
             "Role"    : {"Fn::GetAtt" : [ "LambdaRole", "Arn"]},
             "Runtime" : "dotnetcore2.0",
             "MemorySize" : 256,

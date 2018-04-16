@@ -23,10 +23,10 @@
 
   "Resources" : {
 
-    "ProxyFunction" : {
+    "AspNetCoreFunction" : {
       "Type" : "AWS::Serverless::Function",
       "Properties": {
-        "Handler": "BlueprintBaseName.1::BlueprintBaseName.1.LambdaEntryPoint::FunctionHandlerAsync",
+        "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.LambdaEntryPoint::FunctionHandlerAsync",
         "Runtime": "dotnetcore2.0",
         "CodeUri": "",
         "MemorySize": 256,

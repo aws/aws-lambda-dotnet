@@ -37,7 +37,7 @@
     "GetBlogs" : {
       "Type" : "AWS::Serverless::Function",
       "Properties": {
-        "Handler": "BlueprintBaseName.1::BlueprintBaseName.1.Functions::GetBlogsAsync",
+        "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::GetBlogsAsync",
         "Runtime": "dotnetcore2.0",
         "CodeUri": "",
         "Description": "Function to get a list of blogs",
@@ -65,7 +65,7 @@
     "GetBlog" : {
       "Type" : "AWS::Serverless::Function",
       "Properties": {
-        "Handler": "BlueprintBaseName.1::BlueprintBaseName.1.Functions::GetBlogAsync",
+        "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::GetBlogAsync",
         "Runtime": "dotnetcore2.0",
         "CodeUri": "",
         "Description": "Function to get a single blog",
@@ -94,7 +94,7 @@
     "AddBlog" : {
       "Type" : "AWS::Serverless::Function",
       "Properties": {
-        "Handler": "BlueprintBaseName.1::BlueprintBaseName.1.Functions::AddBlogAsync",
+        "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::AddBlogAsync",
         "Runtime": "dotnetcore2.0",
         "CodeUri": "",
         "Description": "Function to get add a blog",
@@ -122,7 +122,7 @@
     "RemoveBlog" : {
       "Type" : "AWS::Serverless::Function",
       "Properties": {
-        "Handler": "BlueprintBaseName.1::BlueprintBaseName.1.Functions::RemoveBlogAsync",
+        "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::RemoveBlogAsync",
         "Runtime": "dotnetcore2.0",
         "CodeUri": "",
         "Description": "Function to remove a blog",

@@ -11,10 +11,10 @@
 
   "Resources" : {
 
-    "ProxyFunction" : {
+    "AspNetCoreFunction" : {
       "Type" : "AWS::Serverless::Function",
       "Properties": {
-        "Handler": "BlueprintBaseName.1::BlueprintBaseName.1.LambdaEntryPoint::FunctionHandlerAsync",
+        "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.LambdaEntryPoint::FunctionHandlerAsync",
         "Runtime": "dotnetcore2.0",
         "CodeUri": "",
         "MemorySize": 512,
@@ -26,33 +26,14 @@
           }
         },
         "Events": {
-          "PutResource": {
+          "ProxyResource": {
             "Type": "Api",
             "Properties": {
               "Path": "/{proxy+}",
               "Method": "ANY"
             }
-          }
-        }
-      }
-    },
-
-    "RootPathFunction" : {
-      "Type" : "AWS::Serverless::Function",
-      "Properties": {
-        "Handler": "BlueprintBaseName.1::BlueprintBaseName.1.LambdaEntryPoint::FunctionHandlerAsync",
-        "Runtime": "dotnetcore2.0",
-        "CodeUri": "",
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Role": null,
-        "Policies": [ "AWSLambdaFullAccess" ],
-        "Environment" : {
-          "Variables" : {
-          }
-        },
-        "Events": {
-          "PutResource": {
+          },
+		  "RootResource": {
             "Type": "Api",
             "Properties": {
               "Path": "/",
@@ -61,6 +42,7 @@
           }
         }
       }
+   
     }
   },
 
