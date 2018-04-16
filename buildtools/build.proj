@@ -15,36 +15,15 @@
     <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
 
     <UserDirectory Condition="'$(UserDirectory)' == ''">$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))</UserDirectory>
-    <NPMPath Condition="'$(NPMPath)' == ''"></NPMPath>
-    <YeomanCmd Condition="'$(YeomanCmd)' == ''">$(UserDirectory)\AppData\Roaming\npm\yo.cmd</YeomanCmd>
   </PropertyGroup>
 
   <Import Project="$(VSToolsPath)\DotNet\Microsoft.DotNet.Props" Condition="'$(VSToolsPath)' != ''" />
   <Import Project="$(VSToolsPath)\DotNet\Microsoft.DotNet.targets" Condition="'$(VSToolsPath)' != ''" />
 
-  <Target Name="full-build" DependsOnTargets="test-blueprints-dotnetnew;test-blueprints-yeoman;package-blueprints;run-tests;build-nuget-packages">
+  <Target Name="full-build" DependsOnTargets="test-blueprints-dotnetnew;package-blueprints;run-tests;build-nuget-packages">
 
   </Target>
 
-  <UsingTask TaskName="GetNPMPath" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
-    <ParameterGroup>
-      <NPMPath ParameterType="System.String" Output="true" />
-    </ParameterGroup>
-    <Task>
-      <Using Namespace="System" />
-      <Using Namespace="System.IO" />
-      <Code Type="Fragment" Language="cs">
-      <![CDATA[ 
-      if(File.Exists("C:/Program Files/nodejs/npm.cmd"))
-        NPMPath = "C:/Program Files/nodejs/npm.cmd"; 
-      else if(File.Exists("C:/Program Files (x86)/nodejs/npm.cmd"))
-        NPMPath = "C:/Program Files (x86)/nodejs/npm.cmd"; 
-      else
-        throw new Exception("Node.js must be installed to run this build.");
-		]]>
-      </Code>
-    </Task>
-  </UsingTask>
   <UsingTask TaskName="RemoveNonSymbolsPackages" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
     <ParameterGroup>
       <PackagesDir ParameterType="System.String" Required="true" />
@@ -84,13 +63,6 @@
       WorkingDirectory="..\Libraries"/>
     <Exec Command="dotnet restore BlueprintPackager.sln"
       WorkingDirectory="..\Blueprints\BlueprintPackager"/>
-  </Target>
-
-
-  <Target Name="SetupPathProperties">
-    <GetNPMPath Condition="'$(NPMPath)' == ''">
-      <Output PropertyName="NPMPath" TaskParameter="NPMPath" />
-    </GetNPMPath>
   </Target>
 
   <Target Name="package-blueprints" DependsOnTargets="init">
@@ -174,70 +146,7 @@
       WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(ProjectName)/Test/$(ProjectName).Tests"/>
 
   </Target>   
-  
-  <Target Name="test-blueprints-yeoman" DependsOnTargets="package-blueprints;SetupPathProperties;build-nuget-packages">
-
-    <RemoveDir Directories="../Deployment/BlueprintGenerationTests/YeomanGenerator"/>
-    <MakeDir Directories="../Deployment/BlueprintGenerationTests/YeomanGenerator"/>
-
-    <Exec Command="&quot;$(NPMPath)&quot; link"
-      WorkingDirectory="..\Blueprints\YeomanGenerator\generator-aws-lambda-dotnet"/>
-
-    <MSBuild
-          Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint-yeoman"
-          Properties="CurrentBlueprint=EmptyFunction"/>
-    <MSBuild
-          Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint-yeoman"
-        Properties="CurrentBlueprint=EmptyServerless"/>  	
-    <MSBuild
-          Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint-yeoman"
-        Properties="CurrentBlueprint=DynamoDBBlogAPI"/>  
-    <MSBuild
-          Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint-yeoman"
-        Properties="CurrentBlueprint=PreviewAspNetCoreWebAPI"/>  
-	<MSBuild
-        Projects="$(MSBuildProjectFile)"
-        Targets="run-blueprint-yeoman"
-          Properties="CurrentBlueprint=SimpleDynamoDBFunction"/>
-    <MSBuild
-          Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint-yeoman"
-          Properties="CurrentBlueprint=SimpleKinesisFirehoseFunction"/>
-    <MSBuild
-          Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint-yeoman"
-          Properties="CurrentBlueprint=SimpleKinesisFunction"/>
-    <MSBuild
-          Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint-yeoman"
-          Properties="CurrentBlueprint=SimpleS3Function"/>
-    <MSBuild
-          Projects="$(MSBuildProjectFile)"
-          Targets="run-blueprint-yeoman"
-          Properties="CurrentBlueprint=LexBookTripSample"/>
-
-  </Target>
-
-  <Target Name="run-blueprint-yeoman" DependsOnTargets="GetSDKToolingInfoTarget;SetupPathProperties">
-
-    <Error Condition="!Exists($(YeomanCmd))" Text="Yeoman not installed!" />
-
-    <Exec Command="&quot;$(YeomanCmd)&quot; aws-lambda-dotnet $(CurrentBlueprint) $(CurrentBlueprint) default us-east-1"
-      WorkingDirectory="../Deployment/BlueprintGenerationTests/YeomanGenerator"/>
-
-    <Exec Command="dotnet restore"
-      WorkingDirectory="../Deployment/BlueprintGenerationTests/YeomanGenerator/$(CurrentBlueprint)"/>
-
-    <Exec Command="dotnet build"
-      WorkingDirectory="../Deployment/BlueprintGenerationTests/YeomanGenerator/$(CurrentBlueprint)/Test/$(CurrentBlueprint).Tests"/>
-
-  </Target>
-  
-
+    
   <Target Name="run-tests" DependsOnTargets="build-nuget-packages">
     <PropertyGroup>
       <Command>dotnet test -c $(Configuration)</Command>
