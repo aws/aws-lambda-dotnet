@@ -4,7 +4,7 @@
   "name": "Lambda DynamoDB Blog API",
   "identity": "AWS.Lambda.Serverless.DynamoDBBlogAPI.CSharp",
   "groupIdentity": "AWS.Lambda.Serverless.DynamoDBBlogAPI",
-  "shortName": "lambda.DynamoDBBlogAPI",
+  "shortName": "serverless.DynamoDBBlogAPI",
   "tags": {
     "language": "C#",
     "type": "project"

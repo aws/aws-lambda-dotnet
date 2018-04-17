@@ -4,7 +4,7 @@
   "name": "Lambda Empty Serverless",
   "identity": "AWS.Lambda.Serverless.Empty.CSharp",
   "groupIdentity": "AWS.Lambda.Serverless.Empty",
-  "shortName": "lambda.EmptyServerless",
+  "shortName": "serverless.EmptyServerless",
   "tags": {
     "language": "C#",
     "type": "project"

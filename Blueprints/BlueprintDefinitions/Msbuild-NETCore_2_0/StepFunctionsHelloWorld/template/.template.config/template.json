@@ -4,7 +4,7 @@
   "name": "Step Functions Hello World",
   "identity": "AWS.Lambda.Serverless.StepFunctionsHelloWorld.CSharp",
   "groupIdentity": "AWS.Lambda.Serverless.StepFunctionsHelloWorld",
-  "shortName": "lambda.StepFunctionsHelloWorld",
+  "shortName": "serverless.StepFunctionsHelloWorld",
   "tags": {
     "language": "C#",
     "type": "project"

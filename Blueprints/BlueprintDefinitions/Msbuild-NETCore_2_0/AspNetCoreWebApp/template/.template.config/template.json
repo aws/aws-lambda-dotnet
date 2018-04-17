@@ -4,7 +4,7 @@
   "name": "Lambda ASP.NET Core Web Application with Razor Pages",
   "identity": "AWS.Lambda.Serverless.AspNetCoreWebApp.CSharp",
   "groupIdentity": "AWS.Lambda.AspNetCoreWebApp.Serverless",
-  "shortName": "lambda.AspNetCoreWebApp",
+  "shortName": "serverless.AspNetCoreWebApp",
   "tags": {
     "language": "C#",
     "type": "project"

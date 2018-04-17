@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using static BlueprintBaseName.FlowerOrder;
+using static BlueprintBaseName._1.FlowerOrder;
 
 namespace BlueprintBaseName._1
 {

@@ -110,15 +110,15 @@
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
-          Properties="TemplateName=lambda.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPI"/>		  
+          Properties="TemplateName=serverless.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPI"/>		  
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
-          Properties="TemplateName=lambda.DynamoDBBlogAPI;ProjectName=DynamoDBBlogAPI"/>		  
+          Properties="TemplateName=serverless.DynamoDBBlogAPI;ProjectName=DynamoDBBlogAPI"/>		  
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
-          Properties="TemplateName=lambda.EmptyServerless;ProjectName=EmptyServerless"/>		  
+          Properties="TemplateName=serverless.EmptyServerless;ProjectName=EmptyServerless"/>		  
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
@@ -126,7 +126,7 @@
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
-          Properties="TemplateName=lambda.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorld"/>		  
+          Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorld"/>		  
 	  		
   </Target>
   
