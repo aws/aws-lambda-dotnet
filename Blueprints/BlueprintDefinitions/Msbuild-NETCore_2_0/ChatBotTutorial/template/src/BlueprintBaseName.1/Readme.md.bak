@@ -1,4 +1,4 @@
-# Amazon Lex Getting Started Order Flowers Bot Code Hooks
+# Amazon Lex getting started Order Flowers sample
 
 This starter project consists of:
 * Function.cs - The entry point for the Lambda function that chooses the IIntentProcessor to process and execute the processor

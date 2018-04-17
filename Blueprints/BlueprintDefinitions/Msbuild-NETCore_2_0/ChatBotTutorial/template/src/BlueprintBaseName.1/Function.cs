@@ -33,8 +33,7 @@ namespace BlueprintBaseName._1
 
             if (lexEvent.CurrentIntent.Name == "OrderFlowers")
             {       
-                process = new OrderFlowersIntentProcessor();
-                  
+                process = new OrderFlowersIntentProcessor();                  
             }
             else
             {
