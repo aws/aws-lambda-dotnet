@@ -37,8 +37,8 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         public const string APIGATEWAY_REQUEST = "APIGatewayRequest";
 
-        private readonly IWebHost _host;
-        private readonly APIGatewayServer _server;
+        private IWebHost _host;
+        private APIGatewayServer _server;
 
         // Defines a mapping from registered content types to the response encoding format
         // which dictates what transformations should be applied before returning response content
@@ -80,7 +80,24 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <summary>
         /// Default constructor that AWS Lambda will invoke.
         /// </summary>
-        protected APIGatewayProxyFunction()
+        protected APIGatewayProxyFunction(bool delayStart = false)
+        {
+            if (!delayStart)
+                Start();
+        }
+
+        private bool IsStarted
+        {
+            get
+            {
+                return _server != null;
+            }
+        }
+
+        /// <summary>
+        /// Should be called in the derrived constructor 
+        /// </summary>
+        protected void Start()
         {
             var builder = CreateWebHostBuilder();
             Init(builder);
@@ -90,7 +107,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             _host.Start();
 
             _server = _host.Services.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as APIGatewayServer;
-            if(_server == null)
+            if (_server == null)
             {
                 throw new Exception("Failed to find the implementation APIGatewayServer for the IServer registration. This can happen if UseApiGateway was not called.");
             }
@@ -172,6 +189,9 @@ namespace Amazon.Lambda.AspNetCoreServer
         public virtual async Task<APIGatewayProxyResponse> FunctionHandlerAsync(APIGatewayProxyRequest request, ILambdaContext lambdaContext)
         {
             lambdaContext.Logger.LogLine($"Incoming {request.HttpMethod} requests to {request.Path}");
+
+            if (!IsStarted)
+                Start();
 
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request, lambdaContext);
