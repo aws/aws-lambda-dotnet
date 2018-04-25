@@ -80,10 +80,12 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <summary>
         /// Default constructor that AWS Lambda will invoke.
         /// </summary>
-        protected APIGatewayProxyFunction(bool delayStart = false)
+        protected APIGatewayProxyFunction(bool autoStart = true)
         {
-            if (!delayStart)
+            if (autoStart)
+            {
                 Start();
+            }
         }
 
         private bool IsStarted
@@ -191,7 +193,9 @@ namespace Amazon.Lambda.AspNetCoreServer
             lambdaContext.Logger.LogLine($"Incoming {request.HttpMethod} requests to {request.Path}");
 
             if (!IsStarted)
+            {
                 Start();
+            }
 
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request, lambdaContext);
