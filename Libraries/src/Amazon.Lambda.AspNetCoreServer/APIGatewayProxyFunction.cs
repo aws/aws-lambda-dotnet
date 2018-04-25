@@ -97,7 +97,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         /// <summary>
-        /// Should be called in the derrived constructor 
+        /// Should be called in the derived constructor 
         /// </summary>
         protected void Start()
         {
