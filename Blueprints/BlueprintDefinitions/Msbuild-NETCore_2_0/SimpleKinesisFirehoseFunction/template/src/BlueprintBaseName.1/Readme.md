@@ -30,18 +30,18 @@ Once you have edited your function you can use the following command lines to bu
 
 Restore dependencies
 ```
-    cd "BlueprintBaseName"
+    cd "BlueprintBaseName.1"
     dotnet restore
 ```
 
 Execute unit tests
 ```
-    cd "BlueprintBaseName/test/BlueprintBaseName.Tests"
+    cd "BlueprintBaseName.1/test/BlueprintBaseName.1.Tests"
     dotnet test
 ```
 
 Deploy function to AWS Lambda
 ```
-    cd "BlueprintBaseName/src/BlueprintBaseName"
+    cd "BlueprintBaseName.1/src/BlueprintBaseName.1"
     dotnet lambda deploy-function
 ```

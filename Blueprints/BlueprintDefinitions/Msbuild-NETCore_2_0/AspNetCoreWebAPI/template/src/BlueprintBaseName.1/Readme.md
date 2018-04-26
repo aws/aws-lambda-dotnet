@@ -32,8 +32,6 @@ public void ConfigureServices(IServiceCollection services)
 
 You may also have a test project depending on the options selected.
 
-The generated project contains a Serverless template declaration for a single AWS Lambda function that will be exposed through Amazon API Gateway as a HTTP *Get* operation. Edit the template to customize the function or add more functions and other resources needed by your application, and edit the function code in Function.cs. You can then deploy your Serverless application.
-
 ## Here are some steps to follow from Visual Studio:
 
 To deploy your Serverless application, right click the project in Solution Explorer and select *Publish to AWS Lambda*.
@@ -42,22 +40,22 @@ To view your deployed application open the Stack View window by double-clicking 
 
 ## Here are some steps to follow to get started from the command line:
 
-Once you have edited your template and code you can use the following command lines to deploy your application from the command line (these examples assume the project name is *BlueprintBaseName*):
+Once you have edited your template and code you can use the following command lines to deploy your application from the command line (these examples assume the project name is *BlueprintBaseName.1*):
 
 Restore dependencies
 ```
-    cd "BlueprintBaseName"
+    cd "BlueprintBaseName.1"
     dotnet restore
 ```
 
 Execute unit tests
 ```
-    cd "BlueprintBaseName/test/BlueprintBaseName.Tests"
+    cd "BlueprintBaseName.1/test/BlueprintBaseName.1.Tests"
     dotnet test
 ```
 
 Deploy application
 ```
-    cd "BlueprintBaseName/src/BlueprintBaseName"
+    cd "BlueprintBaseName.1/src/BlueprintBaseName.1"
     dotnet lambda deploy-serverless
 ```

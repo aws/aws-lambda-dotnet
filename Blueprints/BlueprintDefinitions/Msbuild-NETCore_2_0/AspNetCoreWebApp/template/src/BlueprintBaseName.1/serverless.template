@@ -33,7 +33,7 @@
               "Method": "ANY"
             }
           },
-		  "RootResource": {
+		      "RootResource": {
             "Type": "Api",
             "Properties": {
               "Path": "/",

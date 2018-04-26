@@ -21,13 +21,13 @@ Once you have edited your template and code you can use the following command li
 
 Restore dependencies
 ```
-    cd "BlueprintBaseName"
+    cd "BlueprintBaseName.1"
     dotnet restore
 ```
 
 Execute unit tests
 ```
-    cd "BlueprintBaseName/test/BlueprintBaseName.Tests"
+    cd "BlueprintBaseName.1/test/BlueprintBaseName.1.Tests"
     dotnet test
 ```
 

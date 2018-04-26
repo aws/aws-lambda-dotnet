@@ -28,7 +28,7 @@ namespace BlueprintBaseName._1.Tests
             IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USWest2);
             IAmazonRekognition rekognitionClient = new AmazonRekognitionClient(RegionEndpoint.USWest2);
 
-            var bucketName = "lambda-BlueprintBaseName-".ToLower() + DateTime.Now.Ticks;
+            var bucketName = "lambda-BlueprintBaseName.1-".ToLower() + DateTime.Now.Ticks;
             await s3Client.PutBucketAsync(bucketName);
             try
             {

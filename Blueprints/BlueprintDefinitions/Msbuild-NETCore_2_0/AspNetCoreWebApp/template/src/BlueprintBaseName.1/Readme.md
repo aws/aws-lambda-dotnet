@@ -26,9 +26,6 @@ public void ConfigureServices(IServiceCollection services)
 * LocalEntryPoint.cs - for local development this contains the executable Main function which bootstraps the ASP.NET Core hosting framework with Kestrel, as for typical ASP.NET Core applications.
 * Startup.cs - usual ASP.NET Core Startup class used to configure the services ASP.NET Core will use.
 
-The generated project contains a Serverless template which declares 2 Lambda functions. The first function is configured using an 
-API Gateway proxy which acts like a wildcard passing all requests to the Lambda function except for requests to the root path which the 
-proxy doesn't support. The second declared function handles request to the root path.
 
 ## Here are some steps to follow from Visual Studio:
 
@@ -38,22 +35,22 @@ To view your deployed application open the Stack View window by double-clicking 
 
 ## Here are some steps to follow to get started from the command line:
 
-Once you have edited your template and code you can use the following command lines to deploy your application from the command line (these examples assume the project name is *BlueprintBaseName*):
+Once you have edited your template and code you can use the following command lines to deploy your application from the command line (these examples assume the project name is *BlueprintBaseName.1*):
 
 Restore dependencies
 ```
-    cd "BlueprintBaseName"
+    cd "BlueprintBaseName.1"
     dotnet restore
 ```
 
 Execute unit tests
 ```
-    cd "BlueprintBaseName/test/BlueprintBaseName.Tests"
+    cd "BlueprintBaseName/test/BlueprintBaseName.1.Tests"
     dotnet test
 ```
 
 Deploy application
 ```
-    cd "BlueprintBaseName/src/BlueprintBaseName"
+    cd "BlueprintBaseName.1/src/BlueprintBaseName.1"
     dotnet lambda deploy-serverless
 ```
