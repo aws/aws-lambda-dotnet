@@ -4,6 +4,7 @@ open System
 open System.IO
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
+open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
@@ -37,6 +38,12 @@ let configureLogging (builder : ILoggingBuilder) =
     let filter (l : LogLevel) = l.Equals LogLevel.Error
     builder.AddFilter(filter).AddConsole().AddDebug() |> ignore
 
+let configureAppConfiguration (ctx:WebHostBuilderContext) (builder : IConfigurationBuilder) =
+
+    builder.AddJsonFile("appsettings.json", true, true)
+        .AddJsonFile((sprintf "appsettings.%s.json" ctx.HostingEnvironment.EnvironmentName), true, true)
+        .AddEnvironmentVariables() |> ignore
+
 // ---------------------------------
 // This type is the entry point when running in Lambda. It has similar responsiblities
 // to the main entry point function that can be used for local development.
@@ -66,6 +73,7 @@ let main _ =
         .UseContentRoot(contentRoot)
         .UseIISIntegration()
         .UseWebRoot(webRoot)
+        .ConfigureAppConfiguration(Action<WebHostBuilderContext, IConfigurationBuilder> configureAppConfiguration)
         .Configure(Action<IApplicationBuilder> configureApp)
         .ConfigureServices(configureServices)
         .ConfigureLogging(configureLogging)
