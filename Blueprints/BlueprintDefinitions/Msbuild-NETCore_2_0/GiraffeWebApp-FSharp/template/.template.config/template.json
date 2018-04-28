@@ -4,7 +4,7 @@
   "classifications": ["AWS", "Lambda", "Serverless"],
   "name": "Lambda Giraffe Web API",
   "identity": "AWS.Lambda.Serverless.GiraffeWebAPI.FSharp",
-  "groupIdentity": "AWS.Lambda.AspNetCoreWebAPI.Serverless",
+  "groupIdentity": "AWS.Lambda.Serverless.GiraffeWebAPI.Serverless",
   "shortName": "serverless.GiraffeWebAPI",
   "tags": {
     "language": "F#",
