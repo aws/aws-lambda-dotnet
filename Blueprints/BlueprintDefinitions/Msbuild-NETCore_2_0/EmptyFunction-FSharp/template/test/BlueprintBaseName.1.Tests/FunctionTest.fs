@@ -16,3 +16,5 @@ module FunctionTest =
         
         Assert.Equal("HELLO WORLD", upperCase)
     
+    [<EntryPoint>]
+    let main argv = 0    

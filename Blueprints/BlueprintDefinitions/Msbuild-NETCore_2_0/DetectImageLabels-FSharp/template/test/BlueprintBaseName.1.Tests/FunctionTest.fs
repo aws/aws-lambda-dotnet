@@ -59,4 +59,6 @@ module FunctionTest =
                 |> Async.AwaitTask 
                 |> Async.RunSynchronously
     }
-
+    
+    [<EntryPoint>]
+    let main argv = 0

@@ -18,3 +18,6 @@ module FunctionTest =
 
         Assert.Equal(5, state.WaitInSeconds)
         Assert.Equal("Hello MyStepFunctions", state.Message)
+    
+    [<EntryPoint>]
+    let main argv = 0

@@ -22,3 +22,6 @@ module ValuesControllerTests =
         Assert.True(response.Headers.ContainsKey("Content-Type"));
         Assert.Equal("application/json; charset=utf-8", response.Headers.Item("Content-Type"));
     }
+    
+    [<EntryPoint>]
+    let main argv = 0

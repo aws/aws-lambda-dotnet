@@ -39,3 +39,6 @@ module FunctionTest =
         
         Assert.Contains("id-foo", testLogger.Buffer.ToString())
         Assert.Contains("Stream processing complete", testLogger.Buffer.ToString())
+    
+    [<EntryPoint>]
+    let main argv = 0

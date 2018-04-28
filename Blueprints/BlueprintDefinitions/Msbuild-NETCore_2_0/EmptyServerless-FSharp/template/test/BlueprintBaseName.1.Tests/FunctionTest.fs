@@ -16,4 +16,6 @@ module FunctionTest =
         let response = functions.Get request  context
         Assert.Equal(200, response.StatusCode)
         Assert.Equal("Hello AWS Serverless", response.Body)
-
+    
+    [<EntryPoint>]
+    let main argv = 0

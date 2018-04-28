@@ -51,3 +51,7 @@ module HttpHandlersTests =
         Assert.True(response.Headers.ContainsKey("Content-Type"));
         Assert.Equal("text/plain", response.Headers.Item("Content-Type"));
     }    
+
+    
+    [<EntryPoint>]
+    let main argv = 0
