@@ -1,13 +1,15 @@
-# Empty AWS Serverless Application Project
+# AWS Lambda Simple S3 Function Project
 
 This starter project consists of:
 * serverless.template - an AWS CloudFormation Serverless Application Model template file for declaring your Serverless functions and other AWS resources
-* Function.cs - class file containing the C# method mapped to the single function declared in the template file
+* Function.fs - Code file containing the function handler method
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
 
 You may also have a test project depending on the options selected.
 
-The generated project contains a Serverless template declaration for a single AWS Lambda function that will be exposed through Amazon API Gateway as a HTTP *Get* operation. Edit the template to customize the function or add more functions and other resources needed by your application, and edit the function code in Function.cs. You can then deploy your Serverless application.
+The generated function handler responds to events on an Amazon S3 bucket. The handler receives the bucket and object key details in an S3Event instance and returns the content type of the object as the function output. Replace the body of this method, and parameters, to suit your needs.
+
+After deploying your function you must configure an Amazon S3 bucket as an event source to trigger your Lambda function.
 
 ## Here are some steps to follow from Visual Studio:
 
@@ -17,7 +19,7 @@ To view your deployed application open the Stack View window by double-clicking 
 
 ## Here are some steps to follow to get started from the command line:
 
-Once you have edited your template and code you can use the following command lines to deploy your application from the command line (these examples assume the project name is *BlueprintBaseName.1*):
+Once you have edited your function you can use the following command lines to build, test and deploy your function to AWS Lambda from the command line (these examples assume the project name is *SimpleS3Function*):
 
 Restore dependencies
 ```
@@ -31,8 +33,8 @@ Execute unit tests
     dotnet test
 ```
 
-Deploy application
+Deploy function to AWS Lambda
 ```
-    cd "BlueprintBaseName/src/BlueprintBaseName"
+    cd "BlueprintBaseName.1/src/BlueprintBaseName.1"
     dotnet lambda deploy-serverless
 ```

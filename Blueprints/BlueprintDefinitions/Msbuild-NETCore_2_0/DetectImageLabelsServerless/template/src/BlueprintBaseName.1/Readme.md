@@ -1,13 +1,14 @@
-# Empty AWS Serverless Application Project
+# AWS Lambda S3 and Image Rekognition Function Project
 
 This starter project consists of:
 * serverless.template - an AWS CloudFormation Serverless Application Model template file for declaring your Serverless functions and other AWS resources
-* Function.cs - class file containing the C# method mapped to the single function declared in the template file
+* Function.cs - class file containing a class with a single function handler method
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
 
 You may also have a test project depending on the options selected.
 
-The generated project contains a Serverless template declaration for a single AWS Lambda function that will be exposed through Amazon API Gateway as a HTTP *Get* operation. Edit the template to customize the function or add more functions and other resources needed by your application, and edit the function code in Function.cs. You can then deploy your Serverless application.
+The generated function handler responds to S3 events on an Amazon S3 bucket and if the object is a png or jpg file uses 
+Amazon Rekognition to detect labels. Once the labels are found it adds them as tags to the S3 Object.
 
 ## Here are some steps to follow from Visual Studio:
 
@@ -31,8 +32,8 @@ Execute unit tests
     dotnet test
 ```
 
-Deploy application
+Deploy function to AWS Lambda
 ```
-    cd "BlueprintBaseName/src/BlueprintBaseName"
+    cd "BlueprintBaseName.1/src/BlueprintBaseName.1"
     dotnet lambda deploy-serverless
 ```

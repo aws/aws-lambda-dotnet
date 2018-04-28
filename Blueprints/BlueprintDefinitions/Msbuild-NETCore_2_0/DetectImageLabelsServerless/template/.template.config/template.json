@@ -1,13 +1,12 @@
 {
-  "$schema": "http://json.schemastore.org/template",
   "author": "AWS",
   "classifications": ["AWS", "Lambda", "Serverless"],
-  "name": "Lambda Giraffe Web App",
-  "identity": "AWS.Lambda.Serverless.Giraffe.FSharp",
-  "groupIdentity": "AWS.Lambda.Serverless.Giraffe.Serverless",
-  "shortName": "serverless.Giraffe",
+  "name": "Serverless Detect Image Labels",
+  "identity": "AWS.Lambda.Serverless.DetectImageLabels.CSharp",
+  "groupIdentity": "AWS.Lambda.Serverless.DetectImageLabels",
+  "shortName": "serverless.DetectImageLabels",
   "tags": {
-    "language": "F#",
+    "language": "C#",
     "type": "project"
   },
   "sourceName": "BlueprintBaseName.1",
@@ -37,5 +36,5 @@
         "replaces": "BlueprintBaseName._1"
     }
   },
-  "primaryOutputs": [ { "path": "./src/BlueprintBaseName.1/BlueprintBaseName.1.fsproj" } ]
+  "primaryOutputs": [ { "path": "./src/BlueprintBaseName.1/BlueprintBaseName.1.csproj" } ]
 }
