@@ -58,7 +58,6 @@ type LambdaEntryPoint() =
             .UseContentRoot(contentRoot) 
             .Configure(Action<IApplicationBuilder> configureApp)
             .ConfigureServices(configureServices)
-            .ConfigureLogging(configureLogging)
             |> ignore
 
 // ---------------------------------
