@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -546,7 +547,11 @@ namespace Amazon.Lambda.AspNetCoreServer
                 response.Headers = new Dictionary<string, string>();
                 foreach (var kvp in responseFeatures.Headers)
                 {
-                    if (kvp.Value.Count == 1)
+                    if(string.Equals(kvp.Key, "Set-Cookie", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ProcessCookies(response.Headers, kvp.Value);
+                    }
+                    else if (kvp.Value.Count == 1)
                     {
                         response.Headers[kvp.Key] = kvp.Value[0];
                     }
@@ -613,6 +618,25 @@ namespace Amazon.Lambda.AspNetCoreServer
             PostMarshallResponseFeature(responseFeatures, response, lambdaContext);
 
             return response;
+        }
+
+        /// <summary>
+        /// To work around API Gateway's limitation only allowing one value per header name return back 
+        /// multiple cookie values with different casing of header values.
+        /// </summary>
+        /// <param name="apiGatewayHeaders"></param>
+        /// <param name="cookies"></param>
+        public static void ProcessCookies(IDictionary<string, string> apiGatewayHeaders, StringValues cookies)
+        {
+            int i = 0;
+            foreach (var cookieName in Utilities.Permute("set-cookie"))
+            {
+                apiGatewayHeaders[cookieName] = cookies[i++];
+                if (cookies.Count <= i)
+                {
+                    break;
+                }
+            }
         }
     }
 }
