@@ -4,12 +4,12 @@
   "name": "Lambda Empty Serverless",
   "identity": "AWS.Lambda.Serverless.Empty.CSharp",
   "groupIdentity": "AWS.Lambda.Serverless.Empty",
-  "shortName": "lambda.EmptyServerless",
+  "shortName": "serverless.EmptyServerless",
   "tags": {
     "language": "C#",
     "type": "project"
   },
-  "sourceName": "BlueprintBaseName",
+  "sourceName": "BlueprintBaseName.1",
   "preferNameDirectory": true,
   "symbols": {
     "profile": {
@@ -25,7 +25,16 @@
       "datatype": "string",
       "replaces" : "DefaultRegion",
       "defaultValue": ""
+    },
+    "safe-sourcename": {
+        "type": "generated",
+        "generator": "coalesce",
+        "parameters": {
+            "sourceVariableName": "safe_namespace",
+            "fallbackVariableName": "safe_name"
+        },
+        "replaces": "BlueprintBaseName._1"
     }
   },
-  "primaryOutputs": [ { "path": "./src/BlueprintBaseName/BlueprintBaseName.csproj" } ]
+  "primaryOutputs": [ { "path": "./src/BlueprintBaseName.1/BlueprintBaseName.1.csproj" } ]
 }

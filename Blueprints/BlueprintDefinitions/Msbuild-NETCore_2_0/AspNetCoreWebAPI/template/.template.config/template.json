@@ -1,15 +1,16 @@
 {
+  "$schema": "http://json.schemastore.org/template",
   "author": "AWS",
   "classifications": ["AWS", "Lambda", "Serverless"],
   "name": "Lambda ASP.NET Core Web API",
   "identity": "AWS.Lambda.Serverless.AspNetCoreWebAPI.CSharp",
   "groupIdentity": "AWS.Lambda.AspNetCoreWebAPI.Serverless",
-  "shortName": "lambda.AspNetCoreWebAPI",
+  "shortName": "serverless.AspNetCoreWebAPI",
   "tags": {
     "language": "C#",
     "type": "project"
   },
-  "sourceName": "BlueprintBaseName",
+  "sourceName": "BlueprintBaseName.1",
   "preferNameDirectory": true,
   "symbols": {
     "profile": {
@@ -25,7 +26,16 @@
       "datatype": "string",
       "replaces" : "DefaultRegion",
       "defaultValue": ""
+    },
+    "safe-sourcename": {
+        "type": "generated",
+        "generator": "coalesce",
+        "parameters": {
+            "sourceVariableName": "safe_namespace",
+            "fallbackVariableName": "safe_name"
+        },
+        "replaces": "BlueprintBaseName._1"
     }
   },
-  "primaryOutputs": [ { "path": "./src/BlueprintBaseName/BlueprintBaseName.csproj" } ]
+  "primaryOutputs": [ { "path": "./src/BlueprintBaseName.1/BlueprintBaseName.1.csproj" } ]
 }

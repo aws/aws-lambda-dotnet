@@ -1,1 +1,0 @@
-{  "profiles": {    "BLUEPRINT_BASE_NAME": {      "commandName": "Project",      "environmentVariables": {        "ASPNETCORE_ENVIRONMENT": "Development"      }    }  }}

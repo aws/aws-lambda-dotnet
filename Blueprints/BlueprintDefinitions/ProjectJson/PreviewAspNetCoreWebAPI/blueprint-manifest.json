@@ -1,8 +1,0 @@
-{
-    "display-name":"ASP.NET Core Web API",
-    "system-name":"PreviewAspNetCoreWebAPI",
-    "description": "Run an ASP.NET Core WEB API as an AWS Serverless application.",
-    "sort-order" : 150,    
-    "hidden-tags" : ["C#","ServerlessProject"],
-    "tags":["Preview", "AspNetCore"]
-}
