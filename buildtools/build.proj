@@ -166,7 +166,7 @@
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
-          Properties="TemplateName=serverless.GiraffeWebAPI;ProjectName=GiraffeWebAPIF;Lang=F#"/>		  
+          Properties="TemplateName=serverless.Giraffe;ProjectName=GiraffeF;Lang=F#"/>		  
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
