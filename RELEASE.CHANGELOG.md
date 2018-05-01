@@ -1,3 +1,14 @@
+### Release 2018-04-30
+* **Amazon.Lambda.AspNetCoreServer (2.0.3)**
+    * Add work around for returning multiple cookies. API Gateway only allows returning one value per header. Cookies are returned by the SET-COOKIE header. To get around the limitation the SET-COOKIE header is returned with difference casing for each cookie.
+    * Change how ASP.NET Core Lambda functions choose how to configure logging by checking for the existence of the LAMBDA_TASK_ROOT environment variable instead of the ASPNETCORE_ENVIRONMENT environment variable being set to Development.
+*  **Amazon.Lambda.Templates (3.0.0)**
+   *  Add F# based project templates including a new [Giraffe](https://github.com/giraffe-fsharp/Giraffe) based project template. To create an F# based Lambda project pass in the **-lang F#** command line switch.
+      *  ``dotnet new serverless.Giraffe -lang F# --region us-west-2 --profile default -o MyFSharpLambdaProject`` 
+   *  Change shortname prefix for Serverless based projects to **serverless** from **lambda**. Serverless projects are deployed with CloudFormation with any other required AWS resources defined in the CloudFormation template.
+   *  Add Serverless version of **DetectImageLabels** and **S3** templates which also create the S3 bucket and configure the notification as part of deployment.
+   *  Fixed issues when creating projects with '.' and '-' in the project name.
+
 ### Release 2018-03-26 21:00
 * **Amazon.Lambda.AspNetCoreServer (2.0.2)**
     * Fixed issue with encoding HTTP request resource path
