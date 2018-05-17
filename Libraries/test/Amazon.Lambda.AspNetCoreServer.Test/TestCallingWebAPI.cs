@@ -203,6 +203,18 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestTrailingSlashInPath()
+        {
+            var response = await this.InvokeAPIGatewayRequest("trailing-slash-in-path.json");
+
+            Assert.Equal(200, response.StatusCode);
+
+            var root = JObject.Parse(response.Body);
+            Assert.Equal("/Prod", root["PathBase"]?.ToString());
+            Assert.Equal("/foo/", root["Path"]?.ToString());
+        }
+
+        [Fact]
         public async Task TestAuthTestAccess()
         {
             var response = await this.InvokeAPIGatewayRequest("authtest-access-request.json");

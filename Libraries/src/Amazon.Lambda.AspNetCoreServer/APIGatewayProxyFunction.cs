@@ -436,6 +436,11 @@ namespace Amazon.Lambda.AspNetCoreServer
                     {
                         requestContextPath += "/";
                     }
+                    else if (!path.EndsWith("/") && requestContextPath.EndsWith("/"))
+                    {
+                        // Handle a trailing slash in the request path: e.g. https://myapigatewayid.execute-api.us-west-2.amazonaws.com/Prod/foo/
+                        requestFeatures.Path = path += "/";
+                    }
 
                     if (requestContextPath.EndsWith(path))
                     {
