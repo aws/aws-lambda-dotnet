@@ -25,5 +25,11 @@
         /// </summary>
         [DataMember(Name = "context")]
         public APIGatewayCustomAuthorizerContextOutput Context { get; set; }
+
+        /// <summary>
+        /// Gets or sets the usageIdentifierKey.
+        /// </summary>
+        [DataMember(Name = "usageIdentifierKey")]
+        public string UsageIdentifierKey { get; set; }
     }
 }
