@@ -38,6 +38,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         public const string APIGATEWAY_REQUEST = "APIGatewayRequest";
 
+        private AspNetCoreStartupMode _startupMode;
         private IWebHost _host;
         private APIGatewayServer _server;
 
@@ -79,11 +80,39 @@ namespace Amazon.Lambda.AspNetCoreServer
         public ResponseContentEncoding DefaultResponseContentEncoding { get; set; } = ResponseContentEncoding.Default;
 
         /// <summary>
-        /// Default constructor that AWS Lambda will invoke.
+        /// The modes for when the ASP.NET Core framework will be initialized.
         /// </summary>
-        protected APIGatewayProxyFunction(bool autoStart = true)
+        public enum AspNetCoreStartupMode
         {
-            if (autoStart)
+            /// <summary>
+            /// Initialize during the construction of APIGatewayProxyFunction
+            /// </summary>
+            Constructor,
+
+            /// <summary>
+            /// Initialize during the first incoming request
+            /// </summary>
+            FirstRequest
+        }
+
+        /// <summary>
+        /// Default Constructor. The ASP.NET Core Framework will be initialized as part of the construction.
+        /// </summary>
+        protected APIGatewayProxyFunction()
+            : this(AspNetCoreStartupMode.Constructor)
+        {
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="startupMode">Configure when the ASP.NET Core framework will be initialized</param>
+        protected APIGatewayProxyFunction(AspNetCoreStartupMode startupMode)
+        {
+            _startupMode = startupMode;
+
+            if (_startupMode == AspNetCoreStartupMode.Constructor)
             {
                 Start();
             }
