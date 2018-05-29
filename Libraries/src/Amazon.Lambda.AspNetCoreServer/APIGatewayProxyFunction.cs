@@ -38,8 +38,9 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         public const string APIGATEWAY_REQUEST = "APIGatewayRequest";
 
-        private readonly IWebHost _host;
-        private readonly APIGatewayServer _server;
+        private AspNetCoreStartupMode _startupMode;
+        private IWebHost _host;
+        private APIGatewayServer _server;
 
         // Defines a mapping from registered content types to the response encoding format
         // which dictates what transformations should be applied before returning response content
@@ -79,9 +80,56 @@ namespace Amazon.Lambda.AspNetCoreServer
         public ResponseContentEncoding DefaultResponseContentEncoding { get; set; } = ResponseContentEncoding.Default;
 
         /// <summary>
-        /// Default constructor that AWS Lambda will invoke.
+        /// The modes for when the ASP.NET Core framework will be initialized.
+        /// </summary>
+        public enum AspNetCoreStartupMode
+        {
+            /// <summary>
+            /// Initialize during the construction of APIGatewayProxyFunction
+            /// </summary>
+            Constructor,
+
+            /// <summary>
+            /// Initialize during the first incoming request
+            /// </summary>
+            FirstRequest
+        }
+
+        /// <summary>
+        /// Default Constructor. The ASP.NET Core Framework will be initialized as part of the construction.
         /// </summary>
         protected APIGatewayProxyFunction()
+            : this(AspNetCoreStartupMode.Constructor)
+        {
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="startupMode">Configure when the ASP.NET Core framework will be initialized</param>
+        protected APIGatewayProxyFunction(AspNetCoreStartupMode startupMode)
+        {
+            _startupMode = startupMode;
+
+            if (_startupMode == AspNetCoreStartupMode.Constructor)
+            {
+                Start();
+            }
+        }
+
+        private bool IsStarted
+        {
+            get
+            {
+                return _server != null;
+            }
+        }
+
+        /// <summary>
+        /// Should be called in the derived constructor 
+        /// </summary>
+        protected void Start()
         {
             var builder = CreateWebHostBuilder();
             Init(builder);
@@ -91,7 +139,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             _host.Start();
 
             _server = _host.Services.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as APIGatewayServer;
-            if(_server == null)
+            if (_server == null)
             {
                 throw new Exception("Failed to find the implementation APIGatewayServer for the IServer registration. This can happen if UseApiGateway was not called.");
             }
@@ -173,6 +221,11 @@ namespace Amazon.Lambda.AspNetCoreServer
         public virtual async Task<APIGatewayProxyResponse> FunctionHandlerAsync(APIGatewayProxyRequest request, ILambdaContext lambdaContext)
         {
             lambdaContext.Logger.LogLine($"Incoming {request.HttpMethod} requests to {request.Path}");
+
+            if (!IsStarted)
+            {
+                Start();
+            }
 
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request, lambdaContext);
