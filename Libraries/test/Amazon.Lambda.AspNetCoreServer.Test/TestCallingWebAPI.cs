@@ -1,6 +1,5 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -150,7 +149,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             var json = JsonConvert.SerializeObject(response);
             Assert.NotNull(json);
-            var expected = "{\"principalId\":\"com.amazon.someuser\",\"policyDocument\":{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"execute-api:Invoke\"],\"Resource\":[\"arn:aws:execute-api:us-west-2:1234567890:apit123d45/Prod/GET/*\"]}]},\"context\":{\"stringKey\":\"Hey I'm a string\",\"boolKey\":true,\"numKey\":9}}";
+            var expected = "{\"principalId\":\"com.amazon.someuser\",\"policyDocument\":{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"execute-api:Invoke\"],\"Resource\":[\"arn:aws:execute-api:us-west-2:1234567890:apit123d45/Prod/GET/*\"]}]},\"context\":{\"stringKey\":\"Hey I'm a string\",\"boolKey\":true,\"numKey\":9},\"usageIdentifierKey\":null}";
             Assert.Equal(expected, json);
         }
 
@@ -232,7 +231,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.NotEqual(200, response.StatusCode);
         }
 
-        // Covers the test case when using a custom proxy request, probbaly for testing, and doesn't specify the resource
+        // Covers the test case when using a custom proxy request, probably for testing, and doesn't specify the resource
         [Fact]
         public async Task TestMissingResourceInRequest()
         {
@@ -241,6 +240,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal(200, response.StatusCode);
             Assert.True(response.Body.Length > 0);
             Assert.Contains("application/json", response.Headers["Content-Type"]);
+        }
+
+        // If there is no content-type we must make sure Content-Type is set to null in the headers collection so API Gateway doesn't return a default Content-Type.
+        [Fact]
+        public async Task TestDeleteNoContentContentType()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-delete-no-content-type-apigatway-request.json");
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.True(response.Body.Length == 0);
+            Assert.Null(response.Headers["Content-Type"]);
         }
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)

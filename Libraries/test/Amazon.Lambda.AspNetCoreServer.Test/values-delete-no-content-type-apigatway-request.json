@@ -1,0 +1,60 @@
+﻿{
+  "resource": "\/{proxy+}",
+  "path": "\/api\/values\/1",
+  "httpMethod": "DELETE",
+  "headers": {
+    "Accept": "*/*",
+    "accept-encoding": "gzip, deflate",
+    "cache-control": "no-cache",
+    "CloudFront-Forwarded-Proto": "https",
+    "CloudFront-Is-Desktop-Viewer": "true",
+    "CloudFront-Is-Mobile-Viewer": "false",
+    "CloudFront-Is-SmartTV-Viewer": "false",
+    "CloudFront-Is-Tablet-Viewer": "false",
+    "CloudFront-Viewer-Country": "US",
+    "Content-Type": "application/json",
+    "Host": "0cev8huwgi.execute-api.us-west-2.amazonaws.com",
+    "Postman-Token": "59038a76-f087-4d02-9609-ffa585adea26",
+    "User-Agent": "PostmanRuntime/7.1.1",
+    "Via": "1.1 8a4a49fefe26d51023ff83ac514d5779.cloudfront.net (CloudFront)",
+    "X-Amz-Cf-Id": "sZv3e3t5GfYGBAP4ioqulwg0XJbg-HUHUQcufF3MHQ2DA4EGBDE9yw==",
+    "X-Amzn-Trace-Id": "Root=1-5b0ca9b9-086dcd50babaabd6dd79470e",
+    "X-Forwarded-For": "50.35.78.102, 52.46.16.75",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "queryStringParameters": null,
+  "pathParameters": {
+    "proxy": "api\/values\/1"
+  },
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "1laqli",
+    "resourcePath": "\/{proxy+}",
+    "httpMethod": "DELETE",
+    "extendedRequestId": "Hn91DGBTPHcFW9w=",
+    "requestTime": "29\/May\/2018:01:15:37 +0000",
+    "path": "\/Prod\/api\/values\/1",
+    "accountId": "626492997873",
+    "protocol": "HTTP\/1.1",
+    "stage": "Prod",
+    "requestTimeEpoch": 1527556537945,
+    "requestId": "cbb0b56b-62dd-11e8-8e09-279e66e99d50",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "accountId": null,
+      "cognitoIdentityId": null,
+      "caller": null,
+      "sourceIp": "50.35.78.102",
+      "accessKey": null,
+      "cognitoAuthenticationType": null,
+      "cognitoAuthenticationProvider": null,
+      "userArn": null,
+      "userAgent": "PostmanRuntime\/7.1.1",
+      "user": null
+    },
+    "apiId": "0cev8huwgi"
+  },
+  "body": "{\r\n  \"VideoName\": \"Intro\",\r\n  \"VideoUrl\" : \"http:\/\/d1un85p0f2qstc.cloudfront.net\/visualstudio\/introduction\/introduction.mp4\"\r\n}",
+  "isBase64Encoded": false
+}
