@@ -1,3 +1,11 @@
+### Release 2018-05-29
+* **Amazon.Lambda.AspNetCoreServer (2.0.4)**
+  * Pull request [#277](https://github.com/aws/aws-lambda-dotnet/pull/277). Fixed issue with calculating PathBase for URLs with trailing slashes.
+  * Pull request [#267](https://github.com/aws/aws-lambda-dotnet/pull/267). Provide ability to delay initializing the ASP.NET Core framework till first request.
+  * Fixed issue with ASP.NET Core not returning a content-type header and API Gateway incorrectly converting content-type to `application/json`.
+* **Amazon.Lambda.APIGatewayEvents (1.1.3)**
+  * Add missing property `UsageIdentifierKey` to `APIGatewayCustomAuthorizerResponse`
+
 ### Release 2018-04-30
 * **Amazon.Lambda.AspNetCoreServer (2.0.3)**
     * Add work around for returning multiple cookies. API Gateway only allows returning one value per header. Cookies are returned by the SET-COOKIE header. To get around the limitation the SET-COOKIE header is returned with difference casing for each cookie.
