@@ -263,6 +263,8 @@
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.SNSEvents"/>
     <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.SQSEvents"/>
+    <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.TestUtilities"/>
 
     <RemoveNonSymbolsPackages

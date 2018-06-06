@@ -24,6 +24,7 @@ These are the packages and their README.md files:
 * [Amazon.Lambda.S3Events](Libraries/src/Amazon.Lambda.S3Events) - [README.md](Libraries/src/Amazon.Lambda.S3Events/README.md)
 * [Amazon.Lambda.SimpleEmailEvents](Libraries/src/Amazon.Lambda.SimpleEmailEvents) - [README.md](Libraries/src/Amazon.Lambda.SimpleEmailEvents/README.md)
 * [Amazon.Lambda.SNSEvents](Libraries/src/Amazon.Lambda.SNSEvents) - [README.md](Libraries/src/Amazon.Lambda.SNSEvents/README.md)
+* [Amazon.Lambda.SQSEvents](Libraries/src/Amazon.Lambda.SQSEvents) - [README.md](Libraries/src/Amazon.Lambda.SQSEvents/README.md)
 
 ### Amazon.Lambda.Tools
 

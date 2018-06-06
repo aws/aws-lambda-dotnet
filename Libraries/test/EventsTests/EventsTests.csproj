@@ -37,6 +37,7 @@
     <ProjectReference Include="..\..\src\Amazon.Lambda.SimpleEmailEvents\Amazon.Lambda.SimpleEmailEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.SNSEvents\Amazon.Lambda.SNSEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj" />
   </ItemGroup>
 
   <ItemGroup>

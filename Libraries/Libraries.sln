@@ -67,6 +67,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TestFunctionFSharp", "test\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestFunctionCSharp", "test\TestFunctionFSharp\TestFunctionCSharp\TestFunctionCSharp.csproj", "{2810A66B-3A03-4889-A4D0-0E8838474A4A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.SQSEvents", "src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj", "{74BFF877-D276-43BF-AC3A-E65BF26E4E2F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -177,6 +179,10 @@ Global
 		{2810A66B-3A03-4889-A4D0-0E8838474A4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2810A66B-3A03-4889-A4D0-0E8838474A4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2810A66B-3A03-4889-A4D0-0E8838474A4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74BFF877-D276-43BF-AC3A-E65BF26E4E2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74BFF877-D276-43BF-AC3A-E65BF26E4E2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74BFF877-D276-43BF-AC3A-E65BF26E4E2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74BFF877-D276-43BF-AC3A-E65BF26E4E2F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -209,6 +215,7 @@ Global
 		{8C9EA16D-6055-421B-ABE7-1B0E35259DFC} = {BB021F02-D90F-469C-8D56-919771B7F4DE}
 		{CB38FA21-5814-4573-94C7-3672D61BC8B8} = {BB021F02-D90F-469C-8D56-919771B7F4DE}
 		{2810A66B-3A03-4889-A4D0-0E8838474A4A} = {BB021F02-D90F-469C-8D56-919771B7F4DE}
+		{74BFF877-D276-43BF-AC3A-E65BF26E4E2F} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}
