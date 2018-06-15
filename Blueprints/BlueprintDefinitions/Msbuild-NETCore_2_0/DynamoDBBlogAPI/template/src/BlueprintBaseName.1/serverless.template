@@ -38,7 +38,7 @@
       "Type" : "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::GetBlogsAsync",
-        "Runtime": "dotnetcore2.0",
+        "Runtime": "dotnetcore2.1",
         "CodeUri": "",
         "Description": "Function to get a list of blogs",
         "MemorySize": 256,
@@ -66,7 +66,7 @@
       "Type" : "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::GetBlogAsync",
-        "Runtime": "dotnetcore2.0",
+        "Runtime": "dotnetcore2.1",
         "CodeUri": "",
         "Description": "Function to get a single blog",
         "MemorySize": 256,
@@ -95,7 +95,7 @@
       "Type" : "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::AddBlogAsync",
-        "Runtime": "dotnetcore2.0",
+        "Runtime": "dotnetcore2.1",
         "CodeUri": "",
         "Description": "Function to add a blog",
         "MemorySize": 256,
@@ -123,7 +123,7 @@
       "Type" : "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::RemoveBlogAsync",
-        "Runtime": "dotnetcore2.0",
+        "Runtime": "dotnetcore2.1",
         "CodeUri": "",
         "Description": "Function to remove a blog",
         "MemorySize": 256,

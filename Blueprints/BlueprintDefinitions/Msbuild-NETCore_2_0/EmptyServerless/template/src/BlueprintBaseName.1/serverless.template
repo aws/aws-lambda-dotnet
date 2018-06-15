@@ -9,7 +9,7 @@
       "Type" : "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::Get",
-        "Runtime": "dotnetcore2.0",
+        "Runtime": "dotnetcore2.1",
         "CodeUri": "",
         "MemorySize": 256,
         "Timeout": 30,

@@ -11,7 +11,7 @@
   "profile":"DefaultProfile",
   "region" : "DefaultRegion",
   "configuration": "Release",
-  "framework": "netcoreapp2.0",
+  "framework": "netcoreapp2.1",
   "s3-prefix": "BlueprintBaseName/",
   "template": "serverless.template",
   "template-parameters": "ShouldCreateTable=true;BlogTableName="

@@ -28,7 +28,7 @@
       "Type" : "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Function::FunctionHandler",
-        "Runtime": "dotnetcore2.0",
+        "Runtime": "dotnetcore2.1",
         "CodeUri": "",
         "Description": "Default function",
         "MemorySize": 256,
