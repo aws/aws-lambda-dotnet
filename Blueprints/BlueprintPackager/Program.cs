@@ -8,13 +8,13 @@ namespace Packager
         public static void Main(string[] args)
         {
             var outputDirectory = Path.GetFullPath(@"../../Deployment/Blueprints");
-            var msbuildBased_2_0_Blueprints = Path.GetFullPath(@"../BlueprintDefinitions/Msbuild-NETCore_2_0");
+            var msbuildBased_2_1_Blueprints = Path.GetFullPath(@"../BlueprintDefinitions/Msbuild-NETCore_2_1");
             try
             {
                 Init(outputDirectory);
 
-                var vsMsbuildPackager_2_0 = new VSMsbuildBlueprintPackager(msbuildBased_2_0_Blueprints, Path.Combine(outputDirectory, "VisualStudioBlueprintsMsbuild_2_0"));
-                vsMsbuildPackager_2_0.Execute();
+                var vsMsbuildPackager_2_1 = new VSMsbuildBlueprintPackager(msbuildBased_2_1_Blueprints, Path.Combine(outputDirectory, "VisualStudioBlueprintsMsbuild_2_1"));
+                vsMsbuildPackager_2_1.Execute();
             }
             catch(Exception e)
             {

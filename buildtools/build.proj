@@ -70,7 +70,7 @@
       WorkingDirectory="..\Blueprints\BlueprintPackager"/>
 
     <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages"
-      WorkingDirectory="../Blueprints/BlueprintDefinitions/Msbuild-NETCore_2_0"/>
+      WorkingDirectory="../Blueprints/BlueprintDefinitions/Msbuild-NETCore_2_1"/>
   </Target>
 
   
@@ -80,7 +80,7 @@
     <RemoveDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew"/>
     <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew"/>	
   
-	<Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\Msbuild-NETCore_2_0"
+	<Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\Msbuild-NETCore_2_1"
 		WorkingDirectory="..\"/>  
 		
     <MSBuild
