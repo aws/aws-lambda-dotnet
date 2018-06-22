@@ -25,7 +25,7 @@ type Startup private () =
         // services.AddAWSService<Amazon.S3.IAmazonS3>() |> ignore
 
         // Add framework services.
-        services.AddMvc() |> ignore
+        services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1) |> ignore
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     member this.Configure(app: IApplicationBuilder, env: IHostingEnvironment) =
