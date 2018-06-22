@@ -9,46 +9,19 @@
 
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
-    <VSToolsPath Condition="'$(VSToolsPath)' == ''">C:\Program Files (x86)\MSBuild\Microsoft\VisualStudio\v14.0</VSToolsPath>
 
 	<SignAssembly Condition=" '$(SignAssembly)' == '' ">true</SignAssembly>
     <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
-
-    <UserDirectory Condition="'$(UserDirectory)' == ''">$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))</UserDirectory>
   </PropertyGroup>
 
-  <Import Project="$(VSToolsPath)\DotNet\Microsoft.DotNet.Props" Condition="'$(VSToolsPath)' != ''" />
-  <Import Project="$(VSToolsPath)\DotNet\Microsoft.DotNet.targets" Condition="'$(VSToolsPath)' != ''" />
 
   <Target Name="full-build" DependsOnTargets="test-blueprints-dotnetnew;package-blueprints;run-tests;build-nuget-packages">
 
   </Target>
 
-  <UsingTask TaskName="RemoveNonSymbolsPackages" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
-    <ParameterGroup>
-      <PackagesDir ParameterType="System.String" Required="true" />
-    </ParameterGroup>
-    <Task>
-      <Using Namespace="System" />
-      <Using Namespace="System.IO" />
-      <Code Type="Fragment" Language="cs">
-        <![CDATA[
-            var symbolsFiles = Directory.GetFiles(PackagesDir, "*.symbols.nupkg");
-            foreach (var file in symbolsFiles)
-            {
-                var newFile = file.Replace(".symbols.nupkg", ".nupkg");
-                Log.LogMessage(string.Format("Moving '{0}' to '{1}'.", file, newFile), MessageImportance.Normal);
-                File.Delete(newFile);
-                File.Move(file, newFile);
-            }
-		]]>
-      </Code>
-    </Task>
-  </UsingTask>
 
 
-
-  <Target Name="init" DependsOnTargets="GetSDKToolingInfoTarget">
+  <Target Name="init" DependsOnTargets="">
 
     <RemoveDir Directories="../Deployment"/>
     <MakeDir Directories="../Deployment/nuget-packages"/>
@@ -186,7 +159,7 @@
 	  		
   </Target>
   
-  <Target Name="run-blueprint-dotnetnew" DependsOnTargets="GetSDKToolingInfoTarget">
+  <Target Name="run-blueprint-dotnetnew" DependsOnTargets="">
 
 
     <Exec Command="dotnet new $(TemplateName) -lang $(Lang) -n $(ProjectName) --profile default --region us-east-1"
@@ -264,9 +237,5 @@
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.SNSEvents"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.TestUtilities"/>
-
-    <RemoveNonSymbolsPackages
-        PackagesDir="..\Deployment\nuget-packages"
-            />
   </Target>
 </Project>
