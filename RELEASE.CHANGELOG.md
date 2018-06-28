@@ -1,3 +1,12 @@
+### Release 2018-06-28
+* **Amazon.Lambda.SQSEvents (1.0.0)**
+	* New package for AWS Lambda event types for Amazon Simple Queue Service (SQS).
+* **Amazon.Lambda.Serialization.Json (1.3.0)**
+	* Updated to handle the base 64 encoded strings coming from SQS events into .NET System.IO.MemoryStream objects.
+* **Blueprints**
+    * New Amazon SQS blueprint.
+    *  **Amazon.Lambda.Templates (3.1.0)** released with latest blueprints.
+
 ### Release 2018-05-29
 * **Amazon.Lambda.AspNetCoreServer (2.0.4)**
   * Pull request [#277](https://github.com/aws/aws-lambda-dotnet/pull/277). Fixed issue with calculating PathBase for URLs with trailing slashes.
