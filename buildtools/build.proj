@@ -119,6 +119,10 @@
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.SQS;ProjectName=SQSFunctionC;Lang=C#"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
           Properties="TemplateName=serverless.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPIC;Lang=C#"/>		  
     <MSBuild
           Projects="$(MSBuildProjectFile)"
@@ -235,6 +239,8 @@
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.SimpleEmailEvents"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.SNSEvents"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.SQSEvents"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.TestUtilities"/>
   </Target>

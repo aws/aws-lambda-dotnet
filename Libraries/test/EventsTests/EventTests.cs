@@ -9,6 +9,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.ConfigEvents;
     using Amazon.Lambda.SimpleEmailEvents;
     using Amazon.Lambda.SNSEvents;
+    using Amazon.Lambda.SQSEvents;
     using Amazon.Lambda.APIGatewayEvents;
     using Amazon.Lambda.LexEvents;
     using Amazon.Lambda.KinesisFirehoseEvents;
@@ -334,6 +335,70 @@ namespace Amazon.Lambda.Tests
             {
                 var snsRecord = record.Sns;
                 Console.WriteLine($"[{record.EventSource} {snsRecord.Timestamp}] Message = {snsRecord.Message}");
+            }
+        }
+
+        [Fact]
+        public void SQSTest()
+        {
+            using (var fileStream = File.OpenRead("sqs-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var sqsEvent = serializer.Deserialize<SQSEvent>(fileStream);
+
+                Assert.Equal(sqsEvent.Records.Count, 1);
+                var record = sqsEvent.Records[0];
+                Assert.Equal("MessageID", record.MessageId);
+                Assert.Equal("MessageReceiptHandle", record.ReceiptHandle);
+                Assert.Equal("Message Body", record.Body);
+                Assert.Equal("fce0ea8dd236ccb3ed9b37dae260836f", record.Md5OfBody );
+                Assert.Equal("582c92c5c5b6ac403040a4f3ab3115c9", record.Md5OfMessageAttributes);
+                Assert.Equal("arn:aws:sqs:us-west-2:123456789012:SQSQueue", record.EventSourceArn);
+                Assert.Equal("aws:sqs", record.EventSource);
+                Assert.Equal("us-west-2", record.AwsRegion);
+                Assert.Equal("2", record.Attributes["ApproximateReceiveCount"]);
+                Assert.Equal("1520621625029", record.Attributes["SentTimestamp"]);
+                Assert.Equal("AROAIWPX5BD2BHG722MW4:sender", record.Attributes["SenderId"]);
+                Assert.Equal("1520621634884", record.Attributes["ApproximateFirstReceiveTimestamp"]);
+
+                Assert.Equal(2, record.MessageAttributes.Count);
+                {
+                    var attribute1 = record.MessageAttributes["Attribute1"];
+                    Assert.NotNull(attribute1);
+
+                    Assert.Equal("123", attribute1.StringValue);
+                    Assert.Equal("Smaug", new StreamReader(attribute1.BinaryValue).ReadToEnd());
+                    Assert.Equal(2, attribute1.StringListValues.Count);
+                    Assert.Equal("a1", attribute1.StringListValues[0]);
+                    Assert.Equal("a2", attribute1.StringListValues[1]);
+
+                    Assert.Equal(2, attribute1.BinaryListValues.Count);
+                    Assert.Equal("Vermithrax", new StreamReader(attribute1.BinaryListValues[0]).ReadToEnd());
+                    Assert.Equal("Pejorative", new StreamReader(attribute1.BinaryListValues[1]).ReadToEnd());
+
+                    Assert.Equal("Number", attribute1.DataType);
+                }
+
+                {
+                    var attribute2 = record.MessageAttributes["Attribute2"];
+                    Assert.NotNull(attribute2);
+                    Assert.Equal("AttributeValue2", attribute2.StringValue);
+                    Assert.Equal(2, attribute2.StringListValues.Count);
+                    Assert.Equal("b1", attribute2.StringListValues[0]);
+                    Assert.Equal("b2", attribute2.StringListValues[1]);
+
+                    Assert.Equal("String", attribute2.DataType);
+                }
+
+                Handle(sqsEvent);
+            }
+        }
+
+        private static void Handle(SQSEvent sqsEvent)
+        {
+            foreach (var record in sqsEvent.Records)
+            {
+                Console.WriteLine($"[{record.EventSource}] Body = {record.Body}");
             }
         }
 

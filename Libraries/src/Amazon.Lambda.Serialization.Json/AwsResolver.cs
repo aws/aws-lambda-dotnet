@@ -66,6 +66,20 @@ namespace Amazon.Lambda.Serialization.Json
                     }
                 }
             }
+            else if (type.FullName.Equals("Amazon.Lambda.SQSEvents.SQSEvent+MessageAttribute", StringComparison.Ordinal))
+            {
+                foreach (JsonProperty property in properties)
+                {
+                    if (property.PropertyName.Equals("BinaryValue", StringComparison.Ordinal))
+                    {
+                        property.MemberConverter = new JsonToMemoryStreamDataConverter();
+                    }
+                    else if (property.PropertyName.Equals("BinaryListValues", StringComparison.Ordinal))
+                    {
+                        property.MemberConverter = new JsonToMemoryStreamListDataConverter();
+                    }
+                }
+            }
 
             return properties;
         }
