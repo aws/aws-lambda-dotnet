@@ -6,7 +6,7 @@ This starter project consists of:
 
 You may also have a test project depending on the options selected.
 
-The generated function handler responds to events on an Amazon SQS queue. The handler receives the bucket and object key details in an SQSEvent instance and returns the content type of the object as the function output. Replace the body of this method, and parameters, to suit your needs.
+The generated function handler responds to events on an Amazon SQS queue.
 
 After deploying your function you must configure an Amazon SQS queue as an event source to trigger your Lambda function.
 
@@ -18,7 +18,7 @@ To view your deployed function open its Function View window by double-clicking 
 
 To perform testing against your deployed function use the Test Invoke tab in the opened Function View window.
 
-To configure event sources for your deployed function, for example to have your function invoked when an object is created in an Amazon S3 bucket, use the Event Sources tab in the opened Function View window.
+To configure event sources for your deployed function go to the AWS Lambda console to select your SQS queue as the event source.
 
 To update the runtime configuration of your deployed function use the Configuration tab in the opened Function View window.
 

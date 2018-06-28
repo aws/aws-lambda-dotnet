@@ -44,7 +44,7 @@ namespace BlueprintBaseName._1
         {
             context.Logger.LogLine($"Processed message {message.Body}");
 
-            // TODO: Do interesting based on the new message
+            // TODO: Do interesting work based on the new message
             await Task.CompletedTask;
         }
     }
