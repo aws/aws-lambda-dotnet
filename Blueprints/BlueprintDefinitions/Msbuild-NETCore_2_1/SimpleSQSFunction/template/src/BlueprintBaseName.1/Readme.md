@@ -18,7 +18,7 @@ To view your deployed function open its Function View window by double-clicking 
 
 To perform testing against your deployed function use the Test Invoke tab in the opened Function View window.
 
-To configure event sources for your deployed function go to the AWS Lambda console to select your SQS queue as the event source.
+To configure event sources for your deployed function use the Event Sources tab in the opened Function View window.
 
 To update the runtime configuration of your deployed function use the Configuration tab in the opened Function View window.
 

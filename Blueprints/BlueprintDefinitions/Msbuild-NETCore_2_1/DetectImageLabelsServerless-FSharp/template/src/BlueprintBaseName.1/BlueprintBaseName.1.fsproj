@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.3.16.2" />
-    <PackageReference Include="AWSSDK.Rekognition" Version="3.3.8" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.18.6" />
+    <PackageReference Include="AWSSDK.Rekognition" Version="3.3.8.10" />
 
     <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.3.0" />
@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.1.3" />
+    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>
