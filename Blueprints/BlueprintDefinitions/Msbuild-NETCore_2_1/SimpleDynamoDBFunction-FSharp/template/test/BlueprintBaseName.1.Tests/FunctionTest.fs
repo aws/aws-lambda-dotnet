@@ -20,14 +20,14 @@ module FunctionTest =
         let keys = dict [ ("id", AttributeValue(S = "MyId")) ]
 
         let newImage = dict [
-            ("field1", AttributeValue(S = "NewValue"))
-            ("field2", AttributeValue(S = "AnotherNewValue"))
-        ]
+                            ("field1", AttributeValue(S = "NewValue"))
+                            ("field2", AttributeValue(S = "AnotherNewValue"))
+                        ]
 
         let oldImages = dict [
-            ("field1", AttributeValue(S = "OldValue"))
-            ("field2", AttributeValue(S = "AnotherOldValue"))
-        ]
+                            ("field1", AttributeValue(S = "OldValue"))
+                            ("field2", AttributeValue(S = "AnotherOldValue"))
+                        ]
 
         let streamRecord =
             StreamRecord(
