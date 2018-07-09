@@ -1,3 +1,9 @@
+### Release 2018-07-09
+* **Blueprints**
+    * Updated blueprints to use the new .NET Core 2.1 Lambda runtime.
+    * Pull request [#291](https://github.com/aws/aws-lambda-dotnet/pull/291). Improving F# blueprints. Thanks to [sharptom](https://github.com/sharptom)
+    *  **Amazon.Lambda.Templates (3.2.0)** released with latest blueprints.
+
 ### Release 2018-06-28
 * **Amazon.Lambda.SQSEvents (1.0.0)**
 	* New package for AWS Lambda event types for Amazon Simple Queue Service (SQS).
