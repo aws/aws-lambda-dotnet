@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
 	<PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="2.0.4" />
-  <PackageReference Include="Microsoft.AspNetCore.App" />
+  <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.0" />
   </ItemGroup>
   <ItemGroup>
     <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.2.0" />
