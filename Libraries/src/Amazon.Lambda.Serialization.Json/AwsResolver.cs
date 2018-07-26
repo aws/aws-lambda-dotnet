@@ -80,6 +80,16 @@ namespace Amazon.Lambda.Serialization.Json
                     }
                 }
             }
+            else if (type.FullName.Equals("Amazon.Lambda.ScheduledEvents.ScheduledEvent", StringComparison.Ordinal))
+            {
+                foreach (JsonProperty property in properties)
+                {
+                    if (property.PropertyName.Equals("DetailType", StringComparison.Ordinal))
+                    {
+                        property.PropertyName = "detail-type";
+                    }
+                }
+            }
 
             return properties;
         }
