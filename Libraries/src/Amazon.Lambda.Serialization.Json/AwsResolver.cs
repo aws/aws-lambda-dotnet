@@ -80,7 +80,9 @@ namespace Amazon.Lambda.Serialization.Json
                     }
                 }
             }
-            else if (type.FullName.Equals("Amazon.Lambda.ScheduledEvents.ScheduledEvent", StringComparison.Ordinal))
+            else if (type.FullName.Equals("Amazon.Lambda.CloudWatchEvents.ICloudWatchEvent", StringComparison.Ordinal)
+                     || type.FullName.Equals("Amazon.Lambda.ScheduledEvents.ScheduledEvent", StringComparison.Ordinal)
+                     || type.FullName.Equals("Amazon.Lambda.ECSEvents.ECSEvent", StringComparison.Ordinal))
             {
                 foreach (JsonProperty property in properties)
                 {
