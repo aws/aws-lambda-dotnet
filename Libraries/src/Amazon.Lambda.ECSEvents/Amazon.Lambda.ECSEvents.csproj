@@ -3,13 +3,13 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <Description>Amazon Lambda .NET Core support - ScheduledEvents package.</Description>
+    <Description>Amazon Lambda .NET Core support - ECSEvents package.</Description>
     <TargetFramework>netstandard1.3</TargetFramework>
     <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
-    <AssemblyTitle>Amazon.Lambda.ScheduledEvents</AssemblyTitle>
+    <AssemblyTitle>Amazon.Lambda.ECSEvents</AssemblyTitle>
     <VersionPrefix>1.0.0</VersionPrefix>
-    <AssemblyName>Amazon.Lambda.ScheduledEvents</AssemblyName>
-    <PackageId>Amazon.Lambda.ScheduledEvents</PackageId>
+    <AssemblyName>Amazon.Lambda.ECSEvents</AssemblyName>
+    <PackageId>Amazon.Lambda.ECSEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
 
