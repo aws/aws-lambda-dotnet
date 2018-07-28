@@ -21,17 +21,29 @@
         /// </summary>
         public string Region { get; set; }
         
+        /// <summary>
+        /// An empty object 
+        /// </summary>
         public Detail Detail { get; set; }
         
         /// <summary>
-        /// Static string of "Scheduled Event"
+        /// Static string of "Scheduled Event" or null
         /// </summary>
         public string DetailType { get; set; }
         
+        /// <summary>
+        /// Static string of "aws.events"
+        /// </summary>
         public string Source { get; set; }
         
+        /// <summary>
+        /// The event time stamp. 
+        /// </summary>
         public DateTime Time { get; set; }
         
+        /// <summary>
+        /// The schedule Id 
+        /// </summary>
         public string Id { get; set; }
         
         /// <summary>
