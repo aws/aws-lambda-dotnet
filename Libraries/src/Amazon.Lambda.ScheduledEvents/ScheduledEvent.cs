@@ -4,15 +4,20 @@
     using System.Collections.Generic;
 
     /// <summary>
-    /// AWS Config event
+    /// AWS Scheduled event
     /// http://docs.aws.amazon.com/config/latest/developerguide/evaluate-config_develop-rules.html
     /// http://docs.aws.amazon.com/config/latest/developerguide/evaluate-config_develop-rules_example-events.html
     /// https://docs.aws.amazon.com/lambda/latest/dg/eventsources.html#eventsources-scheduled-event
     /// </summary>
-    public class ScheduledEvent
+    public class ScheduledEvent<T>
     {
         /// <summary>
-        /// The ID of the AWS account that owns the rule.
+        /// The version of the event based on trigger source
+        /// </summary>
+        public string Version { get; set; }
+        
+        /// <summary>
+        /// The ID of the AWS account that owns the rule
         /// </summary>
         public string Account { get; set; }
 
@@ -22,17 +27,23 @@
         public string Region { get; set; }
         
         /// <summary>
-        /// An empty object 
+        /// A custom object based on trigger source.
+        /// Example: CloudWatch rule will result in an empty object
+        /// Example: ECS Task State Change will result in a rather large object
         /// </summary>
-        public Detail Detail { get; set; }
+        public T Detail { get; set; }
         
         /// <summary>
-        /// Static string of "Scheduled Event" or null
+        /// A string description of the detail object.
+        /// Example: CloudWatch will be null
+        /// Example: ECS Task state change will be "ECS Task State Change"
         /// </summary>
         public string DetailType { get; set; }
         
         /// <summary>
-        /// Static string of "aws.events"
+        /// The source of the invoking scheduled event
+        /// Example: CloudWatch will be "aws.events"
+        /// Example: ECS Task state change will be "aws.ecs"
         /// </summary>
         public string Source { get; set; }
         
@@ -50,12 +61,5 @@
         /// The resource of the invoking schedule 
         /// </summary>
         public List<string> Resources { get; set; }
-    }
-    
-    /// <summary>
-    /// The class representing the information for a Detail
-    /// </summary>
-    public class Detail
-    {
     }
 }
