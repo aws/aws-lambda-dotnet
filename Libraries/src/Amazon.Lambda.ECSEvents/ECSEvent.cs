@@ -10,7 +10,7 @@
     /// http://docs.aws.amazon.com/config/latest/developerguide/evaluate-config_develop-rules_example-events.html
     /// https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_cwe_events.html
     /// </summary>
-    public class ECSEvent<T> : ICloudWatchEvent<Detail>
+    public class ECSEvent : ICloudWatchEvent<Detail>
     {
         /// <inheritdoc />
         /// The version in the detail object of the event describes the version of the associated resource.
