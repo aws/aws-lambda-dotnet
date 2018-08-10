@@ -227,7 +227,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             {
                 Start();
             }
-            _logger.LogInformation($"Incoming {request.HttpMethod} requests to {request.Path}");
+            _logger.LogDebug($"Incoming {request.HttpMethod} requests to {request.Path}");
 
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request, lambdaContext);
@@ -314,20 +314,20 @@ namespace Amazon.Lambda.AspNetCoreServer
             catch (AggregateException agex)
             {
                 ex = agex;
-                _logger.LogDebug($"Caught AggregateException: '{agex}'");
+                _logger.LogError($"Caught AggregateException: '{agex}'");
                 var sb = new StringBuilder();
                 foreach (var newEx in agex.InnerExceptions)
                 {
                     sb.AppendLine(this.ErrorReport(newEx));
                 }
 
-                _logger.LogDebug(sb.ToString());
+                _logger.LogError(sb.ToString());
                 defaultStatusCode = 500;
             }
             catch (ReflectionTypeLoadException rex)
             {
                 ex = rex;
-                _logger.LogDebug($"Caught ReflectionTypeLoadException: '{rex}'");
+                _logger.LogError($"Caught ReflectionTypeLoadException: '{rex}'");
                 var sb = new StringBuilder();
                 foreach (var loaderException in rex.LoaderExceptions)
                 {
@@ -342,14 +342,14 @@ namespace Amazon.Lambda.AspNetCoreServer
                     }
                 }
 
-                _logger.LogDebug(sb.ToString());
+                _logger.LogError(sb.ToString());
                 defaultStatusCode = 500;
             }
             catch (Exception e)
             {
                 ex = e;
                 if (rethrowUnhandledError) throw;
-                _logger.LogDebug($"Unknown error responding to request: {this.ErrorReport(e)}");
+                _logger.LogError($"Unknown error responding to request: {this.ErrorReport(e)}");
                 defaultStatusCode = 500;
             }
             finally
