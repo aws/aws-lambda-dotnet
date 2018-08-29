@@ -10,7 +10,7 @@ namespace Amazon.Lambda.SimpleEmailEvents
     public class SimpleEmailEvent
     {
         /// <summary>
-        /// List of SNS records.
+        /// List of SES records.
         /// </summary>
         public IList<SimpleEmailRecord> Records { get; set; }
 
