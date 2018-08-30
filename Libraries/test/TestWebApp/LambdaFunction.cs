@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 
 namespace TestWebApp
 {
-    public class LambdaFunction : APIGatewayProxyFunction
+    public class LambdaFunction : APIGatewayProxyFunction<Startup>
     {
         public const string BinaryContentType = "application/octet-stream";
 
@@ -13,8 +13,7 @@ namespace TestWebApp
         {
             builder
                 .UseApiGateway()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<Startup>();
+                .UseContentRoot(Directory.GetCurrentDirectory());
         }
     }
 }
