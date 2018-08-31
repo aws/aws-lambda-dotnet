@@ -1,5 +1,5 @@
-using System.IO;
 using Microsoft.AspNetCore.Mvc;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace TestWebApp.Controllers
 {
@@ -14,7 +14,7 @@ namespace TestWebApp.Controllers
             for (int i = 0; i < bytes.Length; i++)
                 bytes[i] = (byte)i;
 
-            return base.File(bytes, LambdaFunction.BinaryContentType);
+            return base.File(bytes, Application.Octet);
         }
     }
 }
