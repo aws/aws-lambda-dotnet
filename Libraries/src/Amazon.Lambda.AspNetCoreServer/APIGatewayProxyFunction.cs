@@ -67,6 +67,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             ["image/png"] = ResponseContentEncoding.Base64,
             ["image/gif"] = ResponseContentEncoding.Base64,
             ["image/jpeg"] = ResponseContentEncoding.Base64,
+            ["image/jpg"] = ResponseContentEncoding.Base64,
             ["application/zip"] = ResponseContentEncoding.Base64,
             ["application/pdf"] = ResponseContentEncoding.Base64,
         };
