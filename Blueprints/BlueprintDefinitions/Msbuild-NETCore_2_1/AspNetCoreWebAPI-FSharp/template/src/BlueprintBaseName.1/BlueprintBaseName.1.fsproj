@@ -21,7 +21,4 @@
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.2.0" />
-  </ItemGroup>
 </Project>
