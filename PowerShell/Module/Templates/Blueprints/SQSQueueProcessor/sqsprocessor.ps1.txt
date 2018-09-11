@@ -1,0 +1,67 @@
+# PowerShell script file to be executed as a AWS Lambda function.
+#
+# When executing in Lambda the following variables will be predefined.
+#   $LambdaInput - A PSObject that contains the Lambda function input data.
+#   $LambdaContext - An Amazon.Lambda.Core.ILambdaContext object that contains information about the currently running Lambda environment.
+#
+# The last item in the PowerShell pipeline will be returned as the result of the Lambda function.
+#
+# To include PowerShell modules with your Lambda function, like the AWSPowerShell.NetCore module, add a "#Requires" statement
+# indicating the module and version.
+
+#Requires -Modules @{ModuleName='AWSPowerShell.NetCore';ModuleVersion='3.3.335.0'}
+
+# Uncomment to send the input event to CloudWatch Logs
+# Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)
+
+foreach ($message in $LambdaInput.Records)
+{
+    # SQS Message Body and Attributes:
+    #   - $message.body
+    #   - $message.messageAttributes
+
+    <#
+        If this is not an SNS Subscribed SQS Queue, process the SQS Message
+    #>
+    # TODO: Add logic to handle each SQS Message
+
+    <#
+        If the SQS Queue is subscribed to an SNS Subscription, a single SQS
+        Message will contain an array of SNS records.
+
+        Uncomment the following lines to provide sample code to process each
+        SNS Record.
+    #>
+    # $snsRecord = ConvertFrom-Json -InputObject $message.body
+    # foreach ($snsRecord in $snsRecord.Message.Records)
+    # {
+    #     # TODO: Add logic to handle each SNS Record
+    # }
+
+    <#
+        If the SQS Queue is subscribed to an SNS Subscription that is
+        triggered by an S3Event, a single SQS Message will contain an array
+        of SNS records that contain the S3Event data.
+
+        This code sample is essentially the same as a standard SNS Subscribed
+        SQS Queue, it simply demonstrates which object properties map to the
+        S3 Object.
+
+        Uncomment the following lines to provide sample code to process each
+        S3 Event.
+    #>
+    # $snsRecord = ConvertFrom-Json -InputObject $message.body
+    # foreach ($s3Event in $snsRecord.Message.Records)
+    # {
+    #     # The following code is used for the S3 Event data if required.
+    #     $bucket = $s3Event.s3.bucket.name
+    #     $key = $s3Event.s3.object.key
+
+    #     Write-Host "Processing event for: bucket = $bucket, key = $key"
+
+    #     # TODO: Add logic to handle S3 event record, for example
+
+    #     $obj = Get-S3Object -Bucket $bucket -Key $key
+    #     Write-Host "Object $key is $($obj.Size) bytes"
+    # }
+}

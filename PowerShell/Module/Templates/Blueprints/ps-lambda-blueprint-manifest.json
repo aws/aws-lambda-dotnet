@@ -1,0 +1,110 @@
+{
+  "manifestVersion": 1,
+  "blueprints": [
+    {
+      "name": "Basic",
+      "description": "Bare bones script",
+      "content": [
+          {
+            "source": "basic.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
+      "name": "CodeCommitTrigger",
+      "description": "Script to process AWS CodeCommit Triggers",
+      "content": [
+          {
+            "source": "codecommittrigger.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
+      "name": "DetectLabels",
+      "description": "Use Amazon Rekognition service to tag image files in S3 with detected labels.",
+      "content": [
+          {
+            "source": "detectlabels.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
+      "name": "KinesisStreamProcessor",
+      "description": "Script to be process a Kinesis Stream",
+      "content": [
+          {
+            "source": "kinesisstreamprocessor.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
+      "name": "S3Event",
+      "description": "Script to process S3 events",
+      "content": [
+          {
+            "source": "s3event.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
+      "name": "SNSSubscription",
+      "description": "Script to be subscribed to an SNS Topic",
+      "content": [
+          {
+            "source": "snssubscription.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
+      "name": "SQSQueueProcessor",
+      "description": "Script to be subscribed to an SQS Queue",
+      "content": [
+          {
+            "source": "sqsprocessor.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    }
+  ]
+}

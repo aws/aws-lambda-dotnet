@@ -1,0 +1,11 @@
+using Amazon.Lambda.PowerShellHost;
+
+namespace NAMESPACE_NAME
+{
+    public class Bootstrap : PowerShellFunctionHost
+    {
+        public Bootstrap() : base("SCRIPT_FILE")
+        {
+        }
+    }
+}

@@ -1,0 +1,25 @@
+# PowerShell script file to be executed as a AWS Lambda function.
+#
+# When executing in Lambda the following variables will be predefined.
+#   $LambdaInput - A PSObject that contains the Lambda function input data.
+#   $LambdaContext - An Amazon.Lambda.Core.ILambdaContext object that contains information about the currently running Lambda environment.
+#
+# The last item in the PowerShell pipeline will be returned as the result of the Lambda function.
+#
+# To include PowerShell modules with your Lambda function, like the AWSPowerShell.NetCore module, add a "#Requires" statement
+# indicating the module and version.
+
+#Requires -Modules @{ModuleName='AWSPowerShell.NetCore';ModuleVersion='3.3.335.0'}
+
+# Uncomment to send the input event to CloudWatch Logs
+# Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)
+
+# A Kinesis Stream processor will receive multiple records per execution
+foreach ($record in $LambdaInput.Records) {
+    # A Kinesis Stream Record is UTF8 Base64 encoded
+    $bytes = [System.Convert]::FromBase64String($record.kinesis.data)
+    $data = [System.Text.Encoding]::UTF8.GetString($bytes)
+
+    # Perform your work to process the Kinesis Stream data record
+    # Do work against $data here
+}
