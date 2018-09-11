@@ -99,7 +99,7 @@ PrivateData = @{
         Tags = 'AWS','Lambda'
 
         # A URL to the license for this module.
-        LicenseUri = 'https://docs.aws.amazon.com/powershell/latest/reference/License.html'
+        LicenseUri = 'https://github.com/aws/aws-lambda-dotnet/blob/master/LICENSE'
 
         # A URL to the main website for this project.
         ProjectUri = 'https://github.com/aws/aws-lambda-dotnet/tree/master/PowerShell'
