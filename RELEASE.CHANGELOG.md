@@ -1,3 +1,17 @@
+### Release 2018-09-11
+* **Amazon.Lambda.PowerShellHost (1.0.0)**
+    * New NuGet package that hosts the PowerShell Core runtime within a Lambda function. 
+When the Lambda function is invoked it will execute a provided PowerShell script.
+* **AWSLambdaPSCore PowerShell Module (1.0.0)**
+    * New PowerShell module for authoring and publishing PowerShell based Lambda functions. 
+For further details view the [PowerShell Lambda Readme](https://github.com/aws/aws-lambda-dotnet/tree/master/PowerShell).
+* **Blueprints**
+    * Remove **DotNetCliToolReference** reference to **Amazon.Lambda.Tools** now that Amazon.Lambda.Tools has 
+been converted to a Global Tool. Check out the [announcement blog](https://aws.amazon.com/blogs/developer/net-core-global-tools-for-aws/) for further details. 
+    *  **Amazon.Lambda.Templates (3.3.0)** released with latest blueprints.
+
+    
+
 ### Release 2018-07-09
 * **Blueprints**
     * Updated blueprints to use the new .NET Core 2.1 Lambda runtime.
