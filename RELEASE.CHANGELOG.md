@@ -2,7 +2,7 @@
 * **Amazon.Lambda.PowerShellHost (1.0.0)**
     * New NuGet package that hosts the PowerShell Core runtime within a Lambda function. 
 When the Lambda function is invoked it will execute a provided PowerShell script.
-* **AWSLambdaPSCore PowerShell Module (1.0.0)**
+* **AWSLambdaPSCore PowerShell Module (1.0.0.2)**
     * New PowerShell module for authoring and publishing PowerShell based Lambda functions. 
 For further details view the [PowerShell Lambda Readme](https://github.com/aws/aws-lambda-dotnet/tree/master/PowerShell).
 * **Blueprints**
