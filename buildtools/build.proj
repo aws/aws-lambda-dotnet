@@ -13,10 +13,28 @@
 	<SignAssembly Condition=" '$(SignAssembly)' == '' ">true</SignAssembly>
     <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  
+  
 
 
-  <Target Name="full-build" DependsOnTargets="test-blueprints-dotnetnew;package-blueprints;run-tests;build-nuget-packages">
+  <Target Name="full-build" DependsOnTargets="full-build-notests;run-tests">
 
+  </Target>
+  
+  <Target Name="full-build-notests" DependsOnTargets="test-blueprints-dotnetnew;package-blueprints;run-tests;build-nuget-packages;copy-awslambdapscore-module">
+
+  </Target>  
+  
+  <Target Name="copy-awslambdapscore-module" DependsOnTargets="init">
+  
+    <ItemGroup>
+      <AWSLambdaPSCoreModuleFiles Include="$(MSBuildThisFileDirectory)../PowerShell/Module/**" /> 
+    </ItemGroup>
+  
+	<Copy  
+            SourceFiles="@(AWSLambdaPSCoreModuleFiles)"  
+            DestinationFolder="../Deployment/PowerShell/AWSLambdaPSCore/%(RecursiveDir)"  
+        />	
   </Target>
 
 
@@ -25,6 +43,8 @@
 
     <RemoveDir Directories="../Deployment"/>
     <MakeDir Directories="../Deployment/nuget-packages"/>
+	<MakeDir Directories="../Deployment/PowerShell"/>
+	<MakeDir Directories="../Deployment/PowerShell/AWSLambdaPSCore"/>
 	
 	<Copy  
             SourceFiles="@(DeploymentNuGetConfig)"  
@@ -231,6 +251,8 @@
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisFirehoseEvents"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.Logging.AspNetCore"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.PowerShellHost"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.S3Events"/>
     <Exec Command="$(Command)"
