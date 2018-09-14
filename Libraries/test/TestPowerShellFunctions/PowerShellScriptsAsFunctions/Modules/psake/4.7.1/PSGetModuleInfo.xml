@@ -1,0 +1,163 @@
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">
+  <Obj RefId="0">
+    <TN RefId="0">
+      <T>Microsoft.PowerShell.Commands.PSRepositoryItemInfo</T>
+      <T>System.Management.Automation.PSCustomObject</T>
+      <T>System.Object</T>
+    </TN>
+    <MS>
+      <S N="Name">psake</S>
+      <Version N="Version">4.7.1</Version>
+      <S N="Type">Module</S>
+      <S N="Description">psake is a build automation tool written in PowerShell.</S>
+      <S N="Author">James Kovacs</S>
+      <Obj N="CompanyName" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+          <S>dlwyatt</S>
+          <S>devblackops</S>
+          <S>psake</S>
+          <S>gep13</S>
+        </LST>
+      </Obj>
+      <S N="Copyright">Copyright (c) 2010-18 James Kovacs, Damian Hickey, Brandon Olin, and Contributors</S>
+      <DT N="PublishedDate">2018-07-04T20:21:04-07:00</DT>
+      <Obj N="InstalledDate" RefId="2">
+        <DT>2018-07-18T17:11:34.4431665-07:00</DT>
+        <MS>
+          <Obj N="DisplayHint" RefId="3">
+            <TN RefId="2">
+              <T>Microsoft.PowerShell.Commands.DisplayHintType</T>
+              <T>System.Enum</T>
+              <T>System.ValueType</T>
+              <T>System.Object</T>
+            </TN>
+            <ToString>DateTime</ToString>
+            <I32>2</I32>
+          </Obj>
+        </MS>
+      </Obj>
+      <Nil N="UpdatedDate" />
+      <URI N="LicenseUri">https://raw.githubusercontent.com/psake/psake/master/license.txt</URI>
+      <URI N="ProjectUri">https://github.com/psake/psake</URI>
+      <URI N="IconUri">https://raw.githubusercontent.com/psake/graphics/master/png/psake-single-icon-teal-bg-256x256.png</URI>
+      <Obj N="Tags" RefId="4">
+        <TNRef RefId="1" />
+        <LST>
+          <S>Build</S>
+          <S>Task</S>
+          <S>PSModule</S>
+        </LST>
+      </Obj>
+      <Obj N="Includes" RefId="5">
+        <TN RefId="3">
+          <T>System.Collections.Hashtable</T>
+          <T>System.Object</T>
+        </TN>
+        <DCT>
+          <En>
+            <S N="Key">Function</S>
+            <Obj N="Value" RefId="6">
+              <TNRef RefId="1" />
+              <LST>
+                <S>Invoke-psake</S>
+                <S>Invoke-Task</S>
+                <S>Get-PSakeScriptTasks</S>
+                <S>Task</S>
+                <S>Properties</S>
+                <S>Include</S>
+                <S>FormatTaskName</S>
+                <S>TaskSetup</S>
+                <S>TaskTearDown</S>
+                <S>Framework</S>
+                <S>Assert</S>
+                <S>Exec</S>
+              </LST>
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Workflow</S>
+            <Obj N="Value" RefId="7">
+              <TNRef RefId="1" />
+              <LST />
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Cmdlet</S>
+            <Ref N="Value" RefId="7" />
+          </En>
+          <En>
+            <S N="Key">Command</S>
+            <Obj N="Value" RefId="8">
+              <TNRef RefId="1" />
+              <LST>
+                <S>Invoke-psake</S>
+                <S>Invoke-Task</S>
+                <S>Get-PSakeScriptTasks</S>
+                <S>Task</S>
+                <S>Properties</S>
+                <S>Include</S>
+                <S>FormatTaskName</S>
+                <S>TaskSetup</S>
+                <S>TaskTearDown</S>
+                <S>Framework</S>
+                <S>Assert</S>
+                <S>Exec</S>
+              </LST>
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">RoleCapability</S>
+            <Ref N="Value" RefId="7" />
+          </En>
+          <En>
+            <S N="Key">DscResource</S>
+            <Ref N="Value" RefId="7" />
+          </En>
+        </DCT>
+      </Obj>
+      <Nil N="PowerShellGetFormatVersion" />
+      <S N="ReleaseNotes">https://raw.githubusercontent.com/psake/psake/master/CHANGELOG.md</S>
+      <Obj N="Dependencies" RefId="9">
+        <TNRef RefId="1" />
+        <LST />
+      </Obj>
+      <S N="RepositorySourceLocation">https://www.powershellgallery.com/api/v2/</S>
+      <S N="Repository">PSGallery</S>
+      <S N="PackageManagementProvider">NuGet</S>
+      <Obj N="AdditionalMetadata" RefId="10">
+        <TN RefId="4">
+          <T>System.Management.Automation.PSCustomObject</T>
+          <T>System.Object</T>
+        </TN>
+        <MS>
+          <S N="copyright">Copyright (c) 2010-18 James Kovacs, Damian Hickey, Brandon Olin, and Contributors</S>
+          <S N="description">psake is a build automation tool written in PowerShell.</S>
+          <S N="requireLicenseAcceptance">False</S>
+          <S N="releaseNotes">https://raw.githubusercontent.com/psake/psake/master/CHANGELOG.md</S>
+          <S N="isLatestVersion">True</S>
+          <S N="isAbsoluteLatestVersion">True</S>
+          <S N="versionDownloadCount">2204</S>
+          <S N="downloadCount">81353</S>
+          <S N="packageSize">45796</S>
+          <S N="published">7/4/2018 8:21:04 PM -07:00</S>
+          <S N="created">7/4/2018 8:21:04 PM -07:00</S>
+          <S N="tags">Build Task PSModule PSFunction_Invoke-psake PSCommand_Invoke-psake PSFunction_Invoke-Task PSCommand_Invoke-Task PSFunction_Get-PSakeScriptTasks PSCommand_Get-PSakeScriptTasks PSFunction_Task PSCommand_Task PSFunction_Properties PSCommand_Properties PSFunction_Include PSCommand_Include PSFunction_FormatTaskName PSCommand_FormatTaskName PSFunction_TaskSetup PSCommand_TaskSetup PSFunction_TaskTearDown PSCommand_TaskTearDown PSFunction_Framework PSCommand_Framework PSFunction_Assert PSCommand_Assert PSFunction_Exec PSCommand_Exec PSIncludes_Function</S>
+          <S N="developmentDependency">False</S>
+          <S N="updated">2018-07-19T00:09:02Z</S>
+          <S N="NormalizedVersion">4.7.1</S>
+          <S N="IsPrerelease">false</S>
+          <S N="ItemType">Module</S>
+          <S N="FileList">psake.nuspec|psake-config.ps1|psake.cmd|psake.ps1|psake.psd1|psake.psm1|en-US\psake.psm1-help.xml.old|examples\checkvariables.ps1|examples\continueonerror.ps1|examples\default.ps1|examples\formattaskname_scriptblock.ps1|examples\formattaskname_string.ps1|examples\msbuild40.ps1|examples\nested.ps1|examples\paralleltasks.ps1|examples\parameters.ps1|examples\preandpostaction.ps1|examples\preandpostcondition.ps1|examples\properties.ps1|examples\requiredvariables.ps1|examples\tasksetupandteardown.ps1|examples\nested\nested1.ps1|examples\nested\nested2.ps1|examples\passingParametersString\build.Release.Version.bat|examples\passingParametersString\parameters.ps1|private\CleanupEnvironment.ps1|private\ConfigureBuildEnvironment.ps1|private\CreateConfigurationForNewContext.ps1|private\ExecuteInBuildFileScope.ps1|private\Get-DefaultBuildFile.ps1|private\GetCurrentConfigurationOrDefault.ps1|private\GetTasksFromContext.ps1|private\LoadConfiguration.ps1|private\LoadModules.ps1|private\ResolveError.ps1|private\SelectObjectWithDefault.ps1|private\WriteColoredOutput.ps1|private\WriteDocumentation.ps1|private\WriteTaskTimeSummary.ps1|public\Assert.ps1|public\Exec.ps1|public\FormatTaskName.ps1|public\Framework.ps1|public\Get-PSakeScriptTasks.ps1|public\Include.ps1|public\Invoke-psake.ps1|public\Invoke-Task.ps1|public\Properties.ps1|public\Task.ps1|public\TaskSetup.ps1|public\TaskTearDown.ps1</S>
+          <S N="GUID">cfb53216-072f-4a46-8975-ff7e6bda05a5</S>
+          <S N="PowerShellVersion">3.0</S>
+        </MS>
+      </Obj>
+      <S N="InstalledLocation">C:\Program Files\PowerShell\Modules\psake\4.7.1</S>
+    </MS>
+  </Obj>
+</Objs>

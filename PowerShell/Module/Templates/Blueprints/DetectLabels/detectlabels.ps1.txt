@@ -1,0 +1,57 @@
+# PowerShell script file to be executed as a AWS Lambda function.
+#
+# When executing in Lambda the following variables will be predefined.
+#   $LambdaInput - A PSObject that contains the Lambda function input data.
+#   $LambdaContext - An Amazon.Lambda.Core.ILambdaContext object that contains information about the currently running Lambda environment.
+#
+# The last item in the PowerShell pipeline will be returned as the result of the Lambda function.
+#
+# To include PowerShell modules with your Lambda function, like the AWSPowerShell.NetCore module, add a "#Requires" statement
+# indicating the module and version.
+
+#Requires -Modules @{ModuleName='AWSPowerShell.NetCore';ModuleVersion='3.3.335.0'}
+
+# Uncomment to send the input event to CloudWatch Logs
+# Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)
+
+$imageExtensions = @(".jpg",".jpeg",".png",".gif")
+
+foreach ($record in $LambdaInput.Records) {
+    $bucket = $record.s3.bucket.name
+    $key = $record.s3.object.key
+
+    Write-Host "Processing event for: bucket = $bucket, key = $key"
+
+    $ext = [System.IO.Path]::GetExtension($key)
+    if ($imageExtensions.Contains($ext)) {
+
+        $confidence = $env:MinConfidence
+        if ($confidence) {
+            Write-Host "MinConfidence environment variable set to $confidence%"
+        } else {
+            Write-Host "MinConfidence environment variable not set, defaulting to 70%"
+            $confidence = 70
+        }
+
+        Write-Host "Inspecting for labels with confidence equal or higher than $confidence%"
+        $labels = (Find-REKLabel -ImageBucket $bucket -ImageName $key -MinConfidence $confidence).Labels  | Select -First 10
+        Write-Host 'Labels Found ' $labels.Count
+
+        Write-Host "Posting up to 10 labels to the object as tags"
+
+        $tags = @()
+        $labels | ForEach-Object {
+
+            Write-Host $_.Name '('$_.Confidence')'
+
+            $tag = New-Object Amazon.S3.Model.Tag
+            $tag.Key = $_.Name
+            $tag.Value = $_.Confidence.ToString()
+            $tags += $tag
+        }
+
+        Write-S3ObjectTagSet -BucketName $bucket -Key $key -Tagging_TagSet $tags
+    } else {
+        Write-Host "Skipped processing: object does not match a known image extension ($imageExtensions -join ',')"
+    }
+}

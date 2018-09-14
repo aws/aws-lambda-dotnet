@@ -21,10 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.2.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="aws-lambda-tools-defaults.json" />
     <None Include="Readme.md" />
     <None Include="serverless.template" />

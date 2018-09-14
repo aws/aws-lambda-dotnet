@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AWSProjectType>Lambda</AWSProjectType>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="CallingUnknownCommand.ps1" />
+    <None Remove="ErrorExamples.ps1" />
+    <None Remove="TestExternalModuleLoaded.ps1" />
+    <None Remove="TestParameterInjections.ps1" />
+    <None Remove="ToUpperScript.ps1" />
+    <None Remove="UseAWSPowerShellCmdLetTest.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="*.ps1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="./Modules/**">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.3.0" />
+    <PackageReference Include="Amazon.Lambda.TestUtilities" Version="1.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Amazon.Lambda.PowerShellHost\Amazon.Lambda.PowerShellHost.csproj" />
+  </ItemGroup>
+</Project>

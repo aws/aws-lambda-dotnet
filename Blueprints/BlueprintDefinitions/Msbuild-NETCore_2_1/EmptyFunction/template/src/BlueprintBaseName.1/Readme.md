@@ -24,12 +24,16 @@ To view execution logs of invocations of your function use the Logs tab in the o
 
 ## Here are some steps to follow to get started from the command line:
 
-Once you have edited your function you can use the following command lines to build, test and deploy your function to AWS Lambda from the command line (these examples assume the project name is *EmptyFunction*):
+Once you have edited your template and code you can deploy your application using the [Amazon.Lambda.Tools Global Tool](https://github.com/aws/aws-extensions-for-dotnet-cli#aws-lambda-amazonlambdatools) from the command line.
 
-Restore dependencies
+Install Amazon.Lambda.Tools Global Tools if not already installed.
 ```
-    cd "BlueprintBaseName"
-    dotnet restore
+    dotnet tool install -g Amazon.Lambda.Tools
+```
+
+If already installed check if new version is available.
+```
+    dotnet tool update -g Amazon.Lambda.Tools
 ```
 
 Execute unit tests

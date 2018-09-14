@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\..\buildtools\common.props" />
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <Description>AWS Lambda PowerShell Host.</Description>
+    <AssemblyTitle>Amazon.Lambda.PowerShellHost</AssemblyTitle>
+    <AssemblyName>Amazon.Lambda.PowerShellHost</AssemblyName>
+    <PackageId>Amazon.Lambda.PowerShellHost</PackageId>
+    <PackageTags>AWS;Amazon;Lambda;PowerShell</PackageTags>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="6.0.4" />
+  </ItemGroup>
+
+</Project>
