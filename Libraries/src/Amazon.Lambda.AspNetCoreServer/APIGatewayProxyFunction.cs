@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 namespace Amazon.Lambda.AspNetCoreServer
 {
     /// <summary>
-    /// ApiGatewayFunction is the base class that is implemented in a ASP.NET Core Web API. The derived class implements
+    /// ApiGatewayProxyFunction is the base class that is implemented in a ASP.NET Core Web API. The derived class implements
     /// the Init method similar to Main function in the ASP.NET Core. The function handler for the Lambda function will point
     /// to this base class FunctionHandlerAsync method.
     /// </summary>
