@@ -3,14 +3,14 @@
 The AWS Lambda Tools for Powershell allows PowerShell developers to publish PowerShell scripts 
 with their dependent modules and have the scripts be invoked by Lambda.
 
-### Setting up a development environment
+## Setting up a development environment
 
 Before we get started developing PowerShell based Lambda functions, let's set up our 
-development environment. .
+development environment.
 
 First, we need to set up the correct version of PowerShell. AWS Lambda support 
 for PowerShell is based on the cross-platform PowerShell Core 6.0 release. This means 
-you can develop your Lambda functions for PowerShell on Windows, Linux, or Mac. If you don’t 
+you can develop your Lambda functions for PowerShell on Windows, Linux, or Mac. If you donï¿½t 
 have this version of PowerShell installed, you can find instructions [here](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-powershell-core-on-windows?view=powershell-6).
 
 If you are using Visual Studio Code on Windows as your IDE, you need to ensure it's 
@@ -21,7 +21,7 @@ Next, we need to install the .NET Core 2.1 SDK. Because PowerShell Core is built
 .NET Core, the Lambda support for PowerShell uses the same .NET Core 2.1 Lambda runtime for 
 both .NET Core and PowerShell based Lambda functions. The .NET Core 2.1 SDK is used by 
 the new PowerShell publishing cmdlets for Lambda to create the Lambda deployment 
-package. You can find the .NET Core 2.1 SDK here: https://www.microsoft.com/net/download Be 
+package. You can find the .NET Core 2.1 SDK [here]( https://www.microsoft.com/net/download). Be 
 sure to install the SDK, not the runtime installation.
 
 The last component we need for the development environment is the 
