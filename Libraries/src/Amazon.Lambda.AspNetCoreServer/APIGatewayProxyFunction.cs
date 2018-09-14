@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using System;
@@ -41,6 +42,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         private AspNetCoreStartupMode _startupMode;
         private IWebHost _host;
         private APIGatewayServer _server;
+        private ILogger _logger;
 
         // Defines a mapping from registered content types to the response encoding format
         // which dictates what transformations should be applied before returning response content
@@ -143,6 +145,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             {
                 throw new Exception("Failed to find the implementation APIGatewayServer for the IServer registration. This can happen if UseApiGateway was not called.");
             }
+            _logger = ActivatorUtilities.CreateInstance<Logger<APIGatewayProxyFunction>>(this._host.Services);
         }
 
         /// <summary>
@@ -220,16 +223,15 @@ namespace Amazon.Lambda.AspNetCoreServer
         [LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
         public virtual async Task<APIGatewayProxyResponse> FunctionHandlerAsync(APIGatewayProxyRequest request, ILambdaContext lambdaContext)
         {
-            lambdaContext.Logger.LogLine($"Incoming {request.HttpMethod} requests to {request.Path}");
-
             if (!IsStarted)
             {
                 Start();
             }
+            _logger.LogDebug($"Incoming {request.HttpMethod} requests to {request.Path}");
 
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request, lambdaContext);
-            lambdaContext.Logger.LogLine($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
+            _logger.LogDebug($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
 
             var context = this.CreateContext(features);
 
@@ -238,7 +240,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 var identity = new ClaimsIdentity(request.RequestContext.Authorizer.Claims.Select(
                     entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
 
-                lambdaContext.Logger.LogLine($"Configuring HttpContext.User with {request.RequestContext.Authorizer.Claims.Count} claims coming from API Gateway's Request Context");
+                _logger.LogDebug($"Configuring HttpContext.User with {request.RequestContext.Authorizer.Claims.Count} claims coming from API Gateway's Request Context");
                 context.HttpContext.User = new ClaimsPrincipal(identity);
             }
 
@@ -312,20 +314,20 @@ namespace Amazon.Lambda.AspNetCoreServer
             catch (AggregateException agex)
             {
                 ex = agex;
-                lambdaContext.Logger.LogLine($"Caught AggregateException: '{agex}'");
+                _logger.LogError($"Caught AggregateException: '{agex}'");
                 var sb = new StringBuilder();
                 foreach (var newEx in agex.InnerExceptions)
                 {
                     sb.AppendLine(this.ErrorReport(newEx));
                 }
 
-                lambdaContext.Logger.LogLine(sb.ToString());
+                _logger.LogError(sb.ToString());
                 defaultStatusCode = 500;
             }
             catch (ReflectionTypeLoadException rex)
             {
                 ex = rex;
-                lambdaContext.Logger.LogLine($"Caught ReflectionTypeLoadException: '{rex}'");
+                _logger.LogError($"Caught ReflectionTypeLoadException: '{rex}'");
                 var sb = new StringBuilder();
                 foreach (var loaderException in rex.LoaderExceptions)
                 {
@@ -340,14 +342,14 @@ namespace Amazon.Lambda.AspNetCoreServer
                     }
                 }
 
-                lambdaContext.Logger.LogLine(sb.ToString());
+                _logger.LogError(sb.ToString());
                 defaultStatusCode = 500;
             }
             catch (Exception e)
             {
                 ex = e;
                 if (rethrowUnhandledError) throw;
-                lambdaContext.Logger.LogLine($"Unknown error responding to request: {this.ErrorReport(e)}");
+                _logger.LogError($"Unknown error responding to request: {this.ErrorReport(e)}");
                 defaultStatusCode = 500;
             }
             finally
@@ -361,7 +363,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             }
             var response = this.MarshallResponse(features, lambdaContext, defaultStatusCode);
 
-            lambdaContext.Logger.LogLine($"Response Base 64 Encoded: {response.IsBase64Encoded}");
+            _logger.LogDebug($"Response Base 64 Encoded: {response.IsBase64Encoded}");
 
             if (ex != null)
                 response.Headers.Add(new KeyValuePair<string, string>("ErrorType", ex.GetType().Name));
