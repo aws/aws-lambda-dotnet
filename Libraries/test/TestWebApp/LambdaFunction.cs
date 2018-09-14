@@ -1,20 +1,8 @@
-﻿using System.IO;
-
-using Amazon.Lambda.AspNetCoreServer;
-using Microsoft.AspNetCore.Hosting;
+﻿using Amazon.Lambda.AspNetCoreServer;
 
 namespace TestWebApp
 {
-    public class LambdaFunction : APIGatewayProxyFunction
+    public class LambdaFunction : APIGatewayProxyFunction<Startup>
     {
-        public const string BinaryContentType = "application/octet-stream";
-
-        protected override void Init(IWebHostBuilder builder)
-        {
-            builder
-                .UseApiGateway()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<Startup>();
-        }
     }
 }
