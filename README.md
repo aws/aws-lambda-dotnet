@@ -31,6 +31,49 @@ These are the packages and their README.md files:
 Package adds commands to the dotnet cli that can be used manage Lambda functions including deploying a function from the dotnet cli. 
 For more information see the [README.md](Libraries/src/Amazon.Lambda.Tools/README.md) file for Amazon.Lambda.Tools.
 
+#### Global Tool Migration
+
+As of September 10th, 2018 Amazon.Lambda.Tools has migrated to be .NET Core [Global Tools](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
+As part of the migration the version number was set to 3.0.0.0
+
+To install Amazon.Lambda.Tools use the **dotnet tool install** command.
+```
+dotnet tool install -g Amazon.Lambda.Tools
+```
+
+To update to the latest version of Amazon.Lambda.Tools use the **dotnet tool update** command.
+```
+dotnet tool update -g Amazon.Lambda.Tools
+```
+
+##### Migrating from DotNetCliToolReference
+
+To migrate an existing project away from the older project tool, you need to edit your project file and remove the **DotNetCliToolReference** for the Amazon.Lambda.Tools package. For example, let's look at an existing Lambda project file.
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+
+    <-- The new property indicating to AWS Toolkit for Visual Studio this is a Lambda project -->
+    <AWSProjectType>Lambda</AWSProjectType>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <-- This line needs to be removed -->
+    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.3.0" />
+  </ItemGroup>
+</Project>
+```
+To migrate this project, you need to delete the **DotNetCliToolReference** element, including **Amazon.Lambda.Tools**. If you don't remove this line, the older project tool version of **Amazon.Lambda.Tools** will be used instead of an installed Global Tool.
+
+The AWS Toolkit for Visual Studio before .NET Core 2.1 would look for the presence of **Amazon.Lambda.Tools** in the project file to determine whether to show the Lambda deployment menu item. Because we knew we were going to switch to Global Tools, and the reference to **Amazon.Lambda.Tools** in the project was going away, we added the **AWSProjectType** property to the project file. The current version of the AWS Toolkit for Visual Studio now looks for either the presence of **Amazon.Lambda.Tools** or the **AWSProjectType** set to **Lambda**. Make sure when removing the **DotNetCliToolReference** that your project file has the **AWSProjectType** property to continue deploying with the AWS Toolkit for Visual Studio.
+
 ### Amazon.Lambda.AspNetCoreServer
 
 Package makes it easy to run ASP.NET Core Web API applications as Lambda functions.
@@ -78,7 +121,7 @@ Simple Step Functions                        lambda.SimpleStepFunctions      [C#
 
 To get details about a template, you can use the help command.
 
-**dotnet new lambda.EmptyFunction –help**
+**dotnet new lambda.EmptyFunction ï¿½help**
 
 ```
 Template Instantiation Commands for .NET Core CLI.                                                                                          
