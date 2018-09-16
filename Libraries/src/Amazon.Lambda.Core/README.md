@@ -4,10 +4,11 @@ This package contains interfaces and classes that can be helpful when running yo
 
 ## ILambdaContext
 
-The `Amazon.Lambda.Core.ILambdaContext` interface can be used in your handler function to access information about the current execution, such as the name of the current function, the memory limit, execution time remaining, and logging.
+The [Amazon.Lambda.Core.ILambdaContext](./ILambdaContext.cs) interface can be used in your handler function to access information about the current execution, such as the name of the current function, the memory limit, execution time remaining, and logging.
 
 Here is an example of how this interface can be used in your handler function.
-The function performs a simple ToUpper content transformation, while writing some context data to Console.  
+The function performs a simple ToUpper content transformation, while writing some context data to Console.
+
 ```csharp
 public string ToUpper(string input, ILambdaContext context)
 {
@@ -21,6 +22,33 @@ public string ToUpper(string input, ILambdaContext context)
 }
 ```
 
+An instance of this interface is attached to any `ControllerBase.Request.HttpContext` instances via the `Items` property using the key "[LAMBDA_CONTEXT / LambdaContext](../Amazon.Lambda.AspNetCoreServer/APIGatewayProxyFunction.cs)"
+
+Here is an example of how you can use this interface in a controller method.
+
+```csharp
+[ApiController]
+public class TestController : ControllerBase
+{
+    [HttpGet("/[controller]")]
+    public IActionResult Get()
+    {
+        Response.Headers.Add("Access-Control-Allow-Origin", "*"); // NOTE: Should be configured via app.UseCors in Startup.cs
+
+        var context = (ILambdaContext)Request.HttpContext.Items[APIGatewayProxyFunction.LAMBDA_CONTEXT];
+        var tmp = new
+        {
+            context.AwsRequestId,
+            context.FunctionName,
+            context.MemoryLimitInMB,
+            context.LogStreamName,
+            context.LogGroupName
+        };
+        return new OkObjectResult(tmp);
+    }
+}
+```
+
 The following sections describe various other interfaces which are accessible through the `ILambdaContext`.
 
 ### IClientContext
@@ -29,6 +57,7 @@ The `Amazon.Lambda.Core.IClientContext` interface provides information about the
 This interface can be found under `ILambdaContext.ClientContext`.
 
 ### IClientApplication
+
 The `Amazon.Lambda.Core.IClientApplication` interface provides information about the client application when the Lambda function is invoked through the AWS Mobile SDK. This includes the application title, its version, etc.
 This interface can be found under `ILambdaContext.ClientContext.Client`.
 
@@ -42,7 +71,8 @@ This interface can be found under `ILambdaContext.Identity`.
 The `Amazon.Lambda.Core.ILambdaLogger` interface allows your function to log data to CloudWatch. This interface defines methods `Log` and `LogLine`. Both take a string and result in a CloudWatch Logs event, with or without a line terminator, provided that the event size is within the allowed limits.
 
 Here is an example of how this interface can be used in your handler function.
-The function performs a simple ToUpper content transformation, while logging the context data.  
+The function performs a simple ToUpper content transformation, while logging the context data.
+
 ```csharp
 public string ToUpper(string input, ILambdaContext context)
 {
@@ -68,11 +98,13 @@ The `Amazon.Lambda.Core.LambdaSerializerAttribute` is an attribute that can is u
 This attribute can be present on the assembly or on the handler method. If you specify both, the method attribute takes priority.
 
 Here is an example of setting this attribute on the assembly.
+
 ```csharp
 [assembly: Amazon.Lambda.Core.LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 ```
 
 And this is how the method can be applied to the handler method.
+
 ```csharp
 [LambdaSerializer(typeof(XmlSerializer))]
 public Response CustomSerializerMethod(Request input)
