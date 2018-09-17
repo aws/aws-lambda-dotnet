@@ -1,0 +1,62 @@
+# PowerShell script file to be executed as a AWS Lambda function.
+#
+# When executing in Lambda the following variables will be predefined.
+#   $LambdaInput - A PSObject that contains the Lambda function input data.
+#   $LambdaContext - An Amazon.Lambda.Core.ILambdaContext object that contains information about the currently running Lambda environment.
+#
+# The last item in the PowerShell pipeline will be returned as the result of the Lambda function.
+#
+# To include PowerShell modules with your Lambda function, like the AWSPowerShell.NetCore module, add a "#Requires" statement
+# indicating the module and version.
+
+#Requires -Modules @{ModuleName='AWSPowerShell.NetCore';ModuleVersion='3.3.343.0'}
+
+# Uncomment to send the input event to CloudWatch Logs
+# Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)
+
+$CFNEvent = if ($null -ne $LambdaInput.Records) {
+    Write-Host 'Message received via SNS - Parsing out CloudFormation event'
+    $LambdaInput.Records[0].Sns.Message
+}
+else {
+    Write-Host 'Event received directly from CloudFormation'
+    $LambdaInput
+}
+$body = @{
+    # We'll assume success and overwrite if anything fails in line to avoid code duplication
+    Status             = "SUCCESS"
+    Reason             = "See the details in CloudWatch Log Stream:`n[Group] $($LambdaContext.LogGroupName)`n[Stream] $($LambdaContext.LogStreamName)"
+    PhysicalResourceId = $LambdaContext.LogStreamName
+    StackId            = $CFNEvent.StackId
+    RequestId          = $CFNEvent.RequestId
+    LogicalResourceId  = $CFNEvent.LogicalResourceId
+}
+Write-Host "Processing RequestType [$($CFNEvent.RequestType)]"
+try {
+    # If you want to return data back to CloudFormation, add the Data property to the body with the value as a hashtable. The hashtable keys will be the retrievable attributes when using Fn::GetAtt against the custom resource in your CloudFormation template:
+    #    $body.Data = @{Secret = $null}
+    switch ($CFNEvent.RequestType) {
+        Create {
+            # Add Create request code here
+        }
+        Update {
+            # Add Update request code here
+        }
+        Delete {
+            # Add Delete request code here
+        }
+    }
+}
+catch {
+    Write-Error $_
+    $body.Status = "FAILED"
+}
+finally {
+    try {
+        Write-Host "Sending response back to CloudFormation"
+        Invoke-WebRequest -Uri $([Uri]$CFNEvent.ResponseURL) -Method Put -Body $($body | ConvertTo-Json -Depth 5)
+    }
+    catch {
+        Write-Error $_
+    }
+}
