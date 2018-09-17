@@ -17,6 +17,21 @@
       ]
     },
     {
+      "name": "CloudFormationCustomResource",
+      "description": "PowerShell handler base for use with CloudFormation custom resource events",
+      "content": [
+          {
+            "source": "cloudformationcustomresource.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
       "name": "CodeCommitTrigger",
       "description": "Script to process AWS CodeCommit Triggers",
       "content": [
