@@ -72,14 +72,14 @@
     The script file containing your new Lambda function will have the filename MyS3EventFunction.ps1.
 
     .EXAMPLE
-    New-AWSPowerShellLambda -Template S3Event -Name S3EventProcessor -WithProject -Region us-east-1
+    New-AWSPowerShellLambda -Template S3Event -ScriptName S3EventProcessor -WithProject -Region us-east-1
 
     In this example a new AWS Lambda PowerShell project is created in a directory called S3EventProcessor.
     The project will be preconfigured in the generated aws-lambda-tools-defaults.json file to deploy to the
     us-east-1 region.
 
     .EXAMPLE
-    New-AWSPowerShellLambda -Template S3Event -Name S3EventProcessor -Directory ./MyCode -WithProject
+    New-AWSPowerShellLambda -Template S3Event -ScriptName S3EventProcessor -Directory ./MyCode -WithProject
 
     In this example a new AWS Lambda PowerShell project is created in a directory called MyCode with the script
     and project files called S3EventProcessor.
