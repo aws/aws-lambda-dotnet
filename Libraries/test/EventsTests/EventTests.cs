@@ -27,6 +27,7 @@ namespace Amazon.Lambda.Tests
     using Newtonsoft.Json;
 
     using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
+    using Amazon.Lambda.CloudWatchEvents.ECSEvents;
 
     public class EventTest
     {
@@ -780,6 +781,59 @@ namespace Amazon.Lambda.Tests
         {
             var data = ms.ToArray();
             return Convert.ToBase64String(data);
+        }
+
+        [Fact]
+        public void ECSContainerStateChangeEventTest()
+        {
+            using (var fileStream = File.OpenRead("ecs-container-state-change-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var ecsEvent = serializer.Deserialize<ECSEvent>(fileStream);
+
+                Assert.Equal(ecsEvent.Version, "0");
+                Assert.Equal(ecsEvent.Id, "8952ba83-7be2-4ab5-9c32-6687532d15a2");
+                Assert.Equal(ecsEvent.DetailType, "ECS Container Instance State Change");
+                Assert.Equal(ecsEvent.Source, "aws.ecs");
+                Assert.Equal(ecsEvent.Account, "111122223333");
+                Assert.Equal(ecsEvent.Time.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:06Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Region, "us-east-1");
+                Assert.Equal(ecsEvent.Resources[0], "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315");
+                Assert.IsType(typeof(CloudWatchEvents.ECSEvents.Detail), ecsEvent.Detail);
+                Assert.Equal(ecsEvent.Detail.AgentConnected, true);
+                Assert.Equal(ecsEvent.Detail.Attributes[0].Name, "com.amazonaws.ecs.capability.logging-driver.syslog");
+                Assert.Equal(ecsEvent.Detail.ClusterArn, "arn:aws:ecs:us-east-1:111122223333:cluster/default");
+                Assert.Equal(ecsEvent.Detail.ContainerInstanceArn, "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315");
+                Assert.Equal(ecsEvent.Detail.Ec2InstanceId, "i-f3a8506b");
+                Assert.Equal(ecsEvent.Detail.RegisteredResources[0].Name, "CPU");
+                Assert.Equal(ecsEvent.Detail.RegisteredResources[0].Type, "INTEGER");
+                Assert.Equal(ecsEvent.Detail.RegisteredResources[0].IntegerValue, 2048);
+                Assert.Equal(ecsEvent.Detail.RegisteredResources[2].StringSetValue[0], "22");
+                Assert.Equal(ecsEvent.Detail.RemainingResources[0].Name, "CPU");
+                Assert.Equal(ecsEvent.Detail.RemainingResources[0].Type, "INTEGER");
+                Assert.Equal(ecsEvent.Detail.RemainingResources[0].IntegerValue, 1988);
+                Assert.Equal(ecsEvent.Detail.RemainingResources[2].StringSetValue[0], "22");
+                Assert.Equal(ecsEvent.Detail.Status, "ACTIVE");
+                Assert.Equal(ecsEvent.Detail.Version, 14801);
+                Assert.Equal(ecsEvent.Detail.VersionInfo.AgentHash, "aebcbca");
+                Assert.Equal(ecsEvent.Detail.VersionInfo.AgentVersion, "1.13.0");
+                Assert.Equal(ecsEvent.Detail.VersionInfo.DockerVersion, "DockerVersion: 1.11.2");
+                Assert.Equal(ecsEvent.Detail.UpdatedAt.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:06.991Z").ToUniversalTime());
+
+                Handle(ecsEvent);
+            }
+        }
+
+        private void Handle(ECSEvent ecsEvent)
+        {
+            //Console.WriteLine(ecsEvent.Id);
+            //Console.WriteLine(ecsEvent.DetailType);
+            Console.WriteLine(ecsEvent.Source);
+            //Console.WriteLine(ecsEvent.Account);
+            Console.WriteLine(ecsEvent.Time);
+            //Console.WriteLine(ecsEvent.Region);
+            Console.WriteLine(ecsEvent.Resources[0]);
+            Console.WriteLine(ecsEvent.Detail.Status);
         }
     }
 }

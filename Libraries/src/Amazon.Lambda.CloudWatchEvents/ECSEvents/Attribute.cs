@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Amazon.Lambda.CloudWatchEvents
+namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
 {
     /// <summary>
     /// https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerInstance.html

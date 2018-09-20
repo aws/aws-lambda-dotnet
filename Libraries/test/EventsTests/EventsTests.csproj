@@ -16,6 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="ecs-container-state-change-event.json" />
+    <None Remove="ecs-task-state-change-event.json" />
     <None Remove="kinesis-analytics-inputpreprocessing-event.json" />
     <None Remove="kinesis-analytics-inputpreprocessing-response.json" />
     <None Remove="kinesis-analytics-outputdelivery-event.json" />
@@ -23,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Amazon.Lambda.CloudWatchEvents\Amazon.Lambda.CloudWatchEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.CloudWatchLogsEvents\Amazon.Lambda.CloudWatchLogsEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.KinesisAnalyticsEvents\Amazon.Lambda.KinesisAnalyticsEvents.csproj" />
