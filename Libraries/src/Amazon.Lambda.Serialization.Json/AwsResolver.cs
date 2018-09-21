@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace Amazon.Lambda.Serialization.Json
 {
@@ -77,6 +78,17 @@ namespace Amazon.Lambda.Serialization.Json
                     else if (property.PropertyName.Equals("BinaryListValues", StringComparison.Ordinal))
                     {
                         property.MemberConverter = new JsonToMemoryStreamListDataConverter();
+                    }
+                }
+            }
+            else if (type.FullName.StartsWith("Amazon.Lambda.CloudWatchEvents.")
+                     && (type.GetTypeInfo().BaseType?.FullName?.StartsWith("CloudWatchEvents.CloudWatchEvent`", StringComparison.Ordinal) ?? false))
+            {
+                foreach (JsonProperty property in properties)
+                {
+                    if (property.PropertyName.Equals("DetailType", StringComparison.Ordinal))
+                    {
+                        property.PropertyName = "detail-type";
                     }
                 }
             }
