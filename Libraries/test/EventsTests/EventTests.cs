@@ -785,12 +785,12 @@ namespace Amazon.Lambda.Tests
         }
 
         [Fact]
-        public void ECSContainerStateChangeEventTest()
+        public void ECSContainerInstanceStateChangeEventTest()
         {
             using (var fileStream = File.OpenRead("ecs-container-state-change-event.json"))
             {
                 var serializer = new JsonSerializer();
-                var ecsEvent = serializer.Deserialize<ECSEvent>(fileStream);
+                var ecsEvent = serializer.Deserialize<ECSContainerInstanceStateChangeEvent>(fileStream);
 
                 Assert.Equal(ecsEvent.Version, "0");
                 Assert.Equal(ecsEvent.Id, "8952ba83-7be2-4ab5-9c32-6687532d15a2");
@@ -801,7 +801,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(ecsEvent.Region, "us-east-1");
                 Assert.Equal(ecsEvent.Resources.Count, 1);
                 Assert.Equal(ecsEvent.Resources[0], "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315");
-                Assert.IsType(typeof(CloudWatchEvents.ECSEvents.Detail), ecsEvent.Detail);
+                Assert.IsType(typeof(ContainerInstance), ecsEvent.Detail);
                 Assert.Equal(ecsEvent.Detail.AgentConnected, true);
                 Assert.Equal(ecsEvent.Detail.Attributes.Count, 14);
                 Assert.Equal(ecsEvent.Detail.Attributes[0].Name, "com.amazonaws.ecs.capability.logging-driver.syslog");
@@ -835,7 +835,7 @@ namespace Amazon.Lambda.Tests
             using (var fileStream = File.OpenRead("ecs-task-state-change-event.json"))
             {
                 var serializer = new JsonSerializer();
-                var ecsEvent = serializer.Deserialize<ECSEvent>(fileStream);
+                var ecsEvent = serializer.Deserialize<ECSTaskStateChangeEvent>(fileStream);
 
                 Assert.Equal(ecsEvent.Version, "0");
                 Assert.Equal(ecsEvent.Id, "9bcdac79-b31f-4d3d-9410-fbd727c29fab");
@@ -846,7 +846,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(ecsEvent.Region, "us-east-1");
                 Assert.Equal(ecsEvent.Resources.Count, 1);
                 Assert.Equal(ecsEvent.Resources[0], "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef");
-                Assert.IsType(typeof(CloudWatchEvents.ECSEvents.Detail), ecsEvent.Detail);
+                Assert.IsType(typeof(Task), ecsEvent.Detail);
                 Assert.Equal(ecsEvent.Detail.ClusterArn, "arn:aws:ecs:us-east-1:111122223333:cluster/default");
                 Assert.Equal(ecsEvent.Detail.ContainerInstanceArn, "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315");
                 Assert.Equal(ecsEvent.Detail.Containers.Count, 1);
@@ -872,10 +872,14 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        private void Handle(ECSEvent ecsEvent)
+        private void Handle(ECSContainerInstanceStateChangeEvent ecsEvent)
         {
-            Console.WriteLine(ecsEvent.DetailType);
-            Console.WriteLine(ecsEvent.Time);
+            Console.WriteLine($"[{ecsEvent.Source} {ecsEvent.Time}] {ecsEvent.DetailType}");
+        }
+
+        private void Handle(ECSTaskStateChangeEvent ecsEvent)
+        {
+            Console.WriteLine($"[{ecsEvent.Source} {ecsEvent.Time}] {ecsEvent.DetailType}");
         }
 
     }
