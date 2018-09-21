@@ -12,6 +12,7 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
     /// https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_cwe_events.html#ecs_container_instance_events
     /// https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_cwe_events.html#ecs_task_events
     /// https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerInstance.html
+    /// https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Task.html
     /// </summary>
     public class Detail
     {
@@ -80,12 +81,13 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         public string Status { get; set; }
 
         /// <summary>
-        /// The version counter for the container instance.
-        /// Every time a container instance experiences a change that triggers a CloudWatch event,
-        /// the version counter is incremented. If you are replicating your Amazon ECS container instance state
-        /// with CloudWatch Events, you can compare the version of a container instance reported by the Amazon
-        /// ECS APIs with the version reported in CloudWatch Events for the container instance
-        /// (inside the detail object) to verify that the version in your event stream is current.
+        /// The version counter for the container instance or task.
+        /// Every time a container instance/task experiences a change that triggers a CloudWatch event,
+        /// the version counter is incremented. If you are replicating your Amazon ECS
+        /// container instance/task state with CloudWatch Events, you can compare the version of
+        /// a container instance/task reported by the Amazon ECS APIs with the version reported in
+        /// CloudWatch Events for the container instance/task (inside the detail object) to
+        /// verify that the version in your event stream is current.
         /// </summary>
         public int Version { get; set; }
 
@@ -98,5 +100,54 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         /// The Unix time stamp for when the service was last updated.
         /// </summary>
         public DateTime UpdatedAt { get; set; }
+
+        /// <summary>
+        /// The Unix time stamp for when the task was created (the task entered the PENDING state).
+        /// </summary>
+        public DateTime CreatedAt { get; set; }
+
+        /// <summary>
+        /// The desired status of the task. For more information,
+        /// see Task Lifecycle: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_life_cycle.html.
+        /// </summary>
+        public string DesiredStatus { get; set; }
+
+        /// <summary>
+        /// The name of the task group associated with the task.
+        /// </summary>
+        public string Group { get; set; }
+
+        /// <summary>
+        /// The last known status of the task. For more information,
+        /// see Task Lifecycle: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_life_cycle.html.
+        /// </summary>
+        public string LastStatus { get; set; }
+
+        /// <summary>
+        /// One or more container overrides.
+        /// </summary>
+        public TaskOverride Overrides { get; set; }
+
+        /// <summary>
+        /// The Unix time stamp for when the task started (the task
+        /// transitioned from the PENDING state to the RUNNING state).
+        /// </summary>
+        public DateTime StartedAt { get; set; }
+
+        /// <summary>
+        /// The tag specified when a task is started. If the task is started by an Amazon ECS service,
+        /// then the startedBy parameter contains the deployment ID of the service that starts it.
+        /// </summary>
+        public string StartedBy { get; set; }
+
+        /// <summary>
+        /// The Amazon Resource Name (ARN) of the task.
+        /// </summary>
+        public string TaskArn { get; set; }
+
+        /// <summary>
+        /// The ARN of the task definition that creates the task.
+        /// </summary>
+        public string TaskDefinitionArn { get; set; }
     }
 }
