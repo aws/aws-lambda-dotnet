@@ -14,6 +14,8 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.LexEvents;
     using Amazon.Lambda.KinesisFirehoseEvents;
     using Amazon.Lambda.KinesisAnalyticsEvents;
+    using Amazon.Lambda.CloudWatchLogsEvents;
+    using Amazon.Lambda.CloudWatchEvents.ECSEvents;
 
     using Newtonsoft.Json.Linq;
 
@@ -23,11 +25,10 @@ namespace Amazon.Lambda.Tests
     using System.Text;
     using Xunit;
     using System.Linq;
-    using Amazon.Lambda.CloudWatchLogsEvents;
     using Newtonsoft.Json;
 
     using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
-    using Amazon.Lambda.CloudWatchEvents.ECSEvents;
+
 
     public class EventTest
     {
@@ -182,7 +183,7 @@ namespace Amazon.Lambda.Tests
 
         private static void Handle(CognitoEvent cognitoEvent)
         {
-            foreach(var datasetKVP in cognitoEvent.DatasetRecords)
+            foreach (var datasetKVP in cognitoEvent.DatasetRecords)
             {
                 var datasetName = datasetKVP.Key;
                 var datasetRecord = datasetKVP.Value;
@@ -352,7 +353,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("MessageID", record.MessageId);
                 Assert.Equal("MessageReceiptHandle", record.ReceiptHandle);
                 Assert.Equal("Message Body", record.Body);
-                Assert.Equal("fce0ea8dd236ccb3ed9b37dae260836f", record.Md5OfBody );
+                Assert.Equal("fce0ea8dd236ccb3ed9b37dae260836f", record.Md5OfBody);
                 Assert.Equal("582c92c5c5b6ac403040a4f3ab3115c9", record.Md5OfMessageAttributes);
                 Assert.Equal("arn:aws:sqs:us-west-2:123456789012:SQSQueue", record.EventSourceArn);
                 Assert.Equal("aws:sqs", record.EventSource);
@@ -618,7 +619,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("button-text", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons[0].Text);
                 Assert.Equal("value sent to server on button click", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons[0].Value);
 
-                MemoryStream ms = new MemoryStream();                
+                MemoryStream ms = new MemoryStream();
                 serializer.Serialize<LexResponse>(lexResponse, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -798,17 +799,21 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(ecsEvent.Account, "111122223333");
                 Assert.Equal(ecsEvent.Time.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:06Z").ToUniversalTime());
                 Assert.Equal(ecsEvent.Region, "us-east-1");
+                Assert.Equal(ecsEvent.Resources.Count, 1);
                 Assert.Equal(ecsEvent.Resources[0], "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315");
                 Assert.IsType(typeof(CloudWatchEvents.ECSEvents.Detail), ecsEvent.Detail);
                 Assert.Equal(ecsEvent.Detail.AgentConnected, true);
+                Assert.Equal(ecsEvent.Detail.Attributes.Count, 14);
                 Assert.Equal(ecsEvent.Detail.Attributes[0].Name, "com.amazonaws.ecs.capability.logging-driver.syslog");
                 Assert.Equal(ecsEvent.Detail.ClusterArn, "arn:aws:ecs:us-east-1:111122223333:cluster/default");
                 Assert.Equal(ecsEvent.Detail.ContainerInstanceArn, "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315");
                 Assert.Equal(ecsEvent.Detail.Ec2InstanceId, "i-f3a8506b");
+                Assert.Equal(ecsEvent.Detail.RegisteredResources.Count, 4);
                 Assert.Equal(ecsEvent.Detail.RegisteredResources[0].Name, "CPU");
                 Assert.Equal(ecsEvent.Detail.RegisteredResources[0].Type, "INTEGER");
                 Assert.Equal(ecsEvent.Detail.RegisteredResources[0].IntegerValue, 2048);
                 Assert.Equal(ecsEvent.Detail.RegisteredResources[2].StringSetValue[0], "22");
+                Assert.Equal(ecsEvent.Detail.RemainingResources.Count, 4);
                 Assert.Equal(ecsEvent.Detail.RemainingResources[0].Name, "CPU");
                 Assert.Equal(ecsEvent.Detail.RemainingResources[0].Type, "INTEGER");
                 Assert.Equal(ecsEvent.Detail.RemainingResources[0].IntegerValue, 1988);
@@ -824,16 +829,54 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        [Fact]
+        public void ECSTaskStateChangeEventTest()
+        {
+            using (var fileStream = File.OpenRead("ecs-task-state-change-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var ecsEvent = serializer.Deserialize<ECSEvent>(fileStream);
+
+                Assert.Equal(ecsEvent.Version, "0");
+                Assert.Equal(ecsEvent.Id, "9bcdac79-b31f-4d3d-9410-fbd727c29fab");
+                Assert.Equal(ecsEvent.DetailType, "ECS Task State Change");
+                Assert.Equal(ecsEvent.Source, "aws.ecs");
+                Assert.Equal(ecsEvent.Account, "111122223333");
+                Assert.Equal(ecsEvent.Time.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:06Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Region, "us-east-1");
+                Assert.Equal(ecsEvent.Resources.Count, 1);
+                Assert.Equal(ecsEvent.Resources[0], "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef");
+                Assert.IsType(typeof(CloudWatchEvents.ECSEvents.Detail), ecsEvent.Detail);
+                Assert.Equal(ecsEvent.Detail.ClusterArn, "arn:aws:ecs:us-east-1:111122223333:cluster/default");
+                Assert.Equal(ecsEvent.Detail.ContainerInstanceArn, "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315");
+                Assert.Equal(ecsEvent.Detail.Containers.Count, 1);
+                Assert.Equal(ecsEvent.Detail.Containers[0].ContainerArn, "arn:aws:ecs:us-east-1:111122223333:container/3305bea1-bd16-4217-803d-3e0482170a17");
+                Assert.Equal(ecsEvent.Detail.Containers[0].ExitCode, 0);
+                Assert.Equal(ecsEvent.Detail.Containers[0].LastStatus, "STOPPED");
+                Assert.Equal(ecsEvent.Detail.Containers[0].Name, "xray");
+                Assert.Equal(ecsEvent.Detail.Containers[0].TaskArn, "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef");
+                Assert.Equal(ecsEvent.Detail.CreatedAt.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:05.702Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Detail.DesiredStatus, "RUNNING");
+                Assert.Equal(ecsEvent.Detail.Group, "task-group");
+                Assert.Equal(ecsEvent.Detail.LastStatus, "RUNNING");
+                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides.Count, 1);
+                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides[0].Name, "xray");
+                Assert.Equal(ecsEvent.Detail.StartedAt.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:06.8Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Detail.StartedBy, "ecs-svc/9223370556150183303");
+                Assert.Equal(ecsEvent.Detail.UpdatedAt.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:06.975Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Detail.TaskArn, "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef");
+                Assert.Equal(ecsEvent.Detail.TaskDefinitionArn, "arn:aws:ecs:us-east-1:111122223333:task-definition/xray:2");
+                Assert.Equal(ecsEvent.Detail.Version, 4);
+
+                Handle(ecsEvent);
+            }
+        }
+
         private void Handle(ECSEvent ecsEvent)
         {
-            //Console.WriteLine(ecsEvent.Id);
-            //Console.WriteLine(ecsEvent.DetailType);
-            Console.WriteLine(ecsEvent.Source);
-            //Console.WriteLine(ecsEvent.Account);
+            Console.WriteLine(ecsEvent.DetailType);
             Console.WriteLine(ecsEvent.Time);
-            //Console.WriteLine(ecsEvent.Region);
-            Console.WriteLine(ecsEvent.Resources[0]);
-            Console.WriteLine(ecsEvent.Detail.Status);
         }
+
     }
 }
