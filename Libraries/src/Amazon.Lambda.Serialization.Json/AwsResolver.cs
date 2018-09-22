@@ -82,7 +82,8 @@ namespace Amazon.Lambda.Serialization.Json
                 }
             }
             else if (type.FullName.StartsWith("Amazon.Lambda.CloudWatchEvents.")
-                     && (type.GetTypeInfo().BaseType?.FullName?.StartsWith("CloudWatchEvents.CloudWatchEvent`", StringComparison.Ordinal) ?? false))
+                     && (type.GetTypeInfo().BaseType?.FullName?.StartsWith("Amazon.Lambda.CloudWatchEvents.CloudWatchEvent`",
+                             StringComparison.Ordinal) ?? false))
             {
                 foreach (JsonProperty property in properties)
                 {
