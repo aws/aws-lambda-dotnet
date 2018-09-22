@@ -1,4 +1,4 @@
-﻿namespace CloudWatchEvents
+﻿namespace Amazon.Lambda.CloudWatchEvents
 {
     using System;
     using System.Collections.Generic;
