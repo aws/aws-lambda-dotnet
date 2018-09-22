@@ -1,5 +1,5 @@
 ﻿using System;
-using CloudWatchEvents;
+using Amazon.Lambda.CloudWatchEvents;
 
 namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
 {
