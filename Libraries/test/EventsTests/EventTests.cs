@@ -14,6 +14,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.LexEvents;
     using Amazon.Lambda.KinesisFirehoseEvents;
     using Amazon.Lambda.KinesisAnalyticsEvents;
+    using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
 
     using Newtonsoft.Json.Linq;
 
@@ -780,6 +781,33 @@ namespace Amazon.Lambda.Tests
         {
             var data = ms.ToArray();
             return Convert.ToBase64String(data);
+        }        
+        
+        [Fact]
+        public void ScheduledEventTest()
+        {
+            using (var fileStream = File.OpenRead("scheduled-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var scheduledEvent = serializer.Deserialize<ScheduledEvent>(fileStream);
+                Assert.Equal(scheduledEvent.Version, "0");
+                Assert.Equal(scheduledEvent.Id, "cdc73f9d-aea9-11e3-9d5a-835b769c0d9c");
+                Assert.Equal(scheduledEvent.DetailType, "Scheduled Event");
+                Assert.Equal(scheduledEvent.Source, "aws.events");
+                Assert.Equal(scheduledEvent.Account, "123456789012");
+                Assert.Equal(scheduledEvent.Time.ToUniversalTime(), DateTime.Parse("1970-01-01T00:00:00Z").ToUniversalTime());
+                Assert.Equal(scheduledEvent.Region, "us-east-1");
+                Assert.Equal(scheduledEvent.Resources.Count, 1);
+                Assert.Equal(scheduledEvent.Resources[0], "arn:aws:events:us-east-1:123456789012:rule/my-schedule");
+                Assert.IsType(typeof(Detail), scheduledEvent.Detail);
+                
+                Handle(scheduledEvent);
+            }
+        }
+        
+        private void Handle(ScheduledEvent scheduledEvent)
+        {
+            Console.WriteLine($"[{scheduledEvent.Source} {scheduledEvent.Time}] {scheduledEvent.DetailType}");
         }
     }
 }
