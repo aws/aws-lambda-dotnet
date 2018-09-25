@@ -7,11 +7,10 @@
     <TargetFramework>netstandard1.3</TargetFramework>
     <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
     <AssemblyTitle>Amazon.Lambda.Serialization.Json</AssemblyTitle>
-    <VersionPrefix>1.0.1</VersionPrefix>
     <AssemblyName>Amazon.Lambda.Serialization.Json</AssemblyName>
     <PackageId>Amazon.Lambda.Serialization.Json</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

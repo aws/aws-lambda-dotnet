@@ -59,23 +59,30 @@ namespace Amazon.Lambda.Serialization.Json
         /// <param name="responseStream">Output stream.</param>
         public void Serialize<T>(T response, Stream responseStream)
         {
-            if (debug)
+            try
             {
-                using (StringWriter debugWriter = new StringWriter())
+                if (debug)
                 {
-                    serializer.Serialize(debugWriter, response);
-                    Console.WriteLine($"Lambda Serialize {response.GetType().FullName}: {debugWriter.ToString()}");
+                    using (StringWriter debugWriter = new StringWriter())
+                    {
+                        serializer.Serialize(debugWriter, response);
+                        Console.WriteLine($"Lambda Serialize {response.GetType().FullName}: {debugWriter.ToString()}");
 
+                        StreamWriter writer = new StreamWriter(responseStream);
+                        writer.Write(debugWriter.ToString());
+                        writer.Flush();
+                    }
+                }
+                else
+                {
                     StreamWriter writer = new StreamWriter(responseStream);
-                    writer.Write(debugWriter.ToString());
+                    serializer.Serialize(writer, response);
                     writer.Flush();
                 }
             }
-            else
+            catch(Exception e)
             {
-                StreamWriter writer = new StreamWriter(responseStream);
-                serializer.Serialize(writer, response);
-                writer.Flush();
+                throw new JsonSerializerException($"Error converting the response object of type {typeof(T).FullName} from the Lambda function to JSON: {e.Message}", e);
             }
         }
 
@@ -87,20 +94,37 @@ namespace Amazon.Lambda.Serialization.Json
         /// <returns>Deserialized object from stream.</returns>
         public T Deserialize<T>(Stream requestStream)
         {
-            TextReader reader;
-            if (debug)
+            try
             {
-                var json = new StreamReader(requestStream).ReadToEnd();
-                Console.WriteLine($"Lambda Deserialize {typeof(T).FullName}: {json}");
-                reader = new StringReader(json);
-            }
-            else
-            {
-                reader = new StreamReader(requestStream);
-            }
+                TextReader reader;
+                if (debug)
+                {
+                    var json = new StreamReader(requestStream).ReadToEnd();
+                    Console.WriteLine($"Lambda Deserialize {typeof(T).FullName}: {json}");
+                    reader = new StringReader(json);
+                }
+                else
+                {
+                    reader = new StreamReader(requestStream);
+                }
 
-            JsonReader jsonReader = new JsonTextReader(reader);
-            return serializer.Deserialize<T>(jsonReader);
+                JsonReader jsonReader = new JsonTextReader(reader);
+                return serializer.Deserialize<T>(jsonReader);
+            }
+            catch (Exception e)
+            {
+                string message;
+                var targetType = typeof(T);
+                if(targetType == typeof(string))
+                {
+                    message = $"Error converting the Lambda event JSON payload to a string. JSON strings must be quoted, for example \"Hello World\" in order to be converted to a string: {e.Message}";
+                }
+                else
+                {
+                    message = $"Error converting the Lambda event JSON payload to type {targetType.FullName}: {e.Message}";
+                }
+                throw new JsonSerializerException(message, e);
+            }
         }
     }
 }
