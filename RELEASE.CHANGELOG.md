@@ -1,3 +1,19 @@
+### Release 2018-09-25
+* **AWSLambdaPSCore PowerShell Module (1.1.0)**
+    * Updated the default version of PowerShell Core to 6.1.0. This can be adjusted using the `PowerShellSdkVersions` parameter.
+    * Pull Request [#322](https://github.com/aws/aws-lambda-dotnet/pull/322) added CloudFormation custom resource template. Thanks [Nate Ferrell](https://github.com/scrthq)
+* **Amazon.Lambda.Serialization.Json (1.4.0)**
+    * Added more informative error message when unable to serialize JSON request and responses.
+* **Amazon.Lambda.AspNetCoreServer (2.1.0)**
+    * Pull Request [#308](https://github.com/aws/aws-lambda-dotnet/pull/308) added typed startup class. Thanks [Chris/0](https://github.com/chrisoverzero)
+    * Pull Request [#304](https://github.com/aws/aws-lambda-dotnet/pull/304) switched to use ASP.NET Core Logging allowing consumers to filter the logging messages. Thanks [Albert Szilvasy](https://github.com/szilvaa)
+    * Pull Request [#315](https://github.com/aws/aws-lambda-dotnet/pull/315) added image/jpg to list of binary encoding types. Thanks [Khaja Nizamuddin](https://github.com/NizamLZ)
+* **Blueprints**
+    * Pull Request [#324](https://github.com/aws/aws-lambda-dotnet/pull/324) fixed issue with SQS template not including the `<AWSProjectType>Lambda</AWSProjectType>` element 
+in the project file.
+    * Updated all templates to version 1.1.0 Amazon.Lambda.Serialization.Json.
+    * **Amazon.Lambda.Templates (3.4.0)** released with latest blueprints.
+
 ### Release 2018-09-11
 * **Amazon.Lambda.PowerShellHost (1.0.0)**
     * New NuGet package that hosts the PowerShell Core runtime within a Lambda function. 
