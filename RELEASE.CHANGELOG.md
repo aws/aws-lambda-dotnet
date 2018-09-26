@@ -9,7 +9,8 @@
     * Pull Request [#304](https://github.com/aws/aws-lambda-dotnet/pull/304) switched to use ASP.NET Core Logging allowing consumers to filter the logging messages. Thanks [Albert Szilvasy](https://github.com/szilvaa)
     * Pull Request [#315](https://github.com/aws/aws-lambda-dotnet/pull/315) added image/jpg to list of binary encoding types. Thanks [Khaja Nizamuddin](https://github.com/NizamLZ)
 * **Blueprints**
-    * Pull Request [#324](https://github.com/aws/aws-lambda-dotnet/pull/324) fixed issue with SQS template not including the `<AWSProjectType>Lambda</AWSProjectType>` element 
+    * Pull Request [#324](https://github.com/aws/aws-lambda-dotnet/pull/324) fixed issue with SQS template not including the `<AWSProjectType>Lambda</AWSProjectType>` element. Thanks [Greg
+Hartshorne](https://github.com/ghartsho)
 in the project file.
     * Updated all templates to version 1.1.0 Amazon.Lambda.Serialization.Json.
     * **Amazon.Lambda.Templates (3.4.0)** released with latest blueprints.
