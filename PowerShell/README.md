@@ -10,7 +10,7 @@ development environment.
 
 First, we need to set up the correct version of PowerShell. AWS Lambda support 
 for PowerShell is based on the cross-platform PowerShell Core 6.0 release. This means 
-you can develop your Lambda functions for PowerShell on Windows, Linux, or Mac. If you don�t 
+you can develop your Lambda functions for PowerShell on Windows, Linux, or Mac. If you don't 
 have this version of PowerShell installed, you can find instructions [here](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-powershell-core-on-windows?view=powershell-6).
 
 If you are using Visual Studio Code on Windows as your IDE, you need to ensure it's 
