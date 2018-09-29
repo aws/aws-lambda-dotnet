@@ -40,3 +40,17 @@ Get-AWSPowerShellLambdaTemplate|Returns a list of getting started templates.
 New-AWSPowerShellLambda|Used to create an initial PowerShell script that is based on a template.
 Publish-AWSPowerShellLambda|Publishes a given PowerShell script to Lambda.
 New-AWSPowerShellLambdaPackage|Creates the Lambda deployment package that can be used in a CI/CD system for deployment.
+
+# Blog Posts
+
+* [Announcing Lambda Support for PowerShell Core](https://aws.amazon.com/blogs/developer/announcing-lambda-support-for-powershell-core/)
+* [Deploying PowerShell-based Lambda with AWS CloudFormation](https://aws.amazon.com/blogs/developer/deploying-powershell-based-lambda-with-aws-cloudformation/)
+* [Creating a PowerShell REST API](https://aws.amazon.com/blogs/developer/creating-a-powershell-rest-api/)
+
+## Community Posts
+
+* [AWS Lambda and PowerShell](https://www.yobyot.com/aws/lambda-powershell/2018/09/13/) - By Alex Neihaus 
+    * Intro post for responding to S3 Events with PowerShell.
+* [Creating a PowerShell Lambda-backed Custom Resource for AWS CloudFormation](https://ferrell.io/2018/09/17/powershell-lambda-fun/) - By Nate Ferrell
+* [Writing PowerShell Core AWS Lambda Functions – Part I](http://www.powershell.amsterdam/2018/09/26/writing-powershell-core-aws-lambda-functions-part-i/) - By Tim Pringle
+    * A series creating an Amazon Lex bot connected to Facebook powered by PowerShell Lambda.
