@@ -41,13 +41,19 @@ New-AWSPowerShellLambda|Used to create an initial PowerShell script that is base
 Publish-AWSPowerShellLambda|Publishes a given PowerShell script to Lambda.
 New-AWSPowerShellLambdaPackage|Creates the Lambda deployment package that can be used in a CI/CD system for deployment.
 
-# Blog Posts
+# Learning Resources
+
+[Lambda Developer Guide](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
+  * [Programming Model for Authoring Lambda Functions in PowerShell](https://docs.aws.amazon.com/lambda/latest/dg/powershell-programming-model.html)
+  * [Creating a Deployment Package (PowerShell)](https://docs.aws.amazon.com/lambda/latest/dg/lambda-powershell-how-to-create-deployment-package.html)
+  
+### AWS Blog Posts
 
 * [Announcing Lambda Support for PowerShell Core](https://aws.amazon.com/blogs/developer/announcing-lambda-support-for-powershell-core/)
 * [Deploying PowerShell-based Lambda with AWS CloudFormation](https://aws.amazon.com/blogs/developer/deploying-powershell-based-lambda-with-aws-cloudformation/)
 * [Creating a PowerShell REST API](https://aws.amazon.com/blogs/developer/creating-a-powershell-rest-api/)
 
-## Community Posts
+### Community Posts
 
 * [AWS Lambda and PowerShell](https://www.yobyot.com/aws/lambda-powershell/2018/09/13/) - By Alex Neihaus 
     * Intro post for responding to S3 Events with PowerShell.
