@@ -171,7 +171,7 @@ Simple Step Functions                        lambda.SimpleStepFunctions      [C#
 
 To get details about a template, you can use the help command.
 
-**dotnet new lambda.EmptyFunction �help**
+**dotnet new lambda.EmptyFunction --help**
 
 ```
 Template Instantiation Commands for .NET Core CLI.                                                                                          
