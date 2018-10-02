@@ -59,4 +59,7 @@ New-AWSPowerShellLambdaPackage|Creates the Lambda deployment package that can be
     * Intro post for responding to S3 Events with PowerShell.
 * [Creating a PowerShell Lambda-backed Custom Resource for AWS CloudFormation](https://ferrell.io/2018/09/17/powershell-lambda-fun/) - By Nate Ferrell
 * [Writing PowerShell Core AWS Lambda Functions – Part I](http://www.powershell.amsterdam/2018/09/26/writing-powershell-core-aws-lambda-functions-part-i/) - By Tim Pringle
-    * A series creating an Amazon Lex bot connected to Facebook powered by PowerShell Lambda.
+    * A series creating an Amazon Lex bot connected to Facebook powered by PowerShell Lambda. 
+    * Part 1 sets up the Facebook app.
+* [Writing PowerShell Core AWS Lambda Functions – Part II](http://www.powershell.amsterdam/2018/10/02/powershell-core-aws-lambda-functions-part-ii/) - By Tim Pringle
+    * Part 2 sets up the dev environment and explain each of the available PowerShell Lambda cmdlets from the AWSLambdaPSCore module.
