@@ -154,19 +154,42 @@ To see a list of the Lambda templates execute **dotnet new lambda --list**
 
 ```
 > dotnet new lambda --list                                                                                             
-Templates                                    Short Name                      Language      Tags                    
-----------------------------------------------------------------------------------------------------------------   
-Lambda Detect Image Labels                   lambda.DetectImageLabels        [C#]          AWS/Lambda/Function     
-Lambda Empty Function                        lambda.EmptyFunction            [C#]          AWS/Lambda/Function     
-Lex Book Trip Sample                         lambda.LexBookTripSample        [C#]          AWS/Lambda/Function     
-Lambda Simple DynamoDB Function              lambda.DynamoDB                 [C#]          AWS/Lambda/Function     
-Lambda Simple Kinesis Firehose Function      lambda.KinesisFirehose          [C#]          AWS/Lambda/Function     
-Lambda Simple Kinesis Function               lambda.Kinesis                  [C#]          AWS/Lambda/Function     
-Lambda Simple S3 Function                    lambda.S3                       [C#]          AWS/Lambda/Function     
-Lambda ASP.NET Core Web API                  lambda.AspNetCoreWebAPI         [C#]          AWS/Lambda/Serverless   
-Lambda DynamoDB Blog API                     lambda.DynamoDBBlogAPI          [C#]          AWS/Lambda/Serverless   
-Lambda Empty Serverless                      lambda.EmptyServerless          [C#]          AWS/Lambda/Serverless   
-Simple Step Functions                        lambda.SimpleStepFunctions      [C#]          AWS/Lambda/Serverless   
+Templates                                                 Short Name                              Language          Tags
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+Order Flowers Chatbot Tutorial                            lambda.OrderFlowersChatbot              [C#]              AWS/Lambda/Function
+
+Lambda Detect Image Labels                                lambda.DetectImageLabels                [C#], F#          AWS/Lambda/Function
+
+Lambda Empty Function                                     lambda.EmptyFunction                    [C#], F#          AWS/Lambda/Function
+
+Lex Book Trip Sample                                      lambda.LexBookTripSample                [C#]              AWS/Lambda/Function
+
+Lambda Simple DynamoDB Function                           lambda.DynamoDB                         [C#], F#          AWS/Lambda/Function
+
+Lambda Simple Kinesis Firehose Function                   lambda.KinesisFirehose                  [C#]              AWS/Lambda/Function
+
+Lambda Simple Kinesis Function                            lambda.Kinesis                          [C#], F#          AWS/Lambda/Function
+
+Lambda Simple S3 Function                                 lambda.S3                               [C#], F#          AWS/Lambda/Function
+
+Lambda Simple SQS Function                                lambda.SQS                              [C#]              AWS/Lambda/Function
+
+Lambda ASP.NET Core Web API                               serverless.AspNetCoreWebAPI             [C#], F#          AWS/Lambda/Serverless
+
+Lambda ASP.NET Core Web Application with Razor Pages      serverless.AspNetCoreWebApp             [C#]              AWS/Lambda/Serverless
+
+Serverless Detect Image Labels                            serverless.DetectImageLabels            [C#], F#          AWS/Lambda/Serverless
+
+Lambda DynamoDB Blog API                                  serverless.DynamoDBBlogAPI              [C#]              AWS/Lambda/Serverless
+
+Lambda Empty Serverless                                   serverless.EmptyServerless              [C#], F#          AWS/Lambda/Serverless
+
+Lambda Giraffe Web App                                    serverless.Giraffe                      F#                AWS/Lambda/Serverless
+
+Serverless Simple S3 Function                             serverless.S3                           [C#], F#          AWS/Lambda/Serverless
+
+Step Functions Hello World                                serverless.StepFunctionsHelloWorld      [C#], F#          AWS/Lambda/Serverless
 ```
 
 To get details about a template, you can use the help command.
