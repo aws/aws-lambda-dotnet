@@ -4,6 +4,17 @@ Repository for the AWS NuGet packages and Blueprints to support writing AWS Lamb
 
 For a history of releases view the [release change log](RELEASE.CHANGELOG.md)
 
+## Version Status
+Our intention is to keep a regular patch and update cycle to ensure Lambda developers have access to the currently supported patch of each major version of .NET Core.  Given the development and deployment effort, our target is to have most rollouts complete in less than a month.  We do not expect it to be less than one week.  This enables us to ensure high quality deployments.  We will give special attention to any versions that contain security updates critical to .NET Core in AWS Lambda.
+
+The table below shows the currently supported patch of each major version of .NET Core in AWS Lambda, the next version(s) we plan on deploying, and the latest version released by Microsoft.  These are subject to change and we'll keep this table as up-to-date as possible.
+
+|Version|Currently Supported Patch|In Development Queue|Latest Microsoft Release|
+|-------|-------------------------|--------------------|------------------------|
+|1.0|1.0.12||1.0.12|
+|2.0|2.0.9||2.0.9|
+|2.1|2.1.4|2.1.5|2.1.5|
+
 ## Learning Resources
 
 [Lambda Developer Guide](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
