@@ -55,7 +55,7 @@
         public string Body { get; set; }
 
         /// <summary>
-        /// True of the body of the request is base 64 encoded.
+        /// True if the body of the request is base 64 encoded.
         /// </summary>
         public bool IsBase64Encoded { get; set; }
 
