@@ -69,3 +69,5 @@ New-AWSPowerShellLambdaPackage|Creates the Lambda deployment package that can be
 	* Part 4 walksthrough writing the entire PowerShell Lambda function and testing it locally.
 * [Writing PowerShell Core AWS Lambda Functions - Part V](https://www.powershell.amsterdam/2018/10/22/powershell-core-aws-lambda-functions-part-v/) - By Tim Pringle
 	* Part 5 concludes the series with the packaging and publishing of the PowerShell Lambda function to AWS and shows it in operation from Facebook. 
+* [AWS Lambda and PowerShell](https://4sysops.com/archives/aws-lambda-with-powershell/) - By Graham Beer
+    * Building Environment to create PowerShell AWS lambda's. Example of shutting down instances via tagging. 
