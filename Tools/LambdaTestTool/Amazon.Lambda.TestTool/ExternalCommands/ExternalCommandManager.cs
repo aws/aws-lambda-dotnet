@@ -95,5 +95,19 @@ namespace Amazon.Lambda.TestTool.ExternalCommands
                 throw new Exception(results.StandardError);
             }
         }
+
+        public void PurgeQueue(string profile, string region, string queueUrl)
+        {
+            var wrapper = new AppWrapper("purge-queue", new List<string>{"-p", profile, "-r", region, "-q", queueUrl});
+
+            var results = wrapper.Execute();
+
+            if (results.ExitCode != 0)
+            {
+                throw new Exception(results.StandardError);
+            }
+            
+        }
+        
     }
 }

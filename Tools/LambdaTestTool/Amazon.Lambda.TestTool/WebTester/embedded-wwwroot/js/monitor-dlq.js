@@ -121,6 +121,11 @@ function onStartMonitoring() {
     config.Function = $("#functions-picker").val();
     config.QueueUrl = $("#aws-dlq-queues").val();
 
+    if(!config.QueueUrl) {
+        $('#dlq-no-queue-selected-dialog').modal();
+        return;
+    }
+    
     $.post(
         {
             url: "webtester-api/MonitorDLQ/start",
@@ -197,4 +202,36 @@ function pollLogs() {
 function showMonitorErrorMessage(errorMessage) {
     $("#monitor-error-msg-div").append(`<div>${errorMessage}</div>`);
     $("#monitor-error-msg-div").show();
+}
+
+function onPurgeDlqClick() {
+
+    var queueUrl = $("#aws-dlq-queues").val();
+    if(!queueUrl) {
+        $('#dlq-no-queue-selected-dialog').modal();
+        return;
+    }
+    
+    $('#dlq-confirm-purge-dialog').modal();
+}
+
+function onConfirmedPurgeDlqClick() {
+    $('#dlq-confirm-purge-dialog').modal('hide');
+
+    var config = {};
+    config.Profile = $("#aws-profile").val();
+    config.Region = $("#aws-region").val();
+    config.QueueUrl = $("#aws-dlq-queues").val();    
+
+    $.post({
+        url: "webtester-api/MonitorDLQ/purge",
+        data: JSON.stringify(config),
+        contentType: "application/json",
+        success: function (data) {
+
+        }
+    })
+    .fail(function (data) {
+        alert('Error purging queue, is the .NET Lambda Test Tool been still running?');
+    });
 }

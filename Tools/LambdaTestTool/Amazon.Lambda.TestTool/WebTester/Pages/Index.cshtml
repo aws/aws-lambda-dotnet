@@ -10,6 +10,11 @@
         to how the AWS Lambda service would run .NET code but there are intended differences to make debugging simple, for example the host OS. 
         For that reason, this testing tool cannot help with diagnosing platform specific issues.
     </p>
+    <p>
+        <b>Tip:</b> If a Lambda function using the default serializer, Amazon.Lambda.Serialization.Json, is deployed with the environment variable <b>LAMBDA_NET_SERIALIZER_DEBUG</b> set to <b>true</b>
+        the JSON input for the Lambda function will be written to CloudWatch Logs. The captured JSON can then be used in this tool to step
+        through the code.
+    </p>
 
     <!-- Select Config File and Function Handler -->
     <div class="row">

@@ -15,14 +15,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.Test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FunctionSignatureExamples", "LambdaFunctions\FunctionSignatureExamples\FunctionSignatureExamples.csproj", "{4D8D6053-60E5-4AC3-8740-22E811452CD9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerlessTemplateExample", "LambdaFunctions\ServerlessTemplateExample\ServerlessTemplateExample.csproj", "{DAD2488C-F731-4719-A016-600BB5F25B48}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerlessTemplateExample", "LambdaFunctions\ServerlessTemplateExample\ServerlessTemplateExample.csproj", "{DAD2488C-F731-4719-A016-600BB5F25B48}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.ExternalCommands", "Amazon.Lambda.TestTool.ExternalCommands\Amazon.Lambda.TestTool.ExternalCommands.csproj", "{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F89015D0-DED5-4FFE-A37E-C1242D4DC792}"
-	ProjectSection(SolutionItems) = preProject
-		README.md = README.md
-	EndProjectSection
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool.ExternalCommands", "Amazon.Lambda.TestTool.ExternalCommands\Amazon.Lambda.TestTool.ExternalCommands.csproj", "{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

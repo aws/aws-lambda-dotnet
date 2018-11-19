@@ -65,6 +65,13 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
             }
         }
 
+        [HttpPost("purge")]
+        public void PurgeDlq([FromBody] PurgeDlqModel model)
+        {
+            var manager = new ExternalCommandManager();
+            manager.PurgeQueue(model.Profile, model.Region, model.QueueUrl);            
+        }
+
         [HttpGet("is-running")]
         public bool IsRunning()
         {
