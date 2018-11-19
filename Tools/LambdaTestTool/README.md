@@ -1,8 +1,8 @@
 # The AWS .NET Mock Lambda Test Tool (Preview)
 
-The AWS .NET Mock Lambda Test Tool is a tool that mocks the Lambda environment, loads a .NET Core Lambda project and executes the selected code. An IDE that is attached to this tool can then debug and step through the .NET Core Lambda code.
+The AWS .NET Mock Lambda Test Tool is a tool that can be used to load a .NET Core Lambda project and execute the selected code inside an emulated Lambda environment. An IDE that is attached to the process hosting this tool can then debug and step through the .NET Core Lambda code. The tool is optimized for quick local debugging with minimal dependencies.
 
-This tool is not a local Lambda environment. This tool is optimized for quick local debugging with minimal dependencies. For example, the targeted .NET Core Lambda code is run within the process of this tool which is run on the host OS. The host OS is usually Windows or macOS.  The host OS is not Amazon Linux, the OS for the Lambda service. Due to these design differences, this tool is not intended to diagnose platform specific issues but instead it can be useful for debugging application logic issues.
+**Note:** this tool is not a local Lambda environment. This tool is optimized for quick local debugging with minimal dependencies. For example, the targeted .NET Core Lambda code is run within the process of this tool which is run on the host OS. The host OS is usually Windows or macOS.  The host OS is not Amazon Linux, the OS for the Lambda service. Due to these design differences, this tool is not intended to diagnose platform specific issues but instead it can be useful for debugging application logic issues.
 
 * [Getting Started](#getting-help)
 * [Installing and Running](#installing-and-running)
@@ -19,17 +19,17 @@ This tool is currently in preview and there are some known limitations. For ques
 
 In the Lambda environment an IAM Role is assigned to the function that delivers AWS Credentials to the Lambda compute environment. When service clients from the AWS SDK for .NET are created without explicit credentials the SDK will search the running environment for credentials and find the credentials delivered by the IAM role.
 
-Roles are **not** used with this tool. Instead, before the code is run a profile from the host machine's credential file is selected. The **AWS_PROFILE** environment variable is set to the selected profile. Just like in the Lambda environment when a service client is created without explicit credentials, the SDK searches for credentials and will find the AWS_PROFILE environment variable and retrieve the credentials from the local credential file.
+IAM Roles are **not** used with this tool. Instead a credential profile is selected from the host machine's credential before the code is run. The **AWS_PROFILE** environment variable is set to the selected profile. Just like in the Lambda environment when a service client is created without explicit credentials the SDK searches for credentials and will find the AWS_PROFILE environment variable and retrieve the credentials from the local credential file.
 
 ## Installing and Running
 
-The tool is distributed as a .NET Global Tool via the NuGet package Amazon.Lambda.TestTool-2.1. To install the tool execute the following command.
+The tool is distributed as a .NET Global Tool via the NuGet package Amazon.Lambda.TestTool-2.1. To install the tool execute the following command:
 
 ```
 dotnet tool install -g Amazon.Lambda.TestTool-2.1
 ```
 
-To update the tool run the following command.
+To update the tool run the following command:
 
 ```
 dotnet tool update -g Amazon.Lambda.TestTool-2.1
@@ -51,7 +51,7 @@ Since this tool loads .NET Core Lambda code within its process the version of .N
 
 With the latest version of the [AWS Toolkit for Visual Studio](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.AWSToolkitforVisualStudio2017) the .NET Mock Lambda Test Tool will be automatically installed/updated and configured as a debug profile when you open a .NET Core Lambda project. The goal is to be able to open a .NET Core Lambda project in Visual Studio and just push **F5** to start debugging without any dependencies other than the AWS Toolkit for Visual Studio.
 
-When a project is opened in Visual Studio the toolkit will detect the project is a Lambda project by looking for the `<AWSProjectType>Lambda</AWSProjectType>` property. If found it will write a `launchSettings.json` file in the .NET Core Lambda project's `Properties` folder. Visual Studio uses this file to look for debug profiles.
+When a project is opened in Visual Studio the toolkit will detect the project is a Lambda project by looking for the `<AWSProjectType>Lambda</AWSProjectType>` property in the project file. If found it will write a `launchSettings.json` file in the .NET Core Lambda project's `Properties` folder. Visual Studio uses this file to look for debug profiles.
 ```json
 {
   "profiles": {
@@ -70,7 +70,7 @@ When a project is opened in Visual Studio the toolkit will detect the project is
 
 Before using Visual Studio Code you must follow the instructions above on installing the .NET Mock Lambda Test Tool.
 
-To debug with Visual Studio Code and the .NET Mock Lambda Test Tool edit the [launch.json](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) file and have the `program` property point to `dotnet-lambda-test-tool-2.1.exe` and make sure `cwd` is pointing the .NET Core Lambda project. When on a non-windows environment then the executable will be called `dotnet-lambda-test-tool-2.1` without the ".exe" at the end. The `dotnet-lambda-test-tool-2.1.exe` executable can be found in the `.dotnet/tools` directory under your home directory. Depending on your file system settings, the `.dotnet` directory can appear hidden.
+To debug with Visual Studio Code and the .NET Mock Lambda Test Tool edit the [launch.json](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) configuration file and have the `program` property point to `dotnet-lambda-test-tool-2.1.exe` and make sure `cwd` is pointing the .NET Core Lambda project. Note that on a non-windows environment the executable will be called `dotnet-lambda-test-tool-2.1` without the ".exe" at the end. The `dotnet-lambda-test-tool-2.1.exe` executable can be found in the `.dotnet/tools` directory under your home directory. Depending on your file system settings, the `.dotnet` directory can appear hidden.
 
 ```json
 {
@@ -141,6 +141,6 @@ Once this is done when you start the debugger in Visual Studio for Mac it will l
 
 ## Known Limitations
 
-* YAML based CloudFormation templates are not yet supported
-* There is no mechanism for setting custom Environment variables
-* NuGet packages that use native dependencies are not supported
+* YAML based CloudFormation templates are not yet supported.
+* No mechanism for setting custom Environment variables.
+* NuGet packages that use native dependencies are not supported.
