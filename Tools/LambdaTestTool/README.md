@@ -74,9 +74,6 @@ To debug with Visual Studio Code and the .NET Mock Lambda Test Tool edit the [la
 
 ```json
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
@@ -91,7 +88,6 @@ To debug with Visual Studio Code and the .NET Mock Lambda Test Tool edit the [la
             "stopAtEntry": false,
             "internalConsoleOptions": "openOnSessionStart"
         },
-        ...
 ```        
 
 ## Configure for JetBrains Rider
