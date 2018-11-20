@@ -24,6 +24,7 @@
 **/.idea
 *.userprefs
 
+/Tools/LambdaTestTool/Amazon.Lambda.TestTool/ExternalCommands/App/**
 
 **/node_modules/
 **/TestGenerations/

@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <Import Project="..\..\..\buildtools\common.props" />
+  
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <ToolCommandName>dotnet-lambda-test-tool-2.1</ToolCommandName>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <Description>A tool to help debug and test your .NET Core AWS Lambda functions locally.</Description>
+    <LangVersion>Latest</LangVersion>
+    <VersionPrefix>0.8.0</VersionPrefix>
+    <Product>AWS .NET Lambda Test Tool</Product>
+    <Copyright>Apache 2</Copyright>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>    
+    <PackageId>Amazon.Lambda.TestTool-2.1</PackageId>
+    <PackageTags>AWS;Amazon;Lambda</PackageTags>
+    <NoWarn>1701;1702;1591;1587;3021;NU5100</NoWarn>
+  </PropertyGroup>  
+  <ItemGroup>
+    <None Remove="WebTester\embedded-wwwroot\css\bootstrap.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.All" />
+  </ItemGroup>
+  <ItemGroup>
+    <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WebTester\embedded-wwwroot\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="WebTester\Pages\**\*" CopyToOutputDirectory="Always" />
+    <Content Include="ExternalCommands\App\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WebTester\embedded-wwwroot\css\font-awesome.min.css" />
+  </ItemGroup>
+  <Target Name="PrepareExternalCommands" BeforeTargets="Compile">
+    <Exec Command="dotnet publish -c $(Configuration) -o ../Amazon.Lambda.TestTool/ExternalCommands/App" WorkingDirectory="../Amazon.Lambda.TestTool.ExternalCommands" />
+  </Target>
+</Project>

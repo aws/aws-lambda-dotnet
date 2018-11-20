@@ -9,6 +9,7 @@
 
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+	<PackCommand>dotnet pack --no-build -c $(Configuration) -o ../../../Deployment/nuget-packages</PackCommand>
 
 	<SignAssembly Condition=" '$(SignAssembly)' == '' ">true</SignAssembly>
     <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
@@ -17,11 +18,11 @@
   
 
 
-  <Target Name="full-build" DependsOnTargets="full-build-notests;run-tests">
+  <Target Name="full-build" DependsOnTargets="full-build-notests;run-tests;test-lambda-test-tool">
 
   </Target>
   
-  <Target Name="full-build-notests" DependsOnTargets="test-blueprints-dotnetnew;package-blueprints;run-tests;build-nuget-packages;copy-awslambdapscore-module">
+  <Target Name="full-build-notests" DependsOnTargets="test-blueprints-dotnetnew;package-blueprints;run-tests;build-nuget-packages;copy-awslambdapscore-module;build-lambda-test-tool-package">
 
   </Target>  
   
@@ -54,6 +55,8 @@
 
     <Exec Command="dotnet restore Libraries.sln"
       WorkingDirectory="..\Libraries"/>
+    <Exec Command="dotnet restore aws-lambda-test-tool.sln"
+      WorkingDirectory="..\Tools\LambdaTestTool"/>
     <Exec Command="dotnet restore BlueprintPackager.sln"
       WorkingDirectory="..\Blueprints\BlueprintPackager"/>
   </Target>
@@ -222,48 +225,67 @@
 
     <Exec Command="dotnet msbuild Libraries.sln /t:Rebuild /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)"
         WorkingDirectory="..\Libraries"/>
-
-    <PropertyGroup>
-      <Command>dotnet pack --no-build -c $(Configuration) -o ../../../Deployment/nuget-packages</Command>
-    </PropertyGroup>
-
-    <Exec Command="$(Command)"
+		
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.APIGatewayEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.AspNetCoreServer"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.CloudWatchLogsEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.CognitoEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.ConfigEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.Core"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.DynamoDBEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.LexEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisAnalyticsEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.KinesisFirehoseEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.Logging.AspNetCore"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.PowerShellHost"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.S3Events"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.Serialization.Json"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.SimpleEmailEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.SNSEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.SQSEvents"/>
-    <Exec Command="$(Command)"
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.TestUtilities"/>
   </Target>
+  
+  <Target Name="build-lambda-test-tool-package" DependsOnTargets="init">
+    <Exec Command="dotnet msbuild aws-lambda-test-tool.sln /t:Rebuild /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)"
+        WorkingDirectory="..\Tools\LambdaTestTool"/>	
+
+    <Exec Command="$(PackCommand)"
+        WorkingDirectory="..\Tools\LambdaTestTool\Amazon.Lambda.TestTool"/>		
+  </Target>
+  
+  <Target Name="test-lambda-test-tool" DependsOnTargets="build-lambda-test-tool-package">
+    <PropertyGroup>
+      <Command>dotnet test</Command>
+    </PropertyGroup>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Tools\LambdaTestTool\Amazon.Lambda.TestTool.Tests"/>
+  </Target>  
+  
+    <Target Name="install-lambda-test-tool" DependsOnTargets="build-lambda-test-tool-package">
+        <Exec Command="dotnet tool uninstall -g Amazon.Lambda.TestTool-2.1" IgnoreExitCode="true"/>
+        <Exec Command="dotnet tool install -g Amazon.Lambda.TestTool-2.1" WorkingDirectory="../Deployment"/>
+    </Target>  
+  
+  
 </Project>
