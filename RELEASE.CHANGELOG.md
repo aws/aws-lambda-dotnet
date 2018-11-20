@@ -1,3 +1,7 @@
+### Release 2018-11-19
+* **Amazon.Lambda.TestTool-2.1 (0.8.0)** (Preview)
+    * Initial release of the new AWS .NET Mock Lambda Test Tool. Checkout the [README.md](https://github.com/aws/aws-lambda-dotnet/tree/master/Tools/LambdaTestTool) for more details.
+
 ### Release 2018-09-25
 * **AWSLambdaPSCore PowerShell Module (1.1.0)**
     * Updated the default version of PowerShell Core to 6.1.0. This can be adjusted using the `PowerShellSdkVersions` parameter.
