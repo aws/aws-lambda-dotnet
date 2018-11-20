@@ -63,3 +63,11 @@ New-AWSPowerShellLambdaPackage|Creates the Lambda deployment package that can be
     * Part 1 sets up the Facebook app.
 * [Writing PowerShell Core AWS Lambda Functions – Part II](http://www.powershell.amsterdam/2018/10/02/powershell-core-aws-lambda-functions-part-ii/) - By Tim Pringle
     * Part 2 sets up the dev environment and explain each of the available PowerShell Lambda cmdlets from the AWSLambdaPSCore module.
+* [Writing PowerShell Core AWS Lambda Functions – Part III](https://www.powershell.amsterdam/2018/10/08/powershell-core-aws-lambda-functions-part-iii/) - By Tim Pringle
+    * Part 3 sets up the Lex 'bot, Messenger component, and introduces the event data that the PowerShell Lambda function will process.
+* [Writing PowerShell Core AWS Lambda Functions - Part IV](https://www.powershell.amsterdam/2018/10/16/powershell-core-aws-lambda-functions-part-iv/) - By Tim Pringle
+	* Part 4 walksthrough writing the entire PowerShell Lambda function and testing it locally.
+* [Writing PowerShell Core AWS Lambda Functions - Part V](https://www.powershell.amsterdam/2018/10/22/powershell-core-aws-lambda-functions-part-v/) - By Tim Pringle
+	* Part 5 concludes the series with the packaging and publishing of the PowerShell Lambda function to AWS and shows it in operation from Facebook. 
+* [AWS Lambda and PowerShell](https://4sysops.com/archives/aws-lambda-with-powershell/) - By Graham Beer
+    * Building Environment to create PowerShell AWS lambda's. Example of shutting down instances via tagging. 
