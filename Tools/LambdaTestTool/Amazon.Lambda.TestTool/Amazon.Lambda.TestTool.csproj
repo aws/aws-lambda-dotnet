@@ -19,6 +19,9 @@
     <NoWarn>1701;1702;1591;1587;3021;NU5100</NoWarn>
   </PropertyGroup>  
   <ItemGroup>
+    <PackageReference Include="YamlDotNet.Signed" Version="5.2.1" />    
+  </ItemGroup>
+  <ItemGroup>
     <None Remove="WebTester\embedded-wwwroot\css\bootstrap.css" />
   </ItemGroup>
   <ItemGroup>
