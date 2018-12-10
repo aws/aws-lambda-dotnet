@@ -80,7 +80,20 @@ namespace Amazon.Lambda.Serialization.Json
                     }
                 }
             }
-
+            else if (type.FullName.Equals("Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest", StringComparison.Ordinal))
+            {
+                foreach (JsonProperty property in properties)
+                {
+                    if (property.PropertyName.Equals("Headers", StringComparison.Ordinal))
+                    {
+                        property.MemberConverter = new JsonToDictionaryStringByStringArrayDataConverter();
+                    }
+                    else if (property.PropertyName.Equals("QueryStringParameters", StringComparison.Ordinal))
+                    {
+                        property.MemberConverter = new JsonToDictionaryStringByStringArrayDataConverter();
+                    }
+                }
+            }
             return properties;
         }
     }
