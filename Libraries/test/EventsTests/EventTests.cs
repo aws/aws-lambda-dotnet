@@ -562,15 +562,11 @@ namespace Amazon.Lambda.Tests
                 Assert.True(evnt.IsBase64Encoded);
                 
                 Assert.Equal(2, evnt.QueryStringParameters.Count);
-                Assert.Single(evnt.QueryStringParameters["query1"]);
-                Assert.Equal("value1", evnt.QueryStringParameters["query1"][0]);
-                Assert.Single(evnt.QueryStringParameters["query2"]);
-                Assert.Equal("value2", evnt.QueryStringParameters["query2"][0]);
+                Assert.Equal("value1", evnt.QueryStringParameters["query1"]);
+                Assert.Equal("value2", evnt.QueryStringParameters["query2"]);
                 
-                Assert.Single(evnt.Headers["head1"]);
-                Assert.Equal("value1", evnt.Headers["head1"][0]);
-                Assert.Single(evnt.Headers["head2"]);
-                Assert.Equal("value2", evnt.Headers["head2"][0]);
+                Assert.Equal("value1", evnt.Headers["head1"]);
+                Assert.Equal("value2", evnt.Headers["head2"]);
 
 
                 var requestContext = evnt.RequestContext;
@@ -592,21 +588,21 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(evnt.Body, "not really base64");
                 Assert.True(evnt.IsBase64Encoded);
                 
-                Assert.Equal(2, evnt.QueryStringParameters.Count);
-                Assert.Equal(2, evnt.QueryStringParameters["query1"].Count);
-                Assert.Equal("q1-value1", evnt.QueryStringParameters["query1"][0]);
-                Assert.Equal("q1-value2", evnt.QueryStringParameters["query1"][1]);
-                Assert.Equal(2, evnt.QueryStringParameters["query2"].Count);
-                Assert.Equal("q2-value1", evnt.QueryStringParameters["query2"][0]);
-                Assert.Equal("q2-value2", evnt.QueryStringParameters["query2"][1]);
+                Assert.Equal(2, evnt.MultiValueQueryStringParameters.Count);
+                Assert.Equal(2, evnt.MultiValueQueryStringParameters["query1"].Count);
+                Assert.Equal("q1-value1", evnt.MultiValueQueryStringParameters["query1"][0]);
+                Assert.Equal("q1-value2", evnt.MultiValueQueryStringParameters["query1"][1]);
+                Assert.Equal(2, evnt.MultiValueQueryStringParameters["query2"].Count);
+                Assert.Equal("q2-value1", evnt.MultiValueQueryStringParameters["query2"][0]);
+                Assert.Equal("q2-value2", evnt.MultiValueQueryStringParameters["query2"][1]);
                 
-                Assert.Equal(2, evnt.Headers["head1"].Count);
-                Assert.Equal(2, evnt.Headers["head1"].Count);
-                Assert.Equal("h1-value1", evnt.Headers["head1"][0]);
-                Assert.Equal("h1-value2", evnt.Headers["head1"][1]);
-                Assert.Equal(2, evnt.Headers["head2"].Count);
-                Assert.Equal("h2-value1", evnt.Headers["head2"][0]);
-                Assert.Equal("h2-value2", evnt.Headers["head2"][1]);
+                Assert.Equal(2, evnt.MultiValueHeaders["head1"].Count);
+                Assert.Equal(2, evnt.MultiValueHeaders["head1"].Count);
+                Assert.Equal("h1-value1", evnt.MultiValueHeaders["head1"][0]);
+                Assert.Equal("h1-value2", evnt.MultiValueHeaders["head1"][1]);
+                Assert.Equal(2, evnt.MultiValueHeaders["head2"].Count);
+                Assert.Equal("h2-value1", evnt.MultiValueHeaders["head2"][0]);
+                Assert.Equal("h2-value2", evnt.MultiValueHeaders["head2"][1]);
 
 
                 var requestContext = evnt.RequestContext;
@@ -616,15 +612,53 @@ namespace Amazon.Lambda.Tests
         
         
         [Fact]
-        public void ApplicationLoadBalancerResponseTest()
+        public void ApplicationLoadBalancerSingleHeaderResponseTest()
         {
 
             var response = new ApplicationLoadBalancerResponse()
             {
-                Headers = new Dictionary<string, IList<string>>
+                Headers = new Dictionary<string, string>
                 {
-                    {"Head1", new List<string>{"h1-value1"}},
-                    {"Head2", new List<string>{"h2-value1", "h2-value2"}}
+                    {"Head1", "h1-value1"},
+                    {"Head2", "h2-value1"}
+                },
+                IsBase64Encoded = true,
+                Body = "not really base64",
+                StatusCode = 200,
+                StatusDescription = "200 OK"
+            };
+
+            string serializedJson;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                var serializer = new JsonSerializer();
+                serializer.Serialize(response, stream);
+
+                stream.Position = 0;
+                serializedJson = Encoding.UTF8.GetString(stream.ToArray());
+            }
+
+            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+            
+            Assert.Equal("h1-value1", root["headers"]["Head1"]);
+            Assert.Equal("h2-value1", root["headers"]["Head2"]);
+            
+            Assert.True((bool)root["isBase64Encoded"]);
+            Assert.Equal("not really base64", (string)root["body"]);
+            Assert.Equal(200, (int)root["statusCode"]);
+            Assert.Equal("200 OK", (string)root["statusDescription"]);
+        }
+
+        [Fact]
+        public void ApplicationLoadBalancerMultiHeaderResponseTest()
+        {
+
+            var response = new ApplicationLoadBalancerResponse()
+            {
+                MultiValueHeaders = new Dictionary<string, IList<string>>
+                {
+                    {"Head1", new List<string>{"h1-value1" } },
+                    {"Head2", new List<string>{"h2-value1", "h2-value2" } }
                 },
                 IsBase64Encoded = true,
                 Body = "not really base64",
@@ -644,20 +678,18 @@ namespace Amazon.Lambda.Tests
 
             JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
 
-            
-            Assert.Equal(1, root["headers"]["Head1"].Count());
-            Assert.Equal("h1-value1", root["headers"]["Head1"].First.ToString());
+            Assert.Equal(1, root["multiValueHeaders"]["Head1"].Count());
+            Assert.Equal("h1-value1", root["multiValueHeaders"]["Head1"].First());
 
-            Assert.Equal(2, root["headers"]["Head2"].Count());
-            Assert.Equal("h2-value1", root["headers"]["Head2"].First.ToString());
-            Assert.Equal("h2-value2", root["headers"]["Head2"].Last.ToString());
-            
+            Assert.Equal(2, root["multiValueHeaders"]["Head2"].Count());
+            Assert.Equal("h2-value1", root["multiValueHeaders"]["Head2"].First());
+            Assert.Equal("h2-value2", root["multiValueHeaders"]["Head2"].Last());
+
             Assert.True((bool)root["isBase64Encoded"]);
             Assert.Equal("not really base64", (string)root["body"]);
             Assert.Equal(200, (int)root["statusCode"]);
             Assert.Equal("200 OK", (string)root["statusDescription"]);
         }
-        
 
 
         [Fact]

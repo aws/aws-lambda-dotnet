@@ -82,6 +82,10 @@
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.SimpleApplicationLoadBalancerFunction;ProjectName=SimpleApplicationLoadBalancerFunctionC;Lang=C#"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
           Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabelsC;Lang=C#"/>		  
     <MSBuild
           Projects="$(MSBuildProjectFile)"

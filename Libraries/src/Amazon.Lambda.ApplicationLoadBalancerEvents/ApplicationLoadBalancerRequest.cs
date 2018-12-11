@@ -22,18 +22,32 @@ namespace Amazon.Lambda.ApplicationLoadBalancerEvents
         /// <summary>
         /// The HTTP method used
         /// </summary>
-        public string HttpMethod { get; set; }    
-        
+        public string HttpMethod { get; set; }
+
         /// <summary>
         /// The headers sent with the request
+        /// Note: Use this property when "Multi value headers" is disabled on ELB Target Group.
         /// </summary>
-        public IDictionary<string, IList<string>> Headers { get; set; }
+        public IDictionary<string, string> Headers { get; set; }
+
+        /// <summary>
+        /// The headers sent with the request
+        /// Note: Use this property when "Multi value headers" is enabled on ELB Target Group.
+        /// </summary>
+        public IDictionary<string, IList<string>> MultiValueHeaders { get; set; }
 
         /// <summary>
         /// The query string parameters that were part of the request
+        /// Note: Use this property when "Multi value headers" is disabled on ELB Target Group.
         /// </summary>
-        public IDictionary<string, IList<string>> QueryStringParameters { get; set; }        
-        
+        public IDictionary<string, string> QueryStringParameters { get; set; }
+
+        /// <summary>
+        /// The query string parameters that were part of the request
+        /// Note: Use this property when "Multi value headers" is enabled on ELB Target Group.
+        /// </summary>
+        public IDictionary<string, IList<string>> MultiValueQueryStringParameters { get; set; }
+
         /// <summary>
         /// The HTTP request body.
         /// </summary>

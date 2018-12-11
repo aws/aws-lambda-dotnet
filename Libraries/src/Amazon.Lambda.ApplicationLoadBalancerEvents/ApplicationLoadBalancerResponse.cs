@@ -20,13 +20,21 @@ namespace Amazon.Lambda.ApplicationLoadBalancerEvents
         /// The HTTP status description for the request
         /// </summary>
         [DataMember(Name = "statusDescription")]
-        public string StatusDescription { get; set; }        
+        public string StatusDescription { get; set; }
 
         /// <summary>
         /// The Http headers return in the response
+        /// Note: Use this property when "Multi value headers" is disabled on ELB Target Group.
         /// </summary>
         [DataMember(Name = "headers")]
-        public IDictionary<string, IList<string>> Headers { get; set; }
+        public IDictionary<string, string> Headers { get; set; }
+
+        /// <summary>
+        /// The Http headers return in the response
+        /// Note: Use this property when "Multi value headers" is enabled on ELB Target Group.
+        /// </summary>
+        [DataMember(Name = "multiValueHeaders")]
+        public IDictionary<string, IList<string>> MultiValueHeaders { get; set; }
 
         /// <summary>
         /// The response body
