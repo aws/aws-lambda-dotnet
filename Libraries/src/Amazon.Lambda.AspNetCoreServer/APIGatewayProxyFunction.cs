@@ -174,7 +174,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                         {
                             sb.Append("&");
                         }
-                        sb.Append($"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(kvp.Value.ToString())}");
+                        sb.Append(Utilities.CreateQueryStringParameter(kvp.Key, kvp.Value.ToString()));
                     }
                     requestFeatures.QueryString = sb.ToString();
                 }

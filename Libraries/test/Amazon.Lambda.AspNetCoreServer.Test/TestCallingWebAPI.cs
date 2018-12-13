@@ -260,7 +260,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(TestLambdaContext context, string fileName)
         {
-            var lambdaFunction = new LambdaFunction();
+            var lambdaFunction = new ApiGatewayLambdaFunction();
             var filePath = Path.Combine(Path.GetDirectoryName(this.GetType().GetTypeInfo().Assembly.Location), fileName);
             var requestStr = File.ReadAllText(filePath);
             var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);

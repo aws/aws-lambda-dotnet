@@ -45,6 +45,13 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <inheritdoc/>
         protected override void MarshallRequest(InvokeFeatures features, ApplicationLoadBalancerRequest lambdaRequest, ILambdaContext lambdaContext)
         {
+            // Request coming from Application Load Balancer will always send the headers X-Amzn-Trace-Id, X-Forwarded-For, X-Forwarded-Port, and X-Forwarded-Proto.
+            // So this will only happen when writing tests with incomplete sample requests.
+            if (lambdaRequest.Headers == null && lambdaRequest.MultiValueHeaders == null)
+            {
+                throw new Exception("Unable to determine header mode, single or multi value, because both Headers and MultiValueHeaders are null.");
+            }
+
             // Look to see if the request is using mutli value headers or not. This is important when
             // marshalling the response to know whether to fill in the the Headers or MultiValueHeaders collection.
             // Since a Lambda function compute environment is only one processing one event at a time it is safe to store
@@ -73,8 +80,8 @@ namespace Amazon.Lambda.AspNetCoreServer
                             }
                             foreach(var value in kvp.Value)
                             {
-                                sb.Append($"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(value)}");
-                            }                            
+                                sb.Append(Utilities.CreateQueryStringParameter(kvp.Key, value));
+                            }
                         }
                         requestFeatures.QueryString = sb.ToString();
                     }
@@ -91,7 +98,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                             {
                                 sb.Append("&");
                             }
-                            sb.Append($"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(kvp.Value.ToString())}");
+                            sb.Append(Utilities.CreateQueryStringParameter(kvp.Key, kvp.Value.ToString()));
                         }
                         requestFeatures.QueryString = sb.ToString();
                     }
@@ -111,18 +118,6 @@ namespace Amazon.Lambda.AspNetCoreServer
                         requestFeatures.Headers[kvp.Key] = new StringValues(kvp.Value);
                     }
                 }
-
-                var headers = lambdaRequest.Headers;
-                if (headers != null)
-                {
-                    foreach (var kvp in headers)
-                    {
-                        requestFeatures.Headers[kvp.Key] = kvp.Value?.ToString();
-                    }
-                }
-
-
-                requestFeatures.Headers["Host"] = GetSingleHeaderValue(lambdaRequest, "host");
 
                 if (!string.IsNullOrEmpty(lambdaRequest.Body))
                 {
@@ -190,7 +185,9 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                     // Remember the Content-Type for possible later use
                     if (kvp.Key.Equals("Content-Type", StringComparison.CurrentCultureIgnoreCase))
-                        contentType = response.Headers[kvp.Key];
+                    {
+                        contentType = kvp.Value[0];
+                    }
                 }
             }
 
@@ -232,7 +229,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
             if(this._multiHeaderValuesEnabled)
             {
-                var kvp = request.MultiValueQueryStringParameters.FirstOrDefault(x => string.Equals(x.Key, headerName, StringComparison.OrdinalIgnoreCase));
+                var kvp = request.MultiValueHeaders.FirstOrDefault(x => string.Equals(x.Key, headerName, StringComparison.OrdinalIgnoreCase));
                 if (!kvp.Equals(default(KeyValuePair<string, IList<string>>)))
                 {
                     return kvp.Value.First();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Text;
 
 namespace Amazon.Lambda.AspNetCoreServer.Internal
@@ -114,6 +115,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
                 yield return new string(combination);
             }
+        }
+
+        internal static string CreateQueryStringParameter(string key, string value)
+        {
+            return $"{WebUtility.UrlEncode(key)}={WebUtility.UrlEncode(value)}";
         }
     }
 }
