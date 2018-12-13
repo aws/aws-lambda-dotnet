@@ -74,12 +74,12 @@ namespace Amazon.Lambda.AspNetCoreServer
                         StringBuilder sb = new StringBuilder("?");
                         foreach (var kvp in queryStringParameters)
                         {
-                            if (sb.Length > 1)
-                            {
-                                sb.Append("&");
-                            }
                             foreach(var value in kvp.Value)
                             {
+                                if (sb.Length > 1)
+                                {
+                                    sb.Append("&");
+                                }
                                 sb.Append(Utilities.CreateQueryStringParameter(kvp.Key, value));
                             }
                         }

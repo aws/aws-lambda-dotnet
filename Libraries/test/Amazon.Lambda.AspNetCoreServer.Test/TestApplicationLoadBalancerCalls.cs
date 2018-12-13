@@ -43,6 +43,16 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestGetQueryStringValueMV()
+        {
+            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-mv-request.json");
+
+            Assert.Equal("value1,value2", response.Body);
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("text/plain; charset=utf-8", response.MultiValueHeaders["Content-Type"].FirstOrDefault());
+        }
+
+        [Fact]
         public async Task TestPutWithBody()
         {
             var response = await this.InvokeApplicationLoadBalancerRequest("values-put-withbody-alb-request.json");

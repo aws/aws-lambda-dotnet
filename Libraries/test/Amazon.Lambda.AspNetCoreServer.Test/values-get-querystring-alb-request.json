@@ -6,7 +6,7 @@
   },
   "httpMethod": "GET",
   "path": "/api/querystring",
-  "queryStringParameters":  {
+  "queryStringParameters": {
     "firstName": "Lewis",
     "lastName": "Meriwether"
   },
