@@ -120,6 +120,25 @@ namespace Amazon.Lambda.TestTool.Tests
             Assert.Equal("ServerlessTemplateExample::ServerlessTemplateExample.Functions::ToUpper", configInfo.FunctionInfos[1].Handler);
 
         }
+        
+        [Fact]
+        public void LoadServerlessYamlTemplateConfig()
+        {
+            var defaultsFilePath = Path.GetFullPath(@"../../../../LambdaFunctions/ServerlessTemplateYamlExample/aws-lambda-tools-defaults.json");
+
+            var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(defaultsFilePath);
+            
+            Assert.Equal(2, configInfo.FunctionInfos.Count);
+            Assert.Equal("default", configInfo.AWSProfile);
+            Assert.Equal("us-west-2", configInfo.AWSRegion);
+            
+            Assert.Equal("MyHelloWorld", configInfo.FunctionInfos[0].Name);
+            Assert.Equal("ServerlessTemplateYamlExample::ServerlessTemplateYamlExample.Functions::HelloWorld", configInfo.FunctionInfos[0].Handler);
+            
+            Assert.Equal("MyToUpper", configInfo.FunctionInfos[1].Name);
+            Assert.Equal("ServerlessTemplateYamlExample::ServerlessTemplateYamlExample.Functions::ToUpper", configInfo.FunctionInfos[1].Handler);
+
+        }        
 
         private string WriteTempConfigFile(string json)
         {

@@ -2,9 +2,9 @@
 using System.IO;
 using System.Collections.Generic;
 
+using YamlDotNet.RepresentationModel;
 using LitJson;
-using Microsoft.AspNetCore.Mvc.TagHelpers;
-using Microsoft.AspNetCore.Rewrite.Internal.ApacheModRewrite;
+
 
 namespace Amazon.Lambda.TestTool.Runtime
 {
@@ -71,19 +71,64 @@ namespace Amazon.Lambda.TestTool.Runtime
 
             if(content[0] != '{')
             {
-                // TODO: Implement YAML support.
-                var message = ".NET Lambda Test Tool does not currently YAML CloudFormation templates.";
-                Console.Error.WriteLine(message);
-                throw new NotImplementedException(message);
+                ProcessYamlServerlessTemplate(configInfo, content);
             }
-
-            var rootData = JsonMapper.ToObject(content);
-            
-            ProcessJsonServerlessTemplate(configInfo, rootData);
+            else
+            {                
+                ProcessJsonServerlessTemplate(configInfo, content);                
+            }
         }
 
-        private static void ProcessJsonServerlessTemplate(LambdaConfigInfo configInfo, JsonData rootData)
+        private static void ProcessYamlServerlessTemplate(LambdaConfigInfo configInfo, string content)
         {
+            var yaml = new YamlStream();
+            yaml.Load(new StringReader(content));
+            
+            var root = (YamlMappingNode)yaml.Documents[0].RootNode;
+            if (root == null)
+                return;
+
+            var resources = root.Children.ContainsKey("Resources") ? root.Children["Resources"] as YamlMappingNode : null;
+            if (resources == null)
+                return;
+
+            foreach (var resource in resources.Children)
+            {
+                var resourceBody = (YamlMappingNode)resource.Value;
+                var type = resourceBody.Children.ContainsKey("Type") ? ((YamlScalarNode)resourceBody.Children["Type"])?.Value : null;
+             
+
+                if (!string.Equals("AWS::Serverless::Function", type, StringComparison.Ordinal) &&
+                    !string.Equals("AWS::Lambda::Function", type, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                var properties = resourceBody.Children.ContainsKey("Properties") ? resourceBody.Children["Properties"] as YamlMappingNode : null;
+                if (properties == null)
+                {
+                    continue;
+                }
+                
+                var handler = properties.Children.ContainsKey("Handler") ? ((YamlScalarNode)properties.Children["Handler"])?.Value : null;
+
+                if (!string.IsNullOrEmpty(handler))
+                {
+                    var functionInfo = new LambdaFunctionInfo
+                    {
+                        Name = resource.Key.ToString(),
+                        Handler = handler
+                    };
+
+                    configInfo.FunctionInfos.Add(functionInfo);
+                }
+            }
+        }
+
+        private static void ProcessJsonServerlessTemplate(LambdaConfigInfo configInfo, string content)
+        {
+            var rootData = JsonMapper.ToObject(content);
+
             var resourcesNode = rootData.ContainsKey("Resources") ? rootData["Resources"] : null as JsonData;
             if (resourcesNode == null)
                 return;
@@ -105,14 +150,16 @@ namespace Amazon.Lambda.TestTool.Runtime
 
                 var handler = properties.ContainsKey("Handler") ? properties["Handler"]?.ToString() : null;
 
-                var functionInfo = new LambdaFunctionInfo
+                if (!string.IsNullOrEmpty(handler))
                 {
-                    Name = key,
-                    Handler = handler
-                };
-                    
-                configInfo.FunctionInfos.Add(functionInfo);
+                    var functionInfo = new LambdaFunctionInfo
+                    {
+                        Name = key,
+                        Handler = handler
+                    };
 
+                    configInfo.FunctionInfos.Add(functionInfo);
+                }
             }
         }
     }

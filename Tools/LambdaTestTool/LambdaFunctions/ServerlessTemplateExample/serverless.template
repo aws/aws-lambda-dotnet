@@ -36,7 +36,23 @@
             "Timeout" : 30,
             "Code" : {}
         }
-    }    
+    },
+    
+    "MissingHandler" : {
+           "Type" : "AWS::Lambda::Function",
+           "Properties" : {
+               "Role"    : null,
+               "Runtime" : "dotnetcore2.1",
+               "MemorySize" : 256,
+               "Timeout" : 30,
+               "Code" : {}
+           }
+       },
+                 
+    "MissingProperties" : {
+           "Type" : "AWS::Lambda::Function"
+           }
+       }
   },
 
   "Outputs" : {
