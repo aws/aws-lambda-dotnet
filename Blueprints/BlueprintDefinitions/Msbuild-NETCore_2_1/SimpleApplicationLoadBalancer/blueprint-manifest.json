@@ -4,5 +4,5 @@
     "description": "A skeleton Lambda function to get started responding to Application Load Balancer events.",
     "sort-order" : 101,    
     "hidden-tags" : ["C#","LambdaProject"],
-    "tags":["Custom", "ALB"]
+    "tags":["ALB", "Simple"]
 }
