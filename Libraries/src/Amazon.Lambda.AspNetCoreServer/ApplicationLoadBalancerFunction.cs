@@ -191,11 +191,6 @@ namespace Amazon.Lambda.AspNetCoreServer
                 }
             }
 
-            if (contentType == null)
-            {
-                response.Headers["Content-Type"] = null;
-            }
-
             if (responseFeatures.Body != null)
             {
                 // Figure out how we should treat the response content
