@@ -14,7 +14,10 @@ namespace BlueprintBaseName._1
     /// 
     /// BlueprintBaseName.1::BlueprintBaseName.1.LambdaEntryPoint::FunctionHandlerAsync
     /// </summary>
-    public class LambdaEntryPoint : Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction
+    public class LambdaEntryPoint :
+        // When using an ELB's Application Load Balancer as the event source change 
+        // the base class to Amazon.Lambda.AspNetCoreServer.ApplicationLoadBalancerFunction
+        Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction
     {
         /// <summary>
         /// The builder has configuration, logging and Amazon API Gateway already configured. The startup class
