@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.IO;
 using System.Collections.Generic;
 
@@ -88,15 +89,34 @@ namespace Amazon.Lambda.TestTool.Runtime
             if (root == null)
                 return;
 
-            var resources = root.Children.ContainsKey("Resources") ? root.Children["Resources"] as YamlMappingNode : null;
+            YamlMappingNode resources = null;
+            
+            if (root.Children.ContainsKey("Resources"))
+            {
+                resources = root.Children["Resources"] as YamlMappingNode;
+                ProcessYamlServerlessTemplateResourcesBased(configInfo, resources);
+            } else if (root.Children.ContainsKey("functions"))
+            {
+                resources = (YamlMappingNode) root.Children["functions"];
+                ProcessYamlServerlessTemplateFunctionBased(configInfo, resources);
+            }
+
+
+           ;
+        }
+
+        private static void ProcessYamlServerlessTemplateResourcesBased(LambdaConfigInfo configInfo, YamlMappingNode resources)
+        {
             if (resources == null)
                 return;
 
             foreach (var resource in resources.Children)
             {
-                var resourceBody = (YamlMappingNode)resource.Value;
-                var type = resourceBody.Children.ContainsKey("Type") ? ((YamlScalarNode)resourceBody.Children["Type"])?.Value : null;
-             
+                var resourceBody = (YamlMappingNode) resource.Value;
+                var type = resourceBody.Children.ContainsKey("Type")
+                    ? ((YamlScalarNode) resourceBody.Children["Type"])?.Value
+                    : null;
+
 
                 if (!string.Equals("AWS::Serverless::Function", type, StringComparison.Ordinal) &&
                     !string.Equals("AWS::Lambda::Function", type, StringComparison.Ordinal))
@@ -104,13 +124,17 @@ namespace Amazon.Lambda.TestTool.Runtime
                     continue;
                 }
 
-                var properties = resourceBody.Children.ContainsKey("Properties") ? resourceBody.Children["Properties"] as YamlMappingNode : null;
+                var properties = resourceBody.Children.ContainsKey("Properties")
+                    ? resourceBody.Children["Properties"] as YamlMappingNode
+                    : null;
                 if (properties == null)
                 {
                     continue;
                 }
-                
-                var handler = properties.Children.ContainsKey("Handler") ? ((YamlScalarNode)properties.Children["Handler"])?.Value : null;
+
+                var handler = properties.Children.ContainsKey("Handler")
+                    ? ((YamlScalarNode) properties.Children["Handler"])?.Value
+                    : null;
 
                 if (!string.IsNullOrEmpty(handler))
                 {
@@ -122,6 +146,34 @@ namespace Amazon.Lambda.TestTool.Runtime
 
                     configInfo.FunctionInfos.Add(functionInfo);
                 }
+            }
+        }
+        
+        private static void ProcessYamlServerlessTemplateFunctionBased(LambdaConfigInfo configInfo, YamlMappingNode resources)
+        {
+            if (resources == null)
+                return;
+
+            foreach (var resource in resources.Children)
+            {
+                var resourceBody = (YamlMappingNode) resource.Value;
+
+                var handler = resourceBody.Children.ContainsKey("handler")
+                    ? ((YamlScalarNode) resourceBody.Children["handler"])?.Value
+                    : null;
+
+                
+                if (handler == null) continue;
+                if (string.IsNullOrEmpty(handler)) continue;
+                
+                
+                var functionInfo = new LambdaFunctionInfo
+                {
+                    Name = resource.Key.ToString(),
+                    Handler = handler
+                };
+
+                configInfo.FunctionInfos.Add(functionInfo);
             }
         }
 
