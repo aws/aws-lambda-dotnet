@@ -17,12 +17,14 @@ namespace BlueprintBaseName._1
 
         public Function()
         {
-            var resolver = new DependencyResolver(ConfigureServices);
-            Configuration = resolver.ServiceProvider.GetService<IConfiguration>();
+            IServiceCollection services = new ServiceCollection();
+            ConfigureServices(services);
+            IServiceProvider provider = services.BuildServiceProvider();
+            Configuration = provider.GetService<IConfiguration>();
         }
 
         /// <summary>
-        /// Constructor for unit tests that can mock IConfiguration
+        /// Constructor for unit tests that can mock IConfiguration.
         /// </summary>
         /// <param name="configuration"></param>
         public Function(IConfiguration configuration)
@@ -43,10 +45,9 @@ namespace BlueprintBaseName._1
 
         private void ConfigureServices(IServiceCollection services)
         {
-            // Add Configuration to DI system
             services.AddConfiguration(builder =>
             {
-                var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?? "Production";
+                var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
                 return builder
                     .SetBasePath(Directory.GetCurrentDirectory())
                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)

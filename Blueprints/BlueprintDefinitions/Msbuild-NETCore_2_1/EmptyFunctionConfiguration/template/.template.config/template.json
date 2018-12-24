@@ -1,10 +1,10 @@
 {
   "author": "AWS",
   "classifications": ["AWS", "Lambda", "Function"],
-  "name": "Lambda Empty Function with Dependency Injection",
-  "identity": "AWS.Lambda.Function.Empty.DepInjection.CSharp",
-  "groupIdentity": "AWS.Lambda.Function.Empty.DepInjection",  
-  "shortName": "lambda.EmptyFunctionDepInjection",
+  "name": "Lambda Empty Function with Configuration",
+  "identity": "AWS.Lambda.Function.Empty.Configuration.CSharp",
+  "groupIdentity": "AWS.Lambda.Function.Empty.Configuration",  
+  "shortName": "lambda.EmptyFunctionConfiguration",
   "tags": {
     "language": "C#",
     "type": "project"

@@ -1,8 +1,7 @@
-# AWS Lambda Empty Function Project with Dependency Injection
+# AWS Lambda Empty Function Project with Configuration
 
 This starter project consists of:
 * Function.cs - class file containing a class with a single function handler method
-* DependencyResolver.cs - class file containing a class that registers dependencies and builds an `IServiceProvider`
 * ServiceCollectionExtensions.cs - class file containing a class with an extension method to `IServiceProvider` that registers an `IConfiguration`
 * Program.cs - class file containing a class with a `Main` method that is not used
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
