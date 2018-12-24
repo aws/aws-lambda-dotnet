@@ -1,8 +1,7 @@
-using Amazon.Lambda.Core;
+using System.Collections.Generic;
+using Xunit;
 using Amazon.Lambda.TestUtilities;
 using Microsoft.Extensions.Configuration;
-using Moq;
-using Xunit;
 
 using BlueprintBaseName._1;
 
@@ -14,10 +13,10 @@ namespace BlueprintBaseName._1.Tests
         public void TestConfigFunction()
         {
             var expected = "val1";
-            var mockConfig = new Mock<IConfiguration>();
-            mockConfig.Setup(p => p[It.IsAny<string>()]).Returns(expected);
+            var configValues = new Dictionary<string, string> { ["env1"] = "val1" };
+            var testConfig = new ConfigurationBuilder().AddInMemoryCollection(configValues).Build();
 
-            var function = new Function(mockConfig.Object);
+            var function = new Function(testConfig);
             var result = function.FunctionHandler("env1", new TestLambdaContext());
             Assert.Equal(expected, result);
         }
