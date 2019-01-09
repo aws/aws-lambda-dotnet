@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\..\buildtools\common.props" />
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <Description>Amazon Lambda .NET Core support - Application Load Balancer package.</Description>
+        <AssemblyTitle>Amazon.Lambda.ApplicationLoadBalancerEvents</AssemblyTitle>
+        <VersionPrefix>1.0.0</VersionPrefix>
+        <AssemblyName>Amazon.Lambda.ApplicationLoadBalancerEvents</AssemblyName>
+        <PackageId>Amazon.Lambda.ApplicationLoadBalancerEvents</PackageId>
+        <PackageTags>AWS;Amazon;Lambda</PackageTags>
+    </PropertyGroup>
+    
+</Project>

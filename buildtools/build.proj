@@ -82,6 +82,10 @@
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.SimpleApplicationLoadBalancerFunction;ProjectName=SimpleApplicationLoadBalancerFunctionC;Lang=C#"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
           Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabelsC;Lang=C#"/>		  
     <MSBuild
           Projects="$(MSBuildProjectFile)"
@@ -228,6 +232,8 @@
 		
     <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.APIGatewayEvents"/>
+    <Exec Command="$(PackCommand)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.ApplicationLoadBalancerEvents"/>
     <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.AspNetCoreServer"/>
     <Exec Command="$(PackCommand)"

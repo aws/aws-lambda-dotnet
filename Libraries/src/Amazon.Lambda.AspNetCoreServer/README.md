@@ -1,11 +1,12 @@
 # Amazon.Lambda.AspNetCoreServer
 
-This package makes it easy to run ASP.NET Core Web API applications as a Lambda function with API Gateway. This allows .NET Core developers to
+This package makes it easy to run ASP.NET Core Web API applications as a Lambda function with API Gateway or an ELB Application Load Balancer. This allows .NET Core developers to
 create "serverless" applications using the ASP.NET Core Web API framework. 
 
 The function takes a request from an [API Gateway Proxy](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy.html)
+or from an [Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html)
 and converts that request into the classes the ASP.NET Core framework expects and then converts the response from the ASP.NET Core
-framework into the response body that API Gateway Proxy understands.
+framework into the response body that API Gateway Proxy or Application Load Balancer understands.
 
 ## Example Lambda Function
 
@@ -37,14 +38,73 @@ The function handler for the Lambda function will be **TestWebApp::TestWebApp.La
 Once the function is deployed configure API Gateway with a HTTP Proxy to call the Lambda Function. Refer to the API Gateway 
 [developer guide](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy.html) for more information.
 
+### Application Load Balancer Example
+
+To be used with an Application Load Balancer from ELB the base class needs to be changed from APIGatewayProxyFunction to **ApplicationLoadBalancerFunction**.
+
+```csharp
+using System.IO;
+
+using Amazon.Lambda.AspNetCoreServer;
+using Microsoft.AspNetCore.Hosting;
+
+namespace TestWebApp
+{
+    public class LambdaFunction : ApplicationLoadBalancerFunction
+    {
+        protected override void Init(IWebHostBuilder builder)
+        {
+            builder
+                .UseStartup<Startup>();
+        }
+    }
+}
+```
+
+## Web App Path Base
+
+By default this package configure the path base for incoming requests to be root of the API Gateway Stage or Application Load Balancer.
+
+If you want to treat a subresource in the resource path to be the path base you will need to modify how requests are marshalled 
+into ASP.NET Core. For example if the listener of an Application Load Balancer 
+points to a Lambda Target Group for requests starting with `/webapp/*` and you want to call a controller `api/values` ASP.NET Core
+will think the resource you want to access is `/webapp/api/values` which will return a 404 NotFound.
+
+In the `LambdaEntryPoint` class you can override the `PostMarshallRequestFeature` method to add custom logic to how
+the path base is computed. In the example below it configures the path base to be `/webapp/`. When the Application Load balancer 
+sends in a request with the resource path set to /webapp/api/values. This code configures the ASP.NET Core request to have the
+path base set to /webapp/ and the path to /api/values.
+
+```csharp
+    public class LambdaEntryPoint : ApplicationLoadBalancerFunction
+    {
+        protected override void Init(IWebHostBuilder builder)
+        {
+            builder
+                .UseStartup<Startup>();
+        }
+
+        protected override void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, ApplicationLoadBalancerRequest lambdaRequest, ILambdaContext lambdaContext)
+        {
+            aspNetCoreRequestFeature.PathBase = "/webapp/";
+
+            // The minus one is ensure path is always at least set to `/`
+            aspNetCoreRequestFeature.Path = 
+                aspNetCoreRequestFeature.Path.Substring(aspNetCoreRequestFeature.PathBase.Length - 1);
+            lambdaContext.Logger.LogLine($"Path: {aspNetCoreRequestFeature.Path}, PathBase: {aspNetCoreRequestFeature.PathBase}");
+        }
+    }
+```
+
+
 ## Supporting Binary Response Content
 
-The interface between the API Gateway and Lambda provides for and assumes response content to be returned as a UTF-8 string.
+The interface between the API Gateway/Application Load Balancer and Lambda assumes response content to be returned as a UTF-8 string.
 In order to return binary content it is necessary to encode the raw response content in Base64 and to set a flag in the
 response object that Base64-encoding has been applied.
 
-In order to facilitate this mechanism, the `APIGatewayProxyFunction` base class maintains a registry of MIME content types
-and how they should be transformed before being returned to the calling API Gateway.  For any binary content types that are
+In order to facilitate this mechanism, the base class maintains a registry of MIME content types
+and how they should be transformed before being returned to the calling API Gateway or Application Load Balancer.  For any binary content types that are
 returned by your application, you should register them for Base64 tranformation and then the framework will take care of
 intercepting any such responses and making an necessary transformations to preserve the binary content.  For example:
 
@@ -88,6 +148,8 @@ In order to use this mechanism to return binary response content, in addition to
 MIME content types that will be returned by your application, it also necessary to register those same
 content types with the API Gateway using either the [console](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-configure-with-console.html)
 or the [REST interface](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-configure-with-control-service-api.html).
+
+For Application Load Balancer this step is not necessary.
 
 ### Default Registered Content Types
 

@@ -2,7 +2,7 @@
 
 namespace TestWebApp
 {
-    public class LambdaFunction : APIGatewayProxyFunction<Startup>
+    public class ApiGatewayLambdaFunction : APIGatewayProxyFunction<Startup>
     {
     }
 }

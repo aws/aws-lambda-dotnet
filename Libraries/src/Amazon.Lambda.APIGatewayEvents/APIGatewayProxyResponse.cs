@@ -4,7 +4,7 @@
     using System.Runtime.Serialization;
 
     /// <summary>
-    /// The response object for Lambda functions handling request from from API Gateway proxy
+    /// The response object for Lambda functions handling request from API Gateway proxy
     /// http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-set-up-simple-proxy.html
     /// </summary>
     [DataContract]

@@ -74,6 +74,7 @@ This packages in this folder contains classes that can be used as input types fo
 These are the packages and their README.md files:
 
 * [Amazon.Lambda.APIGatewayEvents](Libraries/src/Amazon.Lambda.APIGatewayEvents) - [README.md](Libraries/src/Amazon.Lambda.APIGatewayEvents/README.md)
+* [Amazon.Lambda.ApplicationLoadBalancerEvents](Libraries/src/Amazon.Lambda.ApplicationLoadBalancerEvents) - [README.md](Libraries/src/Amazon.Lambda.ApplicationLoadBalancerEvents/README.md)
 * [Amazon.Lambda.CloudWatchLogsEvents](Libraries/src/Amazon.Lambda.CloudWatchLogsEvents) - [README.md](Libraries/src/Amazon.Lambda.CloudWatchLogsEvents/README.md)
 * [Amazon.Lambda.CognitoEvents](Libraries/src/Amazon.Lambda.CognitoEvents) - [README.md](Libraries/src/Amazon.Lambda.CognitoEvents/README.md)
 * [Amazon.Lambda.ConfigEvents](Libraries/src/Amazon.Lambda.ConfigEvents) - [README.md](Libraries/src/Amazon.Lambda.ConfigEvents/README.md)
