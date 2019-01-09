@@ -19,11 +19,20 @@ public void ConfigureServices(IServiceCollection services)
 }
 ```
 
+### Configuring for Application Load Balancer ###
+
+To configure this project to handle requests from an Application Load Balancer instead of API Gateway change
+the base class of `LambdaEntryPoint` from `Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction` to 
+`Amazon.Lambda.AspNetCoreServer.ApplicationLoadBalancerFunction`.
+
 ### Project Files ###
 
 * serverless.template - an AWS CloudFormation Serverless Application Model template file for declaring your Serverless functions and other AWS resources
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
-* LambdaEntryPoint.cs - class that derives from **Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction**. The code in this file bootstraps the ASP.NET Core hosting framework. The Lambda function is defined in the base class.
+* LambdaEntryPoint.cs - class that derives from **Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction**. The code in 
+this file bootstraps the ASP.NET Core hosting framework. The Lambda function is defined in the base class.
+Change the base class to **Amazon.Lambda.AspNetCoreServer.ApplicationLoadBalancerFunction** when using an 
+Application Load Balancer.
 * LocalEntryPoint.cs - for local development this contains the executable Main function which bootstraps the ASP.NET Core hosting framework with Kestrel, as for typical ASP.NET Core applications.
 * Startup.cs - usual ASP.NET Core Startup class used to configure the services ASP.NET Core will use.
 * web.config - used for local development.

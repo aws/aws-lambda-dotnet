@@ -15,7 +15,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
     /// Implements the ASP.NET Core IServer interface and exposes the application object for the Lambda function
     /// to initiate a web request.
     /// </summary>
-    internal class APIGatewayServer : IServer
+    internal class LambdaServer : IServer
     {
         /// <summary>
         /// The application is used by the Lambda function to initiate a web request through the ASP.NET Core framework.
