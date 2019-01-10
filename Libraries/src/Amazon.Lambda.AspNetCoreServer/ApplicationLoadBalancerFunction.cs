@@ -69,7 +69,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 if (this._multiHeaderValuesEnabled)
                 {
                     var queryStringParameters = lambdaRequest.MultiValueQueryStringParameters;
-                    if (queryStringParameters != null)
+                    if (queryStringParameters != null && queryStringParameters.Count > 0)
                     {
                         StringBuilder sb = new StringBuilder("?");
                         foreach (var kvp in queryStringParameters)
@@ -89,7 +89,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 else
                 {
                     var queryStringParameters = lambdaRequest.QueryStringParameters;
-                    if (queryStringParameters != null)
+                    if (queryStringParameters != null && queryStringParameters.Count > 0)
                     {
                         StringBuilder sb = new StringBuilder("?");
                         foreach (var kvp in queryStringParameters)

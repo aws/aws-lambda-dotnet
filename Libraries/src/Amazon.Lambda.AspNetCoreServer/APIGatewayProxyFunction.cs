@@ -165,7 +165,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 // API Gateway delivers the query string in a dictionary but must be reconstructed into the full query string
                 // before passing into ASP.NET Core framework.
                 var queryStringParameters = apiGatewayRequest.QueryStringParameters;
-                if (queryStringParameters != null)
+                if (queryStringParameters != null && queryStringParameters.Count > 0)
                 {
                     StringBuilder sb = new StringBuilder("?");
                     foreach (var kvp in queryStringParameters)

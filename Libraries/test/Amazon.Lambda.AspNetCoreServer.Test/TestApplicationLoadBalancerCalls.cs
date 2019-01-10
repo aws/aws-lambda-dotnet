@@ -43,6 +43,37 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestGetNoQueryStringAlb()
+        {
+            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-no-querystring-alb-request.json");
+
+            Assert.Equal(string.Empty, response.Body);
+            Assert.True(response.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
+        }
+
+        [Fact]
+        public async Task TestGetNoQueryStringAlbMv()
+        {
+            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-no-querystring-alb-mv-request.json");
+            Assert.Equal(string.Empty, response.Body);
+        }
+
+        [Fact]
+        public async Task TestGetEncodingQueryStringAlb()
+        {
+            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-encoding-request.json");
+            Assert.Equal("?url=http://www.gooogle.com", response.Body);
+        }
+
+        [Fact]
+        public async Task TestGetEncodingQueryStringAlbMv()
+        {
+            var response = await this.InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-mv-encoding-request.json");
+            Assert.Equal("?url=http://www.gooogle.com", response.Body);
+        }
+
+        [Fact]
         public async Task TestGetQueryStringValueMV()
         {
             var response = await this.InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-mv-request.json");

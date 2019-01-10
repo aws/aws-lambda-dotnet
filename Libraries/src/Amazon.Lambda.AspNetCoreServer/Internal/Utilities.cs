@@ -119,7 +119,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         internal static string CreateQueryStringParameter(string key, string value)
         {
-            return $"{WebUtility.UrlEncode(key)}={WebUtility.UrlEncode(value)}";
+            return $"{key}={value}";
         }
     }
 }

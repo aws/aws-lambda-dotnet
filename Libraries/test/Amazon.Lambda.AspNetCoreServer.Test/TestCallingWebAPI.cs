@@ -68,6 +68,26 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestGetNoQueryStringApiGateway()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-get-no-querystring-apigatway-request.json");
+
+            Assert.Equal(string.Empty, response.Body);
+            Assert.True(response.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
+        }
+
+        [Fact]
+        public async Task TestGetEncodingQueryStringGateway()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigatway-encoding-request.json");
+
+            Assert.Equal("?url=http://www.gooogle.com", response.Body);
+            Assert.True(response.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
+        }
+
+        [Fact]
         public async Task TestPutWithBody()
         {
             var response = await this.InvokeAPIGatewayRequest("values-put-withbody-apigatway-request.json");
