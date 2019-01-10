@@ -2,16 +2,15 @@
   <Import Project="..\..\..\buildtools\common.props" />
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - CloudWatchLogsEvents package.</Description>
-    <TargetFramework>netstandard1.3</TargetFramework>
-    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
+    <TargetFrameworks>netstandard1.3;netstandard2.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.CloudWatchLogsEvents</AssemblyTitle>
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>1.1.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.CloudWatchLogsEvents</AssemblyName>
     <PackageId>Amazon.Lambda.CloudWatchLogsEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Runtime" Version="4.1.0" />
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.1.1" />
-  </ItemGroup>
+  </ItemGroup>  
 </Project>
