@@ -4,20 +4,16 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - Amazon Lex package.</Description>
-    <TargetFramework>netstandard1.3</TargetFramework>
-    <NetStandardImplicitPackageVersion>1.6.0</NetStandardImplicitPackageVersion>
+    <TargetFrameworks>netstandard1.3;netstandard2.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.LexEvents</AssemblyTitle>
-    <VersionPrefix>1.0.1</VersionPrefix>
+    <VersionPrefix>1.1.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.LexEvents</AssemblyName>
     <PackageId>Amazon.Lambda.LexEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Lex</PackageTags>
-    <Version>1.0.2</Version>
   </PropertyGroup>
-  
-  <ItemGroup>
-    <PackageReference Include="System.Collections" Version="4.0.11" />
-    <PackageReference Include="System.Runtime" Version="4.1.0" />
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.1.1" />
   </ItemGroup>
-  
+
 </Project>
