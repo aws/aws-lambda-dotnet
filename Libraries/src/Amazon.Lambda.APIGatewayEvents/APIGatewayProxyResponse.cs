@@ -17,10 +17,20 @@
         public int StatusCode { get; set; }
 
         /// <summary>
-        /// The Http headers return in the response
+        /// The Http headers return in the response. This collection supports setting single value for the same headers.
+        /// If both the Headers and MultiValueHeaders collections are set API Gateway will merge the collection
+        /// before returning back the headers to the caller.
         /// </summary>
         [DataMember(Name = "headers")]
         public IDictionary<string, string> Headers { get; set; }
+
+        /// <summary>
+        /// The Http headers return in the response. This collection supports setting multiple values for the same headers.
+        /// If both the Headers and MultiValueHeaders collections are set API Gateway will merge the collection
+        /// before returning back the headers to the caller.
+        /// </summary>
+        [DataMember(Name = "multiValueHeaders")]
+        public IDictionary<string, IList<string>> MultiValueHeaders { get; set; }
 
         /// <summary>
         /// The response body

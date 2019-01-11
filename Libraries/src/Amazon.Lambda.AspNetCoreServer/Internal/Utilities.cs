@@ -1,6 +1,9 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 
@@ -62,64 +65,62 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             }
         }
 
-        /// <summary>
-        /// Generate different casing permutations of the input string.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        public  static IEnumerable<string> Permute(string input)
+        internal static string CreateQueryStringParamaters(IDictionary<string, string> singleValues, IDictionary<string, IList<string>> multiValues)
         {
-            // Determine the number of alpha characters that can be toggled.
-            int alphaCharCount = 0;
-            foreach(var c in input)
+            if (multiValues?.Count > 0)
             {
-                if(char.IsLetter(c))
+                StringBuilder sb = new StringBuilder("?");
+                foreach (var kvp in multiValues)
                 {
-                    alphaCharCount++;
-                }
-            }
-
-            // Map the indexes to the position of the alpha characters in the original input string.
-            var alphaIndexes = new int[alphaCharCount];
-            var alphaIndex = 0;
-            for(int i = 0; i < input.Length; i++)
-            {
-                if(char.IsLetter(input[i]))
-                {
-                    alphaIndexes[alphaIndex++] = i;
-                }
-            }
-
-            // Number of permutations is 2^n
-            int max = 1 << alphaCharCount;
-
-            // Converting string
-            // to lower case
-            input = input.ToLower();
-
-            // Using all subsequences 
-            // and permuting them
-            for (int i = 0; i < max; i++)
-            {
-                char[] combination = input.ToCharArray();
-
-                // If j-th bit is set, we 
-                // convert it to upper case
-                for (int j = 0; j < alphaIndexes.Length; j++)
-                {
-                    if (((i >> j) & 1) == 1)
+                    foreach (var value in kvp.Value)
                     {
-                        combination[alphaIndexes[j]] = (char)(combination[alphaIndexes[j]] - 32);
+                        if (sb.Length > 1)
+                        {
+                            sb.Append("&");
+                        }
+                        sb.Append($"{kvp.Key}={value}");
                     }
                 }
-
-                yield return new string(combination);
+                return sb.ToString();
             }
+            else if (singleValues?.Count > 0)
+            {
+                var queryStringParameters = singleValues;
+                if (queryStringParameters != null && queryStringParameters.Count > 0)
+                {
+                    StringBuilder sb = new StringBuilder("?");
+                    foreach (var kvp in singleValues)
+                    {
+                        if (sb.Length > 1)
+                        {
+                            sb.Append("&");
+                        }
+                        sb.Append($"{kvp.Key}={kvp.Value}");
+                    }
+                    return sb.ToString();
+                }
+            }
+
+            return string.Empty;
         }
 
-        internal static string CreateQueryStringParameter(string key, string value)
+        internal static void SetHeadersCollection(IHeaderDictionary headers, IDictionary<string, string> singleValues, IDictionary<string, IList<string>> multiValues)
         {
-            return $"{key}={value}";
+            if (multiValues?.Count > 0)
+            {
+                foreach (var kvp in multiValues)
+                {
+                    headers[kvp.Key] = new StringValues(kvp.Value.ToArray());
+                }
+            }
+            else if (singleValues?.Count > 0)
+            {
+                foreach (var kvp in singleValues)
+                {
+                    headers[kvp.Key] = new StringValues(kvp.Value);
+                }
+            }
+
         }
     }
 }

@@ -101,7 +101,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         private protected override void InternalCustomResponseExceptionHandling(HostingApplication.Context context, APIGatewayProxyResponse apiGatewayResponse, ILambdaContext lambdaContext, Exception ex)
         {
-            apiGatewayResponse.Headers.Add(new KeyValuePair<string, string>("ErrorType", ex.GetType().Name));
+            apiGatewayResponse.MultiValueHeaders["ErrorType"] = new List<string> { ex.GetType().Name };
         }
 
 
@@ -161,36 +161,10 @@ namespace Amazon.Lambda.AspNetCoreServer
                     }
                 }
 
+                requestFeatures.QueryString = Utilities.CreateQueryStringParamaters(
+                    apiGatewayRequest.QueryStringParameters, apiGatewayRequest.MultiValueQueryStringParameters);
 
-                // API Gateway delivers the query string in a dictionary but must be reconstructed into the full query string
-                // before passing into ASP.NET Core framework.
-                var queryStringParameters = apiGatewayRequest.QueryStringParameters;
-                if (queryStringParameters != null && queryStringParameters.Count > 0)
-                {
-                    StringBuilder sb = new StringBuilder("?");
-                    foreach (var kvp in queryStringParameters)
-                    {
-                        if (sb.Length > 1)
-                        {
-                            sb.Append("&");
-                        }
-                        sb.Append(Utilities.CreateQueryStringParameter(kvp.Key, kvp.Value.ToString()));
-                    }
-                    requestFeatures.QueryString = sb.ToString();
-                }
-                else
-                {
-                    requestFeatures.QueryString = string.Empty;
-                }
-
-                var headers = apiGatewayRequest.Headers;
-                if (headers != null)
-                {
-                    foreach (var kvp in headers)
-                    {
-                        requestFeatures.Headers[kvp.Key] = kvp.Value?.ToString();
-                    }
-                }
+                Utilities.SetHeadersCollection(requestFeatures.Headers, apiGatewayRequest.Headers, apiGatewayRequest.MultiValueHeaders);
 
                 if (!requestFeatures.Headers.ContainsKey("Host"))
                 {
@@ -252,31 +226,22 @@ namespace Amazon.Lambda.AspNetCoreServer
             string contentType = null;
             if (responseFeatures.Headers != null)
             {
+                response.MultiValueHeaders = new Dictionary<string, IList<string>>();
+
                 response.Headers = new Dictionary<string, string>();
                 foreach (var kvp in responseFeatures.Headers)
                 {
-                    if(string.Equals(kvp.Key, "Set-Cookie", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ProcessCookies(response.Headers, kvp.Value);
-                    }
-                    else if (kvp.Value.Count == 1)
-                    {
-                        response.Headers[kvp.Key] = kvp.Value[0];
-                    }
-                    else
-                    {
-                        response.Headers[kvp.Key] = string.Join(",", kvp.Value);
-                    }
+                    response.MultiValueHeaders[kvp.Key] = kvp.Value.ToList();
 
                     // Remember the Content-Type for possible later use
-                    if (kvp.Key.Equals("Content-Type", StringComparison.CurrentCultureIgnoreCase))
-                        contentType = response.Headers[kvp.Key];
+                    if (kvp.Key.Equals("Content-Type", StringComparison.CurrentCultureIgnoreCase) && response.MultiValueHeaders[kvp.Key].Count > 0)
+                        contentType = response.MultiValueHeaders[kvp.Key][0];
                 }
             }
 
             if(contentType == null)
             {
-                response.Headers["Content-Type"] = null;
+                response.MultiValueHeaders["Content-Type"] = new List<string>();
             }
 
             if (responseFeatures.Body != null)
@@ -292,25 +257,6 @@ namespace Amazon.Lambda.AspNetCoreServer
             _logger.LogDebug($"Response Base 64 Encoded: {response.IsBase64Encoded}");
 
             return response;
-        }
-
-        /// <summary>
-        /// To work around API Gateway's limitation only allowing one value per header name return back 
-        /// multiple cookie values with different casing of header values.
-        /// </summary>
-        /// <param name="apiGatewayHeaders"></param>
-        /// <param name="cookies"></param>
-        public static void ProcessCookies(IDictionary<string, string> apiGatewayHeaders, StringValues cookies)
-        {
-            int i = 0;
-            foreach (var cookieName in Utilities.Permute("set-cookie"))
-            {
-                apiGatewayHeaders[cookieName] = cookies[i++];
-                if (cookies.Count <= i)
-                {
-                    break;
-                }
-            }
         }
     }
 }
