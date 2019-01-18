@@ -14,6 +14,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.LexEvents;
     using Amazon.Lambda.KinesisFirehoseEvents;
     using Amazon.Lambda.KinesisAnalyticsEvents;
+    using Amazon.Lambda.CloudWatchEvents.BatchEvents;
     using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
 
     using Newtonsoft.Json.Linq;
@@ -782,7 +783,54 @@ namespace Amazon.Lambda.Tests
             var data = ms.ToArray();
             return Convert.ToBase64String(data);
         }        
-        
+
+        [Fact]
+        public void BatchJobStateChangeEventTest()
+        {
+            using (var fileStream = File.OpenRead("batch-job-state-change-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var jobStateChangeEvent = serializer.Deserialize<BatchJobStateChangeEvent>(fileStream);
+
+                Assert.Equal(jobStateChangeEvent.Version, "0");
+                Assert.Equal(jobStateChangeEvent.Id, "c8f9c4b5-76e5-d76a-f980-7011e206042b");
+                Assert.Equal(jobStateChangeEvent.DetailType, "Batch Job State Change");
+                Assert.Equal(jobStateChangeEvent.Source, "aws.batch");
+                Assert.Equal(jobStateChangeEvent.Account, "aws_account_id");
+                Assert.Equal(jobStateChangeEvent.Time.ToUniversalTime(), DateTime.Parse("2017-10-23T17:56:03Z").ToUniversalTime());
+                Assert.Equal(jobStateChangeEvent.Region, "us-east-1");
+                Assert.Equal(jobStateChangeEvent.Resources.Count, 1);
+                Assert.Equal(jobStateChangeEvent.Resources[0], "arn:aws:batch:us-east-1:aws_account_id:job/4c7599ae-0a82-49aa-ba5a-4727fcce14a8");
+                Assert.IsType(typeof(Job), jobStateChangeEvent.Detail);
+                Assert.Equal(jobStateChangeEvent.Detail.JobName, "event-test");
+                Assert.Equal(jobStateChangeEvent.Detail.JobId, "4c7599ae-0a82-49aa-ba5a-4727fcce14a8");
+                Assert.Equal(jobStateChangeEvent.Detail.JobQueue, "arn:aws:batch:us-east-1:aws_account_id:job-queue/HighPriority");
+                Assert.Equal(jobStateChangeEvent.Detail.Status, "RUNNABLE");
+                Assert.Equal(jobStateChangeEvent.Detail.Attempts.Count, 0);
+                Assert.Equal(jobStateChangeEvent.Detail.CreatedAt, 1508781340401);
+                Assert.Equal(jobStateChangeEvent.Detail.RetryStrategy.Attempts, 1);
+                Assert.Equal(jobStateChangeEvent.Detail.DependsOn.Count, 0);
+                Assert.Equal(jobStateChangeEvent.Detail.JobDefinition, "arn:aws:batch:us-east-1:aws_account_id:job-definition/first-run-job-definition:1");
+                Assert.Equal(jobStateChangeEvent.Detail.Parameters.Count, 0);
+                Assert.Equal(jobStateChangeEvent.Detail.Container.Image, "busybox");
+                Assert.Equal(jobStateChangeEvent.Detail.Container.Vcpus, 2);
+                Assert.Equal(jobStateChangeEvent.Detail.Container.Memory, 2000);
+                Assert.Equal(jobStateChangeEvent.Detail.Container.Command.Count, 2);
+                Assert.Equal(jobStateChangeEvent.Detail.Container.Command[0], "echo");
+                Assert.Equal(jobStateChangeEvent.Detail.Container.Volumes.Count, 0);
+                Assert.Equal(jobStateChangeEvent.Detail.Container.Environment.Count, 0);
+                Assert.Equal(jobStateChangeEvent.Detail.Container.MountPoints.Count, 0);
+                Assert.Equal(jobStateChangeEvent.Detail.Container.Ulimits.Count, 0);
+
+                Handle(jobStateChangeEvent);
+            }
+        }
+
+        private void Handle(BatchJobStateChangeEvent jobStateChangeEvent)
+        {
+            Console.WriteLine($"[{jobStateChangeEvent.Source} {jobStateChangeEvent.Time}] {jobStateChangeEvent.DetailType}");
+        }
+
         [Fact]
         public void ScheduledEventTest()
         {
@@ -800,11 +848,11 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(scheduledEvent.Resources.Count, 1);
                 Assert.Equal(scheduledEvent.Resources[0], "arn:aws:events:us-east-1:123456789012:rule/my-schedule");
                 Assert.IsType(typeof(Detail), scheduledEvent.Detail);
-                
+
                 Handle(scheduledEvent);
             }
         }
-        
+
         private void Handle(ScheduledEvent scheduledEvent)
         {
             Console.WriteLine($"[{scheduledEvent.Source} {scheduledEvent.Time}] {scheduledEvent.DetailType}");
