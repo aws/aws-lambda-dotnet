@@ -13,6 +13,24 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
     public class Resource
     {
         /// <summary>
+        /// When the <code>DoubleValue</code> type is set, the value of the resource must be a
+        /// double precision floating-point type.
+        /// </summary>
+        public double DoubleValue { get; set; }
+
+        /// <summary>
+        /// When the <code>IntegerValue</code> type is set, the value of the resource must be
+        /// an integer.
+        /// </summary>
+        public int IntegerValue { get; set; }
+
+        /// <summary>
+        /// When the <code>LongValue</code> type is set, the value of the resource must be an
+        /// extended precision floating-point type.
+        /// </summary>
+        public long LongValue { get; set; }
+
+        /// <summary>
         /// The name of the resource, such as CPU, MEMORY, PORTS, PORTS_UDP, or a user-defined resource.
         /// </summary>
         public string Name { get; set; }
@@ -22,10 +40,6 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         /// </summary>
         public string Type { get; set; }
 
-        /// <summary>
-        /// When the integerValue type is set, the value of the resource must be an integer.
-        /// </summary>
-        public int IntegerValue { get; set; }
 
         /// <summary>
         /// When the stringSetValue type is set, the value of the resource must be a string type.
