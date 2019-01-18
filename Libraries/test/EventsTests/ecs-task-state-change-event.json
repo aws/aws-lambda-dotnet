@@ -1,0 +1,42 @@
+﻿{
+  "version": "0",
+  "id": "9bcdac79-b31f-4d3d-9410-fbd727c29fab",
+  "detail-type": "ECS Task State Change",
+  "source": "aws.ecs",
+  "account": "111122223333",
+  "time": "2016-12-06T16:41:06Z",
+  "region": "us-east-1",
+  "resources": [
+    "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef"
+  ],
+  "detail": {
+    "clusterArn": "arn:aws:ecs:us-east-1:111122223333:cluster/default",
+    "containerInstanceArn": "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315",
+    "containers": [
+      {
+        "containerArn": "arn:aws:ecs:us-east-1:111122223333:container/3305bea1-bd16-4217-803d-3e0482170a17",
+        "exitCode": 0,
+        "lastStatus": "STOPPED",
+        "name": "xray",
+        "taskArn": "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef"
+      }
+    ],
+    "createdAt": "2016-12-06T16:41:05.702Z",
+    "desiredStatus": "RUNNING",
+    "group": "task-group",
+    "lastStatus": "RUNNING",
+    "overrides": {
+      "containerOverrides": [
+        {
+          "name": "xray"
+        }
+      ]
+    },
+    "startedAt": "2016-12-06T16:41:06.8Z",
+    "startedBy": "ecs-svc/9223370556150183303",
+    "updatedAt": "2016-12-06T16:41:06.975Z",
+    "taskArn": "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef",
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/xray:2",
+    "version": 4
+  }
+}
