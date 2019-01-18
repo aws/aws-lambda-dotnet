@@ -1,5 +1,10 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
 using System.Text;
 
 namespace Amazon.Lambda.AspNetCoreServer.Internal
@@ -9,60 +14,113 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
     /// </summary>
     public static class Utilities
     {
-
-        /// <summary>
-        /// Generate different casing permutations of the input string.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        public  static IEnumerable<string> Permute(string input)
+        internal static Stream ConvertLambdaRequestBodyToAspNetCoreBody(string body, bool isBase64Encoded)
         {
-            // Determine the number of alpha characters that can be toggled.
-            int alphaCharCount = 0;
-            foreach(var c in input)
+            Byte[] binaryBody;
+            if (isBase64Encoded)
             {
-                if(char.IsLetter(c))
-                {
-                    alphaCharCount++;
-                }
+                binaryBody = Convert.FromBase64String(body);
+            }
+            else
+            {
+                binaryBody = UTF8Encoding.UTF8.GetBytes(body);
             }
 
-            // Map the indexes to the position of the alpha characters in the original input string.
-            var alphaIndexes = new int[alphaCharCount];
-            var alphaIndex = 0;
-            for(int i = 0; i < input.Length; i++)
+            return new MemoryStream(binaryBody);
+        }
+
+        internal static (string body, bool isBase64Encoded) ConvertAspNetCoreBodyToLambdaBody(Stream aspNetCoreBody, ResponseContentEncoding rcEncoding)
+        {
+
+            // Do we encode the response content in Base64 or treat it as UTF-8
+            if (rcEncoding == ResponseContentEncoding.Base64)
             {
-                if(char.IsLetter(input[i]))
+                // We want to read the response content "raw" and then Base64 encode it
+                byte[] bodyBytes;
+                if (aspNetCoreBody is MemoryStream)
                 {
-                    alphaIndexes[alphaIndex++] = i;
+                    bodyBytes = ((MemoryStream)aspNetCoreBody).ToArray();
                 }
-            }
-
-            // Number of permutations is 2^n
-            int max = 1 << alphaCharCount;
-
-            // Converting string
-            // to lower case
-            input = input.ToLower();
-
-            // Using all subsequences 
-            // and permuting them
-            for (int i = 0; i < max; i++)
-            {
-                char[] combination = input.ToCharArray();
-
-                // If j-th bit is set, we 
-                // convert it to upper case
-                for (int j = 0; j < alphaIndexes.Length; j++)
+                else
                 {
-                    if (((i >> j) & 1) == 1)
+                    using (var ms = new MemoryStream())
                     {
-                        combination[alphaIndexes[j]] = (char)(combination[alphaIndexes[j]] - 32);
+                        aspNetCoreBody.CopyTo(ms);
+                        bodyBytes = ms.ToArray();
                     }
                 }
-
-                yield return new string(combination);
+                return (body: Convert.ToBase64String(bodyBytes), isBase64Encoded: true);
             }
+            else if (aspNetCoreBody is MemoryStream)
+            {
+                return (body: UTF8Encoding.UTF8.GetString(((MemoryStream)aspNetCoreBody).ToArray()), isBase64Encoded: false);
+            }
+            else
+            {
+                aspNetCoreBody.Position = 0;
+                using (StreamReader reader = new StreamReader(aspNetCoreBody, Encoding.UTF8))
+                {
+                    return (body: reader.ReadToEnd(), isBase64Encoded: false);
+                }
+            }
+        }
+
+        internal static string CreateQueryStringParamaters(IDictionary<string, string> singleValues, IDictionary<string, IList<string>> multiValues)
+        {
+            if (multiValues?.Count > 0)
+            {
+                StringBuilder sb = new StringBuilder("?");
+                foreach (var kvp in multiValues)
+                {
+                    foreach (var value in kvp.Value)
+                    {
+                        if (sb.Length > 1)
+                        {
+                            sb.Append("&");
+                        }
+                        sb.Append($"{kvp.Key}={value}");
+                    }
+                }
+                return sb.ToString();
+            }
+            else if (singleValues?.Count > 0)
+            {
+                var queryStringParameters = singleValues;
+                if (queryStringParameters != null && queryStringParameters.Count > 0)
+                {
+                    StringBuilder sb = new StringBuilder("?");
+                    foreach (var kvp in singleValues)
+                    {
+                        if (sb.Length > 1)
+                        {
+                            sb.Append("&");
+                        }
+                        sb.Append($"{kvp.Key}={kvp.Value}");
+                    }
+                    return sb.ToString();
+                }
+            }
+
+            return string.Empty;
+        }
+
+        internal static void SetHeadersCollection(IHeaderDictionary headers, IDictionary<string, string> singleValues, IDictionary<string, IList<string>> multiValues)
+        {
+            if (multiValues?.Count > 0)
+            {
+                foreach (var kvp in multiValues)
+                {
+                    headers[kvp.Key] = new StringValues(kvp.Value.ToArray());
+                }
+            }
+            else if (singleValues?.Count > 0)
+            {
+                foreach (var kvp in singleValues)
+                {
+                    headers[kvp.Key] = new StringValues(kvp.Value);
+                }
+            }
+
         }
     }
 }

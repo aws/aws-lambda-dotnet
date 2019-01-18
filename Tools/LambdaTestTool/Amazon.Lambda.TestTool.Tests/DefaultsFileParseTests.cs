@@ -120,6 +120,47 @@ namespace Amazon.Lambda.TestTool.Tests
             Assert.Equal("ServerlessTemplateExample::ServerlessTemplateExample.Functions::ToUpper", configInfo.FunctionInfos[1].Handler);
 
         }
+        
+        [Fact]
+        public void LoadServerlessResourceBasedYamlTemplateConfig()
+        {
+            var defaultsFilePath = Path.GetFullPath(@"../../../../LambdaFunctions/ServerlessTemplateYamlExample/aws-lambda-tools-defaults.json");
+
+            var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(defaultsFilePath);
+            
+            Assert.Equal(2, configInfo.FunctionInfos.Count);
+            Assert.Equal("default", configInfo.AWSProfile);
+            Assert.Equal("us-west-2", configInfo.AWSRegion);
+            
+            Assert.Equal("MyHelloWorld", configInfo.FunctionInfos[0].Name);
+            Assert.Equal("ServerlessTemplateYamlExample::ServerlessTemplateYamlExample.Functions::HelloWorld", configInfo.FunctionInfos[0].Handler);
+            
+            Assert.Equal("MyToUpper", configInfo.FunctionInfos[1].Name);
+            Assert.Equal("ServerlessTemplateYamlExample::ServerlessTemplateYamlExample.Functions::ToUpper", configInfo.FunctionInfos[1].Handler);
+
+        }        
+        [Fact]
+        public void LoadServerlessFuncitonBasedYamlTemplateConfig()
+        {
+            var defaultsFilePath = Path.GetFullPath(@"../../../../LambdaFunctions/ServerlessFunctionTemplateYamlExample/aws-lambda-tools-defaults.json");
+
+            var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(defaultsFilePath);
+            
+            Assert.Equal(3, configInfo.FunctionInfos.Count);
+            Assert.Equal("default", configInfo.AWSProfile);
+            Assert.Equal("us-west-2", configInfo.AWSRegion);
+            
+            Assert.Equal("create", configInfo.FunctionInfos[0].Name);
+            Assert.Equal("DotNetServerless.Lambda::DotNetServerless.Lambda.Functions.CreateItemFunction::Run", configInfo.FunctionInfos[0].Handler);
+            
+            Assert.Equal("get", configInfo.FunctionInfos[1].Name);
+            Assert.Equal("DotNetServerless.Lambda::DotNetServerless.Lambda.Functions.GetItemFunction::Run", configInfo.FunctionInfos[1].Handler);
+            
+                  
+            Assert.Equal("update", configInfo.FunctionInfos[2].Name);
+            Assert.Equal("DotNetServerless.Lambda::DotNetServerless.Lambda.Functions.UpdateItemFunction::Run", configInfo.FunctionInfos[2].Handler);
+
+        }        
 
         private string WriteTempConfigFile(string json)
         {

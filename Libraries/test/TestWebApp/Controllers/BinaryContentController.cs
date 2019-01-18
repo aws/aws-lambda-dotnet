@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.IO;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace TestWebApp.Controllers
@@ -15,6 +16,15 @@ namespace TestWebApp.Controllers
                 bytes[i] = (byte)i;
 
             return base.File(bytes, Application.Octet);
+        }
+
+        [HttpPut]
+        public string Put()
+        {
+            using (var reader = new StreamReader(this.HttpContext.Request.Body))
+            {
+                return reader.ReadToEnd();
+            }
         }
     }
 }

@@ -13,6 +13,10 @@ namespace TestWebApp.Controllers
         [HttpGet]
         public string Get([FromQuery] string firstName, [FromQuery] string lastName)
         {
+            if (HttpContext.Request.Query.TryGetValue("mv-test", out var values))
+            {
+                return string.Join(",", values);
+            }
             return $"{firstName}, {lastName}";
         }
     }

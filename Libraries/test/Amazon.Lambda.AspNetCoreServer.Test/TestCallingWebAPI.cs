@@ -30,8 +30,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
-            Assert.True(response.Headers.ContainsKey("Content-Type"));
-            Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("application/json; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
 
             Assert.Contains("OnStarting Called", ((TestLambdaLogger)context.Logger).Buffer.ToString());
         }
@@ -43,8 +43,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
-            Assert.True(response.Headers.ContainsKey("Content-Type"));
-            Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("application/json; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
         }
 
         [Fact]
@@ -53,8 +53,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var response = await this.InvokeAPIGatewayRequest("values-get-single-apigatway-request.json");
 
             Assert.Equal("value=5", response.Body);
-            Assert.True(response.Headers.ContainsKey("Content-Type"));
-            Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("text/plain; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
         }
 
         [Fact]
@@ -63,8 +63,28 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigatway-request.json");
 
             Assert.Equal("Lewis, Meriwether", response.Body);
-            Assert.True(response.Headers.ContainsKey("Content-Type"));
-            Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("text/plain; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
+        }
+
+        [Fact]
+        public async Task TestGetNoQueryStringApiGateway()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-get-no-querystring-apigatway-request.json");
+
+            Assert.Equal(string.Empty, response.Body);
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("text/plain; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
+        }
+
+        [Fact]
+        public async Task TestGetEncodingQueryStringGateway()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigatway-encoding-request.json");
+
+            Assert.Equal("?url=http://www.gooogle.com", response.Body);
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("text/plain; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
         }
 
         [Fact]
@@ -74,8 +94,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("Agent, Smith", response.Body);
-            Assert.True(response.Headers.ContainsKey("Content-Type"));
-            Assert.Equal("text/plain; charset=utf-8", response.Headers["Content-Type"]);
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("text/plain; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
         }
 
         [Fact]
@@ -96,8 +116,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(500, response.StatusCode);
             Assert.Equal(string.Empty, response.Body);
-            Assert.True(response.Headers.ContainsKey("ErrorType"));
-            Assert.Equal(expectedExceptionType, response.Headers["ErrorType"]);
+            Assert.True(response.MultiValueHeaders.ContainsKey("ErrorType"));
+            Assert.Equal(expectedExceptionType, response.MultiValueHeaders["ErrorType"][0]);
         }
 
         [Fact]
@@ -107,7 +127,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(200, response.StatusCode);
             Assert.True(response.Body.Length > 0);
-            Assert.Equal("application/json", response.Headers["Content-Type"]);
+            Assert.Equal("application/json", response.MultiValueHeaders["Content-Type"][0]);
         }
 
         [Fact]
@@ -160,10 +180,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             
             Assert.Equal((int)HttpStatusCode.OK, response.StatusCode);
 
-            string contentType;
-            Assert.True(response.Headers.TryGetValue("Content-Type", out contentType),
+            IList<string> contentType;
+            Assert.True(response.MultiValueHeaders.TryGetValue("Content-Type", out contentType),
                     "Content-Type response header exists");
-            Assert.Equal("application/octet-stream", contentType);
+            Assert.Equal("application/octet-stream", contentType[0]);
             Assert.NotNull(response.Body);
             Assert.True(response.Body.Length > 0,
                     "Body content is not empty");
@@ -239,7 +259,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(200, response.StatusCode);
             Assert.True(response.Body.Length > 0);
-            Assert.Contains("application/json", response.Headers["Content-Type"]);
+            Assert.Contains("application/json", response.MultiValueHeaders["Content-Type"][0]);
         }
 
         // If there is no content-type we must make sure Content-Type is set to null in the headers collection so API Gateway doesn't return a default Content-Type.
@@ -250,7 +270,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(200, response.StatusCode);
             Assert.True(response.Body.Length == 0);
-            Assert.Null(response.Headers["Content-Type"]);
+            Assert.Equal(0, response.MultiValueHeaders["Content-Type"].Count);
         }
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
@@ -260,7 +280,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(TestLambdaContext context, string fileName)
         {
-            var lambdaFunction = new LambdaFunction();
+            var lambdaFunction = new ApiGatewayLambdaFunction();
             var filePath = Path.Combine(Path.GetDirectoryName(this.GetType().GetTypeInfo().Assembly.Location), fileName);
             var requestStr = File.ReadAllText(filePath);
             var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);

@@ -11,6 +11,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.SNSEvents;
     using Amazon.Lambda.SQSEvents;
     using Amazon.Lambda.APIGatewayEvents;
+    using Amazon.Lambda.ApplicationLoadBalancerEvents;
     using Amazon.Lambda.LexEvents;
     using Amazon.Lambda.KinesisFirehoseEvents;
     using Amazon.Lambda.KinesisAnalyticsEvents;
@@ -550,6 +551,149 @@ namespace Amazon.Lambda.Tests
             Assert.Equal("execute-api:Invoke", root["policyDocument"]["Statement"][0]["Action"][0]);
             Assert.Equal("Allow", root["policyDocument"]["Statement"][0]["Effect"]);
             Assert.Equal("*", root["policyDocument"]["Statement"][0]["Resource"][0]);
+        }
+        
+        [Fact]
+        public void ApplicationLoadBalancerRequestSingleValueTest()
+        {
+            using (var fileStream = File.OpenRead("alb-request-single-value.json"))
+            {
+                var serializer = new JsonSerializer();
+                var evnt = serializer.Deserialize<ApplicationLoadBalancerRequest>(fileStream);
+
+                Assert.Equal(evnt.Path, "/");
+                Assert.Equal(evnt.HttpMethod, "GET");
+                Assert.Equal(evnt.Body, "not really base64");
+                Assert.True(evnt.IsBase64Encoded);
+                
+                Assert.Equal(2, evnt.QueryStringParameters.Count);
+                Assert.Equal("value1", evnt.QueryStringParameters["query1"]);
+                Assert.Equal("value2", evnt.QueryStringParameters["query2"]);
+                
+                Assert.Equal("value1", evnt.Headers["head1"]);
+                Assert.Equal("value2", evnt.Headers["head2"]);
+
+
+                var requestContext = evnt.RequestContext;
+                Assert.Equal(requestContext.Elb.TargetGroupArn, "arn:aws:elasticloadbalancing:region:123456789012:targetgroup/my-target-group/6d0ecf831eec9f09");
+            }
+        }
+        
+        
+        [Fact]
+        public void ApplicationLoadBalancerRequestMultiValueTest()
+        {
+            using (var fileStream = File.OpenRead("alb-request-multi-value.json"))
+            {
+                var serializer = new JsonSerializer();
+                var evnt = serializer.Deserialize<ApplicationLoadBalancerRequest>(fileStream);
+
+                Assert.Equal(evnt.Path, "/");
+                Assert.Equal(evnt.HttpMethod, "GET");
+                Assert.Equal(evnt.Body, "not really base64");
+                Assert.True(evnt.IsBase64Encoded);
+                
+                Assert.Equal(2, evnt.MultiValueQueryStringParameters.Count);
+                Assert.Equal(2, evnt.MultiValueQueryStringParameters["query1"].Count);
+                Assert.Equal("q1-value1", evnt.MultiValueQueryStringParameters["query1"][0]);
+                Assert.Equal("q1-value2", evnt.MultiValueQueryStringParameters["query1"][1]);
+                Assert.Equal(2, evnt.MultiValueQueryStringParameters["query2"].Count);
+                Assert.Equal("q2-value1", evnt.MultiValueQueryStringParameters["query2"][0]);
+                Assert.Equal("q2-value2", evnt.MultiValueQueryStringParameters["query2"][1]);
+                
+                Assert.Equal(2, evnt.MultiValueHeaders["head1"].Count);
+                Assert.Equal(2, evnt.MultiValueHeaders["head1"].Count);
+                Assert.Equal("h1-value1", evnt.MultiValueHeaders["head1"][0]);
+                Assert.Equal("h1-value2", evnt.MultiValueHeaders["head1"][1]);
+                Assert.Equal(2, evnt.MultiValueHeaders["head2"].Count);
+                Assert.Equal("h2-value1", evnt.MultiValueHeaders["head2"][0]);
+                Assert.Equal("h2-value2", evnt.MultiValueHeaders["head2"][1]);
+
+
+                var requestContext = evnt.RequestContext;
+                Assert.Equal(requestContext.Elb.TargetGroupArn, "arn:aws:elasticloadbalancing:region:123456789012:targetgroup/my-target-group/6d0ecf831eec9f09");
+            }
+        }    
+        
+        
+        [Fact]
+        public void ApplicationLoadBalancerSingleHeaderResponseTest()
+        {
+
+            var response = new ApplicationLoadBalancerResponse()
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    {"Head1", "h1-value1"},
+                    {"Head2", "h2-value1"}
+                },
+                IsBase64Encoded = true,
+                Body = "not really base64",
+                StatusCode = 200,
+                StatusDescription = "200 OK"
+            };
+
+            string serializedJson;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                var serializer = new JsonSerializer();
+                serializer.Serialize(response, stream);
+
+                stream.Position = 0;
+                serializedJson = Encoding.UTF8.GetString(stream.ToArray());
+            }
+
+            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+            
+            Assert.Equal("h1-value1", root["headers"]["Head1"]);
+            Assert.Equal("h2-value1", root["headers"]["Head2"]);
+            
+            Assert.True((bool)root["isBase64Encoded"]);
+            Assert.Equal("not really base64", (string)root["body"]);
+            Assert.Equal(200, (int)root["statusCode"]);
+            Assert.Equal("200 OK", (string)root["statusDescription"]);
+        }
+
+        [Fact]
+        public void ApplicationLoadBalancerMultiHeaderResponseTest()
+        {
+
+            var response = new ApplicationLoadBalancerResponse()
+            {
+                MultiValueHeaders = new Dictionary<string, IList<string>>
+                {
+                    {"Head1", new List<string>{"h1-value1" } },
+                    {"Head2", new List<string>{"h2-value1", "h2-value2" } }
+                },
+                IsBase64Encoded = true,
+                Body = "not really base64",
+                StatusCode = 200,
+                StatusDescription = "200 OK"
+            };
+
+            string serializedJson;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                var serializer = new JsonSerializer();
+                serializer.Serialize(response, stream);
+
+                stream.Position = 0;
+                serializedJson = Encoding.UTF8.GetString(stream.ToArray());
+            }
+
+            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+
+            Assert.Equal(1, root["multiValueHeaders"]["Head1"].Count());
+            Assert.Equal("h1-value1", root["multiValueHeaders"]["Head1"].First());
+
+            Assert.Equal(2, root["multiValueHeaders"]["Head2"].Count());
+            Assert.Equal("h2-value1", root["multiValueHeaders"]["Head2"].First());
+            Assert.Equal("h2-value2", root["multiValueHeaders"]["Head2"].Last());
+
+            Assert.True((bool)root["isBase64Encoded"]);
+            Assert.Equal("not really base64", (string)root["body"]);
+            Assert.Equal(200, (int)root["statusCode"]);
+            Assert.Equal("200 OK", (string)root["statusDescription"]);
         }
 
 

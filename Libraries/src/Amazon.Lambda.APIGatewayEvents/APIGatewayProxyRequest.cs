@@ -25,14 +25,36 @@
         public string HttpMethod { get; set; }
 
         /// <summary>
-        /// The headers sent with the request
+        /// The headers sent with the request. This collection will only contain a single value for a header. 
+        /// 
+        /// API Gateway will populate both the Headers and MultiValueHeaders collection for every request. If multiple values
+        /// are set for a header then the Headers collection will just contain the last value.
         /// </summary>
         public IDictionary<string, string> Headers { get; set; }
 
         /// <summary>
-        /// The query string parameters that were part of the request
+        /// The headers sent with the request. This collection supports multiple values for a single header.
+        /// 
+        /// API Gateway will populate both the Headers and MultiValueHeaders collection for every request. If multiple values
+        /// are set for a header then the Headers collection will just contain the last value.
+        /// </summary>
+        public IDictionary<string, IList<string>> MultiValueHeaders { get; set; }
+
+        /// <summary>
+        /// The query string parameters that were part of the request. This collection will only contain a single value for a query parameter.
+        /// 
+        /// API Gateway will populate both the QueryStringParameters and MultiValueQueryStringParameters collection for every request. If multiple values
+        /// are set for a query parameter then the QueryStringParameters collection will just contain the last value.
         /// </summary>
         public IDictionary<string, string> QueryStringParameters { get; set; }
+
+        /// <summary>
+        /// The query string parameters that were part of the request. This collection supports multiple values for a single query parameter.
+        /// 
+        /// API Gateway will populate both the QueryStringParameters and MultiValueQueryStringParameters collection for every request. If multiple values
+        /// are set for a query parameter then the QueryStringParameters collection will just contain the last value.
+        /// </summary>
+        public IDictionary<string, IList<string>> MultiValueQueryStringParameters { get; set; }
 
         /// <summary>
         /// The path parameters that were part of the request
