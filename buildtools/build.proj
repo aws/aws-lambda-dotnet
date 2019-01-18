@@ -237,6 +237,8 @@
     <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.AspNetCoreServer"/>
     <Exec Command="$(PackCommand)"
+        WorkingDirectory="..\Libraries\src\Amazon.Lambda.CloudWatchEvents"/>
+    <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.CloudWatchLogsEvents"/>
     <Exec Command="$(PackCommand)"
         WorkingDirectory="..\Libraries\src\Amazon.Lambda.CognitoEvents"/>
