@@ -65,59 +65,10 @@ namespace Amazon.Lambda.AspNetCoreServer
                 requestFeatures.Path = lambdaRequest.Path;
 
 
-                requestFeatures.QueryString = string.Empty;
-                if (this._multiHeaderValuesEnabled)
-                {
-                    var queryStringParameters = lambdaRequest.MultiValueQueryStringParameters;
-                    if (queryStringParameters != null && queryStringParameters.Count > 0)
-                    {
-                        StringBuilder sb = new StringBuilder("?");
-                        foreach (var kvp in queryStringParameters)
-                        {
-                            foreach(var value in kvp.Value)
-                            {
-                                if (sb.Length > 1)
-                                {
-                                    sb.Append("&");
-                                }
-                                sb.Append(Utilities.CreateQueryStringParameter(kvp.Key, value));
-                            }
-                        }
-                        requestFeatures.QueryString = sb.ToString();
-                    }
-                }
-                else
-                {
-                    var queryStringParameters = lambdaRequest.QueryStringParameters;
-                    if (queryStringParameters != null && queryStringParameters.Count > 0)
-                    {
-                        StringBuilder sb = new StringBuilder("?");
-                        foreach (var kvp in queryStringParameters)
-                        {
-                            if (sb.Length > 1)
-                            {
-                                sb.Append("&");
-                            }
-                            sb.Append(Utilities.CreateQueryStringParameter(kvp.Key, kvp.Value.ToString()));
-                        }
-                        requestFeatures.QueryString = sb.ToString();
-                    }
-                }
+                requestFeatures.QueryString = Utilities.CreateQueryStringParamaters(
+                    lambdaRequest.QueryStringParameters, lambdaRequest.MultiValueQueryStringParameters);
 
-                if(this._multiHeaderValuesEnabled)
-                {
-                    foreach(var kvp in lambdaRequest.MultiValueHeaders)
-                    {
-                        requestFeatures.Headers[kvp.Key] = new StringValues(kvp.Value.ToArray());
-                    }
-                }
-                else
-                {
-                    foreach (var kvp in lambdaRequest.Headers)
-                    {
-                        requestFeatures.Headers[kvp.Key] = new StringValues(kvp.Value);
-                    }
-                }
+                Utilities.SetHeadersCollection(requestFeatures.Headers, lambdaRequest.Headers, lambdaRequest.MultiValueHeaders);
 
                 if (!string.IsNullOrEmpty(lambdaRequest.Body))
                 {
