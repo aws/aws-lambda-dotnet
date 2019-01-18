@@ -1,4 +1,6 @@
-﻿namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
+﻿using System.Collections.Generic;
+
+namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
 {
     /// <summary>
     /// An object representing the details of a container that is part of a job attempt.
@@ -22,6 +24,11 @@
         /// they reach the RUNNING status.
         /// </summary>
         public string LogStreamName { get; set; }
+
+        /// <summary>
+        /// Details about the network interfaces in this job attempt.
+        /// </summary>
+        public List<NetworkInterfaceDetail> NetworkInterfaces { get; set; }
 
         /// <summary>
         /// A short (255 max characters) human-readable string to provide additional

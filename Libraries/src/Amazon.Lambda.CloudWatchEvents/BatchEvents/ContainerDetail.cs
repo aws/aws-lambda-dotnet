@@ -36,6 +36,11 @@ namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
         public string Image { get; set; }
 
         /// <summary>
+        /// The instance type executing the container.
+        /// </summary>
+        public string InstanceType { get; set; }
+
+        /// <summary>
         /// The Amazon Resource Name (ARN) associated with the job upon execution.
         /// </summary>
         public string JobRoleArn { get; set; }
@@ -56,6 +61,11 @@ namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
         /// The mount points for data volumes in your container.
         /// </summary>
         public List<MountPoint> MountPoints { get; set; }
+
+        /// <summary>
+        /// Details about the network interfaces in your container.
+        /// </summary>
+        public List<NetworkInterfaceDetail> NetworkInterfaces { get; set; }
 
         /// <summary>
         /// When this parameter is true, the container is given elevated privileges on the

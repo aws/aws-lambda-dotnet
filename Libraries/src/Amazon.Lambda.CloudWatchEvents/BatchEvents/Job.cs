@@ -58,6 +58,17 @@ namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
         public string JobQueue { get; set; }
 
         /// <summary>
+        /// An object representing the details of a node that is associated with a multi-node
+        /// parallel job.
+        /// </summary>
+        public NodeDetails NodeDetails { get; set; }
+
+        /// <summary>
+        /// An object representing the node properties of a multi-node parallel job.
+        /// </summary>
+        public NodeProperties NodeProperties { get; set; }
+
+        /// <summary>
         /// Additional parameters passed to the job that replace parameter substitution placeholders or
         /// override any corresponding parameter defaults from the job definition.
         /// </summary>
