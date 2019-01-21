@@ -435,8 +435,6 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(requestContext.ResourceId, "roq9wj");
                 Assert.Equal(requestContext.Stage, "testStage");
                 Assert.Equal(requestContext.RequestId, "deef4878-7910-11e6-8f14-25afc3e9ae33");
-                Assert.Equal(requestContext.ConnectionId, "d034bc98-beed-4fdf-9e85-11bfc15bf734");
-                Assert.Equal(requestContext.DomainName, "somerandomdomain.net");
 
                 var identity = requestContext.Identity;
                 Assert.Equal(identity.CognitoIdentityPoolId, "theCognitoIdentityPoolId");
