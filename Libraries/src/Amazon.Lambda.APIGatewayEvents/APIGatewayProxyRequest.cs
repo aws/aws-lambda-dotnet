@@ -112,6 +112,16 @@
             public string ApiId { get; set; }
 
             /// <summary>
+            /// The connectionId identifies a unique client connection in a WebSocket API
+            /// </summary>
+            public string ConnectionId { get; set; }
+
+            /// <summary>
+            /// The domainName part in a WebSocket API address
+            /// </summary>
+            public string DomainName { get; set; }
+
+            /// <summary>
             /// The APIGatewayCustomAuthorizerContext containing the custom properties set by a custom authorizer.
             /// </summary>
             public APIGatewayCustomAuthorizerContext Authorizer { get; set; }

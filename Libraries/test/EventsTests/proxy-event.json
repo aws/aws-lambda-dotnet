@@ -52,7 +52,9 @@
     },
     "resourcePath": "/{proxy+}",
     "httpMethod": "POST",
-    "apiId": "gy415nuibc"
+    "apiId": "gy415nuibc",
+    "connectionId": "d034bc98-beed-4fdf-9e85-11bfc15bf734",
+    "domainName": "somerandomdomain.net"
   },
   "body": "{\r\n\t\"a\": 1\r\n}"
 }
