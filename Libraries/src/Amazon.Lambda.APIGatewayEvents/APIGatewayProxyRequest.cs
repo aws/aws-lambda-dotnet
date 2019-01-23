@@ -11,16 +11,25 @@
     {
         /// <summary>
         /// The resource path defined in API Gateway
+        /// <para>
+        /// This field is only set for REST API requests.
+        /// </para>
         /// </summary>
         public string Resource { get; set; }
 
         /// <summary>
         /// The url path for the caller
+        /// <para>
+        /// This field is only set for REST API requests.
+        /// </para>
         /// </summary>
         public string Path { get; set; }
 
         /// <summary>
         /// The HTTP method used
+        /// <para>
+        /// This field is only set for REST API requests.
+        /// </para>
         /// </summary>
         public string HttpMethod { get; set; }
 
@@ -29,6 +38,9 @@
         /// 
         /// API Gateway will populate both the Headers and MultiValueHeaders collection for every request. If multiple values
         /// are set for a header then the Headers collection will just contain the last value.
+        /// <para>
+        /// This field is only set for REST API requests.
+        /// </para>
         /// </summary>
         public IDictionary<string, string> Headers { get; set; }
 
@@ -37,6 +49,9 @@
         /// 
         /// API Gateway will populate both the Headers and MultiValueHeaders collection for every request. If multiple values
         /// are set for a header then the Headers collection will just contain the last value.
+        /// <para>
+        /// This field is only set for REST API requests.
+        /// </para>
         /// </summary>
         public IDictionary<string, IList<string>> MultiValueHeaders { get; set; }
 
@@ -45,6 +60,9 @@
         /// 
         /// API Gateway will populate both the QueryStringParameters and MultiValueQueryStringParameters collection for every request. If multiple values
         /// are set for a query parameter then the QueryStringParameters collection will just contain the last value.
+        /// <para>
+        /// This field is only set for REST API requests.
+        /// </para>
         /// </summary>
         public IDictionary<string, string> QueryStringParameters { get; set; }
 
@@ -53,11 +71,17 @@
         /// 
         /// API Gateway will populate both the QueryStringParameters and MultiValueQueryStringParameters collection for every request. If multiple values
         /// are set for a query parameter then the QueryStringParameters collection will just contain the last value.
+        /// <para>
+        /// This field is only set for REST API requests.
+        /// </para>
         /// </summary>
         public IDictionary<string, IList<string>> MultiValueQueryStringParameters { get; set; }
 
         /// <summary>
         /// The path parameters that were part of the request
+        /// <para>
+        /// This field is only set for REST API requests.
+        /// </para>
         /// </summary>
         public IDictionary<string, string> PathParameters { get; set; }
 
@@ -89,6 +113,9 @@
         {
             /// <summary>
             /// The resource full path including the API Gateway stage
+            /// <para>
+            /// This field is only set for REST API requests.
+            /// </para>
             /// </summary>
             public string Path { get; set; }
 
@@ -120,11 +147,17 @@
 
             /// <summary>
             /// The resource path defined in API Gateway
+            /// <para>
+            /// This field is only set for REST API requests.
+            /// </para>
             /// </summary>
             public string ResourcePath { get; set; }
 
             /// <summary>
             /// The HTTP method used
+            /// <para>
+            /// This field is only set for REST API requests.
+            /// </para>
             /// </summary>
             public string HttpMethod { get; set; }
 
@@ -134,14 +167,58 @@
             public string ApiId { get; set; }
 
             /// <summary>
-            /// The connectionId identifies a unique client connection in a WebSocket API
+            /// An automatically generated ID for the API call, which contains more useful information for debugging/troubleshooting.
+            /// </summary>
+            public string ExtendedRequestId { get; set; }
+
+            /// <summary>
+            /// The connectionId identifies a unique client connection in a WebSocket API.
+            /// <para>
+            /// This field is only set for WebSocket API requests.
+            /// </para>
             /// </summary>
             public string ConnectionId { get; set; }
 
             /// <summary>
-            /// The domainName part in a WebSocket API address
+            /// The Epoch-formatted connection time in a WebSocket API.
+            /// <para>
+            /// This field is only set for WebSocket API requests.
+            /// </para>
+            /// </summary>
+            public long ConnectionAt { get; set; }
+
+            /// <summary>
+            /// A domain name for the WebSocket API. This can be used to make a callback to the client (instead of a hard-coded value).
+            /// <para>
+            /// This field is only set for WebSocket API requests.
+            /// </para>
             /// </summary>
             public string DomainName { get; set; }
+
+            /// <summary>
+            /// The event type: CONNECT, MESSAGE, or DISCONNECT.
+            /// <para>
+            /// This field is only set for WebSocket API requests.
+            /// </para>
+            /// </summary>
+            public string EventType { get; set; }
+
+            /// <summary>
+            /// A unique server-side ID for a message. Available only when the $context.eventType is MESSAGE.
+            /// <para>
+            /// This field is only set for WebSocket API requests.
+            /// </para>
+            /// </summary>
+            public string MessageId { get; set; }
+
+            /// <summary>
+            /// The selected route key.
+            /// <para>
+            /// This field is only set for WebSocket API requests.
+            /// </para>
+            /// </summary>
+            public string RouteKey { get; set; }
+
 
             /// <summary>
             /// The APIGatewayCustomAuthorizerContext containing the custom properties set by a custom authorizer.
