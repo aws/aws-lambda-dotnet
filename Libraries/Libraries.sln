@@ -80,6 +80,13 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.CloudWatchEvents", "src\Amazon.Lambda.CloudWatchEvents\Amazon.Lambda.CloudWatchEvents.csproj", "{AD96AA48-2E1A-4BBB-9329-E1E484172FE3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.ApplicationLoadBalancerEvents", "src\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj", "{0E743512-2FE4-40AD-935A-17B40ACF82C1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.RuntimeSupport", "src\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj", "{0046EAB1-FA73-4D7A-A7CD-936E943F775E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.RuntimeSupport.Test", "test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.Test\Amazon.Lambda.RuntimeSupport.Test.csproj", "{99C34307-BF7F-4BFC-8BB6-1A377BC7ED28}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Amazon.Lambda.RuntimeSupport.Tests", "Amazon.Lambda.RuntimeSupport.Tests", "{B5BD0336-7D08-492C-8489-42C987E29B39}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomRuntimeFunctionTest", "test\Amazon.Lambda.RuntimeSupport.Tests\CustomRuntimeFunctionTest\CustomRuntimeFunctionTest.csproj", "{61934DD2-CFBB-48E1-947C-75E8F736734C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -215,6 +222,18 @@ Global
 		{0E743512-2FE4-40AD-935A-17B40ACF82C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0E743512-2FE4-40AD-935A-17B40ACF82C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0E743512-2FE4-40AD-935A-17B40ACF82C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0046EAB1-FA73-4D7A-A7CD-936E943F775E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0046EAB1-FA73-4D7A-A7CD-936E943F775E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0046EAB1-FA73-4D7A-A7CD-936E943F775E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0046EAB1-FA73-4D7A-A7CD-936E943F775E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99C34307-BF7F-4BFC-8BB6-1A377BC7ED28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99C34307-BF7F-4BFC-8BB6-1A377BC7ED28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99C34307-BF7F-4BFC-8BB6-1A377BC7ED28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99C34307-BF7F-4BFC-8BB6-1A377BC7ED28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61934DD2-CFBB-48E1-947C-75E8F736734C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61934DD2-CFBB-48E1-947C-75E8F736734C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61934DD2-CFBB-48E1-947C-75E8F736734C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61934DD2-CFBB-48E1-947C-75E8F736734C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -254,6 +273,10 @@ Global
 		{0AD1E5D6-AC23-47C1-97BF-227007021B6F} = {ADEC039D-0C34-4DA7-802B-6204FFE3F1F5}
 		{AD96AA48-2E1A-4BBB-9329-E1E484172FE3} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{0E743512-2FE4-40AD-935A-17B40ACF82C1} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{0046EAB1-FA73-4D7A-A7CD-936E943F775E} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{99C34307-BF7F-4BFC-8BB6-1A377BC7ED28} = {B5BD0336-7D08-492C-8489-42C987E29B39}
+		{B5BD0336-7D08-492C-8489-42C987E29B39} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{61934DD2-CFBB-48E1-947C-75E8F736734C} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}

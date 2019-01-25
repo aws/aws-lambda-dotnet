@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>0.9.0.0</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Amazon.Lambda.RuntimeSupport</PackageId>
+    <Title>Amazon Lambda .NET Custom Runtime Support</Title>
+    <Product>Amazon.Lambda.RuntimeSupport</Product>
+    <Description>Provides a bootstrap and Lambda Runtime API Client to help you  to develop custom .NET Core Lambda Runtimes.</Description>
+    <Authors>Amazon Web Services</Authors>
+    <Copyright>2019</Copyright>
+    <PackageTags>AWS;Amazon;Lambda</PackageTags>
+    <PackageProjectUrl>https://github.com/aws/aws-lambda-dotnet</PackageProjectUrl>
+    <PackageLicenseUrl>http://aws.amazon.com/apache2.0/</PackageLicenseUrl>
+    <PackageIconUrl>https://sdk-for-net.amazonwebservices.com/images/AWSLogo128x128.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/aws/aws-lambda-dotnet</RepositoryUrl>
+    <Company>Amazon Web Services</Company>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyVersion>0.9.0.0</AssemblyVersion>
+    <FileVersion>0.9.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSwag.MSBuild" Version="12.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
+  </ItemGroup>
+
+  <!--Regenerate InternalClientGenerated.txt by running: dotnet msbuild -t:GenerateClient Amazon.Lambda.RuntimeSupport.Client.csproj-->
+  <Target Name="GenerateClient">
+    <Error Condition="'$(OS)' != 'Windows_NT'" Text="The GenerateClient target is only available on Windows." />
+    <Exec Command="$(NSwagExe) swagger2csclient /input:Client\runtime-api.yaml /exceptionClass:RuntimeApiClientException /generateUpdateJsonSerializerSettingsMethod:false /generateClientInterfaces:true /generateJsonMethods:false /wrapResponses:true /clientClassAccessModifier:internal /typeAccessModifier:public /classname:InternalRuntimeApiClient /namespace:Amazon.Lambda.RuntimeSupport /output:Client\InternalClientGenerated.txt" />
+  </Target>
+</Project>
