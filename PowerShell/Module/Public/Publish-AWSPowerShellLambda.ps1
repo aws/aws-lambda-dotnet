@@ -114,12 +114,20 @@
     Publish-AWSPowerShellLambda -Name S3CleanupFunction -ScriptPath cleanup-s3-bucket.ps1
 
     This example creates a package bundle with the script and any required PowerShell modules and deploys the bundle to AWS Lambda.
-    AWS Credentials and region will be determines by the environment running the cmdlet.
+    AWS Credentials and region will be determined by the environment running the cmdlet.
 
     .EXAMPLE
     Publish-AWSPowerShellLambda -Name S3CleanupFunction -ScriptPath cleanup-s3-bucket.ps1 -Profile beta -Region us-west-2
 
-    In this example the profile to find AWS credentials and the AWS region are set explicily.
+    In this example the profile to find AWS credentials and the AWS region are set explicitly.
+
+    .EXAMPLE
+    Publish-AWSPowerShellLambda -Name SampleLambda -ScriptPath sample-lambda.ps1 -EnvironmentVariable @{'TABLE_NAME'='MyDynamoDBTable'}
+
+    This example creates a package bundle with the script and any required PowerShell modules and deploys the bundle to AWS Lambda.
+    AWS Credentials and region will be determined by the environment running the cmdlet.
+
+    The deployed Lambda Function will include the Environment Variable "TABLE_NAME" with the value of "MyDynamoDBTable".
 #>
 function Publish-AWSPowerShellLambda
 {
@@ -221,7 +229,7 @@ function Publish-AWSPowerShellLambda
         {
             throw "Script $ScriptPath does not exist."
         }
-        
+
         if (!($StagingDirectory))
         {
             $deleteStagingDirectory = $true
@@ -320,6 +328,6 @@ function Publish-AWSPowerShellLambda
     if($deleteStagingDirectory)
     {
         Write-Verbose -Message "Removing staging directory $_buildDirectory"
-        Remove-Item -Path $_buildDirectory -Recurse -Force       
+        Remove-Item -Path $_buildDirectory -Recurse -Force
     }
 }
