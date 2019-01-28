@@ -9,17 +9,18 @@
 # To include PowerShell modules with your Lambda function, like the AWSPowerShell.NetCore module, add a "#Requires" statement
 # indicating the module and version.
 #
-# This example demonstrates how to process an SQS Queue:
-# SQS Queue -> Lambda Function
+# This example demonstrates how to process an SNS Message that follows the process:
+# SNS topic -> SQS Queue -> Lambda Function
 
 #Requires -Modules @{ModuleName='AWSPowerShell.NetCore';ModuleVersion='3.3.428.0'}
 
 # Uncomment to send the input event to CloudWatch Logs
 # Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)
 
-foreach ($message in $LambdaInput.Records)
+foreach ($sqsRecord in $LambdaInput.Records)
 {
-    # TODO: Add logic to handle each SQS Message
-    Write-Host $message.body
-    Write-Host $message.messageAttributes
+    $snsRecord = ConvertFrom-Json -InputObject $sqsRecord.body
+
+    # TODO: Add logic to process each SNS Record
+    Write-Host $snsRecord.Message
 }

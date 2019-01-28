@@ -152,6 +152,21 @@
       ]
     },
     {
+      "name": "SNSToSQS",
+      "description": "Script to be subscribed to an SQS Queue, that is subscribed to an SNS Topic",
+      "content": [
+          {
+            "source": "snstosqs.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
       "name": "SQSQueueProcessor",
       "description": "Script to be subscribed to an SQS Queue",
       "content": [
