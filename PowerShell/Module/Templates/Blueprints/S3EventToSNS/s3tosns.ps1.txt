@@ -9,17 +9,29 @@
 # To include PowerShell modules with your Lambda function, like the AWSPowerShell.NetCore module, add a "#Requires" statement
 # indicating the module and version.
 #
-# This example demonstrates how to process an SQS Queue:
-# SQS Queue -> Lambda Function
+# The following link contains documentation describing the structure of the S3 event object.
+# https://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
+#
+# This example demonstrates how to process an S3 Event that follows the process:
+# S3 Event -> SNS Topic -> Lambda Function
 
 #Requires -Modules @{ModuleName='AWSPowerShell.NetCore';ModuleVersion='3.3.428.0'}
 
 # Uncomment to send the input event to CloudWatch Logs
 # Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)
 
-foreach ($message in $LambdaInput.Records)
+foreach ($snsRecord in $LambdaInput.Records)
 {
-    # TODO: Add logic to handle each SQS Message
-    Write-Host $message.body
-    Write-Host $message.messageAttributes
+    $snsMessage = ConvertFrom-Json -InputObject $snsRecord.Sns.Message
+    foreach ($s3Event in $snsMessage.Records)
+    {
+        $bucket = $s3Event.s3.bucket.name
+        $key = $s3Event.s3.object.key
+
+        Write-Host "Processing event for: bucket = $bucket, key = $key"
+
+        # TODO: Add logic to handle S3 event record, for example
+        $obj = Get-S3Object -Bucket $bucket -Key $key
+        Write-Host "Object $key is $($obj.Size) bytes"
+    }
 }

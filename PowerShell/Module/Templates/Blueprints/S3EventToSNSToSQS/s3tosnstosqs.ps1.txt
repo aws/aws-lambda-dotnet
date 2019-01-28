@@ -1,0 +1,61 @@
+# PowerShell script file to be executed as a AWS Lambda function.
+#
+# When executing in Lambda the following variables will be predefined.
+#   $LambdaInput - A PSObject that contains the Lambda function input data.
+#   $LambdaContext - An Amazon.Lambda.Core.ILambdaContext object that contains information about the currently running Lambda environment.
+#
+# The last item in the PowerShell pipeline will be returned as the result of the Lambda function.
+#
+# To include PowerShell modules with your Lambda function, like the AWSPowerShell.NetCore module, add a "#Requires" statement
+# indicating the module and version.
+#
+# The following link contains documentation describing the structure of the S3 event object.
+# https://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
+#
+# This example demonstrates how to process an S3 Event that follows the process:
+# S3 Event -> SNS Topic -> SQS Queue -> Lambda Function
+
+#Requires -Modules @{ModuleName='AWSPowerShell.NetCore';ModuleVersion='3.3.428.0'}
+
+# Uncomment to send the input event to CloudWatch Logs
+#Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)
+
+foreach ($sqsRecord in $LambdaInput.Records)
+{
+    $sqsRecordBody = ConvertFrom-Json -InputObject $sqsRecord.body
+
+    try
+    {
+        # If this call works, then the SNS Subscription is configured with
+        # "Raw Message Delivery" = "True"
+        $snsMessage = ConvertFrom-Json -InputObject $sqsRecordBody.Message
+    }
+    catch
+    {
+        # If we hit the catch statement, then the SNS Subscription is configured
+        # with "Raw Message Delivery" = "False"
+        $snsMessage = $sqsRecordBody
+    }
+
+    if ($snsMessage.Records.Count -gt 0)
+    {
+        # We have an array of SNS Records, lets process them
+
+        foreach ($s3Event in $snsMessage.Records)
+        {
+            $bucket = $s3Event.s3.bucket.name
+            $key = $s3Event.s3.object.key
+
+            Write-Host 'Processing event for:' (ConvertTo-Json -InputObject @{Bucket = $bucket; Key = $key} -Compress)
+
+            # TODO: Add logic to handle S3 event record, for example
+            $obj = Get-S3Object -Bucket $bucket -Key $key
+            Write-Host "Object $key is $($obj.Size) bytes"
+        }
+    }
+    else
+    {
+        # We likely have an S3 Test Event, write it out to logs
+        Write-Host 'SNS Message:' (ConvertTo-Json -InputObject $snsMessage -Compress)
+    }
+}

@@ -1,7 +1,7 @@
 This sample creates a Lambda function written in PowerShell that can be subscribed
-to an SQS Queue.
+to an SQS Queue. For this sample, the SQS Queue would be subscribed to an SNS Topic.
 
-For example: SQS Queue -> Lambda Function.
+For example: SNS Topic -> SQS Queue -> Lambda Function.
 
 Assuming the Lambda function does not throw an exception, the SQS Message will be
 removed from the SQS Queue by AWS. For more information, please review "Using AWS

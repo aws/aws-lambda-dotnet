@@ -92,11 +92,71 @@
       ]
     },
     {
+      "name": "S3EventToSNS",
+      "description": "Script to process SNS Records triggered by S3 events",
+      "content": [
+          {
+            "source": "s3tosns.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
+      "name": "S3EventToSNSToSQS",
+      "description": "Script to process SQS Messages, subscribed to an SNS Topic that is triggered by S3 events",
+      "content": [
+          {
+            "source": "s3tosnstosqs.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
+      "name": "S3EventToSQS",
+      "description": "Script to process SQS Messages triggered by S3 events",
+      "content": [
+          {
+            "source": "s3tosqs.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
       "name": "SNSSubscription",
       "description": "Script to be subscribed to an SNS Topic",
       "content": [
           {
             "source": "snssubscription.ps1.txt",
+            "output": "{basename}.ps1",
+            "filetype": "lambdaFunction"
+          },
+          {
+            "source": "readme.txt",
+            "output": "readme.txt"
+          }
+      ]
+    },
+    {
+      "name": "SNSToSQS",
+      "description": "Script to be subscribed to an SQS Queue, that is subscribed to an SNS Topic",
+      "content": [
+          {
+            "source": "snstosqs.ps1.txt",
             "output": "{basename}.ps1",
             "filetype": "lambdaFunction"
           },
