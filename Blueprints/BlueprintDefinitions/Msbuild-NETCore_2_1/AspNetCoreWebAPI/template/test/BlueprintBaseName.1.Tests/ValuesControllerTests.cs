@@ -32,8 +32,8 @@ namespace BlueprintBaseName._1.Tests
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
-            Assert.True(response.Headers.ContainsKey("Content-Type"));
-            Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("application/json; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
         }
 
 

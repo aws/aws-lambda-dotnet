@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.4" />
-    <PackageReference Include="Giraffe" Version="3.0.0" />
+    <PackageReference Include="Giraffe" Version="3.4.0" />
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>

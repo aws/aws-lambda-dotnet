@@ -22,8 +22,8 @@ module HttpHandlersTests =
 
         Assert.Equal(200, response.StatusCode)
         Assert.Equal("Serverless Giraffe Web API", response.Body)
-        Assert.True(response.Headers.ContainsKey("Content-Type"))
-        Assert.Equal("text/plain", response.Headers.Item("Content-Type"))
+        Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"))
+        Assert.Contains("text/plain", response.MultiValueHeaders.Item("Content-Type").[0])
     }
 
     [<Fact>]
@@ -36,8 +36,8 @@ module HttpHandlersTests =
 
         Assert.Equal(200, response.StatusCode)
         Assert.Equal("value1, value2", response.Body)
-        Assert.True(response.Headers.ContainsKey("Content-Type"))
-        Assert.Equal("text/plain", response.Headers.Item("Content-Type"))
+        Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"))
+        Assert.Contains("text/plain", response.MultiValueHeaders.Item("Content-Type").[0])
     }
 
     [<Fact>]
@@ -50,8 +50,8 @@ module HttpHandlersTests =
 
         Assert.Equal(200, response.StatusCode)
         Assert.Equal("value1, value2, value3, value4, value5", response.Body)
-        Assert.True(response.Headers.ContainsKey("Content-Type"))
-        Assert.Equal("text/plain", response.Headers.Item("Content-Type"))
+        Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"))
+        Assert.Contains("text/plain", response.MultiValueHeaders.Item("Content-Type").[0])
     }
 
     [<EntryPoint>]

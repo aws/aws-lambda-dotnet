@@ -67,7 +67,7 @@ namespace BlueprintBaseName._1.Tests
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
             Assert.Equal(200, response.StatusCode);
-            Assert.Equal("text/json", response.Headers["Content-Type"]);
+            Assert.Equal("text/json", response.MultiValueHeaders["Content-Type"][0]);
 			Assert.Contains("foo.txt", response.Body);
 
             // Return the content of the new s3 object foo.txt
@@ -77,7 +77,7 @@ namespace BlueprintBaseName._1.Tests
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
             Assert.Equal(200, response.StatusCode);
-            Assert.Equal("text/plain", response.Headers["Content-Type"]);
+            Assert.Equal("text/plain", response.MultiValueHeaders["Content-Type"][0]);
             Assert.Equal("Hello World", response.Body);
 
             // Delete the object
