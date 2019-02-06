@@ -30,9 +30,9 @@
               "Path": "/{proxy+}",
               "Method": "ANY"
             }
-          },
-		      "RootResource": {
             "Type": "Api",
+          },
+          "RootResource": {
             "Properties": {
               "Path": "/",
               "Method": "ANY"

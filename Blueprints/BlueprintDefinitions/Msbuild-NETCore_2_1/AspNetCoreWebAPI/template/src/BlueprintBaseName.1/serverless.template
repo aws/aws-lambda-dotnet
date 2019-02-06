@@ -39,13 +39,21 @@
           }
         },
         "Events": {
-          "PutResource": {
+          "ProxyResource": {
             "Type": "Api",
             "Properties": {
               "Path": "/{proxy+}",
               "Method": "ANY"
             }
+            "Type": "Api",
+          },
+          "RootResource": {
+            "Properties": {
+              "Path": "/",
+              "Method": "ANY"
+            }
           }
+        }
         }
       }
     },
