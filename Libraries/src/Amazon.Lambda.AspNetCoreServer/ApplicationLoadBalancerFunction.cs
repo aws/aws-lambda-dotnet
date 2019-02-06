@@ -62,8 +62,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 var requestFeatures = (IHttpRequestFeature)features;
                 requestFeatures.Scheme = GetSingleHeaderValue(lambdaRequest, "x-forwarded-proto");
                 requestFeatures.Method = lambdaRequest.HttpMethod;
-                requestFeatures.Path = lambdaRequest.Path;
-
+                requestFeatures.Path = Utilities.DecodeResourcePath(lambdaRequest.Path);
 
                 requestFeatures.QueryString = Utilities.CreateQueryStringParamaters(
                     lambdaRequest.QueryStringParameters, lambdaRequest.MultiValueQueryStringParameters);

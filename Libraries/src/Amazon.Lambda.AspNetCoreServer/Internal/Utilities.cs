@@ -122,5 +122,14 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             }
 
         }
+
+        internal static string DecodeResourcePath(string resourcePath)
+        {
+            // Convert any + signs to percent encoding before url decoding the path.
+            resourcePath = resourcePath.Replace("+", "%2B");
+            resourcePath = resourcePath = WebUtility.UrlDecode(resourcePath);
+
+            return resourcePath;
+        }
     }
 }
