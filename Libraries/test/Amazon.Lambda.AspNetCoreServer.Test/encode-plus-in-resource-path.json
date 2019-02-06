@@ -1,6 +1,6 @@
 ﻿{
   "resource": "\/{proxy+}",
-  "path": "\/foo+bar",
+  "path": "api/resourcepath/string/foo+bar",
   "httpMethod": "GET",
   "headers": {
     "Accept": "text\/html,application\/xhtml+xml,application\/xml;q=0.9,image\/webp,image\/apng,*\/*;q=0.8",
@@ -29,7 +29,7 @@
   "stageVariables": null,
   "requestContext": {
     "requestTime": "02\/Mar\/2018:06:49:30 +0000",
-    "path": "\/Prod\/foo+bar",
+    "path": "/Prod/api/resourcepath/string/foo+bar",
     "accountId": "626492997873",
     "protocol": "HTTP\/1.1",
     "resourceId": "fm247q",

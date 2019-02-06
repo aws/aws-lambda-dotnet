@@ -161,6 +161,10 @@ namespace Amazon.Lambda.AspNetCoreServer
                     }
                 }
 
+                // Convert any + signs to percent encoding before url decoding the path.
+                requestFeatures.Path = requestFeatures.Path.Replace("+", "%2B");
+                requestFeatures.Path = requestFeatures.Path = WebUtility.UrlDecode(requestFeatures.Path);
+
                 requestFeatures.QueryString = Utilities.CreateQueryStringParamaters(
                     apiGatewayRequest.QueryStringParameters, apiGatewayRequest.MultiValueQueryStringParameters);
 

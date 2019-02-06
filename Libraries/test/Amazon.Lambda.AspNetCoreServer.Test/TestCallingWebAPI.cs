@@ -208,6 +208,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestEncodeSpaceInResourcePath()
+        {
+            var response = await this.InvokeAPIGatewayRequest("encode-space-in-resource-path.json");
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("value=tmh/file name.xml", response.Body);
+        }
+
+        [Fact]
         public async Task TestSpaceInResourcePathAndQueryString()
         {
             var response = await this.InvokeAPIGatewayRequest("encode-space-in-resource-path-and-query.json");

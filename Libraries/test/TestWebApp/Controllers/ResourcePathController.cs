@@ -21,6 +21,14 @@ namespace TestWebApp.Controllers
         public string Get(string id)
         {
             return "value=" + id;
-        } 
+        }
+
+        [Route("/api/[controller]/string/{*value}")]
+        [HttpGet]
+        public string GetString(string value)
+        {
+            var path = this.HttpContext.Request.Path;
+            return "value=" + value;
+        }
     }
 }

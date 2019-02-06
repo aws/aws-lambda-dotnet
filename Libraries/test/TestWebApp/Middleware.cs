@@ -24,7 +24,7 @@ namespace TestWebApp
             context.Response.OnStarting(x =>
             {
                 var lambdaContext = context.Items["LambdaContext"] as ILambdaContext;
-                lambdaContext.Logger.LogLine("OnStarting Called");
+                lambdaContext?.Logger.LogLine("OnStarting Called");
                 return Task.FromResult(0);
             }, context);
 
