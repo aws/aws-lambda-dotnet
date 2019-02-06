@@ -1,5 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-
+<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <DebugType>portable</DebugType>
@@ -8,33 +7,27 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AWSProjectType>Lambda</AWSProjectType>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.2" />
+    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.4" />
     <PackageReference Include="Giraffe" Version="3.0.0" />
-
-    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="2.1.0" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="3.0.0" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="AppHandlers.fs" />
     <Compile Include="Setup.fs" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="web.config" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="appsettings.Development.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>  
+    </Content>
     <Content Include="aws-lambda-tools-defaults.json" />
     <None Include="Readme.md" />
     <None Include="serverless.template" />
   </ItemGroup>
-
 </Project>

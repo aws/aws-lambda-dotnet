@@ -1,46 +1,33 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-
+<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-	<IsPackable>false</IsPackable>
+    <IsPackable>false</IsPackable>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-	<EnableDefaultContentItems>False</EnableDefaultContentItems>
+    <EnableDefaultContentItems>False</EnableDefaultContentItems>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="HttpHandlersTests.fs" />
   </ItemGroup>
-
-  
-
   <ItemGroup>
     <Content Include=".\SampleRequests\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
-  
-
   <ItemGroup>
     <Content Include="SampleRequests\GetAtArray.json" />
     <Content Include="SampleRequests\GetAtArrayWithvalue.json" />
     <Content Include="SampleRequests\GetAtRoot.json" />
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.2" />
-
-    <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
-    <PackageReference Include="Amazon.Lambda.TestUtilities" Version="1.0.0" />
-    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="1.1.3" />
-
+    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.4" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.TestUtilities" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="1.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\BlueprintBaseName.1\BlueprintBaseName.1.fsproj" />
   </ItemGroup>
-  
 </Project>
