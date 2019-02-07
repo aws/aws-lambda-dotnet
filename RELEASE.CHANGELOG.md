@@ -1,3 +1,67 @@
+### Release 2019-02-07
+* **Amazon.Lambda.TestTool-2.1 (0.9.0)** (Preview)
+    * Pull Request [#357](https://github.com/aws/aws-lambda-dotnet/pull/357) added support for parsing YAML CloudFormation template.
+* **Amazon.Lambda.APIGatewayEvents (1.2.0)**
+    * Pull Request [#382](https://github.com/aws/aws-lambda-dotnet/pull/382) added "ConnectionId" and "DomainName" to APIGatewayProxyRequest. Thanks [FranciscoJCLus](https://github.com/FranciscoJCLus)
+    * Added support for multi value headers and query string parameters.
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.ApplicationLoadBalancerEvents (1.0.0)**
+	* New package for AWS Lambda request and response types when Lambda function is integrated with an ELB Application Load Balancer.
+* **Amazon.Lambda.AspNetCoreServer (3.0.0)**
+    * Support for Application load Balancer via new **ApplicationLoadBalancerFunction** base class.
+    * Switch to use multi value headers and query string parameters support from Amazon.Lambda.APIGatewayEvents.
+    * Fixed issue with url decoded resource parameters
+    * Fixed issue incorrectly url encoding query string parameters
+* **Amazon.Lambda.CloudWatchEvents (1.0.0)**
+    * New package for AWS Lambda event types for CloudWatch Events.
+	* Pull Request [#329](https://github.com/aws/aws-lambda-dotnet/pull/329) added support for Schedule events. Thanks [Kalarrs Topham](https://github.com/exocom)
+	* Pull Request [#328](https://github.com/aws/aws-lambda-dotnet/pull/328) added support for Batch events. Thanks [Kalarrs Topham](https://github.com/exocom)
+	* Pull Request [#327](https://github.com/aws/aws-lambda-dotnet/pull/327) added support for ECS events. Thanks [Kalarrs Topham](https://github.com/exocom)
+* **Amazon.Lambda.CloudWatchLogsEvents (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.CognitoEvents (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.ConfigEvents (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.Core (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.DynamoDBEvents (1.1.0)**
+    * Added netstandard2.0 target framework.
+    * Updated dependency on AWSSDK.DynamoDBv2 to 3.3.17.5
+* **Amazon.Lambda.KinesisAnalyticsEvents (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.KinesisEvents (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.KinesisFirehoseEvents (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.LexEvents (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.Logging.AspNetCore (2.1.0)**
+    * Updated to use 1.1.0 of Amazon.Lambda.Core to take advantage of the new .netstandard2.0 version.
+* **Amazon.Lambda.S3Events (1.1.0)**
+    * Added netstandard2.0 target framework.
+    * Updated dependency on AWSSDK.S3 to 3.3.31.15
+* **Amazon.Lambda.Serialization.Json (1.5.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.SimpleEmailEvents (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.SNSEvents (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.SQSEvents (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **Amazon.Lambda.TestUtilties (1.1.0)**
+    * Added netstandard2.0 target framework.
+* **AWSLambdaPSCore PowerShell Module (1.2.0)**
+    * Pull Request [#372](https://github.com/aws/aws-lambda-dotnet/pull/372) the default version of PowerShell Core to 6.1.1. Thanks [Andrew Pearce](https://github.com/austoonz)
+    * Pull Request [#380](https://github.com/aws/aws-lambda-dotnet/pull/380) added SQS blueprints. Thanks [Andrew Pearce](https://github.com/austoonz)
+    * Pull Request [#381](https://github.com/aws/aws-lambda-dotnet/pull/381) added S3 blueprints. Thanks [Andrew Pearce](https://github.com/austoonz)
+* **Blueprints**
+    * New Application Load Balancer blueprint.
+    * Updated Amazon Lambda and AWS SDK for .NET package dependencies to latest version.
+    * Updated ASP.NET Core test projects for the switch to multi value headers.
+    *  **Amazon.Lambda.Templates (3.5.0)** released with latest blueprints.
+
+
 ### Release 2018-11-19
 * **Amazon.Lambda.TestTool-2.1 (0.8.0)** (Preview)
     * Initial release of the new AWS .NET Mock Lambda Test Tool. Checkout the [README.md](https://github.com/aws/aws-lambda-dotnet/tree/master/Tools/LambdaTestTool) for more details.
