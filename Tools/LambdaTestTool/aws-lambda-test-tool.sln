@@ -15,13 +15,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.Test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FunctionSignatureExamples", "LambdaFunctions\FunctionSignatureExamples\FunctionSignatureExamples.csproj", "{4D8D6053-60E5-4AC3-8740-22E811452CD9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerlessTemplateExample", "LambdaFunctions\ServerlessTemplateExample\ServerlessTemplateExample.csproj", "{DAD2488C-F731-4719-A016-600BB5F25B48}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerlessTemplateExample", "LambdaFunctions\ServerlessTemplateExample\ServerlessTemplateExample.csproj", "{DAD2488C-F731-4719-A016-600BB5F25B48}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool.ExternalCommands", "Amazon.Lambda.TestTool.ExternalCommands\Amazon.Lambda.TestTool.ExternalCommands.csproj", "{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.ExternalCommands", "Amazon.Lambda.TestTool.ExternalCommands\Amazon.Lambda.TestTool.ExternalCommands.csproj", "{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerlessTemplateYamlExample", "LambdaFunctions\ServerlessTemplateYamlExample\ServerlessTemplateYamlExample.csproj", "{CB77D52D-5504-4639-9CAC-D4C1E4C81171}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerlessTemplateYamlExample", "LambdaFunctions\ServerlessTemplateYamlExample\ServerlessTemplateYamlExample.csproj", "{CB77D52D-5504-4639-9CAC-D4C1E4C81171}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerlessFunctionTemplateYamlExample", "LambdaFunctions\ServerlessFunctionTemplateYamlExample\ServerlessFunctionTemplateYamlExample.csproj", "{119FB8F7-03AD-42A3-A521-19D18F40B40E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerlessFunctionTemplateYamlExample", "LambdaFunctions\ServerlessFunctionTemplateYamlExample\ServerlessFunctionTemplateYamlExample.csproj", "{119FB8F7-03AD-42A3-A521-19D18F40B40E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Core", "..\..\Libraries\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj", "{B5B36180-6854-4C9F-9E65-3A6E87A93605}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -141,6 +143,18 @@ Global
 		{119FB8F7-03AD-42A3-A521-19D18F40B40E}.Release|x64.Build.0 = Release|Any CPU
 		{119FB8F7-03AD-42A3-A521-19D18F40B40E}.Release|x86.ActiveCfg = Release|Any CPU
 		{119FB8F7-03AD-42A3-A521-19D18F40B40E}.Release|x86.Build.0 = Release|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Debug|x64.Build.0 = Debug|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Debug|x86.Build.0 = Debug|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Release|x64.ActiveCfg = Release|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Release|x64.Build.0 = Release|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Release|x86.ActiveCfg = Release|Any CPU
+		{B5B36180-6854-4C9F-9E65-3A6E87A93605}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
