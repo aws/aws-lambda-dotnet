@@ -1,6 +1,6 @@
 ### Release 2019-02-07
 * **Amazon.Lambda.TestTool-2.1 (0.9.0)** (Preview)
-    * Pull Request [#357](https://github.com/aws/aws-lambda-dotnet/pull/357) added support for parsing YAML CloudFormation template.
+    * Pull Request [#364](https://github.com/aws/aws-lambda-dotnet/pull/364) added support for parsing YAML CloudFormation template. Thanks [Samuele Resca](https://github.com/samueleresca)
 * **Amazon.Lambda.APIGatewayEvents (1.2.0)**
     * Pull Request [#382](https://github.com/aws/aws-lambda-dotnet/pull/382) added "ConnectionId" and "DomainName" to APIGatewayProxyRequest. Thanks [FranciscoJCLus](https://github.com/FranciscoJCLus)
     * Added support for multi value headers and query string parameters.
