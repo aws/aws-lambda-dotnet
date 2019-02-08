@@ -1,3 +1,10 @@
+### Release 2019-02-08
+* **Amazon.Lambda.AspNetCoreServer (3.0.1)**
+    * Fixed issue with content-type being incorrectly set by API Gateway when ASP.NET Core does not return a content-type.
+* **Blueprints**
+    * ASP.NET Core based templates updated to use 3.0.1 of Amazon.Lambda.AspNetCoreServer.
+    *  **Amazon.Lambda.Templates (3.5.1)** released with latest blueprints.
+
 ### Release 2019-02-07
 * **Amazon.Lambda.TestTool-2.1 (0.9.0)** (Preview)
     * Pull Request [#364](https://github.com/aws/aws-lambda-dotnet/pull/364) added support for parsing YAML CloudFormation template. Thanks [Samuele Resca](https://github.com/samueleresca)
