@@ -279,7 +279,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(200, response.StatusCode);
             Assert.True(response.Body.Length == 0);
-            Assert.Equal(0, response.MultiValueHeaders["Content-Type"].Count);
+            Assert.Equal(1, response.MultiValueHeaders["Content-Type"].Count);
+            Assert.Null(response.MultiValueHeaders["Content-Type"][0]);
+        }
+
+        [Fact]
+        public async Task TestRedirectNoContentType()
+        {
+            var response = await this.InvokeAPIGatewayRequest("redirect-apigateway-request.json");
+
+            Assert.Equal(302, response.StatusCode);
+            Assert.True(response.Body.Length == 0);
+            Assert.Equal(1, response.MultiValueHeaders["Content-Type"].Count);
+            Assert.Null(response.MultiValueHeaders["Content-Type"][0]);
+
+            Assert.Equal("redirecttarget", response.MultiValueHeaders["Location"][0]);
         }
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)

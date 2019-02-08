@@ -243,7 +243,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             if(contentType == null)
             {
-                response.MultiValueHeaders["Content-Type"] = new List<string>();
+                response.MultiValueHeaders["Content-Type"] = new List<string>() { null };
             }
 
             if (responseFeatures.Body != null)
