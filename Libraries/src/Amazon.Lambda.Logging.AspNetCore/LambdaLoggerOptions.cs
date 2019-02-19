@@ -17,8 +17,8 @@ namespace Microsoft.Extensions.Logging
         private const string INCLUDE_LOG_LEVEL_KEY = "IncludeLogLevel";
         private const string INCLUDE_CATEGORY_KEY = "IncludeCategory";
         private const string INCLUDE_NEWLINE_KEY = "IncludeNewline";
-        private const string INCLUDE_EXCEPTION = "IncludeException";
-        private const string INCLUDE_EVENT_ID = "IncludeEventId";
+        private const string INCLUDE_EXCEPTION_KEY = "IncludeException";
+		private const string INCLUDE_EVENT_ID_KEY = "IncludeEventId";
         private const string LOG_LEVEL_KEY = "LogLevel";
 
         /// <summary>
@@ -128,12 +128,12 @@ namespace Microsoft.Extensions.Logging
                 IncludeLogLevel = bool.Parse(includeLogLevelString);
             }
                 
-            if (TryGetString(loggerConfiguration, INCLUDE_EXCEPTION, out string includeExceptionString))
+            if (TryGetString(loggerConfiguration, INCLUDE_EXCEPTION_KEY, out string includeExceptionString))
             {
                 IncludeException = bool.Parse(includeExceptionString);
             }
                 
-            if (TryGetString(loggerConfiguration, INCLUDE_EVENT_ID, out string includeEventIdString))
+            if (TryGetString(loggerConfiguration, INCLUDE_EVENT_ID_KEY, out string includeEventIdString))
             {
                 IncludeEventId = bool.Parse(includeEventIdString);
             }
