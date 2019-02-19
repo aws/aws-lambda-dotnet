@@ -17,6 +17,8 @@ namespace Microsoft.Extensions.Logging
         private const string INCLUDE_LOG_LEVEL_KEY = "IncludeLogLevel";
         private const string INCLUDE_CATEGORY_KEY = "IncludeCategory";
         private const string INCLUDE_NEWLINE_KEY = "IncludeNewline";
+        private const string INCLUDE_EXCEPTION = "IncludeException";
+        private const string INCLUDE_EVENT_ID = "IncludeEventId";
         private const string LOG_LEVEL_KEY = "LogLevel";
 
         /// <summary>
@@ -37,6 +39,18 @@ namespace Microsoft.Extensions.Logging
         /// Default is true.
         /// </summary>
         public bool IncludeNewline { get; set; }
+        
+        /// <summary>
+        /// Flag to indicate if Exception should be part of logged message.
+        /// Default is false.
+        /// </summary>
+        public bool IncludeException { get; set; }
+        
+        /// <summary>
+        /// Flag to indicate if EventId should be part of logged message.
+        /// Default is false.
+        /// </summary>
+        public bool IncludeEventId { get; set; }
 
         /// <summary>
         /// Function used to filter events based on the log level.
@@ -54,6 +68,8 @@ namespace Microsoft.Extensions.Logging
             IncludeCategory = true;
             IncludeLogLevel = true;
             IncludeNewline = true;
+            IncludeException = false;
+            IncludeEventId = false;
             Filter = null;
         }
 
@@ -102,26 +118,32 @@ namespace Microsoft.Extensions.Logging
 
             // Parse settings
 
-            string includeCategoryString;
-            if (TryGetString(loggerConfiguration, INCLUDE_CATEGORY_KEY, out includeCategoryString))
+            if (TryGetString(loggerConfiguration, INCLUDE_CATEGORY_KEY, out string includeCategoryString))
             {
                 IncludeCategory = bool.Parse(includeCategoryString);
             }
 
-            string includeLogLevelString;
-            if (TryGetString(loggerConfiguration, INCLUDE_LOG_LEVEL_KEY, out includeLogLevelString))
+            if (TryGetString(loggerConfiguration, INCLUDE_LOG_LEVEL_KEY, out string includeLogLevelString))
             {
                 IncludeLogLevel = bool.Parse(includeLogLevelString);
             }
+                
+            if (TryGetString(loggerConfiguration, INCLUDE_EXCEPTION, out string includeExceptionString))
+            {
+                IncludeException = bool.Parse(includeExceptionString);
+            }
+                
+            if (TryGetString(loggerConfiguration, INCLUDE_EVENT_ID, out string includeEventIdString))
+            {
+                IncludeEventId = bool.Parse(includeEventIdString);
+            }
 
-            string includeNewlineString;
-            if (TryGetString(loggerConfiguration, INCLUDE_NEWLINE_KEY, out includeNewlineString))
+            if (TryGetString(loggerConfiguration, INCLUDE_NEWLINE_KEY, out string includeNewlineString))
             {
                 IncludeNewline = bool.Parse(includeNewlineString);
             }
 
-            IConfiguration logLevelsSection;
-            if (TryGetSection(loggerConfiguration, LOG_LEVEL_KEY, out logLevelsSection))
+            if (TryGetSection(loggerConfiguration, LOG_LEVEL_KEY, out IConfiguration logLevelsSection))
             {
                 Filter = CreateFilter(logLevelsSection);
             }
