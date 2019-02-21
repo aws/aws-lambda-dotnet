@@ -41,7 +41,7 @@ namespace Amazon.Lambda.RuntimeSupport.Test
         [Fact]
         public void ThrowsExceptionForNullHandler()
         {
-            Assert.Throws<ArgumentNullException>("handler", () => { new LambdaBootstrap(null); });
+            Assert.Throws<ArgumentNullException>("handler", () => { new LambdaBootstrap((LambdaBootstrapHandler)null); });
         }
 
         [Fact]
@@ -151,6 +151,25 @@ namespace Amazon.Lambda.RuntimeSupport.Test
             _testRuntimeApiClient.VerifyOutput(testInput.ToUpper());
 
                 Assert.False(_testInitializer.InitializerWasCalled);
+            Assert.True(_testFunction.HandlerWasCalled);
+        }
+
+        [Fact]
+        public async Task HandlerReturnsNull()
+        {
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerReturnsNullAsync, null))
+            {
+                _testRuntimeApiClient.FunctionInput = new byte[0];
+                bootstrap.Client = _testRuntimeApiClient;
+                bootstrap.EnvironmentVariables = _environmentVariables;
+                Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaBootstrap.TraceIdEnvVar));
+
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            _testRuntimeApiClient.VerifyOutput((byte[])null);
+
+            Assert.False(_testInitializer.InitializerWasCalled);
             Assert.True(_testFunction.HandlerWasCalled);
         }
     }

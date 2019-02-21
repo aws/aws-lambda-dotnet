@@ -14,7 +14,10 @@
  */
 namespace Amazon.Lambda.RuntimeSupport
 {
-    internal class LambdaEnvironment
+    /// <summary>
+    /// Provides access to Environment Variables set by the Lambda runtime environment.
+    /// </summary>
+    public class LambdaEnvironment
     {
         internal const string EnvVarFunctionMemorySize = "AWS_LAMBDA_FUNCTION_MEMORY_SIZE";
         internal const string EnvVarFunctionName = "AWS_LAMBDA_FUNCTION_NAME";
@@ -23,6 +26,8 @@ namespace Amazon.Lambda.RuntimeSupport
         internal const string EnvVarLogStreamName = "AWS_LAMBDA_LOG_STREAM_NAME";
         internal const string EnvVarServerHostAndPort = "AWS_LAMBDA_RUNTIME_API";
         internal const string EnvVarHandler = "_HANDLER";
+
+        public LambdaEnvironment() : this(new SystemEnvironmentVariables()) { }
 
         internal LambdaEnvironment(IEnvironmentVariables environmentVariables)
         {

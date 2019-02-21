@@ -14,8 +14,7 @@
  */
 /*
  * This file was originally generated using NSwag.
- * The original generated file is InternalClientGenerated.txt.  To see what's changed from the generated version, from the root of the repo run:
- * git diff -w -U100000 --no-index byolopensource/Amazon.Lambda.RuntimeSupport.Client/Amazon.Lambda.RuntimeSupport.Client/InternalClientGenerated.txt byolopensource/Amazon.Lambda.RuntimeSupport.Client/Amazon.Lambda.RuntimeSupport.Client/InternalClientAdapted.cs
+ * The original generated file is InternalClientGenerated.txt.
  * This code has been adapted to:
  * 1. Use an internal copy of LitJson to avoid dependency collision with consumers.
  * 2. Allow streams to be sent directly as a response, instead of assuming the response is JSON.
@@ -275,7 +274,7 @@ namespace Amazon.Lambda.RuntimeSupport
                             throw new RuntimeApiClientException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
 
-                        return new SwaggerResponse<System.IO.Stream>((int)response_.StatusCode, headers_, new System.IO.MemoryStream());
+                        return new SwaggerResponse<System.IO.Stream>((int)response_.StatusCode, headers_, new System.IO.MemoryStream(0));
                     }
                     finally
                     {
@@ -313,9 +312,12 @@ namespace Amazon.Lambda.RuntimeSupport
             var client_ = _httpClient;
             try
             {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                var request_ = new System.Net.Http.HttpRequestMessage();
                 {
-                    var content_ = new System.Net.Http.StreamContent(outputStream);
+                    var content_ = outputStream == null ? 
+                        (System.Net.Http.HttpContent)new System.Net.Http.StringContent(string.Empty) :
+                        (System.Net.Http.HttpContent)new NonDisposingStreamContent(outputStream);
+
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");

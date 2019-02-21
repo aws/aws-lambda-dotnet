@@ -68,11 +68,12 @@ namespace Amazon.Lambda.RuntimeSupport
                 }
             }
 
-            AggregateException aggregateException = exception as AggregateException;
             if (exception.InnerException != null)
             {
                 InnerException = new ExceptionInfo(exception.InnerException, true);
             }
+
+            AggregateException aggregateException = exception as AggregateException;
 
             if (aggregateException != null && aggregateException.InnerExceptions != null)
             {

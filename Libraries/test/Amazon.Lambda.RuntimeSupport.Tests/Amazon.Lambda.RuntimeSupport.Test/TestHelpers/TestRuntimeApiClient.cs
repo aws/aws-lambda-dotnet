@@ -52,15 +52,26 @@ namespace Amazon.Lambda.RuntimeSupport.Test
 
         public void VerifyOutput(byte[] expectedOutput)
         {
-            int nextByte = 0;
-            int count = 0;
-            while ((nextByte = LastOutputStream.ReadByte()) != -1)
+            if (expectedOutput == null && LastOutputStream == null)
             {
-                Assert.Equal(expectedOutput[count++], nextByte);
+                return;
             }
-            if (count == 0)
+            else if (expectedOutput != null && LastOutputStream != null)
             {
-                Assert.Null(expectedOutput);
+                int nextByte = 0;
+                int count = 0;
+                while ((nextByte = LastOutputStream.ReadByte()) != -1)
+                {
+                    Assert.Equal(expectedOutput[count++], nextByte);
+                }
+                if (count == 0)
+                {
+                    Assert.Null(expectedOutput);
+                }
+            }
+            else
+            {
+                throw new Exception("expectedOutput and LastOutputStream must both be null or both be non-null.");
             }
         }
 

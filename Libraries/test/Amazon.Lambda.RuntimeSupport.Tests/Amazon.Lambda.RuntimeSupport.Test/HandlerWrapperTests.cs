@@ -106,508 +106,550 @@ namespace Amazon.Lambda.RuntimeSupport.Test
         [Fact]
         public async Task TestTask()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async () =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async () =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
-            });
-
-            await TestHandler(handler, EmptyBytes, EmptyBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestStreamTask()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async (input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async (input) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
-            });
-
-            await TestHandler(handler, InputBytes, EmptyBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputTask()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput>(async (input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput>(async (input) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, EmptyBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestILambdaContextTask()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async (context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async (context) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 Assert.NotNull(context.AwsRequestId);
-            });
-
-            await TestHandler(handler, EmptyBytes, EmptyBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestStreamILambdaContextTask()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async (input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async (input, context) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
                 Assert.NotNull(context.AwsRequestId);
-            });
-
-            await TestHandler(handler, InputBytes, EmptyBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputILambdaContextTask()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput>(async (input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput>(async (input, context) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
                 Assert.NotNull(context.AwsRequestId);
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, EmptyBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestTaskOfStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async () =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async () =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 return new MemoryStream(OutputBytes);
-            });
-
-            await TestHandler(handler, EmptyBytes, OutputBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestStreamTaskOfStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async (input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async (input) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
                 return new MemoryStream(OutputBytes);
-            });
-
-            await TestHandler(handler, InputBytes, OutputBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputTaskOfStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput>(async (input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput>(async (input) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
                 return new MemoryStream(OutputBytes);
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, OutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestContextTaskOfStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async (context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async (context) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 Assert.NotNull(context.AwsRequestId);
                 return new MemoryStream(OutputBytes);
-            });
-
-            await TestHandler(handler, EmptyBytes, OutputBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestStreamContextTaskOfStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async (input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async (input, context) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
                 Assert.NotNull(context.AwsRequestId);
                 return new MemoryStream(OutputBytes);
-            });
-
-            await TestHandler(handler, InputBytes, OutputBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputContextTaskOfStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput>(async (input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput>(async (input, context) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
                 Assert.NotNull(context.AwsRequestId);
                 return new MemoryStream(OutputBytes);
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, OutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestTaskOfPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async () =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async () =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, EmptyBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestStreamTaskOfPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async (input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async (input) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, InputBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputTaskOfPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput, PocoOutput>(async (input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput, PocoOutput>(async (input) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestILambdaContextTaskOfPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async (context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async (context) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 Assert.NotNull(context.AwsRequestId);
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, EmptyBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestStreamILambdaContextTaskOfPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(async (input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(async (input, context) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
                 Assert.NotNull(context.AwsRequestId);
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, InputBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputILambdaContextTaskOfPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput, PocoOutput>(async (input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput, PocoOutput>(async (input, context) =>
             {
                 await Task.Delay(0);
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
                 Assert.NotNull(context.AwsRequestId);
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestVoid()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(() =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(() =>
             {
                 _checkpoint.Check();
-            });
-
-            await TestHandler(handler, EmptyBytes, EmptyBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestStreamVoid()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler((input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper((input) =>
             {
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
-            });
-
-            await TestHandler(handler, InputBytes, EmptyBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputVoid()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput>((input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput>((input) =>
             {
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, EmptyBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestILambdaContextVoid()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler((context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper((context) =>
             {
                 _checkpoint.Check();
                 Assert.NotNull(context.AwsRequestId);
-            });
-
-            await TestHandler(handler, EmptyBytes, EmptyBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestStreamILambdaContextVoid()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler((input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper((input, context) =>
             {
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
                 Assert.NotNull(context.AwsRequestId);
-            });
-
-            await TestHandler(handler, InputBytes, EmptyBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputILambdaContextVoid()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput>((input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput>((input, context) =>
             {
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
                 Assert.NotNull(context.AwsRequestId);
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, EmptyBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, EmptyBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestVoidStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(() =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(() =>
             {
                 _checkpoint.Check();
                 return new MemoryStream(OutputBytes);
-            });
-
-            await TestHandler(handler, EmptyBytes, OutputBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestStreamStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler((input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper((input) =>
             {
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
                 return new MemoryStream(OutputBytes);
-            });
-
-            await TestHandler(handler, InputBytes, OutputBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput>((input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput>((input) =>
             {
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
                 return new MemoryStream(OutputBytes);
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, OutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestILambdaContextStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler((context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper((context) =>
             {
                 _checkpoint.Check();
                 Assert.NotNull(context.AwsRequestId);
                 return new MemoryStream(OutputBytes);
-            });
-
-            await TestHandler(handler, EmptyBytes, OutputBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestStreamILambdaContextStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler((input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper((input, context) =>
             {
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
                 Assert.NotNull(context.AwsRequestId);
                 return new MemoryStream(OutputBytes);
-            });
-
-            await TestHandler(handler, InputBytes, OutputBytes);
+            }))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputILambdaContextStream()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput>((input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput>((input, context) =>
             {
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
                 Assert.NotNull(context.AwsRequestId);
                 return new MemoryStream(OutputBytes);
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, OutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, OutputBytes, true);
+            }
         }
 
         [Fact]
         public async Task TestVoidPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler(() =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(() =>
             {
                 _checkpoint.Check();
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, EmptyBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestStreamPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler((input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper((input) =>
             {
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, InputBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput, PocoOutput>((input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput, PocoOutput>((input) =>
             {
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestILambdaContextPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler((context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper((context) =>
             {
                 _checkpoint.Check();
                 Assert.NotNull(context.AwsRequestId);
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, EmptyBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, EmptyBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestStreamILambdaContextPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler((input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper((input, context) =>
             {
                 _checkpoint.Check();
                 AssertEqual(InputBytes, input);
                 Assert.NotNull(context.AwsRequestId);
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, InputBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, InputBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestPocoInputILambdaContextPocoOutput()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<PocoInput, PocoOutput>((input, context) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<PocoInput, PocoOutput>((input, context) =>
             {
                 _checkpoint.Check();
                 Assert.Equal(PocoInput, input);
                 Assert.NotNull(context.AwsRequestId);
                 return PocoOutput;
-            }, Serializer);
-
-            await TestHandler(handler, PocoInputBytes, PocoOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, PocoInputBytes, PocoOutputBytes, false);
+            }
         }
 
         [Fact]
         public async Task TestSerializtionOfString()
         {
-            var handler = HandlerWrapper.GetLambdaBootstrapHandler<string, string>((input) =>
+            using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<string, string>((input) =>
             {
                 _checkpoint.Check();
                 Assert.Equal(StringInput, input);
                 return StringOutput;
-            }, Serializer);
-
-            await TestHandler(handler, StringInputBytes, StringOutputBytes);
+            }, Serializer))
+            {
+                await TestHandlerWrapper(handlerWrapper, StringInputBytes, StringOutputBytes, false);
+            }
         }
 
-        private async Task TestHandler(LambdaBootstrapHandler handler, byte[] input, byte[] expectedOutput)
+        private async Task TestHandlerWrapper(HandlerWrapper handlerWrapper, byte[] input, byte[] expectedOutput, bool expectedDisposeOutputStream)
         {
-            var invocation = new InvocationRequest
+            // run twice to make sure wrappers that reuse the output stream work correctly
+            for (int i = 0; i < 2; i++)
             {
-                InputStream = new MemoryStream(input ?? new byte[0]),
-                LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment)
-            };
+                var invocation = new InvocationRequest
+                {
+                    InputStream = new MemoryStream(input ?? new byte[0]),
+                    LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment)
+                };
 
-            var outputStream = await handler(invocation);
+                var invocationResponse = await handlerWrapper.Handler(invocation);
 
-            Assert.True(_checkpoint.IsChecked);
-            AssertEqual(expectedOutput, outputStream);
+                Assert.True(_checkpoint.IsChecked);
+                Assert.Equal(expectedDisposeOutputStream, invocationResponse.DisposeOutputStream);
+                AssertEqual(expectedOutput, invocationResponse.OutputStream);
+            }
         }
 
         private void AssertEqual(byte[] expected, Stream actual)

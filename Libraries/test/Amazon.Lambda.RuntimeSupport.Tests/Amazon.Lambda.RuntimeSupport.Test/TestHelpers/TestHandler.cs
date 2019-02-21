@@ -39,28 +39,37 @@ namespace Amazon.Lambda.RuntimeSupport.Test
             CancellationSource.CancelAfter(30000);
         }
 
-        public async Task<Stream> BaseHandlerAsync(InvocationRequest invocation)
+        public async Task<InvocationResponse> BaseHandlerAsync(InvocationRequest invocation)
         {
             var outputStream = new MemoryStream();
             await DoHandlerCommonTasksAsync(invocation.InputStream, outputStream);
-            return outputStream;
+            return new InvocationResponse(outputStream);
         }
 
-        public async Task<Stream> BaseHandlerThrowsAsync(InvocationRequest invocation)
+        public async Task<InvocationResponse> BaseHandlerThrowsAsync(InvocationRequest invocation)
         {
             var outputStream = new MemoryStream();
             await DoHandlerCommonTasksAsync(invocation.InputStream, null);
             throw new Exception(InvokeExceptionMessage);
         }
 
-        public async Task<Stream> BaseHandlerToUpperAsync(InvocationRequest invocation)
+        public async Task<InvocationResponse> BaseHandlerToUpperAsync(InvocationRequest invocation)
         {
             using (var sr = new StreamReader(invocation.InputStream))
             {
                 Stream outputStream = new MemoryStream(Encoding.UTF8.GetBytes(sr.ReadToEnd().ToUpper()));
                 outputStream.Position = 0;
                 await DoHandlerCommonTasksAsync(invocation.InputStream, outputStream);
-                return outputStream;
+                return new InvocationResponse(outputStream);
+            }
+        }
+
+        public async Task<InvocationResponse> BaseHandlerReturnsNullAsync(InvocationRequest invocation)
+        {
+            using (var sr = new StreamReader(invocation.InputStream))
+            {
+                await DoHandlerCommonTasksAsync(invocation.InputStream, null);
+                return null;
             }
         }
 

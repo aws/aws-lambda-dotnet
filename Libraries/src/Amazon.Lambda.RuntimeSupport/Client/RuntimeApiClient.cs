@@ -27,7 +27,7 @@ namespace Amazon.Lambda.RuntimeSupport
     /// <summary>
     /// Client to call the AWS Lambda Runtime API.
     /// </summary>
-    public class RuntimeApiClient : IRuntimeApiClient, IDisposable
+    public class RuntimeApiClient : IRuntimeApiClient
     {
         private readonly HttpClient _httpClient;
         private readonly IInternalRuntimeApiClient _internalClient;
@@ -145,12 +145,6 @@ namespace Amazon.Lambda.RuntimeSupport
         public async Task SendResponseAsync(string awsRequestId, Stream outputStream)
         {
             await _internalClient.ResponseAsync(awsRequestId, outputStream, CancellationToken.None);
-        }
-
-        public void Dispose()
-        {
-            if (_httpClient != null)
-                _httpClient.Dispose();
         }
     }
 }

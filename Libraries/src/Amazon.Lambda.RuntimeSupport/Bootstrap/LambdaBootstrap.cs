@@ -1,16 +1,25 @@
-﻿using Amazon.Lambda.Core;
+﻿/*
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ * 
+ *  http://aws.amazon.com/apache2.0
+ * 
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
-    public delegate Task<Stream> LambdaBootstrapHandler(InvocationRequest invocation);
+    public delegate Task<InvocationResponse> LambdaBootstrapHandler(InvocationRequest invocation);
     public delegate Task<bool> LambdaBootstrapInitializer();
 
     /// <summary>
@@ -24,6 +33,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private LambdaBootstrapInitializer _initializer;
         private LambdaBootstrapHandler _handler;
 
+        private HttpClient _httpClient;
         internal IRuntimeApiClient Client { get; set; }
         internal IEnvironmentVariables EnvironmentVariables { get; set; }
 
@@ -37,9 +47,20 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
             _initializer = initializer;
-            Client = new RuntimeApiClient(new HttpClient());
+            _httpClient = new HttpClient();
+            Client = new RuntimeApiClient(_httpClient);
             EnvironmentVariables = new SystemEnvironmentVariables();
         }
+
+        /// <summary>
+        /// Create a LambdaBootstrap that will call the given initializer and handler.
+        /// </summary>
+        /// <param name="handlerWrapper">The HandlerWrapper to call for each invocation of the Lambda function.</param>
+        /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
+        /// <returns></returns>
+        public LambdaBootstrap(HandlerWrapper handlerWrapper, LambdaBootstrapInitializer initializer = null)
+            : this(handlerWrapper.Handler, initializer)
+        { }
 
         /// <summary>
         /// Run the initialization Func if provided.
@@ -80,27 +101,47 @@ namespace Amazon.Lambda.RuntimeSupport
                 // set environment variable so that if the function uses the XRay client it will work correctly
                 EnvironmentVariables.SetEnvironmentVariable(TraceIdEnvVar, traceId);
 
+                InvocationResponse response = null;
                 try
                 {
-                    using (var outputStream = await _handler(invocation))
-                    {
-                        await Client.SendResponseAsync(invocation.LambdaContext.AwsRequestId, outputStream);
-                    }
+                    response = await _handler(invocation);
+                    await Client.SendResponseAsync(invocation.LambdaContext.AwsRequestId, response?.OutputStream);
                 }
                 catch (Exception exception)
                 {
                     await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception);
                 }
+                finally
+                {
+                    if (response != null && response.DisposeOutputStream)
+                    {
+                        response.OutputStream?.Dispose();
+                    }
+                }
             }
         }
 
-        public void Dispose()
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
         {
-            var disposableClient = Client as IDisposable;
-            if (disposableClient != null)
+            if (!disposedValue)
             {
-                disposableClient.Dispose();
+                if (disposing)
+                {
+                    _httpClient?.Dispose();
+                }
+                disposedValue = true;
             }
         }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+        }
+        #endregion
     }
 }
