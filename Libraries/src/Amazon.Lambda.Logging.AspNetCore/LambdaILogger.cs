@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Logging
             }
 
             // Format of the logged text, optional components are in {}
-            //  {[LogLevel] }{Category: }MessageText{\n}
+            //  {[LogLevel] }{Category: }{EventId: }MessageText {Exception}{\n}
 
             var components = new List<string>(4);
             if (_options.IncludeLogLevel)
@@ -56,11 +56,19 @@ namespace Microsoft.Extensions.Logging
             {
                 components.Add($"{_categoryName}:");
             }
+			if (_options.IncludeEventId)
+			{
+				components.Add($"{eventId}:");
+			}
 
-            var text = formatter.Invoke(state, exception);
+			var text = formatter.Invoke(state, exception);
             components.Add(text);
 
-            if (_options.IncludeNewline)
+			if(_options.IncludeException)
+			{
+				components.Add($"{exception}");
+			}
+			if (_options.IncludeNewline)
             {
                 components.Add(Environment.NewLine);
             }
