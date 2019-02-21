@@ -15,7 +15,7 @@
     <None Include="serverless.template" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="3.0.1" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="3.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.4" />
   </ItemGroup>
 </Project>
