@@ -168,9 +168,10 @@ namespace Amazon.Lambda.AspNetCoreServer
                 })
                 .ConfigureLogging((hostingContext, logging) =>
                 {
+                    logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
+
                     if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LAMBDA_TASK_ROOT")))
                     {
-                        logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
                         logging.AddConsole();
                         logging.AddDebug();
                     }
