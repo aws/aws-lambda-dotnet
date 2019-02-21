@@ -8,7 +8,7 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.4.0" />
     <PackageReference Include="Amazon.Lambda.S3Events" Version="1.1.0" />
-    <PackageReference Include="AWSSDK.S3" Version="3.3.31.15" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.31.19" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Function.fs" />

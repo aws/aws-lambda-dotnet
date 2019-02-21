@@ -5,8 +5,8 @@
     <AWSProjectType>Lambda</AWSProjectType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.3.31.15" />
-    <PackageReference Include="AWSSDK.Rekognition" Version="3.3.14.4" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.31.19" />
+    <PackageReference Include="AWSSDK.Rekognition" Version="3.3.15.2" />
     <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.4.0" />
     <PackageReference Include="Amazon.Lambda.S3Events" Version="1.1.0" />
