@@ -87,13 +87,21 @@ namespace Amazon.Lambda.TestTool
             {
                 foreach (var file in Directory.GetFiles(lambdaFunctionDirectory, "*.json", SearchOption.TopDirectoryOnly))
                 {
-                    var data = JsonMapper.ToObject(File.ReadAllText(file));
-
-                    if(data.ContainsKey("framework") && data["framework"].ToString().StartsWith("netcoreapp") && 
-                        (data.ContainsKey("function-handler") || data.ContainsKey("template")))
+                    try
                     {
-                        Console.WriteLine($"Found Lambda config file {file}");
-                        configFiles.Add(file);
+                        var data = JsonMapper.ToObject(File.ReadAllText(file));
+
+                        if (data.IsObject &&
+                            data.ContainsKey("framework") && data["framework"].ToString().StartsWith("netcoreapp") &&
+                            (data.ContainsKey("function-handler") || data.ContainsKey("template")))
+                        {
+                            Console.WriteLine($"Found Lambda config file {file}");
+                            configFiles.Add(file);
+                        }
+                    }
+                    catch
+                    {
+                        Console.WriteLine($"Error parsing JSON file: {file}");
                     }
                 }
 
