@@ -10,6 +10,7 @@ namespace Amazon.Lambda.TestTool
         
         public bool NoLaunchWindow { get; set; }
 
+        public string Path { get; set; }
 
         public static CommandLineOptions Parse(string[] args)
         {
@@ -27,6 +28,10 @@ namespace Amazon.Lambda.TestTool
                         options.NoLaunchWindow = GetNextBoolValue(i);
                         i++;
                         break;
+                    case "--path":
+                      options.Path = GetNextValue(i);
+                      i++;
+                      break;
                 }
             }
             
