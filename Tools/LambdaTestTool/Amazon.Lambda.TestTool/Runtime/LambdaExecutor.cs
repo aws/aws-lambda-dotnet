@@ -18,6 +18,13 @@ namespace Amazon.Lambda.TestTool.Runtime
         {
             var logger = new LocalLambdaLogger();
             var response = new ExecutionResponse();
+
+            if (!string.IsNullOrEmpty(request.Function.ErrorMessage))
+            {
+              response.Error = request.Function.ErrorMessage;
+              return response;
+            }
+
             try
             {
                 if (!string.IsNullOrEmpty(request.AWSRegion))
