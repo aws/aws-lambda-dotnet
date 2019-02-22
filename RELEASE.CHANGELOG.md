@@ -1,3 +1,17 @@
+### Release 2019-02-21
+* **Amazon.Lambda.AspNetCoreServer (3.0.2)**
+    * Fixed bug with Amazon.Lambda.Logging.AspNetCoreServer not reading logging settings from configuration like appsettings.json.
+    * Added PostCreateWebHost virtual method to run code after the IWebHost has been created but not started.
+* **Amazon.Lambda.Logging.AspNetCore (2.2.0)**
+    * Pull Request [#401](https://github.com/aws/aws-lambda-dotnet/pull/401) adds ability to log EventId and Exception. Thanks [Piotr Karpala](https://github.com/aws/aws-lambda-dotnet/pull/401)
+* **Amazon.Lambda.TestTool-2.1 (0.9.1)** (Preview)
+    * Pull Request [#403](https://github.com/aws/aws-lambda-dotnet/pull/403) added `--path` command line argument. Thanks [Aidan Ryan](https://github.com/aidanjryan)
+    * Fixed bug when searching for default config files during startup.
+* **Blueprints**
+    * Updated logging section in appsettings.json to Informational to match before the logging fix in Amazon.Lambda.AspNetCoreServer
+    * Updated NuGet dependencies.
+    *  **Amazon.Lambda.Templates (3.6.0)** released with latest blueprints.
+
 ### Release 2019-02-08
 * **Amazon.Lambda.AspNetCoreServer (3.0.1)**
     * Fixed issue with content-type being incorrectly set by API Gateway when ASP.NET Core does not return a content-type.
