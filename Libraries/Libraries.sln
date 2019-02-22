@@ -80,6 +80,7 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.CloudWatchEvents", "src\Amazon.Lambda.CloudWatchEvents\Amazon.Lambda.CloudWatchEvents.csproj", "{AD96AA48-2E1A-4BBB-9329-E1E484172FE3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.ApplicationLoadBalancerEvents", "src\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj", "{0E743512-2FE4-40AD-935A-17B40ACF82C1}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.RuntimeSupport", "src\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj", "{0046EAB1-FA73-4D7A-A7CD-936E943F775E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.RuntimeSupport.Test", "test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.Test\Amazon.Lambda.RuntimeSupport.Test.csproj", "{99C34307-BF7F-4BFC-8BB6-1A377BC7ED28}"
