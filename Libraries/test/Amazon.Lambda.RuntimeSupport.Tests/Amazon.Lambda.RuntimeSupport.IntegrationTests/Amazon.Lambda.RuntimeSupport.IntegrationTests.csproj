@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>local-development.snk</AssemblyOriginatorKeyFile>
+    <DefineConstants Condition="'$(SkipRuntimeSupportIntegTests)'=='true'">SKIP_RUNTIME_SUPPORT_INTEG_TESTS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.IdentityManagement" Version="3.3.9.20" />
+    <PackageReference Include="AWSSDK.Lambda" Version="3.3.19.21" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.31.20" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="xunit" Version="2.4.1" />
+  </ItemGroup>
+
+  <Target Name="PackageTestFunction" BeforeTargets="BeforeBuild">
+    <Exec Command="dotnet tool install -g Amazon.Lambda.Tools" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Command="dotnet lambda package -c Release" />
+  </Target>
+
+</Project>

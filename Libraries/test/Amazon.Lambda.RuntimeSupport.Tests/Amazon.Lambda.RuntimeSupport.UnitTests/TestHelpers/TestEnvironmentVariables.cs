@@ -16,7 +16,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Amazon.Lambda.RuntimeSupport.Test
+namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
     class TestEnvironmentVariables : IEnvironmentVariables
     {

@@ -40,6 +40,9 @@ namespace Amazon.Lambda.RuntimeSupport
             long.TryParse(_runtimeApiHeaders.DeadlineMs, out _deadlineMs);
             _cognitoIdentityLazy = new Lazy<CognitoIdentity>(() => CognitoIdentity.FromJson(runtimeApiHeaders.CognitoIdentityJson));
             _cognitoClientContextLazy = new Lazy<CognitoClientContext>(() => CognitoClientContext.FromJson(runtimeApiHeaders.ClientContextJson));
+            
+            // set environment variable so that if the function uses the XRay client it will work correctly
+            _lambdaEnvironment.SetXAmznTraceId(_runtimeApiHeaders.TraceId);
         }
 
         // TODO If/When Amazon.Lambda.Core is major versioned, add this to ILambdaContext.

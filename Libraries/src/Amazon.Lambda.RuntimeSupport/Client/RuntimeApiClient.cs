@@ -31,10 +31,9 @@ namespace Amazon.Lambda.RuntimeSupport
     {
         private readonly HttpClient _httpClient;
         private readonly IInternalRuntimeApiClient _internalClient;
-        private readonly LambdaEnvironment _lambdaEnvironment;
-
-        internal Func<Exception, ExceptionInfo> ExceptionConverter { set; get; }
-        internal IEnvironmentVariables EnvironmentVariables { get; private set;  }
+        
+        internal Func<Exception, ExceptionInfo> ExceptionConverter { get;  set; }
+        internal LambdaEnvironment LambdaEnvironment { get; set; }
 
         /// <summary>
         /// Create a new RuntimeApiClient
@@ -48,17 +47,16 @@ namespace Amazon.Lambda.RuntimeSupport
         internal RuntimeApiClient(IEnvironmentVariables environmentVariables, HttpClient httpClient)
         {
             ExceptionConverter = ExceptionInfo.GetExceptionInfo;
-            EnvironmentVariables = environmentVariables;
             _httpClient = httpClient;
-            _lambdaEnvironment = new LambdaEnvironment(environmentVariables);
+            LambdaEnvironment = new LambdaEnvironment(environmentVariables);
             var internalClient = new InternalRuntimeApiClient(httpClient);
-            internalClient.BaseUrl = "http://" + _lambdaEnvironment.RuntimeServerHostAndPort + internalClient.BaseUrl;
+            internalClient.BaseUrl = "http://" + LambdaEnvironment.RuntimeServerHostAndPort + internalClient.BaseUrl;
             _internalClient = internalClient;
         }
 
         internal RuntimeApiClient(IEnvironmentVariables environmentVariables, IInternalRuntimeApiClient internalClient)
         {
-            _lambdaEnvironment = new LambdaEnvironment(environmentVariables);
+            LambdaEnvironment = new LambdaEnvironment(environmentVariables);
             _internalClient = internalClient;
             ExceptionConverter = ExceptionInfo.GetExceptionInfo;
         }
@@ -99,7 +97,7 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             SwaggerResponse<Stream> response = await _internalClient.NextAsync(System.Threading.CancellationToken.None);
 
-            var lambdaContext = new LambdaContext(new RuntimeApiHeaders(response.Headers), _lambdaEnvironment);
+            var lambdaContext = new LambdaContext(new RuntimeApiHeaders(response.Headers), LambdaEnvironment);
             return new InvocationRequest
             {
                 InputStream = response.Result,
@@ -121,7 +119,8 @@ namespace Amazon.Lambda.RuntimeSupport
             if (exception == null)
                 throw new ArgumentNullException(nameof(exception));
 
-            return _internalClient.Error2Async(awsRequestId, null, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)));
+            var exceptionInfo = ExceptionInfo.GetExceptionInfo(exception);
+            return _internalClient.Error2Async(awsRequestId, exceptionInfo.ErrorType, LambdaJsonExceptionWriter.WriteJson(exceptionInfo));
         }
 
         /// <summary>

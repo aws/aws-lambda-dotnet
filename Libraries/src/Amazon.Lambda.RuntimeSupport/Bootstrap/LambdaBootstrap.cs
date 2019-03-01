@@ -28,14 +28,11 @@ namespace Amazon.Lambda.RuntimeSupport
     /// </summary>
     public class LambdaBootstrap : IDisposable
     {
-        internal const string TraceIdEnvVar = "_X_AMZN_TRACE_ID";
-
         private LambdaBootstrapInitializer _initializer;
         private LambdaBootstrapHandler _handler;
 
         private HttpClient _httpClient;
         internal IRuntimeApiClient Client { get; set; }
-        internal IEnvironmentVariables EnvironmentVariables { get; set; }
 
         /// <summary>
         /// Create a LambdaBootstrap that will call the given initializer and handler.
@@ -48,8 +45,8 @@ namespace Amazon.Lambda.RuntimeSupport
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
             _initializer = initializer;
             _httpClient = new HttpClient();
-            Client = new RuntimeApiClient(_httpClient);
-            EnvironmentVariables = new SystemEnvironmentVariables();
+            Client = new RuntimeApiClient(new SystemEnvironmentVariables(), _httpClient);
+
         }
 
         /// <summary>
@@ -95,27 +92,31 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             using (var invocation = await Client.GetNextInvocationAsync())
             {
-                // cast to the internal LambdaContext type because ILambdaContext doesn't include TraceId (yet)
-                var traceId = ((LambdaContext)invocation.LambdaContext).TraceId;
-
-                // set environment variable so that if the function uses the XRay client it will work correctly
-                EnvironmentVariables.SetEnvironmentVariable(TraceIdEnvVar, traceId);
-
                 InvocationResponse response = null;
+                bool invokeSucceeded = false;
+
                 try
                 {
                     response = await _handler(invocation);
-                    await Client.SendResponseAsync(invocation.LambdaContext.AwsRequestId, response?.OutputStream);
+                    invokeSucceeded = true;
                 }
                 catch (Exception exception)
                 {
                     await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception);
                 }
-                finally
+
+                if (invokeSucceeded)
                 {
-                    if (response != null && response.DisposeOutputStream)
+                    try
                     {
-                        response.OutputStream?.Dispose();
+                        await Client.SendResponseAsync(invocation.LambdaContext.AwsRequestId, response?.OutputStream);
+                    }
+                    finally
+                    {
+                        if (response != null && response.DisposeOutputStream)
+                        {
+                            response.OutputStream?.Dispose();
+                        }
                     }
                 }
             }

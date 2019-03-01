@@ -19,6 +19,7 @@ namespace Amazon.Lambda.RuntimeSupport
     /// </summary>
     public class LambdaEnvironment
     {
+        internal const string EnvVarTraceId = "_X_AMZN_TRACE_ID";
         internal const string EnvVarFunctionMemorySize = "AWS_LAMBDA_FUNCTION_MEMORY_SIZE";
         internal const string EnvVarFunctionName = "AWS_LAMBDA_FUNCTION_NAME";
         internal const string EnvVarFunctionVersion = "AWS_LAMBDA_FUNCTION_VERSION";
@@ -27,10 +28,14 @@ namespace Amazon.Lambda.RuntimeSupport
         internal const string EnvVarServerHostAndPort = "AWS_LAMBDA_RUNTIME_API";
         internal const string EnvVarHandler = "_HANDLER";
 
+        private IEnvironmentVariables _environmentVariables;
+
         public LambdaEnvironment() : this(new SystemEnvironmentVariables()) { }
 
         internal LambdaEnvironment(IEnvironmentVariables environmentVariables)
         {
+            _environmentVariables = environmentVariables;
+
             FunctionMemorySize = environmentVariables.GetEnvironmentVariable(EnvVarFunctionMemorySize) as string;
             FunctionName = environmentVariables.GetEnvironmentVariable(EnvVarFunctionName) as string;
             FunctionVersion = environmentVariables.GetEnvironmentVariable(EnvVarFunctionVersion) as string;
@@ -40,6 +45,11 @@ namespace Amazon.Lambda.RuntimeSupport
             Handler = environmentVariables.GetEnvironmentVariable(EnvVarHandler) as string;
         }
 
+        internal void SetXAmznTraceId(string xAmznTraceId)
+        {
+            _environmentVariables.SetEnvironmentVariable(EnvVarTraceId, xAmznTraceId);
+        }
+
         public string FunctionMemorySize { get; private set; }
         public string FunctionName { get; private set; }
         public string FunctionVersion { get; private set; }
@@ -47,5 +57,12 @@ namespace Amazon.Lambda.RuntimeSupport
         public string LogStreamName { get; private set; }
         public string RuntimeServerHostAndPort { get; private set; }
         public string Handler { get; private set; }
+        public string XAmznTraceId
+        {
+            get
+            {
+                return _environmentVariables.GetEnvironmentVariable(EnvVarTraceId);
+            }
+        }
     }
 }

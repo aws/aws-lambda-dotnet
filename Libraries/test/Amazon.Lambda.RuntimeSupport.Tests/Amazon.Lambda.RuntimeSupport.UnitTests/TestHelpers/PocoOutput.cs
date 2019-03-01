@@ -16,7 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Amazon.Lambda.RuntimeSupport.Test
+namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
     public class PocoOutput
     {

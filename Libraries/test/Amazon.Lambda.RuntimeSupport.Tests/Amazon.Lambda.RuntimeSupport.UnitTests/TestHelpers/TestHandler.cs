@@ -20,7 +20,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Amazon.Lambda.RuntimeSupport.Test
+namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
     public class TestHandler
     {

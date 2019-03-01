@@ -17,7 +17,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Amazon.Lambda.RuntimeSupport.Test
+namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
     /// <summary>
     /// Tests to test LambdaBootstrap when it's constructed using its actual constructor.
@@ -32,10 +32,10 @@ namespace Amazon.Lambda.RuntimeSupport.Test
 
         public LambdaBootstrapTests()
         {
-            _testRuntimeApiClient = new TestRuntimeApiClient();
+            _environmentVariables = new TestEnvironmentVariables();
+            _testRuntimeApiClient = new TestRuntimeApiClient(_environmentVariables);
             _testInitializer = new TestInitializer();
             _testFunction = new TestHandler();
-            _environmentVariables = new TestEnvironmentVariables();
         }
 
         [Fact]
@@ -103,13 +103,12 @@ namespace Amazon.Lambda.RuntimeSupport.Test
             using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerAsync, null))
             {
                 bootstrap.Client = _testRuntimeApiClient;
-                bootstrap.EnvironmentVariables = _environmentVariables;
-                Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaBootstrap.TraceIdEnvVar));
+                Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarTraceId));
 
                 await bootstrap.InvokeOnceAsync();
 
                 Assert.NotNull(_testRuntimeApiClient.LastTraceId);
-                Assert.Equal(_testRuntimeApiClient.LastTraceId, _environmentVariables.GetEnvironmentVariable(LambdaBootstrap.TraceIdEnvVar));
+                Assert.Equal(_testRuntimeApiClient.LastTraceId, _environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarTraceId));
             }
 
             Assert.False(_testInitializer.InitializerWasCalled);
@@ -122,8 +121,7 @@ namespace Amazon.Lambda.RuntimeSupport.Test
             using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerThrowsAsync, null))
             {
                 bootstrap.Client = _testRuntimeApiClient;
-                bootstrap.EnvironmentVariables = _environmentVariables;
-                Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaBootstrap.TraceIdEnvVar));
+                Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarTraceId));
 
                 await bootstrap.InvokeOnceAsync();
             }
@@ -142,8 +140,7 @@ namespace Amazon.Lambda.RuntimeSupport.Test
             {
                 _testRuntimeApiClient.FunctionInput = Encoding.UTF8.GetBytes(testInput);
                 bootstrap.Client = _testRuntimeApiClient;
-                bootstrap.EnvironmentVariables = _environmentVariables;
-                Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaBootstrap.TraceIdEnvVar));
+                Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarTraceId));
 
                 await bootstrap.InvokeOnceAsync();
             }
@@ -161,8 +158,7 @@ namespace Amazon.Lambda.RuntimeSupport.Test
             {
                 _testRuntimeApiClient.FunctionInput = new byte[0];
                 bootstrap.Client = _testRuntimeApiClient;
-                bootstrap.EnvironmentVariables = _environmentVariables;
-                Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaBootstrap.TraceIdEnvVar));
+                Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarTraceId));
 
                 await bootstrap.InvokeOnceAsync();
             }

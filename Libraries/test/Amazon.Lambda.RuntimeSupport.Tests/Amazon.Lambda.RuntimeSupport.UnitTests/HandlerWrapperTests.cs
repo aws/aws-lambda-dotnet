@@ -21,7 +21,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Amazon.Lambda.RuntimeSupport.Test
+namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
     public class HandlerWrapperTests
     {

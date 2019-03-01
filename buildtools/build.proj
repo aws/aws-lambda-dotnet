@@ -218,7 +218,9 @@
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\test\Amazon.Lambda.Logging.AspNetCore.Tests"/>
     <Exec Command="$(Command)"
-        WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.Test"/>
+        WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests"/>
+    <Exec Command="$(Command)"
+        WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.IntegrationTests"/>
     <Exec Command="$(Command)"
         WorkingDirectory="..\Libraries\test\EventsTests"/>
     <Exec Command="$(Command)"

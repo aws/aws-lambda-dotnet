@@ -19,16 +19,16 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Amazon.Lambda.RuntimeSupport.Test
+namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
-    public class TestRuntimeApiClient : IRuntimeApiClient
+    internal class TestRuntimeApiClient : IRuntimeApiClient
     {
         private IEnvironmentVariables _environmentVariables;
         private Dictionary<string, IEnumerable<string>> _headers;
 
-        public TestRuntimeApiClient()
+        public TestRuntimeApiClient(IEnvironmentVariables environmentVariables)
         {
-            _environmentVariables = new TestEnvironmentVariables();
+            _environmentVariables = environmentVariables;
             _headers = new Dictionary<string, IEnumerable<string>>();
             _headers.Add(RuntimeApiHeaders.HeaderAwsRequestId, new List<string>() { "request_id" });
             _headers.Add(RuntimeApiHeaders.HeaderInvokedFunctionArn, new List<string>() { "invoked_function_arn" });
@@ -82,8 +82,6 @@ namespace Amazon.Lambda.RuntimeSupport.Test
             LastTraceId = Guid.NewGuid().ToString();
             _headers[RuntimeApiHeaders.HeaderTraceId] = new List<string>() { LastTraceId };
 
-            var environmentVariables = new TestEnvironmentVariables();
-
             var inputStream = new MemoryStream(FunctionInput == null ? new byte[0] : FunctionInput);
             inputStream.Position = 0;
 
@@ -122,10 +120,13 @@ namespace Amazon.Lambda.RuntimeSupport.Test
 
         public Task SendResponseAsync(string awsRequestId, Stream outputStream)
         {
-            // copy the stream because it gets disposed by the bootstrap
-            LastOutputStream = new MemoryStream((int)outputStream.Length);
-            outputStream.CopyTo(LastOutputStream);
-            LastOutputStream.Position = 0;
+            if (outputStream != null)
+            {
+                // copy the stream because it gets disposed by the bootstrap
+                LastOutputStream = new MemoryStream((int)outputStream.Length);
+                outputStream.CopyTo(LastOutputStream);
+                LastOutputStream.Position = 0;
+            }
 
             SendResponseAsyncCalled = true;
             return Task.Run(() => { });
