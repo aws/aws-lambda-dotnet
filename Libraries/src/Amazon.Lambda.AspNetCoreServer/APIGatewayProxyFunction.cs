@@ -42,32 +42,33 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         // Defines a mapping from registered content types to the response encoding format
         // which dictates what transformations should be applied before returning response content
-        private Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentType = new Dictionary<string, ResponseContentEncoding>
-        {
-            // The complete list of registered MIME content-types can be found at:
-            //    http://www.iana.org/assignments/media-types/media-types.xhtml
+        private Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentType =
+            new Dictionary<string, ResponseContentEncoding>
+            {
+                // The complete list of registered MIME content-types can be found at:
+                //    http://www.iana.org/assignments/media-types/media-types.xhtml
 
-            // Here we just include a few commonly used content types found in
-            // Web API responses and allow users to add more as needed below
+                // Here we just include a few commonly used content types found in
+                // Web API responses and allow users to add more as needed below
 
-            ["text/plain"] = ResponseContentEncoding.Default,
-            ["text/xml"] = ResponseContentEncoding.Default,
-            ["application/xml"] = ResponseContentEncoding.Default,
-            ["application/json"] = ResponseContentEncoding.Default,
-            ["text/html"] = ResponseContentEncoding.Default,
-            ["text/css"] = ResponseContentEncoding.Default,
-            ["text/javascript"] = ResponseContentEncoding.Default,
-            ["text/ecmascript"] = ResponseContentEncoding.Default,
-            ["text/markdown"] = ResponseContentEncoding.Default,
-            ["text/csv"] = ResponseContentEncoding.Default,
+                ["text/plain"] = ResponseContentEncoding.Default,
+                ["text/xml"] = ResponseContentEncoding.Default,
+                ["application/xml"] = ResponseContentEncoding.Default,
+                ["application/json"] = ResponseContentEncoding.Default,
+                ["text/html"] = ResponseContentEncoding.Default,
+                ["text/css"] = ResponseContentEncoding.Default,
+                ["text/javascript"] = ResponseContentEncoding.Default,
+                ["text/ecmascript"] = ResponseContentEncoding.Default,
+                ["text/markdown"] = ResponseContentEncoding.Default,
+                ["text/csv"] = ResponseContentEncoding.Default,
 
-            ["application/octet-stream"] = ResponseContentEncoding.Base64,
-            ["image/png"] = ResponseContentEncoding.Base64,
-            ["image/gif"] = ResponseContentEncoding.Base64,
-            ["image/jpeg"] = ResponseContentEncoding.Base64,
-            ["application/zip"] = ResponseContentEncoding.Base64,
-            ["application/pdf"] = ResponseContentEncoding.Base64,
-        };
+                ["application/octet-stream"] = ResponseContentEncoding.Base64,
+                ["image/png"] = ResponseContentEncoding.Base64,
+                ["image/gif"] = ResponseContentEncoding.Base64,
+                ["image/jpeg"] = ResponseContentEncoding.Base64,
+                ["application/zip"] = ResponseContentEncoding.Base64,
+                ["application/pdf"] = ResponseContentEncoding.Base64,
+            };
 
         // Manage the serialization so the raw requests and responses can be logged.
         ILambdaSerializer _serializer = new Amazon.Lambda.Serialization.Json.JsonSerializer();
@@ -89,10 +90,12 @@ namespace Amazon.Lambda.AspNetCoreServer
             _host = builder.Build();
             _host.Start();
 
-            _server = _host.Services.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as APIGatewayServer;
-            if(_server == null)
+            _server =
+                _host.Services.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as APIGatewayServer;
+            if (_server == null)
             {
-                throw new Exception("Failed to find the implementation APIGatewayServer for the IServer registration. This can happen if UseApiGateway was not called.");
+                throw new Exception(
+                    "Failed to find the implementation APIGatewayServer for the IServer registration. This can happen if UseApiGateway was not called.");
             }
         }
 
@@ -126,7 +129,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                     var env = hostingContext.HostingEnvironment;
 
                     config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                          .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
+                        .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
                     if (env.IsDevelopment())
                     {
@@ -169,24 +172,19 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="lambdaContext"></param>
         /// <returns></returns>
         [LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
-        public virtual async Task<APIGatewayProxyResponse> FunctionHandlerAsync(APIGatewayProxyRequest request, ILambdaContext lambdaContext)
+        public virtual async Task<APIGatewayProxyResponse> FunctionHandlerAsync(APIGatewayProxyRequest request,
+            ILambdaContext lambdaContext)
         {
             lambdaContext.Logger.LogLine($"Incoming {request.HttpMethod} requests to {request.Path}");
 
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request, lambdaContext);
-            lambdaContext.Logger.LogLine($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
+            lambdaContext.Logger.LogLine(
+                $"ASP.NET Core Request PathBase: {((IHttpRequestFeature) features).PathBase}, Path: {((IHttpRequestFeature) features).Path}");
 
             var context = this.CreateContext(features);
 
-            if (request?.RequestContext?.Authorizer?.Claims != null)
-            {
-                var identity = new ClaimsIdentity(request.RequestContext.Authorizer.Claims.Select(
-                    entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
-
-                lambdaContext.Logger.LogLine($"Configuring HttpContext.User with {request.RequestContext.Authorizer.Claims.Count} claims coming from API Gateway's Request Context");
-                context.HttpContext.User = new ClaimsPrincipal(identity);
-            }
+            ConfigureIdentity(request, lambdaContext, context);
 
             // Add along the Lambda objects to the HttpContext to give access to Lambda to them in the ASP.NET Core application
             context.HttpContext.Items[LAMBDA_CONTEXT] = lambdaContext;
@@ -198,6 +196,36 @@ namespace Amazon.Lambda.AspNetCoreServer
             var response = await this.ProcessRequest(lambdaContext, context, features);
 
             return response;
+        }
+
+        private static void ConfigureIdentity(APIGatewayProxyRequest request, ILambdaContext lambdaContext,
+            HostingApplication.Context context)
+        {
+            var authorizer = request?.RequestContext?.Authorizer;
+
+            if (authorizer != null)
+            {
+                // handling claims output from cognito user pool authorizer
+                if (authorizer.Claims != null && authorizer.Claims.Count != 0)
+                {
+                    var identity = new ClaimsIdentity(authorizer.Claims.Select(
+                        entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
+
+                    lambdaContext.Logger.LogLine(
+                        $"Configuring HttpContext.User with {authorizer.Claims.Count} claims coming from API Gateway's Request Context");
+                    context.HttpContext.User = new ClaimsPrincipal(identity);
+                }
+                else
+                {
+                    // handling claims output from custom lambda authorizer
+                    var identity = new ClaimsIdentity(authorizer.Select(
+                        entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
+
+                    lambdaContext.Logger.LogLine(
+                        $"Configuring HttpContext.User with {authorizer.Count} claims coming from API Gateway's Request Context");
+                    context.HttpContext.User = new ClaimsPrincipal(identity);
+                }
+            }
         }
 
         /// <summary>
@@ -247,7 +275,8 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// If specified, an unhandled exception will be rethrown for custom error handling.
         /// Ensure that the error handling code calls 'this.MarshallResponse(features, 500);' after handling the error to return a <see cref="APIGatewayProxyResponse"/> to the user.
         /// </param>
-        protected async Task<APIGatewayProxyResponse> ProcessRequest(ILambdaContext lambdaContext, HostingApplication.Context context, InvokeFeatures features, bool rethrowUnhandledError = false)
+        protected async Task<APIGatewayProxyResponse> ProcessRequest(ILambdaContext lambdaContext,
+            HostingApplication.Context context, InvokeFeatures features, bool rethrowUnhandledError = false)
         {
             var defaultStatusCode = 200;
             Exception ex = null;
@@ -301,10 +330,11 @@ namespace Amazon.Lambda.AspNetCoreServer
                 this._server.Application.DisposeContext(context, ex);
             }
 
-            if(features.ResponseStartingEvents != null)
+            if (features.ResponseStartingEvents != null)
             {
                 await features.ResponseStartingEvents.ExecuteAsync();
             }
+
             var response = this.MarshallResponse(features, lambdaContext, defaultStatusCode);
 
             lambdaContext.Logger.LogLine($"Response Base 64 Encoded: {response.IsBase64Encoded}");
@@ -348,9 +378,9 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="aspNetCoreRequestFeature"></param>
         /// <param name="apiGatewayRequest"></param>
         /// <param name="lambdaContext"></param>
-        protected virtual void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
+        protected virtual void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature,
+            APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
-
         }
 
         /// <summary>
@@ -361,9 +391,9 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="aspNetCoreConnectionFeature"></param>
         /// <param name="apiGatewayRequest"></param>
         /// <param name="lambdaContext"></param>
-        protected virtual void PostMarshallConnectionFeature(IHttpConnectionFeature aspNetCoreConnectionFeature, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
+        protected virtual void PostMarshallConnectionFeature(IHttpConnectionFeature aspNetCoreConnectionFeature,
+            APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
-
         }
 
         /// <summary>
@@ -374,9 +404,9 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="aspNetCoreResponseFeature"></param>
         /// <param name="apiGatewayResponse"></param>
         /// <param name="lambdaContext"></param>
-        protected virtual void PostMarshallResponseFeature(IHttpResponseFeature aspNetCoreResponseFeature, APIGatewayProxyResponse apiGatewayResponse, ILambdaContext lambdaContext)
+        protected virtual void PostMarshallResponseFeature(IHttpResponseFeature aspNetCoreResponseFeature,
+            APIGatewayProxyResponse apiGatewayResponse, ILambdaContext lambdaContext)
         {
-
         }
 
         /// <summary>
@@ -386,9 +416,9 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="context"></param>
         /// <param name="apiGatewayRequest"></param>
         /// <param name="lambdaContext"></param>
-        protected virtual void PostCreateContext(HostingApplication.Context context, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
+        protected virtual void PostCreateContext(HostingApplication.Context context,
+            APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
-
         }
 
         /// <summary>
@@ -398,15 +428,17 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="features"></param>
         /// <param name="apiGatewayRequest"></param>
         /// <param name="lambdaContext"></param>
-        protected void MarshallRequest(InvokeFeatures features, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
+        protected void MarshallRequest(InvokeFeatures features, APIGatewayProxyRequest apiGatewayRequest,
+            ILambdaContext lambdaContext)
         {
             {
-                var requestFeatures = (IHttpRequestFeature)features;
+                var requestFeatures = (IHttpRequestFeature) features;
                 requestFeatures.Scheme = "https";
                 requestFeatures.Method = apiGatewayRequest.HttpMethod;
 
                 string path = null;
-                if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy") && !string.IsNullOrEmpty(apiGatewayRequest.Resource))
+                if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy") &&
+                    !string.IsNullOrEmpty(apiGatewayRequest.Resource))
                 {
                     var proxyPath = apiGatewayRequest.PathParameters["proxy"];
                     path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);
@@ -438,7 +470,8 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                     if (requestContextPath.EndsWith(path))
                     {
-                        requestFeatures.PathBase = requestContextPath.Substring(0, requestContextPath.Length - requestFeatures.Path.Length);
+                        requestFeatures.PathBase = requestContextPath.Substring(0,
+                            requestContextPath.Length - requestFeatures.Path.Length);
                     }
                 }
 
@@ -455,8 +488,10 @@ namespace Amazon.Lambda.AspNetCoreServer
                         {
                             sb.Append("&");
                         }
+
                         sb.Append($"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(kvp.Value.ToString())}");
                     }
+
                     requestFeatures.QueryString = sb.ToString();
                 }
                 else
@@ -493,6 +528,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                     {
                         binaryBody = UTF8Encoding.UTF8.GetBytes(apiGatewayRequest.Body);
                     }
+
                     requestFeatures.Body = new MemoryStream(binaryBody);
                 }
 
@@ -504,7 +540,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             {
                 // set up connection features
-                var connectionFeatures = (IHttpConnectionFeature)features;
+                var connectionFeatures = (IHttpConnectionFeature) features;
 
                 IPAddress remoteIpAddress;
                 if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Identity?.SourceIp) &&
@@ -522,7 +558,6 @@ namespace Amazon.Lambda.AspNetCoreServer
                 // was marshalled into ASP.NET Core request.
                 PostMarshallConnectionFeature(connectionFeatures, apiGatewayRequest, lambdaContext);
             }
-
         }
 
         /// <summary>
@@ -533,7 +568,8 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="statusCodeIfNotSet">Sometimes the ASP.NET server doesn't set the status code correctly when successful, so this parameter will be used when the value is 0.</param>
         /// <param name="lambdaContext"></param>
         /// <returns><see cref="APIGatewayProxyResponse"/></returns>
-        protected APIGatewayProxyResponse MarshallResponse(IHttpResponseFeature responseFeatures, ILambdaContext lambdaContext, int statusCodeIfNotSet = 200)
+        protected APIGatewayProxyResponse MarshallResponse(IHttpResponseFeature responseFeatures,
+            ILambdaContext lambdaContext, int statusCodeIfNotSet = 200)
         {
             var response = new APIGatewayProxyResponse
             {
@@ -583,7 +619,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                     byte[] bodyBytes;
                     if (responseFeatures.Body is MemoryStream)
                     {
-                        bodyBytes = ((MemoryStream)responseFeatures.Body).ToArray();
+                        bodyBytes = ((MemoryStream) responseFeatures.Body).ToArray();
                     }
                     else
                     {
@@ -593,12 +629,13 @@ namespace Amazon.Lambda.AspNetCoreServer
                             bodyBytes = ms.ToArray();
                         }
                     }
+
                     response.Body = Convert.ToBase64String(bodyBytes);
                     response.IsBase64Encoded = true;
                 }
                 else if (responseFeatures.Body is MemoryStream)
                 {
-                    response.Body = UTF8Encoding.UTF8.GetString(((MemoryStream)responseFeatures.Body).ToArray());
+                    response.Body = UTF8Encoding.UTF8.GetString(((MemoryStream) responseFeatures.Body).ToArray());
                 }
                 else
                 {
