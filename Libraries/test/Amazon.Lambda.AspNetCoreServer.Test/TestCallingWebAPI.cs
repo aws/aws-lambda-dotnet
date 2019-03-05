@@ -9,7 +9,6 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -33,7 +32,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
             Assert.Equal("application/json; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
 
-            Assert.Contains("OnStarting Called", ((TestLambdaLogger)context.Logger).Buffer.ToString());
+            Assert.Contains("OnStarting Called", ((TestLambdaLogger) context.Logger).Buffer.ToString());
         }
 
         [Fact]
@@ -160,8 +159,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                         new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
                         {
                             Effect = "Allow",
-                            Action = new HashSet<string> { "execute-api:Invoke" },
-                            Resource = new HashSet<string> { "arn:aws:execute-api:us-west-2:1234567890:apit123d45/Prod/GET/*" }
+                            Action = new HashSet<string> {"execute-api:Invoke"},
+                            Resource = new HashSet<string>
+                                {"arn:aws:execute-api:us-west-2:1234567890:apit123d45/Prod/GET/*"}
                         }
                     }
                 }
@@ -177,8 +177,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         public async Task TestGetBinaryContent()
         {
             var response = await this.InvokeAPIGatewayRequest("values-get-binary-apigatway-request.json");
-            
-            Assert.Equal((int)HttpStatusCode.OK, response.StatusCode);
+
+            Assert.Equal((int) HttpStatusCode.OK, response.StatusCode);
 
             IList<string> contentType;
             Assert.True(response.MultiValueHeaders.TryGetValue("Content-Type", out contentType),
@@ -186,12 +186,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("application/octet-stream", contentType[0]);
             Assert.NotNull(response.Body);
             Assert.True(response.Body.Length > 0,
-                    "Body content is not empty");
+                "Body content is not empty");
 
             Assert.True(response.IsBase64Encoded, "Response IsBase64Encoded");
 
             // Compute a 256-byte array, with values 0-255
-            var binExpected = new byte[byte.MaxValue].Select((val, index) => (byte)index).ToArray();
+            var binExpected = new byte[byte.MaxValue].Select((val, index) => (byte) index).ToArray();
             var binActual = Convert.FromBase64String(response.Body);
             Assert.Equal(binExpected, binActual);
         }
@@ -251,6 +251,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("You Have Access", response.Body);
         }
 
+        [Fact]
+        public async Task TestAuthTestAccess_CustomLambdaAuthorizerClaims()
+        {
+            var response =
+                await this.InvokeAPIGatewayRequest("authtest-access-request-custom-lambda-authorizer-output.json");
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("You Have Access", response.Body);
+        }
 
         [Fact]
         public async Task TestAuthTestNoAccess()
