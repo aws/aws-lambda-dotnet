@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>local-development.snk</AssemblyOriginatorKeyFile>
     <DefineConstants Condition="'$(SkipRuntimeSupportIntegTests)'=='true'">SKIP_RUNTIME_SUPPORT_INTEG_TESTS</DefineConstants>
   </PropertyGroup>
 

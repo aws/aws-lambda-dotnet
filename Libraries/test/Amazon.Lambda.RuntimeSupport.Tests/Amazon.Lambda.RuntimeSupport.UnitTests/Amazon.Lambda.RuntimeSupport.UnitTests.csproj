@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>local-development.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,8 +11,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj" />
+    <ProjectReference Include="..\..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.csproj" />
   </ItemGroup>
 
+  <!--
+    We rely on internal members to test Amazon.Lambda.RuntimeSupport.
+    Linking to the source causes fewer problems than using the InternalsVisibleTo attribute on that assembly.
+  -->
+  <ItemGroup>
+    <Compile Include="..\..\..\src\Amazon.Lambda.RuntimeSupport\Bootstrap\**\*.cs" Link="LinkedSource\Bootstrap\" />
+    <Compile Include="..\..\..\src\Amazon.Lambda.RuntimeSupport\Client\**\*.cs" Link="LinkedSource\Client\" />
+    <Compile Include="..\..\..\src\Amazon.Lambda.RuntimeSupport\Context\**\*.cs" Link="LinkedSource\Context\" />
+    <Compile Include="..\..\..\src\Amazon.Lambda.RuntimeSupport\ExceptionHandling\**\*.cs" Link="LinkedSource\ExceptionHandling\" />
+    <Compile Include="..\..\..\src\Amazon.Lambda.RuntimeSupport\ThirdParty\**\*.cs" Link="LinkedSource\ThirdParty\" />
+  </ItemGroup>
 </Project>
