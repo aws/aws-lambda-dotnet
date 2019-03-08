@@ -1,4 +1,8 @@
 ### Release 2019-02-21
+* **Amazon.Lambda.AspNetCoreServer (3.0.3)**
+  * Pull Request [#409](https://github.com/aws/aws-lambda-dotnet/pull/409) allowing claims from custom authorizer to be passed into ASP.NET Core. Thanks [Lukas Sinkus](https://github.com/LUS1N)
+
+### Release 2019-02-21
 * **Amazon.Lambda.AspNetCoreServer (3.0.2)**
     * Fixed bug with Amazon.Lambda.Logging.AspNetCoreServer not reading logging settings from configuration like appsettings.json.
     * Added PostCreateWebHost virtual method to run code after the IWebHost has been created but not started.
