@@ -109,8 +109,9 @@ namespace Amazon.Lambda.AspNetCoreServer
                 else
                 {
                     // handling claims output from custom lambda authorizer
-                    var identity = new ClaimsIdentity(authorizer.Select(
-                        entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
+                    var identity = new ClaimsIdentity(
+                        authorizer.Where(x => !string.Equals(x.Key, "claims", StringComparison.OrdinalIgnoreCase))
+                            .Select(entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
 
                     lambdaContext.Logger.LogLine(
                         $"Configuring HttpContext.User with {authorizer.Count} claims coming from API Gateway's Request Context");
