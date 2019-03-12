@@ -46,7 +46,6 @@ namespace Amazon.Lambda.RuntimeSupport
             _initializer = initializer;
             _httpClient = new HttpClient();
             Client = new RuntimeApiClient(new SystemEnvironmentVariables(), _httpClient);
-
         }
 
         /// <summary>
