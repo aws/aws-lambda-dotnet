@@ -14,7 +14,8 @@ namespace BlueprintBaseName._1
         /// <param name="args"></param>
         private static async Task Main(string[] args)
         {
-            using(var handlerWrapper = HandlerWrapper.GetHandlerWrapper((Func<string, ILambdaContext, string>)FunctionHandler, new JsonSerializer()))
+            Func<string, ILambdaContext, string> func = FunctionHandler;
+            using(var handlerWrapper = HandlerWrapper.GetHandlerWrapper(func, new JsonSerializer()))
             using(var bootstrap = new LambdaBootstrap(handlerWrapper))
             {
                 await bootstrap.RunAsync();
