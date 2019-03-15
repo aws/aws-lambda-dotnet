@@ -118,78 +118,80 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     if (lambda_Runtime_Function_Error_Type != null)
                         request_.Headers.TryAddWithoutValidation("Lambda-Runtime-Function-Error-Type", ConvertToString(lambda_Runtime_Function_Error_Type, System.Globalization.CultureInfo.InvariantCulture));
-                    var content_ = new System.Net.Http.StringContent(errorJson);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(ErrorContentType);
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    try
+                    using (var content_ = new System.Net.Http.StringContent(errorJson))
                     {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
+                        content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(ErrorContentType);
+                        request_.Content = content_;
+                        request_.Method = new System.Net.Http.HttpMethod("POST");
+                        request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
-                        ProcessResponse(client_, response_);
+                        PrepareRequest(client_, request_, urlBuilder_);
+                        var url_ = urlBuilder_.ToString();
+                        request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+                        PrepareRequest(client_, request_, url_);
 
-                        var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "202")
+                        var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                        try
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(StatusResponse);
-                            try
+                            var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                            if (response_.Content != null && response_.Content.Headers != null)
                             {
-                                result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<StatusResponse>(responseData_);
-                                return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, result_);
+                                foreach (var item_ in response_.Content.Headers)
+                                    headers_[item_.Key] = item_.Value;
                             }
-                            catch (System.Exception exception_)
-                            {
-                                throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
-                            }
-                        }
-                        else
-                        if (status_ == "403")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(ErrorResponse);
-                            try
-                            {
-                                result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
-                            }
-                            catch (System.Exception exception_)
-                            {
-                                throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
-                            }
-                            throw new RuntimeApiClientException<ErrorResponse>("Forbidden", (int)response_.StatusCode, responseData_, headers_, result_, null);
-                        }
-                        else
-                        if (status_ == "500")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new RuntimeApiClientException("Container error. Non-recoverable state. Runtime should exit promptly.\n", (int)response_.StatusCode, responseData_, headers_, null);
-                        }
-                        else
-                        if (status_ != "200" && status_ != "204")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new RuntimeApiClientException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
-                        }
 
-                        return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, default(StatusResponse));
-                    }
-                    finally
-                    {
-                        if (response_ != null)
-                            response_.Dispose();
+                            ProcessResponse(client_, response_);
+
+                            var status_ = ((int)response_.StatusCode).ToString();
+                            if (status_ == "202")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                var result_ = default(StatusResponse);
+                                try
+                                {
+                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<StatusResponse>(responseData_);
+                                    return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, result_);
+                                }
+                                catch (System.Exception exception_)
+                                {
+                                    throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
+                                }
+                            }
+                            else
+                            if (status_ == "403")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                var result_ = default(ErrorResponse);
+                                try
+                                {
+                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                }
+                                catch (System.Exception exception_)
+                                {
+                                    throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
+                                }
+                                throw new RuntimeApiClientException<ErrorResponse>("Forbidden", (int)response_.StatusCode, responseData_, headers_, result_, null);
+                            }
+                            else
+                            if (status_ == "500")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                throw new RuntimeApiClientException("Container error. Non-recoverable state. Runtime should exit promptly.\n", (int)response_.StatusCode, responseData_, headers_, null);
+                            }
+                            else
+                            if (status_ != "200" && status_ != "204")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                throw new RuntimeApiClientException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
+                            }
+
+                            return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, default(StatusResponse));
+                        }
+                        finally
+                        {
+                            if (response_ != null)
+                                response_.Dispose();
+                        }
                     }
                 }
             }
@@ -316,109 +318,116 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     var content_ = outputStream == null ? 
                         (System.Net.Http.HttpContent)new System.Net.Http.StringContent(string.Empty) :
-                        (System.Net.Http.HttpContent)new NonDisposingStreamContent(outputStream);
+                        (System.Net.Http.HttpContent)new System.Net.Http.StreamContent(new NonDisposingStreamWrapper(outputStream));
 
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
+                        content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                        request_.Content = content_;
+                        request_.Method = new System.Net.Http.HttpMethod("POST");
+                        request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
-                        ProcessResponse(client_, response_);
+                        PrepareRequest(client_, request_, urlBuilder_);
+                        var url_ = urlBuilder_.ToString();
+                        request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+                        PrepareRequest(client_, request_, url_);
 
-                        var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "202")
+                        var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                        try
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(StatusResponse);
-                            try
+                            var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                            if (response_.Content != null && response_.Content.Headers != null)
                             {
-                                result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<StatusResponse>(responseData_);
-                                return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, result_);
+                                foreach (var item_ in response_.Content.Headers)
+                                    headers_[item_.Key] = item_.Value;
                             }
-                            catch (System.Exception exception_)
-                            {
-                                throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
-                            }
-                        }
-                        else
-                        if (status_ == "400")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(ErrorResponse);
-                            try
-                            {
-                                result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
-                            }
-                            catch (System.Exception exception_)
-                            {
-                                throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
-                            }
-                            throw new RuntimeApiClientException<ErrorResponse>("Bad Request", (int)response_.StatusCode, responseData_, headers_, result_, null);
-                        }
-                        else
-                        if (status_ == "403")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(ErrorResponse);
-                            try
-                            {
-                                result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
-                            }
-                            catch (System.Exception exception_)
-                            {
-                                throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
-                            }
-                            throw new RuntimeApiClientException<ErrorResponse>("Forbidden", (int)response_.StatusCode, responseData_, headers_, result_, null);
-                        }
-                        else
-                        if (status_ == "413")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(ErrorResponse);
-                            try
-                            {
-                                result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
-                            }
-                            catch (System.Exception exception_)
-                            {
-                                throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
-                            }
-                            throw new RuntimeApiClientException<ErrorResponse>("Payload Too Large", (int)response_.StatusCode, responseData_, headers_, result_, null);
-                        }
-                        else
-                        if (status_ == "500")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new RuntimeApiClientException("Container error. Non-recoverable state. Runtime should exit promptly.\n", (int)response_.StatusCode, responseData_, headers_, null);
-                        }
-                        else
-                        if (status_ != "200" && status_ != "204")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new RuntimeApiClientException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
-                        }
 
-                        return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, default(StatusResponse));
+                            ProcessResponse(client_, response_);
+
+                            var status_ = ((int)response_.StatusCode).ToString();
+                            if (status_ == "202")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                var result_ = default(StatusResponse);
+                                try
+                                {
+                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<StatusResponse>(responseData_);
+                                    return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, result_);
+                                }
+                                catch (System.Exception exception_)
+                                {
+                                    throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
+                                }
+                            }
+                            else
+                            if (status_ == "400")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                var result_ = default(ErrorResponse);
+                                try
+                                {
+                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                }
+                                catch (System.Exception exception_)
+                                {
+                                    throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
+                                }
+                                throw new RuntimeApiClientException<ErrorResponse>("Bad Request", (int)response_.StatusCode, responseData_, headers_, result_, null);
+                            }
+                            else
+                            if (status_ == "403")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                var result_ = default(ErrorResponse);
+                                try
+                                {
+                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                }
+                                catch (System.Exception exception_)
+                                {
+                                    throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
+                                }
+                                throw new RuntimeApiClientException<ErrorResponse>("Forbidden", (int)response_.StatusCode, responseData_, headers_, result_, null);
+                            }
+                            else
+                            if (status_ == "413")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                var result_ = default(ErrorResponse);
+                                try
+                                {
+                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                }
+                                catch (System.Exception exception_)
+                                {
+                                    throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
+                                }
+                                throw new RuntimeApiClientException<ErrorResponse>("Payload Too Large", (int)response_.StatusCode, responseData_, headers_, result_, null);
+                            }
+                            else
+                            if (status_ == "500")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                throw new RuntimeApiClientException("Container error. Non-recoverable state. Runtime should exit promptly.\n", (int)response_.StatusCode, responseData_, headers_, null);
+                            }
+                            else
+                            if (status_ != "200" && status_ != "204")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                throw new RuntimeApiClientException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
+                            }
+
+                            return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, default(StatusResponse));
+                        }
+                        finally
+                        {
+                            if (response_ != null)
+                                response_.Dispose();
+                        }
                     }
                     finally
                     {
-                        if (response_ != null)
-                            response_.Dispose();
+                        content_?.Dispose();
                     }
                 }
             }
@@ -455,93 +464,95 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     if (lambda_Runtime_Function_Error_Type != null)
                         request_.Headers.TryAddWithoutValidation("Lambda-Runtime-Function-Error-Type", ConvertToString(lambda_Runtime_Function_Error_Type, System.Globalization.CultureInfo.InvariantCulture));
-                    var content_ = new System.Net.Http.StringContent(errorJson);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(ErrorContentType);
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    try
+                    using (var content_ = new System.Net.Http.StringContent(errorJson))
                     {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
+                        content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(ErrorContentType);
+                        request_.Content = content_;
+                        request_.Method = new System.Net.Http.HttpMethod("POST");
+                        request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
-                        ProcessResponse(client_, response_);
+                        PrepareRequest(client_, request_, urlBuilder_);
+                        var url_ = urlBuilder_.ToString();
+                        request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+                        PrepareRequest(client_, request_, url_);
 
-                        var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "202")
+                        var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                        try
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(StatusResponse);
-                            try
+                            var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                            if (response_.Content != null && response_.Content.Headers != null)
                             {
-                                result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<StatusResponse>(responseData_);
-                                return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, result_);
+                                foreach (var item_ in response_.Content.Headers)
+                                    headers_[item_.Key] = item_.Value;
                             }
-                            catch (System.Exception exception_)
-                            {
-                                throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
-                            }
-                        }
-                        else
-                        if (status_ == "400")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(ErrorResponse);
-                            try
-                            {
-                                result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
-                            }
-                            catch (System.Exception exception_)
-                            {
-                                throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
-                            }
-                            throw new RuntimeApiClientException<ErrorResponse>("Bad Request", (int)response_.StatusCode, responseData_, headers_, result_, null);
-                        }
-                        else
-                        if (status_ == "403")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(ErrorResponse);
-                            try
-                            {
-                                result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
-                            }
-                            catch (System.Exception exception_)
-                            {
-                                throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
-                            }
-                            throw new RuntimeApiClientException<ErrorResponse>("Forbidden", (int)response_.StatusCode, responseData_, headers_, result_, null);
-                        }
-                        else
-                        if (status_ == "500")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new RuntimeApiClientException("Container error. Non-recoverable state. Runtime should exit promptly.\n", (int)response_.StatusCode, responseData_, headers_, null);
-                        }
-                        else
-                        if (status_ != "200" && status_ != "204")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new RuntimeApiClientException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
-                        }
 
-                        return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, default(StatusResponse));
-                    }
-                    finally
-                    {
-                        if (response_ != null)
-                            response_.Dispose();
+                            ProcessResponse(client_, response_);
+
+                            var status_ = ((int)response_.StatusCode).ToString();
+                            if (status_ == "202")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                var result_ = default(StatusResponse);
+                                try
+                                {
+                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<StatusResponse>(responseData_);
+                                    return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, result_);
+                                }
+                                catch (System.Exception exception_)
+                                {
+                                    throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
+                                }
+                            }
+                            else
+                            if (status_ == "400")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                var result_ = default(ErrorResponse);
+                                try
+                                {
+                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                }
+                                catch (System.Exception exception_)
+                                {
+                                    throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
+                                }
+                                throw new RuntimeApiClientException<ErrorResponse>("Bad Request", (int)response_.StatusCode, responseData_, headers_, result_, null);
+                            }
+                            else
+                            if (status_ == "403")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                var result_ = default(ErrorResponse);
+                                try
+                                {
+                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                }
+                                catch (System.Exception exception_)
+                                {
+                                    throw new RuntimeApiClientException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
+                                }
+                                throw new RuntimeApiClientException<ErrorResponse>("Forbidden", (int)response_.StatusCode, responseData_, headers_, result_, null);
+                            }
+                            else
+                            if (status_ == "500")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                throw new RuntimeApiClientException("Container error. Non-recoverable state. Runtime should exit promptly.\n", (int)response_.StatusCode, responseData_, headers_, null);
+                            }
+                            else
+                            if (status_ != "200" && status_ != "204")
+                            {
+                                var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                                throw new RuntimeApiClientException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
+                            }
+
+                            return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, default(StatusResponse));
+                        }
+                        finally
+                        {
+                            if (response_ != null)
+                                response_.Dispose();
+                        }
                     }
                 }
             }

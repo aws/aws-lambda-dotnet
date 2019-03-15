@@ -1,4 +1,4 @@
-# AWS Lambda Empty Function Project
+# AWS Lambda Custom Runtime Function Project
 
 This starter project consists of:
 * Function.cs - contains a class with a Main method that starts the bootstrap, and a single function handler method
@@ -17,7 +17,8 @@ The generated function handler is a simple method accepting a string argument th
 
 ## Here are some steps to follow to get started from the command line:
 
-Once you have edited your template and code you can deploy your application using the [Amazon.Lambda.Tools Global Tool](https://github.com/aws/aws-extensions-for-dotnet-cli#aws-lambda-amazonlambdatools) from the command line.
+Once you have edited your template and code you can deploy your application using the [Amazon.Lambda.Tools Global Tool](https://github.com/aws/aws-extensions-for-dotnet-cli#aws-lambda-amazonlambdatools) from the command line.  Version 3.1.3
+or later is required to deploy this project.
 
 Install Amazon.Lambda.Tools Global Tools if not already installed.
 ```

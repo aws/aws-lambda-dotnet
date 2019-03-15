@@ -28,6 +28,12 @@ namespace Amazon.Lambda.RuntimeSupport
     /// </summary>
     public class LambdaBootstrap : IDisposable
     {
+        /// <summary>
+        /// The Lambda container freezes the process at a point where an HTTP request is in progress.
+        /// We need to make sure we don't timeout waiting for the next invocation.
+        /// </summary>
+        private static readonly TimeSpan RuntimeApiHttpTimeout = TimeSpan.FromHours(12);
+
         private LambdaBootstrapInitializer _initializer;
         private LambdaBootstrapHandler _handler;
 
@@ -44,7 +50,10 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
             _initializer = initializer;
-            _httpClient = new HttpClient();
+            _httpClient = new HttpClient
+            {
+                Timeout = RuntimeApiHttpTimeout
+            };
             Client = new RuntimeApiClient(new SystemEnvironmentVariables(), _httpClient);
         }
 

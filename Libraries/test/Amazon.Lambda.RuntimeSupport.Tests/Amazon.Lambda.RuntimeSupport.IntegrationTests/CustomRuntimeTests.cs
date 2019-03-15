@@ -28,6 +28,24 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class CustomRuntimeTests
     {
+        private static readonly RegionEndpoint TestRegion = RegionEndpoint.USWest2;
+        private static readonly string LAMBDA_ASSUME_ROLE_POLICY =
+        @"
+        {
+          ""Version"": ""2012-10-17"",
+          ""Statement"": [
+            {
+              ""Sid"": """",
+              ""Effect"": ""Allow"",
+              ""Principal"": {
+                ""Service"": ""lambda.amazonaws.com""
+              },
+              ""Action"": ""sts:AssumeRole""
+            }
+          ]
+        }
+        ".Trim();
+
         private const string ExecutionRoleName = "runtimesupporttestingrole";
         private const string TestBucketRoot = "runtimesupporttesting-";
         private const string FunctionName = "CustomRuntimeFunctionTest";
@@ -45,12 +63,15 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         public async Task TestAllHandlersAsync()
         {
             // run all test cases in one test to ensure they run serially
-            using (var lambdaClient = new AmazonLambdaClient())
-            using (var s3Client = new AmazonS3Client())
+            using (var lambdaClient = new AmazonLambdaClient(TestRegion))
+            using (var s3Client = new AmazonS3Client(TestRegion))
+            using (var iamClient = new AmazonIdentityManagementServiceClient(TestRegion))
             {
+                var roleAlreadyExisted = false;
+
                 try
                 {
-                    await PrepareTestResources(s3Client, lambdaClient);
+                    roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
 
                     await RunTestSuccessAsync(lambdaClient, "ToUpperAsync", "message", "ToUpperAsync-MESSAGE");
                     await RunTestSuccessAsync(lambdaClient, "PingAsync", "ping", "PingAsync-pong");
@@ -70,7 +91,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 }
                 finally
                 {
-                    await CleanUpTestResources(s3Client, lambdaClient);
+                    await CleanUpTestResources(s3Client, lambdaClient, iamClient, roleAlreadyExisted);
                 }
             }
         }
@@ -114,7 +135,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         /// <param name="s3Client"></param>
         /// <param name="lambdaClient"></param>
         /// <returns></returns>
-        private async Task CleanUpTestResources(AmazonS3Client s3Client, AmazonLambdaClient lambdaClient)
+        private async Task CleanUpTestResources(AmazonS3Client s3Client, AmazonLambdaClient lambdaClient,
+            AmazonIdentityManagementServiceClient iamClient, bool roleAlreadyExisted)
         {
             await DeleteFunctionIfExistsAsync(lambdaClient);
 
@@ -126,36 +148,56 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await DeleteDeploymentZipAndBucketAsync(s3Client, bucket.BucketName);
                 }
             }
+
+            if (!roleAlreadyExisted)
+            {
+                var deleteRoleRequest = new DeleteRoleRequest
+                {
+                    RoleName = ExecutionRoleName
+                };
+                await iamClient.DeleteRoleAsync(deleteRoleRequest);
+            }
         }
 
-        private async Task PrepareTestResources(AmazonS3Client s3Client, AmazonLambdaClient lambdaClient)
+        private async Task<bool> PrepareTestResources(AmazonS3Client s3Client, AmazonLambdaClient lambdaClient,
+            AmazonIdentityManagementServiceClient iamClient)
         {
-            await ValidateAndSetIamRoleArn();
+            var roleAlreadyExisted = await ValidateAndSetIamRoleArn(iamClient);
 
             var testBucketName = TestBucketRoot + Guid.NewGuid().ToString();
             await CreateBucketWithDeploymentZipAsync(s3Client, testBucketName);
             await CreateFunctionAsync(lambdaClient, testBucketName);
+
+            return roleAlreadyExisted;
         }
 
-        private static async Task ValidateAndSetIamRoleArn()
+        /// <summary>
+        /// Create the role if it's not there already.
+        /// Return true if it already existed.
+        /// </summary>
+        /// <returns></returns>
+        private static async Task<bool> ValidateAndSetIamRoleArn(AmazonIdentityManagementServiceClient iamClient)
         {
-            using (var iamClient = new AmazonIdentityManagementServiceClient())
+            var getRoleRequest = new GetRoleRequest
             {
-                var getRoleRequest = new GetRoleRequest
+                RoleName = ExecutionRoleName
+            };
+            try
+            {
+                ExecutionRoleArn = (await iamClient.GetRoleAsync(getRoleRequest)).Role.Arn;
+                return true;
+            }
+            catch (NoSuchEntityException)
+            {
+                // create the role
+                var createRoleRequest = new CreateRoleRequest
                 {
-                    RoleName = ExecutionRoleName
+                    RoleName = ExecutionRoleName,
+                    Description = "Test role for CustomRuntimeTests.",
+                    AssumeRolePolicyDocument = LAMBDA_ASSUME_ROLE_POLICY
                 };
-                try
-                {
-                    ExecutionRoleArn = (await iamClient.GetRoleAsync(getRoleRequest)).Role.Arn;
-                }
-                catch (NoSuchEntityException)
-                {
-                    throw new Exception($"You must create a Lambda execution role called {ExecutionRoleName} " + 
-                        "in order to run the Amazon.Lambda.RuntimeSupport integration tests. " +
-                        "See https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html for help creating execution roles. " +
-                        "Alternatively, you can rerun the build with the /p:SkipRuntimeSupportIntegTests=true switch.");
-                }
+                ExecutionRoleArn = (await iamClient.CreateRoleAsync(createRoleRequest)).Role.Arn;
+                return false;
             }
         }
 
@@ -250,7 +292,35 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 Runtime = Runtime.Provided,
                 Role = ExecutionRoleArn
             };
-            await lambdaClient.CreateFunctionAsync(createRequest);
+
+            var startTime = DateTime.Now;
+            var created = false;
+            while (DateTime.Now < startTime.AddSeconds(30))
+            {
+                try
+                {
+                    await lambdaClient.CreateFunctionAsync(createRequest);
+                    created = true;
+                    break;
+                }
+                catch (InvalidParameterValueException ipve)
+                {
+                    // Wait for the role to be fully propagated through AWS
+                    if (ipve.Message == "The role defined for the function cannot be assumed by Lambda.")
+                    {
+                        await Task.Delay(2000);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
+
+            if (!created)
+            {
+                throw new Exception($"Timed out trying to create Lambda function {FunctionName}");
+            }
         }
 
         private static async Task DeleteFunctionIfExistsAsync(AmazonLambdaClient lambdaClient)

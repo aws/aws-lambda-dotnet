@@ -13,6 +13,7 @@
 
 	<SignAssembly Condition=" '$(SignAssembly)' == '' ">true</SignAssembly>
     <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
+    <BlueprintPackagerArguments Condition="'$(UpdateBlueprintPackageVersions)'=='true'">--updateVersions</BlueprintPackagerArguments>
   </PropertyGroup>
   
   
@@ -62,7 +63,7 @@
   </Target>
 
   <Target Name="package-blueprints" DependsOnTargets="init">
-    <Exec Command="dotnet run"
+    <Exec Command="dotnet run $(BlueprintPackagerArguments)"
       WorkingDirectory="..\Blueprints\BlueprintPackager"/>
 
     <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages"

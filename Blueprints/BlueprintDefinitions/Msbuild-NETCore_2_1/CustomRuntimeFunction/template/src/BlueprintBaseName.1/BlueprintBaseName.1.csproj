@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
-    <LangVersion>7.1</LangVersion>
+    <LangVersion>latest</LangVersion>
     <AWSProjectType>Lambda</AWSProjectType>
   </PropertyGroup>
   <ItemGroup>
@@ -11,7 +11,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version ="0.9.0" />
+    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version ="1.0.0" />
     <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.4.0" />
   </ItemGroup>

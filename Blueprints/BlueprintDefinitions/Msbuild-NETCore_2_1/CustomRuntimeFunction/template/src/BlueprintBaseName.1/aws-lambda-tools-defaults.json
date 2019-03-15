@@ -15,7 +15,7 @@
   "function-runtime":"provided",
   "function-memory-size" : 256,
   "function-timeout" : 30,
-  "function-handler" : "does_not_matter_for_this_custom_runtime",
+  "function-handler" : "not_required_for_custom_runtime",
   "function-name" : "BlueprintBaseName.1",
   "msbuild-parameters": "--self-contained true"
   }
