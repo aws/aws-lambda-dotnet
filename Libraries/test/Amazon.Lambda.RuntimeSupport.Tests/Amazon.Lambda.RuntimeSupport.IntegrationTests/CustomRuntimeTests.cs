@@ -21,6 +21,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -151,11 +152,18 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
             if (!roleAlreadyExisted)
             {
-                var deleteRoleRequest = new DeleteRoleRequest
+                try
                 {
-                    RoleName = ExecutionRoleName
-                };
-                await iamClient.DeleteRoleAsync(deleteRoleRequest);
+                    var deleteRoleRequest = new DeleteRoleRequest
+                    {
+                        RoleName = ExecutionRoleName
+                    };
+                    await iamClient.DeleteRoleAsync(deleteRoleRequest);
+                }
+                catch (Exception)
+                {
+                    // no problem - it's best effort
+                }
             }
         }
 
