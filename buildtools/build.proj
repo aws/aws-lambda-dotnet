@@ -107,6 +107,10 @@
     <MSBuild
           Projects="$(MSBuildProjectFile)"
           Targets="run-blueprint-dotnetnew"
+          Properties="TemplateName=lambda.CustomRuntimeFunction;ProjectName=CustomRuntimeFunctionF;Lang=F#"/>		  
+    <MSBuild
+          Projects="$(MSBuildProjectFile)"
+          Targets="run-blueprint-dotnetnew"
           Properties="TemplateName=lambda.EmptyFunction;ProjectName=EmptyFunctionC;Lang=C#"/>		  
     <MSBuild
           Projects="$(MSBuildProjectFile)"
