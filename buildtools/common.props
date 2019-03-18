@@ -7,7 +7,7 @@
     <Authors>Amazon Web Services</Authors>
 	
     <OutputType>Library</OutputType>
-    <TreatWarningsAsErrors Condition="'$(TreatWarningsAsErrors)' == ''">true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 	

@@ -1,0 +1,8 @@
+{
+    "display-name":"Custom Runtime Function",
+    "system-name":"CustomRuntimeFunction",
+    "description": "Setup the project and test project to create Custom Runtime Lambda function.",
+    "sort-order" : 100,    
+    "hidden-tags" : ["F#","LambdaProject"],
+    "tags":["Custom"]
+}

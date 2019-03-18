@@ -1,0 +1,4 @@
+#!/bin/sh
+# This is the script that the Lambda host calls to start the custom runtime.
+
+/var/task/BlueprintBaseName.1
