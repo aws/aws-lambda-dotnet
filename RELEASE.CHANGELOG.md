@@ -1,3 +1,11 @@
+### Release 2019-03-18
+* **Amazon.Lambda.RuntimeSupport (1.0.0)**
+  * New package to support running custom .NET Core Lambda runtimes like .NET Core 2.2. Read the following blog for more information. [https://aws.amazon.com/blogs/developer/announcing-amazon-lambda-runtimesupport/](https://aws.amazon.com/blogs/developer/announcing-amazon-lambda-runtimesupport/)
+* **Blueprints**
+  * New Custom Runtime blueprint for both C# and F#
+  * **Amazon.Lambda.Templates (3.7.0)** released with latest blueprints.
+
+
 ### Release 2019-02-21
 * **Amazon.Lambda.AspNetCoreServer (3.0.3)**
   * Pull Request [#409](https://github.com/aws/aws-lambda-dotnet/pull/409) allowing claims from custom authorizer to be passed into ASP.NET Core. Thanks [Lukas Sinkus](https://github.com/LUS1N)
