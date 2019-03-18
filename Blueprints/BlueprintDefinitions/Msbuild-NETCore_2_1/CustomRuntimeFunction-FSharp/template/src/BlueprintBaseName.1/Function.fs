@@ -26,9 +26,9 @@ module Function =
 
 
     [<EntryPoint>]
-    let main args =
+    let main _args =
     
-        let handler = new Func<string, ILambdaContext, string>(functionHandler)
+        let handler = Func<string, ILambdaContext, string>(functionHandler)
         use handlerWrapper = HandlerWrapper.GetHandlerWrapper(handler, new JsonSerializer())
         use bootstrap = new LambdaBootstrap(handlerWrapper)
    
