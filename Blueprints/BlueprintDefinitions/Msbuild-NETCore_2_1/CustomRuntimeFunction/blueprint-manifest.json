@@ -1,8 +1,8 @@
 {
     "display-name":"Custom Runtime Function",
     "system-name":"CustomRuntimeFunction",
-    "description": "Setup the project and test project to create Custom Runtime Lambda function.",
-    "sort-order" : 100,    
+    "description": "Use Lambda Custom Runtime feature to build Lambda functions using .NET Core 2.2 or 3.0.",
+    "sort-order" : 101,    
     "hidden-tags" : ["C#","LambdaProject"],
     "tags":["Custom"]
 }

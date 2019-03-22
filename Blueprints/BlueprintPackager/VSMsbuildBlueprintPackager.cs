@@ -13,7 +13,7 @@ namespace Packager
 {
     public class VSMsbuildBlueprintPackager : BaseBlueprintPackager
     {
-        private static IList<string> ExcludeBlueprints = new List<string>() { "CustomRuntimeFunction", "CustomRuntimeFunction-FSharp" };
+        private static IList<string> ExcludeBlueprints = new List<string>() { };
 
         string _outputDirectory;
 
