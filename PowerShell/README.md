@@ -71,3 +71,5 @@ New-AWSPowerShellLambdaPackage|Creates the Lambda deployment package that can be
 	* Part 5 concludes the series with the packaging and publishing of the PowerShell Lambda function to AWS and shows it in operation from Facebook. 
 * [AWS Lambda and PowerShell](https://4sysops.com/archives/aws-lambda-with-powershell/) - By Graham Beer
     * Building Environment to create PowerShell AWS lambda's. Example of shutting down instances via tagging. 
+* [Automate the posts on Twitter using a AWS Lambda function and PowerShell](https://blog.victorsilva.com.uy/aws-lambda-powershell-twitter/) - By Victor Silva
+    * A way to send automated blog post on Twitter without “human” interaction using PowerShell AWS Lambda´s.
