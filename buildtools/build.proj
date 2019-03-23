@@ -23,7 +23,7 @@
 
   </Target>
   
-  <Target Name="full-build-notests" DependsOnTargets="test-blueprints-dotnetnew;package-blueprints;run-tests;build-nuget-packages;copy-awslambdapscore-module;build-lambda-test-tool-package">
+  <Target Name="full-build-notests" DependsOnTargets="test-blueprints-dotnetnew;package-blueprints;build-nuget-packages;copy-awslambdapscore-module;build-lambda-test-tool-package">
 
   </Target>  
   
