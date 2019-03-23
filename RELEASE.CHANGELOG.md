@@ -1,4 +1,9 @@
 ### Release 2019-03-18
+* **Amazon.Lambda.TestTool-2.1 (0.9.2)** (Preview)
+    * Fixed issue loading dependent assemblies when the name differs from the NuGet package.
+
+
+### Release 2019-03-18
 * **Amazon.Lambda.RuntimeSupport (1.0.0)**
   * New package to support running custom .NET Core Lambda runtimes like .NET Core 2.2. Read the following blog for more information. [https://aws.amazon.com/blogs/developer/announcing-amazon-lambda-runtimesupport/](https://aws.amazon.com/blogs/developer/announcing-amazon-lambda-runtimesupport/)
 * **Blueprints**
