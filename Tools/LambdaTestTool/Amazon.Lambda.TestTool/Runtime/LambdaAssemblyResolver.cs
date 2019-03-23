@@ -53,9 +53,28 @@ namespace Amazon.Lambda.TestTool.Runtime
             {
                 return string.Equals(runtime.Name, name.Name, StringComparison.OrdinalIgnoreCase);
             }
+
+            bool ResourceAssetPathMatch(RuntimeLibrary runtime)
+            {
+                foreach(var group in runtime.RuntimeAssemblyGroups)
+                {
+                    foreach(var path in group.AssetPaths)
+                    {
+                        if(path.EndsWith("/" + name.Name + ".dll"))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
     
             RuntimeLibrary library =
                 this.dependencyContext.RuntimeLibraries.FirstOrDefault(NamesMatch);
+
+            if(library == null)
+                library = this.dependencyContext.RuntimeLibraries.FirstOrDefault(ResourceAssetPathMatch);
+
             if (library != null)
             {
                 var wrapper = new CompilationLibrary(
