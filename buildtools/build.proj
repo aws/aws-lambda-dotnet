@@ -118,7 +118,7 @@
         <Exec Command="dotnet new $(TemplateName) -lang $(Lang) -n $(ProjectName) --profile default --region us-east-1" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/"/>
         <Exec Command="dotnet restore" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(ProjectName)/src/$(ProjectName)"/>
         <Exec Command="dotnet restore" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(ProjectName)/Test/$(ProjectName).Tests"/>
-        <Exec Command="dotnet build" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(ProjectName)/Test/$(ProjectName).Tests"/>
+        <Exec Command="dotnet build -c $(Configuration)" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(ProjectName)/Test/$(ProjectName).Tests"/>
     </Target>
     <Target Name="run-tests" DependsOnTargets="build-nuget-packages">
         <PropertyGroup>
