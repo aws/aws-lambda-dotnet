@@ -10,6 +10,7 @@
         <SignAssembly Condition=" '$(SignAssembly)' == '' ">true</SignAssembly>
         <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
         <BlueprintPackagerArguments Condition="'$(UpdateBlueprintPackageVersions)'=='true'">--updateVersions</BlueprintPackagerArguments>
+        <Cicd Condition="'$(Cicd)' == ''">true</Cicd>
     </PropertyGroup>
     <Target Name="full-build" DependsOnTargets="full-build-notests;run-tests;test-lambda-test-tool"></Target>
     <Target Name="full-build-notests" DependsOnTargets="test-blueprints-dotnetnew-legacy;package-blueprints;build-nuget-packages;copy-awslambdapscore-module;build-lambda-test-tool-package"></Target>
@@ -27,7 +28,7 @@
     <ItemGroup>
         <Tests Include="..\Libraries\test\**\*.csproj"/>
     </ItemGroup>
-    <Target Name="init">
+    <Target Name="init" Condition="!$(Cicd)">
         <RemoveDir Directories="../Deployment"/>
         <MakeDir Directories="../Deployment/nuget-packages"/>
         <MakeDir Directories="../Deployment/PowerShell"/>
@@ -118,10 +119,10 @@
     <Target Name="build-project-packages">
         <Exec Command="dotnet build -c $(Configuration)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
     </Target>
-    <Target Name="run-unit-tests" DependsOnTargets="init">
+    <Target Name="run-unit-tests">
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests"/>
     </Target>
-    <Target Name="create-nuget-packages-cicd" DependsOnTargets="init;build-project-packages">
+    <Target Name="create-nuget-packages-cicd" DependsOnTargets="build-project-packages">
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
     </Target>
 </Project>
