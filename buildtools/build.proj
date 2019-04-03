@@ -117,7 +117,7 @@
         <Exec Command="dotnet tool install -g Amazon.Lambda.TestTool-2.1" WorkingDirectory="../Deployment"/>
     </Target>
     <Target Name="build-project-packages">
-        <Exec Command="dotnet build -c $(Configuration)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
+        <Exec Command="dotnet msbuild -restore /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
     </Target>
     <Target Name="run-unit-tests">
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests"/>
