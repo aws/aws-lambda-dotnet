@@ -116,6 +116,12 @@
         </PropertyGroup>
         <Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\Amazon.Lambda.TestTool.Tests"/>
     </Target>
+        <Target Name="test-lambda-test-tool-cicd" DependsOnTargets="build-lambda-test-tool-package-cicd">
+        <PropertyGroup>
+            <Command>dotnet test</Command>
+        </PropertyGroup>
+        <Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\Amazon.Lambda.TestTool.Tests"/>
+    </Target>
     <Target Name="install-lambda-test-tool" DependsOnTargets="build-lambda-test-tool-package">
         <Exec Command="dotnet tool uninstall -g Amazon.Lambda.TestTool-2.1" IgnoreExitCode="true"/>
         <Exec Command="dotnet tool install -g Amazon.Lambda.TestTool-2.1" WorkingDirectory="../Deployment"/>
