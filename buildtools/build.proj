@@ -15,7 +15,7 @@
     <Target Name="full-build" DependsOnTargets="full-build-notests;run-tests;test-lambda-test-tool"></Target>
     <Target Name="full-build-notests" DependsOnTargets="test-blueprints-dotnetnew-legacy;package-blueprints;build-nuget-packages;copy-awslambdapscore-module;build-lambda-test-tool-package"></Target>
     <Target Name="tests" DependsOnTargets="run-unit-tests;test-blueprints-dotnetnew-cicd"></Target>
-    <Target Name="build" DependsOnTargets="build-project-packages;run-blueprint-packager"></Target>
+    <Target Name="build" DependsOnTargets="build-project-packages;run-blueprint-packager;build-lambda-test-tool-package-cicd"></Target>
     <Target Name="copy-awslambdapscore-module" DependsOnTargets="init">
         <ItemGroup>
             <AWSLambdaPSCoreModuleFiles Include="$(MSBuildThisFileDirectory)../PowerShell/Module/**" />
@@ -104,6 +104,10 @@
     </Target>
     <Target Name="build-lambda-test-tool-package" DependsOnTargets="init">
         <Exec Command="dotnet msbuild aws-lambda-test-tool.sln /t:Rebuild /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Tools\LambdaTestTool"/>
+        <Exec Command="$(PackCommand)" WorkingDirectory="..\Tools\LambdaTestTool\Amazon.Lambda.TestTool"/>
+    </Target>
+    <Target Name="build-lambda-test-tool-package-cicd" DependsOnTargets="init">
+        <Exec Command="dotnet msbuild -restore /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Tools\LambdaTestTool\Amazon.Lambda.TestTool"/>
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Tools\LambdaTestTool\Amazon.Lambda.TestTool"/>
     </Target>
     <Target Name="test-lambda-test-tool" DependsOnTargets="build-lambda-test-tool-package">
