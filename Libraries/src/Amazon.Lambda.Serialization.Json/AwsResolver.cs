@@ -93,6 +93,14 @@ namespace Amazon.Lambda.Serialization.Json
                     }
                 }
             }
+            else if (type.FullName.StartsWith("Amazon.Lambda.CloudFrontEvents."))
+            {
+                foreach (JsonProperty property in properties)
+                {
+                    string name = property.PropertyName;
+                    property.PropertyName = Char.ToLowerInvariant(name[0]) + name.Substring(1);
+                }
+            }
 
             return properties;
         }

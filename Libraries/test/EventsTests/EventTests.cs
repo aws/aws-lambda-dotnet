@@ -10,6 +10,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.SimpleEmailEvents;
     using Amazon.Lambda.SNSEvents;
     using Amazon.Lambda.SQSEvents;
+    using Amazon.Lambda.CloudFrontEvents;
     using Amazon.Lambda.APIGatewayEvents;
     using Amazon.Lambda.ApplicationLoadBalancerEvents;
     using Amazon.Lambda.LexEvents;
@@ -19,7 +20,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.CloudWatchLogsEvents;
 
     using Amazon.Lambda.CloudWatchEvents.ECSEvents;
-	using Amazon.Lambda.CloudWatchEvents.BatchEvents;
+    using Amazon.Lambda.CloudWatchEvents.BatchEvents;
     using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
     using Newtonsoft.Json.Linq;
 
@@ -406,6 +407,175 @@ namespace Amazon.Lambda.Tests
             {
                 Console.WriteLine($"[{record.EventSource}] Body = {record.Body}");
             }
+        }
+
+        [Fact]
+        public void CloudFrontRequestTest()
+        {
+            using (var fileStream = File.OpenRead("cloudfront-request-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var cloudfrontEvent = serializer.Deserialize<CloudFrontEvent>(fileStream);
+
+                Assert.Equal(cloudfrontEvent.Records.Count, 1);
+                var record = cloudfrontEvent.Records[0];
+                Assert.Equal(record.Cf.Config.DistributionDomainName, "d123.cloudfront.net");
+                Assert.Equal(record.Cf.Config.DistributionId, "EDFDVBD6EXAMPLE");
+                Assert.Equal(record.Cf.Config.EventType, "viewer-request");
+                Assert.Equal(record.Cf.Config.RequestId, "MRVMF7KydIvxMWfJIglgwHQwZsbG2IhRJ07sn9AkKUFSHS9EXAMPLE==");
+                Assert.Equal(record.Cf.Request.Body.Action, "read-only");
+                Assert.Equal(record.Cf.Request.Body.Data, "eyJ1c2VybmFtZSI6IkxhbWJkYUBFZGdlIiwiY29tbWVudCI6IlRoaXMgaXMgcmVxdWVzdCBib2R5In0=");
+                Assert.Equal(record.Cf.Request.Body.Encoding, "base64");
+                Assert.Equal(record.Cf.Request.Body.InputTruncated, false);
+                Assert.Equal(record.Cf.Request.ClientIp, "2001:0db8:85a3:0:0:8a2e:0370:7334");
+                Assert.Equal(record.Cf.Request.Querystring, "size=large");
+                Assert.Equal(record.Cf.Request.Uri, "/picture.jpg");
+                Assert.Equal(record.Cf.Request.Method, "GET");
+                Assert.Equal(record.Cf.Request.Headers.Count, 2);
+                Assert.Equal(record.Cf.Request.Headers.ContainsKey("host"), true);
+                Assert.Equal(record.Cf.Request.Headers["host"].Count, 1);
+                Assert.Equal(record.Cf.Request.Headers["host"][0].Key, "Host");
+                Assert.Equal(record.Cf.Request.Headers["host"][0].Value, "d111111abcdef8.cloudfront.net");
+                Assert.Equal(record.Cf.Request.Headers.ContainsKey("user-agent"), true);
+                Assert.Equal(record.Cf.Request.Headers["user-agent"].Count, 1);
+                Assert.Equal(record.Cf.Request.Headers["user-agent"][0].Key, "User-Agent");
+                Assert.Equal(record.Cf.Request.Headers["user-agent"][0].Value, "curl/7.51.0");
+                Assert.Equal(record.Cf.Request.Origin.Custom.CustomHeaders.Count, 1);
+                Assert.Equal(record.Cf.Request.Origin.Custom.CustomHeaders.ContainsKey("my-origin-custom-header"), true);
+                Assert.Equal(record.Cf.Request.Origin.Custom.CustomHeaders["my-origin-custom-header"].Count, 1);
+                Assert.Equal(record.Cf.Request.Origin.Custom.CustomHeaders["my-origin-custom-header"][0].Key, "My-Origin-Custom-Header");
+                Assert.Equal(record.Cf.Request.Origin.Custom.CustomHeaders["my-origin-custom-header"][0].Value, "Test");
+                Assert.Equal(record.Cf.Request.Origin.Custom.DomainName, "example.com");
+                Assert.Equal(record.Cf.Request.Origin.Custom.KeepaliveTimeout, 5);
+                Assert.Equal(record.Cf.Request.Origin.Custom.Path, "/custom_path");
+                Assert.Equal(record.Cf.Request.Origin.Custom.Port, 443);
+                Assert.Equal(record.Cf.Request.Origin.Custom.Protocol, "https");
+                Assert.Equal(record.Cf.Request.Origin.Custom.ReadTimeout, 5);
+                Assert.Equal(record.Cf.Request.Origin.Custom.SslProtocols.Count, 2);
+                Assert.Equal(record.Cf.Request.Origin.Custom.SslProtocols[0], "TLSv1");
+                Assert.Equal(record.Cf.Request.Origin.Custom.SslProtocols[1], "TLSv1.1");
+                Assert.Equal(record.Cf.Request.Origin.S3.AuthMethod, "origin-access-identity");
+                Assert.Equal(record.Cf.Request.Origin.S3.CustomHeaders.ContainsKey("my-origin-custom-header"), true);
+                Assert.Equal(record.Cf.Request.Origin.S3.CustomHeaders["my-origin-custom-header"].Count, 1);
+                Assert.Equal(record.Cf.Request.Origin.S3.CustomHeaders["my-origin-custom-header"][0].Key, "My-Origin-Custom-Header");
+                Assert.Equal(record.Cf.Request.Origin.S3.CustomHeaders["my-origin-custom-header"][0].Value, "Test");
+                Assert.Equal(record.Cf.Request.Origin.S3.DomainName, "my-bucket.s3.amazonaws.com");
+                Assert.Equal(record.Cf.Request.Origin.S3.Path, "/s3_path");
+                Assert.Equal(record.Cf.Request.Origin.S3.Region, "us-east-1");
+
+                Handle(cloudfrontEvent);
+            }
+        }
+
+        [Fact]
+        public void CloudFrontResponseTest()
+        {
+            using (var fileStream = File.OpenRead("cloudfront-response-event.json"))
+            {
+                var serializer = new JsonSerializer();
+                var cloudfrontEvent = serializer.Deserialize<CloudFrontEvent>(fileStream);
+
+                Assert.Equal(cloudfrontEvent.Records.Count, 1);
+                var record = cloudfrontEvent.Records[0];
+                Assert.Equal(record.Cf.Config.DistributionDomainName, "d123.cloudfront.net");
+                Assert.Equal(record.Cf.Config.DistributionId, "EDFDVBD6EXAMPLE");
+                Assert.Equal(record.Cf.Config.EventType, "viewer-response");
+                Assert.Equal(record.Cf.Config.RequestId, "xGN7KWpVEmB9Dp7ctcVFQC4E-nrcOcEKS3QyAez--06dV7TEXAMPLE==");
+                Assert.Equal(record.Cf.Request.ClientIp, "2001:0db8:85a3:0:0:8a2e:0370:7334");
+                Assert.Equal(record.Cf.Request.Method, "GET");
+                Assert.Equal(record.Cf.Request.Uri, "/picture.jpg");
+                Assert.Equal(record.Cf.Request.Querystring, "size=large");
+                Assert.Equal(record.Cf.Request.Headers.Count, 2);
+                Assert.Equal(record.Cf.Request.Headers.ContainsKey("host"), true);
+                Assert.Equal(record.Cf.Request.Headers["host"].Count, 1);
+                Assert.Equal(record.Cf.Request.Headers["host"][0].Key, "Host");
+                Assert.Equal(record.Cf.Request.Headers["host"][0].Value, "d111111abcdef8.cloudfront.net");
+                Assert.Equal(record.Cf.Request.Headers.ContainsKey("user-agent"), true);
+                Assert.Equal(record.Cf.Request.Headers["user-agent"].Count, 1);
+                Assert.Equal(record.Cf.Request.Headers["user-agent"][0].Key, "User-Agent");
+                Assert.Equal(record.Cf.Request.Headers["user-agent"][0].Value, "curl/7.18.1");
+                Assert.Equal(record.Cf.Response.Status, "200");
+                Assert.Equal(record.Cf.Response.StatusDescription, "OK");
+                Assert.Equal(record.Cf.Response.Headers.Count, 2);
+                Assert.Equal(record.Cf.Response.Headers.ContainsKey("server"), true);
+                Assert.Equal(record.Cf.Response.Headers["server"].Count, 1);
+                Assert.Equal(record.Cf.Response.Headers["server"][0].Key, "Server");
+                Assert.Equal(record.Cf.Response.Headers["server"][0].Value, "MyCustomOrigin");
+                Assert.Equal(record.Cf.Response.Headers.ContainsKey("set-cookie"), true);
+                Assert.Equal(record.Cf.Response.Headers["set-cookie"].Count, 2);
+                Assert.Equal(record.Cf.Response.Headers["set-cookie"][0].Key, "Set-Cookie");
+                Assert.Equal(record.Cf.Response.Headers["set-cookie"][0].Value, "theme=light");
+                Assert.Equal(record.Cf.Response.Headers["set-cookie"][1].Key, "Set-Cookie");
+                Assert.Equal(record.Cf.Response.Headers["set-cookie"][1].Value, "sessionToken=abc123; Expires=Wed, 09 Jun 2021 10:18:14 GMT");
+
+                Handle(cloudfrontEvent);
+            }
+        }
+
+        private static void Handle(CloudFrontEvent cloudFrontEvent)
+        {
+            foreach (var record in cloudFrontEvent.Records)
+            {
+                var cf = record.Cf;
+                Console.WriteLine($"[{cf.Config.DistributionId} {cf.Config.EventType}] Uri = {cf.Request.Uri}");
+            }
+        }
+
+        [Fact]
+        public void CloudFrontGeneratedResponseTest()
+        {
+            string content = @"
+<\!DOCTYPE html>
+<html lang=""en"">
+  <head>
+    <meta charset=""utf-8"">
+    <title>Simple Lambda@Edge Static Content Response</title>
+  </head>
+  <body>
+    <p>Hello from Lambda@Edge!</p>
+  </body>
+</html>
+";
+            byte[] buffer = Encoding.UTF8.GetBytes(content);
+            string base64EncodedBody = Convert.ToBase64String(buffer);
+
+            var response = new CloudFrontEvent.GeneratedResponseEntity
+            {
+                Headers = new Dictionary<string, List<CloudFrontEvent.HeaderEntity>>()
+                {
+                    { "content-type", new List<CloudFrontEvent.HeaderEntity>() { new CloudFrontEvent.HeaderEntity() { Key = "Content-Type", Value = "text/html; charset=utf-8" } } },
+                    { "content-encoding", new List<CloudFrontEvent.HeaderEntity>() { new CloudFrontEvent.HeaderEntity() { Key = "Content-Encoding", Value = "gzip" } } } //not actually gzipping
+                },
+                Body = base64EncodedBody,
+                BodyEncoding = "base64",
+                Status = "200",
+                StatusDescription = "OK"
+            };
+
+            string serializedJson;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                var serializer = new JsonSerializer();
+                serializer.Serialize(response, stream);
+
+                stream.Position = 0;
+                serializedJson = Encoding.UTF8.GetString(stream.ToArray());
+            }
+
+            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+            Assert.Equal(root["body"], base64EncodedBody);
+            Assert.Equal(root["bodyEncoding"], "base64");
+            Assert.Equal(root["status"], "200");
+            Assert.Equal(root["statusDescription"], "OK");
+
+            Assert.NotNull(root["headers"]);
+            var headers = root["headers"] as JObject;
+            Assert.NotNull(headers["content-type"]);
+            Assert.Equal(headers["content-type"][0]["key"], "Content-Type");
+            Assert.Equal(headers["content-type"][0]["value"], "text/html; charset=utf-8");
+            Assert.NotNull(headers["content-encoding"]);
+            Assert.Equal(headers["content-encoding"][0]["key"], "Content-Encoding");
+            Assert.Equal(headers["content-encoding"][0]["value"], "gzip");
         }
 
         [Fact]

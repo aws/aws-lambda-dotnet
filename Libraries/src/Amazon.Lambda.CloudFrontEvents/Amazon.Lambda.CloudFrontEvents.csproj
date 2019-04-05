@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\..\buildtools\common.props" />
+
+  <PropertyGroup>
+    <Description>Amazon Lambda .NET Core support - EdgeEvents package.</Description>
+    <TargetFrameworks>netstandard1.3;netstandard2.0</TargetFrameworks>
+    <AssemblyTitle>Amazon.Lambda.CloudFrontEvents</AssemblyTitle>
+    <VersionPrefix>1.1.0</VersionPrefix>
+    <AssemblyName>Amazon.Lambda.CloudFrontEvents</AssemblyName>
+    <PackageId>Amazon.Lambda.CloudFrontEvents</PackageId>
+    <PackageTags>AWS;Amazon;Lambda</PackageTags>
+  </PropertyGroup>
+
+</Project>
