@@ -15,7 +15,7 @@ namespace Amazon.Lambda.TestTool.Tests
 {
     public class DlqMonitorTests
     {
-        [Fact]
+        [Fact(Skip = "Integration test being disabled temporarily. Enable test once a container with a profile is created")]
         public async Task DlqIntegTest()
         {
             const int WAIT_TIME = 5000;
