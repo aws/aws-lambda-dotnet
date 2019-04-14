@@ -12,7 +12,7 @@
 # This example demonstrates how to process an SNS Message that follows the process:
 # SNS topic -> SQS Queue -> Lambda Function
 
-#Requires -Modules @{ModuleName='AWSPowerShell.NetCore';ModuleVersion='3.3.428.0'}
+#Requires -Modules @{ModuleName='AWSPowerShell.NetCore';ModuleVersion='3.3.485.0'}
 
 # Uncomment to send the input event to CloudWatch Logs
 # Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)
