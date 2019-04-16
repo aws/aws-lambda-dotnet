@@ -25,9 +25,6 @@
     <ItemGroup>
         <LibraryName Include="..\Libraries\src\**\*.csproj"/>
     </ItemGroup>
-    <ItemGroup>
-        <Tests Include="..\Libraries\test\**\*.csproj"/>
-    </ItemGroup>
     <Target Name="init" Condition="!$(Cicd)">
         <RemoveDir Directories="../Deployment"/>
         <MakeDir Directories="../Deployment/nuget-packages"/>
@@ -45,7 +42,7 @@
         <Exec Command="dotnet run -c $(Configuration) $(BlueprintPackagerArguments)" WorkingDirectory="..\Blueprints\BlueprintPackager"/>
     </Target>
     <!-- package-blueprints;build-nuget-packages -->
-    <Target Name="test-blueprints-dotnew-legacy" DependsOnTargets="package-blueprints;build-nuget-packages;test-blueprints-dotnew">
+    <Target Name="test-blueprints-dotnetnew-legacy" DependsOnTargets="package-blueprints;build-nuget-packages;test-blueprints-dotnew">
     </Target>
 
     <Target Name="test-blueprints-dotnew">
@@ -96,7 +93,8 @@
         <PropertyGroup>
             <Command>dotnet test -c $(Configuration)</Command>
         </PropertyGroup>
-        <Exec Command="$(Command)" WorkingDirectory="..\Libraries\test\%(Tests.FileName)"/>
+        <Message Text="%(AllFiles.FileName)"/>
+        <Exec Command="$(Command) Libraries.sln" WorkingDirectory="..\Libraries"/>
     </Target>
     <Target Name="build-nuget-packages" DependsOnTargets="init">
         <Exec Command="dotnet msbuild Libraries.sln /t:Rebuild /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Libraries"/>
