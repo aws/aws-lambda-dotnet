@@ -10,7 +10,7 @@
         <SignAssembly Condition=" '$(SignAssembly)' == '' ">true</SignAssembly>
         <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
         <BlueprintPackagerArguments Condition="'$(UpdateBlueprintPackageVersions)'=='true'">--updateVersions</BlueprintPackagerArguments>
-        <Cicd Condition="'$(Cicd)' == ''">true</Cicd>
+        <Cicd Condition="'$(Cicd)' == ''">false</Cicd>
     </PropertyGroup>
     <Target Name="full-build" DependsOnTargets="full-build-notests;run-tests;test-lambda-test-tool"></Target>
     <Target Name="full-build-notests" DependsOnTargets="test-blueprints-dotnetnew-legacy;package-blueprints;build-nuget-packages;copy-awslambdapscore-module;build-lambda-test-tool-package"></Target>
@@ -93,7 +93,6 @@
         <PropertyGroup>
             <Command>dotnet test -c $(Configuration)</Command>
         </PropertyGroup>
-        <Message Text="%(AllFiles.FileName)"/>
         <Exec Command="$(Command) Libraries.sln" WorkingDirectory="..\Libraries"/>
     </Target>
     <Target Name="build-nuget-packages" DependsOnTargets="init">
