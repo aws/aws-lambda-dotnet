@@ -14,7 +14,7 @@ namespace Amazon.Lambda.TestTool.Tests
 {
     public class ExternalCommandsTests
     {
-        [Fact]
+        [Fact(Skip = "Integration test being disabled temporarily. Enable test once a container with a profile is created")]
         public void ListProfiles()
         {
             var manager = new ExternalCommandManager();
@@ -30,7 +30,7 @@ namespace Amazon.Lambda.TestTool.Tests
             Assert.True(profiles.Contains(TestUtils.TestProfile));
         }
 
-        [Fact]
+        [Fact(Skip = "Integration test being disabled temporarily. Enable test once a container with a profile is created")]
         public async Task ListQueuesAsync()
         {
             var queueName = "local-reader-list-queue-test-" + DateTime.Now.Ticks;
@@ -51,8 +51,8 @@ namespace Amazon.Lambda.TestTool.Tests
                 }
             }
         }
-        
-        [Fact]
+
+        [Fact(Skip = "Integration test being disabled temporarily. Enable test once a container with a profile is created")]
         public async Task ReadMessageAsync()
         {
             var queueName = "local-reader-read-message-test-" + DateTime.Now.Ticks;
