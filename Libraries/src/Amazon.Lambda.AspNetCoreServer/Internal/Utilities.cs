@@ -120,16 +120,13 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                     headers[kvp.Key] = new StringValues(kvp.Value);
                 }
             }
-
         }
 
-        internal static string DecodeResourcePath(string resourcePath)
-        {
-            // Convert any + signs to percent encoding before url decoding the path.
-            resourcePath = resourcePath.Replace("+", "%2B");
-            resourcePath = resourcePath = WebUtility.UrlDecode(resourcePath);
-
-            return resourcePath;
-        }
+        internal static string DecodeResourcePath(string resourcePath) => WebUtility.UrlDecode(resourcePath
+            // Convert any + signs to percent encoding before URL decoding the path.
+            .Replace("+", "%2B")
+            // Double-escape any %2F (encoded / characters) so that they survive URL decoding the path.
+            .Replace("%2F", "%252F")
+            .Replace("%2f", "%252f"));
     }
 }
