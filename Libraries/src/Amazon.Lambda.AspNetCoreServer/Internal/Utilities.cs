@@ -65,7 +65,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             }
         }
 
-        internal static string CreateQueryStringParamaters(IDictionary<string, string> singleValues, IDictionary<string, IList<string>> multiValues)
+        internal static string CreateQueryStringParameters(IDictionary<string, string> singleValues, IDictionary<string, IList<string>> multiValues)
         {
             if (multiValues?.Count > 0)
             {
@@ -78,7 +78,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                         {
                             sb.Append("&");
                         }
-                        sb.Append($"{kvp.Key}={value}");
+                        sb.Append(kvp.Key).Append('=').Append(value);
                     }
                 }
                 return sb.ToString();
@@ -95,7 +95,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                         {
                             sb.Append("&");
                         }
-                        sb.Append($"{kvp.Key}={kvp.Value}");
+                        sb.Append(kvp.Key).Append('=').Append(kvp.Value);
                     }
                     return sb.ToString();
                 }
