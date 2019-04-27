@@ -80,10 +80,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         public async Task TestGetEncodingQueryStringGateway()
         {
             var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigatway-encoding-request.json");
+            var results = JsonConvert.DeserializeObject<TestWebApp.Controllers.RawQueryStringController.Results>(response.Body);
+            Assert.Equal("http://www.gooogle.com", results.Url);
+            Assert.Equal(DateTimeOffset.Parse("2019-03-12T16:06:06.549817+00:00"), results.TestDateTimeOffset);
 
-            Assert.Equal("?url=http://www.gooogle.com", response.Body);
             Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
-            Assert.Equal("text/plain; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
+            Assert.Equal("application/json; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
         }
 
         [Fact]
