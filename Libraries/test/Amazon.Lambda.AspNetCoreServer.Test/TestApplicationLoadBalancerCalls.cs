@@ -161,6 +161,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.False(response.IsBase64Encoded, "Response IsBase64Encoded");
         }
 
+        [Fact]
+        public async Task TestHealthCheck()
+        {
+            var response = await this.InvokeApplicationLoadBalancerRequest("alb-healthcheck.json");
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("[\"value1\",\"value2\"]", response.Body);
+            Assert.True(response.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
+        }
+
         private async Task<ApplicationLoadBalancerResponse> InvokeApplicationLoadBalancerRequest(string fileName)
         {
             return await InvokeApplicationLoadBalancerRequest(new TestLambdaContext(), fileName);
