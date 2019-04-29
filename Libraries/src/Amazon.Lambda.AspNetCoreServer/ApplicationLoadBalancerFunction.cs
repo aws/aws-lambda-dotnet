@@ -74,6 +74,15 @@ namespace Amazon.Lambda.AspNetCoreServer
                     requestFeatures.Body = Utilities.ConvertLambdaRequestBodyToAspNetCoreBody(lambdaRequest.Body, lambdaRequest.IsBase64Encoded);
                 }
 
+                var userAgent = GetSingleHeaderValue(lambdaRequest, "user-agent");
+                if (userAgent != null && userAgent.StartsWith("ELB-HealthChecker/", StringComparison.OrdinalIgnoreCase))
+                {
+                    requestFeatures.Scheme = "https";
+                    requestFeatures.Headers["host"] = "localhost";
+                    requestFeatures.Headers["x-forwarded-port"] = "443";
+                    requestFeatures.Headers["x-forwarded-for"] = "127.0.0.1";
+                }
+
                 // Call consumers customize method in case they want to change how API Gateway's request
                 // was marshalled into ASP.NET Core request.
                 PostMarshallRequestFeature(requestFeatures, lambdaRequest, lambdaContext);
