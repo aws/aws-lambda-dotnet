@@ -65,7 +65,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 requestFeatures.Path = Utilities.DecodeResourcePath(lambdaRequest.Path);
 
                 requestFeatures.QueryString = Utilities.CreateQueryStringParamaters(
-                    lambdaRequest.QueryStringParameters, lambdaRequest.MultiValueQueryStringParameters);
+                    lambdaRequest.QueryStringParameters, lambdaRequest.MultiValueQueryStringParameters, false);
 
                 Utilities.SetHeadersCollection(requestFeatures.Headers, lambdaRequest.Headers, lambdaRequest.MultiValueHeaders);
 
