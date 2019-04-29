@@ -5,9 +5,10 @@
     }
   },
   "httpMethod": "GET",
-  "path": "/api/rawquerystring",
+  "path": "/api/rawquerystring/json",
   "multiValueQueryStringParameters": {
-    "url": [ "http://www.gooogle.com"]
+    "url": [ "http://www.gooogle.com" ],
+    "testDateTimeOffset": [ "2019-03-12T16%3A06%3A06.5498170%2B00%3A00" ]
   },
   "multiValueHeaders": {
     "accept": [ "text/html", "application/xhtml+xml" ],

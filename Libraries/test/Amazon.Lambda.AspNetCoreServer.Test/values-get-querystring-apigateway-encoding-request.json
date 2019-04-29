@@ -1,13 +1,14 @@
 ﻿{
   "resource": "/{proxy+}",
-  "path": "/api/rawquerystring",
+  "path": "/api/rawquerystring/json",
   "httpMethod": "GET",
   "headers": null,
   "queryStringParameters": {
-    "url": "http://www.gooogle.com"
+    "url": "http://www.gooogle.com",
+    "testDateTimeOffset": "2019-03-12T16:06:06.549817+00:00"
   },
   "pathParameters": {
-    "proxy": "api/rawquerystring"
+    "proxy": "api/rawquerystring/json"
   },
   "stageVariables": null,
   "requestContext": {

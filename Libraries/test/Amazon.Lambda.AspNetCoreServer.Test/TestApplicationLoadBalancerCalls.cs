@@ -63,14 +63,24 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         public async Task TestGetEncodingQueryStringAlb()
         {
             var response = await this.InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-encoding-request.json");
-            Assert.Equal("?url=http://www.gooogle.com", response.Body);
+            var results = JsonConvert.DeserializeObject<TestWebApp.Controllers.RawQueryStringController.Results>(response.Body);
+            Assert.Equal("http://www.gooogle.com", results.Url);
+            Assert.Equal(DateTimeOffset.Parse("2019-03-12T16:06:06.549817+00:00"), results.TestDateTimeOffset);
+
+            Assert.True(response.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
         }
 
         [Fact]
         public async Task TestGetEncodingQueryStringAlbMv()
         {
             var response = await this.InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-mv-encoding-request.json");
-            Assert.Equal("?url=http://www.gooogle.com", response.Body);
+            var results = JsonConvert.DeserializeObject<TestWebApp.Controllers.RawQueryStringController.Results>(response.Body);
+            Assert.Equal("http://www.gooogle.com", results.Url);
+            Assert.Equal(DateTimeOffset.Parse("2019-03-12T16:06:06.549817+00:00"), results.TestDateTimeOffset);
+
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("application/json; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
         }
 
         [Fact]
@@ -149,6 +159,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("Greetings, programs!", response.Body);
 
             Assert.False(response.IsBase64Encoded, "Response IsBase64Encoded");
+        }
+
+        [Fact]
+        public async Task TestHealthCheck()
+        {
+            var response = await this.InvokeApplicationLoadBalancerRequest("alb-healthcheck.json");
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("[\"value1\",\"value2\"]", response.Body);
+            Assert.True(response.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
         }
 
         private async Task<ApplicationLoadBalancerResponse> InvokeApplicationLoadBalancerRequest(string fileName)

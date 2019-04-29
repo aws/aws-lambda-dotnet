@@ -14,5 +14,22 @@ namespace TestWebApp.Controllers
         {
             return this.Request.QueryString.ToString();
         }
+
+        [HttpGet]
+        [Route("json")]
+        public Results Get([FromQuery] string url, [FromQuery] DateTimeOffset testDateTimeOffset)
+        {
+            return new Results
+            {
+                Url = url,
+                TestDateTimeOffset = testDateTimeOffset
+            };
+        }
+
+        public class Results
+        {
+            public string Url { get; set; }
+            public DateTimeOffset TestDateTimeOffset { get;set;}
+        }
     }
 }
