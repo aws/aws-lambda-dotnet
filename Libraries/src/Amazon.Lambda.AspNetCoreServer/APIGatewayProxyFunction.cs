@@ -186,7 +186,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                 requestFeatures.Path = Utilities.DecodeResourcePath(requestFeatures.Path);
 
-                requestFeatures.QueryString = Utilities.CreateQueryStringParamaters(
+                requestFeatures.QueryString = Utilities.CreateQueryStringParameters(
                     apiGatewayRequest.QueryStringParameters, apiGatewayRequest.MultiValueQueryStringParameters, true);
 
                 Utilities.SetHeadersCollection(requestFeatures.Headers, apiGatewayRequest.Headers, apiGatewayRequest.MultiValueHeaders);

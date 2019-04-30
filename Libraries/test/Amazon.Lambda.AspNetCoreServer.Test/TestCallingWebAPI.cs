@@ -212,10 +212,27 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestEncodeSpaceInResourcePath()
         {
+            var requestStr = GetRequestContent("encode-space-in-resource-path.json");
             var response = await this.InvokeAPIGatewayRequest("encode-space-in-resource-path.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("value=tmh/file name.xml", response.Body);
+
+        }
+
+        [Fact]
+        public async Task TestEncodeSlashInResourcePath()
+        {
+            var requestStr = GetRequestContent("encode-slash-in-resource-path.json");
+            var response = await this.InvokeAPIGatewayRequestWithContent(new TestLambdaContext(), requestStr);
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("{\"only\":\"a%2Fb\"}", response.Body);
+
+            response = await this.InvokeAPIGatewayRequestWithContent(new TestLambdaContext(), requestStr.Replace("a%2Fb", "a/b"));
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("{\"first\":\"a\",\"second\":\"b\"}", response.Body);
         }
 
         [Fact]
@@ -314,11 +331,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(TestLambdaContext context, string fileName)
         {
+            return await InvokeAPIGatewayRequestWithContent(context, GetRequestContent(fileName));
+        }
+
+        private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequestWithContent(TestLambdaContext context, string requestContent)
+        {
             var lambdaFunction = new ApiGatewayLambdaFunction();
+            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestContent);
+            return await lambdaFunction.FunctionHandlerAsync(request, context);
+        }
+
+        private string GetRequestContent(string fileName)
+        {
             var filePath = Path.Combine(Path.GetDirectoryName(this.GetType().GetTypeInfo().Assembly.Location), fileName);
             var requestStr = File.ReadAllText(filePath);
-            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
-            return await lambdaFunction.FunctionHandlerAsync(request, context);
+            return requestStr;
         }
     }
 }

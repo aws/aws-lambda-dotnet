@@ -30,5 +30,12 @@ namespace TestWebApp.Controllers
             var path = this.HttpContext.Request.Path;
             return "value=" + value;
         }
+
+        [HttpGet("/api/[controller]/encoding/{first}/{second}", Name = "Multi")]
+        public ActionResult Multi(string first, string second) => Ok(new { first, second });
+
+        [HttpGet("/api/[controller]/encoding/{only}", Name = "Single")]
+        public ActionResult Single(string only) => Ok(new { only });
+
     }
 }

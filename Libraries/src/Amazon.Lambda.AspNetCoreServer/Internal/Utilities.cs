@@ -65,7 +65,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             }
         }
 
-        internal static string CreateQueryStringParamaters(IDictionary<string, string> singleValues, IDictionary<string, IList<string>> multiValues, bool urlEncodeValue)
+        internal static string CreateQueryStringParameters(IDictionary<string, string> singleValues, IDictionary<string, IList<string>> multiValues, bool urlEncodeValue)
         {
             if (multiValues?.Count > 0)
             {
@@ -78,7 +78,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                         {
                             sb.Append("&");
                         }
-
                         sb.Append($"{kvp.Key}={(urlEncodeValue ? WebUtility.UrlEncode(value) : value)}");
                     }
                 }
@@ -121,16 +120,13 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                     headers[kvp.Key] = new StringValues(kvp.Value);
                 }
             }
-
         }
 
-        internal static string DecodeResourcePath(string resourcePath)
-        {
-            // Convert any + signs to percent encoding before url decoding the path.
-            resourcePath = resourcePath.Replace("+", "%2B");
-            resourcePath = resourcePath = WebUtility.UrlDecode(resourcePath);
-
-            return resourcePath;
-        }
+        internal static string DecodeResourcePath(string resourcePath) => WebUtility.UrlDecode(resourcePath
+            // Convert any + signs to percent encoding before URL decoding the path.
+            .Replace("+", "%2B")
+            // Double-escape any %2F (encoded / characters) so that they survive URL decoding the path.
+            .Replace("%2F", "%252F")
+            .Replace("%2f", "%252f"));
     }
 }
