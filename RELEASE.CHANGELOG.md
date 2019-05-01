@@ -1,3 +1,11 @@
+### Release 2019-05-01
+* **Amazon.Lambda.AspNetCoreServer (3.0.4)**
+	* Pull Request [#449](https://github.com/aws/aws-lambda-dotnet/pull/449) fixing routing with escape characters in resource path. Thanks [Chris/0](https://github.com/chrisoverzero)
+	* Fixed url encoding issue with query string values when called by API Gateway. [#451](https://github.com/aws/aws-lambda-dotnet/pull/451)
+	* Fixed issue handling ELB Health Checks when Lambda function placed behind an Application Load Balancer. [#452](https://github.com/aws/aws-lambda-dotnet/pull/452)
+* **Amazon.Lambda.Templates (3.7.1)**
+	* Updated dependencies for AWS SDK for .NET and the Amazon Lambda packages to the latest version.
+
 ### Release 2019-03-18
 * **Amazon.Lambda.TestTool-2.1 (0.9.2)** (Preview)
     * Fixed issue loading dependent assemblies when the name differs from the NuGet package.
