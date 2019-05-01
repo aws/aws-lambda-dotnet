@@ -17,6 +17,7 @@
     <PackageId>Amazon.Lambda.TestTool-2.1</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
     <NoWarn>1701;1702;1591;1587;3021;NU5100</NoWarn>
+	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>  
   <ItemGroup>
     <PackageReference Include="YamlDotNet.Signed" Version="5.2.1" />    
