@@ -30,7 +30,6 @@
         <MakeDir Directories="../Deployment/nuget-packages"/>
         <MakeDir Directories="../Deployment/PowerShell"/>
         <MakeDir Directories="../Deployment/PowerShell/AWSLambdaPSCore"/>
-        <Copy SourceFiles="@(DeploymentNuGetConfig)" DestinationFolder="../Deployment" />
         <Exec Command="dotnet restore Libraries.sln" WorkingDirectory="..\Libraries"/>
         <Exec Command="dotnet restore aws-lambda-test-tool.sln" WorkingDirectory="..\Tools\LambdaTestTool"/>
         <Exec Command="dotnet restore BlueprintPackager.sln" WorkingDirectory="..\Blueprints\BlueprintPackager"/>
@@ -48,6 +47,7 @@
     <Target Name="test-blueprints-dotnew">
         <RemoveDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew"/>
         <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew"/>
+        <Copy SourceFiles="@(DeploymentNuGetConfig)" DestinationFolder="../Deployment" />
         <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\Msbuild-NETCore_2_1" WorkingDirectory="..\"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SimpleApplicationLoadBalancerFunction;ProjectName=SimpleApplicationLoadBalancerFunctionC;Lang=C#"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabelsC;Lang=C#"/>
