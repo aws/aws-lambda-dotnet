@@ -1,4 +1,4 @@
-# AWS Lambda Simple SQS Function Project
+# AWS Lambda Simple SNS Function Project
 
 This starter project consists of:
 * Function.cs - class file containing a class with a single function handler method
@@ -6,9 +6,9 @@ This starter project consists of:
 
 You may also have a test project depending on the options selected.
 
-The generated function handler responds to events on an Amazon SQS queue.
+The generated function handler responds to events on an Amazon SNS service.
 
-After deploying your function you must configure an Amazon SQS queue as an event source to trigger your Lambda function.
+After deploying your function you must configure an Amazon SNS service as an event source to trigger your Lambda function.
 
 ## Here are some steps to follow from Visual Studio:
 
