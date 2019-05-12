@@ -52,6 +52,11 @@ namespace Amazon.Lambda.AspNetCoreServer
                 throw new Exception("Unable to determine header mode, single or multi value, because both Headers and MultiValueHeaders are null.");
             }
 
+			if (lambdaRequest.RequestContext?.Elb?.TargetGroupArn == null)
+			{
+				_logger.LogWarning($"Request does not contain ELB information but is derived from {nameof(ApplicationLoadBalancerFunction)}.");
+			}
+
             // Look to see if the request is using mutli value headers or not. This is important when
             // marshalling the response to know whether to fill in the the Headers or MultiValueHeaders collection.
             // Since a Lambda function compute environment is only one processing one event at a time it is safe to store
