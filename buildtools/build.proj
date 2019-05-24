@@ -14,7 +14,8 @@
     </PropertyGroup>
     <Target Name="full-build" DependsOnTargets="full-build-notests;run-tests;test-lambda-test-tool"></Target>
     <Target Name="full-build-notests" DependsOnTargets="test-blueprints-dotnetnew-legacy;package-blueprints;build-nuget-packages;copy-awslambdapscore-module;build-lambda-test-tool-package"></Target>
-    <Target Name="tests" DependsOnTargets="run-unit-tests;test-blueprints-dotnetnew-cicd;test-lambda-test-tool-cicd"></Target>
+    <Target Name="unit-tests" DependsOnTargets="run-unit-tests;test-blueprints-dotnetnew-cicd;test-lambda-test-tool-cicd"></Target>
+    <Target Name="integ-tests" DependsOnTargets="run-integ-tests"></Target>
     <Target Name="build" DependsOnTargets="build-project-packages;run-blueprint-packager;build-lambda-test-tool-package-cicd"></Target>
     <Target Name="copy-awslambdapscore-module" DependsOnTargets="init">
         <ItemGroup>
@@ -127,6 +128,9 @@
     </Target>
     <Target Name="run-unit-tests">
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests"/>
+    </Target>
+    <Target Name="run-integ-tests">
+        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.IntegrationTests"/>
     </Target>
     <Target Name="create-nuget-packages-cicd" DependsOnTargets="build-project-packages">
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
