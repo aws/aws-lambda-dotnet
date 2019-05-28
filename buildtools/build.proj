@@ -14,6 +14,7 @@
     </PropertyGroup>
     <Target Name="full-build" DependsOnTargets="full-build-notests;run-tests;test-lambda-test-tool"></Target>
     <Target Name="full-build-notests" DependsOnTargets="test-blueprints-dotnetnew-legacy;package-blueprints;build-nuget-packages;copy-awslambdapscore-module;build-lambda-test-tool-package"></Target>
+    <Target Name="tests" DependsOnTargets="unit-tests"></Target>
     <Target Name="unit-tests" DependsOnTargets="run-unit-tests;test-blueprints-dotnetnew-cicd;test-lambda-test-tool-cicd"></Target>
     <Target Name="integ-tests" DependsOnTargets="run-integ-tests"></Target>
     <Target Name="build" DependsOnTargets="build-project-packages;run-blueprint-packager;build-lambda-test-tool-package-cicd"></Target>
