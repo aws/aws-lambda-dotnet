@@ -17,6 +17,8 @@ public void Configure(ILoggerFactory loggerFactory)
     loggerOptions.IncludeCategory = false;
     loggerOptions.IncludeLogLevel = false;
     loggerOptions.IncludeNewline = true;
+    loggerOptions.IncludeException = true;
+    loggerOptions.IncludeEventId = true;
 
     // Configure Filter to only log some 
     loggerOptions.Filter = (category, logLevel) =>
@@ -50,6 +52,8 @@ Configuration file, `appsettings.json`:
     "IncludeCategory": false,
     "IncludeLogLevel": false,
     "IncludeNewline":  true,
+	"IncludException": true,
+    "IncludeEventId": true,
     "LogLevel": {
       "Default": "Debug",
       "Microsoft": "Information"
