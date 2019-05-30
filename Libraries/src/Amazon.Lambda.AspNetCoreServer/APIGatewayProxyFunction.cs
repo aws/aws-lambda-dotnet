@@ -76,6 +76,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         }
 
+      
         /// <summary>
         /// 
         /// </summary>
@@ -86,16 +87,36 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         }
 
-
-        private protected override void InternalPostCreateContext(HostingApplication.Context context, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
+        private protected override void InternalPostCreateContext(
+            HostingApplication.Context context,
+            APIGatewayProxyRequest apiGatewayRequest,
+            ILambdaContext lambdaContext)
         {
-            if (apiGatewayRequest?.RequestContext?.Authorizer?.Claims != null)
-            {
-                var identity = new ClaimsIdentity(apiGatewayRequest.RequestContext.Authorizer.Claims.Select(
-                    entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
+            var authorizer = apiGatewayRequest?.RequestContext?.Authorizer;
 
-                _logger.LogDebug($"Configuring HttpContext.User with {apiGatewayRequest.RequestContext.Authorizer.Claims.Count} claims coming from API Gateway's Request Context");
-                context.HttpContext.User = new ClaimsPrincipal(identity);
+            if (authorizer != null)
+            {
+                // handling claims output from cognito user pool authorizer
+                if (authorizer.Claims != null && authorizer.Claims.Count != 0)
+                {
+                    var identity = new ClaimsIdentity(authorizer.Claims.Select(
+                        entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
+
+                    lambdaContext.Logger.LogLine(
+                        $"Configuring HttpContext.User with {authorizer.Claims.Count} claims coming from API Gateway's Request Context");
+                    context.HttpContext.User = new ClaimsPrincipal(identity);
+                }
+                else
+                {
+                    // handling claims output from custom lambda authorizer
+                    var identity = new ClaimsIdentity(
+                        authorizer.Where(x => !string.Equals(x.Key, "claims", StringComparison.OrdinalIgnoreCase))
+                            .Select(entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
+
+                    lambdaContext.Logger.LogLine(
+                        $"Configuring HttpContext.User with {authorizer.Count} claims coming from API Gateway's Request Context");
+                    context.HttpContext.User = new ClaimsPrincipal(identity);
+                }
             }
         }
 
@@ -115,12 +136,13 @@ namespace Amazon.Lambda.AspNetCoreServer
         protected override void MarshallRequest(InvokeFeatures features, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
             {
-                var requestFeatures = (IHttpRequestFeature)features;
+                var requestFeatures = (IHttpRequestFeature) features;
                 requestFeatures.Scheme = "https";
                 requestFeatures.Method = apiGatewayRequest.HttpMethod;
 
                 string path = null;
-                if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy") && !string.IsNullOrEmpty(apiGatewayRequest.Resource))
+                if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy") &&
+                    !string.IsNullOrEmpty(apiGatewayRequest.Resource))
                 {
                     var proxyPath = apiGatewayRequest.PathParameters["proxy"];
                     path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);
@@ -157,14 +179,15 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                     if (requestContextPath.EndsWith(path))
                     {
-                        requestFeatures.PathBase = requestContextPath.Substring(0, requestContextPath.Length - requestFeatures.Path.Length);
+                        requestFeatures.PathBase = requestContextPath.Substring(0,
+                            requestContextPath.Length - requestFeatures.Path.Length);
                     }
                 }
 
                 requestFeatures.Path = Utilities.DecodeResourcePath(requestFeatures.Path);
 
-                requestFeatures.QueryString = Utilities.CreateQueryStringParamaters(
-                    apiGatewayRequest.QueryStringParameters, apiGatewayRequest.MultiValueQueryStringParameters);
+                requestFeatures.QueryString = Utilities.CreateQueryStringParameters(
+                    apiGatewayRequest.QueryStringParameters, apiGatewayRequest.MultiValueQueryStringParameters, true);
 
                 Utilities.SetHeadersCollection(requestFeatures.Headers, apiGatewayRequest.Headers, apiGatewayRequest.MultiValueHeaders);
 
@@ -190,7 +213,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             {
                 // set up connection features
-                var connectionFeatures = (IHttpConnectionFeature)features;
+                var connectionFeatures = (IHttpConnectionFeature) features;
 
                 if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Identity?.SourceIp) &&
                     IPAddress.TryParse(apiGatewayRequest.RequestContext.Identity.SourceIp, out var remoteIpAddress))
@@ -207,7 +230,6 @@ namespace Amazon.Lambda.AspNetCoreServer
                 // was marshalled into ASP.NET Core request.
                 PostMarshallConnectionFeature(connectionFeatures, apiGatewayRequest, lambdaContext);
             }
-
         }
 
         /// <summary>

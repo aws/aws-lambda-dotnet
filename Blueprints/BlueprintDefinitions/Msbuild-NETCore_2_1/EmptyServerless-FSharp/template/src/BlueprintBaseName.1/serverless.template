@@ -16,7 +16,7 @@
 				"Role": null,
 				"Policies": [ "AWSLambdaBasicExecutionRole" ],
 				"Events": {
-					"PutResource": {
+					"RootGet": {
 						"Type": "Api",
 						"Properties": {
 							"Path": "/",

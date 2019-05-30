@@ -1,3 +1,42 @@
+### Release 2019-05-01
+* **Amazon.Lambda.AspNetCoreServer (3.0.4)**
+	* Pull Request [#449](https://github.com/aws/aws-lambda-dotnet/pull/449) fixing routing with escape characters in resource path. Thanks [Chris/0](https://github.com/chrisoverzero)
+	* Fixed url encoding issue with query string values when called by API Gateway. [#451](https://github.com/aws/aws-lambda-dotnet/pull/451)
+	* Fixed issue handling ELB Health Checks when Lambda function placed behind an Application Load Balancer. [#452](https://github.com/aws/aws-lambda-dotnet/pull/452)
+* **Amazon.Lambda.Templates (3.7.1)**
+	* Updated dependencies for AWS SDK for .NET and the Amazon Lambda packages to the latest version.
+
+### Release 2019-03-18
+* **Amazon.Lambda.TestTool-2.1 (0.9.2)** (Preview)
+    * Fixed issue loading dependent assemblies when the name differs from the NuGet package.
+
+
+### Release 2019-03-18
+* **Amazon.Lambda.RuntimeSupport (1.0.0)**
+  * New package to support running custom .NET Core Lambda runtimes like .NET Core 2.2. Read the following blog for more information. [https://aws.amazon.com/blogs/developer/announcing-amazon-lambda-runtimesupport/](https://aws.amazon.com/blogs/developer/announcing-amazon-lambda-runtimesupport/)
+* **Blueprints**
+  * New Custom Runtime blueprint for both C# and F#
+  * **Amazon.Lambda.Templates (3.7.0)** released with latest blueprints.
+
+
+### Release 2019-02-21
+* **Amazon.Lambda.AspNetCoreServer (3.0.3)**
+  * Pull Request [#409](https://github.com/aws/aws-lambda-dotnet/pull/409) allowing claims from custom authorizer to be passed into ASP.NET Core. Thanks [Lukas Sinkus](https://github.com/LUS1N)
+
+### Release 2019-02-21
+* **Amazon.Lambda.AspNetCoreServer (3.0.2)**
+    * Fixed bug with Amazon.Lambda.Logging.AspNetCoreServer not reading logging settings from configuration like appsettings.json.
+    * Added PostCreateWebHost virtual method to run code after the IWebHost has been created but not started.
+* **Amazon.Lambda.Logging.AspNetCore (2.2.0)**
+    * Pull Request [#401](https://github.com/aws/aws-lambda-dotnet/pull/401) adds ability to log EventId and Exception. Thanks [Piotr Karpala](https://github.com/aws/aws-lambda-dotnet/pull/401)
+* **Amazon.Lambda.TestTool-2.1 (0.9.1)** (Preview)
+    * Pull Request [#403](https://github.com/aws/aws-lambda-dotnet/pull/403) added `--path` command line argument. Thanks [Aidan Ryan](https://github.com/aidanjryan)
+    * Fixed bug when searching for default config files during startup.
+* **Blueprints**
+    * Updated logging section in appsettings.json to Informational to match before the logging fix in Amazon.Lambda.AspNetCoreServer
+    * Updated NuGet dependencies.
+    *  **Amazon.Lambda.Templates (3.6.0)** released with latest blueprints.
+
 ### Release 2019-02-08
 * **Amazon.Lambda.AspNetCoreServer (3.0.1)**
     * Fixed issue with content-type being incorrectly set by API Gateway when ASP.NET Core does not return a content-type.

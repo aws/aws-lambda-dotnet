@@ -10,6 +10,26 @@ namespace Amazon.Lambda.AspNetCoreServer
     /// <typeparam name ="TStartup">The type containing the startup methods for the application.</typeparam>
     public abstract class APIGatewayProxyFunction<TStartup> : APIGatewayProxyFunction where TStartup : class
     {
+        /// <summary>
+        /// Default Constructor. The ASP.NET Core Framework will be initialized as part of the construction.
+        /// </summary>
+        protected APIGatewayProxyFunction()
+            : base()
+        {
+
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="startupMode">Configure when the ASP.NET Core framework will be initialized</param>
+        protected APIGatewayProxyFunction(StartupMode startupMode)
+            : base(startupMode)
+        {
+
+        }
+
         /// <inheritdoc/>
         protected override IWebHostBuilder CreateWebHostBuilder() =>
             base.CreateWebHostBuilder().UseStartup<TStartup>();

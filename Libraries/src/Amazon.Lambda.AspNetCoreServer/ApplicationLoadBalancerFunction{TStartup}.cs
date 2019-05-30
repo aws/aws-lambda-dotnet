@@ -10,6 +10,26 @@ namespace Amazon.Lambda.AspNetCoreServer
     /// <typeparam name ="TStartup">The type containing the startup methods for the application.</typeparam>
     public abstract class ApplicationLoadBalancerFunction<TStartup> : ApplicationLoadBalancerFunction where TStartup : class
     {
+        /// <summary>
+        /// Default Constructor. The ASP.NET Core Framework will be initialized as part of the construction.
+        /// </summary>
+        protected ApplicationLoadBalancerFunction()
+            : base()
+        {
+
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="startupMode">Configure when the ASP.NET Core framework will be initialized</param>
+        protected ApplicationLoadBalancerFunction(StartupMode startupMode)
+            : base(startupMode)
+        {
+
+        }
+
         /// <inheritdoc/>
         protected override IWebHostBuilder CreateWebHostBuilder() =>
             base.CreateWebHostBuilder().UseStartup<TStartup>();

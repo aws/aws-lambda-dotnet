@@ -12,12 +12,13 @@ using Newtonsoft.Json;
 namespace Packager
 {
     public class VSMsbuildBlueprintPackager : BaseBlueprintPackager
-    { 
-        
+    {
+        private static IList<string> ExcludeBlueprints = new List<string>() { };
+
         string _outputDirectory;
 
         public VSMsbuildBlueprintPackager(string blueprintRoot, string outputDirectory)
-            : base(blueprintRoot)
+            : base(blueprintRoot, ExcludeBlueprints)
         {
             _outputDirectory = outputDirectory; // Path.Combine(outputDirectory, "VisualStudioBlueprintsMsbuild");
             if(!Directory.Exists(_outputDirectory))

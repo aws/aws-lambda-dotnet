@@ -64,14 +64,23 @@ namespace Amazon.Lambda.AspNetCoreServer
                 requestFeatures.Method = lambdaRequest.HttpMethod;
                 requestFeatures.Path = Utilities.DecodeResourcePath(lambdaRequest.Path);
 
-                requestFeatures.QueryString = Utilities.CreateQueryStringParamaters(
-                    lambdaRequest.QueryStringParameters, lambdaRequest.MultiValueQueryStringParameters);
+                requestFeatures.QueryString = Utilities.CreateQueryStringParameters(
+                    lambdaRequest.QueryStringParameters, lambdaRequest.MultiValueQueryStringParameters, false);
 
                 Utilities.SetHeadersCollection(requestFeatures.Headers, lambdaRequest.Headers, lambdaRequest.MultiValueHeaders);
 
                 if (!string.IsNullOrEmpty(lambdaRequest.Body))
                 {
                     requestFeatures.Body = Utilities.ConvertLambdaRequestBodyToAspNetCoreBody(lambdaRequest.Body, lambdaRequest.IsBase64Encoded);
+                }
+
+                var userAgent = GetSingleHeaderValue(lambdaRequest, "user-agent");
+                if (userAgent != null && userAgent.StartsWith("ELB-HealthChecker/", StringComparison.OrdinalIgnoreCase))
+                {
+                    requestFeatures.Scheme = "https";
+                    requestFeatures.Headers["host"] = "localhost";
+                    requestFeatures.Headers["x-forwarded-port"] = "443";
+                    requestFeatures.Headers["x-forwarded-for"] = "127.0.0.1";
                 }
 
                 // Call consumers customize method in case they want to change how API Gateway's request

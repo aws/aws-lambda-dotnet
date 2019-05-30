@@ -29,14 +29,13 @@ namespace Amazon.Lambda.TestTool
                     Port = commandOptions.Port
                 };
 
-                var path = Directory.GetCurrentDirectory();
+                var path = commandOptions.Path ?? Directory.GetCurrentDirectory();
 
-                // Check to see if running in debug mode from this project's directory which means the test tool is being debugged. 
+                // Check to see if running in debug mode from this project's directory which means the test tool is being debugged.
                 // To make debugging easier pick one of the test Lambda projects.
-                if (Directory.GetCurrentDirectory().EndsWith("Amazon.Lambda.TestTool"))
+                if (path.EndsWith("Amazon.Lambda.TestTool"))
                 {
-                    path = Path.Combine(Directory.GetCurrentDirectory(),
-                        "../LambdaFunctions/S3EventFunction/bin/Debug/netcoreapp2.1");
+                    path = Path.Combine(path, "../LambdaFunctions/S3EventFunction/bin/Debug/netcoreapp2.1");
                 }
                 // If running in the project directory select the build directory so the deps.json file can be found.
                 else if (Utils.IsProjectDirectory(path))
@@ -87,13 +86,21 @@ namespace Amazon.Lambda.TestTool
             {
                 foreach (var file in Directory.GetFiles(lambdaFunctionDirectory, "*.json", SearchOption.TopDirectoryOnly))
                 {
-                    var data = JsonMapper.ToObject(File.ReadAllText(file));
-
-                    if(data.ContainsKey("framework") && data["framework"].ToString().StartsWith("netcoreapp") && 
-                        (data.ContainsKey("function-handler") || data.ContainsKey("template")))
+                    try
                     {
-                        Console.WriteLine($"Found Lambda config file {file}");
-                        configFiles.Add(file);
+                        var data = JsonMapper.ToObject(File.ReadAllText(file));
+
+                        if (data.IsObject &&
+                            data.ContainsKey("framework") && data["framework"].ToString().StartsWith("netcoreapp") &&
+                            (data.ContainsKey("function-handler") || data.ContainsKey("template")))
+                        {
+                            Console.WriteLine($"Found Lambda config file {file}");
+                            configFiles.Add(file);
+                        }
+                    }
+                    catch
+                    {
+                        Console.WriteLine($"Error parsing JSON file: {file}");
                     }
                 }
 

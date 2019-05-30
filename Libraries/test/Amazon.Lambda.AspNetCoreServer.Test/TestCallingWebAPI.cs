@@ -9,7 +9,6 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -26,20 +25,20 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var context = new TestLambdaContext();
 
-            var response = await this.InvokeAPIGatewayRequest(context, "values-get-all-apigatway-request.json");
+            var response = await this.InvokeAPIGatewayRequest(context, "values-get-all-apigateway-request.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
             Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
             Assert.Equal("application/json; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
 
-            Assert.Contains("OnStarting Called", ((TestLambdaLogger)context.Logger).Buffer.ToString());
+            Assert.Contains("OnStarting Called", ((TestLambdaLogger) context.Logger).Buffer.ToString());
         }
 
         [Fact]
         public async Task TestGetAllValuesWithCustomPath()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-get-different-proxypath-apigatway-request.json");
+            var response = await this.InvokeAPIGatewayRequest("values-get-different-proxypath-apigateway-request.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
@@ -50,7 +49,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetSingleValue()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-get-single-apigatway-request.json");
+            var response = await this.InvokeAPIGatewayRequest("values-get-single-apigateway-request.json");
 
             Assert.Equal("value=5", response.Body);
             Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
@@ -60,7 +59,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetQueryStringValue()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigatway-request.json");
+            var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigateway-request.json");
 
             Assert.Equal("Lewis, Meriwether", response.Body);
             Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
@@ -70,7 +69,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetNoQueryStringApiGateway()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-get-no-querystring-apigatway-request.json");
+            var response = await this.InvokeAPIGatewayRequest("values-get-no-querystring-apigateway-request.json");
 
             Assert.Equal(string.Empty, response.Body);
             Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
@@ -80,17 +79,19 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetEncodingQueryStringGateway()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigatway-encoding-request.json");
+            var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigateway-encoding-request.json");
+            var results = JsonConvert.DeserializeObject<TestWebApp.Controllers.RawQueryStringController.Results>(response.Body);
+            Assert.Equal("http://www.gooogle.com", results.Url);
+            Assert.Equal(DateTimeOffset.Parse("2019-03-12T16:06:06.549817+00:00"), results.TestDateTimeOffset);
 
-            Assert.Equal("?url=http://www.gooogle.com", response.Body);
             Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
-            Assert.Equal("text/plain; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
+            Assert.Equal("application/json; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
         }
 
         [Fact]
         public async Task TestPutWithBody()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-put-withbody-apigatway-request.json");
+            var response = await this.InvokeAPIGatewayRequest("values-put-withbody-apigateway-request.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("Agent, Smith", response.Body);
@@ -101,15 +102,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestDefaultResponseErrorCode()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-get-error-apigatway-request.json");
+            var response = await this.InvokeAPIGatewayRequest("values-get-error-apigateway-request.json");
 
             Assert.Equal(500, response.StatusCode);
             Assert.Equal(string.Empty, response.Body);
         }
 
         [Theory]
-        [InlineData("values-get-aggregateerror-apigatway-request.json", "AggregateException")]
-        [InlineData("values-get-typeloaderror-apigatway-request.json", "ReflectionTypeLoadException")]
+        [InlineData("values-get-aggregateerror-apigateway-request.json", "AggregateException")]
+        [InlineData("values-get-typeloaderror-apigateway-request.json", "ReflectionTypeLoadException")]
         public async Task TestEnhancedExceptions(string requestFileName, string expectedExceptionType)
         {
             var response = await this.InvokeAPIGatewayRequest(requestFileName);
@@ -123,7 +124,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGettingSwaggerDefinition()
         {
-            var response = await this.InvokeAPIGatewayRequest("swagger-get-apigatway-request.json");
+            var response = await this.InvokeAPIGatewayRequest("swagger-get-apigateway-request.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.True(response.Body.Length > 0);
@@ -133,7 +134,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public void TestGetCustomAuthorizerValue()
         {
-            var requestStr = File.ReadAllText("values-get-customauthorizer-apigatway-request.json");
+            var requestStr = File.ReadAllText("values-get-customauthorizer-apigateway-request.json");
             var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
             Assert.NotNull(request.RequestContext.Authorizer);
             Assert.NotNull(request.RequestContext.Authorizer.StringKey);
@@ -160,8 +161,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                         new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
                         {
                             Effect = "Allow",
-                            Action = new HashSet<string> { "execute-api:Invoke" },
-                            Resource = new HashSet<string> { "arn:aws:execute-api:us-west-2:1234567890:apit123d45/Prod/GET/*" }
+                            Action = new HashSet<string> {"execute-api:Invoke"},
+                            Resource = new HashSet<string>
+                                {"arn:aws:execute-api:us-west-2:1234567890:apit123d45/Prod/GET/*"}
                         }
                     }
                 }
@@ -176,9 +178,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestGetBinaryContent()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-get-binary-apigatway-request.json");
-            
-            Assert.Equal((int)HttpStatusCode.OK, response.StatusCode);
+            var response = await this.InvokeAPIGatewayRequest("values-get-binary-apigateway-request.json");
+
+            Assert.Equal((int) HttpStatusCode.OK, response.StatusCode);
 
             IList<string> contentType;
             Assert.True(response.MultiValueHeaders.TryGetValue("Content-Type", out contentType),
@@ -186,12 +188,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("application/octet-stream", contentType[0]);
             Assert.NotNull(response.Body);
             Assert.True(response.Body.Length > 0,
-                    "Body content is not empty");
+                "Body content is not empty");
 
             Assert.True(response.IsBase64Encoded, "Response IsBase64Encoded");
 
             // Compute a 256-byte array, with values 0-255
-            var binExpected = new byte[byte.MaxValue].Select((val, index) => (byte)index).ToArray();
+            var binExpected = new byte[byte.MaxValue].Select((val, index) => (byte) index).ToArray();
             var binActual = Convert.FromBase64String(response.Body);
             Assert.Equal(binExpected, binActual);
         }
@@ -210,10 +212,27 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestEncodeSpaceInResourcePath()
         {
+            var requestStr = GetRequestContent("encode-space-in-resource-path.json");
             var response = await this.InvokeAPIGatewayRequest("encode-space-in-resource-path.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("value=tmh/file name.xml", response.Body);
+
+        }
+
+        [Fact]
+        public async Task TestEncodeSlashInResourcePath()
+        {
+            var requestStr = GetRequestContent("encode-slash-in-resource-path.json");
+            var response = await this.InvokeAPIGatewayRequestWithContent(new TestLambdaContext(), requestStr);
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("{\"only\":\"a%2Fb\"}", response.Body);
+
+            response = await this.InvokeAPIGatewayRequestWithContent(new TestLambdaContext(), requestStr.Replace("a%2Fb", "a/b"));
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("{\"first\":\"a\",\"second\":\"b\"}", response.Body);
         }
 
         [Fact]
@@ -251,6 +270,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("You Have Access", response.Body);
         }
 
+        [Fact]
+        public async Task TestAuthTestAccess_CustomLambdaAuthorizerClaims()
+        {
+            var response =
+                await this.InvokeAPIGatewayRequest("authtest-access-request-custom-lambda-authorizer-output.json");
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("You Have Access", response.Body);
+        }
 
         [Fact]
         public async Task TestAuthTestNoAccess()
@@ -275,7 +303,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task TestDeleteNoContentContentType()
         {
-            var response = await this.InvokeAPIGatewayRequest("values-delete-no-content-type-apigatway-request.json");
+            var response = await this.InvokeAPIGatewayRequest("values-delete-no-content-type-apigateway-request.json");
 
             Assert.Equal(200, response.StatusCode);
             Assert.True(response.Body.Length == 0);
@@ -303,11 +331,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(TestLambdaContext context, string fileName)
         {
+            return await InvokeAPIGatewayRequestWithContent(context, GetRequestContent(fileName));
+        }
+
+        private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequestWithContent(TestLambdaContext context, string requestContent)
+        {
             var lambdaFunction = new ApiGatewayLambdaFunction();
+            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestContent);
+            return await lambdaFunction.FunctionHandlerAsync(request, context);
+        }
+
+        private string GetRequestContent(string fileName)
+        {
             var filePath = Path.Combine(Path.GetDirectoryName(this.GetType().GetTypeInfo().Assembly.Location), fileName);
             var requestStr = File.ReadAllText(filePath);
-            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
-            return await lambdaFunction.FunctionHandlerAsync(request, context);
+            return requestStr;
         }
     }
 }

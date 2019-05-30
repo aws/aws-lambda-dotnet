@@ -168,9 +168,10 @@ namespace Amazon.Lambda.AspNetCoreServer
                 })
                 .ConfigureLogging((hostingContext, logging) =>
                 {
+                    logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
+
                     if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LAMBDA_TASK_ROOT")))
                     {
-                        logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
                         logging.AddConsole();
                         logging.AddDebug();
                     }
@@ -207,6 +208,8 @@ namespace Amazon.Lambda.AspNetCoreServer
 
 
             _host = builder.Build();
+            PostCreateWebHost(_host);
+
             _host.Start();
 
             _server = _host.Services.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
@@ -393,6 +396,16 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         private protected virtual void InternalCustomResponseExceptionHandling(HostingApplication.Context context, TRESPONSE lambdaReponse, ILambdaContext lambdaContext, Exception ex)
+        {
+
+        }
+
+        /// <summary>
+        /// This methid is called after the IWebHost is created from the IWebHostBuilder and the services have been configured. The
+        /// WebHost hasn't been started yet.
+        /// </summary>
+        /// <param name="webHost"></param>
+        protected virtual void PostCreateWebHost(IWebHost webHost)
         {
 
         }
