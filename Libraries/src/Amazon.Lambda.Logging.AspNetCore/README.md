@@ -52,7 +52,7 @@ Configuration file, `appsettings.json`:
     "IncludeCategory": false,
     "IncludeLogLevel": false,
     "IncludeNewline":  true,
-	"IncludException": true,
+    "IncludException": true,
     "IncludeEventId": true,
     "LogLevel": {
       "Default": "Debug",
