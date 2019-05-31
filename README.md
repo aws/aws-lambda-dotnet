@@ -148,7 +148,7 @@ For more information see the [README.md](Libraries/src/Amazon.Lambda.TestUtiliti
 
 ## Blueprints
 
-Blueprints in this repository are .NET Core Lambda functions that can used to get started. In Visual Studio the Blueprints are avalible when creating a new project and selecting the AWS Lambda Project.
+Blueprints in this repository are .NET Core Lambda functions that can used to get started. In Visual Studio the Blueprints are available when creating a new project and selecting the AWS Lambda Project.
 
 
 ### Dotnet CLI Templates
