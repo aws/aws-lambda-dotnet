@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\..\buildtools\common.props" />
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Description>Amazon ASP.NET Core support - Application Load Balancer Identity package.</Description>
+    <AssemblyTitle>Amazon.Lambda.ApplicationLoadBalancerIdentity</AssemblyTitle>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <AssemblyName>Amazon.Lambda.ApplicationLoadBalancerIdentity</AssemblyName>
+    <PackageId>Amazon.Lambda.ApplicationLoadBalancerIdentity</PackageId>
+    <PackageTags>AWS;Amazon;Lambda;ALB</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.1.0" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="5.4.0" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.5" />
+  </ItemGroup>
+
+</Project>

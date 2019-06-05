@@ -91,6 +91,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.RuntimeSuppor
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.RuntimeSupport.UnitTests", "test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests\Amazon.Lambda.RuntimeSupport.UnitTests.csproj", "{10E47FE4-8620-4933-A14D-E33F25CA557A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.ApplicationLoadBalancerIdentity", "src\Amazon.Lambda.ApplicationLoadBalancerIdentity\Amazon.Lambda.ApplicationLoadBalancerIdentity.csproj", "{3DD26AE4-2CEB-4DC8-82AC-F71EC17AC757}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.ApplicationLoadBalancerIdentity.Tests", "test\Amazon.Lambda.ApplicationLoadBalancerIdentity.Tests\Amazon.Lambda.ApplicationLoadBalancerIdentity.Tests.csproj", "{E60C7487-7491-4BB4-BC47-E0F803515835}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -241,6 +245,14 @@ Global
 		{10E47FE4-8620-4933-A14D-E33F25CA557A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10E47FE4-8620-4933-A14D-E33F25CA557A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10E47FE4-8620-4933-A14D-E33F25CA557A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3DD26AE4-2CEB-4DC8-82AC-F71EC17AC757}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DD26AE4-2CEB-4DC8-82AC-F71EC17AC757}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DD26AE4-2CEB-4DC8-82AC-F71EC17AC757}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DD26AE4-2CEB-4DC8-82AC-F71EC17AC757}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E60C7487-7491-4BB4-BC47-E0F803515835}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E60C7487-7491-4BB4-BC47-E0F803515835}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E60C7487-7491-4BB4-BC47-E0F803515835}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E60C7487-7491-4BB4-BC47-E0F803515835}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -285,6 +297,8 @@ Global
 		{61934DD2-CFBB-48E1-947C-75E8F736734C} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{39FD7632-73D0-4BB3-AE99-DC7B8B251E29} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{10E47FE4-8620-4933-A14D-E33F25CA557A} = {B5BD0336-7D08-492C-8489-42C987E29B39}
+		{3DD26AE4-2CEB-4DC8-82AC-F71EC17AC757} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{E60C7487-7491-4BB4-BC47-E0F803515835} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}
