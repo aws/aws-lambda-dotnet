@@ -1,5 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Amazon.Lambda.Logging.AspNetCore;
 using System;
+using System.Collections.Concurrent;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -7,10 +8,15 @@ namespace Microsoft.Extensions.Logging
     /// The ILoggerProvider implementation that is added to the ASP.NET Core logging system to create loggers
     /// that will send the messages to the CloudWatch LogGroup associated with this Lambda function.
     /// </summary>
-    internal class LambdaILoggerProvider : ILoggerProvider
+    internal class LambdaILoggerProvider : ILoggerProvider, ISupportExternalScope
     {
         // Private fields
         private readonly LambdaLoggerOptions _options;
+        private IExternalScopeProvider _scopeProvider;
+        private readonly ConcurrentDictionary<string, LambdaILogger> _loggers;
+
+        // Constants
+        private const string DEFAULT_CATEGORY_NAME = "Default";
 
         /// <summary>
         /// Creates the provider
@@ -24,6 +30,8 @@ namespace Microsoft.Extensions.Logging
             }
 
             _options = options;
+            _loggers = new ConcurrentDictionary<string, LambdaILogger>();
+            _scopeProvider = options.IncludeScopes ? new LoggerExternalScopeProvider() : NullExternalScopeProvider.Instance;
         }
 
         /// <summary>
@@ -33,7 +41,23 @@ namespace Microsoft.Extensions.Logging
         /// <returns></returns>
         public ILogger CreateLogger(string categoryName)
         {
-            return new LambdaILogger(categoryName, _options);
+            var name = string.IsNullOrEmpty(categoryName) ? DEFAULT_CATEGORY_NAME : categoryName;
+
+            return _loggers.GetOrAdd(name, loggerName => new LambdaILogger(name, _options)
+            {
+                ScopeProvider = _scopeProvider
+            });
+        }
+
+        /// <inheritdoc />
+        public void SetScopeProvider(IExternalScopeProvider scopeProvider)
+        {
+            _scopeProvider = scopeProvider;
+
+            foreach (var logger in _loggers)
+            {
+                logger.Value.ScopeProvider = _scopeProvider;
+            }
         }
 
         /// <summary>

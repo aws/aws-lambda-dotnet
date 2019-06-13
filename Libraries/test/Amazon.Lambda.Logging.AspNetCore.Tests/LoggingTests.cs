@@ -323,7 +323,42 @@ namespace Amazon.Lambda.Tests
 			}
 		}
 
-		private static string GetAppSettingsPath(string fileName)
+        [Fact]
+        public void TestLoggingScopesEvents()
+        {
+            // Arrange
+            using (var writer = new StringWriter())
+            {
+                ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                var loggerOptions = new LambdaLoggerOptions{ IncludeScopes = true };
+                var loggerfactory = new TestLoggerFactory()
+                    .AddLambdaLogger(loggerOptions);
+
+                var defaultLogger = loggerfactory.CreateLogger("Default");
+                
+                // Act
+                using(defaultLogger.BeginScope("First {0}", "scope123"))
+                {
+                    defaultLogger.LogInformation("Hello");
+
+                    using(defaultLogger.BeginScope("Second {0}", "scope456"))
+                    {
+                        defaultLogger.LogError("In 2nd scope");
+                        defaultLogger.LogInformation("that's enough");
+                    }
+                }
+                
+                // Assert
+                // get text and verify
+                var text = writer.ToString();
+                Assert.Contains("[Information] First scope123 => Default: Hello ", text);
+                Assert.Contains("[Error] First scope123 Second scope456 => Default: In 2nd scope ", text);
+                Assert.Contains("[Information] First scope123 Second scope456 => Default: that's enough ", text);
+            }
+        }
+
+        private static string GetAppSettingsPath(string fileName)
 		{
 			return Path.Combine(APPSETTINGS_DIR, fileName);
 		}
