@@ -67,6 +67,7 @@
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.S3;ProjectName=S3FunctionF;Lang=F#"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.S3;ProjectName=S3FunctionServerlessC;Lang=C#"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.S3;ProjectName=S3FunctionServerlessF;Lang=F#"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SNS;ProjectName=SNSFunctionC;Lang=C#"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SQS;ProjectName=SQSFunctionC;Lang=C#"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPIC;Lang=C#"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPIF;Lang=F#"/>
