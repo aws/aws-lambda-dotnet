@@ -11,9 +11,9 @@ The table below shows the currently supported patch of each major version of .NE
 
 |Version|Currently Supported Patch|In Development Queue|Latest Microsoft Release|
 |-------|-------------------------|--------------------|------------------------|
-|1.0|1.0.13|1.0.15|1.0.15|
+|1.0|1.0.13|1.0.16|1.0.16|
 |2.0|2.0.9||2.0.9|
-|2.1|2.1.8|2.1.10|2.1.10|
+|2.1|2.1.10|2.1.11|2.1.11|
 
 ## Learning Resources
 
@@ -148,7 +148,7 @@ For more information see the [README.md](Libraries/src/Amazon.Lambda.TestUtiliti
 
 ## Blueprints
 
-Blueprints in this repository are .NET Core Lambda functions that can used to get started. In Visual Studio the Blueprints are avalible when creating a new project and selecting the AWS Lambda Project.
+Blueprints in this repository are .NET Core Lambda functions that can used to get started. In Visual Studio the Blueprints are available when creating a new project and selecting the AWS Lambda Project.
 
 
 ### Dotnet CLI Templates
