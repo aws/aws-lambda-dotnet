@@ -6,10 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.IdentityManagement" Version="3.3.101.12" />
-    <PackageReference Include="AWSSDK.Lambda" Version="3.3.102.4" />
-    <PackageReference Include="AWSSDK.S3" Version="3.3.102.3" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.1.0" />
+    <PackageReference Include="AWSSDK.IdentityManagement" Version="3.3.101.20" />
+    <PackageReference Include="AWSSDK.Lambda" Version="3.3.102.12" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.102.11" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.1.1" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
       <PrivateAssets>all</PrivateAssets>
@@ -18,7 +18,7 @@
     <PackageReference Include="xunit" Version="2.4.1" />
 
     <!-- This needs to be referenced to allow testing via AssumeRole credentials -->
-    <PackageReference Include="AWSSDK.SecurityToken" Version="3.3.101.4" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="3.3.101.12" />
   </ItemGroup>
 
   <Target Name="PackageTestFunction" BeforeTargets="BeforeBuild">

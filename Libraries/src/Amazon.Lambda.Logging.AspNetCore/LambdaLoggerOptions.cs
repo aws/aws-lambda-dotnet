@@ -19,6 +19,7 @@ namespace Microsoft.Extensions.Logging
         private const string INCLUDE_NEWLINE_KEY = "IncludeNewline";
         private const string INCLUDE_EXCEPTION_KEY = "IncludeException";
 		private const string INCLUDE_EVENT_ID_KEY = "IncludeEventId";
+		private const string INCLUDE_SCOPES_KEY = "IncludeScopes";
         private const string LOG_LEVEL_KEY = "LogLevel";
 
         /// <summary>
@@ -53,12 +54,16 @@ namespace Microsoft.Extensions.Logging
         public bool IncludeEventId { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether scopes should be included in the message.
+        /// Defaults to <c>false</c>.
+        /// </summary>
+        public bool IncludeScopes { get; set; }
+        /// <summary>
         /// Function used to filter events based on the log level.
         /// Default value is null and will instruct logger to log everything.
         /// </summary>
         [CLSCompliant(false)]  // https://github.com/aspnet/Logging/issues/500
         public Func<string, LogLevel, bool> Filter { get; set; }
-
 
         /// <summary>
         /// Constructs instance of LambdaLoggerOptions with default values.
@@ -70,6 +75,7 @@ namespace Microsoft.Extensions.Logging
             IncludeNewline = true;
             IncludeException = false;
             IncludeEventId = false;
+            IncludeScopes = false;
             Filter = null;
         }
 
@@ -146,6 +152,11 @@ namespace Microsoft.Extensions.Logging
             if (TryGetSection(loggerConfiguration, LOG_LEVEL_KEY, out IConfiguration logLevelsSection))
             {
                 Filter = CreateFilter(logLevelsSection);
+            }
+
+            if (TryGetString(loggerConfiguration, INCLUDE_SCOPES_KEY, out string includeScopesString))
+            {
+                IncludeScopes = bool.Parse(includeScopesString);
             }
         }
 
