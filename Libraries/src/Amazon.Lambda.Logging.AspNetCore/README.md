@@ -1,4 +1,4 @@
-# Amazon.Lambda.Logging.AspNetCore
+﻿# Amazon.Lambda.Logging.AspNetCore
 
 This package contains an implementation of ASP.NET Core's ILogger class, allowing an application to use the standard ASP.NET Core logging functionality to write CloudWatch Log events.
 
@@ -19,6 +19,7 @@ public void Configure(ILoggerFactory loggerFactory)
     loggerOptions.IncludeNewline = true;
     loggerOptions.IncludeException = true;
     loggerOptions.IncludeEventId = true;
+    loggerOptions.IncludeScopes = true;
 
     // Configure Filter to only log some 
     loggerOptions.Filter = (category, logLevel) =>
@@ -54,6 +55,7 @@ Configuration file, `appsettings.json`:
     "IncludeNewline":  true,
     "IncludException": true,
     "IncludeEventId": true,
+    "IncludeScopes": true,
     "LogLevel": {
       "Default": "Debug",
       "Microsoft": "Information"
@@ -77,5 +79,20 @@ public void Configure(ILoggerFactory loggerFactory)
     // Configure Lambda logging
     loggerFactory
         .AddLambdaLogger(loggerOptions);
+}
+```
+
+# Using scopes
+When `loggerOptions.IncludeScopes` is set to `true`.
+```csharp
+using(defaultLogger.BeginScope(awsRequestId))
+{
+    defaultLogger.LogInformation("Hello");
+
+    using(defaultLogger.BeginScope("Second {0}", "scope456"))
+    {
+        defaultLogger.LogError("In 2nd scope");
+        defaultLogger.LogInformation("that's enough");
+    }
 }
 ```
