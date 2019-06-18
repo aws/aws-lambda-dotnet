@@ -58,7 +58,8 @@ namespace Microsoft.Extensions.Logging
         /// Defaults to <c>false</c>.
         /// </summary>
         public bool IncludeScopes { get; set; }
-        /// <summary>
+
+		/// <summary>
         /// Function used to filter events based on the log level.
         /// Default value is null and will instruct logger to log everything.
         /// </summary>

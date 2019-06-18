@@ -247,6 +247,27 @@ namespace Amazon.Lambda.Tests
 			Assert.False(loggerOptions.IncludeNewline);
 			Assert.True(loggerOptions.IncludeEventId);
 			Assert.True(loggerOptions.IncludeException);
+			Assert.False(loggerOptions.IncludeScopes);
+		}
+
+		[Fact]
+		public void TestConfigurationReadingForScopes()
+		{
+			// Arrange
+			var configuration = new ConfigurationBuilder()
+					.AddJsonFile(GetAppSettingsPath("appsettings.scopes.json"))
+					.Build();
+
+			// Act
+			var loggerOptions = new LambdaLoggerOptions(configuration);
+
+			// Assert
+			Assert.False(loggerOptions.IncludeCategory);
+			Assert.False(loggerOptions.IncludeLogLevel);
+			Assert.False(loggerOptions.IncludeNewline);
+			Assert.True(loggerOptions.IncludeEventId);
+			Assert.True(loggerOptions.IncludeException);
+			Assert.True(loggerOptions.IncludeScopes);
 		}
 
 		[Fact]
@@ -358,7 +379,42 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        private static string GetAppSettingsPath(string fileName)
+		[Fact]
+		public void TestLoggingScopesEvents_When_ScopesDisabled()
+		{
+			// Arrange
+			using (var writer = new StringWriter())
+			{
+				ConnectLoggingActionToLogger(message => writer.Write(message));
+
+				var loggerOptions = new LambdaLoggerOptions { IncludeScopes = false };
+				var loggerfactory = new TestLoggerFactory()
+					.AddLambdaLogger(loggerOptions);
+
+				var defaultLogger = loggerfactory.CreateLogger("Default");
+
+				// Act
+				using (defaultLogger.BeginScope("First {0}", "scope123"))
+				{
+					defaultLogger.LogInformation("Hello");
+
+					using (defaultLogger.BeginScope("Second {0}", "scope456"))
+					{
+						defaultLogger.LogError("In 2nd scope");
+						defaultLogger.LogInformation("that's enough");
+					}
+				}
+
+				// Assert
+				// get text and verify
+				var text = writer.ToString();
+				Assert.Contains("[Information] Default: Hello ", text);
+				Assert.Contains("[Error] Default: In 2nd scope ", text);
+				Assert.Contains("[Information] Default: that's enough ", text);
+			}
+		}
+
+		private static string GetAppSettingsPath(string fileName)
 		{
 			return Path.Combine(APPSETTINGS_DIR, fileName);
 		}
