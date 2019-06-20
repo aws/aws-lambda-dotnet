@@ -1,3 +1,14 @@
+### Release 2019-06-19
+* **Amazon.Lambda.Logging.AspNetCore (2.3.0)**
+  * Pull Request [#471](https://github.com/aws/aws-lambda-dotnet/pull/471) added support for logging scopes. Thanks [Piotr Karpala](https://github.com/karpikpl)
+* **Amazon.Lambda.AspNetCoreServer (3.1.0)**
+  * Updated to use version 2.3.0 of Amazon.Lambda.Logging.AspNetCore
+  * Pull Request [#459](https://github.com/aws/aws-lambda-dotnet/pull/459) add warning when using incorrect base type. Thanks [Hans van Bakel](https://github.com/hvanbakel)
+* **Amazon.Lambda.Templates (3.8.0)**
+  * Pull Request [#457](https://github.com/aws/aws-lambda-dotnet/pull/457) added Simple Notification Service template. Thanks [Nathan Westfall](https://github.com/nwestfall)
+  * Remove version number for Microsoft.AspNetCore.App in ASP.NET Core templates. The validation check is no longer needed in current versions of .NET Core and has been removed from AWS .NET Tooling.
+  * Updated AWS SDK for.NET and Amazon Lambda package references in all of the templates.
+
 ### Release 2019-05-01
 * **Amazon.Lambda.AspNetCoreServer (3.0.4)**
 	* Pull Request [#449](https://github.com/aws/aws-lambda-dotnet/pull/449) fixing routing with escape characters in resource path. Thanks [Chris/0](https://github.com/chrisoverzero)
