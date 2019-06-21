@@ -1,3 +1,10 @@
+### Release 2019-06-20
+* **Amazon.Lambda.TestTool-2.1 (0.9.3)**
+  * Explicily reference the latest version of Newtonsoft.Json (12.0.2). This allows 
+Lambda functions that are using a newer then what ASP.NET Core uses by default to have issues 
+loading Newtonsoft.Json.
+  
+
 ### Release 2019-06-19
 * **Amazon.Lambda.Logging.AspNetCore (2.3.0)**
   * Pull Request [#471](https://github.com/aws/aws-lambda-dotnet/pull/471) added support for logging scopes. Thanks [Piotr Karpala](https://github.com/karpikpl)
