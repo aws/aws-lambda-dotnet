@@ -13,6 +13,11 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
+#if NETCOREAPP_3_0
+using Microsoft.Extensions.Hosting;
+#endif
+
+
 namespace Amazon.Lambda.AspNetCoreServer
 {
     public abstract class AbstractAspNetCoreFunction
