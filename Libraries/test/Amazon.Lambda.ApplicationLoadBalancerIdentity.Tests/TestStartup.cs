@@ -16,7 +16,7 @@
                 {
                     MaxCacheSizeMB = 10,
                     MaxCacheLifetime = TimeSpan.FromHours(1),
-                    VerifyTokenSignature = true,
+                    ValidateTokenSignature = true,
                     ValidateTokenLifetime = false
                 });
         }

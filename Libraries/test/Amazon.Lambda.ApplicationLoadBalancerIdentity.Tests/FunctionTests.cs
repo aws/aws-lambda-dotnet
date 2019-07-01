@@ -36,7 +36,7 @@ namespace Amazon.Lambda.ApplicationLoadBalancerIdentity.Tests
         {
             var opts = new ALBIdentityMiddlewareOptions
             {
-                VerifyTokenSignature = true,
+                ValidateTokenSignature = true,
                 MaxCacheSizeMB = cacheSize,
                 ValidateTokenLifetime = false
             };

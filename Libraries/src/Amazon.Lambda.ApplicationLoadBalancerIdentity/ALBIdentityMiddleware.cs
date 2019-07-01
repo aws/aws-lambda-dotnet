@@ -18,7 +18,7 @@
     using Org.BouncyCastle.OpenSsl;
 
     /// <summary>
-    /// A middleware class that extends the ALB OpenId Connect authentication functionality into ASP.NET Core.
+    /// A middleware class that extends the Application Load Balancer (ALB) OpenId Connect authentication functionality into ASP.NET Core.
     /// </summary>
     public class ALBIdentityMiddleware
     {
@@ -42,7 +42,7 @@
 
         // Validation related properties
         private readonly string region;
-        private readonly ConcurrentDictionary<string, Task<TokenValidationParameters>> validationParameters;
+        private readonly ConcurrentDictionary<string, TokenValidationParameters> cachedValidationParameters;
         private readonly JsonWebTokenHandler tokenHandler;
 
         // Properties from DI
@@ -62,11 +62,12 @@
             this.logger = logger;
             this.options = options;
 
-            if (this.options.VerifyTokenSignature)
+            if (this.options.ValidateTokenSignature)
             {
+                // Unit tests will set this property, so we only create a new client if it doesn't already have a value.
                 if (InternalHttpClient == null) InternalHttpClient = new HttpClient();
                 this.region = Environment.GetEnvironmentVariable(AWSRegionEnvironmentVariable);
-                this.validationParameters = new ConcurrentDictionary<string, Task<TokenValidationParameters>>();
+                this.cachedValidationParameters = new ConcurrentDictionary<string, TokenValidationParameters>();
                 this.tokenHandler = new JsonWebTokenHandler();
             }
 
@@ -79,10 +80,14 @@
                 // the maximum int size in seconds.
                 var maxCacheLife = TimeSpan.FromSeconds(int.MaxValue);
 
+                // Ensure that the cache compaction percentage has a sane value.
+                if (this.options.CacheCompactionPercentage < 1 || this.options.CacheCompactionPercentage > 50)
+                    this.options.CacheCompactionPercentage = 10;
+
                 this.cachedIds = new MemoryCache(new MemoryCacheOptions
                 {
                     // Evict 20% of cache entries on max size.
-                    CompactionPercentage = 0.2,
+                    CompactionPercentage = this.options.CacheCompactionPercentage / 100,
 
                     // Convert the user supplied value (in MB) to bytes.
                     SizeLimit = Convert.ToInt64(this.options.MaxCacheSizeMB.Value) * 1048576,
@@ -161,15 +166,15 @@
         {
             this.logger?.LogDebug("User Principal is '{0}' (issued by '{1}')", jwt.Subject, jwt.Issuer);
 
-            if (this.options.VerifyTokenSignature)
+            if (this.options.ValidateTokenSignature)
             {
-                var validationParameters = await this.validationParameters.GetOrAdd(jwt.Kid, async (key) =>
+                if (!this.cachedValidationParameters.TryGetValue(jwt.Kid, out TokenValidationParameters validationParameters))
                 {
                     var uri = string.Format(ALBPublicKeyUrlFormatString, this.region, jwt.Kid);
                     this.logger?.LogInformation("Retrieving ALB public key from '{0}'", uri);
                     var publicRsa = await InternalHttpClient.GetStringAsync(uri);
 
-                    return new TokenValidationParameters
+                    validationParameters = new TokenValidationParameters
                     {
                         RequireExpirationTime = true,
                         RequireSignedTokens = true,
@@ -180,10 +185,12 @@
                         ValidateLifetime = this.options.ValidateTokenLifetime,
                         ClockSkew = TimeSpan.FromMinutes(2)
                     };
-                });
+
+                    this.cachedValidationParameters.TryAdd(jwt.Kid, validationParameters);
+                }
 
                 var validationResult = this.tokenHandler.ValidateToken(jwt.EncodedToken, validationParameters);
-                this.logger?.LogDebug("Token Validation result: {0}", validationResult.Issuer);
+                this.logger?.LogDebug("Token Validation result: {0}", validationResult.IsValid);
 
                 if (!validationResult.IsValid)
                     throw validationResult.Exception;
