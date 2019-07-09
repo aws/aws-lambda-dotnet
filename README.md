@@ -157,7 +157,7 @@ New .NET Core projects can be created with the **dotnet new** command. By
 installing the **Amazon.Lambda.Templates** NuGet package the AWS Lamdba blueprints 
 can be created from the **dotnet new** command. To install the template execute the following command:
 ```
-dotnet new -i Amazon.Lambda.Templates::*
+dotnet new -i "Amazon.Lambda.Templates::*"
 ```
 
 The ::* on the end of the command indicates the latest version of the NuGet package.
