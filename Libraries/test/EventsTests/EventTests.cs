@@ -230,10 +230,10 @@ namespace Amazon.Lambda.Tests
         [Fact]
         public void SimpleEmailTest()
         {
-            using (var fileStream = File.OpenRead("simple-email-event.json"))
+            using (var fileStream = File.OpenRead("simple-email-event-lambda.json"))
             {
                 var serializer = new JsonSerializer();
-                var sesEvent = serializer.Deserialize<SimpleEmailEvent>(fileStream);
+                var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.LambdaReceiptAction>>(fileStream);
 
                 Assert.Equal(sesEvent.Records.Count, 1);
                 var record = sesEvent.Records[0];
@@ -285,6 +285,20 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.Ses.Receipt.SPFVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.VirusVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.ProcessingTimeMillis, 574);
+                
+                Handle(sesEvent);
+            }
+        }
+        public void SimpleEmailLambdaActionTest()
+        {
+            using (var fileStream = File.OpenRead("simple-email-event-lambda.json"))
+            {
+                var serializer = new JsonSerializer();
+                var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.LambdaReceiptAction>>(fileStream);
+
+                Assert.Equal(sesEvent.Records.Count, 1);
+                var record = sesEvent.Records[0];
+                
                 Assert.Equal(record.Ses.Receipt.Action.Type, "Lambda");
                 Assert.Equal(record.Ses.Receipt.Action.InvocationType, "Event");
                 Assert.Equal(record.Ses.Receipt.Action.FunctionArn, "arn:aws:lambda:us-east-1:000000000000:function:my-ses-lambda-function");
@@ -292,7 +306,27 @@ namespace Amazon.Lambda.Tests
                 Handle(sesEvent);
             }
         }
-        private static void Handle(SimpleEmailEvent sesEvent)
+        public void SimpleEmailS3ActionTest()
+        {
+            using (var fileStream = File.OpenRead("simple-email-event-s3.json"))
+            {
+                var serializer = new JsonSerializer();
+                var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.S3ReceiptAction>>(fileStream);
+
+                Assert.Equal(sesEvent.Records.Count, 1);
+                var record = sesEvent.Records[0];
+
+                Assert.Equal(record.Ses.Receipt.Action.Type, "S3");
+                Assert.Equal(record.Ses.Receipt.Action.TopicArn, "arn:aws:sns:planet-earth-1:123456789:ses-email-received");
+                Assert.Equal(record.Ses.Receipt.Action.BucketName, "my-ses-inbox");
+                Assert.Equal(record.Ses.Receipt.Action.ObjectKeyPrefix, "important");
+                Assert.Equal(record.Ses.Receipt.Action.ObjectKey, "important/fiddlyfaddlyhiddlyhoodly");
+
+                Handle(sesEvent);
+            }
+        }
+        private static void Handle<TReceiptAction>(SimpleEmailEvent<TReceiptAction> sesEvent)
+            where TReceiptAction : SimpleEmailEvents.Actions.IReceiptAction
         {
             foreach (var record in sesEvent.Records)
             {

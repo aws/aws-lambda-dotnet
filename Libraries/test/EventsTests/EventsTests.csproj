@@ -21,6 +21,7 @@
     <None Remove="kinesis-analytics-inputpreprocessing-response.json" />
     <None Remove="kinesis-analytics-outputdelivery-event.json" />
     <None Remove="kinesis-analytics-outputdelivery-response.json" />
+    <None Remove="simple-email-event-s3.json" />
   </ItemGroup>
 
   <ItemGroup>

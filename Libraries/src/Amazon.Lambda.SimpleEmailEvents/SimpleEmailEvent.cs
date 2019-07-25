@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Amazon.Lambda.SimpleEmailEvents.Actions;
+using System;
 using System.Collections.Generic;
 
 namespace Amazon.Lambda.SimpleEmailEvents
@@ -7,17 +8,17 @@ namespace Amazon.Lambda.SimpleEmailEvents
     /// Simple Email Service event
     /// http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html#eventsources-ses-email-receiving
     /// </summary>
-    public class SimpleEmailEvent
+    public class SimpleEmailEvent<TReceiptAction> where TReceiptAction : IReceiptAction
     {
         /// <summary>
         /// List of SES records.
         /// </summary>
-        public IList<SimpleEmailRecord> Records { get; set; }
+        public IList<SimpleEmailRecord<TReceiptAction>> Records { get; set; }
 
         /// <summary>
         /// An SES record.
         /// </summary>
-        public class SimpleEmailRecord
+        public class SimpleEmailRecord<TReceiptAction> where TReceiptAction : IReceiptAction
         {
             /// <summary>
             /// The event version.
@@ -32,13 +33,13 @@ namespace Amazon.Lambda.SimpleEmailEvents
             /// <summary>
             /// The SES message.
             /// </summary>
-            public SimpleEmailService Ses { get; set; }
+            public SimpleEmailService<TReceiptAction> Ses { get; set; }
         }
 
         /// <summary>
         /// An SES message record.
         /// </summary>
-        public class SimpleEmailService
+        public class SimpleEmailService<TReceiptAction> where TReceiptAction : IReceiptAction
         {
             /// <summary>
             /// The mail data for the SES message.
@@ -48,7 +49,7 @@ namespace Amazon.Lambda.SimpleEmailEvents
             /// <summary>
             /// The receipt data for the SES message.
             /// </summary>
-            public SimpleEmailReceipt Receipt { get; set; }
+            public SimpleEmailReceipt<TReceiptAction> Receipt { get; set; }
         }
 
         /// <summary>
@@ -95,7 +96,8 @@ namespace Amazon.Lambda.SimpleEmailEvents
         /// <summary>
         /// The receipt data for the SES message.
         /// </summary>
-        public class SimpleEmailReceipt
+        /// <typeparam name="TAction">The type of action being received in this receipt</typeparam>
+        public class SimpleEmailReceipt<TReceiptAction> where TReceiptAction : IReceiptAction
         {
             /// <summary>
             /// The recipients of the message.
@@ -128,9 +130,9 @@ namespace Amazon.Lambda.SimpleEmailEvents
             public SimpleEmailVerdict VirusVerdict { get; set; }
 
             /// <summary>
-            /// The virus verdict of the message, e.g. status: PASS.
+            /// The action of the message (i.e, which lambda was invoked, where it was stored in S3, etc)
             /// </summary>
-            public SimpleEmailReceiptAction Action { get; set; }
+            public TReceiptAction Action { get; set; }
 
             /// <summary>
             /// How long this incoming message took to process.
@@ -189,27 +191,6 @@ namespace Amazon.Lambda.SimpleEmailEvents
         /// The Subject header.
         /// </summary>
         public string Subject { get; set; }
-    }
-
-    /// <summary>
-    /// The SES receipt's action.
-    /// </summary>
-    public class SimpleEmailReceiptAction
-    {
-        /// <summary>
-        /// The type of the action, e.g. "Lambda"
-        /// </summary>
-        public string Type { get; set; }
-
-        /// <summary>
-        /// The type of invocation, e.g. "Event"
-        /// </summary>
-        public string InvocationType { get; set; }
-
-        /// <summary>
-        /// The ARN of this function.
-        /// </summary>
-        public string FunctionArn { get; set; }
     }
 
     /// <summary>
