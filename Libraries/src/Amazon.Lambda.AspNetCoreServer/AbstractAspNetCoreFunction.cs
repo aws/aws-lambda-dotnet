@@ -1,7 +1,6 @@
 ﻿using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.Core;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +11,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-
+using Microsoft.AspNetCore.Http.Features.Authentication;
 #if NETCOREAPP_3_0
 using Microsoft.Extensions.Hosting;
 #endif
@@ -229,7 +228,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// Creates a <see cref="HostingApplication.Context"/> object using the <see cref="LambdaServer"/> field in the class.
         /// </summary>
         /// <param name="features"><see cref="IFeatureCollection"/> implementation.</param>
-        protected HostingApplication.Context CreateContext(IFeatureCollection features)
+        protected object CreateContext(IFeatureCollection features)
         {
             return _server.Application.CreateContext(features);
         }
@@ -296,17 +295,16 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             _logger.LogDebug($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
 
+            
+            {
+                var itemFeatures = (IItemsFeature) features;
+                itemFeatures.Items = new Dictionary<object, object>();
+                itemFeatures.Items[LAMBDA_CONTEXT] = lambdaContext;
+                itemFeatures.Items[LAMBDA_REQUEST_OBJECT] = request;
+                PostMarshallRequestFeature(itemFeatures, request, lambdaContext);
+            }
+            
             var context = this.CreateContext(features);
-
-            InternalPostCreateContext(context, request, lambdaContext);
-
-            // Add along the Lambda objects to the HttpContext to give access to Lambda to them in the ASP.NET Core application
-            context.HttpContext.Items[LAMBDA_CONTEXT] = lambdaContext;
-            context.HttpContext.Items[LAMBDA_REQUEST_OBJECT] = request;
-
-            // Allow the context to be customized before passing the request to ASP.NET Core.
-            PostCreateContext(context, request, lambdaContext);
-
             var response = await this.ProcessRequest(lambdaContext, context, features);
 
             return response;
@@ -322,7 +320,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// If specified, an unhandled exception will be rethrown for custom error handling.
         /// Ensure that the error handling code calls 'this.MarshallResponse(features, 500);' after handling the error to return a the typed Lambda object to the user.
         /// </param>
-        protected async Task<TRESPONSE> ProcessRequest(ILambdaContext lambdaContext, HostingApplication.Context context, InvokeFeatures features, bool rethrowUnhandledError = false)
+        protected async Task<TRESPONSE> ProcessRequest(ILambdaContext lambdaContext, object context, InvokeFeatures features, bool rethrowUnhandledError = false)
         {
             var defaultStatusCode = 200;
             Exception ex = null;
@@ -384,7 +382,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             if (ex != null)
             {
-                InternalCustomResponseExceptionHandling(context, response, lambdaContext, ex);
+                InternalCustomResponseExceptionHandling(response, lambdaContext, ex);
             }                
 
             if (features.ResponseCompletedEvents != null)
@@ -394,13 +392,9 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             return response;
         }
+        
 
-        private protected virtual void InternalPostCreateContext(HostingApplication.Context context, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
-        {
-
-        }
-
-        private protected virtual void InternalCustomResponseExceptionHandling(HostingApplication.Context context, TRESPONSE lambdaReponse, ILambdaContext lambdaContext, Exception ex)
+        private protected virtual void InternalCustomResponseExceptionHandling(TRESPONSE lambdaReponse, ILambdaContext lambdaContext, Exception ex)
         {
 
         }
@@ -414,18 +408,32 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
 
         }
-
+        
         /// <summary>
-        /// This method is called after the HostingApplication.Context has been created. Derived classes can overwrite this method to alter
-        /// the context before passing the request to ASP.NET Core to process the request.
+        /// This method is called after marshalling the incoming Lambda request
+        /// into ASP.NET Core's IItemsFeature. Derived classes can overwrite this method to alter
+        /// the how the marshalling was done.
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="aspNetCoreItemFeature"></param>
         /// <param name="lambdaRequest"></param>
         /// <param name="lambdaContext"></param>
-        protected virtual void PostCreateContext(HostingApplication.Context context, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
+        protected virtual void PostMarshallRequestFeature(IItemsFeature aspNetCoreItemFeature, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
         {
 
         }
+        
+        /// <summary>
+        /// This method is called after marshalling the incoming Lambda request
+        /// into ASP.NET Core's IHttpAuthenticationFeature. Derived classes can overwrite this method to alter
+        /// the how the marshalling was done.
+        /// </summary>
+        /// <param name="aspNetCoreHttpAuthenticationFeature"></param>
+        /// <param name="lambdaRequest"></param>
+        /// <param name="lambdaContext"></param>
+        protected virtual void PostMarshallRequestFeature(IHttpAuthenticationFeature aspNetCoreHttpAuthenticationFeature, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
+        {
+
+        }        
 
         /// <summary>
         /// This method is called after marshalling the incoming Lambda request

@@ -11,8 +11,8 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.ApplicationLoadBalancerEvents;
 using System.Net;
+using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.Extensions.Primitives;
-using Microsoft.AspNetCore.Hosting.Internal;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -45,6 +45,14 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <inheritdoc/>
         protected override void MarshallRequest(InvokeFeatures features, ApplicationLoadBalancerRequest lambdaRequest, ILambdaContext lambdaContext)
         {
+            {
+                var requestFeatures = (IHttpAuthenticationFeature) features;
+                
+                // Call consumers customize method in case they want to change how API Gateway's request
+                // was marshalled into ASP.NET Core request.
+                PostMarshallRequestFeature(requestFeatures, lambdaRequest, lambdaContext);                
+            }
+            
             // Request coming from Application Load Balancer will always send the headers X-Amzn-Trace-Id, X-Forwarded-For, X-Forwarded-Port, and X-Forwarded-Proto.
             // So this will only happen when writing tests with incomplete sample requests.
             if (lambdaRequest.Headers == null && lambdaRequest.MultiValueHeaders == null)
@@ -170,7 +178,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             return response;
         }
 
-        private protected override void InternalCustomResponseExceptionHandling(HostingApplication.Context context, ApplicationLoadBalancerResponse lambdaResponse, ILambdaContext lambdaContext, Exception ex)
+        private protected override void InternalCustomResponseExceptionHandling(ApplicationLoadBalancerResponse lambdaResponse, ILambdaContext lambdaContext, Exception ex)
         {
             var errorName = ex.GetType().Name;
 

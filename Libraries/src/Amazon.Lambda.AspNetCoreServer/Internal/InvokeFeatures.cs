@@ -2,18 +2,21 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Http.Features.Authentication;
 
 #pragma warning disable 1591
 
 namespace Amazon.Lambda.AspNetCoreServer.Internal
 {
     public class InvokeFeatures : IFeatureCollection,
+                             IItemsFeature,
+                             IHttpAuthenticationFeature,
                              IHttpRequestFeature,
                              IHttpResponseFeature,
                              IHttpConnectionFeature
@@ -25,6 +28,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         public InvokeFeatures()
         {
+            _features[typeof(IItemsFeature)] = this;
+            _features[typeof(IHttpAuthenticationFeature)] = this;
             _features[typeof(IHttpRequestFeature)] = this;
             _features[typeof(IHttpResponseFeature)] = this;
             _features[typeof(IHttpConnectionFeature)] = this;
@@ -85,6 +90,18 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             return this._features.GetEnumerator();
         }
 
+        #endregion
+        
+        #region IItemsFeature
+        IDictionary<object, object> IItemsFeature.Items { get; set; }
+        #endregion
+        
+        #region IHttpAuthenticationFeature
+        ClaimsPrincipal IHttpAuthenticationFeature.User { get; set; }
+        
+        #if NETCOREAPP_2_1
+        Microsoft.AspNetCore.Http.Features.Authentication.IAuthenticationHandler IHttpAuthenticationFeature.Handler { get; set; }
+        #endif
         #endregion
 
         #region IHttpRequestFeature

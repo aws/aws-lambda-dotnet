@@ -5,7 +5,6 @@ using System.Net;
 using System.Security.Claims;
 using System.Text;
 
-using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -13,6 +12,7 @@ using Microsoft.Extensions.Primitives;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.AspNetCoreServer.Internal;
+using Microsoft.AspNetCore.Http.Features.Authentication;
 
 
 namespace Amazon.Lambda.AspNetCoreServer
@@ -87,40 +87,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         }
 
-        private protected override void InternalPostCreateContext(
-            HostingApplication.Context context,
-            APIGatewayProxyRequest apiGatewayRequest,
-            ILambdaContext lambdaContext)
-        {
-            var authorizer = apiGatewayRequest?.RequestContext?.Authorizer;
-
-            if (authorizer != null)
-            {
-                // handling claims output from cognito user pool authorizer
-                if (authorizer.Claims != null && authorizer.Claims.Count != 0)
-                {
-                    var identity = new ClaimsIdentity(authorizer.Claims.Select(
-                        entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
-
-                    lambdaContext.Logger.LogLine(
-                        $"Configuring HttpContext.User with {authorizer.Claims.Count} claims coming from API Gateway's Request Context");
-                    context.HttpContext.User = new ClaimsPrincipal(identity);
-                }
-                else
-                {
-                    // handling claims output from custom lambda authorizer
-                    var identity = new ClaimsIdentity(
-                        authorizer.Where(x => !string.Equals(x.Key, "claims", StringComparison.OrdinalIgnoreCase))
-                            .Select(entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
-
-                    lambdaContext.Logger.LogLine(
-                        $"Configuring HttpContext.User with {authorizer.Count} claims coming from API Gateway's Request Context");
-                    context.HttpContext.User = new ClaimsPrincipal(identity);
-                }
-            }
-        }
-
-        private protected override void InternalCustomResponseExceptionHandling(HostingApplication.Context context, APIGatewayProxyResponse apiGatewayResponse, ILambdaContext lambdaContext, Exception ex)
+        private protected override void InternalCustomResponseExceptionHandling(APIGatewayProxyResponse apiGatewayResponse, ILambdaContext lambdaContext, Exception ex)
         {
             apiGatewayResponse.MultiValueHeaders["ErrorType"] = new List<string> { ex.GetType().Name };
         }
@@ -135,6 +102,40 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="lambdaContext"></param>
         protected override void MarshallRequest(InvokeFeatures features, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
+            {
+                var authFeatures = (IHttpAuthenticationFeature) features;
+                
+                var authorizer = apiGatewayRequest?.RequestContext?.Authorizer;
+
+                if (authorizer != null)
+                {
+                    // handling claims output from cognito user pool authorizer
+                    if (authorizer.Claims != null && authorizer.Claims.Count != 0)
+                    {
+                        var identity = new ClaimsIdentity(authorizer.Claims.Select(
+                            entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
+
+                        lambdaContext.Logger.LogLine(
+                            $"Configuring HttpContext.User with {authorizer.Claims.Count} claims coming from API Gateway's Request Context");
+                        authFeatures.User = new ClaimsPrincipal(identity);
+                    }
+                    else
+                    {
+                        // handling claims output from custom lambda authorizer
+                        var identity = new ClaimsIdentity(
+                            authorizer.Where(x => !string.Equals(x.Key, "claims", StringComparison.OrdinalIgnoreCase))
+                                .Select(entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
+
+                        lambdaContext.Logger.LogLine(
+                            $"Configuring HttpContext.User with {authorizer.Count} claims coming from API Gateway's Request Context");
+                        authFeatures.User = new ClaimsPrincipal(identity);
+                    }
+                }
+
+                // Call consumers customize method in case they want to change how API Gateway's request
+                // was marshalled into ASP.NET Core request.
+                PostMarshallRequestFeature(authFeatures, apiGatewayRequest, lambdaContext);                
+            }
             {
                 var requestFeatures = (IHttpRequestFeature) features;
                 requestFeatures.Scheme = "https";
