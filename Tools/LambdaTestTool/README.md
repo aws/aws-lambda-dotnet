@@ -91,7 +91,15 @@ To debug with Visual Studio Code and the .NET Mock Lambda Test Tool edit the [la
             "stopAtEntry": false,
             "internalConsoleOptions": "openOnSessionStart"
         },
-```        
+```
+
+To customize the launch behavior for the debugger, you can pass additional arguments via the `args` property:
+
+| Name             | Default Value             | Example                                     |
+| ---------------- | ------------------------- | ------------------------------------------- |
+| port             | 5050                      | `["--port", "5001"`]                        |
+| suppress browser | False                     | `["--no-launch-window", "true"`]            |
+| path             | Current working directory | `["--path", "C:\\different\\launch\\path"]` |
 
 ## Configure for JetBrains Rider
 
