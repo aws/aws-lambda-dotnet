@@ -18,7 +18,7 @@ namespace Amazon.Lambda.TestTool.Runtime
         IList<LambdaFunction> LoadLambdaFunctions(IList<LambdaFunctionInfo> configInfos);
         ExecutionResponse ExecuteLambdaFunction(ExecutionRequest request);
     }
-    
+
     /// <summary>
     /// A mock Lambda runtime to execute Lambda functions.
     /// </summary>
@@ -44,18 +44,18 @@ namespace Amazon.Lambda.TestTool.Runtime
             var depsFile = Directory.GetFiles(directory, "*.deps.json").FirstOrDefault();
             if (depsFile == null)
             {
-                throw new Exception("Failed to find a deps.json file");
+                throw new Exception($"Failed to find a deps.json file in the specified directory ({directory})");
             }
 
             var fileName = depsFile.Substring(0, depsFile.Length - ".deps.json".Length) + ".dll";
             if (!File.Exists(fileName))
             {
-                throw new Exception("Failed to find Lambda project entry assembly");
+                throw new Exception($"Failed to find Lambda project entry assembly in the specified directory ({directory})");
             }
-            
+
             // The resolver provides the ability to load the assemblies containing the select Lambda function.
             var resolver = new LambdaAssemblyResolver(fileName);
-            
+
             var runtime = new LocalLambdaRuntime(resolver, directory);
             return runtime;
         }
@@ -68,7 +68,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             {
                 functions.Add(LoadLambdaFunction(configInfo));
             }
-            
+
             return functions;
         }
 
@@ -88,7 +88,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                 function.ErrorMessage = $"Invalid format for function handler string {functionInfo.Handler}. Format is <assembly>::<type-name>::<method>.";
                 return function;
             }
-            
+
             // Using our custom Assembly resolver load the target Assembly.
             function.LambdaAssembly = this.Resolver.LoadAssembly(handlerTokens[0]);
             if (function.LambdaAssembly == null)
@@ -114,7 +114,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             else
             {
                 // TODO: Handle method overloads
-                if(methodInfos.Length > 1)
+                if (methodInfos.Length > 1)
                 {
                     function.ErrorMessage = $"More then one method called {handlerTokens[2]} was found. This tool does not currently support method overloading.";
                 }
@@ -128,8 +128,8 @@ namespace Amazon.Lambda.TestTool.Runtime
             // Search to see if a Lambda serializer is registered.
             var attribute = function.LambdaMethod.GetCustomAttribute(typeof(LambdaSerializerAttribute)) as LambdaSerializerAttribute ??
                             function.LambdaAssembly.GetCustomAttribute(typeof(LambdaSerializerAttribute)) as LambdaSerializerAttribute;
-            
-            
+
+
             if (attribute != null)
             {
                 function.Serializer = Activator.CreateInstance(attribute.SerializerType) as ILambdaSerializer;
@@ -138,7 +138,7 @@ namespace Amazon.Lambda.TestTool.Runtime
 
             return function;
         }
-               
+
         /// <summary>
         /// Execute the Lambda function.
         /// </summary>
