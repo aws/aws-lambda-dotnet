@@ -9,7 +9,7 @@ namespace Amazon.Lambda.TestTool.Tests
     public class LoadLambdaFunctionTests
     {
         [Fact]
-        public void LoadInstaneMethodWithAssemblySerializer()
+        public void LoadInstanceMethodWithAssemblySerializer()
         {
             var configFile = Path.GetFullPath(@"../../../../LambdaFunctions/S3EventFunction/aws-lambda-tools-defaults.json");
             var buildPath = Path.GetFullPath(@"../../../../LambdaFunctions/S3EventFunction/bin/debug/netcoreapp2.1");

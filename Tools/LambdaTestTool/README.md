@@ -2,17 +2,20 @@
 
 The AWS .NET Mock Lambda Test Tool is a tool that can be used to load a .NET Core Lambda project and execute the selected code inside an emulated Lambda environment. An IDE that is attached to the process hosting this tool can then debug and step through the .NET Core Lambda code. The tool is optimized for quick local debugging with minimal dependencies.
 
-**Note:** this tool is not a local Lambda environment. This tool is optimized for quick local debugging with minimal dependencies. For example, the targeted .NET Core Lambda code is run within the process of this tool which is run on the host OS. The host OS is usually Windows or macOS.  The host OS is not Amazon Linux, the OS for the Lambda service. Due to these design differences, this tool is not intended to diagnose platform specific issues but instead it can be useful for debugging application logic issues.
+![](./Resources/TestHarness.png)
 
-* [Getting Started](#getting-help)
-* [Installing and Running](#installing-and-running)
-* [Configure for Visual Studio](#configure-for-visual-studio)
-* [Configure for Visual Studio Code](#configure-for-visual-studio-code)
-* [Configure for JetBrains Rider](#configure-for-jetbrains-rider)
-* [Configure for Visual Studio for Mac](#configure-for-visual-studio-for-mac)
-* [Known Limitations](#known-limitations)
+**Note:** this tool is not a local Lambda environment. This tool is optimized for quick local debugging with minimal dependencies. For example, the targeted .NET Core Lambda code is run within the process of this tool which is run on the host OS. The host OS is usually Windows or macOS. The host OS is not Amazon Linux, the OS for the Lambda service. Due to these design differences, this tool is not intended to diagnose platform specific issues but instead it can be useful for debugging application logic issues.
+
+- [Getting Started](#getting-help)
+- [Installing and Running](#installing-and-running)
+- [Configure for Visual Studio](#configure-for-visual-studio)
+- [Configure for Visual Studio Code](#configure-for-visual-studio-code)
+- [Configure for JetBrains Rider](#configure-for-jetbrains-rider)
+- [Configure for Visual Studio for Mac](#configure-for-visual-studio-for-mac)
+- [Known Limitations](#known-limitations)
 
 ## Getting Help
+
 This tool is currently in preview and there are some known limitations. For questions and problems please open a GitHub issue in this repository.
 
 ## AWS Credentials
@@ -88,7 +91,15 @@ To debug with Visual Studio Code and the .NET Mock Lambda Test Tool edit the [la
             "stopAtEntry": false,
             "internalConsoleOptions": "openOnSessionStart"
         },
-```        
+```
+
+To customize the launch behavior for the debugger, you can pass additional arguments via the `args` property:
+
+| Name             | Default Value             | Example                                     |
+| ---------------- | ------------------------- | ------------------------------------------- |
+| port             | 5050                      | `["--port", "5001"`]                        |
+| suppress browser | False                     | `["--no-launch-window", "true"`]            |
+| path             | Current working directory | `["--path", "C:\\different\\launch\\path"]` |
 
 ## Configure for JetBrains Rider
 
