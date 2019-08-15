@@ -91,7 +91,9 @@ namespace Amazon.Lambda.TestTool
                         var data = JsonMapper.ToObject(File.ReadAllText(file));
 
                         if (data.IsObject &&
-                            data.ContainsKey("framework") && data["framework"].ToString().StartsWith("netcoreapp") &&
+                            data.ContainsKey("framework") &&
+                            (data["framework"].ToString().StartsWith("netcoreapp", StringComparison.InvariantCultureIgnoreCase) ||
+                            data["framework"].ToString().StartsWith("netstandard", StringComparison.InvariantCultureIgnoreCase)) &&
                             (data.ContainsKey("function-handler") || data.ContainsKey("template")))
                         {
                             Console.WriteLine($"Found Lambda config file {file}");
