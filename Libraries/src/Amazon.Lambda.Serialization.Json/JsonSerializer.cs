@@ -22,18 +22,33 @@ namespace Amazon.Lambda.Serialization.Json
         private bool debug;
 
         /// <summary>
-        /// Constructs instance of serializer.
+        /// Constructs instance of serializer. This constructor is usefull to 
+        /// customize the serializer settings.
         /// </summary>
-        public JsonSerializer()
+        /// <param name="customizeSerializerSettings">A callback to customize the serializer settings.</param>
+        public JsonSerializer(Action<JsonSerializerSettings> customizeSerializerSettings)
         {
             JsonSerializerSettings settings = new JsonSerializerSettings();
+            customizeSerializerSettings(settings);
+
+            // Set the contract resolver *after* the custom callback has been 
+            // invoked. This makes sure that we always use the good resolver.
             settings.ContractResolver = new AwsResolver();
+
             serializer = Newtonsoft.Json.JsonSerializer.Create(settings);
 
             if (string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true", StringComparison.OrdinalIgnoreCase))
             {
                 this.debug = true;
             }
+        }
+
+        /// <summary>
+        /// Constructs instance of serializer.
+        /// </summary>
+        public JsonSerializer()
+            :this(customizeSerializerSettings: _ => { /* Nothing to customize by default. */ })
+        {
         }
 
         /// <summary>
