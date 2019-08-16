@@ -37,6 +37,15 @@ namespace Amazon.Lambda.SimpleEmailEvents
         }
 
         /// <summary>
+        /// An SES record.
+        /// </summary>
+        [Obsolete(
+            "Please move to using SimpleEmailRecord<TReceiptAction> for greater flexibility over which type of action this record refers to. For a like for like replacement on lambda actions, please use SimpleEmailRecord<LambdaReceiptAction>"
+        )]
+        public class SimpleEmailRecord : SimpleEmailRecord<LambdaReceiptAction>
+        { }
+
+        /// <summary>
         /// An SES message record.
         /// </summary>
         public class SimpleEmailService<TReceiptAction> where TReceiptAction : IReceiptAction
@@ -203,4 +212,16 @@ namespace Amazon.Lambda.SimpleEmailEvents
         /// </summary>
         public string Status { get; set; }
     }
+
+    /// <summary>
+    /// Simple Email Service event
+    /// http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html#eventsources-ses-email-receiving
+    /// </summary>
+    [Obsolete(
+        "Please move to using SimpleEmailEvent<TReceiptAction>, which allows greater flexibility over which type of event is being handled. For a like for like replacement if using a lambda event, use SimpleEmailEvent<LambdaReceiptAction>"
+    )]
+    public class SimpleEmailEvent : SimpleEmailEvent<LambdaReceiptAction>
+    { }
+
+    
 }
