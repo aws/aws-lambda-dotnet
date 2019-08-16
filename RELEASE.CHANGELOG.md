@@ -1,4 +1,4 @@
-### Release 2019-08-57
+### Release 2019-08-15
 * **Amazon.Lambda.Serialization.Json (1.6.0)**
   * Pull Request [#503](https://github.com/aws/aws-lambda-dotnet/pull/503) add constructor that allows changing the serializer settings. Thanks [Maxime Beaudry](https://github.com/mabead)
 * **Amazon.Lambda.TestTool-2.1 (0.9.4)** (Preview)
