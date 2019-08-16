@@ -1,3 +1,11 @@
+### Release 2019-08-57
+* **Amazon.Lambda.Serialization.Json (1.6.0)**
+  * Pull Request [#503](https://github.com/aws/aws-lambda-dotnet/pull/503) add constructor that allows changing the serializer settings. Thanks [Maxime Beaudry](https://github.com/mabead)
+* **Amazon.Lambda.TestTool-2.1 (0.9.4)** (Preview)
+  * Pull Request [#506](https://github.com/aws/aws-lambda-dotnet/pull/506) Update docs and error messages. Thanks [ericksoen](https://github.com/ericksoen)
+* **Amazon.Lambda.Templates (3.8.1)**
+  * Updated AWS SDK for.NET and Amazon Lambda package references in all of the templates.
+
 ### Release 2019-06-20
 * **Amazon.Lambda.TestTool-2.1 (0.9.3)**
   * Explicily reference the latest version of Newtonsoft.Json (12.0.2). This allows 
