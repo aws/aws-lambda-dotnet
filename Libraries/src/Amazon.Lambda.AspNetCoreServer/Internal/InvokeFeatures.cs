@@ -20,6 +20,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                              IHttpRequestFeature,
                              IHttpResponseFeature,
                              IHttpConnectionFeature
+
+#if !NETCOREAPP_2_1
+                             ,IHttpResponseBodyFeature
+#endif
     /*
     ,
                          IHttpUpgradeFeature,
@@ -35,7 +39,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             _features[typeof(IHttpConnectionFeature)] = this;
         }
 
-        #region IFeatureCollection
+#region IFeatureCollection
         public bool IsReadOnly => false;
 
         IDictionary<Type, object> _features = new Dictionary<Type, object>();
@@ -90,21 +94,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             return this._features.GetEnumerator();
         }
 
-        #endregion
+#endregion
         
-        #region IItemsFeature
+#region IItemsFeature
         IDictionary<object, object> IItemsFeature.Items { get; set; }
-        #endregion
+#endregion
         
-        #region IHttpAuthenticationFeature
+#region IHttpAuthenticationFeature
         ClaimsPrincipal IHttpAuthenticationFeature.User { get; set; }
         
-        #if NETCOREAPP_2_1
+#if NETCOREAPP_2_1
         Microsoft.AspNetCore.Http.Features.Authentication.IAuthenticationHandler IHttpAuthenticationFeature.Handler { get; set; }
-        #endif
-        #endregion
+#endif
+#endregion
 
-        #region IHttpRequestFeature
+#region IHttpRequestFeature
         string IHttpRequestFeature.Protocol { get; set; }
 
         string IHttpRequestFeature.Scheme { get; set; }
@@ -123,9 +127,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         Stream IHttpRequestFeature.Body { get; set; } = new MemoryStream();
 
-        #endregion
+#endregion
 
-        #region IHttpResponseFeature
+#region IHttpResponseFeature
         int IHttpResponseFeature.StatusCode
         {
             get;
@@ -211,6 +215,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         #endregion
 
+        #region IHttpResponseBodyFeature
+#if !NETCOREAPP_2_1
+
+#endif
+        #endregion
+
         #region IHttpConnectionFeature
 
         string IHttpConnectionFeature.ConnectionId { get; set; }
@@ -223,6 +233,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         int IHttpConnectionFeature.LocalPort { get; set; }
 
-        #endregion
+#endregion
     }
 }
