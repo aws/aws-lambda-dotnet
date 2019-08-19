@@ -2,8 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+#if !NETCOREAPP_2_1
+using System.IO.Pipelines;
+using System.Runtime.CompilerServices;
+#endif
 using System.Net;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Http;
@@ -37,6 +42,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             _features[typeof(IHttpRequestFeature)] = this;
             _features[typeof(IHttpResponseFeature)] = this;
             _features[typeof(IHttpConnectionFeature)] = this;
+#if !NETCOREAPP_2_1
+            _features[typeof(IHttpResponseBodyFeature)] = this;
+#endif            
         }
 
 #region IFeatureCollection
@@ -217,7 +225,45 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         #region IHttpResponseBodyFeature
 #if !NETCOREAPP_2_1
+        Stream IHttpResponseBodyFeature.Stream => ((IHttpResponseFeature)this).Body;
 
+        private PipeWriter _pipeWriter;
+
+        PipeWriter IHttpResponseBodyFeature.Writer
+        {
+            get
+            {
+                if (_pipeWriter == null)
+                {
+                    _pipeWriter = PipeWriter.Create(((IHttpResponseBodyFeature) this).Stream);
+                }
+                return _pipeWriter;
+            }
+        }
+
+        Task IHttpResponseBodyFeature.CompleteAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        void IHttpResponseBodyFeature.DisableBuffering()
+        {
+            
+        }
+
+        Task IHttpResponseBodyFeature.SendFileAsync(
+            string path,
+            long offset,
+            long? count,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException("SendFileAsync is not implemented for Serverless ASP.NET Core functions");
+        }
+
+        Task IHttpResponseBodyFeature.StartAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return Task.CompletedTask;
+        }
 #endif
         #endregion
 
