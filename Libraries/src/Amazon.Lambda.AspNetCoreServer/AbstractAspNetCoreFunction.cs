@@ -301,7 +301,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 itemFeatures.Items = new Dictionary<object, object>();
                 itemFeatures.Items[LAMBDA_CONTEXT] = lambdaContext;
                 itemFeatures.Items[LAMBDA_REQUEST_OBJECT] = request;
-                PostMarshallRequestFeature(itemFeatures, request, lambdaContext);
+                PostMarshallItemsFeatureFeature(itemFeatures, request, lambdaContext);
             }
             
             var context = this.CreateContext(features);
@@ -420,7 +420,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="aspNetCoreItemFeature"></param>
         /// <param name="lambdaRequest"></param>
         /// <param name="lambdaContext"></param>
-        protected virtual void PostMarshallRequestFeature(IItemsFeature aspNetCoreItemFeature, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
+        protected virtual void PostMarshallItemsFeatureFeature(IItemsFeature aspNetCoreItemFeature, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
         {
 
         }
@@ -433,7 +433,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="aspNetCoreHttpAuthenticationFeature"></param>
         /// <param name="lambdaRequest"></param>
         /// <param name="lambdaContext"></param>
-        protected virtual void PostMarshallRequestFeature(IHttpAuthenticationFeature aspNetCoreHttpAuthenticationFeature, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
+        protected virtual void PostMarshallHttpAuthenticationFeature(IHttpAuthenticationFeature aspNetCoreHttpAuthenticationFeature, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
         {
 
         }        

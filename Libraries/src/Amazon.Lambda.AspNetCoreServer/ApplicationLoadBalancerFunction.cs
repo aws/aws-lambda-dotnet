@@ -50,7 +50,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 
                 // Call consumers customize method in case they want to change how API Gateway's request
                 // was marshalled into ASP.NET Core request.
-                PostMarshallRequestFeature(requestFeatures, lambdaRequest, lambdaContext);                
+                PostMarshallHttpAuthenticationFeature(requestFeatures, lambdaRequest, lambdaContext);                
             }
             
             // Request coming from Application Load Balancer will always send the headers X-Amzn-Trace-Id, X-Forwarded-For, X-Forwarded-Port, and X-Forwarded-Proto.

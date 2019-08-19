@@ -134,7 +134,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                 // Call consumers customize method in case they want to change how API Gateway's request
                 // was marshalled into ASP.NET Core request.
-                PostMarshallRequestFeature(authFeatures, apiGatewayRequest, lambdaContext);                
+                PostMarshallHttpAuthenticationFeature(authFeatures, apiGatewayRequest, lambdaContext);                
             }
             {
                 var requestFeatures = (IHttpRequestFeature) features;
