@@ -326,71 +326,74 @@ namespace Amazon.Lambda.AspNetCoreServer
             Exception ex = null;
             try
             {
-                await this._server.Application.ProcessRequestAsync(context);
-            }
-            catch (AggregateException agex)
-            {
-                ex = agex;
-                _logger.LogError($"Caught AggregateException: '{agex}'");
-                var sb = new StringBuilder();
-                foreach (var newEx in agex.InnerExceptions)
+                try
                 {
-                    sb.AppendLine(this.ErrorReport(newEx));
+                    await this._server.Application.ProcessRequestAsync(context);
+                }
+                catch (AggregateException agex)
+                {
+                    ex = agex;
+                    _logger.LogError($"Caught AggregateException: '{agex}'");
+                    var sb = new StringBuilder();
+                    foreach (var newEx in agex.InnerExceptions)
+                    {
+                        sb.AppendLine(this.ErrorReport(newEx));
+                    }
+
+                    _logger.LogError(sb.ToString());
+                    defaultStatusCode = 500;
+                }
+                catch (ReflectionTypeLoadException rex)
+                {
+                    ex = rex;
+                    _logger.LogError($"Caught ReflectionTypeLoadException: '{rex}'");
+                    var sb = new StringBuilder();
+                    foreach (var loaderException in rex.LoaderExceptions)
+                    {
+                        var fileNotFoundException = loaderException as FileNotFoundException;
+                        if (fileNotFoundException != null && !string.IsNullOrEmpty(fileNotFoundException.FileName))
+                        {
+                            sb.AppendLine($"Missing file: {fileNotFoundException.FileName}");
+                        }
+                        else
+                        {
+                            sb.AppendLine(this.ErrorReport(loaderException));
+                        }
+                    }
+
+                    _logger.LogError(sb.ToString());
+                    defaultStatusCode = 500;
+                }
+                catch (Exception e)
+                {
+                    ex = e;
+                    if (rethrowUnhandledError) throw;
+                    _logger.LogError($"Unknown error responding to request: {this.ErrorReport(e)}");
+                    defaultStatusCode = 500;
                 }
 
-                _logger.LogError(sb.ToString());
-                defaultStatusCode = 500;
-            }
-            catch (ReflectionTypeLoadException rex)
-            {
-                ex = rex;
-                _logger.LogError($"Caught ReflectionTypeLoadException: '{rex}'");
-                var sb = new StringBuilder();
-                foreach (var loaderException in rex.LoaderExceptions)
+                if (features.ResponseStartingEvents != null)
                 {
-                    var fileNotFoundException = loaderException as FileNotFoundException;
-                    if (fileNotFoundException != null && !string.IsNullOrEmpty(fileNotFoundException.FileName))
-                    {
-                        sb.AppendLine($"Missing file: {fileNotFoundException.FileName}");
-                    }
-                    else
-                    {
-                        sb.AppendLine(this.ErrorReport(loaderException));
-                    }
+                    await features.ResponseStartingEvents.ExecuteAsync();
+                }
+                var response = this.MarshallResponse(features, lambdaContext, defaultStatusCode);
+
+                if (ex != null)
+                {
+                    InternalCustomResponseExceptionHandling(response, lambdaContext, ex);
                 }
 
-                _logger.LogError(sb.ToString());
-                defaultStatusCode = 500;
-            }
-            catch (Exception e)
-            {
-                ex = e;
-                if (rethrowUnhandledError) throw;
-                _logger.LogError($"Unknown error responding to request: {this.ErrorReport(e)}");
-                defaultStatusCode = 500;
+                if (features.ResponseCompletedEvents != null)
+                {
+                    await features.ResponseCompletedEvents.ExecuteAsync();
+                }
+
+                return response;
             }
             finally
             {
                 this._server.Application.DisposeContext(context, ex);
             }
-
-            if (features.ResponseStartingEvents != null)
-            {
-                await features.ResponseStartingEvents.ExecuteAsync();
-            }
-            var response = this.MarshallResponse(features, lambdaContext, defaultStatusCode);
-
-            if (ex != null)
-            {
-                InternalCustomResponseExceptionHandling(response, lambdaContext, ex);
-            }                
-
-            if (features.ResponseCompletedEvents != null)
-            {
-                await features.ResponseCompletedEvents.ExecuteAsync();
-            }
-
-            return response;
         }
         
 

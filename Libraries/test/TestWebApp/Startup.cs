@@ -34,15 +34,15 @@ namespace TestWebApp
         // This method gets called by the runtime. Use this method to add services to the container
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("YouAreSpecial", policy => policy.RequireClaim("you_are_special"));
+            });
+
 #if NETCOREAPP_2_1
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Info { Title = "My API", Version = "v1" });
-            });
-
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy("YouAreSpecial", policy => policy.RequireClaim("you_are_special"));
             });
 
             // Add framework services.
