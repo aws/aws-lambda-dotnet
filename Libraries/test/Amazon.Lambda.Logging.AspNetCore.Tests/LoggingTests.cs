@@ -66,7 +66,7 @@ namespace Amazon.Lambda.Tests
 				msLogger.LogCritical(SHOULD_APPEAR + (count++));
 
 				var sdkLogger = loggerfactory.CreateLogger("AWSSDK");
-				sdkLogger.LogTrace(SHOULD_APPEAR + (count++));
+				sdkLogger.LogTrace(SHOULD_NOT_APPEAR);
 				sdkLogger.LogInformation(SHOULD_APPEAR + (count++));
 				sdkLogger.LogCritical(SHOULD_APPEAR + (count++));
 
@@ -312,7 +312,7 @@ namespace Amazon.Lambda.Tests
 				msLogger.LogCritical(GET_SHOULD_APPEAR_EVENT(countEvent++), GET_SHOULD_APPEAR_EXCEPTION(countException++), SHOULD_APPEAR + (countMessage++));
 
 				var sdkLogger = loggerfactory.CreateLogger("AWSSDK");
-				sdkLogger.LogTrace(GET_SHOULD_APPEAR_EVENT(countEvent++), GET_SHOULD_APPEAR_EXCEPTION(countException++), SHOULD_APPEAR + (countMessage++));
+				sdkLogger.LogTrace(SHOULD_NOT_APPEAR_EVENT, SHOULD_NOT_APPEAR_EXCEPTION, SHOULD_NOT_APPEAR);
 				sdkLogger.LogInformation(GET_SHOULD_APPEAR_EVENT(countEvent++), GET_SHOULD_APPEAR_EXCEPTION(countException++), SHOULD_APPEAR + (countMessage++));
 				sdkLogger.LogCritical(GET_SHOULD_APPEAR_EVENT(countEvent++), GET_SHOULD_APPEAR_EXCEPTION(countException++), SHOULD_APPEAR + (countMessage++));
 
@@ -357,7 +357,7 @@ namespace Amazon.Lambda.Tests
                     .AddLambdaLogger(loggerOptions);
 
                 var defaultLogger = loggerfactory.CreateLogger("Default");
-                
+
                 // Act
                 using(defaultLogger.BeginScope("First {0}", "scope123"))
                 {
@@ -369,7 +369,7 @@ namespace Amazon.Lambda.Tests
                         defaultLogger.LogInformation("that's enough");
                     }
                 }
-                
+
                 // Assert
                 // get text and verify
                 var text = writer.ToString();
@@ -413,6 +413,75 @@ namespace Amazon.Lambda.Tests
 				Assert.Contains("[Information] Default: that's enough ", text);
 			}
 		}
+
+        [Fact]
+        public void TestDefaultLogLevel()
+        {
+            using (var writer = new StringWriter())
+            {
+                ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                var configuration = new ConfigurationBuilder()
+                    .AddJsonFile(GetAppSettingsPath("appsettings.json"))
+                    .Build();
+
+                var loggerOptions = new LambdaLoggerOptions(configuration);
+                var loggerfactory = new TestLoggerFactory()
+                    .AddLambdaLogger(loggerOptions);
+
+                // act
+                // `Dummy` category is not specified, we should use `Default` category instead
+                var dummyLogger = loggerfactory.CreateLogger("Dummy");
+                dummyLogger.LogTrace(SHOULD_NOT_APPEAR);
+                dummyLogger.LogDebug(SHOULD_APPEAR);
+                dummyLogger.LogInformation(SHOULD_APPEAR);
+
+                // `Microsoft` category is specified, log accordingly
+                var msLogger = loggerfactory.CreateLogger("Microsoft");
+                msLogger.LogTrace(SHOULD_NOT_APPEAR);
+                msLogger.LogDebug(SHOULD_NOT_APPEAR);
+                msLogger.LogInformation(SHOULD_APPEAR);
+
+                // assert
+                var text = writer.ToString();
+                Assert.DoesNotContain(SHOULD_NOT_APPEAR, text);
+            }
+        }
+
+        [Fact]
+        public void TestDefaultLogLevelIfNotConfigured()
+        {
+            // arrange
+            using (var writer = new StringWriter())
+            {
+                ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                var configuration = new ConfigurationBuilder()
+                    .AddJsonFile(GetAppSettingsPath("appsettings.without_default.json"))
+                    .Build();
+
+                var loggerOptions = new LambdaLoggerOptions(configuration);
+                var loggerfactory = new TestLoggerFactory()
+                    .AddLambdaLogger(loggerOptions);
+
+                // act
+                // `Dummy` category is not specified, we should stick with default: min level = INFO
+                var dummyLogger = loggerfactory.CreateLogger("Dummy");
+                dummyLogger.LogTrace(SHOULD_NOT_APPEAR);
+                dummyLogger.LogDebug(SHOULD_NOT_APPEAR);
+                dummyLogger.LogInformation(SHOULD_APPEAR);
+
+                // `Microsoft` category is specified, log accordingly
+                var msLogger = loggerfactory.CreateLogger("Microsoft");
+                msLogger.LogTrace(SHOULD_NOT_APPEAR);
+                msLogger.LogDebug(SHOULD_NOT_APPEAR);
+                msLogger.LogInformation(SHOULD_NOT_APPEAR);
+
+                // assert
+                var text = writer.ToString();
+                Assert.DoesNotContain(SHOULD_NOT_APPEAR, text);
+            }
+        }
 
 		private static string GetAppSettingsPath(string fileName)
 		{

@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Logging
 		private const string INCLUDE_EVENT_ID_KEY = "IncludeEventId";
 		private const string INCLUDE_SCOPES_KEY = "IncludeScopes";
         private const string LOG_LEVEL_KEY = "LogLevel";
+        private const string DEFAULT_CATEGORY = "Default";
 
         /// <summary>
         /// Flag to indicate if LogLevel should be part of logged message.
@@ -40,13 +41,13 @@ namespace Microsoft.Extensions.Logging
         /// Default is true.
         /// </summary>
         public bool IncludeNewline { get; set; }
-        
+
         /// <summary>
         /// Flag to indicate if Exception should be part of logged message.
         /// Default is false.
         /// </summary>
         public bool IncludeException { get; set; }
-        
+
         /// <summary>
         /// Flag to indicate if EventId should be part of logged message.
         /// Default is false.
@@ -134,12 +135,12 @@ namespace Microsoft.Extensions.Logging
             {
                 IncludeLogLevel = bool.Parse(includeLogLevelString);
             }
-                
+
             if (TryGetString(loggerConfiguration, INCLUDE_EXCEPTION_KEY, out string includeExceptionString))
             {
                 IncludeException = bool.Parse(includeExceptionString);
             }
-                
+
             if (TryGetString(loggerConfiguration, INCLUDE_EVENT_ID_KEY, out string includeEventIdString))
             {
                 IncludeEventId = bool.Parse(includeEventIdString);
@@ -186,6 +187,7 @@ namespace Microsoft.Extensions.Logging
             // Populate mapping of category to LogLevel
             var logLevelsMapping = new Dictionary<string, LogLevel>(StringComparer.Ordinal);
             var wildcardLogLevelsMapping = new Dictionary<string, LogLevel>(StringComparer.Ordinal);
+            LogLevel defaultLogLevel = LogLevel.Information;
             foreach (var logLevel in logLevels)
             {
                 var category = logLevel.Key;
@@ -214,6 +216,10 @@ namespace Microsoft.Extensions.Logging
 
                     var trimmedCategory = category.TrimEnd('*');
                     wildcardLogLevelsMapping[trimmedCategory] = minLevel;
+                }
+                else if (category.Equals(DEFAULT_CATEGORY, StringComparison.OrdinalIgnoreCase))
+                {
+                    defaultLogLevel = minLevel;
                 }
                 else
                 {
@@ -247,7 +253,7 @@ namespace Microsoft.Extensions.Logging
                     else
                     {
                         // If no log filters then default to logging the log message.
-                        return true;
+                        return (logLevel >= defaultLogLevel);
                     }
                 }
             };
