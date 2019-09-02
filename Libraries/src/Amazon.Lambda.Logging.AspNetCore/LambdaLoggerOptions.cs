@@ -206,6 +206,7 @@ namespace Microsoft.Extensions.Logging
                     }
 
                     var wildcardLocation = category.IndexOf('*');
+
                     // Wildcards are only supported at the end of a Category name!
                     if (wildcardLocation != category.Length - 1)
                     {
@@ -221,9 +222,18 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            // Extract a reverse sorted list of wildcard categories.  This allows us to quickly search for most specific match
+            // Extract reverse sorted list of given categories. This will allow us to quickly search for most specific namespace prefix match
+            // to least specific - notice we add "." (namespace delimiter) at the end, assuming it is namespace prefix.
+            var namespacePrefixCategories = logLevelsMapping.Keys
+                .OrderByDescending(k => k)
+                .Select(k => k.TrimEnd('.') + ".")
+                .ToList();
+
+            // Extract a reverse sorted list of wildcard categories. This allows us to quickly search for most specific match
             // to least specific.
-            var wildcardCategories = wildcardLogLevelsMapping.Keys.OrderByDescending(x => x).ToList();
+            var wildcardCategories = wildcardLogLevelsMapping.Keys
+                .OrderByDescending(x => x)
+                .ToList();
 
             // Filter lambda that examines mapping
             return (string category, LogLevel logLevel) =>
@@ -233,23 +243,27 @@ namespace Microsoft.Extensions.Logging
                 // Exact match takes priority
                 if (logLevelsMapping.TryGetValue(category, out minLevel))
                 {
-                    return (logLevel >= minLevel);
+                    return logLevel >= minLevel;
                 }
-                else
+
+                // Find the most specific wildcard category that matches the logger category
+                var matchedCategory = wildcardCategories.FirstOrDefault(category.StartsWith);
+                if (matchedCategory != null)
                 {
-                    // Find the most specific wildcard category that matches the logger category
-                    var matchedCategory = wildcardCategories.FirstOrDefault(filterCategory => category.StartsWith(filterCategory));
-                    if (matchedCategory != null)
-                    {
-                        minLevel = wildcardLogLevelsMapping[matchedCategory];
-                        return (logLevel >= minLevel);
-                    }
-                    else
-                    {
-                        // If no log filters then default to logging the log message.
-                        return true;
-                    }
+                    minLevel = wildcardLogLevelsMapping[matchedCategory];
+                    return logLevel >= minLevel;
                 }
+
+                // Find the most specific namespace prefix
+                matchedCategory = namespacePrefixCategories.FirstOrDefault(category.StartsWith);
+                if (matchedCategory != null)
+                {
+                    minLevel = logLevelsMapping[matchedCategory];
+                    return logLevel >= minLevel;
+                }
+
+                // If no log filters then default to logging the log message.
+                return true;
             };
         }
     }
