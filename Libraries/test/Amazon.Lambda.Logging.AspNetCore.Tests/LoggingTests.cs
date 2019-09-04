@@ -430,6 +430,13 @@ namespace Amazon.Lambda.Tests
                     .AddLambdaLogger(loggerOptions);
 
                 // act
+                // creating named logger, `Default` category is set to "Debug"
+                // (Default category has special treatment - it's not actually stored, named logger just falls to default)
+                var defaultLogger = loggerfactory.CreateLogger("Default");
+                defaultLogger.LogTrace(SHOULD_NOT_APPEAR);
+                defaultLogger.LogDebug(SHOULD_APPEAR);
+                defaultLogger.LogInformation(SHOULD_APPEAR);
+
                 // `Dummy` category is not specified, we should use `Default` category instead
                 var dummyLogger = loggerfactory.CreateLogger("Dummy");
                 dummyLogger.LogTrace(SHOULD_NOT_APPEAR);
