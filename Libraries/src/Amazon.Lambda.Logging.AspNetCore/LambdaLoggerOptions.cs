@@ -187,7 +187,7 @@ namespace Microsoft.Extensions.Logging
             // Populate mapping of category to LogLevel
             var logLevelsMapping = new Dictionary<string, LogLevel>(StringComparer.Ordinal);
             var wildcardLogLevelsMapping = new Dictionary<string, LogLevel>(StringComparer.Ordinal);
-            LogLevel defaultLogLevel = LogLevel.Information;
+            var defaultLogLevel = LogLevel.Information;
             foreach (var logLevel in logLevels)
             {
                 var category = logLevel.Key;
