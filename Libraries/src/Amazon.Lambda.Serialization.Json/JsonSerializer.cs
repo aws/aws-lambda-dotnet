@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using Amazon.Lambda.Core;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace Amazon.Lambda.Serialization.Json
 {
@@ -26,14 +27,18 @@ namespace Amazon.Lambda.Serialization.Json
         /// customize the serializer settings.
         /// </summary>
         /// <param name="customizeSerializerSettings">A callback to customize the serializer settings.</param>
-        public JsonSerializer(Action<JsonSerializerSettings> customizeSerializerSettings)
+        /// <param name="namingStrategy">The naming strategy to use. This parameter makes it possible to change the naming strategy to camel case for example. When not provided, it uses the default Newtonsoft.Json DefaultNamingStrategy.</param>
+        public JsonSerializer(Action<JsonSerializerSettings> customizeSerializerSettings, NamingStrategy namingStrategy = null)
         {
             JsonSerializerSettings settings = new JsonSerializerSettings();
             customizeSerializerSettings(settings);
 
             // Set the contract resolver *after* the custom callback has been 
             // invoked. This makes sure that we always use the good resolver.
-            settings.ContractResolver = new AwsResolver();
+            settings.ContractResolver = new AwsResolver
+            {
+                NamingStrategy = namingStrategy,
+            };
 
             serializer = Newtonsoft.Json.JsonSerializer.Create(settings);
 
