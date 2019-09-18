@@ -45,13 +45,9 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <inheritdoc/>
         protected override void MarshallRequest(InvokeFeatures features, ApplicationLoadBalancerRequest lambdaRequest, ILambdaContext lambdaContext)
         {
-            {
-                var requestFeatures = (IHttpAuthenticationFeature) features;
-                
-                // Call consumers customize method in case they want to change how API Gateway's request
-                // was marshalled into ASP.NET Core request.
-                PostMarshallHttpAuthenticationFeature(requestFeatures, lambdaRequest, lambdaContext);                
-            }
+            // Call consumers customize method in case they want to change how API Gateway's request
+            // was marshalled into ASP.NET Core request.
+            PostMarshallHttpAuthenticationFeature(features, lambdaRequest, lambdaContext);                
             
             // Request coming from Application Load Balancer will always send the headers X-Amzn-Trace-Id, X-Forwarded-For, X-Forwarded-Port, and X-Forwarded-Proto.
             // So this will only happen when writing tests with incomplete sample requests.

@@ -1,11 +1,15 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Amazon.Lambda.AspNetCoreServer.Internal
 {
@@ -119,6 +123,59 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 {
                     headers[kvp.Key] = new StringValues(kvp.Value);
                 }
+            }
+        }
+
+        // This code is taken from the Apache 2.0 licensed ASP.NET Core repo.
+        // https://github.com/aspnet/AspNetCore/blob/d7bfbb5824b5f8876bcd4afaa29a611efc7aa1c9/src/Http/Shared/StreamCopyOperationInternal.cs
+        internal static async Task CopyToAsync(Stream source, Stream destination, long? count, int bufferSize, CancellationToken cancel)
+        {
+            long? bytesRemaining = count;
+
+            var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            try
+            {
+                Debug.Assert(source != null);
+                Debug.Assert(destination != null);
+                Debug.Assert(!bytesRemaining.HasValue || bytesRemaining.GetValueOrDefault() >= 0);
+                Debug.Assert(buffer != null);
+
+                while (true)
+                {
+                    // The natural end of the range.
+                    if (bytesRemaining.HasValue && bytesRemaining.GetValueOrDefault() <= 0)
+                    {
+                        return;
+                    }
+
+                    cancel.ThrowIfCancellationRequested();
+
+                    int readLength = buffer.Length;
+                    if (bytesRemaining.HasValue)
+                    {
+                        readLength = (int)Math.Min(bytesRemaining.GetValueOrDefault(), (long)readLength);
+                    }
+                    int read = await source.ReadAsync(buffer, 0, readLength, cancel);
+
+                    if (bytesRemaining.HasValue)
+                    {
+                        bytesRemaining -= read;
+                    }
+
+                    // End of the source stream.
+                    if (read == 0)
+                    {
+                        return;
+                    }
+
+                    cancel.ThrowIfCancellationRequested();
+
+                    await destination.WriteAsync(buffer, 0, read, cancel);
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
 
