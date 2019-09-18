@@ -30,9 +30,9 @@ namespace Amazon.Lambda.Tests
     using Xunit;
     using System.Linq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
 
     using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
-
 
     public class EventTest
     {
@@ -1104,6 +1104,34 @@ namespace Amazon.Lambda.Tests
         private void Handle(ECSTaskStateChangeEvent ecsEvent)
         {
             Console.WriteLine($"[{ecsEvent.Source} {ecsEvent.Time}] {ecsEvent.DetailType}");
+        }
+
+        [Fact]
+        public void SerializeCanUseNamingStrategy()
+        {
+            var namingStrategy = new CamelCaseNamingStrategy();
+            var serializer = new JsonSerializer(_ => { }, namingStrategy);
+
+            var classUsingPascalCase = new ClassUsingPascalCase
+            {
+                SomeValue = 12,
+                SomeOtherValue = "abcd",
+            };
+
+            var ms = new MemoryStream();
+
+            serializer.Serialize(classUsingPascalCase, ms);
+            ms.Position = 0;
+
+            var serializedString = new StreamReader(ms).ReadToEnd();
+
+            Assert.Equal(@"{""someValue"":12,""someOtherValue"":""abcd""}", serializedString);
+        }
+
+        class ClassUsingPascalCase
+        {
+            public int SomeValue { get; set; }
+            public string SomeOtherValue { get; set; }
         }
     }
 }
