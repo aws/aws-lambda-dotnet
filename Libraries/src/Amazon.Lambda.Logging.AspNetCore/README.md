@@ -53,7 +53,7 @@ Configuration file, `appsettings.json`:
     "IncludeCategory": false,
     "IncludeLogLevel": false,
     "IncludeNewline":  true,
-    "IncludException": true,
+    "IncludeException": true,
     "IncludeEventId": true,
     "IncludeScopes": true,
     "LogLevel": {
