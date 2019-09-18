@@ -115,7 +115,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                         var identity = new ClaimsIdentity(authorizer.Claims.Select(
                             entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
 
-                        lambdaContext.Logger.LogLine(
+`                        _logger.LogDebug(
                             $"Configuring HttpContext.User with {authorizer.Claims.Count} claims coming from API Gateway's Request Context");
                         authFeatures.User = new ClaimsPrincipal(identity);
                     }
@@ -126,7 +126,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                             authorizer.Where(x => !string.Equals(x.Key, "claims", StringComparison.OrdinalIgnoreCase))
                                 .Select(entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
 
-                        lambdaContext.Logger.LogLine(
+                        _logger.LogDebug(
                             $"Configuring HttpContext.User with {authorizer.Count} claims coming from API Gateway's Request Context");
                         authFeatures.User = new ClaimsPrincipal(identity);
                     }
