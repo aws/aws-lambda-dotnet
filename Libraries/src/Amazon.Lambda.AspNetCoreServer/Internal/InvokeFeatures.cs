@@ -282,11 +282,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 bufferSize: bufferSize,
                 options: FileOptions.Asynchronous | FileOptions.SequentialScan);
 
-            var destination = new MemoryStream();
             using (fileStream)
             {
                 fileStream.Seek(offset, SeekOrigin.Begin);
-                await Utilities.CopyToAsync(fileStream, destination, count, bufferSize, cancellationToken);
+                await Utilities.CopyToAsync(fileStream, ((IHttpResponseBodyFeature)this).Stream, count, bufferSize, cancellationToken);
             }
         }
 
