@@ -1128,6 +1128,24 @@ namespace Amazon.Lambda.Tests
             Assert.Equal(@"{""someValue"":12,""someOtherValue"":""abcd""}", serializedString);
         }
 
+        [Fact]
+        public void SerializeWithCamelCaseNamingStrategyCanDeserializeBothCamelAndPascalCase()
+        {
+            var namingStrategy = new CamelCaseNamingStrategy();
+            var serializer = new JsonSerializer(_ => { }, namingStrategy);
+
+            var camelCaseString  = @"{""someValue"":12,""someOtherValue"":""abcd""}";
+            var pascalCaseString = @"{""SomeValue"":12,""SomeOtherValue"":""abcd""}";
+
+            var camelCaseObject  = serializer.Deserialize<ClassUsingPascalCase>(new MemoryStream(Encoding.ASCII.GetBytes(camelCaseString)));
+            var pascalCaseObject = serializer.Deserialize<ClassUsingPascalCase>(new MemoryStream(Encoding.ASCII.GetBytes(pascalCaseString)));
+
+            Assert.Equal(12, camelCaseObject.SomeValue);
+            Assert.Equal(12, pascalCaseObject.SomeValue);
+            Assert.Equal("abcd", camelCaseObject.SomeOtherValue);
+            Assert.Equal("abcd", pascalCaseObject.SomeOtherValue);
+        }
+
         class ClassUsingPascalCase
         {
             public int SomeValue { get; set; }
