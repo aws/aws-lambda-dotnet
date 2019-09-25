@@ -9,7 +9,7 @@ Below is a sample class and Lambda function that illustrates how a SimpleEmailEv
 ```csharp
 public class Function
 {
-    public string Handler(SimpleEmailEvent sesEvent)
+    public string Handler(SimpleEmailEvent<LambdaReceiptAction> sesEvent)
     {
 		foreach (var record in sesEvent.Records)
 		{
