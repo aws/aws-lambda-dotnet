@@ -225,7 +225,7 @@ function _packageProject
 
         if (($OutputPackage))
         {
-            $arguments += " --output-package $OutputPackage"
+            $arguments += " --output-package `"$OutputPackage`""
         }
         $amazonLambdaToolsPath = _configureAmazonLambdaTools
 
