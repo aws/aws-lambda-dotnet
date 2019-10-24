@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Logging
 		private const string INCLUDE_EVENT_ID_KEY = "IncludeEventId";
 		private const string INCLUDE_SCOPES_KEY = "IncludeScopes";
         private const string LOG_LEVEL_KEY = "LogLevel";
+        private const string DEFAULT_CATEGORY = "Default";
 
         /// <summary>
         /// Flag to indicate if LogLevel should be part of logged message.
@@ -185,6 +186,7 @@ namespace Microsoft.Extensions.Logging
 
             // Populate mapping of category to LogLevel
             var logLevelsMapping = new Dictionary<string, LogLevel>(StringComparer.Ordinal);
+            var defaultLogLevel = LogLevel.Information;
             foreach (var logLevel in logLevels)
             {
                 var category = logLevel.Key;
@@ -214,6 +216,10 @@ namespace Microsoft.Extensions.Logging
                     var trimmedCategory = category.TrimEnd('*');
                     logLevelsMapping[trimmedCategory] = minLevel;
                 }
+                else if (category.Equals(DEFAULT_CATEGORY, StringComparison.OrdinalIgnoreCase))
+                {
+                    defaultLogLevel = minLevel;
+                }
                 else
                 {
                     logLevelsMapping[category] = minLevel;
@@ -240,12 +246,15 @@ namespace Microsoft.Extensions.Logging
                 var matchedCategory = orderedCategories.FirstOrDefault(category.StartsWith);
                 if (matchedCategory != null)
                 {
+                    // If no log filters then default to logging the log message.
                     minLevel = logLevelsMapping[matchedCategory];
                     return logLevel >= minLevel;
                 }
-
-                // If no log filters then default to logging the log message.
-                return true;
+                else
+                {
+                    // If no log filters then default to logging the log message.
+                    return (logLevel >= defaultLogLevel);
+                }
             };
         }
     }
