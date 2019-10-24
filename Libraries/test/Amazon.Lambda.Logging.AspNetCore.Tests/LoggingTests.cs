@@ -414,7 +414,55 @@ namespace Amazon.Lambda.Tests
 			}
 		}
 
-		private static string GetAppSettingsPath(string fileName)
+        [Fact]
+        public void TestLoggingWithTypeCategories()
+        {
+            using (var writer = new StringWriter())
+            {
+                ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                // arrange
+                var configuration = new ConfigurationBuilder()
+                    .AddJsonFile(GetAppSettingsPath("appsettings.nsprefix.json"))
+                    .Build();
+
+                var loggerOptions = new LambdaLoggerOptions(configuration);
+                var loggerFactory = new TestLoggerFactory()
+                    .AddLambdaLogger(loggerOptions);
+
+                // act
+                var httpClientLogger = loggerFactory.CreateLogger<System.Net.HttpListener>();
+                var authMngrLogger = loggerFactory.CreateLogger<System.Net.AuthenticationManager>();
+                var arrayLogger = loggerFactory.CreateLogger<System.Array>();
+
+                httpClientLogger.LogTrace(SHOULD_NOT_APPEAR);
+                httpClientLogger.LogDebug(SHOULD_APPEAR);
+                httpClientLogger.LogInformation(SHOULD_APPEAR);
+                httpClientLogger.LogWarning(SHOULD_APPEAR);
+                httpClientLogger.LogError(SHOULD_APPEAR);
+                httpClientLogger.LogCritical(SHOULD_APPEAR);
+
+                authMngrLogger.LogTrace(SHOULD_NOT_APPEAR);
+                authMngrLogger.LogDebug(SHOULD_NOT_APPEAR);
+                authMngrLogger.LogInformation(SHOULD_APPEAR);
+                authMngrLogger.LogWarning(SHOULD_APPEAR);
+                authMngrLogger.LogError(SHOULD_APPEAR);
+                authMngrLogger.LogCritical(SHOULD_APPEAR);
+
+                arrayLogger.LogTrace(SHOULD_NOT_APPEAR);
+                arrayLogger.LogDebug(SHOULD_NOT_APPEAR);
+                arrayLogger.LogInformation(SHOULD_NOT_APPEAR);
+                arrayLogger.LogWarning(SHOULD_APPEAR);
+                arrayLogger.LogError(SHOULD_APPEAR);
+                arrayLogger.LogCritical(SHOULD_APPEAR);
+
+                // assert
+                var text = writer.ToString();
+                Assert.DoesNotContain(SHOULD_NOT_APPEAR, text);
+            }
+        }
+
+        private static string GetAppSettingsPath(string fileName)
 		{
 			return Path.Combine(APPSETTINGS_DIR, fileName);
 		}
