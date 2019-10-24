@@ -40,13 +40,13 @@ namespace Microsoft.Extensions.Logging
         /// Default is true.
         /// </summary>
         public bool IncludeNewline { get; set; }
-        
+
         /// <summary>
         /// Flag to indicate if Exception should be part of logged message.
         /// Default is false.
         /// </summary>
         public bool IncludeException { get; set; }
-        
+
         /// <summary>
         /// Flag to indicate if EventId should be part of logged message.
         /// Default is false.
@@ -134,12 +134,12 @@ namespace Microsoft.Extensions.Logging
             {
                 IncludeLogLevel = bool.Parse(includeLogLevelString);
             }
-                
+
             if (TryGetString(loggerConfiguration, INCLUDE_EXCEPTION_KEY, out string includeExceptionString))
             {
                 IncludeException = bool.Parse(includeExceptionString);
             }
-                
+
             if (TryGetString(loggerConfiguration, INCLUDE_EVENT_ID_KEY, out string includeEventIdString))
             {
                 IncludeEventId = bool.Parse(includeEventIdString);
@@ -185,7 +185,6 @@ namespace Microsoft.Extensions.Logging
 
             // Populate mapping of category to LogLevel
             var logLevelsMapping = new Dictionary<string, LogLevel>(StringComparer.Ordinal);
-            var wildcardLogLevelsMapping = new Dictionary<string, LogLevel>(StringComparer.Ordinal);
             foreach (var logLevel in logLevels)
             {
                 var category = logLevel.Key;
@@ -198,22 +197,22 @@ namespace Microsoft.Extensions.Logging
 
                 if (category.Contains("*"))
                 {
-                    var wildcardCount = category.Count(x => x == '*');
                     // Only 1 wildcard is supported
+                    var wildcardCount = category.Count(x => x == '*');
                     if (wildcardCount > 1)
                     {
                         throw new ArgumentOutOfRangeException($"Category '{category}' is invalid - only 1 wildcard is supported in a category.");
                     }
 
-                    var wildcardLocation = category.IndexOf('*');
                     // Wildcards are only supported at the end of a Category name!
+                    var wildcardLocation = category.IndexOf('*');
                     if (wildcardLocation != category.Length - 1)
                     {
                         throw new ArgumentException($"Category '{category}' is invalid - wilcards are only supported at the end of a category.");
                     }
 
                     var trimmedCategory = category.TrimEnd('*');
-                    wildcardLogLevelsMapping[trimmedCategory] = minLevel;
+                    logLevelsMapping[trimmedCategory] = minLevel;
                 }
                 else
                 {
@@ -221,9 +220,10 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            // Extract a reverse sorted list of wildcard categories.  This allows us to quickly search for most specific match
-            // to least specific.
-            var wildcardCategories = wildcardLogLevelsMapping.Keys.OrderByDescending(x => x).ToList();
+            // Extract a reverse sorted list of categories. This allows us to quickly search for most specific match to least specific.
+            var orderedCategories = logLevelsMapping.Keys
+                .OrderByDescending(categoryKey => categoryKey)
+                .ToList();
 
             // Filter lambda that examines mapping
             return (string category, LogLevel logLevel) =>
@@ -233,23 +233,19 @@ namespace Microsoft.Extensions.Logging
                 // Exact match takes priority
                 if (logLevelsMapping.TryGetValue(category, out minLevel))
                 {
-                    return (logLevel >= minLevel);
+                    return logLevel >= minLevel;
                 }
-                else
+
+                // Find the most specific wildcard or namespace prefix category that matches the logger category
+                var matchedCategory = orderedCategories.FirstOrDefault(category.StartsWith);
+                if (matchedCategory != null)
                 {
-                    // Find the most specific wildcard category that matches the logger category
-                    var matchedCategory = wildcardCategories.FirstOrDefault(filterCategory => category.StartsWith(filterCategory));
-                    if (matchedCategory != null)
-                    {
-                        minLevel = wildcardLogLevelsMapping[matchedCategory];
-                        return (logLevel >= minLevel);
-                    }
-                    else
-                    {
-                        // If no log filters then default to logging the log message.
-                        return true;
-                    }
+                    minLevel = logLevelsMapping[matchedCategory];
+                    return logLevel >= minLevel;
                 }
+
+                // If no log filters then default to logging the log message.
+                return true;
             };
         }
     }
