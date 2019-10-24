@@ -251,16 +251,45 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             
         }
 
-        Task IHttpResponseBodyFeature.SendFileAsync(
-            string path,
+        // This code is taken from the Apache 2.0 licensed ASP.NET Core repo.
+        // https://github.com/aspnet/AspNetCore/blob/ab02951b37ac0cb09f8f6c3ed0280b46d89b06e0/src/Http/Http/src/SendFileFallback.cs
+        async Task IHttpResponseBodyFeature.SendFileAsync(
+            string filePath,
             long offset,
             long? count,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("SendFileAsync is not implemented for Serverless ASP.NET Core functions");
+            var fileInfo = new FileInfo(filePath);
+            if (offset < 0 || offset > fileInfo.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, string.Empty);
+            }
+            if (count.HasValue &&
+                (count.Value < 0 || count.Value > fileInfo.Length - offset))
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), count, string.Empty);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            int bufferSize = 1024 * 16;
+
+            var fileStream = new FileStream(
+                filePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite,
+                bufferSize: bufferSize,
+                options: FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+            using (fileStream)
+            {
+                fileStream.Seek(offset, SeekOrigin.Begin);
+                await Utilities.CopyToAsync(fileStream, ((IHttpResponseBodyFeature)this).Stream, count, bufferSize, cancellationToken);
+            }
         }
 
-        Task IHttpResponseBodyFeature.StartAsync(CancellationToken cancellationToken = default(CancellationToken))
+        Task IHttpResponseBodyFeature.StartAsync(CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }

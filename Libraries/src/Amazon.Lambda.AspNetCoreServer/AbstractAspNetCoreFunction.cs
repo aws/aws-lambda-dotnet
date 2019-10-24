@@ -187,8 +187,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 .UseDefaultServiceProvider((hostingContext, options) =>
                 {
                     options.ValidateScopes = hostingContext.HostingEnvironment.IsDevelopment();
-                })
-                .UseLambdaServer();
+                });
 
 
             return builder;
@@ -210,6 +209,9 @@ namespace Amazon.Lambda.AspNetCoreServer
             var builder = CreateWebHostBuilder();
             Init(builder);
 
+            // Swap out Kestrel as the webserver and use our implementation of IServer
+            builder.UseLambdaServer();
+
 
             _host = builder.Build();
             PostCreateWebHost(_host);
@@ -219,7 +221,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             _server = _host.Services.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
             if (_server == null)
             {
-                throw new Exception("Failed to find the implementation Lambda for the IServer registration. This can happen if UseApiGateway was not called.");
+                throw new Exception("Failed to find the implementation Lambda for the IServer registration. This can happen if UseLambdaServer was not called.");
             }
             _logger = ActivatorUtilities.CreateInstance<Logger<APIGatewayProxyFunction>>(this._host.Services);
         }
@@ -298,7 +300,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             
             {
                 var itemFeatures = (IItemsFeature) features;
-                itemFeatures.Items = new Dictionary<object, object>();
+                itemFeatures.Items = new ItemsDictionary();
                 itemFeatures.Items[LAMBDA_CONTEXT] = lambdaContext;
                 itemFeatures.Items[LAMBDA_REQUEST_OBJECT] = request;
                 PostMarshallItemsFeatureFeature(itemFeatures, request, lambdaContext);

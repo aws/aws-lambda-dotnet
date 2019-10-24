@@ -115,7 +115,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                         var identity = new ClaimsIdentity(authorizer.Claims.Select(
                             entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
 
-`                        _logger.LogDebug(
+                        _logger.LogDebug(
                             $"Configuring HttpContext.User with {authorizer.Claims.Count} claims coming from API Gateway's Request Context");
                         authFeatures.User = new ClaimsPrincipal(identity);
                     }
