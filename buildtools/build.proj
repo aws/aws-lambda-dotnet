@@ -83,7 +83,7 @@
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldF;Lang=F#"/>
     </Target>
 
-    <Target Name="test-blueprints-dotnetnew-cicd" DependsOnTargets="package-blueprints;create-nuget-packages-cicd;test-blueprints-dotnew">
+    <Target Name="test-blueprints-dotnetnew-cicd" DependsOnTargets="package-blueprints;create-nuget-packages-cicd">
     </Target>
     
     <Target Name="run-blueprint-dotnetnew">
