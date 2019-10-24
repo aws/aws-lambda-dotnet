@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFrameworks>netcoreapp2.1;netcoreapp3.0</TargetFrameworks>
     <AssemblyName>Amazon.Lambda.AspNetCoreServer.Test</AssemblyName>
     <OutputType>Library</OutputType>
     <PackageId>Amazon.Lambda.AspNetCoreServer.Test</PackageId>

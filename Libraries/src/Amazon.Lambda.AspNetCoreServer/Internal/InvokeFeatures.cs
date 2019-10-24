@@ -2,21 +2,33 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+#if !NETCOREAPP_2_1
+using System.IO.Pipelines;
+using System.Runtime.CompilerServices;
+#endif
 using System.Net;
+using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Http.Features.Authentication;
 
 #pragma warning disable 1591
 
 namespace Amazon.Lambda.AspNetCoreServer.Internal
 {
     public class InvokeFeatures : IFeatureCollection,
+                             IItemsFeature,
+                             IHttpAuthenticationFeature,
                              IHttpRequestFeature,
                              IHttpResponseFeature,
                              IHttpConnectionFeature
+
+#if !NETCOREAPP_2_1
+                             ,IHttpResponseBodyFeature
+#endif
     /*
     ,
                          IHttpUpgradeFeature,
@@ -25,12 +37,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         public InvokeFeatures()
         {
+            _features[typeof(IItemsFeature)] = this;
+            _features[typeof(IHttpAuthenticationFeature)] = this;
             _features[typeof(IHttpRequestFeature)] = this;
             _features[typeof(IHttpResponseFeature)] = this;
             _features[typeof(IHttpConnectionFeature)] = this;
+#if !NETCOREAPP_2_1
+            _features[typeof(IHttpResponseBodyFeature)] = this;
+#endif            
         }
 
-        #region IFeatureCollection
+#region IFeatureCollection
         public bool IsReadOnly => false;
 
         IDictionary<Type, object> _features = new Dictionary<Type, object>();
@@ -85,9 +102,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             return this._features.GetEnumerator();
         }
 
-        #endregion
+#endregion
+        
+#region IItemsFeature
+        IDictionary<object, object> IItemsFeature.Items { get; set; }
+#endregion
+        
+#region IHttpAuthenticationFeature
+        ClaimsPrincipal IHttpAuthenticationFeature.User { get; set; }
+        
+#if NETCOREAPP_2_1
+        Microsoft.AspNetCore.Http.Features.Authentication.IAuthenticationHandler IHttpAuthenticationFeature.Handler { get; set; }
+#endif
+#endregion
 
-        #region IHttpRequestFeature
+#region IHttpRequestFeature
         string IHttpRequestFeature.Protocol { get; set; }
 
         string IHttpRequestFeature.Scheme { get; set; }
@@ -106,9 +135,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         Stream IHttpRequestFeature.Body { get; set; } = new MemoryStream();
 
-        #endregion
+#endregion
 
-        #region IHttpResponseFeature
+#region IHttpResponseFeature
         int IHttpResponseFeature.StatusCode
         {
             get;
@@ -194,6 +223,79 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         #endregion
 
+        #region IHttpResponseBodyFeature
+#if !NETCOREAPP_2_1
+        Stream IHttpResponseBodyFeature.Stream => ((IHttpResponseFeature)this).Body;
+
+        private PipeWriter _pipeWriter;
+
+        PipeWriter IHttpResponseBodyFeature.Writer
+        {
+            get
+            {
+                if (_pipeWriter == null)
+                {
+                    _pipeWriter = PipeWriter.Create(((IHttpResponseBodyFeature) this).Stream);
+                }
+                return _pipeWriter;
+            }
+        }
+
+        Task IHttpResponseBodyFeature.CompleteAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        void IHttpResponseBodyFeature.DisableBuffering()
+        {
+            
+        }
+
+        // This code is taken from the Apache 2.0 licensed ASP.NET Core repo.
+        // https://github.com/aspnet/AspNetCore/blob/ab02951b37ac0cb09f8f6c3ed0280b46d89b06e0/src/Http/Http/src/SendFileFallback.cs
+        async Task IHttpResponseBodyFeature.SendFileAsync(
+            string filePath,
+            long offset,
+            long? count,
+            CancellationToken cancellationToken)
+        {
+            var fileInfo = new FileInfo(filePath);
+            if (offset < 0 || offset > fileInfo.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, string.Empty);
+            }
+            if (count.HasValue &&
+                (count.Value < 0 || count.Value > fileInfo.Length - offset))
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), count, string.Empty);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            int bufferSize = 1024 * 16;
+
+            var fileStream = new FileStream(
+                filePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite,
+                bufferSize: bufferSize,
+                options: FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+            using (fileStream)
+            {
+                fileStream.Seek(offset, SeekOrigin.Begin);
+                await Utilities.CopyToAsync(fileStream, ((IHttpResponseBodyFeature)this).Stream, count, bufferSize, cancellationToken);
+            }
+        }
+
+        Task IHttpResponseBodyFeature.StartAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+#endif
+        #endregion
+
         #region IHttpConnectionFeature
 
         string IHttpConnectionFeature.ConnectionId { get; set; }
@@ -206,6 +308,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         int IHttpConnectionFeature.LocalPort { get; set; }
 
-        #endregion
+#endregion
     }
 }

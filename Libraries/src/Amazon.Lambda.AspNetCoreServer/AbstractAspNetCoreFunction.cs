@@ -1,7 +1,6 @@
 ﻿using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.Core;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +11,11 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http.Features.Authentication;
+#if NETCOREAPP_3_0
+using Microsoft.Extensions.Hosting;
+#endif
+
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -183,8 +187,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 .UseDefaultServiceProvider((hostingContext, options) =>
                 {
                     options.ValidateScopes = hostingContext.HostingEnvironment.IsDevelopment();
-                })
-                .UseLambdaServer();
+                });
 
 
             return builder;
@@ -206,6 +209,9 @@ namespace Amazon.Lambda.AspNetCoreServer
             var builder = CreateWebHostBuilder();
             Init(builder);
 
+            // Swap out Kestrel as the webserver and use our implementation of IServer
+            builder.UseLambdaServer();
+
 
             _host = builder.Build();
             PostCreateWebHost(_host);
@@ -215,7 +221,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             _server = _host.Services.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
             if (_server == null)
             {
-                throw new Exception("Failed to find the implementation Lambda for the IServer registration. This can happen if UseApiGateway was not called.");
+                throw new Exception("Failed to find the implementation Lambda for the IServer registration. This can happen if UseLambdaServer was not called.");
             }
             _logger = ActivatorUtilities.CreateInstance<Logger<APIGatewayProxyFunction>>(this._host.Services);
         }
@@ -224,7 +230,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// Creates a <see cref="HostingApplication.Context"/> object using the <see cref="LambdaServer"/> field in the class.
         /// </summary>
         /// <param name="features"><see cref="IFeatureCollection"/> implementation.</param>
-        protected HostingApplication.Context CreateContext(IFeatureCollection features)
+        protected object CreateContext(IFeatureCollection features)
         {
             return _server.Application.CreateContext(features);
         }
@@ -291,17 +297,16 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             _logger.LogDebug($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
 
+            
+            {
+                var itemFeatures = (IItemsFeature) features;
+                itemFeatures.Items = new ItemsDictionary();
+                itemFeatures.Items[LAMBDA_CONTEXT] = lambdaContext;
+                itemFeatures.Items[LAMBDA_REQUEST_OBJECT] = request;
+                PostMarshallItemsFeatureFeature(itemFeatures, request, lambdaContext);
+            }
+            
             var context = this.CreateContext(features);
-
-            InternalPostCreateContext(context, request, lambdaContext);
-
-            // Add along the Lambda objects to the HttpContext to give access to Lambda to them in the ASP.NET Core application
-            context.HttpContext.Items[LAMBDA_CONTEXT] = lambdaContext;
-            context.HttpContext.Items[LAMBDA_REQUEST_OBJECT] = request;
-
-            // Allow the context to be customized before passing the request to ASP.NET Core.
-            PostCreateContext(context, request, lambdaContext);
-
             var response = await this.ProcessRequest(lambdaContext, context, features);
 
             return response;
@@ -317,85 +322,84 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// If specified, an unhandled exception will be rethrown for custom error handling.
         /// Ensure that the error handling code calls 'this.MarshallResponse(features, 500);' after handling the error to return a the typed Lambda object to the user.
         /// </param>
-        protected async Task<TRESPONSE> ProcessRequest(ILambdaContext lambdaContext, HostingApplication.Context context, InvokeFeatures features, bool rethrowUnhandledError = false)
+        protected async Task<TRESPONSE> ProcessRequest(ILambdaContext lambdaContext, object context, InvokeFeatures features, bool rethrowUnhandledError = false)
         {
             var defaultStatusCode = 200;
             Exception ex = null;
             try
             {
-                await this._server.Application.ProcessRequestAsync(context);
-            }
-            catch (AggregateException agex)
-            {
-                ex = agex;
-                _logger.LogError($"Caught AggregateException: '{agex}'");
-                var sb = new StringBuilder();
-                foreach (var newEx in agex.InnerExceptions)
+                try
                 {
-                    sb.AppendLine(this.ErrorReport(newEx));
+                    await this._server.Application.ProcessRequestAsync(context);
+                }
+                catch (AggregateException agex)
+                {
+                    ex = agex;
+                    _logger.LogError($"Caught AggregateException: '{agex}'");
+                    var sb = new StringBuilder();
+                    foreach (var newEx in agex.InnerExceptions)
+                    {
+                        sb.AppendLine(this.ErrorReport(newEx));
+                    }
+
+                    _logger.LogError(sb.ToString());
+                    defaultStatusCode = 500;
+                }
+                catch (ReflectionTypeLoadException rex)
+                {
+                    ex = rex;
+                    _logger.LogError($"Caught ReflectionTypeLoadException: '{rex}'");
+                    var sb = new StringBuilder();
+                    foreach (var loaderException in rex.LoaderExceptions)
+                    {
+                        var fileNotFoundException = loaderException as FileNotFoundException;
+                        if (fileNotFoundException != null && !string.IsNullOrEmpty(fileNotFoundException.FileName))
+                        {
+                            sb.AppendLine($"Missing file: {fileNotFoundException.FileName}");
+                        }
+                        else
+                        {
+                            sb.AppendLine(this.ErrorReport(loaderException));
+                        }
+                    }
+
+                    _logger.LogError(sb.ToString());
+                    defaultStatusCode = 500;
+                }
+                catch (Exception e)
+                {
+                    ex = e;
+                    if (rethrowUnhandledError) throw;
+                    _logger.LogError($"Unknown error responding to request: {this.ErrorReport(e)}");
+                    defaultStatusCode = 500;
                 }
 
-                _logger.LogError(sb.ToString());
-                defaultStatusCode = 500;
-            }
-            catch (ReflectionTypeLoadException rex)
-            {
-                ex = rex;
-                _logger.LogError($"Caught ReflectionTypeLoadException: '{rex}'");
-                var sb = new StringBuilder();
-                foreach (var loaderException in rex.LoaderExceptions)
+                if (features.ResponseStartingEvents != null)
                 {
-                    var fileNotFoundException = loaderException as FileNotFoundException;
-                    if (fileNotFoundException != null && !string.IsNullOrEmpty(fileNotFoundException.FileName))
-                    {
-                        sb.AppendLine($"Missing file: {fileNotFoundException.FileName}");
-                    }
-                    else
-                    {
-                        sb.AppendLine(this.ErrorReport(loaderException));
-                    }
+                    await features.ResponseStartingEvents.ExecuteAsync();
+                }
+                var response = this.MarshallResponse(features, lambdaContext, defaultStatusCode);
+
+                if (ex != null)
+                {
+                    InternalCustomResponseExceptionHandling(response, lambdaContext, ex);
                 }
 
-                _logger.LogError(sb.ToString());
-                defaultStatusCode = 500;
-            }
-            catch (Exception e)
-            {
-                ex = e;
-                if (rethrowUnhandledError) throw;
-                _logger.LogError($"Unknown error responding to request: {this.ErrorReport(e)}");
-                defaultStatusCode = 500;
+                if (features.ResponseCompletedEvents != null)
+                {
+                    await features.ResponseCompletedEvents.ExecuteAsync();
+                }
+
+                return response;
             }
             finally
             {
                 this._server.Application.DisposeContext(context, ex);
             }
-
-            if (features.ResponseStartingEvents != null)
-            {
-                await features.ResponseStartingEvents.ExecuteAsync();
-            }
-            var response = this.MarshallResponse(features, lambdaContext, defaultStatusCode);
-
-            if (ex != null)
-            {
-                InternalCustomResponseExceptionHandling(context, response, lambdaContext, ex);
-            }                
-
-            if (features.ResponseCompletedEvents != null)
-            {
-                await features.ResponseCompletedEvents.ExecuteAsync();
-            }
-
-            return response;
         }
+        
 
-        private protected virtual void InternalPostCreateContext(HostingApplication.Context context, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
-        {
-
-        }
-
-        private protected virtual void InternalCustomResponseExceptionHandling(HostingApplication.Context context, TRESPONSE lambdaReponse, ILambdaContext lambdaContext, Exception ex)
+        private protected virtual void InternalCustomResponseExceptionHandling(TRESPONSE lambdaReponse, ILambdaContext lambdaContext, Exception ex)
         {
 
         }
@@ -409,18 +413,32 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
 
         }
-
+        
         /// <summary>
-        /// This method is called after the HostingApplication.Context has been created. Derived classes can overwrite this method to alter
-        /// the context before passing the request to ASP.NET Core to process the request.
+        /// This method is called after marshalling the incoming Lambda request
+        /// into ASP.NET Core's IItemsFeature. Derived classes can overwrite this method to alter
+        /// the how the marshalling was done.
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="aspNetCoreItemFeature"></param>
         /// <param name="lambdaRequest"></param>
         /// <param name="lambdaContext"></param>
-        protected virtual void PostCreateContext(HostingApplication.Context context, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
+        protected virtual void PostMarshallItemsFeatureFeature(IItemsFeature aspNetCoreItemFeature, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
         {
 
         }
+        
+        /// <summary>
+        /// This method is called after marshalling the incoming Lambda request
+        /// into ASP.NET Core's IHttpAuthenticationFeature. Derived classes can overwrite this method to alter
+        /// the how the marshalling was done.
+        /// </summary>
+        /// <param name="aspNetCoreHttpAuthenticationFeature"></param>
+        /// <param name="lambdaRequest"></param>
+        /// <param name="lambdaContext"></param>
+        protected virtual void PostMarshallHttpAuthenticationFeature(IHttpAuthenticationFeature aspNetCoreHttpAuthenticationFeature, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
+        {
+
+        }        
 
         /// <summary>
         /// This method is called after marshalling the incoming Lambda request
