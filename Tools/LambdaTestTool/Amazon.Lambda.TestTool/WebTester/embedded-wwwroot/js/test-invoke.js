@@ -34,7 +34,7 @@ function onExecute() {
             }
         })
         .fail(function (data) {
-            alert('Error sending execute request, is the .NET Lambda Test Tool been still running?');
+            alert('Error sending execute request, is the .NET Lambda Test Tool still running?');
         });
 }
 
@@ -91,6 +91,6 @@ function onSaveRequest() {
             }
         })
         .fail(function (data) {
-            alert('Error saving request, is the .NET Lambda Test Tool been still running?');
+            alert('Error saving request, is the .NET Lambda Test Tool still running?');
         });
 }

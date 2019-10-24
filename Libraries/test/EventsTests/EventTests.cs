@@ -30,9 +30,9 @@ namespace Amazon.Lambda.Tests
     using Xunit;
     using System.Linq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
 
     using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
-
 
     public class EventTest
     {
@@ -230,10 +230,10 @@ namespace Amazon.Lambda.Tests
         [Fact]
         public void SimpleEmailTest()
         {
-            using (var fileStream = File.OpenRead("simple-email-event.json"))
+            using (var fileStream = File.OpenRead("simple-email-event-lambda.json"))
             {
                 var serializer = new JsonSerializer();
-                var sesEvent = serializer.Deserialize<SimpleEmailEvent>(fileStream);
+                var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.LambdaReceiptAction>>(fileStream);
 
                 Assert.Equal(sesEvent.Records.Count, 1);
                 var record = sesEvent.Records[0];
@@ -285,6 +285,20 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.Ses.Receipt.SPFVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.VirusVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.ProcessingTimeMillis, 574);
+                
+                Handle(sesEvent);
+            }
+        }
+        public void SimpleEmailLambdaActionTest()
+        {
+            using (var fileStream = File.OpenRead("simple-email-event-lambda.json"))
+            {
+                var serializer = new JsonSerializer();
+                var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.LambdaReceiptAction>>(fileStream);
+
+                Assert.Equal(sesEvent.Records.Count, 1);
+                var record = sesEvent.Records[0];
+                
                 Assert.Equal(record.Ses.Receipt.Action.Type, "Lambda");
                 Assert.Equal(record.Ses.Receipt.Action.InvocationType, "Event");
                 Assert.Equal(record.Ses.Receipt.Action.FunctionArn, "arn:aws:lambda:us-east-1:000000000000:function:my-ses-lambda-function");
@@ -292,7 +306,27 @@ namespace Amazon.Lambda.Tests
                 Handle(sesEvent);
             }
         }
-        private static void Handle(SimpleEmailEvent sesEvent)
+        public void SimpleEmailS3ActionTest()
+        {
+            using (var fileStream = File.OpenRead("simple-email-event-s3.json"))
+            {
+                var serializer = new JsonSerializer();
+                var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.S3ReceiptAction>>(fileStream);
+
+                Assert.Equal(sesEvent.Records.Count, 1);
+                var record = sesEvent.Records[0];
+
+                Assert.Equal(record.Ses.Receipt.Action.Type, "S3");
+                Assert.Equal(record.Ses.Receipt.Action.TopicArn, "arn:aws:sns:planet-earth-1:123456789:ses-email-received");
+                Assert.Equal(record.Ses.Receipt.Action.BucketName, "my-ses-inbox");
+                Assert.Equal(record.Ses.Receipt.Action.ObjectKeyPrefix, "important");
+                Assert.Equal(record.Ses.Receipt.Action.ObjectKey, "important/fiddlyfaddlyhiddlyhoodly");
+
+                Handle(sesEvent);
+            }
+        }
+        private static void Handle<TReceiptAction>(SimpleEmailEvent<TReceiptAction> sesEvent)
+            where TReceiptAction : SimpleEmailEvents.Actions.IReceiptAction
         {
             foreach (var record in sesEvent.Records)
             {
@@ -1104,6 +1138,52 @@ namespace Amazon.Lambda.Tests
         private void Handle(ECSTaskStateChangeEvent ecsEvent)
         {
             Console.WriteLine($"[{ecsEvent.Source} {ecsEvent.Time}] {ecsEvent.DetailType}");
+        }
+
+        [Fact]
+        public void SerializeCanUseNamingStrategy()
+        {
+            var namingStrategy = new CamelCaseNamingStrategy();
+            var serializer = new JsonSerializer(_ => { }, namingStrategy);
+
+            var classUsingPascalCase = new ClassUsingPascalCase
+            {
+                SomeValue = 12,
+                SomeOtherValue = "abcd",
+            };
+
+            var ms = new MemoryStream();
+
+            serializer.Serialize(classUsingPascalCase, ms);
+            ms.Position = 0;
+
+            var serializedString = new StreamReader(ms).ReadToEnd();
+
+            Assert.Equal(@"{""someValue"":12,""someOtherValue"":""abcd""}", serializedString);
+        }
+
+        [Fact]
+        public void SerializeWithCamelCaseNamingStrategyCanDeserializeBothCamelAndPascalCase()
+        {
+            var namingStrategy = new CamelCaseNamingStrategy();
+            var serializer = new JsonSerializer(_ => { }, namingStrategy);
+
+            var camelCaseString  = @"{""someValue"":12,""someOtherValue"":""abcd""}";
+            var pascalCaseString = @"{""SomeValue"":12,""SomeOtherValue"":""abcd""}";
+
+            var camelCaseObject  = serializer.Deserialize<ClassUsingPascalCase>(new MemoryStream(Encoding.ASCII.GetBytes(camelCaseString)));
+            var pascalCaseObject = serializer.Deserialize<ClassUsingPascalCase>(new MemoryStream(Encoding.ASCII.GetBytes(pascalCaseString)));
+
+            Assert.Equal(12, camelCaseObject.SomeValue);
+            Assert.Equal(12, pascalCaseObject.SomeValue);
+            Assert.Equal("abcd", camelCaseObject.SomeOtherValue);
+            Assert.Equal("abcd", pascalCaseObject.SomeOtherValue);
+        }
+
+        class ClassUsingPascalCase
+        {
+            public int SomeValue { get; set; }
+            public string SomeOtherValue { get; set; }
         }
     }
 }

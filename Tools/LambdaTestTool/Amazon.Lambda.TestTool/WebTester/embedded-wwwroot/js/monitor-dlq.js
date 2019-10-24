@@ -232,6 +232,6 @@ function onConfirmedPurgeDlqClick() {
         }
     })
     .fail(function (data) {
-        alert('Error purging queue, is the .NET Lambda Test Tool been still running?');
+        alert('Error purging queue, is the .NET Lambda Test Tool still running?');
     });
 }

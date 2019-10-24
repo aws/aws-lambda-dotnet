@@ -11,6 +11,49 @@ namespace Amazon.Lambda.Serialization.Json
     /// </summary>
     internal class AwsResolver : DefaultContractResolver
     {
+        private JsonToMemoryStreamDataConverter jsonToMemoryStreamDataConverter;
+        private JsonNumberToDateTimeDataConverter jsonNumberToDateTimeDataConverter;
+        private JsonToMemoryStreamListDataConverter jsonToMemoryStreamListDataConverter;
+
+        JsonToMemoryStreamDataConverter StreamDataConverter
+        {
+            get
+            {
+                if (jsonToMemoryStreamDataConverter == null)
+                {
+                    jsonToMemoryStreamDataConverter = new JsonToMemoryStreamDataConverter();
+                }
+
+                return jsonToMemoryStreamDataConverter;
+            }
+        }
+        
+        JsonToMemoryStreamListDataConverter StreamListDataConverter
+        {
+            get
+            {
+                if (jsonToMemoryStreamListDataConverter == null)
+                {
+                    jsonToMemoryStreamListDataConverter = new JsonToMemoryStreamListDataConverter();
+                }
+
+                return jsonToMemoryStreamListDataConverter;
+            }
+        }
+        
+        JsonNumberToDateTimeDataConverter DateTimeConverter
+        {
+            get
+            {
+                if (jsonNumberToDateTimeDataConverter == null)
+                {
+                    jsonNumberToDateTimeDataConverter = new JsonNumberToDateTimeDataConverter();
+                }
+
+                return jsonNumberToDateTimeDataConverter;
+            }
+        }
+        
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
             IList<JsonProperty> properties = base.CreateProperties(type, memberSerialization);
@@ -35,11 +78,11 @@ namespace Amazon.Lambda.Serialization.Json
                 {
                     if (property.PropertyName.Equals("Data", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = new JsonToMemoryStreamDataConverter();
+                        property.MemberConverter = StreamDataConverter;
                     }
                     else if (property.PropertyName.Equals("ApproximateArrivalTimestamp", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = new JsonNumberToDateTimeDataConverter();
+                        property.MemberConverter = DateTimeConverter;
                     }
                 }
             }
@@ -49,7 +92,7 @@ namespace Amazon.Lambda.Serialization.Json
                 {
                     if (property.PropertyName.Equals("ApproximateCreationDateTime", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = new JsonNumberToDateTimeDataConverter();
+                        property.MemberConverter = DateTimeConverter;
                     }
                 }
             }
@@ -59,11 +102,11 @@ namespace Amazon.Lambda.Serialization.Json
                 {
                     if (property.PropertyName.Equals("B", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = new JsonToMemoryStreamDataConverter();
+                        property.MemberConverter = StreamDataConverter;
                     }
                     else if (property.PropertyName.Equals("BS", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = new JsonToMemoryStreamListDataConverter();
+                        property.MemberConverter = StreamListDataConverter;
                     }
                 }
             }
@@ -73,11 +116,11 @@ namespace Amazon.Lambda.Serialization.Json
                 {
                     if (property.PropertyName.Equals("BinaryValue", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = new JsonToMemoryStreamDataConverter();
+                        property.MemberConverter = StreamDataConverter;
                     }
                     else if (property.PropertyName.Equals("BinaryListValues", StringComparison.Ordinal))
                     {
-                        property.MemberConverter = new JsonToMemoryStreamListDataConverter();
+                        property.MemberConverter = StreamListDataConverter;
                     }
                 }
             }

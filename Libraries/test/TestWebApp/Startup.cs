@@ -9,7 +9,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+
+#if NETCOREAPP_2_1
 using Swashbuckle.AspNetCore.Swagger;
+#endif
 
 namespace TestWebApp
 {
@@ -22,12 +25,6 @@ namespace TestWebApp
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
 
-            if (env.IsEnvironment("Development"))
-            {
-                // This will push telemetry data through Application Insights pipeline faster, allowing you to view results immediately.
-                builder.AddApplicationInsightsSettings(developerMode: true);
-            }
-
             builder.AddEnvironmentVariables();
             Configuration = builder.Build();
         }
@@ -37,33 +34,45 @@ namespace TestWebApp
         // This method gets called by the runtime. Use this method to add services to the container
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new Info { Title = "My API", Version = "v1" });
-            });
-
             services.AddAuthorization(options =>
             {
                 options.AddPolicy("YouAreSpecial", policy => policy.RequireClaim("you_are_special"));
+            });
+
+#if NETCOREAPP_2_1
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new Info { Title = "My API", Version = "v1" });
             });
 
             // Add framework services.
             services.AddApplicationInsightsTelemetry(Configuration);
 
             services.AddMvc();
+#elif NETCOREAPP_3_0
+            services.AddControllers();
+#endif
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            app.UseSwagger();
-            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
-
             app.UseMiddleware<Middleware>();
 
-            app.UseMvc();
+#if NETCOREAPP_3_0
+            app.UseRouting();
 
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
+#else
+            app.UseSwagger();
+
+            app.UseMvc();
+#endif
             app.Run(async (context) =>
             {
                 var root = new JObject();

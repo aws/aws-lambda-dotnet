@@ -4,14 +4,21 @@
 
   <PropertyGroup>
     <Description>Amazon.Lambda.AspNetCoreServer makes it easy to run ASP.NET Core Web API applications as AWS Lambda functions.</Description>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.AspNetCoreServer</AssemblyTitle>
-    <VersionPrefix>3.1.0</VersionPrefix>
+    <VersionPrefix>4.0.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.AspNetCoreServer</AssemblyName>
     <PackageId>Amazon.Lambda.AspNetCoreServer</PackageId>
     <PackageTags>AWS;Amazon;Lambda;aspnetcore</PackageTags>
     <LangVersion>Latest</LangVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <DefineConstants>NETSTANDARD_2_0,NETCOREAPP_2_1</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <DefineConstants>NETCOREAPP_3_0</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,10 +29,13 @@
     <ProjectReference Include="..\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.AspNetCore" Version="2.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.1" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
 </Project>
