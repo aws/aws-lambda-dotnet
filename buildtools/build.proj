@@ -56,6 +56,7 @@
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabelsF;Lang=F#"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.DetectImageLabels;ProjectName=DetectImageLabelsServerlessC;Lang=C#"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.DetectImageLabels;ProjectName=DetectImageLabelsServerlessF;Lang=F#"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCore30WebAPI;ProjectName=AspNetCore30WebAPIC;Lang=C#"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.CustomRuntimeFunction;ProjectName=CustomRuntimeFunctionC;Lang=C#"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.CustomRuntimeFunction;ProjectName=CustomRuntimeFunctionF;Lang=F#"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.EmptyFunction;ProjectName=EmptyFunctionC;Lang=C#"/>
