@@ -1,3 +1,27 @@
+### Release 2019-10-24
+* **Amazon.Lambda.AspNetCoreServer (4.0.0)**
+  * Add support for ASP.NET Core 3.0 which can be used with Lambda Custom Runtime.
+  * Added <strong>PostMarshallHttpAuthenticationFeature</strong>. Allows subclasses to customize the <strong>ClaimsPrincipal</strong> for the incoming request.</li>
+  * Added <strong>PostMarshallItemsFeatureFeature</strong>. Allows subclasses to customize what is added to the <strong>Items</strong> collection of the HttpContext for the incoming request. 
+  * Breaking changes to support ASP.NET Core 3.0
+    * Removed <strong>PostCreateContext</strong>. 
+    * Items collection on HttpContext has been changed to return null when attempting to get a value that does not exist. This was done to match the behavior of ASP.NET Core requests coming from Kestrel.
+* **Amazon.Lambda.Logging.AspNetCore (3.0.0)**
+  * Pull Request [#520](https://github.com/aws/aws-lambda-dotnet/pull/520) Match type namespace prefix as well when building `LogLevels`. Thanks [Zdenek Havlin](https://github.com/wdolek)
+  * Pull Request [#522](https://github.com/aws/aws-lambda-dotnet/pull/522) Adjust handling of `Default` log category, adjusting it to .NET. Thanks [Zdenek Havlin](https://github.com/wdolek)   
+* **Amazon.Lambda.Serialization.Json (1.7.0)**
+  * Pull Request [#525](https://github.com/aws/aws-lambda-dotnet/pull/525) add naming strategy option to JsonSerializer. Thanks [Maxime Beaudry](https://github.com/mabead)
+  * Pull Request [#518](https://github.com/aws/aws-lambda-dotnet/pull/518) performance improvement reusing Contract resolvers. Thanks [Daniel Marbach](https://github.com/danielmarbach)
+* **Amazon.Lambda.SimpleEmailEvents (2.0.0)**
+  * Pull Request [#496](https://github.com/aws/aws-lambda-dotnet/pull/496) Split out SimpleEmailEventsReceiptAction into different action types. Thanks [Craig Brett](https://github.com/craigbrett17)
+* **Amazon.Lambda.TestTool-2.1 (0.9.5)** (Preview)
+  * Pull Request [#513](https://github.com/aws/aws-lambda-dotnet/pull/513) Fix typos in Lambda.TestTool/WebTester js files. Thanks [Clay](https://github.com/cyrisX2)
+* **Amazon.Lambda.Templates (3.9.0)**
+  * Added ASP.NET Core 3.0 Custom Runtime template.
+  * Updated lambda.CustomRuntimeFunction template to .NET Core 3.0
+  * Updated AWS SDK for.NET and Amazon Lambda package references in all of the templates.
+
+
 ### Release 2019-08-15
 * **Amazon.Lambda.Serialization.Json (1.6.0)**
   * Pull Request [#503](https://github.com/aws/aws-lambda-dotnet/pull/503) add constructor that allows changing the serializer settings. Thanks [Maxime Beaudry](https://github.com/mabead)
