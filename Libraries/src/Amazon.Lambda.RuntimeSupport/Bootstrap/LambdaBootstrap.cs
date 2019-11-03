@@ -103,7 +103,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     await InvokeOnceAsync(cancellationToken);
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
                     // Loop cancelled
                 }
