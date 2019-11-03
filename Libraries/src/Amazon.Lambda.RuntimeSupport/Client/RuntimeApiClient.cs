@@ -65,13 +65,14 @@ namespace Amazon.Lambda.RuntimeSupport
         /// Report an initialization error as an asynchronous operation.
         /// </summary>
         /// <param name="exception">The exception to report.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        public Task ReportInitializationErrorAsync(Exception exception)
+        public Task ReportInitializationErrorAsync(Exception exception, CancellationToken cancellationToken = default)
         {
             if (exception == null)
                 throw new ArgumentNullException(nameof(exception));
 
-            return _internalClient.ErrorAsync(null, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)));
+            return _internalClient.ErrorAsync(null, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)), cancellationToken);
         }
 
         /// <summary>
@@ -79,13 +80,14 @@ namespace Amazon.Lambda.RuntimeSupport
         /// This can be used to directly control flow in Step Functions without creating an Exception class and throwing it.
         /// </summary>
         /// <param name="errorType">The type of the error to report to Lambda.  This does not need to be a .NET type name.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        public Task ReportInitializationErrorAsync(string errorType)
+        public Task ReportInitializationErrorAsync(string errorType, CancellationToken cancellationToken = default)
         {
             if (errorType == null)
                 throw new ArgumentNullException(nameof(errorType));
 
-            return _internalClient.ErrorAsync(errorType, null);
+            return _internalClient.ErrorAsync(errorType, null, cancellationToken);
         }
 
         /// <summary>
@@ -94,7 +96,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         /// <param name="cancellationToken">The optional cancellation token to use to stop listening for the next invocation.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        public async Task<InvocationRequest> GetNextInvocationAsync(CancellationToken cancellationToken)
+        public async Task<InvocationRequest> GetNextInvocationAsync(CancellationToken cancellationToken = default)
         {
             SwaggerResponse<Stream> response = await _internalClient.NextAsync(cancellationToken);
 
@@ -111,8 +113,9 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         /// <param name="awsRequestId">The ID of the function request that caused the error.</param>
         /// <param name="exception">The exception to report.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        public Task ReportInvocationErrorAsync(string awsRequestId, Exception exception)
+        public Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default)
         {
             if (awsRequestId == null)
                 throw new ArgumentNullException(nameof(awsRequestId));
@@ -121,7 +124,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 throw new ArgumentNullException(nameof(exception));
 
             var exceptionInfo = ExceptionInfo.GetExceptionInfo(exception);
-            return _internalClient.Error2Async(awsRequestId, exceptionInfo.ErrorType, LambdaJsonExceptionWriter.WriteJson(exceptionInfo));
+            return _internalClient.Error2Async(awsRequestId, exceptionInfo.ErrorType, LambdaJsonExceptionWriter.WriteJson(exceptionInfo), cancellationToken);
         }
 
         /// <summary>
@@ -130,10 +133,11 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         /// <param name="awsRequestId">The ID of the function request that caused the error.</param>
         /// <param name="errorType">The type of the error to report to Lambda.  This does not need to be a .NET type name.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        public Task ReportInvocationErrorAsync(string awsRequestId, string errorType)
+        public Task ReportInvocationErrorAsync(string awsRequestId, string errorType, CancellationToken cancellationToken = default)
         {
-            return _internalClient.Error2Async(awsRequestId, errorType, null);
+            return _internalClient.Error2Async(awsRequestId, errorType, null, cancellationToken);
         }
 
         /// <summary>
@@ -141,10 +145,11 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         /// <param name="awsRequestId">The ID of the function request being responded to.</param>
         /// <param name="outputStream">The content of the response to the function invocation.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns></returns>
-        public async Task SendResponseAsync(string awsRequestId, Stream outputStream)
+        public async Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
         {
-            await _internalClient.ResponseAsync(awsRequestId, outputStream, CancellationToken.None);
+            await _internalClient.ResponseAsync(awsRequestId, outputStream, cancellationToken);
         }
     }
 }

@@ -33,16 +33,18 @@ namespace Amazon.Lambda.RuntimeSupport
         /// Report an initialization error as an asynchronous operation.
         /// </summary>
         /// <param name="exception">The exception to report.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        Task ReportInitializationErrorAsync(Exception exception);
+        Task ReportInitializationErrorAsync(Exception exception, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Send an initialization error with a type string but no other information as an asynchronous operation.
         /// This can be used to directly control flow in Step Functions without creating an Exception class and throwing it.
         /// </summary>
         /// <param name="errorType">The type of the error to report to Lambda.  This does not need to be a .NET type name.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        Task ReportInitializationErrorAsync(string errorType);
+        Task ReportInitializationErrorAsync(string errorType, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get the next function invocation from the Runtime API as an asynchronous operation.
@@ -57,8 +59,9 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         /// <param name="awsRequestId">The ID of the function request that caused the error.</param>
         /// <param name="exception">The exception to report.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        Task ReportInvocationErrorAsync(string awsRequestId, Exception exception);
+        Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Send an initialization error with a type string but no other information as an asynchronous operation.
@@ -66,15 +69,17 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         /// <param name="awsRequestId">The ID of the function request that caused the error.</param>
         /// <param name="errorType">The type of the error to report to Lambda.  This does not need to be a .NET type name.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        Task ReportInvocationErrorAsync(string awsRequestId, string errorType);
+        Task ReportInvocationErrorAsync(string awsRequestId, string errorType, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Send a response to a function invocation to the Runtime API as an asynchronous operation.
         /// </summary>
         /// <param name="awsRequestId">The ID of the function request being responded to.</param>
         /// <param name="outputStream">The content of the response to the function invocation.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns></returns>
-        Task SendResponseAsync(string awsRequestId, Stream outputStream);
+        Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default);
     }
 }
