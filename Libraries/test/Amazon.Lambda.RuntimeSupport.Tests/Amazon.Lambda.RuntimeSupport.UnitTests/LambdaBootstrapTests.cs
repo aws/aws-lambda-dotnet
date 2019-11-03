@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 using System;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -29,6 +30,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         TestInitializer _testInitializer;
         TestRuntimeApiClient _testRuntimeApiClient;
         TestEnvironmentVariables _environmentVariables;
+        HandlerWrapper _testWrapper;
 
         public LambdaBootstrapTests()
         {
@@ -36,12 +38,20 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             _testRuntimeApiClient = new TestRuntimeApiClient(_environmentVariables);
             _testInitializer = new TestInitializer();
             _testFunction = new TestHandler();
+            _testWrapper = HandlerWrapper.GetHandlerWrapper(_testFunction.HandlerVoidVoidSync);
         }
 
         [Fact]
         public void ThrowsExceptionForNullHandler()
         {
             Assert.Throws<ArgumentNullException>("handler", () => { new LambdaBootstrap((LambdaBootstrapHandler)null); });
+        }
+
+        [Fact]
+        public void ThrowsExceptionForNullHttpClient()
+        {
+            Assert.Throws<ArgumentNullException>("httpClient", () => { new LambdaBootstrap((HttpClient)null, _testFunction.BaseHandlerAsync); });
+            Assert.Throws<ArgumentNullException>("httpClient", () => { new LambdaBootstrap((HttpClient)null, _testWrapper); });
         }
 
         [Fact]

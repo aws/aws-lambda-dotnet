@@ -43,19 +43,28 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// Create a LambdaBootstrap that will call the given initializer and handler.
         /// </summary>
+        /// <param name="httpClient">The HTTP client to use with the Lambda runtime.</param>
+        /// <param name="handler">Delegate called for each invocation of the Lambda function.</param>
+        /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
+        /// <returns></returns>
+        public LambdaBootstrap(HttpClient httpClient, LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer = null)
+        {
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _handler = handler ?? throw new ArgumentNullException(nameof(handler));
+            _initializer = initializer;
+            _httpClient.Timeout = RuntimeApiHttpTimeout;
+            Client = new RuntimeApiClient(new SystemEnvironmentVariables(), _httpClient);
+        }
+
+        /// <summary>
+        /// Create a LambdaBootstrap that will call the given initializer and handler.
+        /// </summary>
         /// <param name="handler">Delegate called for each invocation of the Lambda function.</param>
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         /// <returns></returns>
         public LambdaBootstrap(LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer = null)
-        {
-            _handler = handler ?? throw new ArgumentNullException(nameof(handler));
-            _initializer = initializer;
-            _httpClient = new HttpClient
-            {
-                Timeout = RuntimeApiHttpTimeout
-            };
-            Client = new RuntimeApiClient(new SystemEnvironmentVariables(), _httpClient);
-        }
+            : this(new HttpClient(), handler, initializer)
+        { }
 
         /// <summary>
         /// Create a LambdaBootstrap that will call the given initializer and handler.
@@ -65,6 +74,17 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns></returns>
         public LambdaBootstrap(HandlerWrapper handlerWrapper, LambdaBootstrapInitializer initializer = null)
             : this(handlerWrapper.Handler, initializer)
+        { }
+
+        /// <summary>
+        /// Create a LambdaBootstrap that will call the given initializer and handler.
+        /// </summary>
+        /// <param name="httpClient">The HTTP client to use with the Lambda runtime.</param>
+        /// <param name="handlerWrapper">The HandlerWrapper to call for each invocation of the Lambda function.</param>
+        /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
+        /// <returns></returns>
+        public LambdaBootstrap(HttpClient httpClient, HandlerWrapper handlerWrapper, LambdaBootstrapInitializer initializer = null)
+            : this(httpClient, handlerWrapper.Handler, initializer)
         { }
 
         /// <summary>
