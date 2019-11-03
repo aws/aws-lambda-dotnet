@@ -75,7 +75,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             }
         }
 
-        public Task<InvocationRequest> GetNextInvocationAsync()
+        public Task<InvocationRequest> GetNextInvocationAsync(System.Threading.CancellationToken cancellationToken = default)
         {
             GetNextInvocationAsyncCalled = true;
 

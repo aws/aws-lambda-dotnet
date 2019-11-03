@@ -92,10 +92,11 @@ namespace Amazon.Lambda.RuntimeSupport
         /// Get the next function invocation from the Runtime API as an asynchronous operation.
         /// Completes when the next invocation is received.
         /// </summary>
+        /// <param name="cancellationToken">The optional cancellation token to use to stop listening for the next invocation.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        public async Task<InvocationRequest> GetNextInvocationAsync()
+        public async Task<InvocationRequest> GetNextInvocationAsync(CancellationToken cancellationToken)
         {
-            SwaggerResponse<Stream> response = await _internalClient.NextAsync(System.Threading.CancellationToken.None);
+            SwaggerResponse<Stream> response = await _internalClient.NextAsync(cancellationToken);
 
             var lambdaContext = new LambdaContext(new RuntimeApiHeaders(response.Headers), LambdaEnvironment);
             return new InvocationRequest

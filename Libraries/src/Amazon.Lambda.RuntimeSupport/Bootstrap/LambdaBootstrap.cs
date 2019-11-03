@@ -99,7 +99,14 @@ namespace Amazon.Lambda.RuntimeSupport
 
             while (doStartInvokeLoop && !cancellationToken.IsCancellationRequested)
             {
-                await InvokeOnceAsync();
+                try
+                {
+                    await InvokeOnceAsync(cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Loop cancelled
+                }
             }
         }
 
@@ -116,9 +123,9 @@ namespace Amazon.Lambda.RuntimeSupport
             }
         }
 
-        internal async Task InvokeOnceAsync()
+        internal async Task InvokeOnceAsync(CancellationToken cancellationToken = default)
         {
-            using (var invocation = await Client.GetNextInvocationAsync())
+            using (var invocation = await Client.GetNextInvocationAsync(cancellationToken))
             {
                 InvocationResponse response = null;
                 bool invokeSucceeded = false;
