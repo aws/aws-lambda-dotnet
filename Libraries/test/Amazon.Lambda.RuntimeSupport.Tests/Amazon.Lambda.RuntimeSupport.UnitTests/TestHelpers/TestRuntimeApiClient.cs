@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -75,7 +76,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             }
         }
 
-        public Task<InvocationRequest> GetNextInvocationAsync()
+        public Task<InvocationRequest> GetNextInvocationAsync(CancellationToken cancellationToken = default)
         {
             GetNextInvocationAsyncCalled = true;
 
@@ -94,31 +95,31 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             });
         }
 
-        public Task ReportInitializationErrorAsync(Exception exception)
+        public Task ReportInitializationErrorAsync(Exception exception, CancellationToken cancellationToken = default)
         {
             ReportInitializationErrorAsyncExceptionCalled = true;
             return Task.Run(() => { });
         }
 
-        public Task ReportInitializationErrorAsync(string errorType)
+        public Task ReportInitializationErrorAsync(string errorType, CancellationToken cancellationToken = default)
         {
             ReportInitializationErrorAsyncTypeCalled = true;
             return Task.Run(() => { });
         }
 
-        public Task ReportInvocationErrorAsync(string awsRequestId, Exception exception)
+        public Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default)
         {
             ReportInvocationErrorAsyncExceptionCalled = true;
             return Task.Run(() => { });
         }
 
-        public Task ReportInvocationErrorAsync(string awsRequestId, string errorType)
+        public Task ReportInvocationErrorAsync(string awsRequestId, string errorType, CancellationToken cancellationToken = default)
         {
             ReportInvocationErrorAsyncTypeCalled = true;
             return Task.Run(() => { });
         }
 
-        public Task SendResponseAsync(string awsRequestId, Stream outputStream)
+        public Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
         {
             if (outputStream != null)
             {
