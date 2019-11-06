@@ -1,3 +1,7 @@
+### Release 2019-11-05
+* **Amazon.Lambda.RuntimeSupport (1.1.0)**
+  * Pull Request [#540](https://github.com/aws/aws-lambda-dotnet/pull/540) Improve testability of for LambdaBootstrap. Thanks [Martin Costello](https://github.com/martincostello)
+
 ### Release 2019-10-24
 * **Amazon.Lambda.AspNetCoreServer (4.0.0)**
   * Add support for ASP.NET Core 3.0 which can be used with Lambda Custom Runtime.
