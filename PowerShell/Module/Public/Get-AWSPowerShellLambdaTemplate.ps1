@@ -26,13 +26,25 @@
 #>
 function Get-AWSPowerShellLambdaTemplate
 {
-
     [CmdletBinding()]
+    param
+    (
+        [switch]$InstalledOnly
+    )
 
-    $manifest = _loadBlueprintManifest
-    foreach ($b in $manifest.blueprints) {
+    if ($InstalledOnly)
+    {
+        $manifest = _loadBlueprintManifest
+    }
+    else
+    {
+        $manifest = _loadBlueprintManifest -Online
+    }
+
+    foreach ($b in $manifest.blueprints)
+    {
         [PSCustomObject]@{
-            Template = $b.name
+            Template    = $b.name
             Description = $b.description
         }
     }

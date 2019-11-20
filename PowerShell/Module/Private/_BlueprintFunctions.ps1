@@ -20,7 +20,7 @@ function _getHostedBlueprintsContent
         'https://d3rrggjwfhwld2.cloudfront.net'
         'https://aws-vs-toolkit.s3.amazonaws.com'
     )
-    
+
     $_altOrigin = $env:PSLAMBDA_BLUEPRINTS_ORIGIN
 
     if ($_altOrigin)
@@ -93,10 +93,17 @@ function _getBlueprintsContent
     (
         # the relative path and filename to the content to load
         [Parameter(Mandatory = $true)]
-        [string]$ContentPath
+        [string]$ContentPath,
+
+        # Defines whether to load Blueprints from online data sources
+        [switch]$Online
     )
 
-    $_content = _getHostedBlueprintsContent -Contentpath $ContentPath
+    if ($Online)
+    {
+        $_content = _getHostedBlueprintsContent -Contentpath $ContentPath
+    }
+
     if (!($_content))
     {
         $_content = _getLocalBlueprintsContent -ContentPath $ContentPath
@@ -115,7 +122,22 @@ function _getBlueprintsContent
 #>
 function _loadBlueprintManifest
 {
-    return ConvertFrom-Json -InputObject (_getBlueprintsContent -ContentPath $_manifestFilename)
+    param
+    (
+        # Defines whether to load Blueprints from online data sources
+        [switch]$Online
+    )
+
+    $_getBlueprintsContent = @{
+        ContentPath = $_manifestFilename
+    }
+
+    if ($Online)
+    {
+        $_getBlueprintsContent.Add('Online', $true)
+    }
+
+    return ConvertFrom-Json -InputObject (_getBlueprintsContent @_getBlueprintsContent)
 }
 
 <#
