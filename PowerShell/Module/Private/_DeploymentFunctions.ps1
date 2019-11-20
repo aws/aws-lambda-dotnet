@@ -433,14 +433,15 @@ function _prepareDependentPowerShellModules
         New-Item -ItemType directory -Path $SavedModulesDirectory | Out-Null
     }
 
-    ## use the fullname property of the $Script fileinfo object, as [System.Management.Automation.Language.Parser]::ParseFile() does not succeed with PSPath values (like `Microsoft.PowerShell.Core\FileSystem::\\someserver\somepath\Get-Something.ps1`), what are what $Script has when the given file is at a UNC path
+    ## Use the FullName property of the $Script fileinfo object, as [System.Management.Automation.Language.Parser]::ParseFile() does not succeed with PSPath values like `Microsoft.PowerShell.Core\FileSystem::\\someserver\somepath\Get-Something.ps1`. 
+    ## $Script will have a PSPath value like this when the given file is at a UNC path.
     $strScriptFullname = (Get-Item -Path $Script).FullName
     ## variable in which to place any ParseFile() errors, so as to be able to check for them
     $arrErrorFromParseFile = @()
     $ast = [System.Management.Automation.Language.Parser]::ParseFile($strScriptFullname, [ref]$null, [ref]$arrErrorFromParseFile)
     if (($arrErrorFromParseFile | Measure-Object).Count -gt 0) {
         ## Write a warning (not terminating for now)
-        Write-Warning "Received error trying to parse given script file '$Script'. Resulting Lambda package might not contain all things needed for success"
+        Write-Warning "Received error trying to parse given script file '$Script'. Resulting Lambda package might not contain required PowerShell modules needed for success"
     } ## end if
     if ($ast.ScriptRequirements.RequiredModules)
     {
