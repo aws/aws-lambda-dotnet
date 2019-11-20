@@ -166,21 +166,21 @@ function _deployProject
         }
 
         $amazonLambdaToolsPath = _configureAmazonLambdaTools
-        
+
         $env:AWS_EXECUTION_ENV="AWSLambdaPSCore"
-        try 
+        try
         {
-            if ($DisableInteractive) 
+            if ($DisableInteractive)
             {
                 Invoke-Expression "$amazonLambdaToolsPath deploy-function $arguments" | Foreach-Object {Write-Verbose -Message "$_`r"}
             }
             else
             {
                 Write-Host 'Initiate deployment'
-                Invoke-Expression "$amazonLambdaToolsPath deploy-function $arguments"            
-            }                
+                Invoke-Expression "$amazonLambdaToolsPath deploy-function $arguments"
+            }
         }
-        finally 
+        finally
         {
             Remove-Item Env:\AWS_EXECUTION_ENV
         }
@@ -433,7 +433,15 @@ function _prepareDependentPowerShellModules
         New-Item -ItemType directory -Path $SavedModulesDirectory | Out-Null
     }
 
-    $ast = [System.Management.Automation.Language.Parser]::ParseFile($Script, [ref]$null, [ref]$null)
+    ## use the fullname property of the $Script fileinfo object, as [System.Management.Automation.Language.Parser]::ParseFile() does not succeed with PSPath values (like `Microsoft.PowerShell.Core\FileSystem::\\someserver\somepath\Get-Something.ps1`), what are what $Script has when the given file is at a UNC path
+    $strScriptFullname = (Get-Item -Path $Script).FullName
+    ## variable in which to place any ParseFile() errors, so as to be able to check for them
+    $arrErrorFromParseFile = @()
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($strScriptFullname, [ref]$null, [ref]$arrErrorFromParseFile)
+    if (($arrErrorFromParseFile | Measure-Object).Count -gt 0) {
+        ## Write a warning (not terminating for now)
+        Write-Warning "Received error trying to parse given script file '$Script'. Resulting Lambda package might not contain all things needed for success"
+    } ## end if
     if ($ast.ScriptRequirements.RequiredModules)
     {
         $ast.ScriptRequirements.RequiredModules | ForEach-Object -Process {
@@ -465,22 +473,24 @@ function _prepareDependentPowerShellModules
                     Path = $SavedModulesDirectory
                     ErrorAction = 'Stop'
                 }
-                
+
                 if ($_.Version)
                 {
                     $splat.Add('RequiredVersion',$_.Version)
                 }
-                
+
                 if ($ModuleRepository)
                 {
                     $splat.Add('Repository',$ModuleRepository)
                 }
-                
+
                 # in the Save-Module call, replace -RequiredVersion with @splat
                 Save-Module @splat
             }
         }
     }
+    ## Add verbosity that no RequiredModules found
+    else {Write-Verbose "No RequiredModules found for script '$Script'"}
 }
 
 function _findLocalModule
@@ -503,7 +513,7 @@ function _findLocalModule
     }
 
     $availableModules = Get-Module -ListAvailable -Name $Name | Sort-Object -Property Version -Descending
-    
+
     # Select-Object added to ensure multiple installed copies of a specified version won't break staging folder
     # names. Before: ModuleName\System.Obejct[]\. After: Module\Version\
     $availableModules | ForEach-Object -Process {
@@ -558,7 +568,7 @@ function _createStagingDirectory
         [Parameter(Mandatory = $false)]
         [String]$StagingDirectory
     )
-    
+
     if ($StagingDirectory)
     {
         $NewStagingDirectory = Join-Path -Path $StagingDirectory -ChildPath $Name
