@@ -27,6 +27,9 @@ function _deployProject
         [int]$FunctionTimeout,
 
         [Parameter(Mandatory = $false)]
+        [string[]]$FunctionLayer,        
+
+        [Parameter(Mandatory = $false)]
         [Boolean]$PublishNewVersion,
 
         [Parameter(Mandatory = $false)]
@@ -98,6 +101,12 @@ function _deployProject
         if (($FunctionTimeout))
         {
             $arguments += " --function-timeout $FunctionTimeout"
+        }
+
+        $formattedLayers = _formatArray($FunctionLayer)
+        if(($formattedLayers))
+        {
+            $arguments += " --function-layers $formattedLayers"
         }
 
         if (($PublishNewVersion))
