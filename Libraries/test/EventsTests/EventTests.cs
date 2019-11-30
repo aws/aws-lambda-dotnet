@@ -477,6 +477,8 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(requestContext.RequestId, "deef4878-7910-11e6-8f14-25afc3e9ae33");
                 Assert.Equal(requestContext.ConnectionId, "d034bc98-beed-4fdf-9e85-11bfc15bf734");
                 Assert.Equal(requestContext.DomainName, "somerandomdomain.net");
+                Assert.Equal(1519166937665, requestContext.RequestTimeEpoch);
+                Assert.Equal("20/Feb/2018:22:48:57 +0000", requestContext.RequestTime);
 
                 var identity = requestContext.Identity;
                 Assert.Equal(identity.CognitoIdentityPoolId, "theCognitoIdentityPoolId");
@@ -490,6 +492,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(identity.UserArn, "theUserArn");
                 Assert.Equal(identity.UserAgent, "PostmanRuntime/2.4.5");
                 Assert.Equal(identity.User, "theUser");
+                Assert.Equal("IAM_user_access_key", identity.AccessKey);
 
                 Handle(proxyEvent);
             }

@@ -224,6 +224,42 @@
             /// The APIGatewayCustomAuthorizerContext containing the custom properties set by a custom authorizer.
             /// </summary>
             public APIGatewayCustomAuthorizerContext Authorizer { get; set; }
+            
+            /// <summary>
+            /// Gets and sets the operation name.
+            /// </summary>
+            public string OperationName { get; set; }
+            
+            /// <summary>
+            /// Gets and sets the error.
+            /// </summary>
+            public string Error { get; set; }
+            
+            /// <summary>
+            /// Gets and sets the integration latency.
+            /// </summary>
+            public string IntegrationLatency { get; set; }
+            
+            /// <summary>
+            /// Gets and sets the message direction.
+            /// </summary>
+            public string MessageDirection { get; set; }
+            
+            /// <summary>
+            /// Gets and sets the request time.
+            /// </summary>
+            public string RequestTime { get; set; }
+            
+            /// <summary>
+            /// Gets and sets the request time as an epoch.
+            /// </summary>
+            public long RequestTimeEpoch { get; set; }
+            
+            /// <summary>
+            /// Gets and sets the status.
+            /// </summary>
+            public string Status { get; set; }
+
         }
 
         /// <summary>
@@ -256,6 +292,16 @@
             /// The API Key
             /// </summary>
             public string ApiKey { get; set; }
+
+            /// <summary>
+            /// The API Key ID
+            /// </summary>
+            public string ApiKeyId { get; set; }
+            
+            /// <summary>
+            /// The Access Key
+            /// </summary>
+            public string AccessKey { get; set; }
 
             /// <summary>
             /// The source IP of the request
