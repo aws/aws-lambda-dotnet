@@ -48,13 +48,16 @@
       "cognitoAuthenticationProvider": "theCognitoAuthenticationProvider",
       "userArn": "theUserArn",
       "userAgent": "PostmanRuntime/2.4.5",
-      "user": "theUser"
+      "user": "theUser",
+      "accessKey": "IAM_user_access_key"
     },
     "resourcePath": "/{proxy+}",
     "httpMethod": "POST",
     "apiId": "gy415nuibc",
     "connectionId": "d034bc98-beed-4fdf-9e85-11bfc15bf734",
-    "domainName": "somerandomdomain.net"
+    "domainName": "somerandomdomain.net",
+    "requestTime": "20/Feb/2018:22:48:57 +0000",
+    "requestTimeEpoch": 1519166937665
   },
   "body": "{\r\n\t\"a\": 1\r\n}"
 }
