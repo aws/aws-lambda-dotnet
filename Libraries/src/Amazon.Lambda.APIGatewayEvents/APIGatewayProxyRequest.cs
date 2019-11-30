@@ -139,6 +139,11 @@
             /// The unique request id
             /// </summary>
             public string RequestId { get; set; }
+            
+             /// <summary>
+            /// The request time in epoch formatted
+            /// </summary>
+            public long RequestTimeEpoch { get; set; }
 
             /// <summary>
             /// The identity information for the request caller
