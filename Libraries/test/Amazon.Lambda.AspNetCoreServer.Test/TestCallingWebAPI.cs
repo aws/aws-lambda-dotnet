@@ -20,6 +20,23 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
         }
 
+
+        [Fact]
+        public async Task TestHttpApiGetAllValues()
+        {
+            var context = new TestLambdaContext();
+
+            var response = await this.InvokeAPIGatewayRequest(context, "values-get-all-httpapi-request.json");
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("[\"value1\",\"value2\"]", response.Body);
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("application/json; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
+
+            Assert.Contains("OnStarting Called", ((TestLambdaLogger)context.Logger).Buffer.ToString());
+        }
+
+
         [Fact]
         public async Task TestGetAllValues()
         {
