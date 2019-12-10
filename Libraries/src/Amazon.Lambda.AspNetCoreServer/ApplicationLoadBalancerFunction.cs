@@ -47,8 +47,8 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
             // Call consumers customize method in case they want to change how API Gateway's request
             // was marshalled into ASP.NET Core request.
-            PostMarshallHttpAuthenticationFeature(features, lambdaRequest, lambdaContext);                
-            
+            PostMarshallHttpAuthenticationFeature(features, lambdaRequest, lambdaContext);
+
             // Request coming from Application Load Balancer will always send the headers X-Amzn-Trace-Id, X-Forwarded-For, X-Forwarded-Port, and X-Forwarded-Proto.
             // So this will only happen when writing tests with incomplete sample requests.
             if (lambdaRequest.Headers == null && lambdaRequest.MultiValueHeaders == null)
@@ -126,23 +126,25 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
             var response = new ApplicationLoadBalancerResponse
             {
-                StatusCode = responseFeatures.StatusCode != 0 ? responseFeatures.StatusCode : statusCodeIfNotSet                
+                StatusCode = responseFeatures.StatusCode != 0 ? responseFeatures.StatusCode : statusCodeIfNotSet
             };
 
             response.StatusDescription = $"{response.StatusCode} {((System.Net.HttpStatusCode)response.StatusCode).ToString()}";
 
 
             string contentType = null;
+            string contentEncoding = null;
+
             if (responseFeatures.Headers != null)
             {
-                if(this._multiHeaderValuesEnabled)
+                if (this._multiHeaderValuesEnabled)
                     response.MultiValueHeaders = new Dictionary<string, IList<string>>();
                 else
                     response.Headers = new Dictionary<string, string>();
 
                 foreach (var kvp in responseFeatures.Headers)
                 {
-                    if(this._multiHeaderValuesEnabled)
+                    if (this._multiHeaderValuesEnabled)
                     {
                         response.MultiValueHeaders[kvp.Key] = kvp.Value.ToList();
                     }
@@ -156,13 +158,21 @@ namespace Amazon.Lambda.AspNetCoreServer
                     {
                         contentType = kvp.Value[0];
                     }
+                    else if (kvp.Key.Equals("Content-Encoding", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        contentEncoding = kvp.Value[0];
+                    }
                 }
             }
 
             if (responseFeatures.Body != null)
             {
-                // Figure out how we should treat the response content
-                var rcEncoding = GetResponseContentEncodingForContentType(contentType);
+                // Figure out how we should treat the response content, check encoding first to see if body is compressed, then check content type
+                var rcEncoding = GetResponseContentEncodingForContentEncoding(contentEncoding);
+                if (rcEncoding != ResponseContentEncoding.Base64)
+                {
+                    rcEncoding = GetResponseContentEncodingForContentType(contentType);
+                }
 
                 (response.Body, response.IsBase64Encoded) = Utilities.ConvertAspNetCoreBodyToLambdaBody(responseFeatures.Body, rcEncoding);
             }
@@ -178,19 +188,19 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
             var errorName = ex.GetType().Name;
 
-            if(this._multiHeaderValuesEnabled)
+            if (this._multiHeaderValuesEnabled)
             {
                 lambdaResponse.MultiValueHeaders.Add(new KeyValuePair<string, IList<string>>("ErrorType", new List<string> { errorName }));
             }
             else
             {
                 lambdaResponse.Headers.Add(new KeyValuePair<string, string>("ErrorType", errorName));
-            }            
+            }
         }
 
         private string GetSingleHeaderValue(ApplicationLoadBalancerRequest request, string headerName)
         {
-            if(this._multiHeaderValuesEnabled)
+            if (this._multiHeaderValuesEnabled)
             {
                 var kvp = request.MultiValueHeaders.FirstOrDefault(x => string.Equals(x.Key, headerName, StringComparison.OrdinalIgnoreCase));
                 if (!kvp.Equals(default(KeyValuePair<string, IList<string>>)))

@@ -1,17 +1,20 @@
-﻿using Amazon.Lambda.ApplicationLoadBalancerEvents;
-using Amazon.Lambda.TestUtilities;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Threading.Tasks;
-using TestWebApp;
-using Xunit;
-using System;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+
+using Amazon.Lambda.ApplicationLoadBalancerEvents;
+using Amazon.Lambda.TestUtilities;
 
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+
+using TestWebApp;
+
+using Xunit;
 
 namespace Amazon.Lambda.AspNetCoreServer.Test
 {
@@ -170,6 +173,37 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("[\"value1\",\"value2\"]", response.Body);
             Assert.True(response.Headers.ContainsKey("Content-Type"));
             Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
+        }
+
+        [Fact]
+        public async Task TestGetCompressResponse()
+        {
+            var context = new TestLambdaContext();
+
+            var response = await this.InvokeApplicationLoadBalancerRequest(context, "compressresponse-get-alb-request.json");
+
+            Assert.Equal(200, response.StatusCode);
+
+            var bytes = Convert.FromBase64String(response.Body);
+            using (var msi = new MemoryStream(bytes))
+            using (var mso = new MemoryStream())
+            {
+                using (var gs = new GZipStream(msi, CompressionMode.Decompress))
+                {
+                    gs.CopyTo(mso);
+
+                }
+                var body = Encoding.UTF8.GetString(mso.ToArray());
+                Assert.Equal("[\"value1\",\"value2\"]", body);
+            }
+
+            Assert.True(response.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("application/json-compress", response.Headers["Content-Type"]);
+
+            Assert.True(response.Headers.ContainsKey("Content-Encoding"));
+            Assert.Equal("gzip", response.Headers["Content-Encoding"]);
+
+            Assert.Contains("OnStarting Called", ((TestLambdaLogger)context.Logger).Buffer.ToString());
         }
 
         private async Task<ApplicationLoadBalancerResponse> InvokeApplicationLoadBalancerRequest(string fileName)
