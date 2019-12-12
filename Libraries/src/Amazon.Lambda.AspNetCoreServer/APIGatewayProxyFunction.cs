@@ -13,7 +13,7 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 using Microsoft.AspNetCore.Http.Features.Authentication;
-
+using System.Globalization;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -210,6 +210,14 @@ namespace Amazon.Lambda.AspNetCoreServer
                 {
                     requestFeatures.Body = Utilities.ConvertLambdaRequestBodyToAspNetCoreBody(apiGatewayRequest.Body, apiGatewayRequest.IsBase64Encoded);
                 }
+
+                // Make sure the content-length header is set if header was not present.
+                const string contentLengthHeaderName = "Content-Length";
+                if (!requestFeatures.Headers.ContainsKey(contentLengthHeaderName))
+                {
+                    requestFeatures.Headers[contentLengthHeaderName] = requestFeatures.Body == null ? "0" : requestFeatures.Body.Length.ToString(CultureInfo.InvariantCulture);
+                }
+
 
                 // Call consumers customize method in case they want to change how API Gateway's request
                 // was marshalled into ASP.NET Core request.

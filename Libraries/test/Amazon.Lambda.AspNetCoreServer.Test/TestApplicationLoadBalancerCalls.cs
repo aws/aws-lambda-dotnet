@@ -172,6 +172,20 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
         }
 
+        [Fact]
+        public async Task TestContentLengthWithContent()
+        {
+            var response = await this.InvokeApplicationLoadBalancerRequest("check-content-length-withcontent-alb.json");
+            Assert.Equal("Request content length: 17", response.Body.Trim());
+        }
+
+        [Fact]
+        public async Task TestContentLengthNoContent()
+        {
+            var response = await this.InvokeApplicationLoadBalancerRequest("check-content-length-nocontent-alb.json");
+            Assert.Equal("Request content length: 0", response.Body.Trim());
+        }
+
         private async Task<ApplicationLoadBalancerResponse> InvokeApplicationLoadBalancerRequest(string fileName)
         {
             return await InvokeApplicationLoadBalancerRequest(new TestLambdaContext(), fileName);

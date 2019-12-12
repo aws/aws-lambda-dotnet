@@ -13,6 +13,7 @@ using Amazon.Lambda.ApplicationLoadBalancerEvents;
 using System.Net;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using Microsoft.Extensions.Primitives;
+using System.Globalization;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -81,6 +82,13 @@ namespace Amazon.Lambda.AspNetCoreServer
                 if (!string.IsNullOrEmpty(lambdaRequest.Body))
                 {
                     requestFeatures.Body = Utilities.ConvertLambdaRequestBodyToAspNetCoreBody(lambdaRequest.Body, lambdaRequest.IsBase64Encoded);
+                }
+
+                // Make sure the content-length header is set if header was not present.
+                const string contentLengthHeaderName = "Content-Length";
+                if (!requestFeatures.Headers.ContainsKey(contentLengthHeaderName))
+                {
+                    requestFeatures.Headers[contentLengthHeaderName] = requestFeatures.Body == null ? "0" : requestFeatures.Body.Length.ToString(CultureInfo.InvariantCulture);
                 }
 
                 var userAgent = GetSingleHeaderValue(lambdaRequest, "user-agent");

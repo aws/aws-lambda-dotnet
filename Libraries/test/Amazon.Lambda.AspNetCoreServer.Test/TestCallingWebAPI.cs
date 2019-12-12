@@ -324,6 +324,20 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("redirecttarget", response.MultiValueHeaders["Location"][0]);
         }
 
+        [Fact]
+        public async Task TestContentLengthWithContent()
+        {
+            var response = await this.InvokeAPIGatewayRequest("check-content-length-withcontent-apigateway.json");
+            Assert.Equal("Request content length: 17", response.Body.Trim());
+        }
+
+        [Fact]
+        public async Task TestContentLengthNoContent()
+        {
+            var response = await this.InvokeAPIGatewayRequest("check-content-length-nocontent-apigateway.json");
+            Assert.Equal("Request content length: 0", response.Body.Trim());
+        }
+
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
         {
             return await InvokeAPIGatewayRequest(new TestLambdaContext(), fileName);
