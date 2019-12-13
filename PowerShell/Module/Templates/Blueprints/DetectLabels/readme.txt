@@ -6,7 +6,7 @@ the image (called 'labels') with a minimum confidence level which it then applie
 by setting the environment variable MinConfidence to the required value.
 
 To work with Amazon S3 and Amazon Rekognition the script uses cmdlets from the
-AWS Tools for PowerShell module (AWSPowerShell.NetCore). To run successfully the
+AWS.Tools.S3 and AWS.Tools.Rekognition modules. To run successfully the
 function must be deployed with a role allowing access to the following service operations:
 
 rekognition:DetectLabels

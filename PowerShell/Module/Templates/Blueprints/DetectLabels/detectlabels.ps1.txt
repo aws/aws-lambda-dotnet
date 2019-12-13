@@ -10,6 +10,7 @@
 # indicating the module and version. If using an AWS.Tools.* module the must also be a requires for AWS.Tools.Common.
 
 #Requires -Modules @{ModuleName='AWS.Tools.Common';ModuleVersion='4.0.0.0'}
+#Requires -Modules @{ModuleName='AWS.Tools.Rekognition';ModuleVersion='4.0.0.0'}
 #Requires -Modules @{ModuleName='AWS.Tools.S3';ModuleVersion='4.0.0.0'}
 
 # Uncomment to send the input event to CloudWatch Logs
