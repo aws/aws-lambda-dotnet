@@ -123,7 +123,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                     {
                         // handling claims output from custom lambda authorizer
                         var identity = new ClaimsIdentity(
-                            authorizer.Where(x => !string.Equals(x.Key, "claims", StringComparison.OrdinalIgnoreCase))
+                            authorizer.Where(x => x.Value != null && !string.Equals(x.Key, "claims", StringComparison.OrdinalIgnoreCase))
                                 .Select(entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
 
                         _logger.LogDebug(
