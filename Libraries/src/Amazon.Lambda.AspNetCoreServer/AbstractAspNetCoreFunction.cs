@@ -70,6 +70,15 @@ namespace Amazon.Lambda.AspNetCoreServer
             ["application/pdf"] = ResponseContentEncoding.Base64,
         };
 
+        // Defines a mapping from registered content encodings to the response encoding format
+        // which dictates what transformations should be applied before returning response content
+        private Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentEncoding = new Dictionary<string, ResponseContentEncoding>
+        {
+            ["gzip"] = ResponseContentEncoding.Base64,
+            ["deflate"] = ResponseContentEncoding.Base64,
+            ["br"] = ResponseContentEncoding.Base64
+        };
+
         /// <summary>
         /// Default Constructor. The ASP.NET Core Framework will be initialized as part of the construction.
         /// </summary>
@@ -124,6 +133,34 @@ namespace Amazon.Lambda.AspNetCoreServer
         public void RegisterResponseContentEncodingForContentType(string contentType, ResponseContentEncoding encoding)
         {
             _responseContentEncodingForContentType[contentType] = encoding;
+        }
+
+        /// <summary>
+        /// Registers a mapping from a asp.net content encoding to a lambda response content type to a <see cref="ResponseContentEncoding"/>.
+        /// </summary>
+        /// <remarks>
+        /// The mappings in combination with the <see cref="DefaultResponseContentEncoding"/>
+        /// setting will dictate if and how response content should be transformed before being
+        /// returned to the calling API Gateway instance.
+        /// <para>
+        /// The interface between the API Gateway and Lambda provides for repsonse content to
+        /// be returned as a UTF-8 string.  In order to return binary content without incurring
+        /// any loss or corruption due to transformations to the UTF-8 encoding, it is necessary
+        /// to encode the raw response content in Base64 and to annotate the response that it is
+        /// Base64-encoded.
+        /// </para><para>
+        /// <b>NOTE:</b>  In order to use this mechanism to return binary response content, in
+        /// addition to registering here any binary MIME content types that will be returned by
+        /// your application, it also necessary to register those same content types with the API
+        /// Gateway using either the console or the REST interface. Check the developer guide for
+        /// further information.
+        /// http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-configure-with-console.html
+        /// http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-configure-with-control-service-api.html
+        /// </para>
+        /// </remarks>
+        public void RegisterResponseContentEncodingForContentEncoding(string contentEncoding, ResponseContentEncoding encoding)
+        {
+            _responseContentEncodingForContentEncoding[contentEncoding] = encoding;
         }
 
 
@@ -259,6 +296,26 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         /// <summary>
+        /// Gets the response content encoding for a content encoding.
+        /// </summary>
+        /// <param name="contentEncoding"></param>
+        /// <returns></returns>
+        public ResponseContentEncoding GetResponseContentEncodingForContentEncoding(string contentEncoding)
+        {
+            if (string.IsNullOrEmpty(contentEncoding))
+            {
+                return DefaultResponseContentEncoding;
+            }
+
+            if (_responseContentEncodingForContentEncoding.ContainsKey(contentEncoding))
+            {
+                return _responseContentEncodingForContentEncoding[contentEncoding];
+            }
+
+            return DefaultResponseContentEncoding;
+        }
+
+        /// <summary>
         /// Formats an Exception into a string, including all inner exceptions.
         /// </summary>
         /// <param name="e"><see cref="Exception"/> instance.</param>
@@ -297,15 +354,15 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             _logger.LogDebug($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
 
-            
+
             {
-                var itemFeatures = (IItemsFeature) features;
+                var itemFeatures = (IItemsFeature)features;
                 itemFeatures.Items = new ItemsDictionary();
                 itemFeatures.Items[LAMBDA_CONTEXT] = lambdaContext;
                 itemFeatures.Items[LAMBDA_REQUEST_OBJECT] = request;
                 PostMarshallItemsFeatureFeature(itemFeatures, request, lambdaContext);
             }
-            
+
             var context = this.CreateContext(features);
             var response = await this.ProcessRequest(lambdaContext, context, features);
 
@@ -397,7 +454,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 this._server.Application.DisposeContext(context, ex);
             }
         }
-        
+
 
         private protected virtual void InternalCustomResponseExceptionHandling(TRESPONSE lambdaReponse, ILambdaContext lambdaContext, Exception ex)
         {
@@ -413,7 +470,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
 
         }
-        
+
         /// <summary>
         /// This method is called after marshalling the incoming Lambda request
         /// into ASP.NET Core's IItemsFeature. Derived classes can overwrite this method to alter
@@ -426,7 +483,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
 
         }
-        
+
         /// <summary>
         /// This method is called after marshalling the incoming Lambda request
         /// into ASP.NET Core's IHttpAuthenticationFeature. Derived classes can overwrite this method to alter
@@ -438,7 +495,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         protected virtual void PostMarshallHttpAuthenticationFeature(IHttpAuthenticationFeature aspNetCoreHttpAuthenticationFeature, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
         {
 
-        }        
+        }
 
         /// <summary>
         /// This method is called after marshalling the incoming Lambda request

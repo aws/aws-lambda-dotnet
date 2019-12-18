@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -39,6 +40,13 @@ namespace TestWebApp
                 options.AddPolicy("YouAreSpecial", policy => policy.RequireClaim("you_are_special"));
             });
 
+            services.AddResponseCompression((options) =>
+            {
+                options.Providers.Add<GzipCompressionProvider>();
+                options.EnableForHttps = true;
+                options.MimeTypes = new string[] { "application/json-compress" };
+            });
+
 #if NETCOREAPP_2_1
             services.AddSwaggerGen(c =>
             {
@@ -58,6 +66,7 @@ namespace TestWebApp
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             app.UseMiddleware<Middleware>();
+            app.UseResponseCompression();
 
 #if NETCOREAPP_3_0
             app.UseRouting();
