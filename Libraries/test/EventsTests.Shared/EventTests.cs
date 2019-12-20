@@ -135,13 +135,15 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void DynamoDbUpdateTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void DynamoDbUpdateTest(Type serializerType)
         {
-            var jsonText = File.ReadAllText("dynamodb-event.json");
-            Stream json = new MemoryStream(Encoding.UTF8.GetBytes(jsonText));
-            json.Position = 0;
-            var serializer = new JsonSerializer();
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            Stream json = LoadJsonTestFile("dynamodb-event.json");
             var dynamodbEvent = serializer.Deserialize<DynamoDBEvent>(json);
             Assert.Equal(dynamodbEvent.Records.Count, 2);
 
@@ -180,12 +182,16 @@ namespace Amazon.Lambda.Tests
             Console.WriteLine($"Successfully processed {ddbEvent.Records.Count} records.");
         }
 
-        [Fact]
-        public void CognitoTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void CognitoTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("cognito-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var cognitoEvent = serializer.Deserialize<CognitoEvent>(fileStream);
                 Assert.Equal(cognitoEvent.Version, 2);
                 Assert.Equal(cognitoEvent.EventType, "SyncTrigger");
@@ -216,12 +222,16 @@ namespace Amazon.Lambda.Tests
 
         String ConfigInvokingEvent = "{\"configSnapshotId\":\"00000000-0000-0000-0000-000000000000\",\"s3ObjectKey\":\"AWSLogs/000000000000/Config/us-east-1/2016/2/24/ConfigSnapshot/000000000000_Config_us-east-1_ConfigSnapshot_20160224T182319Z_00000000-0000-0000-0000-000000000000.json.gz\",\"s3Bucket\":\"config-bucket\",\"notificationCreationTime\":\"2016-02-24T18:23:20.328Z\",\"messageType\":\"ConfigurationSnapshotDeliveryCompleted\",\"recordVersion\":\"1.1\"}";
 
-        [Fact]
-        public void ConfigTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void ConfigTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("config-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            using (var fileStream = LoadJsonTestFile("config-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var configEvent = serializer.Deserialize<ConfigEvent>(fileStream);
                 Assert.Equal(configEvent.ConfigRuleId, "config-rule-0123456");
                 Assert.Equal(configEvent.Version, "1.0");
@@ -245,12 +255,16 @@ namespace Amazon.Lambda.Tests
             Console.WriteLine($"Event version - {configEvent.Version}");
         }
 
-        [Fact]
-        public void SimpleEmailTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void SimpleEmailTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("simple-email-event-lambda.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            using (var fileStream = LoadJsonTestFile("simple-email-event-lambda.json"))
             {
-                var serializer = new JsonSerializer();
                 var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.LambdaReceiptAction>>(fileStream);
 
                 Assert.Equal(sesEvent.Records.Count, 1);
@@ -307,11 +321,16 @@ namespace Amazon.Lambda.Tests
                 Handle(sesEvent);
             }
         }
-        public void SimpleEmailLambdaActionTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void SimpleEmailLambdaActionTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("simple-email-event-lambda.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("simple-email-event-lambda.json"))
             {
-                var serializer = new JsonSerializer();
                 var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.LambdaReceiptAction>>(fileStream);
 
                 Assert.Equal(sesEvent.Records.Count, 1);
@@ -324,18 +343,23 @@ namespace Amazon.Lambda.Tests
                 Handle(sesEvent);
             }
         }
-        public void SimpleEmailS3ActionTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void SimpleEmailS3ActionTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("simple-email-event-s3.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("simple-email-event-s3.json"))
             {
-                var serializer = new JsonSerializer();
                 var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.S3ReceiptAction>>(fileStream);
 
                 Assert.Equal(sesEvent.Records.Count, 1);
                 var record = sesEvent.Records[0];
 
                 Assert.Equal(record.Ses.Receipt.Action.Type, "S3");
-                Assert.Equal(record.Ses.Receipt.Action.TopicArn, "arn:aws:sns:planet-earth-1:123456789:ses-email-received");
+                Assert.Equal(record.Ses.Receipt.Action.TopicArn, "arn:aws:sns:eu-west-1:123456789:ses-email-received");
                 Assert.Equal(record.Ses.Receipt.Action.BucketName, "my-ses-inbox");
                 Assert.Equal(record.Ses.Receipt.Action.ObjectKeyPrefix, "important");
                 Assert.Equal(record.Ses.Receipt.Action.ObjectKey, "important/fiddlyfaddlyhiddlyhoodly");
@@ -353,12 +377,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void SNSTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void SNSTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("sns-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("sns-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var snsEvent = serializer.Deserialize<SNSEvent>(fileStream);
 
                 Assert.Equal(snsEvent.Records.Count, 1);
@@ -396,12 +424,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void SQSTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void SQSTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("sqs-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("sqs-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var sqsEvent = serializer.Deserialize<SQSEvent>(fileStream);
 
                 Assert.Equal(sqsEvent.Records.Count, 1);
@@ -460,12 +492,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void APIGatewayProxyRequestTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void APIGatewayProxyRequestTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("proxy-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            using (var fileStream = LoadJsonTestFile("proxy-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var proxyEvent = serializer.Deserialize<APIGatewayProxyRequest>(fileStream);
 
                 Assert.Equal(proxyEvent.Resource, "/{proxy+}");
@@ -530,9 +566,14 @@ namespace Amazon.Lambda.Tests
             };
         }
 
-        [Fact]
-        public void APIGatewayProxyResponseTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void APIGatewayProxyResponseTest(Type serializerType)
         {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
             var response = new APIGatewayProxyResponse
             {
                 StatusCode = 200,
@@ -543,7 +584,6 @@ namespace Amazon.Lambda.Tests
             string serializedJson;
             using (MemoryStream stream = new MemoryStream())
             {
-                var serializer = new JsonSerializer();
                 serializer.Serialize(response, stream);
 
                 stream.Position = 0;
@@ -560,9 +600,14 @@ namespace Amazon.Lambda.Tests
             Assert.Equal(headers["Header2"], "Value2");
         }
 
-        [Fact]
-        public void APIGatewayAuthorizerResponseTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void APIGatewayAuthorizerResponseTest(Type serializerType)
         {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
             var context = new APIGatewayCustomAuthorizerContextOutput();
             context["field1"] = "value1";
             context["field2"] = "value2";
@@ -590,7 +635,6 @@ namespace Amazon.Lambda.Tests
             string serializedJson;
             using (MemoryStream stream = new MemoryStream())
             {
-                var serializer = new JsonSerializer();
                 serializer.Serialize(response, stream);
 
                 stream.Position = 0;
@@ -610,12 +654,16 @@ namespace Amazon.Lambda.Tests
             Assert.Equal("*", root["policyDocument"]["Statement"][0]["Resource"][0]);
         }
         
-        [Fact]
-        public void ApplicationLoadBalancerRequestSingleValueTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void ApplicationLoadBalancerRequestSingleValueTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("alb-request-single-value.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            using (var fileStream = LoadJsonTestFile("alb-request-single-value.json"))
             {
-                var serializer = new JsonSerializer();
                 var evnt = serializer.Deserialize<ApplicationLoadBalancerRequest>(fileStream);
 
                 Assert.Equal(evnt.Path, "/");
@@ -637,12 +685,16 @@ namespace Amazon.Lambda.Tests
         }
         
         
-        [Fact]
-        public void ApplicationLoadBalancerRequestMultiValueTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void ApplicationLoadBalancerRequestMultiValueTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("alb-request-multi-value.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            using (var fileStream = LoadJsonTestFile("alb-request-multi-value.json"))
             {
-                var serializer = new JsonSerializer();
                 var evnt = serializer.Deserialize<ApplicationLoadBalancerRequest>(fileStream);
 
                 Assert.Equal(evnt.Path, "/");
@@ -673,9 +725,14 @@ namespace Amazon.Lambda.Tests
         }    
         
         
-        [Fact]
-        public void ApplicationLoadBalancerSingleHeaderResponseTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void ApplicationLoadBalancerSingleHeaderResponseTest(Type serializerType)
         {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
 
             var response = new ApplicationLoadBalancerResponse()
             {
@@ -693,7 +750,6 @@ namespace Amazon.Lambda.Tests
             string serializedJson;
             using (MemoryStream stream = new MemoryStream())
             {
-                var serializer = new JsonSerializer();
                 serializer.Serialize(response, stream);
 
                 stream.Position = 0;
@@ -711,10 +767,14 @@ namespace Amazon.Lambda.Tests
             Assert.Equal("200 OK", (string)root["statusDescription"]);
         }
 
-        [Fact]
-        public void ApplicationLoadBalancerMultiHeaderResponseTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void ApplicationLoadBalancerMultiHeaderResponseTest(Type serializerType)
         {
-
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             var response = new ApplicationLoadBalancerResponse()
             {
                 MultiValueHeaders = new Dictionary<string, IList<string>>
@@ -731,7 +791,6 @@ namespace Amazon.Lambda.Tests
             string serializedJson;
             using (MemoryStream stream = new MemoryStream())
             {
-                var serializer = new JsonSerializer();
                 serializer.Serialize(response, stream);
 
                 stream.Position = 0;
@@ -754,12 +813,16 @@ namespace Amazon.Lambda.Tests
         }
 
 
-        [Fact]
-        public void LexEvent()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void LexEvent(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("lex-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("lex-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var lexEvent = serializer.Deserialize<LexEvent>(fileStream);
                 Assert.Equal("1.0", lexEvent.MessageVersion);
                 Assert.Equal("FulfillmentCodeHook or DialogCodeHook", lexEvent.InvocationSource);
@@ -791,12 +854,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void LexResponse()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void LexResponse(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("lex-response.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("lex-response.json"))
             {
-                var serializer = new JsonSerializer();
                 var lexResponse = serializer.Deserialize<LexResponse>(fileStream);
 
                 Assert.Equal(2, lexResponse.SessionAttributes.Count);
@@ -835,12 +902,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void KinesisFirehoseEvent()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void KinesisFirehoseEvent(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("kinesis-firehose-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            using (var fileStream = LoadJsonTestFile("kinesis-firehose-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var kinesisEvent = serializer.Deserialize<KinesisFirehoseEvent>(fileStream);
                 Assert.Equal("00540a87-5050-496a-84e4-e7d92bbaf5e2", kinesisEvent.InvocationId);
                 Assert.Equal("arn:aws:firehose:us-east-1:AAAAAAAAAAAA:deliverystream/lambda-test", kinesisEvent.DeliveryStreamArn);
@@ -854,12 +925,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void KinesisFirehoseResponseTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void KinesisFirehoseResponseTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("kinesis-firehose-response.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-firehose-response.json"))
             {
-                var serializer = new JsonSerializer();
                 var kinesisResponse = serializer.Deserialize<KinesisFirehoseResponse>(fileStream);
 
                 Assert.Equal(1, kinesisResponse.Records.Count);
@@ -881,12 +956,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void KinesisAnalyticsOutputDeliveryEvent()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void KinesisAnalyticsOutputDeliveryEvent(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("kinesis-analytics-outputdelivery-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-analytics-outputdelivery-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var kinesisAnalyticsEvent = serializer.Deserialize<KinesisAnalyticsOutputDeliveryEvent>(fileStream);
                 Assert.Equal("00540a87-5050-496a-84e4-e7d92bbaf5e2", kinesisAnalyticsEvent.InvocationId);
                 Assert.Equal("arn:aws:kinesisanalytics:us-east-1:12345678911:application/lambda-test", kinesisAnalyticsEvent.ApplicationArn);
@@ -896,12 +975,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void KinesisAnalyticsOutputDeliveryResponseTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void KinesisAnalyticsOutputDeliveryResponseTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("kinesis-analytics-outputdelivery-response.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-analytics-outputdelivery-response.json"))
             {
-                var serializer = new JsonSerializer();
                 var kinesisAnalyticsResponse = serializer.Deserialize<KinesisAnalyticsOutputDeliveryResponse>(fileStream);
 
                 Assert.Equal(1, kinesisAnalyticsResponse.Records.Count);
@@ -919,12 +1002,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void KinesisAnalyticsInputProcessingEventTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void KinesisAnalyticsInputProcessingEventTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("kinesis-analytics-inputpreprocessing-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-analytics-inputpreprocessing-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var kinesisAnalyticsEvent = serializer.Deserialize<KinesisAnalyticsStreamsInputPreprocessingEvent>(fileStream);
                 Assert.Equal("00540a87-5050-496a-84e4-e7d92bbaf5e2", kinesisAnalyticsEvent.InvocationId);
                 Assert.Equal("arn:aws:kinesis:us-east-1:AAAAAAAAAAAA:stream/lambda-test", kinesisAnalyticsEvent.StreamArn);
@@ -936,12 +1023,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void KinesisAnalyticsInputProcessingResponseTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void KinesisAnalyticsInputProcessingResponseTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("kinesis-analytics-inputpreprocessing-response.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-analytics-inputpreprocessing-response.json"))
             {
-                var serializer = new JsonSerializer();
                 var kinesisAnalyticsResponse = serializer.Deserialize<KinesisAnalyticsInputPreprocessingResponse>(fileStream);
 
                 Assert.Equal(1, kinesisAnalyticsResponse.Records.Count);
@@ -963,12 +1054,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void CloudWatchLogEvent()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void CloudWatchLogEvent(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("logs-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("logs-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var evnt = serializer.Deserialize<CloudWatchLogsEvent>(fileStream);
 
                 Assert.NotNull(evnt.Awslogs);
@@ -988,12 +1083,16 @@ namespace Amazon.Lambda.Tests
             return Convert.ToBase64String(data);
         }        
 
-        [Fact]
-        public void BatchJobStateChangeEventTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void BatchJobStateChangeEventTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("batch-job-state-change-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            using (var fileStream = LoadJsonTestFile("batch-job-state-change-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var jobStateChangeEvent = serializer.Deserialize<BatchJobStateChangeEvent>(fileStream);
 
                 Assert.Equal(jobStateChangeEvent.Version, "0");
@@ -1035,12 +1134,16 @@ namespace Amazon.Lambda.Tests
             Console.WriteLine($"[{jobStateChangeEvent.Source} {jobStateChangeEvent.Time}] {jobStateChangeEvent.DetailType}");
         }
 
-        [Fact]
-        public void ScheduledEventTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void ScheduledEventTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("scheduled-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            using (var fileStream = LoadJsonTestFile("scheduled-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var scheduledEvent = serializer.Deserialize<ScheduledEvent>(fileStream);
                 Assert.Equal(scheduledEvent.Version, "0");
                 Assert.Equal(scheduledEvent.Id, "cdc73f9d-aea9-11e3-9d5a-835b769c0d9c");
@@ -1062,12 +1165,16 @@ namespace Amazon.Lambda.Tests
             Console.WriteLine($"[{scheduledEvent.Source} {scheduledEvent.Time}] {scheduledEvent.DetailType}");
         }
 
-        [Fact]
-        public void ECSContainerInstanceStateChangeEventTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void ECSContainerInstanceStateChangeEventTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("ecs-container-state-change-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("ecs-container-state-change-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var ecsEvent = serializer.Deserialize<ECSContainerInstanceStateChangeEvent>(fileStream);
 
                 Assert.Equal(ecsEvent.Version, "0");
@@ -1108,12 +1215,16 @@ namespace Amazon.Lambda.Tests
         }
 
 
-        [Fact]
-        public void ECSTaskStateChangeEventTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void ECSTaskStateChangeEventTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("ecs-task-state-change-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("ecs-task-state-change-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var ecsEvent = serializer.Deserialize<ECSTaskStateChangeEvent>(fileStream);
 
                 Assert.Equal(ecsEvent.Version, "0");

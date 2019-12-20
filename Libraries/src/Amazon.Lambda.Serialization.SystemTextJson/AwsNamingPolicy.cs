@@ -9,10 +9,11 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
     /// </summary>
     public class AwsNamingPolicy : JsonNamingPolicy
     {
-        IDictionary<string, string> _customNameMappings = new Dictionary<string, string>
+        readonly IDictionary<string, string> _customNameMappings = new Dictionary<string, string>
             {
                 {"XAmzId2", "x-amz-id-2" },
-                {"XAmzRequestId", "x-amz-request-id" }
+                {"XAmzRequestId", "x-amz-request-id" },
+                {"DetailType", "detail-type" }
             };
 
         /// <summary>
