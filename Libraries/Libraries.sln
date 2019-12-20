@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2036
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}"
 EndProject
@@ -91,13 +91,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.RuntimeSuppor
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.RuntimeSupport.UnitTests", "test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests\Amazon.Lambda.RuntimeSupport.UnitTests.csproj", "{10E47FE4-8620-4933-A14D-E33F25CA557A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.Serialization.SystemTextJson", "src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj", "{AA6BA0B8-D61E-49E7-BC1B-19410E25F005}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Serialization.SystemTextJson", "src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj", "{AA6BA0B8-D61E-49E7-BC1B-19410E25F005}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "EventsTests.Shared", "test\EventsTests.Shared\EventsTests.Shared.shproj", "{A2CB78BB-E54F-48CA-BBFB-9553D27EF23D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventsTests.NETCore31", "test\EventsTests.NETCore31\EventsTests.NETCore31.csproj", "{44E9D925-B61D-4234-97B7-61424C963BA6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventsTests.NETCore31", "test\EventsTests.NETCore31\EventsTests.NETCore31.csproj", "{44E9D925-B61D-4234-97B7-61424C963BA6}"
 EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		test\EventsTests.Shared\EventsTests.Shared.projitems*{a2cb78bb-e54f-48ca-bbfb-9553d27ef23d}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU

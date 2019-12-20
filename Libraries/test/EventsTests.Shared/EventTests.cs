@@ -91,12 +91,16 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        [Fact]
-        public void KinesisTest()
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void KinesisTest(Type serializerType)
         {
-            using (var fileStream = File.OpenRead("kinesis-event.json"))
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var kinesisEvent = serializer.Deserialize<KinesisEvent>(fileStream);
                 Assert.Equal(kinesisEvent.Records.Count, 2);
                 var record = kinesisEvent.Records[0];

@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.Json;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.Serialization.SystemTextJson.Converters;
 
 namespace Amazon.Lambda.Serialization.SystemTextJson
 {
@@ -30,14 +32,19 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
             {
                 IgnoreNullValues = true,
                 PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = new AwsNamingPolicy()
             };
+
+            _options.Converters.Add(new DateTimeConverter());
+            _options.Converters.Add(new MemoryStreamConverter());
+            _options.Converters.Add(new ConstantClassConverter());
             
             if (string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true", StringComparison.OrdinalIgnoreCase))
             {
                 this._debug = true;
             }            
         }
-        
+
         /// <summary>
         /// Serializes a particular object to a stream.
         /// </summary>
