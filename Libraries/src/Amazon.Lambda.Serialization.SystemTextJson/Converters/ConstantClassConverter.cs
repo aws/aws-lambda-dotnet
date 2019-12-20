@@ -19,7 +19,9 @@ namespace Amazon.Lambda.Serialization.SystemTextJson.Converters
 
         private readonly static HashSet<string> ConstantClassNames = new HashSet<string>
         {
-            "Amazon.S3.EventType"
+            "Amazon.S3.EventType",
+            "Amazon.DynamoDBv2.OperationType",
+            "Amazon.DynamoDBv2.StreamViewType"
         };
 
         /// <summary>
