@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\..\..\buildtools\common.props" />    
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <Description>Amazon Lambda .NET Core support - Serialization.Json with System.Text.Json.</Description>
+        <AssemblyTitle>Amazon.Lambda.Serialization.SystemTextJson</AssemblyTitle>
+        <AssemblyName>Amazon.Lambda.Serialization.SystemTextJson</AssemblyName>
+        <PackageId>Amazon.Lambda.Serialization.SystemTextJson</PackageId>
+        <PackageTags>AWS;Amazon;Lambda</PackageTags>
+        <VersionPrefix>0.5.0-preview1</VersionPrefix>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+        <PackageReference Include="System.Text.Json" Version="4.7.0" />
+    </ItemGroup>
+    
+</Project>

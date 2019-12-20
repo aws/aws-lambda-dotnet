@@ -1,3 +1,5 @@
+using Amazon.Lambda.Core;
+
 namespace Amazon.Lambda.Tests
 {
     using Amazon.Lambda;
@@ -36,12 +38,24 @@ namespace Amazon.Lambda.Tests
 
     public class EventTest
     {
-        [Fact]
-        public void S3PutTest()
+        
+        // This utility method takes care of removing the BOM that System.Text.Json doesn't like.
+        public MemoryStream LoadJsonTestFile(string filename)
         {
-            using (var fileStream = File.OpenRead("s3-event.json"))
+            var json = File.ReadAllText(filename);
+            return new MemoryStream(UTF8Encoding.UTF8.GetBytes(json));
+        }
+        
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void S3PutTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("s3-event.json"))
             {
-                var serializer = new JsonSerializer();
                 var s3Event = serializer.Deserialize<S3Event>(fileStream);
 
                 Assert.Equal(s3Event.Records.Count, 1);

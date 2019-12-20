@@ -45,7 +45,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestWebApp", "test\TestWebA
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Logging.AspNetCore.Tests", "test\Amazon.Lambda.Logging.AspNetCore.Tests\Amazon.Lambda.Logging.AspNetCore.Tests.csproj", "{A612EC01-6595-4EA6-B0EF-FF00E4FB331D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventsTests", "test\EventsTests\EventsTests.csproj", "{D96E1572-C079-413A-BFA0-235000700DDB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventsTests.NETCore21", "test\EventsTests.NETCore21\EventsTests.NETCore21.csproj", "{D96E1572-C079-413A-BFA0-235000700DDB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestFunction", "test\TestFunction\TestFunction.csproj", "{11A53C8D-A49B-4477-BFD9-E00C77D1291C}"
 EndProject
@@ -90,6 +90,12 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.RuntimeSupport.IntegrationTests", "test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.IntegrationTests\Amazon.Lambda.RuntimeSupport.IntegrationTests.csproj", "{39FD7632-73D0-4BB3-AE99-DC7B8B251E29}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.RuntimeSupport.UnitTests", "test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests\Amazon.Lambda.RuntimeSupport.UnitTests.csproj", "{10E47FE4-8620-4933-A14D-E33F25CA557A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.Serialization.SystemTextJson", "src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj", "{AA6BA0B8-D61E-49E7-BC1B-19410E25F005}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "EventsTests.Shared", "test\EventsTests.Shared\EventsTests.Shared.shproj", "{A2CB78BB-E54F-48CA-BBFB-9553D27EF23D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventsTests.NETCore31", "test\EventsTests.NETCore31\EventsTests.NETCore31.csproj", "{44E9D925-B61D-4234-97B7-61424C963BA6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -241,6 +247,14 @@ Global
 		{10E47FE4-8620-4933-A14D-E33F25CA557A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10E47FE4-8620-4933-A14D-E33F25CA557A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10E47FE4-8620-4933-A14D-E33F25CA557A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA6BA0B8-D61E-49E7-BC1B-19410E25F005}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA6BA0B8-D61E-49E7-BC1B-19410E25F005}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA6BA0B8-D61E-49E7-BC1B-19410E25F005}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA6BA0B8-D61E-49E7-BC1B-19410E25F005}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44E9D925-B61D-4234-97B7-61424C963BA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44E9D925-B61D-4234-97B7-61424C963BA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44E9D925-B61D-4234-97B7-61424C963BA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44E9D925-B61D-4234-97B7-61424C963BA6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -285,6 +299,9 @@ Global
 		{61934DD2-CFBB-48E1-947C-75E8F736734C} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{39FD7632-73D0-4BB3-AE99-DC7B8B251E29} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{10E47FE4-8620-4933-A14D-E33F25CA557A} = {B5BD0336-7D08-492C-8489-42C987E29B39}
+		{AA6BA0B8-D61E-49E7-BC1B-19410E25F005} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{A2CB78BB-E54F-48CA-BBFB-9553D27EF23D} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{44E9D925-B61D-4234-97B7-61424C963BA6} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}
