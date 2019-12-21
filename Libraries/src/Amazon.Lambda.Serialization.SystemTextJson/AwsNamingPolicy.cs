@@ -12,8 +12,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         readonly IDictionary<string, string> _customNameMappings = new Dictionary<string, string>
             {
                 {"XAmzId2", "x-amz-id-2" },
-                {"XAmzRequestId", "x-amz-request-id" },
-                {"DetailType", "detail-type" }
+                {"XAmzRequestId", "x-amz-request-id" }
             };
 
         /// <summary>
