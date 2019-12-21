@@ -78,6 +78,9 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             /// The transformed data payload, after base64-encoding.
             /// </summary>
             [DataMember(Name = "data")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("data")]
+#endif
             public string Base64EncodedData { get; set; }
 
             /// <summary>

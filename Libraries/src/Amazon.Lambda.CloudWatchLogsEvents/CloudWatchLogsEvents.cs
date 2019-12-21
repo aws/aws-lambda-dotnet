@@ -30,6 +30,9 @@ namespace Amazon.Lambda.CloudWatchLogsEvents
             /// The data that are base64 encoded and gziped messages in LogStreams.
             /// </summary>
             [DataMember(Name = "data", IsRequired = false)]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("data")]
+#endif
             public string EncodedData { get; set; }
 
             /// <summary>
