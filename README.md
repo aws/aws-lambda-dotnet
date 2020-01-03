@@ -14,6 +14,7 @@ The table below shows the currently supported patch of each major version of .NE
 |1.0|1.0.13|1.0.16|1.0.16|
 |2.0|2.0.9||2.0.9|
 |2.1|2.1.13||2.1.14|
+|3.1||3.1|3.1|
 
 ## Learning Resources
 
