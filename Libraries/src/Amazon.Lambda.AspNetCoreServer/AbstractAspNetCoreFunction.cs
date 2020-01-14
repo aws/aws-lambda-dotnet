@@ -12,7 +12,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.Features.Authentication;
-#if NETCOREAPP_3_0
+#if NETCOREAPP_3_0 || NETCOREAPP_3_1
 using Microsoft.Extensions.Hosting;
 #endif
 
