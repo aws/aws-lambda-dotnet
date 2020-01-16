@@ -1,16 +1,22 @@
-﻿using Amazon.Lambda.APIGatewayEvents;
-using Amazon.Lambda.TestUtilities;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
-using TestWebApp;
-using Xunit;
-using System;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+
+using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.TestUtilities;
+
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+
+using TestWebApp;
+
+using Xunit;
 
 namespace Amazon.Lambda.AspNetCoreServer.Test
 {
@@ -19,6 +25,23 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         public TestCallingWebAPI()
         {
         }
+
+
+        [Fact]
+        public async Task TestHttpApiGetAllValues()
+        {
+            var context = new TestLambdaContext();
+
+            var response = await this.InvokeAPIGatewayRequest(context, "values-get-all-httpapi-request.json");
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("[\"value1\",\"value2\"]", response.Body);
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("application/json; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
+
+            Assert.Contains("OnStarting Called", ((TestLambdaLogger)context.Logger).Buffer.ToString());
+        }
+
 
         [Fact]
         public async Task TestGetAllValues()
@@ -336,6 +359,35 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var response = await this.InvokeAPIGatewayRequest("check-content-length-nocontent-apigateway.json");
             Assert.Equal("Request content length: 0", response.Body.Trim());
+        }
+
+        [Fact]
+        public async Task TestGetCompressResponse()
+        {
+            var context = new TestLambdaContext();
+
+            var response = await this.InvokeAPIGatewayRequest(context, "compressresponse-get-apigateway-request.json");
+
+            Assert.Equal(200, response.StatusCode);
+
+            var bytes = Convert.FromBase64String(response.Body);
+            using (var msi = new MemoryStream(bytes))
+            using (var mso = new MemoryStream())
+            {
+                using (var gs = new GZipStream(msi, CompressionMode.Decompress))
+                {
+                    gs.CopyTo(mso);
+
+                }
+                var body = UTF8Encoding.UTF8.GetString(mso.ToArray());
+                Assert.Equal("[\"value1\",\"value2\"]", body);
+            }
+
+            Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.Equal("application/json-compress", response.MultiValueHeaders["Content-Type"][0]);
+            Assert.Equal("gzip", response.MultiValueHeaders["Content-Encoding"][0]);
+
+            Assert.Contains("OnStarting Called", ((TestLambdaLogger)context.Logger).Buffer.ToString());
         }
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)

@@ -1,0 +1,38 @@
+﻿{
+  "resource": "/{proxy+}",
+  "path": "/api/compressresponse",
+  "httpMethod": "GET",
+  "headers": {
+    "Accept": "text\/html,application\/xhtml+xml,application\/xml;q=0.9,image\/webp,image\/apng,*\/*;q=0.8",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Language": "en-US,en;q=0.9"
+  },
+  "queryStringParameters": null,
+  "pathParameters": {
+    "proxy": "api/compressresponse"
+  },
+  "stageVariables": null,
+  "requestContext": {
+    "accountId": "AAAAAAAAAAAA",
+    "resourceId": "5agfss",
+    "stage": "test-invoke-stage",
+    "requestId": "test-invoke-request",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "accountId": "AAAAAAAAAAAA",
+      "cognitoIdentityId": null,
+      "caller": "BBBBBBBBBBBB",
+      "apiKey": "test-invoke-api-key",
+      "sourceIp": "127.0.0.1",
+      "cognitoAuthenticationType": null,
+      "cognitoAuthenticationProvider": null,
+      "userArn": "arn:aws:iam::AAAAAAAAAAAA:root",
+      "userAgent": "Apache-HttpClient/4.5.x (Java/1.8.0_102)",
+      "user": "AAAAAAAAAAAA"
+    },
+    "resourcePath": "/{proxy+}",
+    "httpMethod": "GET",
+    "apiId": "t2yh6sjnmk"
+  },
+  "body": null
+}

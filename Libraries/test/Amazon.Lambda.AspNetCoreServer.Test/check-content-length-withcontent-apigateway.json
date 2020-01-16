@@ -1,0 +1,123 @@
+{
+  "resource": "\/{proxy+}",
+  "path": "\/api\/values",
+  "httpMethod": "POST",
+  "headers": {
+    "Accept": "*\/*",
+    "Accept-Encoding": "gzip, deflate",
+    "cache-control": "no-cache",
+    "CloudFront-Forwarded-Proto": "https",
+    "CloudFront-Is-Desktop-Viewer": "true",
+    "CloudFront-Is-Mobile-Viewer": "false",
+    "CloudFront-Is-SmartTV-Viewer": "false",
+    "CloudFront-Is-Tablet-Viewer": "false",
+    "CloudFront-Viewer-Country": "US",
+    "Content-Type": "text\/plain",
+    "Host": "sqdsyciv7c.execute-api.us-west-2.amazonaws.com",
+    "Postman-Token": "7a5b3568-b0cc-4c18-8ce6-bca1e1b304a2",
+    "User-Agent": "PostmanRuntime\/7.6.0",
+    "Via": "1.1 b838ef1ff22a4a994af82d5178c30e1d.cloudfront.net (CloudFront)",
+    "X-Amz-Cf-Id": "kxde7KDGCw2q13_mSE0f5S79Q2G02BhP76Lr2_Iqa3p2TqmXxG-hDQ==",
+    "X-Amzn-Trace-Id": "Root=1-5df2b7a1-fe3252987294e6c23d6f3e34",
+    "X-Forwarded-For": "192.182.149.40, 64.252.140.161",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "multiValueHeaders": {
+    "Accept": [
+      "*\/*"
+    ],
+    "Accept-Encoding": [
+      "gzip, deflate"
+    ],
+    "cache-control": [
+      "no-cache"
+    ],
+    "CloudFront-Forwarded-Proto": [
+      "https"
+    ],
+    "CloudFront-Is-Desktop-Viewer": [
+      "true"
+    ],
+    "CloudFront-Is-Mobile-Viewer": [
+      "false"
+    ],
+    "CloudFront-Is-SmartTV-Viewer": [
+      "false"
+    ],
+    "CloudFront-Is-Tablet-Viewer": [
+      "false"
+    ],
+    "CloudFront-Viewer-Country": [
+      "US"
+    ],
+    "Content-Type": [
+      "text\/plain"
+    ],
+    "Host": [
+      "sqdsyciv7c.execute-api.us-west-2.amazonaws.com"
+    ],
+    "Postman-Token": [
+      "7a5b3568-b0cc-4c18-8ce6-bca1e1b304a2"
+    ],
+    "User-Agent": [
+      "PostmanRuntime\/7.6.0"
+    ],
+    "Via": [
+      "1.1 b838ef1ff22a4a994af82d5178c30e1d.cloudfront.net (CloudFront)"
+    ],
+    "X-Amz-Cf-Id": [
+      "kxde7KDGCw2q13_mSE0f5S79Q2G02BhP76Lr2_Iqa3p2TqmXxG-hDQ=="
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-5df2b7a1-fe3252987294e6c23d6f3e34"
+    ],
+    "X-Forwarded-For": [
+      "192.182.149.40, 64.252.140.161"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "pathParameters": {
+    "proxy": "api\/values"
+  },
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "vk9w6n",
+    "resourcePath": "\/{proxy+}",
+    "httpMethod": "POST",
+    "extendedRequestId": "EnGhRFC7PHcFffA=",
+    "requestTime": "12\/Dec\/2019:21:56:49 +0000",
+    "path": "\/Prod\/api\/values",
+    "accountId": "626492997873",
+    "protocol": "HTTP\/1.1",
+    "stage": "Prod",
+    "domainPrefix": "sqdsyciv7c",
+    "requestTimeEpoch": 1576187809658,
+    "requestId": "ec60ed0b-0c02-4d5e-bbb9-57bb77b798c0",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "accountId": null,
+      "cognitoIdentityId": null,
+      "caller": null,
+      "sourceIp": "192.182.149.40",
+      "principalOrgId": null,
+      "accessKey": null,
+      "cognitoAuthenticationType": null,
+      "cognitoAuthenticationProvider": null,
+      "userArn": null,
+      "userAgent": "PostmanRuntime\/7.6.0",
+      "user": null
+    },
+    "domainName": "sqdsyciv7c.execute-api.us-west-2.amazonaws.com",
+    "apiId": "sqdsyciv7c"
+  },
+  "body": "{\"hello\":\"world\"}",
+  "isBase64Encoded": false
+}

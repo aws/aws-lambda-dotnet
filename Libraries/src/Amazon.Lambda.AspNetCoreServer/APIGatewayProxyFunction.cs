@@ -76,7 +76,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         }
 
-      
+
         /// <summary>
         /// 
         /// </summary>
@@ -103,8 +103,8 @@ namespace Amazon.Lambda.AspNetCoreServer
         protected override void MarshallRequest(InvokeFeatures features, APIGatewayProxyRequest apiGatewayRequest, ILambdaContext lambdaContext)
         {
             {
-                var authFeatures = (IHttpAuthenticationFeature) features;
-                
+                var authFeatures = (IHttpAuthenticationFeature)features;
+
                 var authorizer = apiGatewayRequest?.RequestContext?.Authorizer;
 
                 if (authorizer != null)
@@ -123,7 +123,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                     {
                         // handling claims output from custom lambda authorizer
                         var identity = new ClaimsIdentity(
-                            authorizer.Where(x => !string.Equals(x.Key, "claims", StringComparison.OrdinalIgnoreCase))
+                            authorizer.Where(x => x.Value != null && !string.Equals(x.Key, "claims", StringComparison.OrdinalIgnoreCase))
                                 .Select(entry => new Claim(entry.Key, entry.Value.ToString())), "AuthorizerIdentity");
 
                         _logger.LogDebug(
@@ -134,10 +134,10 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                 // Call consumers customize method in case they want to change how API Gateway's request
                 // was marshalled into ASP.NET Core request.
-                PostMarshallHttpAuthenticationFeature(authFeatures, apiGatewayRequest, lambdaContext);                
+                PostMarshallHttpAuthenticationFeature(authFeatures, apiGatewayRequest, lambdaContext);
             }
             {
-                var requestFeatures = (IHttpRequestFeature) features;
+                var requestFeatures = (IHttpRequestFeature)features;
                 requestFeatures.Scheme = "https";
                 requestFeatures.Method = apiGatewayRequest.HttpMethod;
 
@@ -227,7 +227,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             {
                 // set up connection features
-                var connectionFeatures = (IHttpConnectionFeature) features;
+                var connectionFeatures = (IHttpConnectionFeature)features;
 
                 if (!string.IsNullOrEmpty(apiGatewayRequest?.RequestContext?.Identity?.SourceIp) &&
                     IPAddress.TryParse(apiGatewayRequest.RequestContext.Identity.SourceIp, out var remoteIpAddress))
@@ -262,6 +262,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             };
 
             string contentType = null;
+            string contentEncoding = null;
             if (responseFeatures.Headers != null)
             {
                 response.MultiValueHeaders = new Dictionary<string, IList<string>>();
@@ -273,21 +274,32 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                     // Remember the Content-Type for possible later use
                     if (kvp.Key.Equals("Content-Type", StringComparison.CurrentCultureIgnoreCase) && response.MultiValueHeaders[kvp.Key].Count > 0)
+                    {
                         contentType = response.MultiValueHeaders[kvp.Key][0];
+                    }
+                    else if (kvp.Key.Equals("Content-Encoding", StringComparison.CurrentCultureIgnoreCase) && response.MultiValueHeaders[kvp.Key].Count > 0)
+                    {
+                        contentEncoding = response.MultiValueHeaders[kvp.Key][0];
+                    }
                 }
             }
 
-            if(contentType == null)
+            if (contentType == null)
             {
                 response.MultiValueHeaders["Content-Type"] = new List<string>() { null };
             }
 
             if (responseFeatures.Body != null)
             {
-                // Figure out how we should treat the response content
-                var rcEncoding = GetResponseContentEncodingForContentType(contentType);
+                // Figure out how we should treat the response content, check encoding first to see if body is compressed, then check content type
+                var rcEncoding = GetResponseContentEncodingForContentEncoding(contentEncoding);
+                if (rcEncoding != ResponseContentEncoding.Base64)
+                {
+                    rcEncoding = GetResponseContentEncodingForContentType(contentType);
+                }
 
                 (response.Body, response.IsBase64Encoded) = Utilities.ConvertAspNetCoreBodyToLambdaBody(responseFeatures.Body, rcEncoding);
+
             }
 
             PostMarshallResponseFeature(responseFeatures, response, lambdaContext);

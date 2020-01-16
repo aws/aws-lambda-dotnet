@@ -1,10 +1,19 @@
+### Release 2019-12-18
+* **Amazon.Lambda.AspNetCoreServer (4.1.0)**
+  * Pull Request [#558](https://github.com/aws/aws-lambda-dotnet/pull/558) Add support for response compression. Thanks [Justin Dearing](https://github.com/jdearing)
+  * Fixed NPE bug when using the new API Gateway HTTP API support.
+  * Fixed issue with request content-length header not being set.
+* **Amazon.Lambda.APIGatewayEvents (1.3.0)**
+  * Added OperationName, Error, IntegrationLatency, MessageDirection, RequestTime, RequestTimeEpoch, Status, ApiKeyId and AccessKey fields.
+
+
 ### Release 2019-11-05
 * **Amazon.Lambda.RuntimeSupport (1.1.0)**
   * Pull Request [#540](https://github.com/aws/aws-lambda-dotnet/pull/540) Improve testability of for LambdaBootstrap. Thanks [Martin Costello](https://github.com/martincostello)
 
 ### Release 2019-10-24
 * **Amazon.Lambda.AspNetCoreServer (4.0.0)**
-  * Add support for ASP.NET Core 3.0 which can be used with Lambda Custom Runtime.
+  * Added support for ASP.NET Core 3.0 which can be used with Lambda Custom Runtime.
   * Added <strong>PostMarshallHttpAuthenticationFeature</strong>. Allows subclasses to customize the <strong>ClaimsPrincipal</strong> for the incoming request.</li>
   * Added <strong>PostMarshallItemsFeatureFeature</strong>. Allows subclasses to customize what is added to the <strong>Items</strong> collection of the HttpContext for the incoming request. 
   * Breaking changes to support ASP.NET Core 3.0
