@@ -46,6 +46,17 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         }
 
         /// <summary>
+        /// Constructs instance of serializer with the option to customize the JsonSerializerOptions after the 
+        /// Amazon.Lambda.Serialization.SystemTextJson's default settings have been applied.
+        /// </summary>
+        /// <param name="customizer"></param>
+        public LambdaJsonSerializer(Action<JsonSerializerOptions> customizer)
+            : this()
+        {
+            customizer?.Invoke(this._options);
+        }
+
+        /// <summary>
         /// Serializes a particular object to a stream.
         /// </summary>
         /// <typeparam name="T">Type of object to serialize.</typeparam>
