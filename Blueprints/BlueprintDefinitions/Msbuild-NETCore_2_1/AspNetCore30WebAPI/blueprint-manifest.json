@@ -1,8 +1,0 @@
-{
-    "display-name":"Custom Runtime (ASP.NET Core 3.0)",
-    "system-name":"CustomRuntimeAspNetCore30",
-    "description": "ASP.NET Core 3.0 using Lambda custom runtime",
-    "sort-order" : 155,    
-    "hidden-tags" : ["C#","ServerlessProject"],
-    "tags":["AspNetCore", "Custom"]
-}

@@ -24,6 +24,8 @@
 **/.idea
 *.userprefs
 
+**/.ionide/**
+
 /Tools/LambdaTestTool/Amazon.Lambda.TestTool/ExternalCommands/App/**
 
 **/node_modules/

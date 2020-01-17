@@ -2,10 +2,10 @@
   "$schema": "http://json.schemastore.org/template",
   "author": "AWS",
   "classifications": ["AWS", "Lambda", "Serverless"],
-  "name": "Lambda Custom Runtime (ASP.NET Core 3.0)",
-  "identity": "AWS.Lambda.Serverless.AspNetCore30WebAPI.CSharp",
-  "groupIdentity": "AWS.Lambda.AspNetCore30WebAPI.Serverless",
-  "shortName": "serverless.AspNetCore30WebAPI",
+  "name": "Lambda Custom Runtime (ASP.NET Core 3.1)",
+  "identity": "AWS.Lambda.Serverless.AspNetCore31WebAPI.CSharp",
+  "groupIdentity": "AWS.Lambda.AspNetCore31WebAPI.Serverless",
+  "shortName": "serverless.AspNetCore31WebAPI",
   "tags": {
     "language": "C#",
     "type": "project"
