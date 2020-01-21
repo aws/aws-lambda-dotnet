@@ -1,0 +1,83 @@
+﻿@page
+@model IndexModel
+ 
+<div class="container">
+    <h1>@Constants.PRODUCT_NAME (Preview)</h1>
+
+    <p>
+        This tool can be used to help test .NET Lambda functions for debugging application logic. Your Lambda code will run within this tool's process allowing IDEs
+        attached to this tool to step through your .NET Core Lambda code. This tool runs your code similarly
+        to how the AWS Lambda service would run .NET code but there are intended differences to make debugging simple, for example the host OS. 
+        For that reason, this testing tool cannot help with diagnosing platform specific issues.
+    </p>
+    <p>
+        <b>Tip:</b> If a Lambda function using the default serializer, Amazon.Lambda.Serialization.Json, is deployed with the environment variable <b>LAMBDA_NET_SERIALIZER_DEBUG</b> set to <b>true</b>
+        the JSON input for the Lambda function will be written to CloudWatch Logs. The captured JSON can then be used in this tool to step
+        through the code.
+    </p>
+
+    <!-- Select Config File and Function Handler -->
+    <div class="row">
+        <div class="col-sm form-group">
+            <label class="col-xs-3 control-label" for="config-file">Config File</label>
+            <div class="col-xs-5">
+                <select id="config-file" class="form-control" name="color" onchange="onConfigFileChange()">
+                    @foreach (var file in Model.LambdaOptions.LambdaConfigFiles)
+                    {
+                        <option value="@System.IO.Path.GetFileName(file)">@System.IO.Path.GetFileName(file)</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="col-sm form-group">
+            <label class="col-xs-3 control-label" for="functions-picker">Function</label>
+            <div class="col-xs-5">
+                <select id="functions-picker" class="form-control" name="color"></select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Select Profile and Region -->
+    <div class="row">
+        <div class="col-sm form-group" for="functions-picker">
+            <label class="col-xs-3 control-label" for="aws-profile">AWS Credential Profile</label>
+            <select id="aws-profile" class="form-control" onchange="onAWSConfigChange()">
+                @foreach (var profile in Model.AWSProfiles)
+                {
+                    <option value="@profile">@profile</option>
+                }
+            </select>
+        </div>
+        <div class="col-sm form-group" for="aws-region">
+            <label class="col-xs-3 control-label">AWS Region</label>
+            <input id="aws-region" type="text" class="form-control" onchange="onAWSConfigChange()" />
+        </div>
+    </div>
+
+    <!-- TODO: Add ability to set environment variables -->
+
+    <!-- Setup tab control -->
+    <ul class="nav nav-tabs" id="actionTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" id="sample-request-tab" href="#sample-request-panel" role="tab" aria-controls="sample-request-panel">Test Invoke</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" id="monitor-dlq-tab" href="#monitor-dlq-panel" role="tab" aria-controls="monitor-dlq-panel">Monitor Dead Letter Queue</a>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+
+        <partial name="_TestInvokePanel" />
+
+        <partial name="_MonitorDlqPanel" />
+
+    </div>
+
+
+</div>
+
+
+<script src="~/js/common.js" asp-append-version="true"></script>
+<script src="~/js/test-invoke.js" asp-append-version="true"></script>
+<script src="~/js/monitor-dlq.js" asp-append-version="true"></script>
