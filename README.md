@@ -41,6 +41,8 @@ The table below shows the currently supported patch of each major version of .NE
   * Shows how to use the Serverless framework with .NET Core Lambda.
 * [Creating a Serverless Application with .NET Core, AWS Lambda and AWS API Gateway](https://www.jerriepelser.com/blog/dotnet-core-aws-lambda-serverless-application/) By Jerrie Pelser, April 2017
   * Tutorial for building a Web API and **not** using ASP.NET Core.
+* [Modular Powershell in AWS Lambda Functions](https://rollingwebsphere.home.blog/2020/01/18/aws-lambda-functions-with-modular-powershell/) By Brian Olson, January 2020
+  * Tutorial for using modular powershell functions in AWS Lambda.
 
 ### AWS Recorded Talks
 * [Building a .NET Serverless Application on AWS](https://www.youtube.com/watch?v=TZUtB1xXduo) By Abby Fuller, Tara Walker and Nicki Klien 2018
