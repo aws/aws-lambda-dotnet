@@ -9,8 +9,6 @@ namespace Amazon.Lambda.Serialization.SystemTextJson.Converters
     /// </summary>
     public class DateTimeConverter : JsonConverter<DateTime>
     {
-        private static readonly DateTime EPOCH_DATETIME = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-
         /// <summary>
         /// Converts the value to a DateTime. If the JSON type is a number then it assumes the time is represented as 
         /// an epoch time.
@@ -30,11 +28,11 @@ namespace Amazon.Lambda.Serialization.SystemTextJson.Converters
             {
                 if (reader.TryGetInt64(out var intSeconds))
                 {
-                    return EPOCH_DATETIME.AddSeconds(intSeconds);
+                    return DateTime.UnixEpoch.AddSeconds(intSeconds);
                 }
                 if (reader.TryGetDouble(out var doubleSeconds))
                 {
-                    return EPOCH_DATETIME.AddSeconds(doubleSeconds);
+                    return DateTime.UnixEpoch.AddSeconds(doubleSeconds);
                 }
             }
 
