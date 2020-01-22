@@ -35,12 +35,12 @@ namespace Amazon.Lambda.TestTool
                 // To make debugging easier pick one of the test Lambda projects.
                 if (path.EndsWith("Amazon.Lambda.TestTool"))
                 {
-                    path = Path.Combine(path, "../LambdaFunctions/S3EventFunction/bin/Debug/netcoreapp2.1");
+                    path = Path.Combine(path, "../LambdaFunctions/S3EventFunction/bin/Debug/netcoreapp3.1");
                 }
                 // If running in the project directory select the build directory so the deps.json file can be found.
                 else if (Utils.IsProjectDirectory(path))
                 {
-                    path = Path.Combine(path, "bin/Debug/netcoreapp2.1");
+                    path = Path.Combine(path, "bin/Debug/netcoreapp3.1");
                 }
 
                 options.LambdaRuntime = LocalLambdaRuntime.Initialize(path);

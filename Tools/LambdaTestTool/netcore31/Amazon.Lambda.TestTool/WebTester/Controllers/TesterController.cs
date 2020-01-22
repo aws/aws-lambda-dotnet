@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Amazon.Lambda.TestTool.Runtime;
 using Amazon.Lambda.TestTool.WebTester.Models;
 using Amazon.Lambda.TestTool.WebTester.SampleRequests;
@@ -55,7 +56,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         }
 
         [HttpPost("{configFile}/{functionHandler}")]
-        public ExecutionResponse ExecuteFunction(string configFile, string functionHandler)
+        public async Task<ExecutionResponse> ExecuteFunction(string configFile, string functionHandler)
         {
             var function = this.LambdaOptions.LoadLambdaFuntion(configFile, functionHandler);
             string functionInvokeParams = null;
@@ -63,7 +64,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
             {
                 using (var reader = new StreamReader(this.Request.Body))
                 {
-                    functionInvokeParams = reader.ReadToEnd();
+                    functionInvokeParams = await reader.ReadToEndAsync();
                 }
             }
 

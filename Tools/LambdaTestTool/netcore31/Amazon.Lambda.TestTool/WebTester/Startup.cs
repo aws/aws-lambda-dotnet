@@ -60,7 +60,8 @@ namespace Amazon.Lambda.TestTool.WebTester
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc()
+            services.AddControllers();
+            services.AddRazorPages()
                     .WithRazorPagesRoot("/WebTester/Pages");
         }
 
@@ -97,7 +98,13 @@ namespace Amazon.Lambda.TestTool.WebTester
                 await next();
             });
 
-            app.UseMvc();
+            app.UseRouting();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapRazorPages();
+            });
         }
     }
 }

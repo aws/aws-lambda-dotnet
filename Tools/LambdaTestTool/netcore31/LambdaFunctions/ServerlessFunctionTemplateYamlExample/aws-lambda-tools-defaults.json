@@ -11,7 +11,7 @@
   "profile":"default",
   "region" : "us-west-2",
   "configuration": "Release",
-  "framework": "netcoreapp2.1",
+  "framework": "netcoreapp3.1",
   "s3-prefix": "ServerlessTemplateExample/",
   "template": "serverless.yml"
 }

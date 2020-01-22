@@ -135,7 +135,7 @@ namespace Amazon.Lambda.TestTool.Tests
 
         private ExecutionResponse ExecuteFunction(string handler, string payload)
         {
-            var buildPath = Path.GetFullPath(@"../../../../LambdaFunctions/FunctionSignatureExamples/bin/debug/netcoreapp2.1");
+            var buildPath = Path.GetFullPath(@"../../../../LambdaFunctions/FunctionSignatureExamples/bin/debug/netcoreapp3.1");
             
             var runtime = LocalLambdaRuntime.Initialize(buildPath);
             var configInfo = new LambdaFunctionInfo

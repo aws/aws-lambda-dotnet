@@ -12,7 +12,7 @@ namespace Amazon.Lambda.TestTool.Tests
         public void LoadInstanceMethodWithAssemblySerializer()
         {
             var configFile = Path.GetFullPath(@"../../../../LambdaFunctions/S3EventFunction/aws-lambda-tools-defaults.json");
-            var buildPath = Path.GetFullPath(@"../../../../LambdaFunctions/S3EventFunction/bin/debug/netcoreapp2.1");
+            var buildPath = Path.GetFullPath(@"../../../../LambdaFunctions/S3EventFunction/bin/debug/netcoreapp3.1");
             
             var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
             Assert.Single(configInfo.FunctionInfos);
@@ -36,7 +36,7 @@ namespace Amazon.Lambda.TestTool.Tests
         public void LoadStaticMethodWithMethodSerializer()
         {
             var configFile = Path.GetFullPath(@"../../../../LambdaFunctions/ToUpperFunc/aws-lambda-tools-defaults.json");
-            var buildPath = Path.GetFullPath(@"../../../../LambdaFunctions/ToUpperFunc/bin/debug/netcoreapp2.1");
+            var buildPath = Path.GetFullPath(@"../../../../LambdaFunctions/ToUpperFunc/bin/debug/netcoreapp3.1");
             
             var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
             Assert.Single(configInfo.FunctionInfos);

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices.ComTypes;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Amazon.Lambda.TestTool
 {

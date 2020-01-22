@@ -1,5 +1,4 @@
-﻿using Microsoft.Azure.KeyVault.Models;
-
+﻿
 namespace Amazon.Lambda.TestTool.WebTester.Models
 {
     public class FunctionSummary

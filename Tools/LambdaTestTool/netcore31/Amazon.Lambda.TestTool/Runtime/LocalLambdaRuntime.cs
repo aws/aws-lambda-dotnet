@@ -24,13 +24,13 @@ namespace Amazon.Lambda.TestTool.Runtime
     /// </summary>
     public class LocalLambdaRuntime : ILocalLambdaRuntime
     {
-        private LambdaAssemblyResolver Resolver { get; }
+        private LambdaAssemblyLoadContext LambdaContext { get; }
         public string LambdaAssemblyDirectory { get; }
 
 
-        private LocalLambdaRuntime(LambdaAssemblyResolver resolver, string lambdaAssemblyDirectory)
+        private LocalLambdaRuntime(LambdaAssemblyLoadContext lambdaContext, string lambdaAssemblyDirectory)
         {
-            Resolver = resolver;
+            LambdaContext = lambdaContext;
             this.LambdaAssemblyDirectory = lambdaAssemblyDirectory;
         }
 
@@ -54,7 +54,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             }
 
             // The resolver provides the ability to load the assemblies containing the select Lambda function.
-            var resolver = new LambdaAssemblyResolver(fileName);
+            var resolver = new LambdaAssemblyLoadContext(fileName);
 
             var runtime = new LocalLambdaRuntime(resolver, directory);
             return runtime;
@@ -90,7 +90,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             }
 
             // Using our custom Assembly resolver load the target Assembly.
-            function.LambdaAssembly = this.Resolver.LoadAssembly(handlerTokens[0]);
+            function.LambdaAssembly = this.LambdaContext.LoadFromAssemblyName(new AssemblyName(handlerTokens[0]));
             if (function.LambdaAssembly == null)
             {
                 function.ErrorMessage = $"Failed to find assembly {handlerTokens[0]}";
@@ -152,7 +152,6 @@ namespace Amazon.Lambda.TestTool.Runtime
 
         public void Dispose()
         {
-            Resolver?.Dispose();
         }
     }
 }

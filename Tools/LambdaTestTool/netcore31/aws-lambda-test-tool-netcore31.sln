@@ -23,8 +23,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerlessTemplateYamlExamp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerlessFunctionTemplateYamlExample", "LambdaFunctions\ServerlessFunctionTemplateYamlExample\ServerlessFunctionTemplateYamlExample.csproj", "{119FB8F7-03AD-42A3-A521-19D18F40B40E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Core", "..\..\..\Libraries\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj", "{0714DA40-14B6-4B00-9C84-461B23F56B1D}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -143,18 +141,6 @@ Global
 		{119FB8F7-03AD-42A3-A521-19D18F40B40E}.Release|x64.Build.0 = Release|Any CPU
 		{119FB8F7-03AD-42A3-A521-19D18F40B40E}.Release|x86.ActiveCfg = Release|Any CPU
 		{119FB8F7-03AD-42A3-A521-19D18F40B40E}.Release|x86.Build.0 = Release|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Debug|x64.Build.0 = Debug|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Debug|x86.Build.0 = Debug|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Release|x64.ActiveCfg = Release|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Release|x64.Build.0 = Release|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Release|x86.ActiveCfg = Release|Any CPU
-		{0714DA40-14B6-4B00-9C84-461B23F56B1D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -27,7 +27,7 @@ namespace Amazon.Lambda.TestTool.Tests
                 try
                 {
                     var configFile = Path.GetFullPath(@"../../../../LambdaFunctions/ToUpperFunc/aws-lambda-tools-defaults.json");
-                    var buildPath = Path.GetFullPath(@"../../../../LambdaFunctions/ToUpperFunc/bin/debug/netcoreapp2.1");            
+                    var buildPath = Path.GetFullPath(@"../../../../LambdaFunctions/ToUpperFunc/bin/debug/netcoreapp3.1");            
                     var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
                     var runtime = LocalLambdaRuntime.Initialize(buildPath);
                     var function = runtime.LoadLambdaFunctions(configInfo.FunctionInfos)[0];
