@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Amazon.Lambda.TestTool.Runtime;
 using Amazon.Lambda.TestTool.WebTester.Models;
 using Amazon.Lambda.TestTool.WebTester.SampleRequests;
-using LitJson;
 using Microsoft.AspNetCore.Mvc;
 
 
@@ -75,14 +74,14 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
 
             if (!string.IsNullOrEmpty(functionInvokeParams))
             {
-                var rootData = JsonMapper.ToObject(functionInvokeParams);
+                var parameters = System.Text.Json.JsonSerializer.Deserialize<Amazon.Lambda.TestTool.Models.InvokeParameters>(functionInvokeParams, new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
 
-                if (rootData.ContainsKey("payload"))
-                    request.Payload = rootData["payload"]?.ToString();
-                if (rootData.ContainsKey("profile"))
-                    request.AWSProfile = rootData["profile"]?.ToString();
-                if (rootData.ContainsKey("region"))
-                    request.AWSRegion = rootData["region"]?.ToString();
+                request.Payload = parameters.Payload;
+                request.AWSProfile = parameters.Profile;
+                request.AWSRegion = parameters.Region;
             }
             
 

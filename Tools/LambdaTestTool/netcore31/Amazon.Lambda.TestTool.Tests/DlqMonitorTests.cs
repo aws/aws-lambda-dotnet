@@ -4,7 +4,6 @@ using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon.Lambda.TestTool.ExternalCommands;
 using Amazon.Lambda.TestTool.Runtime;
 using Xunit;
 

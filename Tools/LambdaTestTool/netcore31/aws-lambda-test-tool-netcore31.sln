@@ -9,15 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ToUpperFunc", "LambdaFuncti
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "S3EventFunction", "LambdaFunctions\S3EventFunction\S3EventFunction.csproj", "{69F67DCD-333A-4E9E-AB6D-54FF9D332496}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool", "Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj", "{201239A9-AEB3-455D-9862-A51DD6CD5F11}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool", "Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj", "{201239A9-AEB3-455D-9862-A51DD6CD5F11}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.Tests", "Amazon.Lambda.TestTool.Tests\Amazon.Lambda.TestTool.Tests.csproj", "{020CD48D-EF3D-4AA1-B4BA-460DDC10FC39}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool.Tests", "Amazon.Lambda.TestTool.Tests\Amazon.Lambda.TestTool.Tests.csproj", "{020CD48D-EF3D-4AA1-B4BA-460DDC10FC39}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FunctionSignatureExamples", "LambdaFunctions\FunctionSignatureExamples\FunctionSignatureExamples.csproj", "{4D8D6053-60E5-4AC3-8740-22E811452CD9}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerlessTemplateExample", "LambdaFunctions\ServerlessTemplateExample\ServerlessTemplateExample.csproj", "{DAD2488C-F731-4719-A016-600BB5F25B48}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.ExternalCommands", "Amazon.Lambda.TestTool.ExternalCommands\Amazon.Lambda.TestTool.ExternalCommands.csproj", "{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerlessTemplateYamlExample", "LambdaFunctions\ServerlessTemplateYamlExample\ServerlessTemplateYamlExample.csproj", "{CB77D52D-5504-4639-9CAC-D4C1E4C81171}"
 EndProject
@@ -105,18 +103,6 @@ Global
 		{DAD2488C-F731-4719-A016-600BB5F25B48}.Release|x64.Build.0 = Release|Any CPU
 		{DAD2488C-F731-4719-A016-600BB5F25B48}.Release|x86.ActiveCfg = Release|Any CPU
 		{DAD2488C-F731-4719-A016-600BB5F25B48}.Release|x86.Build.0 = Release|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Debug|x64.Build.0 = Debug|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Debug|x86.Build.0 = Debug|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Release|x64.ActiveCfg = Release|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Release|x64.Build.0 = Release|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Release|x86.ActiveCfg = Release|Any CPU
-		{AC05A239-3AFB-4694-9FF8-B9A0DAE19144}.Release|x86.Build.0 = Release|Any CPU
 		{CB77D52D-5504-4639-9CAC-D4C1E4C81171}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CB77D52D-5504-4639-9CAC-D4C1E4C81171}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CB77D52D-5504-4639-9CAC-D4C1E4C81171}.Debug|x64.ActiveCfg = Debug|Any CPU

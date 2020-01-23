@@ -1,8 +1,6 @@
 ﻿using System;
 using System.IO;
 
-using LitJson;
-
 using Amazon.Lambda.TestTool.Runtime;
 using Amazon.Lambda.TestTool.WebTester;
 using System.Collections.Generic;
@@ -88,11 +86,13 @@ namespace Amazon.Lambda.TestTool
                 {
                     try
                     {
-                        var data = JsonMapper.ToObject(File.ReadAllText(file));
+                        var configFile = System.Text.Json.JsonSerializer.Deserialize<Models.LambdaConfigFile>(File.ReadAllText(file), new System.Text.Json.JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
 
-                        if (data.IsObject &&
-                            data.ContainsKey("framework") && data["framework"].ToString().StartsWith("netcoreapp") &&
-                            (data.ContainsKey("function-handler") || data.ContainsKey("template")))
+                        if(!string.IsNullOrEmpty(configFile.Framework) && configFile.Framework.StartsWith("netcoreapp") &&
+                            (!string.IsNullOrEmpty(configFile.FunctionHandler) || !string.IsNullOrEmpty(configFile.Template)))
                         {
                             Console.WriteLine($"Found Lambda config file {file}");
                             configFiles.Add(file);

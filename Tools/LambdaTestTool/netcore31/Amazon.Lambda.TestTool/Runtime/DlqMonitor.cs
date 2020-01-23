@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon.Lambda.TestTool.ExternalCommands;
-using Amazon.Lambda.TestTool.ExternalCommands.Models;
+using Amazon.Lambda.TestTool.Services;
+
+using Amazon.SQS.Model;
 
 namespace Amazon.Lambda.TestTool.Runtime
 {
@@ -35,7 +36,7 @@ namespace Amazon.Lambda.TestTool.Runtime
         public void Start()
         {
             this._cancelSource = new CancellationTokenSource();
-            Task.Run(() => Loop(this._cancelSource.Token));
+            _ = Loop(this._cancelSource.Token);
         }
 
         public void Stop()
@@ -43,17 +44,17 @@ namespace Amazon.Lambda.TestTool.Runtime
             this._cancelSource.Cancel();
         }
 
-        private void Loop(CancellationToken token)
+        private async Task Loop(CancellationToken token)
         {
-            var manager = new ExternalCommandManager();
+            var manager = new AWSServiceImpl();
             while (!token.IsCancellationRequested)
             {
-                SQSMessage message = null;
+                Message message = null;
                 LogRecord logRecord = null;
                 try
                 {
                     // Read a message from the queue using the ExternalCommands console application.
-                    message = manager.ReadMessage(this._profile, this._region, this._queueUrl);
+                    message = await manager.ReadMessageAsync(this._profile, this._region, this._queueUrl);
                     if (token.IsCancellationRequested)
                     {
                         return;

@@ -2,9 +2,11 @@
 using System.Collections;
 using System.IO;
 using System.Collections.Generic;
+using System.Text.Json;
+
+using Amazon.Lambda.TestTool.Models;
 
 using YamlDotNet.RepresentationModel;
-using LitJson;
 
 
 namespace Amazon.Lambda.TestTool.Runtime
@@ -15,19 +17,23 @@ namespace Amazon.Lambda.TestTool.Runtime
     /// </summary>
     public static class LambdaDefaultsConfigFileParser
     {
+
         public static LambdaConfigInfo LoadFromFile(string filePath)
         {
             if (!File.Exists(filePath))
             {
                 throw new FileNotFoundException($"Lambda config file {filePath} not found");
             }
-            
-            var rootData = JsonMapper.ToObject(File.ReadAllText(filePath)) as JsonData;
+
+            var configFile = JsonSerializer.Deserialize<LambdaConfigFile>(File.ReadAllText(filePath), new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
 
             var configInfo = new LambdaConfigInfo
             {
-                AWSProfile = rootData.ContainsKey("profile") ? rootData["profile"]?.ToString() : "default",
-                AWSRegion = rootData.ContainsKey("region") ? rootData["region"]?.ToString() : null,
+                AWSProfile = !string.IsNullOrEmpty(configFile.Profile) ? configFile.Profile : "default",
+                AWSRegion = !string.IsNullOrEmpty(configFile.Region) ? configFile.Region : null,
                 FunctionInfos = new List<LambdaFunctionInfo>()
             };
 
@@ -35,8 +41,8 @@ namespace Amazon.Lambda.TestTool.Runtime
                 configInfo.AWSProfile = "default";
 
 
-            var templateFileName = rootData.ContainsKey("template") ? rootData["template"]?.ToString() : null;
-            var functionHandler = rootData.ContainsKey("function-handler") ? rootData["function-handler"]?.ToString() : null;
+            var templateFileName = !string.IsNullOrEmpty(configFile.Template) ? configFile.Template : null;
+            var functionHandler = !string.IsNullOrEmpty(configFile.FunctionHandler) ? configFile.FunctionHandler : null;
 
             if (!string.IsNullOrEmpty(templateFileName))
             {
@@ -54,7 +60,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                     Handler = functionHandler
                 };
 
-                info.Name = rootData.ContainsKey("function-name") ? rootData["function-name"]?.ToString() : null;
+                info.Name = !string.IsNullOrEmpty(configFile.FunctionName) ? configFile.FunctionName : null;
                 if (string.IsNullOrEmpty(info.Name))
                 {
                     info.Name = functionHandler;
@@ -179,20 +185,26 @@ namespace Amazon.Lambda.TestTool.Runtime
 
         private static void ProcessJsonServerlessTemplate(LambdaConfigInfo configInfo, string content)
         {
-            var rootData = JsonMapper.ToObject(content);
+            var rootData = JsonDocument.Parse(content);
 
-            var resourcesNode = rootData.ContainsKey("Resources") ? rootData["Resources"] : null as JsonData;
-            if (resourcesNode == null)
+            JsonElement resourcesNode;
+            if (!rootData.RootElement.TryGetProperty("Resources", out resourcesNode))
                 return;
 
-            foreach (var key in resourcesNode.Keys)
+            foreach (var resourceProperty in resourcesNode.EnumerateObject())
             {
-                var resource = resourcesNode[key];
-                var type = resource.ContainsKey("Type") ? resource["Type"]?.ToString() : null;
-                var properties = resource.ContainsKey("Properties") ? resource["Properties"] : null;
+                var resource = resourceProperty.Value;
 
-                if (properties == null)
+                JsonElement typeProperty;
+                if (!resource.TryGetProperty("Type", out typeProperty))
                     continue;
+
+                var type = typeProperty.GetString();
+
+                JsonElement propertiesProperty;
+                if (!resource.TryGetProperty("Properties", out propertiesProperty))
+                    continue;
+
 
                 if (!string.Equals("AWS::Serverless::Function", type, StringComparison.Ordinal) &&
                     !string.Equals("AWS::Lambda::Function", type, StringComparison.Ordinal))
@@ -200,13 +212,17 @@ namespace Amazon.Lambda.TestTool.Runtime
                     continue;
                 }
 
-                var handler = properties.ContainsKey("Handler") ? properties["Handler"]?.ToString() : null;
+                JsonElement handlerProperty;
+                if (!propertiesProperty.TryGetProperty("Handler", out handlerProperty))
+                    continue;
+
+                var handler = handlerProperty.GetString();
 
                 if (!string.IsNullOrEmpty(handler))
                 {
                     var functionInfo = new LambdaFunctionInfo
                     {
-                        Name = key,
+                        Name = resourceProperty.Name,
                         Handler = handler
                     };
 

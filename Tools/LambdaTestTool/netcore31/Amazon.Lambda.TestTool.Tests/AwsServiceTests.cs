@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
-using Amazon.Lambda.TestTool.ExternalCommands;
+using Amazon.Lambda.TestTool.Services;
 using Xunit;
 
 using Amazon.SQS;
@@ -12,12 +12,12 @@ using Newtonsoft.Json;
 
 namespace Amazon.Lambda.TestTool.Tests
 {
-    public class ExternalCommandsTests
+    public class AwsServiceTests
     {
         [Fact(Skip = "Integration test being disabled temporarily. Enable test once a container with a profile is created")]
         public void ListProfiles()
         {
-            var manager = new ExternalCommandManager();
+            var manager = new AWSServiceImpl();
 
             var profiles = manager.ListProfiles();
             Assert.NotEmpty(profiles);
@@ -40,8 +40,8 @@ namespace Amazon.Lambda.TestTool.Tests
                 await TestUtils.WaitTillQueueIsCreatedAsync(client, createResponse.QueueUrl);
                 try
                 {
-                    var manager = new ExternalCommandManager();
-                    var queues = manager.ListQueues(TestUtils.TestProfile, TestUtils.TestRegion.SystemName);
+                    var aws = new AWSServiceImpl();
+                    var queues = await aws.ListQueuesAsync(TestUtils.TestProfile, TestUtils.TestRegion.SystemName);
                     
                     Assert.True(queues.Contains(createResponse.QueueUrl));
                 }
@@ -62,8 +62,8 @@ namespace Amazon.Lambda.TestTool.Tests
                 await TestUtils.WaitTillQueueIsCreatedAsync(client, createResponse.QueueUrl);
                 try
                 {
-                    var manager = new ExternalCommandManager();
-                    var message = manager.ReadMessage(TestUtils.TestProfile, TestUtils.TestRegion.SystemName, createResponse.QueueUrl);
+                    var aws = new AWSServiceImpl();
+                    var message = await aws.ReadMessageAsync(TestUtils.TestProfile, TestUtils.TestRegion.SystemName, createResponse.QueueUrl);
                     
                     Assert.Null(message);
 
@@ -73,10 +73,10 @@ namespace Amazon.Lambda.TestTool.Tests
                         QueueUrl = createResponse.QueueUrl
                     });
                     
-                    message = manager.ReadMessage(TestUtils.TestProfile, TestUtils.TestRegion.SystemName, createResponse.QueueUrl);
+                    message = await aws.ReadMessageAsync(TestUtils.TestProfile, TestUtils.TestRegion.SystemName, createResponse.QueueUrl);
                     Assert.NotNull(message);
                     
-                    manager.DeleteMessage(TestUtils.TestProfile, TestUtils.TestRegion.SystemName, createResponse.QueueUrl, message.ReceiptHandle);
+                    await aws.DeleteMessageAsync(TestUtils.TestProfile, TestUtils.TestRegion.SystemName, createResponse.QueueUrl, message.ReceiptHandle);
                 }
                 finally
                 {

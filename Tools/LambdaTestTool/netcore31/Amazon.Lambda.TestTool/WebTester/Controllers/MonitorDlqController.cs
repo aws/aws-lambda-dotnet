@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
-using Amazon.Lambda.TestTool.ExternalCommands;
+using System.Threading.Tasks;
+using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Runtime;
 using Amazon.Lambda.TestTool.WebTester.Models;
-using LitJson;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Amazon.Lambda.TestTool.WebTester.Controllers
@@ -25,10 +24,10 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         }
         
         [HttpGet("queues/{awsProfile}/{awsRegion}")]
-        public IList<QueueItem> ListAvailableQueuesAsync(string awsProfile, string awsRegion)
+        public async Task<IList<QueueItem>> ListAvailableQueuesAsync(string awsProfile, string awsRegion)
         {
-            var manager = new ExternalCommandManager();
-            var queueUrls = manager.ListQueues(awsProfile, awsRegion);
+            var aws = new AWSServiceImpl();
+            var queueUrls = await aws.ListQueuesAsync(awsProfile, awsRegion);
 
             var items = new List<QueueItem>();
 
@@ -66,10 +65,10 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         }
 
         [HttpPost("purge")]
-        public void PurgeDlq([FromBody] PurgeDlqModel model)
+        public async Task PurgeDlq([FromBody] PurgeDlqModel model)
         {
-            var manager = new ExternalCommandManager();
-            manager.PurgeQueue(model.Profile, model.Region, model.QueueUrl);            
+            var aws = new AWSServiceImpl();
+            await aws.PurgeQueueAsync(model.Profile, model.Region, model.QueueUrl);            
         }
 
         [HttpGet("is-running")]

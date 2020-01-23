@@ -21,8 +21,11 @@
   </PropertyGroup>  
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="YamlDotNet.Signed" Version="5.2.1" />    
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="YamlDotNet.Signed" Version="5.2.1" />
+        
+    <PackageReference Include="AWSSDK.Core" Version="3.3.24.2" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.3.3.10" />        
   </ItemGroup>
   <ItemGroup>
     <None Remove="WebTester\embedded-wwwroot\css\bootstrap.css" />
@@ -38,12 +41,13 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="WebTester\Pages\**\*" CopyToOutputDirectory="Always" />
-    <Content Include="ExternalCommands\App\**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="WebTester\embedded-wwwroot\css\font-awesome.min.css" />
   </ItemGroup>
-  <Target Name="PrepareExternalCommands" BeforeTargets="Compile">
-    <Exec Command="dotnet publish -c $(Configuration) -o ../Amazon.Lambda.TestTool/ExternalCommands/App" WorkingDirectory="../Amazon.Lambda.TestTool.ExternalCommands" />
-  </Target>
+  <ItemGroup>
+    <Folder Include="Services\" />
+    <Folder Include="Models\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="ThirdParty\Json\IJsonWrapper.cs" />
+  </ItemGroup>
 </Project>

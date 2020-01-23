@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-using Amazon.Lambda.TestTool.ExternalCommands;
+using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.WebTester.SampleRequests;
 
 namespace Amazon.Lambda.TestTool.WebTester.Pages
@@ -23,7 +23,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Pages
         {
             this.LambdaOptions = lambdaOptions;
 
-            var externalManager = new ExternalCommandManager();
+            var externalManager = new AWSServiceImpl();
             this.AWSProfiles = externalManager.ListProfiles();
         }
 
