@@ -14,9 +14,12 @@ namespace Amazon.Lambda.TestTool.Tests
 {
     public class AwsServiceTests
     {
-        [Fact(Skip = "Integration test being disabled temporarily. Enable test once a container with a profile is created")]
+        [Fact]
         public void ListProfiles()
         {
+            if (!TestUtils.ProfileTestsEnabled)
+                return;
+
             var manager = new AWSServiceImpl();
 
             var profiles = manager.ListProfiles();
@@ -30,9 +33,12 @@ namespace Amazon.Lambda.TestTool.Tests
             Assert.True(profiles.Contains(TestUtils.TestProfile));
         }
 
-        [Fact(Skip = "Integration test being disabled temporarily. Enable test once a container with a profile is created")]
+        [Fact]
         public async Task ListQueuesAsync()
         {
+            if (!TestUtils.ProfileTestsEnabled)
+                return;
+
             var queueName = "local-reader-list-queue-test-" + DateTime.Now.Ticks;
             using (var client = new AmazonSQSClient(TestUtils.GetAWSCredentials(), TestUtils.TestRegion))
             {
@@ -52,9 +58,12 @@ namespace Amazon.Lambda.TestTool.Tests
             }
         }
         
-        [Fact(Skip = "Integration test being disabled temporarily. Enable test once a container with a profile is created")]
+        [Fact]
         public async Task ReadMessageAsync()
         {
+            if (!TestUtils.ProfileTestsEnabled)
+                return;
+
             var queueName = "local-reader-read-message-test-" + DateTime.Now.Ticks;
             using (var client = new AmazonSQSClient(TestUtils.GetAWSCredentials(), TestUtils.TestRegion))
             {

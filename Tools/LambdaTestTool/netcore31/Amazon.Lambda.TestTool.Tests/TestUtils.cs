@@ -57,5 +57,14 @@ namespace Amazon.Lambda.TestTool.Tests
                     Thread.Sleep(100);
             }
         }
+
+        public static bool ProfileTestsEnabled
+        {
+            get
+            {
+                var profiles = new CredentialProfileStoreChain().ListProfiles();
+                return profiles.Count > 0;
+            }
+        }
     }
 }

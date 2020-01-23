@@ -14,9 +14,12 @@ namespace Amazon.Lambda.TestTool.Tests
 {
     public class DlqMonitorTests
     {
-        [Fact(Skip = "Integration test being disabled temporarily. Enable test once a container with a profile is created")]
+        [Fact]
         public async Task DlqIntegTest()
         {
+            if (!TestUtils.ProfileTestsEnabled)
+                return;
+
             const int WAIT_TIME = 5000;
             var queueName = "local-dlq-list-queue-test-" + DateTime.Now.Ticks;
             using (var client = new AmazonSQSClient(TestUtils.GetAWSCredentials(), TestUtils.TestRegion))
