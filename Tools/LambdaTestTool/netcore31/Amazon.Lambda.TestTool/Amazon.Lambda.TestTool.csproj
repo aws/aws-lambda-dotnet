@@ -8,7 +8,7 @@
     <ToolCommandName>dotnet-lambda-test-tool-3.1</ToolCommandName>
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
-    <Description>A tool to help debug and test your .NET Core AWS Lambda functions locally.</Description>
+    <Description>A tool to help debug and test your .NET Core 3.1 AWS Lambda functions locally.</Description>
     <LangVersion>Latest</LangVersion>
     <VersionPrefix>0.9.5</VersionPrefix>
     <Product>AWS .NET Lambda Test Tool</Product>
@@ -17,7 +17,7 @@
     <PackageId>Amazon.Lambda.TestTool-3.1</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
     <NoWarn>1701;1702;1591;1587;3021;NU5100</NoWarn>
-	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>  
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
@@ -28,26 +28,11 @@
     <PackageReference Include="AWSSDK.SQS" Version="3.3.3.10" />        
   </ItemGroup>
   <ItemGroup>
-    <None Remove="WebTester\embedded-wwwroot\css\bootstrap.css" />
-  </ItemGroup>
-  <ItemGroup>
-    <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.4" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="WebTester\embedded-wwwroot\**" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Resources\**" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="WebTester\Pages\**\*" CopyToOutputDirectory="Always" />
     <Content Include="WebTester\embedded-wwwroot\css\font-awesome.min.css" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Services\" />
-    <Folder Include="Models\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="ThirdParty\Json\IJsonWrapper.cs" />
   </ItemGroup>
 </Project>
