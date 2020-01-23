@@ -22,9 +22,9 @@ namespace DotNetServerless.Lambda.Functions
     }
 
     [LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
-    public async Task<APIGatewayProxyResponse> Run(APIGatewayProxyRequest request)
+    public Task<APIGatewayProxyResponse> Run(APIGatewayProxyRequest request)
     {
-      return new APIGatewayProxyResponse();
+      return Task.FromResult(new APIGatewayProxyResponse());
     }
   }
 }

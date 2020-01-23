@@ -6,26 +6,26 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DotNetServerless.Lambda.Functions
 {
-  public class GetItemFunction
-  {
-    private readonly IServiceProvider _serviceProvider;
-
-    public GetItemFunction() : this(Startup
-      .BuildContainer()
-    .BuildServiceProvider())
+    public class GetItemFunction
     {
-    }
+        private readonly IServiceProvider _serviceProvider;
 
-    public GetItemFunction(IServiceProvider serviceProvider)
-    {
-      _serviceProvider = serviceProvider;
-    }
+        public GetItemFunction() : 
+            this(Startup
+                    .BuildContainer()
+                    .BuildServiceProvider())
+        {
+        }
 
-    [LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
-    public async Task<APIGatewayProxyResponse> Run(APIGatewayProxyRequest request)
-    {
-     return new APIGatewayProxyResponse();
-      
+        public GetItemFunction(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+        }
+
+        [LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+        public Task<APIGatewayProxyResponse> Run(APIGatewayProxyRequest request)
+        {
+            return Task.FromResult(new APIGatewayProxyResponse());
+        }
     }
-  }
 }

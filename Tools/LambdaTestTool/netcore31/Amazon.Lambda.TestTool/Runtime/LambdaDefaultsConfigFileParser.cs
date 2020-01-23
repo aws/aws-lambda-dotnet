@@ -25,10 +25,10 @@ namespace Amazon.Lambda.TestTool.Runtime
                 throw new FileNotFoundException($"Lambda config file {filePath} not found");
             }
 
-            var configFile = JsonSerializer.Deserialize<LambdaConfigFile>(File.ReadAllText(filePath), new System.Text.Json.JsonSerializerOptions
+            var configFile = JsonSerializer.Deserialize<LambdaConfigFile>(File.ReadAllText(filePath).Trim(), new System.Text.Json.JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
-            });
+            }); ;
 
             var configInfo = new LambdaConfigInfo
             {

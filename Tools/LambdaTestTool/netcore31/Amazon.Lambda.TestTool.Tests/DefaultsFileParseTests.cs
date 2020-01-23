@@ -11,7 +11,7 @@ namespace Amazon.Lambda.TestTool.Tests
         [Fact]
         public void LambdaFunctionWithNoName()
         {
-            var jsonFile = WriteTempConfigFile("{'function-handler' : 'Assembly::Type::Method'}");
+            var jsonFile = WriteTempConfigFile("{\"function-handler\" : \"Assembly::Type::Method\"}");
             try
             {
                 var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
@@ -28,7 +28,7 @@ namespace Amazon.Lambda.TestTool.Tests
         [Fact]
         public void LambdaFunctionWithName()
         {
-            var jsonFile = WriteTempConfigFile("{'function-handler' : 'Assembly::Type::Method', 'function-name' : 'TheFunc'}");
+            var jsonFile = WriteTempConfigFile("{\"function-handler\" : \"Assembly::Type::Method\", \"function-name\" : \"TheFunc\"}");
             try
             {
                 var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
@@ -60,7 +60,7 @@ namespace Amazon.Lambda.TestTool.Tests
         [Fact]
         public void NonDefaultProfile()
         {
-            var jsonFile = WriteTempConfigFile("{'profile' : 'test-profile'}");
+            var jsonFile = WriteTempConfigFile("{\"profile\" : \"test-profile\"}");
             try
             {
                 var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
@@ -90,7 +90,7 @@ namespace Amazon.Lambda.TestTool.Tests
         [Fact]
         public void SetRegion()
         {
-            var jsonFile = WriteTempConfigFile("{'region' : 'us-west-2'}");
+            var jsonFile = WriteTempConfigFile("{\"region\" : \"us-west-2\"}");
             try
             {
                 var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
