@@ -44,6 +44,12 @@ The table below shows the currently supported patch of each major version of .NE
 * [Modular Powershell in AWS Lambda Functions](https://rollingwebsphere.home.blog/2020/01/18/aws-lambda-functions-with-modular-powershell/) By Brian Olson, January 2020
   * Tutorial for using modular powershell functions in AWS Lambda.
 
+### Templates & Repositories  
+* [serverlessDotNetStarter](https://github.com/pharindoko/serverlessDotNetStarter) - By Florian Fuß
+  * Start with a simple template for Visual Studio Code
+  * Debug locally with Lambda NET Mock Test Tool
+  * Deploy easily with the serverless framework
+
 ### AWS Recorded Talks
 * [Building a .NET Serverless Application on AWS](https://www.youtube.com/watch?v=TZUtB1xXduo) By Abby Fuller, Tara Walker and Nicki Klien 2018
   * Demo of a serverless application using the AWS .NET SDK, AWS Lambda, AWS CodeBuild, AWS X-Ray, Amazon Dynamo DB Accelorator (DAX), and the AWS Toolkit for Visual Studio.
