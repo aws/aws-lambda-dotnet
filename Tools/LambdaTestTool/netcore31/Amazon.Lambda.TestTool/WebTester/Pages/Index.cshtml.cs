@@ -22,9 +22,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Pages
         public IndexModel(LocalLambdaOptions lambdaOptions)
         {
             this.LambdaOptions = lambdaOptions;
-
-            var externalManager = new AWSServiceImpl();
-            this.AWSProfiles = externalManager.ListProfiles();
+            this.AWSProfiles = this.LambdaOptions.LambdaRuntime.AWSService.ListProfiles();
         }
 
         public void OnGet()

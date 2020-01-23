@@ -46,7 +46,7 @@ namespace Amazon.Lambda.TestTool.Runtime
 
         private async Task Loop(CancellationToken token)
         {
-            var manager = new AWSServiceImpl();
+            var aws = this._runtime.AWSService;
             while (!token.IsCancellationRequested)
             {
                 Message message = null;
@@ -54,7 +54,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                 try
                 {
                     // Read a message from the queue using the ExternalCommands console application.
-                    message = await manager.ReadMessageAsync(this._profile, this._region, this._queueUrl);
+                    message = await aws.ReadMessageAsync(this._profile, this._region, this._queueUrl);
                     if (token.IsCancellationRequested)
                     {
                         return;

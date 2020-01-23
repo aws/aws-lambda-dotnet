@@ -20,9 +20,9 @@ namespace Amazon.Lambda.TestTool.Tests
             if (!TestUtils.ProfileTestsEnabled)
                 return;
 
-            var manager = new AWSServiceImpl();
+            var aws = new AWSServiceImpl();
 
-            var profiles = manager.ListProfiles();
+            var profiles = aws.ListProfiles();
             Assert.NotEmpty(profiles);
 
             foreach (var profile in profiles)

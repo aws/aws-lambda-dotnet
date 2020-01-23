@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 
 using Amazon.Lambda.Core;
-using Amazon.Lambda.TestTool.Runtime;
+using Amazon.Lambda.TestTool.Services;
 
 namespace Amazon.Lambda.TestTool.Runtime
 {
@@ -17,6 +17,8 @@ namespace Amazon.Lambda.TestTool.Runtime
         LambdaFunction LoadLambdaFunction(LambdaFunctionInfo functionInfo);
         IList<LambdaFunction> LoadLambdaFunctions(IList<LambdaFunctionInfo> configInfos);
         ExecutionResponse ExecuteLambdaFunction(ExecutionRequest request);
+
+        IAWSService AWSService { get; }
     }
 
     /// <summary>
@@ -27,14 +29,22 @@ namespace Amazon.Lambda.TestTool.Runtime
         private LambdaAssemblyLoadContext LambdaContext { get; }
         public string LambdaAssemblyDirectory { get; }
 
+        public IAWSService AWSService { get; }
 
-        private LocalLambdaRuntime(LambdaAssemblyLoadContext lambdaContext, string lambdaAssemblyDirectory)
+
+        private LocalLambdaRuntime(LambdaAssemblyLoadContext lambdaContext, string lambdaAssemblyDirectory, IAWSService awsService)
         {
             LambdaContext = lambdaContext;
             this.LambdaAssemblyDirectory = lambdaAssemblyDirectory;
+            this.AWSService = awsService;
         }
 
         public static ILocalLambdaRuntime Initialize(string directory)
+        {
+            return Initialize(directory, new AWSServiceImpl());
+        }
+
+        public static ILocalLambdaRuntime Initialize(string directory, IAWSService awsService)
         {
             if (!Directory.Exists(directory))
             {
@@ -56,7 +66,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             // The resolver provides the ability to load the assemblies containing the select Lambda function.
             var resolver = new LambdaAssemblyLoadContext(fileName);
 
-            var runtime = new LocalLambdaRuntime(resolver, directory);
+            var runtime = new LocalLambdaRuntime(resolver, directory, awsService);
             return runtime;
         }
 

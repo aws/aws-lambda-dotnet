@@ -26,8 +26,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         [HttpGet("queues/{awsProfile}/{awsRegion}")]
         public async Task<IList<QueueItem>> ListAvailableQueuesAsync(string awsProfile, string awsRegion)
         {
-            var aws = new AWSServiceImpl();
-            var queueUrls = await aws.ListQueuesAsync(awsProfile, awsRegion);
+            var queueUrls = await this.LambdaOptions.LambdaRuntime.AWSService.ListQueuesAsync(awsProfile, awsRegion);
 
             var items = new List<QueueItem>();
 
@@ -67,8 +66,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         [HttpPost("purge")]
         public async Task PurgeDlq([FromBody] PurgeDlqModel model)
         {
-            var aws = new AWSServiceImpl();
-            await aws.PurgeQueueAsync(model.Profile, model.Region, model.QueueUrl);            
+            await this.LambdaOptions.LambdaRuntime.AWSService.PurgeQueueAsync(model.Profile, model.Region, model.QueueUrl);            
         }
 
         [HttpGet("is-running")]
