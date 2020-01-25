@@ -26,7 +26,7 @@
 
 **/.ionide/**
 
-/Tools/LambdaTestTool/Amazon.Lambda.TestTool/ExternalCommands/App/**
+/Tools/LambdaTestTool/netcore21/Amazon.Lambda.TestTool/ExternalCommands/App/**
 
 **/node_modules/
 **/TestGenerations/
