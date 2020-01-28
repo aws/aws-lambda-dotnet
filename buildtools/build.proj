@@ -37,7 +37,8 @@
         <Exec Command="dotnet restore BlueprintPackager.sln" WorkingDirectory="..\Blueprints\BlueprintPackager"/>
     </Target>
     <Target Name="package-blueprints" DependsOnTargets="init;run-blueprint-packager">
-        <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/Msbuild-NETCore_2_1"/>
+        <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/netcore2.1"/>
+		<Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/netcore3.1"/>
     </Target>
     <Target Name="run-blueprint-packager">
         <Exec Command="dotnet run -c $(Configuration) $(BlueprintPackagerArguments)" WorkingDirectory="..\Blueprints\BlueprintPackager"/>
