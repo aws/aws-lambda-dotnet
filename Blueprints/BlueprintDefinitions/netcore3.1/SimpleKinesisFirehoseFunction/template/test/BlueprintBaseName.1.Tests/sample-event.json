@@ -1,4 +1,4 @@
-﻿{
+{
   "invocationId": "00540a87-5050-496a-84e4-e7d92bbaf5e2",
   "deliveryStreamArn": "arn:aws:firehose:us-east-1:AAAAAAAAAAAA:deliverystream/lambda-test",
   "region": "us-east-1",

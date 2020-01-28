@@ -1,6 +1,10 @@
 {
   "author": "AWS",
-  "classifications": [ "AWS", "Lambda", "Serverless" ],
+  "classifications": [
+    "AWS",
+    "Lambda",
+    "Serverless"
+  ],
   "name": "Serverless Simple S3 Function",
   "identity": "AWS.Serverless.Simple.S3.CSharp",
   "groupIdentity": "AWS.Serverless.Simple.S3",
@@ -36,5 +40,9 @@
       "replaces": "BlueprintBaseName._1"
     }
   },
-  "primaryOutputs": [ { "path": "./src/BlueprintBaseName.1/BlueprintBaseName.1.csproj" } ]
+  "primaryOutputs": [
+    {
+      "path": "./src/BlueprintBaseName.1/BlueprintBaseName.1.csproj"
+    }
+  ]
 }

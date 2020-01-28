@@ -1,4 +1,4 @@
-﻿{
+{
   "resource": "/{proxy+}",
   "path": "/api/values",
   "httpMethod": "GET",

@@ -1,41 +1,55 @@
 {
-  "AWSTemplateFormatVersion" : "2010-09-09",
-  "Transform" : "AWS::Serverless-2016-10-31",
-  "Description" : "AWS Serverless API that exposes the add, remove and get operations for a blogging platform using Amazon DynamoDB.",
-  "Parameters" : {
-    "ShouldCreateTable" : {
-      "Type" : "String",        
-      "AllowedValues" : ["true", "false"],
-      "Description" : "If true then the DynamoDB blogging table will be created with the CloudFormation stack."
-    },  
-    "BlogTableName" : {
-        "Type" : "String",
-        "Description" : "Name of DynamoDB table used to store the blog post. If left blank a new table will be created.",
-        "MinLength" : "0"
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "AWS Serverless API that exposes the add, remove and get operations for a blogging platform using Amazon DynamoDB.",
+  "Parameters": {
+    "ShouldCreateTable": {
+      "Type": "String",
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Description": "If true then the DynamoDB blogging table will be created with the CloudFormation stack."
     },
-    "ReadCapacity" : {
-        "Type" : "Number",
-        "Description" : "Read capacity for the DynamoDB blog table.",
-        "Default" : "3",
-        "MinValue" : 1
+    "BlogTableName": {
+      "Type": "String",
+      "Description": "Name of DynamoDB table used to store the blog post. If left blank a new table will be created.",
+      "MinLength": "0"
     },
-    "WriteCapacity" : {
-        "Type" : "Number",
-        "Description" : "Write capacity for the DynamoDB blog table.",
-        "Default" : "3",
-        "MinValue" : 1
+    "ReadCapacity": {
+      "Type": "Number",
+      "Description": "Read capacity for the DynamoDB blog table.",
+      "Default": "3",
+      "MinValue": 1
+    },
+    "WriteCapacity": {
+      "Type": "Number",
+      "Description": "Write capacity for the DynamoDB blog table.",
+      "Default": "3",
+      "MinValue": 1
     }
   },
-
-  "Conditions" : {
-    "CreateBlogTable" : {"Fn::Equals" : [{"Ref" : "ShouldCreateTable"}, "true"]},
-	  "TableNameGenerated" : {"Fn::Equals" : [{"Ref" : "BlogTableName"}, ""]}
+  "Conditions": {
+    "CreateBlogTable": {
+      "Fn::Equals": [
+        {
+          "Ref": "ShouldCreateTable"
+        },
+        "true"
+      ]
+    },
+    "TableNameGenerated": {
+      "Fn::Equals": [
+        {
+          "Ref": "BlogTableName"
+        },
+        ""
+      ]
+    }
   },
-
-  "Resources" : {
-
-    "GetBlogs" : {
-      "Type" : "AWS::Serverless::Function",
+  "Resources": {
+    "GetBlogs": {
+      "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::GetBlogsAsync",
         "Runtime": "dotnetcore3.1",
@@ -44,10 +58,22 @@
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
-        "Policies": [ "AWSLambdaFullAccess" ],
-        "Environment" : {
-          "Variables" : {
-            "BlogTable" : { "Fn::If" : ["CreateBlogTable", {"Ref":"BlogTable"}, { "Ref" : "BlogTableName" } ] }
+        "Policies": [
+          "AWSLambdaFullAccess"
+        ],
+        "Environment": {
+          "Variables": {
+            "BlogTable": {
+              "Fn::If": [
+                "CreateBlogTable",
+                {
+                  "Ref": "BlogTable"
+                },
+                {
+                  "Ref": "BlogTableName"
+                }
+              ]
+            }
           }
         },
         "Events": {
@@ -61,9 +87,8 @@
         }
       }
     },
-
-    "GetBlog" : {
-      "Type" : "AWS::Serverless::Function",
+    "GetBlog": {
+      "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::GetBlogAsync",
         "Runtime": "dotnetcore3.1",
@@ -72,10 +97,22 @@
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
-        "Policies": [ "AWSLambdaFullAccess" ],
-        "Environment" : {
-          "Variables" : {
-            "BlogTable" : { "Fn::If" : ["CreateBlogTable", {"Ref":"BlogTable"}, { "Ref" : "BlogTableName" } ] }
+        "Policies": [
+          "AWSLambdaFullAccess"
+        ],
+        "Environment": {
+          "Variables": {
+            "BlogTable": {
+              "Fn::If": [
+                "CreateBlogTable",
+                {
+                  "Ref": "BlogTable"
+                },
+                {
+                  "Ref": "BlogTableName"
+                }
+              ]
+            }
           }
         },
         "Events": {
@@ -89,10 +126,8 @@
         }
       }
     },
-    
-
-    "AddBlog" : {
-      "Type" : "AWS::Serverless::Function",
+    "AddBlog": {
+      "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::AddBlogAsync",
         "Runtime": "dotnetcore3.1",
@@ -101,10 +136,22 @@
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
-        "Policies": [ "AWSLambdaFullAccess" ],
-        "Environment" : {
-          "Variables" : {
-            "BlogTable" : { "Fn::If" : ["CreateBlogTable", {"Ref":"BlogTable"}, { "Ref" : "BlogTableName" } ] }
+        "Policies": [
+          "AWSLambdaFullAccess"
+        ],
+        "Environment": {
+          "Variables": {
+            "BlogTable": {
+              "Fn::If": [
+                "CreateBlogTable",
+                {
+                  "Ref": "BlogTable"
+                },
+                {
+                  "Ref": "BlogTableName"
+                }
+              ]
+            }
           }
         },
         "Events": {
@@ -118,9 +165,8 @@
         }
       }
     },
-
-    "RemoveBlog" : {
-      "Type" : "AWS::Serverless::Function",
+    "RemoveBlog": {
+      "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::RemoveBlogAsync",
         "Runtime": "dotnetcore3.1",
@@ -129,10 +175,22 @@
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
-        "Policies": [ "AWSLambdaFullAccess" ],
-        "Environment" : {
-          "Variables" : {
-            "BlogTable" : { "Fn::If" : ["CreateBlogTable", {"Ref":"BlogTable"}, { "Ref" : "BlogTableName" } ] }
+        "Policies": [
+          "AWSLambdaFullAccess"
+        ],
+        "Environment": {
+          "Variables": {
+            "BlogTable": {
+              "Fn::If": [
+                "CreateBlogTable",
+                {
+                  "Ref": "BlogTable"
+                },
+                {
+                  "Ref": "BlogTableName"
+                }
+              ]
+            }
           }
         },
         "Events": {
@@ -146,29 +204,57 @@
         }
       }
     },
-
-    "BlogTable" : {
-        "Type" : "AWS::DynamoDB::Table",
-        "Condition" : "CreateBlogTable",
-        "Properties" : {
-            "TableName" : { "Fn::If" : ["TableNameGenerated", {"Ref" : "AWS::NoValue" }, { "Ref" : "BlogTableName" } ] },
-            "AttributeDefinitions" : [
-              {"AttributeName" : "Id", "AttributeType" : "S"}
-            ],
-            "KeySchema"            : [
-              {"AttributeName" : "Id", "KeyType" : "HASH"}
-            ],
-            "ProvisionedThroughput" : {
-                "ReadCapacityUnits" : { "Ref" : "ReadCapacity" },
-                "WriteCapacityUnits" : { "Ref" : "WriteCapacity" }
+    "BlogTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Condition": "CreateBlogTable",
+      "Properties": {
+        "TableName": {
+          "Fn::If": [
+            "TableNameGenerated",
+            {
+              "Ref": "AWS::NoValue"
+            },
+            {
+              "Ref": "BlogTableName"
             }
+          ]
+        },
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "Id",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "Id",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": {
+            "Ref": "ReadCapacity"
+          },
+          "WriteCapacityUnits": {
+            "Ref": "WriteCapacity"
+          }
         }
+      }
     }
   },
-
-  "Outputs" : {
-    "BlogTable" : {
-        "Value" : { "Fn::If" : ["CreateBlogTable", {"Ref":"BlogTable"}, { "Ref" : "BlogTableName" } ] }
+  "Outputs": {
+    "BlogTable": {
+      "Value": {
+        "Fn::If": [
+          "CreateBlogTable",
+          {
+            "Ref": "BlogTable"
+          },
+          {
+            "Ref": "BlogTableName"
+          }
+        ]
+      }
     }
   }
 }

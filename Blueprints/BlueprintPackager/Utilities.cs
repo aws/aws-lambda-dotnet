@@ -4,6 +4,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 
+using Newtonsoft.Json;
+
 namespace Packager
 {
     public static class Utilities
@@ -38,6 +40,13 @@ namespace Packager
                     }
                 }
             }
+        }
+
+        public static void FormatJsonFile(string file)
+        {
+            var rootObj = JsonConvert.DeserializeObject(File.ReadAllText(file));
+            var formattedJson = JsonConvert.SerializeObject(rootObj, Formatting.Indented);
+            File.WriteAllText(file, formattedJson);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 
 namespace Packager
 {
@@ -21,6 +22,11 @@ namespace Packager
                     {
                         var versionUpdater = new UpdatePackageReferenceVersions(blueprintPath.Source);
                         versionUpdater.Execute();
+                    }
+
+                    foreach(var jsonFile in Directory.GetFiles(blueprintPath.Source, "*.*", SearchOption.AllDirectories).Where(x => string.Equals(Path.GetExtension(x), ".json") || string.Equals(Path.GetExtension(x), ".template")))
+                    {
+                        Utilities.FormatJsonFile(jsonFile);
                     }
 
                     var packager = new VSMsbuildBlueprintPackager(blueprintPath.Source, Path.Combine(outputDirectory, new DirectoryInfo(blueprintPath.Output).Name));

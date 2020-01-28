@@ -2,7 +2,6 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
   "Description": "An AWS Serverless Application that uses the ASP.NET Core framework running in Amazon Lambda.",
-
   "Parameters": {
     "ShouldCreateBucket": {
       "Type": "String",
@@ -36,7 +35,6 @@
       ]
     }
   },
-
   "Resources": {
     "AspNetCoreFunction": {
       "Type": "AWS::Serverless::Function",
@@ -83,7 +81,6 @@
         }
       }
     },
-
     "Bucket": {
       "Type": "AWS::S3::Bucket",
       "Condition": "CreateS3Bucket",
@@ -102,7 +99,6 @@
       }
     }
   },
-
   "Outputs": {
     "ApiURL": {
       "Description": "API endpoint URL for Prod environment",

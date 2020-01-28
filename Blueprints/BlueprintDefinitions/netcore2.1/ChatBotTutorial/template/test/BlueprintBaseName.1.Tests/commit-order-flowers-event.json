@@ -1,9 +1,8 @@
-﻿{
+{
   "messageVersion": "1.0",
   "invocationSource": "FulfillmentCodeHook",
   "userId": "",
-  "sessionAttributes": {
-  },
+  "sessionAttributes": {},
   "bot": {
     "name": "OrderFlowers",
     "alias": null,
