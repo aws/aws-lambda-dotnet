@@ -146,7 +146,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                     _logger.LogWarning($"Request does not contain domain name information but is derived from {nameof(APIGatewayProxyFunction)}.");
                 }
 
-                string path = null;
+                string path = "/";
                 if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy") &&
                     !string.IsNullOrEmpty(apiGatewayRequest.Resource))
                 {
