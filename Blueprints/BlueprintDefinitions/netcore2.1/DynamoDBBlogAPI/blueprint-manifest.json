@@ -1,0 +1,13 @@
+{
+  "display-name": "Blog API using DynamoDB",
+  "system-name": "DynamoDBBlogAPI",
+  "description": "An AWS Serverless application example Blogging API using Amazon DynamoDB.",
+  "sort-order": 201,
+  "hidden-tags": [
+    "C#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "DynamoDB"
+  ]
+}

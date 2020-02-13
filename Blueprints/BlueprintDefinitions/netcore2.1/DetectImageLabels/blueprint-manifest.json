@@ -1,0 +1,14 @@
+{
+  "display-name": "Detect Image Labels",
+  "system-name": "DetectImageLabels",
+  "description": "Use Amazon Rekognition service to tag image files in S3 with detected labels.",
+  "sort-order": 101,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "S3",
+    "Rekognition"
+  ]
+}

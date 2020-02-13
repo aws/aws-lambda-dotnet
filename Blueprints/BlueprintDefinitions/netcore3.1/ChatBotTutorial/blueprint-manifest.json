@@ -1,0 +1,14 @@
+{
+  "display-name": "Order Flowers Chatbot",
+  "system-name": "OrderFlowersChatbotTutorial",
+  "description": "Amazon Lex getting started Order Flowers sample",
+  "sort-order": 101,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "Custom",
+    "Lex"
+  ]
+}

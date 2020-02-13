@@ -1,0 +1,14 @@
+{
+  "display-name": "Simple SNS Function",
+  "system-name": "SimpleSNSFunction",
+  "description": "A project for responding to SNS Event notifications",
+  "sort-order": 101,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "SNS",
+    "Simple"
+  ]
+}

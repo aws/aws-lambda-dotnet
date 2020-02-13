@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AWSProjectType>Lambda</AWSProjectType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.7.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="StepFunctionTasks.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="state-machine.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="aws-lambda-tools-defaults.json" />
+    <None Include="Readme.md" />
+    <None Include="serverless.template" />
+  </ItemGroup>
+</Project>
