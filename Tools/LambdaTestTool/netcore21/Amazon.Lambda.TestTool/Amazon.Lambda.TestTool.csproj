@@ -10,7 +10,7 @@
     <PackAsTool>true</PackAsTool>
     <Description>A tool to help debug and test your .NET Core AWS Lambda functions locally.</Description>
     <LangVersion>Latest</LangVersion>
-    <VersionPrefix>0.9.5</VersionPrefix>
+    <VersionPrefix>0.9.6</VersionPrefix>
     <Product>AWS .NET Lambda Test Tool</Product>
     <Copyright>Apache 2</Copyright>
     <EnableDefaultContentItems>false</EnableDefaultContentItems>    
