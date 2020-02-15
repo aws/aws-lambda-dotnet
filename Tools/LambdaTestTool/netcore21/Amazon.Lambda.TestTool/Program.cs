@@ -18,7 +18,7 @@ namespace Amazon.Lambda.TestTool
         {            
             try
             {
-                Environment.SetEnvironmentVariable("AWS_EXECUTION_ENV", "AWS_DOTNET_LAMDBA_TEST_TOOL_" + Utils.DetermineToolVersion());
+                Environment.SetEnvironmentVariable("AWS_EXECUTION_ENV", "AWS_DOTNET_LAMDBA_TEST_TOOL_2_1_" + Utils.DetermineToolVersion());
 
                 PrintToolTitle();
                 
