@@ -92,7 +92,8 @@ namespace Amazon.Lambda.TestTool
                         });
 
                         if(!string.IsNullOrEmpty(configFile.Framework) && configFile.Framework.StartsWith("netcoreapp") &&
-                            (!string.IsNullOrEmpty(configFile.FunctionHandler) || !string.IsNullOrEmpty(configFile.Template)))
+                            (!string.IsNullOrEmpty(configFile.FunctionHandler) || 
+                            (!string.IsNullOrEmpty(configFile.Template) && File.Exists(Path.Combine(lambdaFunctionDirectory, configFile.Template)))))
                         {
                             Console.WriteLine($"Found Lambda config file {file}");
                             configFiles.Add(file);

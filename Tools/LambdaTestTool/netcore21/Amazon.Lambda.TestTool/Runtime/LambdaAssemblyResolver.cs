@@ -9,9 +9,6 @@ using Microsoft.Extensions.DependencyModel.Resolution;
 
 namespace Amazon.Lambda.TestTool.Runtime
 {
-    // This code was taken from the blog post by Samuel Cragg on CodeProject
-    // https://www.codeproject.com/Articles/1194332/Resolving-Assemblies-in-NET-Core
-    // Licensed under CPOP: https://www.codeproject.com/info/cpol10.aspx
     public class LambdaAssemblyResolver : IDisposable
     {
         private readonly ICompilationAssemblyResolver assemblyResolver;

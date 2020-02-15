@@ -99,11 +99,11 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         }
 
         [HttpPost("request/{requestName}")]
-        public string SaveLambdaRequest(string requestName)
+        public async Task<string> SaveLambdaRequest(string requestName)
         {
             using (var reader = new StreamReader(this.Request.Body))
             {
-                var content = reader.ReadToEnd();
+                var content = await reader.ReadToEndAsync();
                 var manager = new SampleRequestManager(this.LambdaOptions.PreferenceDirectory);
                 return manager.SaveRequest(requestName, content);
             }
