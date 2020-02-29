@@ -43,6 +43,8 @@ The table below shows the currently supported patch of each major version of .NE
   * Tutorial for building a Web API and **not** using ASP.NET Core.
 * [Modular Powershell in AWS Lambda Functions](https://rollingwebsphere.home.blog/2020/01/18/aws-lambda-functions-with-modular-powershell/) By Brian Olson, January 2020
   * Tutorial for using modular powershell functions in AWS Lambda.
+* [AWS Lambda for .NET Developers](https://marcroussy.com/2019/03/01/aws-lambda-for-dotnet-developers/) By Marc Roussy, March 2019
+  * An introduction to the basic concepts of building AWS Lambda functions with .NET Core.
 
 ### Templates & Repositories  
 * [serverlessDotNetStarter](https://github.com/pharindoko/serverlessDotNetStarter) - By Florian Fuß
