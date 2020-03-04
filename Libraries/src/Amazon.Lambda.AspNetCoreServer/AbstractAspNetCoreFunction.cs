@@ -12,7 +12,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.Features.Authentication;
-#if NETCOREAPP_3_0
+#if NETCOREAPP_3_1
 using Microsoft.Extensions.Hosting;
 #endif
 
@@ -341,7 +341,11 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="request"></param>
         /// <param name="lambdaContext"></param>
         /// <returns></returns>
+#if NETCOREAPP_2_1
         [LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+#elif NETCOREAPP_3_1
+        [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
         public virtual async Task<TRESPONSE> FunctionHandlerAsync(TREQUEST request, ILambdaContext lambdaContext)
         {
             if (!IsStarted)

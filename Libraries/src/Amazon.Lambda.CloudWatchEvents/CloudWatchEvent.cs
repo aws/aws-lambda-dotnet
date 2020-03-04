@@ -40,6 +40,9 @@
         /// For example, ScheduledEvent will be null
         /// For example, ECSEvent could be "ECS Container Instance State Change" or "ECS Task State Change"
         /// </summary>
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("detail-type")]
+#endif
         public string DetailType { get; set; }
 
         /// <summary>

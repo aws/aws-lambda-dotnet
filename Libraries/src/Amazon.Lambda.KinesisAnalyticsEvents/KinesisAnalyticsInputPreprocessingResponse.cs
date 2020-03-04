@@ -33,6 +33,9 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
         /// The records.
         /// </value>
         [DataMember(Name = "records")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("records")]
+#endif
         public IList<Record> Records { get; set; }
 
         /// <summary>
@@ -48,6 +51,9 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// The record identifier.
             /// </value>
             [DataMember(Name = "recordId")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("recordId")]
+#endif
             public string RecordId { get; set; }
 
             /// <summary>
@@ -57,6 +63,9 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// The result.
             /// </value>
             [DataMember(Name = "result")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("result")]
+#endif
             public string Result { get; set; }
 
             /// <summary>
@@ -66,7 +75,11 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// The base64 encoded data.
             /// </value>
             [DataMember(Name = "data")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("data")]
+#endif
             public string Base64EncodedData { get; set; }
+            
             /// <summary>
             /// Encodes the data.
             /// </summary>

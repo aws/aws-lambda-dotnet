@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>C52FEED4-DC83-4541-B058-5BDABCBBD710</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>EventsTests.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)alb-request-multi-value.json" />
+    <Content Include="$(MSBuildThisFileDirectory)alb-request-single-value.json" />
+    <Content Include="$(MSBuildThisFileDirectory)batch-job-state-change-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)cognito-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)config-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)dynamodb-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)ecs-container-state-change-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)ecs-task-state-change-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-inputpreprocessing-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-inputpreprocessing-response.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-outputdelivery-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-outputdelivery-response.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kinesis-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kinesis-firehose-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kinesis-firehose-response.json" />
+    <Content Include="$(MSBuildThisFileDirectory)lex-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)lex-response.json" />
+    <Content Include="$(MSBuildThisFileDirectory)logs-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)proxy-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)s3-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)scheduled-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)simple-email-event-lambda.json" />
+    <Content Include="$(MSBuildThisFileDirectory)simple-email-event-s3.json" />
+    <Content Include="$(MSBuildThisFileDirectory)sns-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)sqs-event.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)EventTests.cs" />
+  </ItemGroup>
+</Project>
