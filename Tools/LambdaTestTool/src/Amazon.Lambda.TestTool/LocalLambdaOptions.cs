@@ -26,13 +26,17 @@ namespace Amazon.Lambda.TestTool
             }
             
             var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(fullConfigFilePath);
+            return LoadLambdaFuntion(configInfo, functionHandler);
+        }
+
+        public LambdaFunction LoadLambdaFuntion(LambdaConfigInfo configInfo, string functionHandler)
+        {
             var functionInfo = configInfo.FunctionInfos.FirstOrDefault(x =>
                 string.Equals(functionHandler, x.Handler, StringComparison.OrdinalIgnoreCase));
             if (functionInfo == null)
             {
                 throw new Exception($"Failed to find function {functionHandler}");
             }
-
 
             var function = this.LambdaRuntime.LoadLambdaFunction(functionInfo);
             return function;

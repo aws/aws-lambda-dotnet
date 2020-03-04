@@ -15,7 +15,6 @@ namespace Amazon.Lambda.TestTool.Runtime
     /// </summary>
     public static class LambdaDefaultsConfigFileParser
     {
-
         public static LambdaConfigInfo LoadFromFile(string filePath)
         {
             if (!File.Exists(filePath))
@@ -26,8 +25,14 @@ namespace Amazon.Lambda.TestTool.Runtime
             var configFile = JsonSerializer.Deserialize<LambdaConfigFile>(File.ReadAllText(filePath).Trim(), new System.Text.Json.JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
-            }); ;
+            });
+            configFile.ConfigFileLocation = filePath;
 
+            return LoadFromFile(configFile);
+        }
+
+        public static LambdaConfigInfo LoadFromFile(LambdaConfigFile configFile)
+        {
             var configInfo = new LambdaConfigInfo
             {
                 AWSProfile = !string.IsNullOrEmpty(configFile.Profile) ? configFile.Profile : "default",
@@ -44,7 +49,8 @@ namespace Amazon.Lambda.TestTool.Runtime
 
             if (!string.IsNullOrEmpty(templateFileName))
             {
-                var templateFullPath = Path.Combine(Path.GetDirectoryName(filePath), templateFileName);
+                var directory = Directory.Exists(configFile.ConfigFileLocation) ? configFile.ConfigFileLocation : Path.GetDirectoryName(configFile.ConfigFileLocation);
+                var templateFullPath = Path.Combine(directory, templateFileName);
                 if (!File.Exists(templateFullPath))
                 {
                     throw new FileNotFoundException($"Serverless template file {templateFullPath} not found");

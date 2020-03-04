@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 using Amazon.Lambda.TestTool.Runtime;
@@ -14,13 +15,11 @@ namespace Amazon.Lambda.TestTool
         {
             try
             {
-                Environment.SetEnvironmentVariable("AWS_EXECUTION_ENV", "AWS_DOTNET_LAMDBA_TEST_TOOL_3_1_" + Utils.DetermineToolVersion());
-
                 Utils.PrintToolTitle(productName);
 
                 var commandOptions = CommandLineOptions.Parse(args);
 
-                var options = new LocalLambdaOptions()
+                var localLambdaOptions = new LocalLambdaOptions()
                 {
                     Port = commandOptions.Port
                 };
@@ -49,14 +48,74 @@ namespace Amazon.Lambda.TestTool
                     path = Path.Combine(path, $"bin/Debug/{targetFramework}");
                 }
 
-                options.LambdaRuntime = LocalLambdaRuntime.Initialize(path);
+                localLambdaOptions.LambdaRuntime = LocalLambdaRuntime.Initialize(path);
                 Console.WriteLine($"Loaded local Lambda runtime from project output {path}");
 
-                // Look for aws-lambda-tools-defaults.json or other config files.
-                options.LambdaConfigFiles = Utils.SearchForConfigFiles(path);
+                if (commandOptions.NoUI)
+                {
+                    string configFile = null;
+                    if (string.IsNullOrEmpty(commandOptions.ConfigFile))
+                    {
+                        configFile = Utils.SearchForConfigFiles(path).FirstOrDefault(x => string.Equals("aws-lambda-tools-defaults.json", Path.GetFileName(x), StringComparison.OrdinalIgnoreCase));
+                    }
+                    else if (Path.IsPathRooted(commandOptions.ConfigFile))
+                    {
+                        configFile = commandOptions.ConfigFile;
+                    }
+                    else if(File.Exists(Path.Combine(path, commandOptions.ConfigFile)))
+                    {
+                        configFile = Path.Combine(path, commandOptions.ConfigFile);
+                    }
+                    else if (File.Exists(Path.Combine(Directory.GetCurrentDirectory(), commandOptions.ConfigFile)))
+                    {
+                        configFile = Path.Combine(Directory.GetCurrentDirectory(), commandOptions.ConfigFile);
+                    }
 
-                // Start the test tool web server.
-                uiStartup(options, !commandOptions.NoLaunchWindow);
+                    LambdaConfigInfo configInfo;
+                    if (configFile != null)
+                    {
+                        configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
+                    }
+                    else
+                    {
+                        configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(new LambdaConfigFile
+                        {
+                            FunctionHandler = commandOptions.FunctionHandler,
+                            ConfigFileLocation = path
+                        });
+                    }
+
+                    string functionHandler = commandOptions.FunctionHandler;
+                    if (string.IsNullOrEmpty(commandOptions.FunctionHandler))
+                    {
+                        if(configInfo.FunctionInfos.Count == 1)
+                        {
+                            functionHandler = configInfo.FunctionInfos[0].Handler;
+                        }
+                        else
+                        {
+                            throw new CommandLineParseException("Project has more then one Lambda function defined. Use the --function-handler switch to identify the function to execute.");
+                        }
+                    }
+
+                    var request = new ExecutionRequest()
+                    {
+                        AWSProfile = commandOptions.AWSProfile ?? configInfo.AWSProfile,
+                        AWSRegion = commandOptions.AWSRegion ?? configInfo.AWSRegion,
+                        Payload = commandOptions.Payload,
+                        Function = localLambdaOptions.LoadLambdaFuntion(configInfo, functionHandler)
+                    };
+
+                    var response = localLambdaOptions.LambdaRuntime.ExecuteLambdaFunction(request);
+                }
+                else
+                {
+                    // Look for aws-lambda-tools-defaults.json or other config files.
+                    localLambdaOptions.LambdaConfigFiles = Utils.SearchForConfigFiles(path);
+
+                    // Start the test tool web server.
+                    uiStartup(localLambdaOptions, !commandOptions.NoLaunchWindow);
+                }
             }
             catch (CommandLineParseException e)
             {

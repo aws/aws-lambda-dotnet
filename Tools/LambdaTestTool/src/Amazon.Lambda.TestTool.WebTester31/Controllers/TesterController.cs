@@ -83,9 +83,6 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
                 request.AWSProfile = parameters.Profile;
                 request.AWSRegion = parameters.Region;
             }
-            
-
-
 
             var response = this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunction(request);
             return response;

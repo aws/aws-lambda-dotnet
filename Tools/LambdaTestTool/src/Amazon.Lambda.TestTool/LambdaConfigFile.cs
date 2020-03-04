@@ -15,5 +15,7 @@ namespace Amazon.Lambda.TestTool
         public string FunctionHandler { get; set; }
         [JsonPropertyName("function-name")]
         public string FunctionName { get; set; }
+
+        public string ConfigFileLocation { get; set; }
     }
 }
