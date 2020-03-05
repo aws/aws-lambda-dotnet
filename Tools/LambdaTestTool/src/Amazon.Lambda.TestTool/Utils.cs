@@ -106,6 +106,17 @@ namespace Amazon.Lambda.TestTool
             return false;
         }
 
+        public static string FindLambdaProjectDirectory(string lambdaAssemblyDirectory)
+        {
+            if (string.IsNullOrEmpty(lambdaAssemblyDirectory))
+                return null;
+            
+            if (IsProjectDirectory(lambdaAssemblyDirectory))
+                return lambdaAssemblyDirectory;
+            
+            return Directory.GetParent(lambdaAssemblyDirectory)?.FullName;
+        }
+
         public static IList<string> SearchForConfigFiles(string lambdaFunctionDirectory)
         {
             var configFiles = new List<string>();

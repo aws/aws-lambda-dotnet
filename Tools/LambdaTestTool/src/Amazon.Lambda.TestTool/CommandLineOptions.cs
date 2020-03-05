@@ -22,6 +22,8 @@ namespace Amazon.Lambda.TestTool
         public string AWSProfile { get; set; }
         
         public string AWSRegion { get; set; }
+        
+        public bool ShowHelp { get; set; }
 
         public static CommandLineOptions Parse(string[] args)
         {
@@ -32,6 +34,13 @@ namespace Amazon.Lambda.TestTool
                 bool skipAhead;
                 switch (args[i])
                 {
+                    case "--help":
+                        options.ShowHelp = GetNextBoolValue(i, out skipAhead);
+                        if(skipAhead)
+                        {
+                            i++;
+                        }
+                        break;
                     case "--port":
                         options.Port = GetNextIntValue(i);
                         i++;
@@ -117,7 +126,36 @@ namespace Amazon.Lambda.TestTool
 
         public static void PrintUsage()
         {
-            Console.WriteLine("");
+            Console.WriteLine();
+            Console.WriteLine("The .NET Lambda Test Tool can be launched in 2 modes. The default mode is to launch a web interface to select the Lambda code");
+            Console.WriteLine("to execute with in the Lambda test tool. The second mode skips using the web interface and the Lambda code is identified");
+            Console.WriteLine("using the commandline switches as described below. To switch to the no web interface mode use the --no-ui command line switch.");
+            Console.WriteLine();
+            
+            Console.WriteLine("These options are valid for either mode the Lambda test tool is running in.");
+            Console.WriteLine();
+            Console.WriteLine("\t--path <directory>                    The path to the lambda project to execute. If not set then the current directory will be used.");
+            Console.WriteLine();
+
+            Console.WriteLine("These options are valid when using the web interface to select and execute the Lambda code.");
+            Console.WriteLine();
+            Console.WriteLine("\t--port <port-number>                  The port number used for the test tool's web interface.");
+            Console.WriteLine("\t--no-launch-window                    Disable auto launching the test tool's web interface in a browser.");
+            Console.WriteLine();
+            
+            Console.WriteLine("These options are valid in the no web interface mode.");
+            Console.WriteLine();
+            Console.WriteLine("\t--no-ui                               Disable launching the web interface and immediately execute the Lambda code.");
+            Console.WriteLine("\t--profile <profile-name>              Set the AWS credentials profile to provide credentials to the Lambda code.");
+            Console.WriteLine("\t                                      If not set the profile from the config file will be used.");
+            Console.WriteLine("\t--region <region-name>                Set the AWS region to as the default region for the Lambda code being executed.");
+            Console.WriteLine("\t                                      If not set the region from the config file will be used.");
+            Console.WriteLine("\t--config-file <file-name>             The config file to read for Lambda settings. If not set than aws-lambda-tools-defaults.json");
+            Console.WriteLine("\t                                      will be used.");
+            Console.WriteLine("\t--function-handler <handler-string>   The Lambda function handler to identify the code to run. If not set then the function handler");
+            Console.WriteLine("\t                                      from the config file will be used. This is the format of <assembly::type-name::method-name>.");
+            Console.WriteLine("\t--payload <file-name>                 The JSON payload to send to the Lambda function. This can be either an inline string or a");
+            Console.WriteLine("\t                                      file path to a JSON file.");
         }
     }
 
