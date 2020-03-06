@@ -11,7 +11,27 @@ namespace Amazon.Lambda.TestTool
 {
     public class TestToolStartup
     {
+        public class RunConfiguration
+        {
+            public enum RunMode { Normal, Test};
+
+            /// <summary>
+            /// If this is set to Test then that disables any interactive activity or any calls to Environment.Exit which wouldn't work well during a test run.
+            /// </summary>
+            public RunMode Mode { get; set; } = RunMode.Normal;
+
+            /// <summary>
+            /// Allows you to capture the output for tests to example instead of just writing to the console windows.
+            /// </summary>
+            public TextWriter OutputWriter { get; set; } = Console.Out;
+        }
+
         public static void Startup(string productName, Action<LocalLambdaOptions, bool> uiStartup, string[] args)
+        {
+            Startup(productName, uiStartup, args, new RunConfiguration());
+        }
+
+        public static void Startup(string productName, Action<LocalLambdaOptions, bool> uiStartup, string[] args, RunConfiguration runConfiguration)
         {
             try
             {
@@ -54,11 +74,11 @@ namespace Amazon.Lambda.TestTool
                 }
 
                 localLambdaOptions.LambdaRuntime = LocalLambdaRuntime.Initialize(lambdaAssemblyDirectory);
-                Console.WriteLine($"Loaded local Lambda runtime from project output {lambdaAssemblyDirectory}");
+                runConfiguration.OutputWriter.WriteLine($"Loaded local Lambda runtime from project output {lambdaAssemblyDirectory}");
 
                 if (commandOptions.NoUI)
                 {
-                    ExecuteWithNoUi(localLambdaOptions, commandOptions, lambdaAssemblyDirectory);
+                    ExecuteWithNoUi(localLambdaOptions, commandOptions, lambdaAssemblyDirectory, runConfiguration);
                 }
                 else
                 {
@@ -71,31 +91,37 @@ namespace Amazon.Lambda.TestTool
             }
             catch (CommandLineParseException e)
             {
-                Console.WriteLine($"Invalid command line arguments: {e.Message}");
-                Console.WriteLine("Use the --help option to learn about the possible command line arguments");
-                if (Debugger.IsAttached)
+                runConfiguration.OutputWriter.WriteLine($"Invalid command line arguments: {e.Message}");
+                runConfiguration.OutputWriter.WriteLine("Use the --help option to learn about the possible command line arguments");
+                if (runConfiguration.Mode == RunConfiguration.RunMode.Normal)
                 {
-                    Console.WriteLine("Press any key to exit");
-                    Console.ReadKey();
+                    if (Debugger.IsAttached)
+                    {
+                        Console.WriteLine("Press any key to exit");
+                        Console.ReadKey();
+                    }
+                    System.Environment.Exit(-1);
                 }
-                System.Environment.Exit(-1);
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine($"Unknown error occurred causing process exit: {e.Message}");
-                Console.Error.WriteLine(e.StackTrace);
-                if (Debugger.IsAttached)
+                runConfiguration.OutputWriter.WriteLine($"Unknown error occurred causing process exit: {e.Message}");
+                runConfiguration.OutputWriter.WriteLine(e.StackTrace);
+                if (runConfiguration.Mode == RunConfiguration.RunMode.Normal)
                 {
-                    Console.WriteLine("Press any key to exit");
-                    Console.ReadKey();
+                    if (Debugger.IsAttached)
+                    {
+                        Console.WriteLine("Press any key to exit");
+                        Console.ReadKey();
+                    }
+                    System.Environment.Exit(-2);
                 }
-                Environment.Exit(-2);
             }
         }
         
-        public static void ExecuteWithNoUi(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory)
+        public static void ExecuteWithNoUi(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, RunConfiguration runConfiguration)
         {
-            Console.WriteLine("Executing Lambda function without web interface");
+            runConfiguration.OutputWriter.WriteLine("Executing Lambda function without web interface");
             var lambdaProjectDirectory = Utils.FindLambdaProjectDirectory(lambdaAssemblyDirectory);
 
             
@@ -120,7 +146,7 @@ namespace Amazon.Lambda.TestTool
             LambdaConfigInfo configInfo;
             if (configFile != null)
             {
-                Console.WriteLine($"... Using config file {configFile}");
+                runConfiguration.OutputWriter.WriteLine($"... Using config file {configFile}");
                 configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
             }
             else
@@ -158,7 +184,7 @@ namespace Amazon.Lambda.TestTool
             {
                 // The user has explicitly set a function handler value that is not in the config file or CloudFormation template.
                 // To support users testing add hoc methods create a temporary config object using explicit function handler value.
-                Console.WriteLine($"... Info: function handler {functionHandler} is not defined in config file.");
+                runConfiguration.OutputWriter.WriteLine($"... Info: function handler {functionHandler} is not defined in config file.");
                 var temporaryConfigInfo = LambdaDefaultsConfigFileParser.LoadFromFile(new LambdaConfigFile
                 {
                     FunctionHandler = functionHandler,
@@ -172,7 +198,7 @@ namespace Amazon.Lambda.TestTool
             }
 
 
-            Console.WriteLine($"... Using function handler {functionHandler}");
+            runConfiguration.OutputWriter.WriteLine($"... Using function handler {functionHandler}");
 
             var payload = commandOptions.Payload;
             // Look to see if the payload value is a file in
@@ -185,7 +211,7 @@ namespace Amazon.Lambda.TestTool
             {
                 if(File.Exists(possiblePath))
                 {
-                    Console.WriteLine($"... Using payload with from the file {Path.GetFullPath(possiblePath)}");
+                    runConfiguration.OutputWriter.WriteLine($"... Using payload with from the file {Path.GetFullPath(possiblePath)}");
                     payload = File.ReadAllText(possiblePath);
                     payloadFileFound = true;
                     break;
@@ -196,70 +222,80 @@ namespace Amazon.Lambda.TestTool
             {
                 if (!string.IsNullOrEmpty(payload))
                 {
-                    Console.WriteLine($"... Using payload with the value {payload}");
+                    runConfiguration.OutputWriter.WriteLine($"... Using payload with the value {payload}");
                 }
                 else
                 {
-                    Console.WriteLine("... No payload configured. If a payload is required set the --payload switch to a file path or a JSON document.");
+                    runConfiguration.OutputWriter.WriteLine("... No payload configured. If a payload is required set the --payload switch to a file path or a JSON document.");
                 }
+            }
+
+            var awsProfile = commandOptions.AWSProfile ?? configInfo.AWSProfile;
+            if (!string.IsNullOrEmpty(awsProfile))
+            {
+                if (new Amazon.Runtime.CredentialManagement.CredentialProfileStoreChain().TryGetProfile(awsProfile, out _))
+                {
+                    runConfiguration.OutputWriter.WriteLine($"... Setting AWS_PROFILE environment variable to {awsProfile}.");
+                }
+                else
+                {
+                    runConfiguration.OutputWriter.WriteLine($"... Warning: Profile {awsProfile} not found in the aws credential store.");
+                    awsProfile = null;
+                }
+            }
+            else
+            {
+                runConfiguration.OutputWriter.WriteLine("... No profile choosen for AWS credentials. The --profile switch can be used to configure an AWS profile.");
+            }
+
+            var awsRegion = commandOptions.AWSRegion ?? configInfo.AWSRegion;
+            if (!string.IsNullOrEmpty(awsRegion))
+            {
+                runConfiguration.OutputWriter.WriteLine($"... Setting AWS_REGION environment variable to {awsRegion}.");
+            }
+            else
+            {
+                runConfiguration.OutputWriter.WriteLine("... No default AWS region configured. The --region switch can be used to configure an AWS Region.");
             }
 
             // Create the execution request that will be sent into the LocalLambdaRuntime.
             var request = new ExecutionRequest()
             {
-                AWSProfile = commandOptions.AWSProfile ?? configInfo.AWSProfile,
-                AWSRegion = commandOptions.AWSRegion ?? configInfo.AWSRegion,
+                AWSProfile = awsProfile,
+                AWSRegion = awsRegion,
                 Payload = payload,
                 Function = lambdaFunction
             };
-
-            if(!string.IsNullOrEmpty(request.AWSProfile))
-            {
-                Console.WriteLine($"... Setting AWS_PROFILE environment variable to {request.AWSProfile}");
-            }
-            else
-            {
-                Console.WriteLine("... No profile choosen for AWS credentials. The --profile switch can be used to configure an AWS profile.");
-            }
-
-            if (!string.IsNullOrEmpty(request.AWSRegion))
-            {
-                Console.WriteLine($"... Setting AWS_REGION environment variable to {request.AWSRegion}.");
-            }
-            else
-            {
-                Console.WriteLine("... No default AWS region configured. The --region switch can be used to configure an AWS Region.");
-            }
 
 
             try
             {
                 var response = localLambdaOptions.LambdaRuntime.ExecuteLambdaFunction(request);
                 
-                Console.WriteLine("Captured Log information:");
-                Console.WriteLine(response.Logs);
+                runConfiguration.OutputWriter.WriteLine("Captured Log information:");
+                runConfiguration.OutputWriter.WriteLine(response.Logs);
                 
                 if (response.IsSuccess)
                 {
-                    Console.WriteLine("Request executed successfully");
-                    Console.WriteLine("Response:");
-                    Console.WriteLine(response.Response);
+                    runConfiguration.OutputWriter.WriteLine("Request executed successfully");
+                    runConfiguration.OutputWriter.WriteLine("Response:");
+                    runConfiguration.OutputWriter.WriteLine(response.Response);
                 }
                 else
                 {
-                    Console.WriteLine("Request failed to execute");
-                    Console.WriteLine($"Error:");
-                    Console.WriteLine(response.Error);
+                    runConfiguration.OutputWriter.WriteLine("Request failed to execute");
+                    runConfiguration.OutputWriter.WriteLine($"Error:");
+                    runConfiguration.OutputWriter.WriteLine(response.Error);
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine("Unknown error occurred in the Lambda test tool while executing request.");
-                Console.WriteLine($"Error Message: {e.Message}");
-                Console.WriteLine(e.StackTrace);
+                runConfiguration.OutputWriter.WriteLine("Unknown error occurred in the Lambda test tool while executing request.");
+                runConfiguration.OutputWriter.WriteLine($"Error Message: {e.Message}");
+                runConfiguration.OutputWriter.WriteLine(e.StackTrace);
             }
 
-            if(commandOptions.PauseExit)
+            if(runConfiguration.Mode == RunConfiguration.RunMode.Normal && commandOptions.PauseExit)
             {
                 Console.WriteLine("Press any key to exist");
                 Console.ReadKey();

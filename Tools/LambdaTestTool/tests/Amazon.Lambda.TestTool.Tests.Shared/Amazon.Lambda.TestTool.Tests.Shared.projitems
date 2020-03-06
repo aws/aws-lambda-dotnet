@@ -16,6 +16,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DlqMonitorTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InvokeFunctionTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LoadLambdaFunctionTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NoUiStartupTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestUtils.cs" />
   </ItemGroup>
 </Project>

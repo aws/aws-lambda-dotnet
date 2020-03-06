@@ -28,6 +28,13 @@ namespace ToUpperFunc
             
             return input?.ToUpper();
         }
+
+
+        [LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+        public static string ToLower(string input, ILambdaContext context)
+        {
+            return input?.ToLower();
+        }
     }
 }
     
