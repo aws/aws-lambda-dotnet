@@ -29,6 +29,19 @@ namespace Amazon.Lambda.TestTool
             return LoadLambdaFuntion(configInfo, functionHandler);
         }
 
+        public bool TryLoadLambdaFuntion(LambdaConfigInfo configInfo, string functionHandler, out LambdaFunction lambdaFunction)
+        {
+            lambdaFunction = null;
+            try
+            {
+                lambdaFunction = LoadLambdaFuntion(configInfo, functionHandler);
+                return true;
+            }
+            catch { }
+
+            return false;
+        }
+
         public LambdaFunction LoadLambdaFuntion(LambdaConfigInfo configInfo, string functionHandler)
         {
             var functionInfo = configInfo.FunctionInfos.FirstOrDefault(x =>
@@ -40,7 +53,7 @@ namespace Amazon.Lambda.TestTool
 
             var function = this.LambdaRuntime.LoadLambdaFunction(functionInfo);
             return function;
-        }
+        }        
 
         /// <summary>
         /// The directory to store in local settings for a Lambda project for example saved Lambda requests.

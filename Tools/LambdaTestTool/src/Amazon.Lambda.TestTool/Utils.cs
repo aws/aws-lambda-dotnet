@@ -10,7 +10,8 @@ namespace Amazon.Lambda.TestTool
 {
     public static class Utils
     {
-        
+        public const string DEFAULT_CONFIG_FILE = "aws-lambda-tools-defaults.json";
+
         public static string DetermineToolVersion()
         {
             AssemblyInformationalVersionAttribute attribute = null;
@@ -114,7 +115,7 @@ namespace Amazon.Lambda.TestTool
             if (IsProjectDirectory(lambdaAssemblyDirectory))
                 return lambdaAssemblyDirectory;
             
-            return Directory.GetParent(lambdaAssemblyDirectory)?.FullName;
+            return FindLambdaProjectDirectory(Directory.GetParent(lambdaAssemblyDirectory)?.FullName);
         }
 
         public static IList<string> SearchForConfigFiles(string lambdaFunctionDirectory)

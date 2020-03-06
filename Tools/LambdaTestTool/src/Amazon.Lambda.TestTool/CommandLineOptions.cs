@@ -25,6 +25,8 @@ namespace Amazon.Lambda.TestTool
         
         public bool ShowHelp { get; set; }
 
+        public bool PauseExit { get; set; } = true;
+
         public static CommandLineOptions Parse(string[] args)
         {
             var options = new CommandLineOptions();
@@ -81,11 +83,14 @@ namespace Amazon.Lambda.TestTool
                         break;
                     case "--payload":
                         options.Payload = GetNextStringValue(i);
-                        if(File.Exists(options.Payload))
-                        {
-                            options.Payload = File.ReadAllText(options.Payload);
-                        }
                         i++;
+                        break;
+                    case "--pause-exit":
+                        options.PauseExit = GetNextBoolValue(i, out skipAhead);
+                        if (skipAhead)
+                        {
+                            i++;
+                        }
                         break;
                 }
             }
@@ -112,7 +117,7 @@ namespace Amazon.Lambda.TestTool
             
             bool GetNextBoolValue(int currentIndex, out bool skipAhead)
             {
-                if (currentIndex + 1 < args.Length && !args[currentIndex + 1].StartsWith("--") && bool.TryParse(GetNextStringValue(currentIndex + 1), out var value))
+                if (currentIndex + 1 < args.Length && !args[currentIndex + 1].StartsWith("--") && bool.TryParse(GetNextStringValue(currentIndex), out var value))
                 {
                     skipAhead = true;
                     return value;
@@ -156,6 +161,9 @@ namespace Amazon.Lambda.TestTool
             Console.WriteLine("\t                                      from the config file will be used. This is the format of <assembly::type-name::method-name>.");
             Console.WriteLine("\t--payload <file-name>                 The JSON payload to send to the Lambda function. This can be either an inline string or a");
             Console.WriteLine("\t                                      file path to a JSON file.");
+            Console.WriteLine("\t--pause-exit <true or false>          If set to true the test tool will pause waiting for a key input before exiting. The is useful");
+            Console.WriteLine("\t                                      when executing from an IDE so you can avoid having the output window immediately disappear after");
+            Console.WriteLine("\t                                      executing the Lambda code. The default value is true.");
         }
     }
 
