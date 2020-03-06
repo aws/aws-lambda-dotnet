@@ -160,10 +160,10 @@
     </Target>
     <Target Name="install-lambda-test-tool" DependsOnTargets="build-lambda-test-tool-package">
         <Exec Command="dotnet tool uninstall -g Amazon.Lambda.TestTool-2.1" IgnoreExitCode="true"/>
-        <Exec Command="dotnet tool install -g Amazon.Lambda.TestTool-2.1" WorkingDirectory="../Deployment"/>
+        <Exec Command="dotnet tool install --add-source . -g Amazon.Lambda.TestTool-2.1" WorkingDirectory="../Deployment"/>
 
         <Exec Command="dotnet tool uninstall -g Amazon.Lambda.TestTool-3.1" IgnoreExitCode="true"/>
-        <Exec Command="dotnet tool install -g Amazon.Lambda.TestTool-3.1" WorkingDirectory="../Deployment"/>
+        <Exec Command="dotnet tool install --add-source . -g Amazon.Lambda.TestTool-3.1" WorkingDirectory="../Deployment"/>
 	</Target>
     <Target Name="build-project-packages">
         <Exec Command="dotnet msbuild -restore /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
