@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants>NETCORE_3_1</DefineConstants>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.0" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <PackageReference Include="LitJson" Version="0.13.0" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.3.102.64" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="3.1.1" />
+    <ProjectReference Include="..\LambdaFunctions\netcore31\FunctionSignatureExamples\FunctionSignatureExamples.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\netcore31\S3EventFunction\S3EventFunction.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\netcore31\ServerlessTemplateExample\ServerlessTemplateExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\netcore31\ToUpperFunc\ToUpperFunc.csproj" />
+  </ItemGroup>
+  <Import Project="..\Amazon.Lambda.TestTool.Tests.Shared\Amazon.Lambda.TestTool.Tests.Shared.projitems" Label="Shared" />
+  
+</Project>

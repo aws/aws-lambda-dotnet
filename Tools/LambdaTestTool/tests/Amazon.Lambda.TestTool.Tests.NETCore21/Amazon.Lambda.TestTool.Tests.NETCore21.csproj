@@ -1,20 +1,18 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.1;netcoreapp3.1</TargetFrameworks>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
+  <PropertyGroup>
     <DefineConstants>NETCORE_2_1</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
-    <DefineConstants>NETCORE_3_1</DefineConstants>
-  </PropertyGroup>
 
 
   <ItemGroup>
-	<PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.0" />
     <PackageReference Include="xunit" Version="2.3.1" />
@@ -26,18 +24,13 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.1.0" />
     <ProjectReference Include="..\LambdaFunctions\netcore21\FunctionSignatureExamples\FunctionSignatureExamples.csproj" />
     <ProjectReference Include="..\LambdaFunctions\netcore21\S3EventFunction\S3EventFunction.csproj" />
     <ProjectReference Include="..\LambdaFunctions\netcore21\ServerlessTemplateExample\ServerlessTemplateExample.csproj" />
     <ProjectReference Include="..\LambdaFunctions\netcore21\ToUpperFunc\ToUpperFunc.csproj" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="3.1.1" />
-    <ProjectReference Include="..\LambdaFunctions\netcore31\FunctionSignatureExamples\FunctionSignatureExamples.csproj" />
-    <ProjectReference Include="..\LambdaFunctions\netcore31\S3EventFunction\S3EventFunction.csproj" />
-    <ProjectReference Include="..\LambdaFunctions\netcore31\ServerlessTemplateExample\ServerlessTemplateExample.csproj" />
-    <ProjectReference Include="..\LambdaFunctions\netcore31\ToUpperFunc\ToUpperFunc.csproj" />
-  </ItemGroup>
+  <Import Project="..\Amazon.Lambda.TestTool.Tests.Shared\Amazon.Lambda.TestTool.Tests.Shared.projitems" Label="Shared" />
+
 </Project>
