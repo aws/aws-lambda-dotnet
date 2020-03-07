@@ -1,9 +1,9 @@
-﻿namespace Amazon.Lambda.TestTool
+namespace Amazon.Lambda.TestTool.WebTester31
 {
-    public static class Constants
+    public class Constants
     {
         public const int DEFAULT_PORT = 5050;
 
-        public const string PRODUCT_NAME = "AWS .NET Core 3.1 Mock Lambda Test Tool";
+        public const string PRODUCT_NAME = "AWS .NET Core 3.1 Mock Lambda Test Tool";        
     }
 }

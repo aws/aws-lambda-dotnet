@@ -1,18 +1,19 @@
-﻿using System;
-using System.IO;
-
-using Amazon.Lambda.TestTool.Runtime;
-using Amazon.Lambda.TestTool.WebTester;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
-using System.Text;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
-namespace Amazon.Lambda.TestTool.WebTester
+namespace Amazon.Lambda.TestTool.WebTester31
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             Environment.SetEnvironmentVariable("AWS_EXECUTION_ENV", "AWS_DOTNET_LAMDBA_TEST_TOOL_3_1_" + Utils.DetermineToolVersion());
             TestToolStartup.Startup(Constants.PRODUCT_NAME, (options, showUI) => Startup.LaunchWebTester(options, showUI), args);

@@ -1,12 +1,18 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-namespace Amazon.Lambda.TestTool.WebTester
+namespace Amazon.Lambda.TestTool.WebTester31
 {
     public class Startup
     {
@@ -49,7 +55,7 @@ namespace Amazon.Lambda.TestTool.WebTester
 
             host.WaitForShutdown();
         }
-
+        
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -58,14 +64,15 @@ namespace Amazon.Lambda.TestTool.WebTester
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
+        // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
             services.AddRazorPages();
+            services.AddServerSideBlazor();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseDeveloperExceptionPage();
 
@@ -74,7 +81,7 @@ namespace Amazon.Lambda.TestTool.WebTester
             {
                 // All web resources used by the test tool are stored as embedded resources. Check to see if the incoming
                 // request is for an embedded resource and if so return it.
-                var embeddedResourceName = "Amazon.Lambda.TestTool.WebTester31.embedded_wwwroot" + context.Request.Path.Value.Replace('/', '.');
+                var embeddedResourceName = "Amazon.Lambda.TestTool.WebTester31.wwwroot" + context.Request.Path.Value.Replace('/', '.');
                 using (var stream = this.GetType().Assembly.GetManifestResourceStream(embeddedResourceName))
                 {
                     if (stream != null)
@@ -100,8 +107,8 @@ namespace Amazon.Lambda.TestTool.WebTester
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();
-                endpoints.MapRazorPages();
+                endpoints.MapBlazorHub();
+                endpoints.MapFallbackToPage("/_Host");
             });
         }
     }

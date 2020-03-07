@@ -1,0 +1,77 @@
+﻿@using Amazon.Lambda.TestTool.Runtime;
+@inject LocalLambdaOptions LambdaOptions
+
+<!-- Select Config File and Function Handler -->
+<div class="row">
+    <div class="col-sm form-group">
+        <label class="col-xs-3 control-label" for="config-file">Config File</label>
+        <div class="col-xs-5">
+            <select id="config-file" class="form-control" name="color" @onchange="OnConfigFileChange">
+                @foreach (var file in @LambdaOptions.LambdaConfigFiles)
+                {
+                    <option value="@System.IO.Path.GetFileName(file)">@System.IO.Path.GetFileName(file)</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="col-sm form-group">
+        <label class="col-xs-3 control-label" for="functions-picker">Function</label>
+        <div class="col-xs-5">
+            <select id="functions-picker" class="form-control" name="color">
+                @if (AvailableFunctions != null)
+                {
+                    @foreach (var function in AvailableFunctions)
+                    {
+                        <option value="@function.FunctionInfo.Handler">@function.FunctionInfo.Name</option>
+                    }
+                }
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Select Profile and Region -->
+<div class="row">
+    <div class="col-sm form-group" for="functions-picker">
+        <label class="col-xs-3 control-label" for="aws-profile">AWS Credential Profile</label>
+        <select id="aws-profile" class="form-control">
+                @foreach (var profile in @AWSProfiles)
+                {
+                    <option value="@profile">@profile</option>
+                }
+        </select>
+    </div>
+    <div class="col-sm form-group" for="aws-region">
+        <label class="col-xs-3 control-label">AWS Region</label>
+        <input id="aws-region" type="text" class="form-control" />
+    </div>
+</div>
+
+<!-- TODO: Add ability to set environment variables -->
+
+@code {
+
+    public string AWSProfile { get; set; }
+    public string AWSRegion { get; set; }
+
+    public IList<string> AWSProfiles;
+
+
+    IList<LambdaFunction> AvailableFunctions;
+    
+    protected override Task OnInitializedAsync()
+    {
+        AWSProfiles = this.LambdaOptions.LambdaRuntime.AWSService.ListProfiles();
+        return Task.CompletedTask;
+    }    
+    
+    
+    void OnConfigFileChange(ChangeEventArgs e)
+    {
+        var configFile = e.Value.ToString();
+        var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
+        AvailableFunctions = this.LambdaOptions.LambdaRuntime.LoadLambdaFunctions(configInfo.FunctionInfos);
+        
+        this.StateHasChanged();
+    }    
+}

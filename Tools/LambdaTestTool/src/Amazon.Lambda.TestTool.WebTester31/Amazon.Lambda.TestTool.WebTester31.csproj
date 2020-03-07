@@ -13,11 +13,9 @@
     <VersionPrefix>0.10.0</VersionPrefix>
     <Product>AWS .NET Lambda Test Tool</Product>
     <Copyright>Apache 2</Copyright>
-    <EnableDefaultContentItems>false</EnableDefaultContentItems>
     <PackageId>Amazon.Lambda.TestTool-3.1</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
     <NoWarn>1701;1702;1591;1587;3021;NU5100;CS1591</NoWarn>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,11 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="embedded-wwwroot\**" />
+    <EmbeddedResource Include="wwwroot\**" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="Pages\**\*" CopyToOutputDirectory="Always" />
-    <Content Include="embedded-wwwroot\css\font-awesome.min.css" />
-  </ItemGroup>  
 
 </Project>
