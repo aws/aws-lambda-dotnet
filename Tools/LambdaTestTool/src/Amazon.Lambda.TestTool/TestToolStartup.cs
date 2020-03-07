@@ -201,24 +201,28 @@ namespace Amazon.Lambda.TestTool
             runConfiguration.OutputWriter.WriteLine($"... Using function handler {functionHandler}");
 
             var payload = commandOptions.Payload;
-            // Look to see if the payload value is a file in
-            // * Directory with user Lambda assemblies.
-            // * Lambda project directory
-            // * Properties directory under the project directory. This is to make it easy to reconcile from the launchSettings.json file.
-            var possiblePaths = new[] { Path.Combine(lambdaAssemblyDirectory, payload), Path.Combine(lambdaProjectDirectory, payload), Path.Combine(lambdaProjectDirectory, "Properties", payload) };
+
             bool payloadFileFound = false;
-            foreach(var possiblePath in possiblePaths)
+            if(!string.IsNullOrEmpty(payload))
             {
-                if(File.Exists(possiblePath))
+                // Look to see if the payload value is a file in
+                // * Directory with user Lambda assemblies.
+                // * Lambda project directory
+                // * Properties directory under the project directory. This is to make it easy to reconcile from the launchSettings.json file.
+                var possiblePaths = new[] { Path.Combine(lambdaAssemblyDirectory, payload), Path.Combine(lambdaProjectDirectory, payload), Path.Combine(lambdaProjectDirectory, "Properties", payload) };
+                foreach (var possiblePath in possiblePaths)
                 {
-                    runConfiguration.OutputWriter.WriteLine($"... Using payload with from the file {Path.GetFullPath(possiblePath)}");
-                    payload = File.ReadAllText(possiblePath);
-                    payloadFileFound = true;
-                    break;
+                    if (File.Exists(possiblePath))
+                    {
+                        runConfiguration.OutputWriter.WriteLine($"... Using payload with from the file {Path.GetFullPath(possiblePath)}");
+                        payload = File.ReadAllText(possiblePath);
+                        payloadFileFound = true;
+                        break;
+                    }
                 }
             }
 
-            if(!payloadFileFound)
+            if (!payloadFileFound)
             {
                 if (!string.IsNullOrEmpty(payload))
                 {
