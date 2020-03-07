@@ -6,10 +6,10 @@
     <div class="col-sm form-group">
         <label class="col-xs-3 control-label" for="config-file">Config File</label>
         <div class="col-xs-5">
-            <select id="config-file" class="form-control" name="color" @onchange="OnConfigFileChange">
+            <select class="form-control" @onchange="OnConfigFileChange">
                 @foreach (var file in @LambdaOptions.LambdaConfigFiles)
                 {
-                    <option value="@System.IO.Path.GetFileName(file)">@System.IO.Path.GetFileName(file)</option>
+                    <option value="@file">@System.IO.Path.GetFileName(file)</option>
                 }
             </select>
         </div>
@@ -17,7 +17,7 @@
     <div class="col-sm form-group">
         <label class="col-xs-3 control-label" for="functions-picker">Function</label>
         <div class="col-xs-5">
-            <select id="functions-picker" class="form-control" name="color">
+            <select class="form-control" name="color">
                 @if (AvailableFunctions != null)
                 {
                     @foreach (var function in AvailableFunctions)
@@ -58,20 +58,19 @@
 
 
     IList<LambdaFunction> AvailableFunctions;
-    
+
     protected override Task OnInitializedAsync()
     {
         AWSProfiles = this.LambdaOptions.LambdaRuntime.AWSService.ListProfiles();
         return Task.CompletedTask;
-    }    
-    
-    
+    }
+
     void OnConfigFileChange(ChangeEventArgs e)
     {
         var configFile = e.Value.ToString();
         var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
         AvailableFunctions = this.LambdaOptions.LambdaRuntime.LoadLambdaFunctions(configInfo.FunctionInfos);
-        
+
         this.StateHasChanged();
-    }    
+    }
 }

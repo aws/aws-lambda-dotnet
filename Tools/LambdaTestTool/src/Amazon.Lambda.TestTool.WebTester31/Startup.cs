@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 
 namespace Amazon.Lambda.TestTool.WebTester31
@@ -69,6 +70,15 @@ namespace Amazon.Lambda.TestTool.WebTester31
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
+
+            services.AddOptions<StaticFileOptions>()
+                .PostConfigure(o =>
+                {
+                    var fileProvider = new ManifestEmbeddedFileProvider(typeof(Startup).Assembly, "wwwroot");
+
+                    // Make sure we don't remove the existing file providers (blazor needs this)
+                    o.FileProvider = new CompositeFileProvider(o.FileProvider, fileProvider);
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -76,32 +86,7 @@ namespace Amazon.Lambda.TestTool.WebTester31
         {
             app.UseDeveloperExceptionPage();
 
-            // Handled Embedded Resources like static files
-            app.Use(async (context, next) =>
-            {
-                // All web resources used by the test tool are stored as embedded resources. Check to see if the incoming
-                // request is for an embedded resource and if so return it.
-                var embeddedResourceName = "Amazon.Lambda.TestTool.WebTester31.wwwroot" + context.Request.Path.Value.Replace('/', '.');
-                using (var stream = this.GetType().Assembly.GetManifestResourceStream(embeddedResourceName))
-                {
-                    if (stream != null)
-                    {
-                        if (embeddedResourceName.EndsWith(".js"))
-                        {
-                            context.Response.ContentType = "text/javascript";
-                        }
-                        else if (embeddedResourceName.EndsWith(".css"))
-                        {
-                            context.Response.ContentType = "text/css";
-                        }
-
-                        await stream.CopyToAsync(context.Response.Body);
-                        return;
-                    }
-                }
-
-                await next();
-            });
+            app.UseStaticFiles();
 
             app.UseRouting();
 
