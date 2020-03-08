@@ -12,7 +12,7 @@ namespace Amazon.Lambda.TestTool.SampleRequests
     public class SampleRequestManager
     {
         public const string SAVED_REQUEST_GROUP = "Saved Requests";
-        const string SAVED_REQUEST_DIRECTORY = "SavedRequests";
+        public const string SAVED_REQUEST_DIRECTORY = "SavedRequests";
         private string _preferenceDirectory;
         
         public SampleRequestManager(string preferenceDirectory)
@@ -79,6 +79,20 @@ namespace Amazon.Lambda.TestTool.SampleRequests
             return hash;
         }
 
+        public static bool TryDetermineSampleRequestName(string value, out string sampleName)
+        {
+            sampleName = null;
+            if (value == null)
+                return false;
+
+            if (!value.StartsWith(SAVED_REQUEST_DIRECTORY))
+                return false;
+
+            // The minus 6 is for the "@" and the trailing ".json"
+            sampleName = value.Substring(SAVED_REQUEST_DIRECTORY.Length + 1, value.Length - SAVED_REQUEST_DIRECTORY.Length - 6);
+            return true;
+        }
+
         public string GetRequest(string name)
         {
             if(name.StartsWith(SAVED_REQUEST_DIRECTORY + "@"))
@@ -95,7 +109,7 @@ namespace Amazon.Lambda.TestTool.SampleRequests
             var filename = $"{name}.json";
             File.WriteAllText(Path.Combine(GetSavedRequestDirectory(), filename), content);
 
-            return $"{SAVED_REQUEST_DIRECTORY}/{filename}";
+            return $"{SAVED_REQUEST_DIRECTORY}@{filename}";
         }
 
         private string GetEmbeddedResource(string name)

@@ -74,7 +74,7 @@ function onSaveRequest() {
 
                     var exists = false;
                     $('#sample-requests').each(function(){
-                        if (this.value == data) {
+                        if (this.value === data) {
                             exists = true;
                             return false;
                         }

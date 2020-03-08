@@ -13,6 +13,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 
+using Blazored.Modal;
+
 namespace Amazon.Lambda.TestTool.WebTester31
 {
     public class Startup
@@ -70,6 +72,8 @@ namespace Amazon.Lambda.TestTool.WebTester31
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
+
+            services.AddBlazoredModal();
 
             services.AddOptions<StaticFileOptions>()
                 .PostConfigure(o =>
