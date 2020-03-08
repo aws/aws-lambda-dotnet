@@ -6,7 +6,7 @@
     <div class="col-sm form-group">
         <label class="col-xs-3 control-label" for="config-file">Config File</label>
         <div class="col-xs-5">
-            <select class="form-control" @onchange="OnConfigFileChange">
+            <select class="form-control" @bind="ConfigFile">
                 @foreach (var file in @LambdaOptions.LambdaConfigFiles)
                 {
                     <option value="@file">@System.IO.Path.GetFileName(file)</option>
@@ -17,7 +17,7 @@
     <div class="col-sm form-group">
         <label class="col-xs-3 control-label" for="functions-picker">Function</label>
         <div class="col-xs-5">
-            <select class="form-control" name="color">
+            <select class="form-control" name="color" @bind="FunctionHandler">
                 @if (AvailableFunctions != null)
                 {
                     @foreach (var function in AvailableFunctions)
@@ -34,16 +34,19 @@
 <div class="row">
     <div class="col-sm form-group" for="functions-picker">
         <label class="col-xs-3 control-label" for="aws-profile">AWS Credential Profile</label>
-        <select id="aws-profile" class="form-control">
-                @foreach (var profile in @AWSProfiles)
+        <select id="aws-profile" class="form-control" @bind="AWSProfile">
+            @if (AvailableAWSProfiles != null)
+            {
+                @foreach (var profile in @AvailableAWSProfiles)
                 {
                     <option value="@profile">@profile</option>
                 }
+            }
         </select>
     </div>
     <div class="col-sm form-group" for="aws-region">
         <label class="col-xs-3 control-label">AWS Region</label>
-        <input id="aws-region" type="text" class="form-control" />
+        <input id="aws-region" type="text" class="form-control"  @bind="AWSRegion"/>
     </div>
 </div>
 
@@ -54,22 +57,59 @@
     public string AWSProfile { get; set; }
     public string AWSRegion { get; set; }
 
-    public IList<string> AWSProfiles;
+    private string _configFile;
+    public string ConfigFile
+    {
+        get
+        {
+            return this._configFile;
+        }
+        set
+        {
+            this._configFile = value;
+            UpdateConfigFileChange();
+        }
+    }
+
+    public string FunctionHandler { get; set; }
+
+    IList<string> AvailableAWSProfiles;
 
 
     IList<LambdaFunction> AvailableFunctions;
 
     protected override Task OnInitializedAsync()
     {
-        AWSProfiles = this.LambdaOptions.LambdaRuntime.AWSService.ListProfiles();
+        AvailableAWSProfiles = this.LambdaOptions.LambdaRuntime.AWSService.ListProfiles();
+
+
+        if(LambdaOptions.LambdaConfigFiles.Count > 0)
+        {
+            this.ConfigFile = LambdaOptions.LambdaConfigFiles[0];
+        }
+
         return Task.CompletedTask;
     }
 
-    void OnConfigFileChange(ChangeEventArgs e)
+    void UpdateConfigFileChange()
     {
-        var configFile = e.Value.ToString();
-        var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
+        var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(this.ConfigFile);
         AvailableFunctions = this.LambdaOptions.LambdaRuntime.LoadLambdaFunctions(configInfo.FunctionInfos);
+        if(AvailableFunctions.Count > 0)
+        {
+            this.FunctionHandler = this.AvailableFunctions[0].FunctionInfo.Handler;
+        }
+
+
+        if(configInfo.AWSProfile != null && this.AvailableAWSProfiles.Contains(configInfo.AWSProfile))
+        {
+            this.AWSProfile = configInfo.AWSProfile;
+        }
+
+        if(!string.IsNullOrEmpty(configInfo.AWSRegion))
+        {
+            this.AWSRegion = configInfo.AWSRegion;
+        }
 
         this.StateHasChanged();
     }

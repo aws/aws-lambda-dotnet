@@ -1,11 +1,13 @@
 ﻿@page "/"
 
-
+@using Amazon.Lambda.TestTool.Runtime;
+@using Amazon.Lambda.TestTool.SampleRequests;
+@inject LocalLambdaOptions LambdaOptions
 
 <p>
     This tool can be used to help test .NET Lambda functions for debugging application logic. Your Lambda code will run within this tool's process allowing IDEs
     attached to this tool to step through your .NET Core Lambda code. This tool runs your code similarly
-    to how the AWS Lambda service would run .NET code but there are intended differences to make debugging simple, for example the host OS. 
+    to how the AWS Lambda service would run .NET code but there are intended differences to make debugging simple, for example the host OS.
     For that reason, this testing tool cannot help with diagnosing platform specific issues.
 </p>
 <p>
@@ -14,5 +16,124 @@
     through the code.
 </p>
 
-<FunctionPickerComponent/>
+<FunctionPickerComponent @ref="FunctionPicker" />
 
+
+<div class="row">
+    <div class="col-sm form-group">
+        <label class="" for="sample-requests">Example Requests:</label>
+        <select class="control" id="sample-requests" @onchange="OnLambdaRequestSelected">
+            <option id="void-select-request"> -- select a request -- </option>
+            @if (@SampleRequests.ContainsKey(SampleRequestManager.SAVED_REQUEST_GROUP))
+            {
+                <optgroup id="saved-select-request-group" label="@SampleRequestManager.SAVED_REQUEST_GROUP">
+                    @foreach (var request in SampleRequests[SampleRequestManager.SAVED_REQUEST_GROUP])
+                    {
+                        <option value="@request.Filename">@request.Name</option>
+                    }
+                </optgroup>
+            }
+            @foreach (var group in SampleRequests.Keys)
+            {
+                @if (!string.Equals(group, SampleRequestManager.SAVED_REQUEST_GROUP))
+                {
+                    <optgroup label="@group">
+                        @foreach (var request in SampleRequests[group])
+                        {
+                            <option value="@request.Filename">@request.Name</option>
+                        }
+                    </optgroup>
+                }
+            }
+        </select>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm form-group">
+        <label class="col-xs-3 control-label" for="function-payload">Function Input:</label>
+        <textarea class="form-control" rows="10" @bind="FunctionInput" placeholder="JSON document as input to Lambda Function. Plain strings must be wrapped in quotes."></textarea>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-sm form-group">
+        <button class="btn btn-primary btn-sm" @onclick="OnExecuteClick">Execute Function</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#save-request-prompt" @onclick="OnSaveRequestClick">Save Request</button>
+    </div>
+</div>
+
+<div class="row" id="results-panel" style="display: none;">
+    <div class="col-sm-6 form-group">
+        <label class="control-label" for="function-response">Response:</label><br />
+        <small>The area below shows the result returned by your function execution.</small>
+        <pre class="form-control" rows="20" id="function-response" style="font-size: 75%"></pre>
+    </div>
+    <div class="col-sm-6 form-group">
+        <label class="control-label" for="function-logs">Log Output:</label><br />
+        <small>The area below shows the logging calls in your code.</small>
+        <pre class="form-control" rows="20" id="function-logs" style="font-size: 75%"></pre>
+    </div>
+</div>
+
+
+@code {
+
+    FunctionPickerComponent FunctionPicker { get; set; }
+
+    public IDictionary<string, IList<LambdaRequest>> SampleRequests { get; set; }
+
+    public string FunctionInput { get; set; }
+
+    public string FunctionResponse { get; set; }
+
+    public string FunctionLogs { get; set; }
+
+    SampleRequestManager SampleRequestManager { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        this.SampleRequestManager = new SampleRequestManager(LambdaOptions.PreferenceDirectory);
+        this.SampleRequests = SampleRequestManager.GetSampleRequests();
+
+        return Task.CompletedTask;
+    }
+
+    void OnSaveRequestClick()
+    {
+        Console.WriteLine("Save");
+    }
+
+    void OnExecuteClick()
+    {
+        var function = this.LambdaOptions.LoadLambdaFuntion(FunctionPicker.ConfigFile, FunctionPicker.FunctionHandler);
+
+        var request = new ExecutionRequest()
+        {
+            Function = function,
+            AWSProfile = FunctionPicker.AWSProfile,
+            AWSRegion = FunctionPicker.AWSRegion,
+            Payload = this.FunctionInput
+        };
+
+        var response = this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunction(request);
+
+        if(response.IsSuccess)
+        {
+            this.FunctionResponse = response.Response;
+
+        }
+        else
+        {
+            this.FunctionResponse = response.Error;
+        }
+
+        this.FunctionLogs = response.Logs;
+    }
+
+    void OnLambdaRequestSelected(ChangeEventArgs e)
+    {
+        var selectedInput = e.Value.ToString();
+        this.FunctionInput = SampleRequestManager.GetRequest(selectedInput);
+    }
+}
