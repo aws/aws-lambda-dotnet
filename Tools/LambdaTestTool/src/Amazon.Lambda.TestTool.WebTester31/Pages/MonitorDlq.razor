@@ -1,10 +1,14 @@
 @page "/monitor-dlq"
 
+@using System.Timers
 @using Amazon.Lambda.TestTool.Runtime
 @using Amazon.Lambda.TestTool.WebTester31.Models
 
+@implements IDisposable
+
 @inject LocalLambdaOptions LambdaOptions
 @inject IModalService Modal
+
 
 <h2>Monitor Dead Letter Queue</h2>
 <p>
@@ -24,7 +28,7 @@
         {
             <option value="@queue.QueueUrl">@queue.QueueName</option>
         }
-        
+
     </select>
     <i id="spinnerDlqQueues" class="fa fa-spinner" style="font-size: 24px; margin: 5px; visibility: hidden;"></i>
 </div>
@@ -61,17 +65,53 @@
             </tr>
         </thead>
         <tbody id="dlg-log-table-body">
-
+            @if (this.Logs != null)
+            {
+                @foreach (var log in this.Logs)
+                {
+                    <tr>
+                        <th></th>
+                        <td>@log.ProcessTime</td>
+                        @if (string.IsNullOrEmpty(log.Logs) || log.Logs.Length <= MAX_LOG_TABLE_TEXT_LENGTH)
+                        {
+                            <td>@FormatForLogTable(log.Logs)</td>
+                        }
+                        else
+                        {
+                            <td><span class="fake-link" @onclick="() => ShowExpandedText(log.Logs)">@FormatForLogTable(log.Logs)</span></td>
+                        }
+                        @if (string.IsNullOrEmpty(log.Error) || log.Error.Length <= MAX_LOG_TABLE_TEXT_LENGTH)
+                        {
+                            <td>@FormatForLogTable(log.Error)</td>
+                        }
+                        else
+                        {
+                            <td><span class="fake-link" @onclick="() => ShowExpandedText(log.Error)">@FormatForLogTable(log.Error)</span></td>
+                        }
+                        @if (string.IsNullOrEmpty(log.Event) || log.Event.Length <= MAX_LOG_TABLE_TEXT_LENGTH)
+                        {
+                            <td>@FormatForLogTable(log.Event)</td>
+                        }
+                        else
+                        {
+                            <td><span class="fake-link" @onclick="() => ShowExpandedText(log.Event)">@FormatForLogTable(log.Event)</span></td>
+                        }
+                    </tr>
+                }
+            }
         </tbody>
     </table>
 </div>
 
 @code {
 
+    const int MAX_LOG_TABLE_TEXT_LENGTH = 50;
+
     FunctionPickerComponent _functionPicker;
 
 
     DlqMonitor _dlqMonitor;
+    Timer _logRefreshTimer;
 
     FunctionPickerComponent FunctionPicker
     {
@@ -86,28 +126,67 @@
     }
 
     IList<QueueItem> AvailableQueues { get; set; } = new List<QueueItem>();
-    
+
     public string SelectedQueueUrl { get; set; }
 
+    public bool IsRunning { get; set; }
+
+    IList<DlqMonitor.LogRecord> Logs { get; set; } = new List<DlqMonitor.LogRecord>();
 
 
     void OnStartMonitoring()
     {
+        Logs.Clear();
         var function = this.LambdaOptions.LoadLambdaFuntion(FunctionPicker.ConfigFile, FunctionPicker.FunctionHandler);
         _dlqMonitor = new DlqMonitor(this.LambdaOptions.LambdaRuntime, function, FunctionPicker.AWSProfile, FunctionPicker.AWSRegion, SelectedQueueUrl);
         _dlqMonitor.Start();
+        IsRunning = true;
+
+        if (_logRefreshTimer != null)
+        {
+            _logRefreshTimer.Dispose();
+            _logRefreshTimer = null;
+        }
+
+        _logRefreshTimer = new Timer
+        {
+            Interval = 5000,
+            AutoReset = true
+        };
+        _logRefreshTimer.Elapsed += RefreshLogs;
+        _logRefreshTimer.Start();
+
+        this.StateHasChanged();
     }
-    
+
+    void RefreshLogs(object sender, ElapsedEventArgs e)
+    {
+        const int MAX_LOGS = 3;
+
+        if (_dlqMonitor == null)
+        {
+            return;
+        }
+
+        var newLogs = _dlqMonitor.FetchNewLogs();
+        this.Logs = this.Logs.Concat(newLogs).OrderByDescending(x => x.ProcessTime).Take(MAX_LOGS).ToList();
+        base.InvokeAsync(() => this.StateHasChanged());
+    }
+
     void OnStopMonitoring()
     {
+        IsRunning = false;
         _dlqMonitor?.Stop();
         _dlqMonitor = null;
+
+        _logRefreshTimer.Dispose();
+        _logRefreshTimer = null;
     }
-    
+
     async Task OnPurgeDlqClick()
     {
         await this.LambdaOptions.LambdaRuntime.AWSService.PurgeQueueAsync(FunctionPicker.AWSProfile, FunctionPicker.AWSRegion, SelectedQueueUrl);
-    }    
+    }
 
     string _lastFetchQueueSettings;
     async Task OnFunctionPickerChange()
@@ -124,20 +203,54 @@
         if (!string.Equals(_lastFetchQueueSettings, fetchQueueSettings))
         {
             var queueUrls = await this.LambdaOptions.LambdaRuntime.AWSService.ListQueuesAsync(FunctionPicker.AWSProfile, FunctionPicker.AWSRegion);
-        
+
             AvailableQueues.Clear();
             foreach (var queueUrl in queueUrls)
             {
-                AvailableQueues.Add(new QueueItem{QueueUrl = queueUrl});
+                AvailableQueues.Add(new QueueItem { QueueUrl = queueUrl });
             }
 
             if (AvailableQueues.Count > 0)
             {
                 SelectedQueueUrl = AvailableQueues[0].QueueUrl;
             }
-            
+
             _lastFetchQueueSettings = fetchQueueSettings;
             this.StateHasChanged();
+        }
+    }
+
+    string FormatForLogTable(string text)
+    {
+        if (text == null)
+            return string.Empty;
+
+        text = text.Replace("\n", "").Replace("\r", "");
+        if (text.Length > MAX_LOG_TABLE_TEXT_LENGTH)
+            text = text.Substring(0, MAX_LOG_TABLE_TEXT_LENGTH);
+
+        return text;
+    }
+
+    void ShowExpandedText(string text)
+    {
+        var parameters = new ModalParameters();
+        parameters.Add(ExpandedTextDialog.PARAMETER_NAME_FULL_TEXT, text);
+        Modal.Show<ExpandedTextDialog>("Full Text", parameters);
+    }
+
+    public void Dispose()
+    {
+        if (this._logRefreshTimer != null)
+        {
+            this._logRefreshTimer.Dispose();
+            this._logRefreshTimer = null;
+        }
+
+        if (this._dlqMonitor != null)
+        {
+            _dlqMonitor.Stop();
+            _dlqMonitor = null;
         }
     }
 }

@@ -8,6 +8,12 @@ a, .btn-link {
     color: #0366d6;
 }
 
+.fake-link {
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 .btn-primary {
     color: #fff;
     background-color: #1b6ec2;
