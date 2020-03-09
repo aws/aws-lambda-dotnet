@@ -5,6 +5,9 @@
 @inject LocalLambdaOptions LambdaOptions
 @inject IModalService Modal
 
+<h1 style="padding: 15px">@Constants.PRODUCT_NAME</h1>
+<hr/>
+
 <p>
     This tool can be used to help test .NET Lambda functions for debugging application logic. Your Lambda code will run within this tool's process allowing IDEs
     attached to this tool to step through your .NET Core Lambda code. This tool runs your code similarly
@@ -100,7 +103,7 @@
     string _selectedSampleRequestName;
     string SelectedSampleRequestName
     {
-        get { return this._selectedSampleRequestName; }
+        get => this._selectedSampleRequestName;
         set
         {
             this._selectedSampleRequestName = value;
@@ -111,12 +114,10 @@
 
     SampleRequestManager SampleRequestManager { get; set; }
 
-    protected override Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         this.SampleRequestManager = new SampleRequestManager(LambdaOptions.PreferenceDirectory);
         this.SampleRequests = SampleRequestManager.GetSampleRequests();
-
-        return Task.CompletedTask;
     }
 
     void OnSaveRequestClick()

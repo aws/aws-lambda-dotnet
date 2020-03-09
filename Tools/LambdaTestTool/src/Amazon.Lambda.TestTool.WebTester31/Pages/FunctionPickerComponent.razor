@@ -54,24 +54,54 @@
 
 @code {
 
-    public string AWSProfile { get; set; }
-    public string AWSRegion { get; set; }
+    string _awsProfile;
+
+    public string AWSProfile
+    {
+        get => this._awsProfile;
+        set
+        {
+            this._awsProfile = value;
+            OnChangeAsync?.Invoke();
+        }
+    }
+
+    string _awsRegion;
+    public string AWSRegion
+    {
+        get => this._awsRegion;
+        set
+        {
+            this._awsRegion = value;
+            OnChangeAsync?.Invoke();
+        }
+    }
+    
+    public Func<Task> OnChangeAsync { get; set; }
 
     private string _configFile;
     public string ConfigFile
     {
-        get
-        {
-            return this._configFile;
-        }
+        get => this._configFile;
         set
         {
             this._configFile = value;
             UpdateConfigFileChange();
+            
+            OnChangeAsync?.Invoke();
         }
     }
 
-    public string FunctionHandler { get; set; }
+    string _functionHandler;
+    public string FunctionHandler
+    {
+        get => this._functionHandler;
+        set
+        {
+            this._functionHandler = value;
+            OnChangeAsync?.Invoke();
+        }
+    }
 
     IList<string> AvailableAWSProfiles;
 

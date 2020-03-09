@@ -47,11 +47,11 @@ app {
 }
 
 .sidebar {
-    background-color: #FF9900;
+    background-color: #fafafa;
 }
 
     .sidebar .top-row {
-        background-color: #3b7a57;
+        background-color: #fafafa;
     }
 
     .sidebar .navbar-brand {
@@ -79,7 +79,7 @@ app {
         }
 
         .sidebar .nav-item a {
-            color: #d7d7d7;
+            color: grey;
             border-radius: 4px;
             height: 3rem;
             display: flex;
@@ -89,12 +89,12 @@ app {
 
             .sidebar .nav-item a.active {
                 background-color: rgba(255,255,255,0.25);
-                color: white;
+                color: black;
             }
 
             .sidebar .nav-item a:hover {
                 background-color: rgba(255,255,255,0.1);
-                color: white;
+                color: black;
             }
 
 .content {
