@@ -9,12 +9,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Amazon.Lambda.TestTool
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {            
             try
             {
@@ -47,7 +48,7 @@ namespace Amazon.Lambda.TestTool
                 Console.WriteLine($"Loaded local Lambda runtime from project output {path}");
 
                 // Look for aws-lambda-tools-defaults.json or other config files.
-                options.LambdaConfigFiles = SearchForConfigFiles(path);
+                options.LambdaConfigFiles = await SearchForConfigFiles(path);
 
                 // Start the test tool web server.
                 Startup.LaunchWebTester(options, !commandOptions.NoLaunchWindow);
@@ -76,7 +77,7 @@ namespace Amazon.Lambda.TestTool
             }
         }
 
-        static IList<string> SearchForConfigFiles(string lambdaFunctionDirectory)
+        static async Task<IList<string>> SearchForConfigFiles(string lambdaFunctionDirectory)
         {
             var configFiles = new List<string>();
 
@@ -88,7 +89,7 @@ namespace Amazon.Lambda.TestTool
                 {
                     try
                     {
-                        var data = JsonMapper.ToObject(File.ReadAllText(file));
+                        var data = JsonMapper.ToObject(await File.ReadAllTextAsync(file));
 
                         if (data.IsObject &&
                             data.ContainsKey("framework") && data["framework"].ToString().StartsWith("netcoreapp") &&

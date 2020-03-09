@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 using YamlDotNet.RepresentationModel;
 using LitJson;
-
+using System.Threading.Tasks;
 
 namespace Amazon.Lambda.TestTool.Runtime
 {
@@ -15,14 +15,14 @@ namespace Amazon.Lambda.TestTool.Runtime
     /// </summary>
     public static class LambdaDefaultsConfigFileParser
     {
-        public static LambdaConfigInfo LoadFromFile(string filePath)
+        public static async Task<LambdaConfigInfo> LoadFromFile(string filePath)
         {
             if (!File.Exists(filePath))
             {
                 throw new FileNotFoundException($"Lambda config file {filePath} not found");
             }
             
-            var rootData = JsonMapper.ToObject(File.ReadAllText(filePath)) as JsonData;
+            var rootData = JsonMapper.ToObject(await File.ReadAllTextAsync(filePath)) as JsonData;
 
             var configInfo = new LambdaConfigInfo
             {
@@ -45,7 +45,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                 {
                     throw new FileNotFoundException($"Serverless template file {templateFullPath} not found");
                 }
-                ProcessServerlessTemplate(configInfo, templateFullPath);
+                await ProcessServerlessTemplate(configInfo, templateFullPath);
             }
             else if(!string.IsNullOrEmpty(functionHandler))
             {
@@ -66,9 +66,9 @@ namespace Amazon.Lambda.TestTool.Runtime
             return configInfo;
         }
 
-        private static void ProcessServerlessTemplate(LambdaConfigInfo configInfo, string templateFilePath)
+        private static async Task ProcessServerlessTemplate(LambdaConfigInfo configInfo, string templateFilePath)
         {
-            var content = File.ReadAllText(templateFilePath).Trim();
+            var content = (await File.ReadAllTextAsync(templateFilePath)).Trim();
 
             if(content[0] != '{')
             {

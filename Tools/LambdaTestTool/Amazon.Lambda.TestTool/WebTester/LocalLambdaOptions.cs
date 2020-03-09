@@ -16,7 +16,7 @@ namespace Amazon.Lambda.TestTool.WebTester
 
         public ILocalLambdaRuntime LambdaRuntime { get; set; }
 
-        public LambdaFunction LoadLambdaFuntion(string configFile, string functionHandler)
+        public async Task<LambdaFunction> LoadLambdaFuntionAsync(string configFile, string functionHandler)
         {
             var fullConfigFilePath = this.LambdaConfigFiles.FirstOrDefault(x =>
                 string.Equals(configFile, Path.GetFileName(x), StringComparison.OrdinalIgnoreCase));
@@ -25,7 +25,7 @@ namespace Amazon.Lambda.TestTool.WebTester
                 throw new Exception($"{configFile} is not a config file for this project");
             }
             
-            var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(fullConfigFilePath);
+            var configInfo = await LambdaDefaultsConfigFileParser.LoadFromFile(fullConfigFilePath);
             var functionInfo = configInfo.FunctionInfos.FirstOrDefault(x =>
                 string.Equals(functionHandler, x.Handler, StringComparison.OrdinalIgnoreCase));
             if (functionInfo == null)

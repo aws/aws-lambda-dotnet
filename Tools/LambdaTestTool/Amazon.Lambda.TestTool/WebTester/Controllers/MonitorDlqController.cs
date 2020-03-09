@@ -45,7 +45,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         {
             lock (LOCK_OBJECT)
             {
-                var function = this.LambdaOptions.LoadLambdaFuntion(model.ConfigFile, model.Function);
+                var function = this.LambdaOptions.LoadLambdaFuntionAsync(model.ConfigFile, model.Function).GetAwaiter().GetResult();
 
                 StopDlqMonitor();
             

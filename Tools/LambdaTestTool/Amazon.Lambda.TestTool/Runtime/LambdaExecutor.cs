@@ -14,7 +14,7 @@ namespace Amazon.Lambda.TestTool.Runtime
     {        
         private static readonly object EXECUTE_LOCK = new object();
         
-        public ExecutionResponse Execute(ExecutionRequest request)
+        public ExecutionResponse ExecuteAsync(ExecutionRequest request)
         {
             var logger = new LocalLambdaLogger();
             var response = new ExecutionResponse();
@@ -57,7 +57,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                     using(var wrapper = new ConsoleOutWrapper(logger))
                     {
                         var lambdaReturnObject = request.Function.LambdaMethod.Invoke(instance, parameters);
-                        response.Response = ProcessReturn(request, lambdaReturnObject);
+                        response.Response = ProcessReturn(request, lambdaReturnObject).GetAwaiter().GetResult();
                     }
                 }
             }
@@ -119,7 +119,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             return sb.ToString();
         }
 
-        public static string ProcessReturn(ExecutionRequest request, object lambdaReturnObject)
+        public static async Task<string> ProcessReturn(ExecutionRequest request, object lambdaReturnObject)
         {
             Stream lambdaReturnStream = null;
 
@@ -160,10 +160,8 @@ namespace Amazon.Lambda.TestTool.Runtime
                 return null;
             
             lambdaReturnStream.Position = 0;
-            using (var reader = new StreamReader(lambdaReturnStream))
-            {
-                return reader.ReadToEnd();
-            }
+            using var reader = new StreamReader(lambdaReturnStream);
+            return await reader.ReadToEndAsync();
 
         }
 

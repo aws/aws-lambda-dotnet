@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Amazon.Lambda.TestTool.Runtime;
 using Amazon.Lambda.TestTool.WebTester.Models;
 using Amazon.Lambda.TestTool.WebTester.SampleRequests;
@@ -22,7 +23,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         }
 
         [HttpGet("{configFile}")]
-        public ConfigFileSummary GetFunctions(string configFile)
+        public async Task<ConfigFileSummary> GetFunctionsAsync(string configFile)
         {
             var fullConfigFilePath = this.LambdaOptions.LambdaConfigFiles.FirstOrDefault(x =>
                 string.Equals(configFile, Path.GetFileName(x), StringComparison.OrdinalIgnoreCase));
@@ -31,7 +32,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
                 throw new Exception($"{configFile} is not a config file for this project");
             }
             
-            var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(fullConfigFilePath);
+            var configInfo = await LambdaDefaultsConfigFileParser.LoadFromFile(fullConfigFilePath);
             var functions = this.LambdaOptions.LambdaRuntime.LoadLambdaFunctions(configInfo.FunctionInfos);
 
             var summary = new ConfigFileSummary
@@ -55,16 +56,14 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         }
 
         [HttpPost("{configFile}/{functionHandler}")]
-        public ExecutionResponse ExecuteFunction(string configFile, string functionHandler)
+        public async Task<ExecutionResponse> ExecuteFunction(string configFile, string functionHandler)
         {
-            var function = this.LambdaOptions.LoadLambdaFuntion(configFile, functionHandler);
+            var function = await this.LambdaOptions.LoadLambdaFuntionAsync(configFile, functionHandler);
             string functionInvokeParams = null;
             if (this.Request.ContentLength > 0)
             {
-                using (var reader = new StreamReader(this.Request.Body))
-                {
-                    functionInvokeParams = reader.ReadToEnd();
-                }
+                using var reader = new StreamReader(this.Request.Body);
+                functionInvokeParams = await reader.ReadToEndAsync();
             }
 
             var request = new ExecutionRequest()
@@ -99,11 +98,11 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         }
 
         [HttpPost("request/{requestName}")]
-        public string SaveLambdaRequest(string requestName)
+        public async Task<string> SaveLambdaRequest(string requestName)
         {
             using (var reader = new StreamReader(this.Request.Body))
             {
-                var content = reader.ReadToEnd();
+                var content = await reader.ReadToEndAsync();
                 var manager = new SampleRequestManager(this.LambdaOptions.PreferenceDirectory);
                 return manager.SaveRequest(requestName, content);
             }

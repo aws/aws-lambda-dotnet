@@ -146,7 +146,7 @@ namespace Amazon.Lambda.TestTool.Runtime
         /// <returns></returns>
         public ExecutionResponse ExecuteLambdaFunction(ExecutionRequest request)
         {
-            return new LambdaExecutor().Execute(request);
+            return new LambdaExecutor().ExecuteAsync(request);
         }
 
 
