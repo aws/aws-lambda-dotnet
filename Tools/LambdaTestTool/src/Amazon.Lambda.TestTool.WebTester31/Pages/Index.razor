@@ -3,6 +3,7 @@
 @using Amazon.Lambda.TestTool.Runtime;
 @using Amazon.Lambda.TestTool.SampleRequests;
 @inject LocalLambdaOptions LambdaOptions
+@inject IJSRuntime JSRuntime;
 
 <p>
     This tool can be used to help test .NET Lambda functions for debugging application logic. Your Lambda code will run within this tool's process allowing IDEs
@@ -63,7 +64,7 @@
     </div>
 </div>
 
-<div class="row" id="results-panel" style="@ResultsPanelStyle">
+<div class="row" id="results-panel" >
     <div class="col-sm-6 form-group">
         <label class="control-label" for="function-response">Response:</label><br />
         <small>The area below shows the result returned by your function execution.</small>
@@ -72,15 +73,16 @@
     <div class="col-sm-6 form-group">
         <label class="control-label" for="function-logs">Log Output:</label><br />
         <small>The area below shows the logging calls in your code.</small>
-        <pre class="form-control" rows="20" id="function-logs" style="font-size: 75%">@FunctionLogs</pre>
+        <pre class="form-control" rows="20" id="function-logs" style="height: min-content; font-size: 75%">@FunctionLogs</pre>
     </div>
 </div>
 
 
+
 @code {
 
-    const string ResponseSuccessStyle = "font-size: 75%; color: black";
-    const string ResponseErrorStyle = "font-size: 75%; color: red";
+    const string ResponseSuccessStyle = "height: min-content; font-size: 75%; color: black";
+    const string ResponseErrorStyle = "height: min-content; font-size: 75%; color: red";
     
     string ResultsPanelStyle { get; set; } = "display: none;";
     string FunctionResponseStyle { get; set; } = ResponseSuccessStyle;
@@ -109,6 +111,7 @@
     {
         Console.WriteLine("Save");
     }
+
 
     void OnExecuteClick()
     {
