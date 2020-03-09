@@ -3,7 +3,7 @@
 @using Amazon.Lambda.TestTool.Runtime;
 @using Amazon.Lambda.TestTool.SampleRequests;
 @inject LocalLambdaOptions LambdaOptions
-@inject IJSRuntime JSRuntime;
+@inject IModalService Modal
 
 <p>
     This tool can be used to help test .NET Lambda functions for debugging application logic. Your Lambda code will run within this tool's process allowing IDEs
@@ -23,7 +23,7 @@
 <div class="row">
     <div class="col-sm form-group">
         <label class="" for="sample-requests">Example Requests:</label>
-        <select class="control" id="sample-requests" @onchange="OnLambdaRequestSelected">
+        <select class="control" id="sample-requests" @bind="SelectedSampleRequestName">
             <option id="void-select-request"> -- select a request -- </option>
             @if (@SampleRequests.ContainsKey(SampleRequestManager.SAVED_REQUEST_GROUP))
             {
@@ -97,6 +97,18 @@
 
     public string FunctionLogs { get; set; }
 
+    string _selectedSampleRequestName;
+    string SelectedSampleRequestName
+    {
+        get { return this._selectedSampleRequestName; }
+        set
+        {
+            this._selectedSampleRequestName = value;
+            this.FunctionInput = SampleRequestManager.GetRequest(this._selectedSampleRequestName);
+            this.StateHasChanged();
+        }
+    }
+
     SampleRequestManager SampleRequestManager { get; set; }
 
     protected override Task OnInitializedAsync()
@@ -109,7 +121,32 @@
 
     void OnSaveRequestClick()
     {
-        Console.WriteLine("Save");
+        var parameters = new ModalParameters();
+        parameters.Add(SaveRequestDialog.PARAMETER_NAME_REQUEST_BODY, this.FunctionInput);
+
+
+        if(SampleRequestManager.TryDetermineSampleRequestName(SelectedSampleRequestName, out var sampleRequestName))
+        {
+            parameters.Add(SaveRequestDialog.PARAMETER_NAME_CURRENT_NAME, sampleRequestName);
+        }
+
+        Modal.OnClose += OnSaveRequestClosed;
+        Modal.Show<SaveRequestDialog>("Save Request", parameters);
+    }
+
+    void OnSaveRequestClosed(ModalResult modalResult)
+    {
+        if (modalResult.Cancelled)
+        {
+            return;
+        }
+
+        this.SampleRequestManager = new SampleRequestManager(LambdaOptions.PreferenceDirectory);
+        this.SampleRequests = SampleRequestManager.GetSampleRequests();
+
+        this.SelectedSampleRequestName = modalResult.Data as string;
+
+        this.StateHasChanged();
     }
 
 
@@ -127,7 +164,7 @@
 
         var response = this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunction(request);
 
-        if(response.IsSuccess)
+        if (response.IsSuccess)
         {
             this.FunctionResponse = response.Response;
             this.FunctionResponseStyle = ResponseSuccessStyle;
@@ -141,13 +178,7 @@
         this.FunctionLogs = response.Logs;
 
         ResultsPanelStyle = "display: block";
-        
-        this.StateHasChanged();
-    }
 
-    void OnLambdaRequestSelected(ChangeEventArgs e)
-    {
-        var selectedInput = e.Value.ToString();
-        this.FunctionInput = SampleRequestManager.GetRequest(selectedInput);
+        this.StateHasChanged();
     }
 }
