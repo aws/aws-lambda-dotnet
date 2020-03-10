@@ -35,19 +35,20 @@
 
 <div class="row mt-3">
     <div class="col-sm-9">
-        <div class="form-group" id="start-monitor-div">
+        <div class="form-group @(IsRunning ? "collapse" : "" )" id="start-monitor-div" style="@(IsRunning ? "visibility: hidden" : "visibility: visible" )">
             <button class="btn btn-primary btn-sm" @onclick="OnStartMonitoring">Start Monitoring</button>
         </div>
-        <div class="form-group collapse" id="stop-monitor-div">
+        <div class="form-group @(IsRunning ? "" : "collapse" )" id="stop-monitor-div" style="@(IsRunning ? "visibility: visible" : "visibility: hidden" )">
             <i class="fa fa-spinner fa-spin" style="font-size: 24px; margin: 5px;"></i>
             <button class="btn btn-secondary btn-sm" @onclick="OnStopMonitoring">
                 Stop Monitoring
             </button>
         </div>
-        <div class="alert alert-warning collapse" style="margin-left: 10px" role="alert" id="monitor-error-msg-div">
+        <div class="alert alert-warning @(string.IsNullOrEmpty(ErrorMessage) ? "collapse" : "")" style="margin-left: 10px" role="alert" id="monitor-error-msg-div">
+            @ErrorMessage
         </div>
     </div>
-    <div class="form-group float-right col-sm-3" id="purge-dlq-div">
+    <div class="form-group float-right col-sm-3" id="purge-dlq-div" style="@(string.IsNullOrEmpty(this.SelectedQueueUrl) ? "visibility: hidden" : "visibility: visible")">
         <button class="btn btn-danger float-right btn-sm" @onclick="OnPurgeDlqClick">Purge Queue</button>
     </div>
 </div>
@@ -109,6 +110,8 @@
 
     FunctionPickerComponent _functionPicker;
 
+    string ErrorMessage { get; set; }
+
 
     DlqMonitor _dlqMonitor;
     Timer _logRefreshTimer;
@@ -137,24 +140,32 @@
     void OnStartMonitoring()
     {
         Logs.Clear();
-        var function = this.LambdaOptions.LoadLambdaFuntion(FunctionPicker.ConfigFile, FunctionPicker.FunctionHandler);
-        _dlqMonitor = new DlqMonitor(this.LambdaOptions.LambdaRuntime, function, FunctionPicker.AWSProfile, FunctionPicker.AWSRegion, SelectedQueueUrl);
-        _dlqMonitor.Start();
-        IsRunning = true;
-
-        if (_logRefreshTimer != null)
+        this.ErrorMessage = null;
+        try
         {
-            _logRefreshTimer.Dispose();
-            _logRefreshTimer = null;
+            var function = this.LambdaOptions.LoadLambdaFuntion(FunctionPicker.ConfigFile, FunctionPicker.FunctionHandler);
+            _dlqMonitor = new DlqMonitor(this.LambdaOptions.LambdaRuntime, function, FunctionPicker.AWSProfile, FunctionPicker.AWSRegion, SelectedQueueUrl);
+            _dlqMonitor.Start();
+            IsRunning = true;
+
+            if (_logRefreshTimer != null)
+            {
+                _logRefreshTimer.Dispose();
+                _logRefreshTimer = null;
+            }
+
+            _logRefreshTimer = new Timer
+            {
+                Interval = 5000,
+                AutoReset = true
+            };
+            _logRefreshTimer.Elapsed += RefreshLogs;
+            _logRefreshTimer.Start();
         }
-
-        _logRefreshTimer = new Timer
+        catch(Exception e)
         {
-            Interval = 5000,
-            AutoReset = true
-        };
-        _logRefreshTimer.Elapsed += RefreshLogs;
-        _logRefreshTimer.Start();
+            this.ErrorMessage = "Error starting monitoring: " + e.Message;
+        }
 
         this.StateHasChanged();
     }
@@ -183,9 +194,32 @@
         _logRefreshTimer = null;
     }
 
-    async Task OnPurgeDlqClick()
+    void OnPurgeDlqClick()
     {
-        await this.LambdaOptions.LambdaRuntime.AWSService.PurgeQueueAsync(FunctionPicker.AWSProfile, FunctionPicker.AWSRegion, SelectedQueueUrl);
+        var parameters = new ModalParameters();
+        parameters.Add(ConfirmDialog.PARAMETER_NAME_MESSAGE, "Are you sure you want to delete all messages from the SQS queue?");
+        Modal.OnClose += OnPurgeDlqClickConfirmed;
+        Modal.Show<ConfirmDialog>("Confirm Purging Queue", parameters);
+    }
+
+    void OnPurgeDlqClickConfirmed(ModalResult result)
+    {
+        Modal.OnClose -= OnPurgeDlqClickConfirmed;
+        if (result.Cancelled)
+            return;
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                await this.LambdaOptions.LambdaRuntime.AWSService.PurgeQueueAsync(FunctionPicker.AWSProfile, FunctionPicker.AWSRegion, SelectedQueueUrl);
+            }
+            catch(Exception e)
+            {
+                this.ErrorMessage = "Error purging messages from queue: " + e.Message;
+                _ = base.InvokeAsync(() => this.StateHasChanged());
+            }
+        });
     }
 
     string _lastFetchQueueSettings;
@@ -202,20 +236,29 @@
         var fetchQueueSettings = $"profile={FunctionPicker.AWSProfile},region={FunctionPicker.AWSRegion}";
         if (!string.Equals(_lastFetchQueueSettings, fetchQueueSettings))
         {
-            var queueUrls = await this.LambdaOptions.LambdaRuntime.AWSService.ListQueuesAsync(FunctionPicker.AWSProfile, FunctionPicker.AWSRegion);
-
-            AvailableQueues.Clear();
-            foreach (var queueUrl in queueUrls)
-            {
-                AvailableQueues.Add(new QueueItem { QueueUrl = queueUrl });
-            }
-
-            if (AvailableQueues.Count > 0)
-            {
-                SelectedQueueUrl = AvailableQueues[0].QueueUrl;
-            }
-
             _lastFetchQueueSettings = fetchQueueSettings;
+            this.ErrorMessage = null;
+            this.SelectedQueueUrl = null;
+            try
+            {
+                var queueUrls = await this.LambdaOptions.LambdaRuntime.AWSService.ListQueuesAsync(FunctionPicker.AWSProfile, FunctionPicker.AWSRegion);
+
+                AvailableQueues.Clear();
+                foreach (var queueUrl in queueUrls)
+                {
+                    AvailableQueues.Add(new QueueItem { QueueUrl = queueUrl });
+                }
+
+                if (AvailableQueues.Count > 0)
+                {
+                    SelectedQueueUrl = AvailableQueues[0].QueueUrl;
+                }
+            }
+            catch(Exception e)
+            {
+                this.ErrorMessage = "Error listing queues: " + e.Message;
+            }
+
             this.StateHasChanged();
         }
     }

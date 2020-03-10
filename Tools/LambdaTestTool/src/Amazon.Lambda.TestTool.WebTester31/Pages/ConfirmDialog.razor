@@ -1,0 +1,33 @@
+﻿@inject IModalService ModalService
+
+<div class="simple-form" style="min-width: 400px">
+    <p>@Message</p>
+
+    <button type="button" class="btn btn-primary" @onclick="OnOkClicked">Ok</button>
+    <button type="button" class="btn btn-secondary" @onclick="OnCancelClicked">Cancel</button>
+</div>
+
+@code {
+    public const string PARAMETER_NAME_MESSAGE = "Message";
+
+
+    public string Message { get; set; }
+
+    [CascadingParameter] ModalParameters Parameters { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Message = Parameters.TryGet<string>(PARAMETER_NAME_MESSAGE);
+    }
+
+    void OnOkClicked()
+    {
+        ModalService.Close(ModalResult.Ok(string.Empty));
+    }
+
+
+    void OnCancelClicked()
+    {
+        ModalService.Close(ModalResult.Cancel());
+    }
+}
