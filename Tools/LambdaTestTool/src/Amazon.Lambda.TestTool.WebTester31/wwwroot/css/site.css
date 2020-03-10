@@ -187,3 +187,56 @@ app {
         display: block;
     }
 }
+
+
+.my-reconnect-modal > div {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    overflow: hidden;
+    background-color: #fff;
+    opacity: 0.8;
+    text-align: center;
+    font-weight: bold;    
+}
+
+.components-reconnect-hide > div {
+    display: none;
+}
+
+.components-reconnect-show > div {
+    display: none;
+}
+
+.components-reconnect-show > .show {
+    display: block;
+}
+
+.components-reconnect-failed > div {
+    display: none;
+}
+
+.components-reconnect-failed > .failed {
+    display: block;
+    vertical-align: middle;
+}
+
+.components-reconnect-refused > div {
+    display: none;
+}
+
+.components-reconnect-refused > .refused {
+    display: block;
+    vertical-align: middle;
+}
+
+.center-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align:left;
+}
