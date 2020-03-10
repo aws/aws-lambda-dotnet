@@ -5,19 +5,11 @@
 @inject LocalLambdaOptions LambdaOptions
 @inject IModalService Modal
 
-<h1 style="padding: 15px">@Constants.PRODUCT_NAME</h1>
-<hr/>
+<h2>@Constants.PRODUCT_NAME</h2>
 
 <p>
-    This tool can be used to help test .NET Lambda functions for debugging application logic. Your Lambda code will run within this tool's process allowing IDEs
-    attached to this tool to step through your .NET Core Lambda code. This tool runs your code similarly
-    to how the AWS Lambda service would run .NET code but there are intended differences to make debugging simple, for example the host OS.
-    For that reason, this testing tool cannot help with diagnosing platform specific issues.
-</p>
-<p>
-    <b>Tip:</b> If a Lambda function using the default serializer, Amazon.Lambda.Serialization.Json, is deployed with the environment variable <b>LAMBDA_NET_SERIALIZER_DEBUG</b> set to <b>true</b>
-    the JSON input for the Lambda function will be written to CloudWatch Logs. The captured JSON can then be used in this tool to step
-    through the code.
+    Run .NET Core 3.1 Lambda function code inside this tool. IDEs can attach their debuggers to this tool and step through 
+    the Lambda code.
 </p>
 
 <FunctionPickerComponent @ref="FunctionPicker" />
@@ -57,8 +49,14 @@
     <div class="col-sm form-group">
         <label class="col-xs-3 control-label" for="function-payload">Function Input:</label>
         <textarea class="form-control" rows="10" @bind="FunctionInput" placeholder="JSON document as input to Lambda Function. Plain strings must be wrapped in quotes."></textarea>
+        <p>
+            <b>Tip:</b> If a Lambda function using the default serializer, Amazon.Lambda.Serialization.Json, is deployed with the environment variable <b>LAMBDA_NET_SERIALIZER_DEBUG</b> set to <b>true</b>
+            the JSON input for the Lambda function will be written to CloudWatch Logs. The captured JSON can then be used in this tool to step
+            through the code.
+        </p>
     </div>
 </div>
+
 
 <div class="row mt-3">
     <div class="col-sm form-group">
