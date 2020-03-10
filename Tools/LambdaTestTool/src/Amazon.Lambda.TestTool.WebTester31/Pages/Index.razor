@@ -76,7 +76,7 @@
     <div class="col-sm-6 form-group">
         <label class="control-label" for="function-logs">Log Output:</label><br />
         <small>The area below shows the logging calls in your code.</small>
-        <pre class="form-control" rows="20" id="function-logs" style="height: min-content; font-size: 75%">@FunctionLogs</pre>
+        <pre class="form-control" rows="20" id="function-logs" style="white-space: pre-wrap; height: min-content; font-size: 75%">@FunctionLogs</pre>
     </div>
 </div>
 
@@ -84,8 +84,8 @@
 
 @code {
 
-    const string ResponseSuccessStyle = "height: min-content; font-size: 75%; color: black";
-    const string ResponseErrorStyle = "height: min-content; font-size: 75%; color: red";
+    const string ResponseSuccessStyle = "white-space: pre-wrap; height: min-content; font-size: 75%; color: black";
+    const string ResponseErrorStyle = "white-space: pre-wrap; height: min-content; font-size: 75%; color: red";
     
     string ResultsPanelStyle { get; set; } = "display: none;";
     string FunctionResponseStyle { get; set; } = ResponseSuccessStyle;
