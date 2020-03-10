@@ -240,3 +240,11 @@ app {
     transform: translate(-50%, -50%);
     text-align:left;
 }
+
+.faq-question {
+    margin-top:30px;
+}
+
+.faq-answer {
+    
+}
