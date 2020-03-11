@@ -1,0 +1,17 @@
+﻿<div class="simple-form" style="min-width: 400px">
+    <pre style="max-width: 700px; max-height: 500px">@FullText</pre>
+</div>
+
+@code {
+    public const string PARAMETER_NAME_FULL_TEXT = "FullText";
+
+
+    public string FullText { get; set; }
+
+    [CascadingParameter] ModalParameters Parameters { get; set; }
+
+    protected override void OnInitialized()
+    {
+        FullText = Parameters.TryGet<string>(PARAMETER_NAME_FULL_TEXT);
+    }
+}
