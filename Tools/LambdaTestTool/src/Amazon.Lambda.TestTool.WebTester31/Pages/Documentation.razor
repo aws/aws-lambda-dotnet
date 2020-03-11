@@ -25,14 +25,14 @@
     .NET Core uses <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.loader.assemblyloadcontext" target="_blank">AssemblyLoadContext</a> objects to load assemblies into a process.
     Most applications including the .NET Lambda production environment load assemblies in the <b>Default</b> AssemblyLoadContext. This tool loads the provided .NET Lambda code in a separate
     AssemblyLoadContext to avoid clashes with .NET assemblies used by this tool versus the .NET assemblies used by the provided .NET Lambda code. In some rare cases this difference can affect
-    how the .NET Lambd code runs within this tool compared to the actual Lambda environment.
+    how the .NET Lambda code runs within this tool compared to the actual Lambda environment.
 </p>
 
 <h4 class="faq-question">Why do I get a message saying the tool has been paused?</h4>
 <p class="faq-answer">
     The web interface part of this tool was developed using Blazor Server Side which uses WebSockets to communicate from the browser to the backend ASP.NET Core process. When you are
     debugging your Lambda code and are stopped at a breakpoint the ASP.NET Core process isn't responding on the WebSocket. That triggers the Blazor application to signal it isn't currently
-    getting any communication. Once you continue running the application the WebSocket will be reconnected. If the debugger is stopped killing the test tool process that will also bring
+    getting any communication. Once you continue running the application the WebSocket will be reconnected. If the debugger is stopped, killing the test tool process, that will also bring
     up the message about the application being paused. In this case you can close the browser window.
 </p>
 
@@ -85,7 +85,7 @@ These options are valid in the no web interface mode.
 </p>
 
 <p>
-    Here is an example of a <b>launchSettings.json</b> file configured to use this tool without the web interface. Only <b>--no-ui</b> and <b>--payload</b> are set turning of the web interface
+    Here is an example of a <b>launchSettings.json</b> file configured to use this tool without the web interface. Only <b>--no-ui</b> and <b>--payload</b> are set turning off the web interface
     and indicating the contents of the payload.json file should be used as the function input. The function handler is identified from the project's <b>aws-lambda-tools-defaults.json</b> file.
 </p>
 
@@ -107,8 +107,8 @@ These options are valid in the no web interface mode.
     The <b>--payload</b> switch points to a file location of a JSON document that is used as the function input. The file is searched using the following rules.
     <ul>
         <li>File is an absolute path.</li>
-        <li>File is in current directory.</li>
-        <li>File is in Lambda project directory.</li>
+        <li>File is in current directory where the Lambda assemblies can be found.</li>
+        <li>File is in Lambda project directory which is found looking up the parent directories from the Lambda assemblies directory.</li>
         <li>File is in Properties directory along with the launchSettings.json file.</li>
         <li>File is a saved request from the web interface. In this case you only need to set --payload to the name used to save the request.</li>
     </ul>
