@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 
 using Amazon.Lambda.TestTool.Runtime;
+using Amazon.Lambda.TestTool.SampleRequests;
 
 namespace Amazon.Lambda.TestTool
 {
@@ -205,19 +206,35 @@ namespace Amazon.Lambda.TestTool
             bool payloadFileFound = false;
             if(!string.IsNullOrEmpty(payload))
             {
-                // Look to see if the payload value is a file in
-                // * Directory with user Lambda assemblies.
-                // * Lambda project directory
-                // * Properties directory under the project directory. This is to make it easy to reconcile from the launchSettings.json file.
-                var possiblePaths = new[] { Path.Combine(lambdaAssemblyDirectory, payload), Path.Combine(lambdaProjectDirectory, payload), Path.Combine(lambdaProjectDirectory, "Properties", payload) };
-                foreach (var possiblePath in possiblePaths)
+                if (Path.IsPathFullyQualified(payload) && File.Exists(payload))
                 {
-                    if (File.Exists(possiblePath))
+                    runConfiguration.OutputWriter.WriteLine($"... Using payload with from the file {payload}");
+                    payload = File.ReadAllText(payload);
+                    payloadFileFound = true;
+                }
+                else
+                {
+                    // Look to see if the payload value is a file in
+                    // * Directory with user Lambda assemblies.
+                    // * Lambda project directory
+                    // * Properties directory under the project directory. This is to make it easy to reconcile from the launchSettings.json file.
+                    // * Is a saved sample request from the web interface
+                    var possiblePaths = new[]
                     {
-                        runConfiguration.OutputWriter.WriteLine($"... Using payload with from the file {Path.GetFullPath(possiblePath)}");
-                        payload = File.ReadAllText(possiblePath);
-                        payloadFileFound = true;
-                        break;
+                        Path.Combine(lambdaAssemblyDirectory, payload),
+                        Path.Combine(lambdaProjectDirectory, payload),
+                        Path.Combine(lambdaProjectDirectory, "Properties", payload),
+                        Path.Combine(localLambdaOptions.GetPreferenceDirectory(false), new SampleRequestManager(localLambdaOptions.GetPreferenceDirectory(false)).GetSaveRequestRelativePath(payload))
+                    };
+                    foreach (var possiblePath in possiblePaths)
+                    {
+                        if (File.Exists(possiblePath))
+                        {
+                            runConfiguration.OutputWriter.WriteLine($"... Using payload with from the file {Path.GetFullPath(possiblePath)}");
+                            payload = File.ReadAllText(possiblePath);
+                            payloadFileFound = true;
+                            break;
+                        }
                     }
                 }
             }

@@ -94,7 +94,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         [HttpGet("request/{requestName}")]
         public string GetLambdaRequest(string requestName)
         {
-            var manager = new SampleRequestManager(this.LambdaOptions.PreferenceDirectory);
+            var manager = new SampleRequestManager(this.LambdaOptions.GetPreferenceDirectory(false));
             return manager.GetRequest(requestName);
         }
 
@@ -104,7 +104,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
             using (var reader = new StreamReader(this.Request.Body))
             {
                 var content = await reader.ReadToEndAsync();
-                var manager = new SampleRequestManager(this.LambdaOptions.PreferenceDirectory);
+                var manager = new SampleRequestManager(this.LambdaOptions.GetPreferenceDirectory(true));
                 return manager.SaveRequest(requestName, content);
             }
         }

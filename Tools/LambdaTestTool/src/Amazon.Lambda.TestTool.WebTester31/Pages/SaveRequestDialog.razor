@@ -31,7 +31,7 @@
     {
         var requestBody = Parameters.Get<string>(PARAMETER_NAME_REQUEST_BODY);
 
-        var manager = new SampleRequestManager(this.LambdaOptions.PreferenceDirectory);
+        var manager = new SampleRequestManager(this.LambdaOptions.GetPreferenceDirectory(true));
         var systemName = manager.SaveRequest(this.SaveRequestName, requestBody);
 
         ModalService.Close(ModalResult.Ok(systemName));

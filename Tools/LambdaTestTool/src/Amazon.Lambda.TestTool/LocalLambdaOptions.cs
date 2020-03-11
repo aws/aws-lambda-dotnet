@@ -58,27 +58,24 @@ namespace Amazon.Lambda.TestTool
         /// <summary>
         /// The directory to store in local settings for a Lambda project for example saved Lambda requests.
         /// </summary>
-        public string PreferenceDirectory
+        public string GetPreferenceDirectory(bool createIfNotExist)
         {
-            get
+            var currentDirectory = this.LambdaRuntime.LambdaAssemblyDirectory;
+            while (currentDirectory != null && !Utils.IsProjectDirectory(currentDirectory))
             {
-                var currentDirectory = this.LambdaRuntime.LambdaAssemblyDirectory;
-                while (currentDirectory != null && !Utils.IsProjectDirectory(currentDirectory))
-                {
-                    currentDirectory = Directory.GetParent(currentDirectory).FullName;
-                }
-
-                if (currentDirectory == null)
-                    currentDirectory = this.LambdaRuntime.LambdaAssemblyDirectory;
-
-                var preferenceDirectory = Path.Combine(currentDirectory, ".lambda-test-tool");
-                if(!Directory.Exists(preferenceDirectory))
-                {
-                    Directory.CreateDirectory(preferenceDirectory);
-                }
-
-                return preferenceDirectory;
+                currentDirectory = Directory.GetParent(currentDirectory).FullName;
             }
+
+            if (currentDirectory == null)
+                currentDirectory = this.LambdaRuntime.LambdaAssemblyDirectory;
+
+            var preferenceDirectory = Path.Combine(currentDirectory, ".lambda-test-tool");
+            if(createIfNotExist && !Directory.Exists(preferenceDirectory))
+            {
+                Directory.CreateDirectory(preferenceDirectory);
+            }
+
+            return preferenceDirectory;
         }
     }
 }

@@ -54,20 +54,24 @@ namespace Amazon.Lambda.TestTool.SampleRequests
                 r.Add(request);
             }
 
-            var savedRequestFiles = Directory.GetFiles(GetSavedRequestDirectory(), "*.json");
-            if(savedRequestFiles.Length > 0)
+            var savedRequestDirectory = GetSavedRequestDirectory();
+            if(Directory.Exists(savedRequestDirectory))
             {
-                var savedRequests = new List<LambdaRequest>();
-                hash[SAVED_REQUEST_GROUP] = savedRequests;
-                foreach (var file in savedRequestFiles)
+                var savedRequestFiles = Directory.GetFiles(GetSavedRequestDirectory(), "*.json");
+                if (savedRequestFiles.Length > 0)
                 {
-                    var r = new LambdaRequest
+                    var savedRequests = new List<LambdaRequest>();
+                    hash[SAVED_REQUEST_GROUP] = savedRequests;
+                    foreach (var file in savedRequestFiles)
                     {
-                        Filename = $"{SAVED_REQUEST_DIRECTORY}@{Path.GetFileName(file)}",
-                        Group = SAVED_REQUEST_GROUP,
-                        Name = Path.GetFileNameWithoutExtension(file)
-                    };
-                    savedRequests.Add(r);
+                        var r = new LambdaRequest
+                        {
+                            Filename = $"{SAVED_REQUEST_DIRECTORY}@{Path.GetFileName(file)}",
+                            Group = SAVED_REQUEST_GROUP,
+                            Name = Path.GetFileNameWithoutExtension(file)
+                        };
+                        savedRequests.Add(r);
+                    }
                 }
             }
 
@@ -107,9 +111,22 @@ namespace Amazon.Lambda.TestTool.SampleRequests
         public string SaveRequest(string name, string content)
         {
             var filename = $"{name}.json";
-            File.WriteAllText(Path.Combine(GetSavedRequestDirectory(), filename), content);
 
+            var savedRequestDirectory = GetSavedRequestDirectory();
+            if (!Directory.Exists(savedRequestDirectory))
+                Directory.CreateDirectory(savedRequestDirectory);
+
+            File.WriteAllText(Path.Combine(savedRequestDirectory, filename), content);
             return $"{SAVED_REQUEST_DIRECTORY}@{filename}";
+        }
+
+        public string GetSaveRequestRelativePath(string name)
+        {
+            var relativePath = $"{SAVED_REQUEST_DIRECTORY}{Path.DirectorySeparatorChar}{name}";
+            if (!name.EndsWith(".json"))
+                relativePath += ".json";
+
+            return relativePath;
         }
 
         private string GetEmbeddedResource(string name)
@@ -126,9 +143,6 @@ namespace Amazon.Lambda.TestTool.SampleRequests
         public string GetSavedRequestDirectory()
         {
             var path = Path.Combine(this._preferenceDirectory, SAVED_REQUEST_DIRECTORY);
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-
             return path;
         }
     }

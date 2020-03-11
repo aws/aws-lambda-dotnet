@@ -27,7 +27,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Pages
 
         public void OnGet()
         {
-            this.SampleRequests = new SampleRequestManager(LambdaOptions.PreferenceDirectory).GetSampleRequests();
+            this.SampleRequests = new SampleRequestManager(LambdaOptions.GetPreferenceDirectory(false)).GetSampleRequests();
         }
     }
 }

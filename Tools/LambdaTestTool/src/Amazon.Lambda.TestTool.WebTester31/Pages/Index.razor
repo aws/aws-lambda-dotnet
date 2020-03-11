@@ -49,7 +49,7 @@
     <div class="col-sm form-group">
         <label class="col-xs-3 control-label" for="function-payload">Function Input:</label>
         <textarea class="form-control" rows="10" @bind="FunctionInput" placeholder="JSON document as input to Lambda Function. Plain strings must be wrapped in quotes."></textarea>
-        <p>
+        <p style="margin-top:10px">
             <b>Tip:</b> If a Lambda function using the default serializer, Amazon.Lambda.Serialization.Json, is deployed with the environment variable <b>LAMBDA_NET_SERIALIZER_DEBUG</b> set to <b>true</b>
             the JSON input for the Lambda function will be written to CloudWatch Logs. The captured JSON can then be used in this tool to step
             through the code.
@@ -114,7 +114,7 @@
 
     protected override void OnInitialized()
     {
-        this.SampleRequestManager = new SampleRequestManager(LambdaOptions.PreferenceDirectory);
+        this.SampleRequestManager = new SampleRequestManager(LambdaOptions.GetPreferenceDirectory(false));
         this.SampleRequests = SampleRequestManager.GetSampleRequests();
     }
 
@@ -140,9 +140,7 @@
             return;
         }
 
-        this.SampleRequestManager = new SampleRequestManager(LambdaOptions.PreferenceDirectory);
         this.SampleRequests = SampleRequestManager.GetSampleRequests();
-
         this.SelectedSampleRequestName = modalResult.Data as string;
 
         this.StateHasChanged();

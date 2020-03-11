@@ -95,7 +95,7 @@ These options are valid in the no web interface mode.
     "Mock Lambda Test Tool": {
       "commandName": "Executable",
       "commandLineArgs": "--no-ui --payload payload.json",
-      "workingDirectory": ".\\bin\\$(Configuration)\\netcoreapp2.1",
+      "workingDirectory": ".\\bin\\$(Configuration)\\netcoreapp3.1",
       "executablePath": "C:\\Users\\%USERNAME%\\.dotnet\\tools\\dotnet-lambda-test-tool-3.1.exe"
     }
   }
@@ -104,4 +104,12 @@ These options are valid in the no web interface mode.
 
 <h4 class="faq-question">How is the payload file in the --no-ui mode searched for?</h4>
 <p class="faq-answer">
+    The <b>--payload</b> switch points to a file location of a JSON document that is used as the function input. The file is searched using the following rules.
+    <ul>
+        <li>File is an absolute path.</li>
+        <li>File is in current directory.</li>
+        <li>File is in Lambda project directory.</li>
+        <li>File is in Properties directory along with the launchSettings.json file.</li>
+        <li>File is a saved request from the web interface. In this case you only need to set --payload to the name used to save the request.</li>
+    </ul>
 </p>
