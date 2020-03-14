@@ -226,7 +226,6 @@ namespace Amazon.Lambda.AspNetCoreServer
                     options.ValidateScopes = hostingContext.HostingEnvironment.IsDevelopment();
                 });
 
-
             return builder;
         }
 
@@ -354,7 +353,6 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             _logger.LogDebug($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
 
-
             {
                 var itemFeatures = (IItemsFeature)features;
                 itemFeatures.Items = new ItemsDictionary();
@@ -363,10 +361,20 @@ namespace Amazon.Lambda.AspNetCoreServer
                 PostMarshallItemsFeatureFeature(itemFeatures, request, lambdaContext);
             }
 
-            var context = this.CreateContext(features);
-            var response = await this.ProcessRequest(lambdaContext, context, features);
+            var scope = _host.Services.CreateScope();
+            try
+            {
+                ((IServiceProvidersFeature)features).RequestServices = scope.ServiceProvider;
 
-            return response;
+                var context = this.CreateContext(features);
+                var response = await this.ProcessRequest(lambdaContext, context, features);
+
+                return response;
+            }
+            finally
+            {
+                scope.Dispose();
+            }
         }
 
         /// <summary>
