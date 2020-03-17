@@ -84,7 +84,7 @@
 
     const string ResponseSuccessStyle = "white-space: pre-wrap; height: min-content; font-size: 75%; color: black";
     const string ResponseErrorStyle = "white-space: pre-wrap; height: min-content; font-size: 75%; color: red";
-    
+
     string ResultsPanelStyle { get; set; } = "display: none;";
     string FunctionResponseStyle { get; set; } = ResponseSuccessStyle;
 
@@ -135,6 +135,8 @@
 
     void OnSaveRequestClosed(ModalResult modalResult)
     {
+        Modal.OnClose -= OnSaveRequestClosed;
+
         if (modalResult.Cancelled)
         {
             return;

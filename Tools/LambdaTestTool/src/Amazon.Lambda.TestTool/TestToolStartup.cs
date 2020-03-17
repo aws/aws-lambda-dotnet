@@ -119,13 +119,68 @@ namespace Amazon.Lambda.TestTool
                 }
             }
         }
+
         
         public static void ExecuteWithNoUi(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, RunConfiguration runConfiguration)
         {
             runConfiguration.OutputWriter.WriteLine("Executing Lambda function without web interface");
             var lambdaProjectDirectory = Utils.FindLambdaProjectDirectory(lambdaAssemblyDirectory);
-
             
+            string configFile = DetermineConfigFile(commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory);
+            LambdaConfigInfo configInfo = LoadLambdaConfigInfo(configFile, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
+            LambdaFunction lambdaFunction = LoadLambdaFunction(configInfo, localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
+
+            string payload = DeterminePayload(localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
+
+            var awsProfile = commandOptions.AWSProfile ?? configInfo.AWSProfile;
+            if (!string.IsNullOrEmpty(awsProfile))
+            {
+                if (new Amazon.Runtime.CredentialManagement.CredentialProfileStoreChain().TryGetProfile(awsProfile, out _))
+                {
+                    runConfiguration.OutputWriter.WriteLine($"... Setting AWS_PROFILE environment variable to {awsProfile}.");
+                }
+                else
+                {
+                    runConfiguration.OutputWriter.WriteLine($"... Warning: Profile {awsProfile} not found in the aws credential store.");
+                    awsProfile = null;
+                }
+            }
+            else
+            {
+                runConfiguration.OutputWriter.WriteLine("... No profile choosen for AWS credentials. The --profile switch can be used to configure an AWS profile.");
+            }
+
+            var awsRegion = commandOptions.AWSRegion ?? configInfo.AWSRegion;
+            if (!string.IsNullOrEmpty(awsRegion))
+            {
+                runConfiguration.OutputWriter.WriteLine($"... Setting AWS_REGION environment variable to {awsRegion}.");
+            }
+            else
+            {
+                runConfiguration.OutputWriter.WriteLine("... No default AWS region configured. The --region switch can be used to configure an AWS Region.");
+            }
+
+            // Create the execution request that will be sent into the LocalLambdaRuntime.
+            var request = new ExecutionRequest()
+            {
+                AWSProfile = awsProfile,
+                AWSRegion = awsRegion,
+                Payload = payload,
+                Function = lambdaFunction
+            };
+
+            ExecuteRequest(request, localLambdaOptions, runConfiguration);
+
+
+            if (runConfiguration.Mode == RunConfiguration.RunMode.Normal && commandOptions.PauseExit)
+            {
+                Console.WriteLine("Press any key to exist");
+                Console.ReadKey();
+            }
+        }
+
+        private static string DetermineConfigFile(CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory)
+        {
             string configFile = null;
             if (string.IsNullOrEmpty(commandOptions.ConfigFile))
             {
@@ -135,7 +190,7 @@ namespace Amazon.Lambda.TestTool
             {
                 configFile = commandOptions.ConfigFile;
             }
-            else if(File.Exists(Path.Combine(lambdaAssemblyDirectory, commandOptions.ConfigFile)))
+            else if (File.Exists(Path.Combine(lambdaAssemblyDirectory, commandOptions.ConfigFile)))
             {
                 configFile = Path.Combine(lambdaAssemblyDirectory, commandOptions.ConfigFile);
             }
@@ -144,6 +199,11 @@ namespace Amazon.Lambda.TestTool
                 configFile = Path.Combine(lambdaProjectDirectory, commandOptions.ConfigFile);
             }
 
+            return configFile;
+        }
+
+        private static LambdaConfigInfo LoadLambdaConfigInfo(string configFile, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration)
+        {
             LambdaConfigInfo configInfo;
             if (configFile != null)
             {
@@ -153,7 +213,7 @@ namespace Amazon.Lambda.TestTool
             else
             {
                 // If no config files or function handler are set then we don't know what code to call and must give up.
-                if(string.IsNullOrEmpty(commandOptions.FunctionHandler))
+                if (string.IsNullOrEmpty(commandOptions.FunctionHandler))
                 {
                     throw new CommandLineParseException("No config file or function handler specified to test tool is unable to identify the Lambda code to execute.");
                 }
@@ -162,15 +222,20 @@ namespace Amazon.Lambda.TestTool
                 configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(new LambdaConfigFile
                 {
                     FunctionHandler = commandOptions.FunctionHandler,
-                    ConfigFileLocation = Utils.FindLambdaProjectDirectory(lambdaAssemblyDirectory) ?? lambdaAssemblyDirectory
+                    ConfigFileLocation = lambdaProjectDirectory ?? lambdaAssemblyDirectory
                 });
             }
 
+            return configInfo;
+        }
+
+        private static LambdaFunction LoadLambdaFunction(LambdaConfigInfo configInfo, LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration)
+        {
             // If no function handler was explicitly set and there is only one function defined in the config file then assume the user wants to debug that function.
             var functionHandler = commandOptions.FunctionHandler;
             if (string.IsNullOrEmpty(commandOptions.FunctionHandler))
             {
-                if(configInfo.FunctionInfos.Count == 1)
+                if (configInfo.FunctionInfos.Count == 1)
                 {
                     functionHandler = configInfo.FunctionInfos[0].Handler;
                 }
@@ -181,7 +246,7 @@ namespace Amazon.Lambda.TestTool
             }
 
             LambdaFunction lambdaFunction;
-            if(!localLambdaOptions.TryLoadLambdaFuntion(configInfo, functionHandler, out lambdaFunction))
+            if (!localLambdaOptions.TryLoadLambdaFuntion(configInfo, functionHandler, out lambdaFunction))
             {
                 // The user has explicitly set a function handler value that is not in the config file or CloudFormation template.
                 // To support users testing add hoc methods create a temporary config object using explicit function handler value.
@@ -198,13 +263,16 @@ namespace Amazon.Lambda.TestTool
                 lambdaFunction = localLambdaOptions.LoadLambdaFuntion(configInfo, functionHandler);
             }
 
-
             runConfiguration.OutputWriter.WriteLine($"... Using function handler {functionHandler}");
+            return lambdaFunction;
+        }
 
+        private static string DeterminePayload(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration)
+        {
             var payload = commandOptions.Payload;
 
             bool payloadFileFound = false;
-            if(!string.IsNullOrEmpty(payload))
+            if (!string.IsNullOrEmpty(payload))
             {
                 if (Path.IsPathFullyQualified(payload) && File.Exists(payload))
                 {
@@ -251,51 +319,18 @@ namespace Amazon.Lambda.TestTool
                 }
             }
 
-            var awsProfile = commandOptions.AWSProfile ?? configInfo.AWSProfile;
-            if (!string.IsNullOrEmpty(awsProfile))
-            {
-                if (new Amazon.Runtime.CredentialManagement.CredentialProfileStoreChain().TryGetProfile(awsProfile, out _))
-                {
-                    runConfiguration.OutputWriter.WriteLine($"... Setting AWS_PROFILE environment variable to {awsProfile}.");
-                }
-                else
-                {
-                    runConfiguration.OutputWriter.WriteLine($"... Warning: Profile {awsProfile} not found in the aws credential store.");
-                    awsProfile = null;
-                }
-            }
-            else
-            {
-                runConfiguration.OutputWriter.WriteLine("... No profile choosen for AWS credentials. The --profile switch can be used to configure an AWS profile.");
-            }
+            return payload;
+        }
 
-            var awsRegion = commandOptions.AWSRegion ?? configInfo.AWSRegion;
-            if (!string.IsNullOrEmpty(awsRegion))
-            {
-                runConfiguration.OutputWriter.WriteLine($"... Setting AWS_REGION environment variable to {awsRegion}.");
-            }
-            else
-            {
-                runConfiguration.OutputWriter.WriteLine("... No default AWS region configured. The --region switch can be used to configure an AWS Region.");
-            }
-
-            // Create the execution request that will be sent into the LocalLambdaRuntime.
-            var request = new ExecutionRequest()
-            {
-                AWSProfile = awsProfile,
-                AWSRegion = awsRegion,
-                Payload = payload,
-                Function = lambdaFunction
-            };
-
-
+        private static void ExecuteRequest(ExecutionRequest request, LocalLambdaOptions localLambdaOptions, RunConfiguration runConfiguration)
+        {
             try
             {
                 var response = localLambdaOptions.LambdaRuntime.ExecuteLambdaFunction(request);
-                
+
                 runConfiguration.OutputWriter.WriteLine("Captured Log information:");
                 runConfiguration.OutputWriter.WriteLine(response.Logs);
-                
+
                 if (response.IsSuccess)
                 {
                     runConfiguration.OutputWriter.WriteLine("Request executed successfully");
@@ -314,12 +349,6 @@ namespace Amazon.Lambda.TestTool
                 runConfiguration.OutputWriter.WriteLine("Unknown error occurred in the Lambda test tool while executing request.");
                 runConfiguration.OutputWriter.WriteLine($"Error Message: {e.Message}");
                 runConfiguration.OutputWriter.WriteLine(e.StackTrace);
-            }
-
-            if(runConfiguration.Mode == RunConfiguration.RunMode.Normal && commandOptions.PauseExit)
-            {
-                Console.WriteLine("Press any key to exist");
-                Console.ReadKey();
             }
         }
     }

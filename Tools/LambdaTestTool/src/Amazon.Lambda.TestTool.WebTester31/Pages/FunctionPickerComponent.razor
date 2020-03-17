@@ -76,7 +76,7 @@
             OnChangeAsync?.Invoke();
         }
     }
-    
+
     public Func<Task> OnChangeAsync { get; set; }
 
     private string _configFile;
@@ -87,7 +87,7 @@
         {
             this._configFile = value;
             UpdateConfigFileChange();
-            
+
             OnChangeAsync?.Invoke();
         }
     }
@@ -125,13 +125,10 @@
     {
         var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(this.ConfigFile);
         AvailableFunctions = this.LambdaOptions.LambdaRuntime.LoadLambdaFunctions(configInfo.FunctionInfos);
-        if(AvailableFunctions.Count > 0)
-        {
-            this.FunctionHandler = this.AvailableFunctions[0].FunctionInfo.Handler;
-        }
+        this.FunctionHandler = this.AvailableFunctions.First()?.FunctionInfo?.Handler;
 
 
-        if(configInfo.AWSProfile != null && this.AvailableAWSProfiles.Contains(configInfo.AWSProfile))
+        if (configInfo.AWSProfile != null && this.AvailableAWSProfiles.Contains(configInfo.AWSProfile))
         {
             this.AWSProfile = configInfo.AWSProfile;
         }

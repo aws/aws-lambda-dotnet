@@ -155,7 +155,7 @@ namespace Amazon.Lambda.TestTool
             Console.WriteLine("\t                                      If not set the profile from the config file will be used.");
             Console.WriteLine("\t--region <region-name>                Set the AWS region to as the default region for the Lambda code being executed.");
             Console.WriteLine("\t                                      If not set the region from the config file will be used.");
-            Console.WriteLine("\t--config-file <file-name>             The config file to read for Lambda settings. If not set than aws-lambda-tools-defaults.json");
+            Console.WriteLine("\t--config-file <file-name>             The config file to read for Lambda settings. If not set then aws-lambda-tools-defaults.json");
             Console.WriteLine("\t                                      will be used.");
             Console.WriteLine("\t--function-handler <handler-string>   The Lambda function handler to identify the code to run. If not set then the function handler");
             Console.WriteLine("\t                                      from the config file will be used. This is the format of <assembly::type-name::method-name>.");

@@ -13,16 +13,16 @@
 <h2>IDE Support</h2>
 <p>
     Since this tool is a .NET Core application that loads the selected .NET code into its process any IDE that can debug .NET Core application can use this tool to debug .NET Lambda code.
-    The easiest way to use this tool is with Visual Studio and the <a href="https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.AWSToolkitforVisualStudio2017" target="_blank">AWS Toolkit for Visual Studio</a>
+    The easiest way to use this tool is with Visual Studio and the <a href="@Constants.LINK_VS_TOOLKIT_MARKETPLACE" target="_blank">AWS Toolkit for Visual Studio</a>
     which will automatically configure this tool when a .NET Core Lambda project is opened in Visual Studio. For how to setup this tool for other IDE like Visual Studio for Code or Rider from JetBrains check
-    click <a href="https://github.com/aws/aws-lambda-dotnet/tree/master/Tools/LambdaTestTool#installing-and-running" target="_blank">here.</a>
+    click <a href="@Constants.LINK_GITHUB_TEST_TOOL_INSTALL_AND_RUN" target="_blank">here.</a>
 </p>
 
 <h2>Frequently Asked Questions</h2>
 <hr />
 <h4 class="faq-question">How does this tool load the provided .NET Lambda code?</h4>
 <p class="faq-answer">
-    .NET Core uses <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.loader.assemblyloadcontext" target="_blank">AssemblyLoadContext</a> objects to load assemblies into a process.
+    .NET Core uses <a href="@Constants.LINK_MSDN_ASSEMBLY_LOAD_CONTEXT" target="_blank">AssemblyLoadContext</a> objects to load assemblies into a process.
     Most applications including the .NET Lambda production environment load assemblies in the <b>Default</b> AssemblyLoadContext. This tool loads the provided .NET Lambda code in a separate
     AssemblyLoadContext to avoid clashes with .NET assemblies used by this tool versus the .NET assemblies used by the provided .NET Lambda code. In some rare cases this difference can affect
     how the .NET Lambda code runs within this tool compared to the actual Lambda environment.
