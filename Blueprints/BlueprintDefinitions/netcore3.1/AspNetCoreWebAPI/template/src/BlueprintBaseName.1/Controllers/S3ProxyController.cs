@@ -10,15 +10,13 @@ using Microsoft.Extensions.Logging;
 using Amazon.S3;
 using Amazon.S3.Model;
 
-using Newtonsoft.Json;
-
 namespace BlueprintBaseName._1.Controllers
 {
     /// <summary>
     /// ASP.NET Core controller acting as a S3 Proxy.
     /// </summary>
     [Route("api/[controller]")]
-    public class S3ProxyController : Controller
+    public class S3ProxyController : ControllerBase
     {
         IAmazonS3 S3Client { get; set; }
         ILogger Logger { get; set; }
@@ -51,7 +49,7 @@ namespace BlueprintBaseName._1.Controllers
             try
             {
                 this.Response.ContentType = "text/json";
-                return new JsonResult(listResponse.S3Objects, new JsonSerializerSettings { Formatting = Formatting.Indented });
+                return new JsonResult(listResponse.S3Objects);
             }
             catch(AmazonS3Exception e)
             {

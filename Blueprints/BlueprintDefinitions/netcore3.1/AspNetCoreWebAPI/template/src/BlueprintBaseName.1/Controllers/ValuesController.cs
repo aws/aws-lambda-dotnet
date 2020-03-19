@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BlueprintBaseName._1.Controllers
 {
     [Route("api/[controller]")]
-    public class ValuesController : Controller
+    public class ValuesController : ControllerBase
     {
         // GET api/values
         [HttpGet]

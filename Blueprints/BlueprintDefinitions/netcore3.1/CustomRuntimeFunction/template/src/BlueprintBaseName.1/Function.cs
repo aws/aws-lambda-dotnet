@@ -1,6 +1,6 @@
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
-using Amazon.Lambda.Serialization.Json;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using System;
 using System.Threading.Tasks;
 
@@ -15,7 +15,7 @@ namespace BlueprintBaseName._1
         private static async Task Main(string[] args)
         {
             Func<string, ILambdaContext, string> func = FunctionHandler;
-            using(var handlerWrapper = HandlerWrapper.GetHandlerWrapper(func, new JsonSerializer()))
+            using(var handlerWrapper = HandlerWrapper.GetHandlerWrapper(func, new LambdaJsonSerializer()))
             using(var bootstrap = new LambdaBootstrap(handlerWrapper))
             {
                 await bootstrap.RunAsync();

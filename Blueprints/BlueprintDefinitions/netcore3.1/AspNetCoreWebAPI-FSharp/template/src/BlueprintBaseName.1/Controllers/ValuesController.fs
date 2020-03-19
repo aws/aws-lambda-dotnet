@@ -6,7 +6,7 @@ open Microsoft.AspNetCore.Mvc
 
 [<Route("api/[controller]")>]
 type ValuesController() =
-    inherit Controller()
+    inherit ControllerBase()
 
     [<HttpGet>]
     member this.Get() =

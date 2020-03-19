@@ -1,10 +1,10 @@
-using Amazon.Lambda.Core;
-using Amazon.Lambda.LexEvents;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 
-using Newtonsoft.Json;
+using Amazon.Lambda.Core;
+using Amazon.Lambda.LexEvents;
 
 namespace BlueprintBaseName._1
 {
@@ -26,15 +26,15 @@ namespace BlueprintBaseName._1
 
         protected string SerializeReservation(FlowerOrder order)
         {
-            return JsonConvert.SerializeObject(order, new JsonSerializerSettings
+            return JsonSerializer.Serialize(order, new JsonSerializerOptions
             {
-                NullValueHandling = NullValueHandling.Ignore
+                IgnoreNullValues = true
             });
         }
 
         protected FlowerOrder DeserializeReservation(string json)
         {
-            return JsonConvert.DeserializeObject<FlowerOrder>(json);
+            return JsonSerializer.Deserialize<FlowerOrder>(json);
         }
 
         protected LexResponse Close(IDictionary<string, string> sessionAttributes, string fulfillmentState, LexResponse.LexMessage message)

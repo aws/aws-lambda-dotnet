@@ -53,7 +53,6 @@ module FunctionTest =
         let context = TestLambdaContext(Logger = testLogger)
         lambdaFunction.FunctionHandler ddbEvent context
 
-        Assert.Contains("id-foo", testLogger.Buffer.ToString())
         Assert.Contains("Stream processing complete", testLogger.Buffer.ToString())
 
     [<EntryPoint>]

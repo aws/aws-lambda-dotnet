@@ -2,7 +2,7 @@ namespace BlueprintBaseName._1
 
 open Amazon.Lambda.Core
 open Amazon.Lambda.RuntimeSupport
-open Amazon.Lambda.Serialization.Json
+open Amazon.Lambda.Serialization.SystemTextJson
 
 open System
 
@@ -29,7 +29,7 @@ module Function =
     let main _args =
     
         let handler = Func<string, ILambdaContext, string>(functionHandler)
-        use handlerWrapper = HandlerWrapper.GetHandlerWrapper(handler, new JsonSerializer())
+        use handlerWrapper = HandlerWrapper.GetHandlerWrapper(handler, new LambdaJsonSerializer())
         use bootstrap = new LambdaBootstrap(handlerWrapper)
    
         bootstrap.RunAsync().GetAwaiter().GetResult()
