@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Runtime.Serialization;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// An object representing the expected format of an API Gateway custom authorizer response.
