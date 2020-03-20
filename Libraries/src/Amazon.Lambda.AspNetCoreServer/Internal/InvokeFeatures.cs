@@ -24,7 +24,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                              IHttpAuthenticationFeature,
                              IHttpRequestFeature,
                              IHttpResponseFeature,
-                             IHttpConnectionFeature
+                             IHttpConnectionFeature,
+                             IServiceProvidersFeature
 
 #if !NETCOREAPP_2_1
                              ,IHttpResponseBodyFeature
@@ -35,24 +36,27 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                          IHttpRequestLifetimeFeature*/
     {
 
+        private volatile int _containerRevision;
+
         public InvokeFeatures()
         {
-            _features[typeof(IItemsFeature)] = this;
-            _features[typeof(IHttpAuthenticationFeature)] = this;
-            _features[typeof(IHttpRequestFeature)] = this;
-            _features[typeof(IHttpResponseFeature)] = this;
-            _features[typeof(IHttpConnectionFeature)] = this;
+            this[typeof(IItemsFeature)] = this;
+            this[typeof(IHttpAuthenticationFeature)] = this;
+            this[typeof(IHttpRequestFeature)] = this;
+            this[typeof(IHttpResponseFeature)] = this;
+            this[typeof(IHttpConnectionFeature)] = this;
+            this[typeof(IServiceProvidersFeature)] = this;
 #if !NETCOREAPP_2_1
-            _features[typeof(IHttpResponseBodyFeature)] = this;
+            this[typeof(IHttpResponseBodyFeature)] = this;
 #endif            
         }
 
-#region IFeatureCollection
+        #region IFeatureCollection
         public bool IsReadOnly => false;
 
         IDictionary<Type, object> _features = new Dictionary<Type, object>();
 
-        public int Revision => 0;
+        public int Revision => _containerRevision;
 
         public object this[Type key]
         {
@@ -69,7 +73,26 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
             set
             {
+                if (key == null)
+                {
+                    throw new ArgumentNullException(nameof(key));
+                }
+
+                if (value == null)
+                {
+                    if (_features != null && _features.Remove(key))
+                    {
+                        _containerRevision++;
+                    }
+                    return;
+                }
+
+                if (_features == null)
+                {
+                    _features = new Dictionary<Type, object>();
+                }
                 _features[key] = value;
+                _containerRevision++;
             }
         }
 
@@ -308,6 +331,16 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         int IHttpConnectionFeature.LocalPort { get; set; }
 
-#endregion
+        #endregion
+
+        #region IServiceProvidersFeature
+
+        IServiceProvider IServiceProvidersFeature.RequestServices 
+        { 
+            get; 
+            set; 
+        }
+
+        #endregion
     }
 }
