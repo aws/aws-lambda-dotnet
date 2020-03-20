@@ -9,10 +9,14 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
+using System.Runtime.Serialization.Json;
+using System.IO;
 
 #if NETCOREAPP_2_1
+using Newtonsoft.Json.Linq;
 using Swashbuckle.AspNetCore.Swagger;
+#else
+using System.Text.Json;
 #endif
 
 namespace TestWebApp
@@ -84,6 +88,7 @@ namespace TestWebApp
 #endif
             app.Run(async (context) =>
             {
+#if NETCOREAPP_2_1
                 var root = new JObject();
                 root["Path"] = new JValue(context.Request.Path);
                 root["PathBase"] = new JValue(context.Request.PathBase);
@@ -100,8 +105,31 @@ namespace TestWebApp
                 }
                 root["QueryVariables"] = query;
 
+                var body = root.ToString();
+#else
+                var stream = new MemoryStream();
+                var writer = new Utf8JsonWriter(stream);
+                writer.WriteStartObject();
+                writer.WriteString("Path", context.Request.Path);
+                writer.WriteString("PathBase", context.Request.PathBase);
+                writer.WriteStartObject("QueryVariables");
+                foreach (var queryKey in context.Request.Query.Keys)
+                {
+                    writer.WriteStartArray(queryKey);
+                    foreach (var v in context.Request.Query[queryKey])
+                    {
+                        writer.WriteStringValue(v);
+                    }
+                    writer.WriteEndArray();
+                }
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+                writer.Dispose();
+                stream.Position = 0;
+                var body = new StreamReader(stream).ReadToEnd();
+#endif
                 context.Response.Headers["Content-Type"] = "application/json";
-                await context.Response.WriteAsync(root.ToString());
+                await context.Response.WriteAsync(body);
             });
         }
     }
