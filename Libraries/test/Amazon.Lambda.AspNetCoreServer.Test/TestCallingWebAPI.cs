@@ -390,6 +390,16 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Contains("OnStarting Called", ((TestLambdaLogger)context.Logger).Buffer.ToString());
         }
 
+        [Fact]
+        public async Task TestRequestServicesAreAvailable()
+        {
+            var requestStr = GetRequestContent("requestservices-get-apigateway-request.json");
+            var response = await this.InvokeAPIGatewayRequestWithContent(new TestLambdaContext(), requestStr);
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope", response.Body);
+        }
+
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
         {
             return await InvokeAPIGatewayRequest(new TestLambdaContext(), fileName);
