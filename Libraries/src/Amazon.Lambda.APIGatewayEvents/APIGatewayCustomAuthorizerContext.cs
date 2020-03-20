@@ -4,6 +4,13 @@
     using System.Collections.Generic;
     using System.Runtime.Serialization;
 
+#if NETSTANDARD_2_0
+    using Newtonsoft.Json.Linq;
+#else
+    using System.Text.Json;
+#endif
+
+
     /// <summary>
     /// An object representing the expected format of an API Gateway custom authorizer response.
     /// </summary>
@@ -115,6 +122,7 @@
                     object value;
                     if(this.TryGetValue("claims", out value))
                     {
+#if NETSTANDARD_2_0
                         JObject jsonClaims = value as JObject;
                         if (jsonClaims != null)
                         {
@@ -124,6 +132,18 @@
 
                             }
                         }
+#else
+                        if(value is JsonElement jsonClaims)
+                        {
+                            foreach(JsonProperty property in jsonClaims.EnumerateObject())
+                            {
+                                if(property.Value.ValueKind == JsonValueKind.String)
+                                {
+                                    _claims[property.Name] = property.Value.GetString();
+                                }
+                            }
+                        }
+#endif
                     }
                 }
 
