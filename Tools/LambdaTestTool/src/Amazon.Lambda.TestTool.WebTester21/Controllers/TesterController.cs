@@ -87,7 +87,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
 
 
 
-            var response = this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunction(request);
+            var response = await this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunctionAsync(request);
             return response;
         }
 

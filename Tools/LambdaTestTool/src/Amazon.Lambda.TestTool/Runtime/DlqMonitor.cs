@@ -75,7 +75,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                         Payload = message.Body
                     };
 
-                    var response = this._runtime.ExecuteLambdaFunction(request);
+                    var response = await this._runtime.ExecuteLambdaFunctionAsync(request);
                     
                     // Capture the results to send back to the client application.
                     logRecord = new LogRecord

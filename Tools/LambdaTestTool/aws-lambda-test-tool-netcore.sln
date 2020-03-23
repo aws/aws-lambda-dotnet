@@ -51,7 +51,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.Test
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		tests\Amazon.Lambda.TestTool.Tests.Shared\Amazon.Lambda.TestTool.Tests.Shared.projitems*{594ee68c-10c0-4a19-9b61-377d0ab2f5ed}*SharedItemsImports = 5
 		tests\Amazon.Lambda.TestTool.Tests.Shared\Amazon.Lambda.TestTool.Tests.Shared.projitems*{70aff681-844a-428c-aba2-7053e61d39c8}*SharedItemsImports = 13
+		tests\Amazon.Lambda.TestTool.Tests.Shared\Amazon.Lambda.TestTool.Tests.Shared.projitems*{e57abb02-e8fc-4011-95d3-e9cb9412edcb}*SharedItemsImports = 5
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

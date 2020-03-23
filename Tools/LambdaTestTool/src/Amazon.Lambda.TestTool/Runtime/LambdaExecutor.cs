@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestTool.Runtime.LambdaMocks;
@@ -12,17 +13,17 @@ namespace Amazon.Lambda.TestTool.Runtime
 {
     public class LambdaExecutor
     {        
-        private static readonly object EXECUTE_LOCK = new object();
+        private static readonly SemaphoreSlim executeSlim = new SemaphoreSlim(1, 1);
         
-        public ExecutionResponse Execute(ExecutionRequest request)
+        public async Task<ExecutionResponse> ExecuteAsync(ExecutionRequest request)
         {
             var logger = new LocalLambdaLogger();
             var response = new ExecutionResponse();
 
             if (!string.IsNullOrEmpty(request.Function.ErrorMessage))
             {
-              response.Error = request.Function.ErrorMessage;
-              return response;
+                response.Error = request.Function.ErrorMessage;
+                return response;
             }
 
             try
@@ -35,30 +36,35 @@ namespace Amazon.Lambda.TestTool.Runtime
                 {
                     Environment.SetEnvironmentVariable("AWS_PROFILE", request.AWSProfile);
                 }
-                
-                
+
+
                 var context = new LocalLambdaContext()
                 {
                     Logger = logger
                 };
-    
+
                 object instance = null;
                 if (!request.Function.LambdaMethod.IsStatic)
                 {
                     instance = Activator.CreateInstance(request.Function.LambdaType);
                 }
-    
+
                 var parameters = BuildParameters(request, context);
 
                 // Because a Lambda compute environment never executes more then one event at a time
                 // create a lock around the execution to match that environment.
-                lock (EXECUTE_LOCK)
+                await executeSlim.WaitAsync();
+                try
                 {
-                    using(var wrapper = new ConsoleOutWrapper(logger))
+                    using (var wrapper = new ConsoleOutWrapper(logger))
                     {
                         var lambdaReturnObject = request.Function.LambdaMethod.Invoke(instance, parameters);
-                        response.Response = ProcessReturn(request, lambdaReturnObject);
+                        response.Response = await ProcessReturnAsync(request, lambdaReturnObject);
                     }
+                }
+                finally
+                {
+                    executeSlim.Release();
                 }
             }
             catch (TargetInvocationException e)
@@ -71,7 +77,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             }
 
             response.Logs = logger.Buffer;
-            
+
             return response;
         }
 
@@ -119,17 +125,17 @@ namespace Amazon.Lambda.TestTool.Runtime
             return sb.ToString();
         }
 
-        public static string ProcessReturn(ExecutionRequest request, object lambdaReturnObject)
+        public static async Task<string> ProcessReturnAsync(ExecutionRequest request, object lambdaReturnObject)
         {
             Stream lambdaReturnStream = null;
 
             if (lambdaReturnObject == null)
                 return null;
-            
+
             // If the return was a Task then wait till the task is complete.
             if (lambdaReturnObject is Task task)
             {
-                task.GetAwaiter().GetResult();
+                await task;
 
                 // Check to see if the Task returns back an object.
                 if (task.GetType().IsGenericType)
@@ -156,9 +162,9 @@ namespace Amazon.Lambda.TestTool.Runtime
                 request.Function.Serializer.Serialize(lambdaReturnObject, lambdaReturnStream);
             }
 
-            if (lambdaReturnStream == null) 
+            if (lambdaReturnStream == null)
                 return null;
-            
+
             lambdaReturnStream.Position = 0;
             using (var reader = new StreamReader(lambdaReturnStream))
             {

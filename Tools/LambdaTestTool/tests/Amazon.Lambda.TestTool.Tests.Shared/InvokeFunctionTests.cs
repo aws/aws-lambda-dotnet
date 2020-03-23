@@ -4,6 +4,7 @@ using System.IO;
 using Xunit;
 
 using Amazon.Lambda.TestTool.Runtime;
+using System.Threading.Tasks;
 
 namespace Amazon.Lambda.TestTool.Tests
 {
@@ -11,11 +12,11 @@ namespace Amazon.Lambda.TestTool.Tests
     {
 
         [Fact]
-        public void StringToStringWithContextTest()
+        public async Task StringToStringWithContextTest()
         {
             var payload = "\"TestData\"";
 
-            var response = ExecuteFunction(
+            var response = await ExecuteFunctionAsync(
                 "FunctionSignatureExamples::FunctionSignatureExamples.InstanceMethods::StringToStringWithContext",
                 payload);
 
@@ -25,9 +26,9 @@ namespace Amazon.Lambda.TestTool.Tests
         
         
         [Fact]
-        public void NoParametersTest()
+        public async Task NoParametersTest()
         {
-            var response = ExecuteFunction(
+            var response = await ExecuteFunctionAsync(
                 "FunctionSignatureExamples::FunctionSignatureExamples.InstanceMethods::NoParameters",
                 null);
 
@@ -36,9 +37,9 @@ namespace Amazon.Lambda.TestTool.Tests
         }
         
         [Fact]
-        public void VoidReturnTest()
+        public async Task VoidReturnTest()
         {
-            var response = ExecuteFunction(
+            var response = await ExecuteFunctionAsync(
                 "FunctionSignatureExamples::FunctionSignatureExamples.InstanceMethods::VoidReturn",
                 null);
 
@@ -47,11 +48,11 @@ namespace Amazon.Lambda.TestTool.Tests
         }
 
         [Fact]
-        public void NoContextWithParameterTest()
+        public async Task NoContextWithParameterTest()
         {
             var payload = "\"TestData\"";
 
-            var response = ExecuteFunction(
+            var response = await ExecuteFunctionAsync(
                 "FunctionSignatureExamples::FunctionSignatureExamples.InstanceMethods::NoContextWithParameter",
                 payload);
 
@@ -60,11 +61,11 @@ namespace Amazon.Lambda.TestTool.Tests
         }
         
         [Fact]
-        public void TheStaticMethodTest()
+        public async Task TheStaticMethodTest()
         {
             var payload = "\"TestData\"";
 
-            var response = ExecuteFunction(
+            var response = await ExecuteFunctionAsync(
                 "FunctionSignatureExamples::FunctionSignatureExamples.StaticMethods::TheStaticMethod",
                 payload);
 
@@ -73,11 +74,11 @@ namespace Amazon.Lambda.TestTool.Tests
         }
 
         [Fact]
-        public void WithGenericParameterTest()
+        public async Task WithGenericParameterTest()
         {
             var payload = "[\"Value1\", \"Value2\"]";
 
-            var response = ExecuteFunction(
+            var response = await ExecuteFunctionAsync(
                 "FunctionSignatureExamples::FunctionSignatureExamples.InstanceMethods::WithGenericParameter",
                 payload);
 
@@ -86,11 +87,11 @@ namespace Amazon.Lambda.TestTool.Tests
         }
 
         [Fact]
-        public void TaskWithNoResultTest()
+        public async Task TaskWithNoResultTest()
         {
             var payload = "\"TestData\"";
 
-            var response = ExecuteFunction(
+            var response = await ExecuteFunctionAsync(
                 "FunctionSignatureExamples::FunctionSignatureExamples.AsyncMethods::TaskWithNoResult",
                 payload);
 
@@ -99,11 +100,11 @@ namespace Amazon.Lambda.TestTool.Tests
         } 
         
         [Fact]
-        public void TaskWithResultTest()
+        public async Task TaskWithResultTest()
         {
             var payload = "\"TestData\"";
 
-            var response = ExecuteFunction(
+            var response = await ExecuteFunctionAsync(
                 "FunctionSignatureExamples::FunctionSignatureExamples.AsyncMethods::TaskWithResult",
                 payload);
 
@@ -112,9 +113,9 @@ namespace Amazon.Lambda.TestTool.Tests
         }
 
         [Fact]
-        public void AsyncNoResultThrowExceptionTest()
+        public async Task AsyncNoResultThrowExceptionTest()
         {
-            var response = ExecuteFunction(
+            var response = await ExecuteFunctionAsync(
                 "FunctionSignatureExamples::FunctionSignatureExamples.ErrorFunctions::AsyncNoResultThrowException",
                 null);
 
@@ -123,9 +124,9 @@ namespace Amazon.Lambda.TestTool.Tests
         }
 
         [Fact]
-        public void AsyncWithResultThrowExceptionTest()
+        public async Task AsyncWithResultThrowExceptionTest()
         {
-            var response = ExecuteFunction(
+            var response = await ExecuteFunctionAsync(
                 "FunctionSignatureExamples::FunctionSignatureExamples.ErrorFunctions::AsyncWithResultThrowException",
                 null);
 
@@ -133,7 +134,7 @@ namespace Amazon.Lambda.TestTool.Tests
             Assert.NotNull(response.Error);
         }
 
-        private ExecutionResponse ExecuteFunction(string handler, string payload)
+        private async Task<ExecutionResponse> ExecuteFunctionAsync(string handler, string payload)
         {
             var buildPath = TestUtils.GetLambdaFunctionBuildPath("FunctionSignatureExamples");
 
@@ -154,7 +155,7 @@ namespace Amazon.Lambda.TestTool.Tests
                 Payload = payload
             }; 
             
-            var response = runtime.ExecuteLambdaFunction(request);
+            var response = await runtime.ExecuteLambdaFunctionAsync(request);
             return response;
         }
     }

@@ -326,7 +326,7 @@ namespace Amazon.Lambda.TestTool
         {
             try
             {
-                var response = localLambdaOptions.LambdaRuntime.ExecuteLambdaFunction(request);
+                var response = localLambdaOptions.LambdaRuntime.ExecuteLambdaFunctionAsync(request).GetAwaiter().GetResult();
 
                 runConfiguration.OutputWriter.WriteLine("Captured Log information:");
                 runConfiguration.OutputWriter.WriteLine(response.Logs);

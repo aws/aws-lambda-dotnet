@@ -149,7 +149,7 @@
     }
 
 
-    void OnExecuteClick()
+    async Task OnExecuteClick()
     {
         var function = this.LambdaOptions.LoadLambdaFuntion(FunctionPicker.ConfigFile, FunctionPicker.FunctionHandler);
 
@@ -161,7 +161,7 @@
             Payload = this.FunctionInput
         };
 
-        var response = this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunction(request);
+        var response = await this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunctionAsync(request);
 
         if (response.IsSuccess)
         {

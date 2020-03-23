@@ -4,6 +4,7 @@ using System.Net;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestTool.Services;
@@ -16,7 +17,8 @@ namespace Amazon.Lambda.TestTool.Runtime
 
         LambdaFunction LoadLambdaFunction(LambdaFunctionInfo functionInfo);
         IList<LambdaFunction> LoadLambdaFunctions(IList<LambdaFunctionInfo> configInfos);
-        ExecutionResponse ExecuteLambdaFunction(ExecutionRequest request);
+
+        Task<ExecutionResponse> ExecuteLambdaFunctionAsync(ExecutionRequest request);
 
         IAWSService AWSService { get; }
     }
@@ -153,10 +155,10 @@ namespace Amazon.Lambda.TestTool.Runtime
         /// Execute the Lambda function.
         /// </summary>
         /// <param name="request"></param>
-        /// <returns></returns>
-        public ExecutionResponse ExecuteLambdaFunction(ExecutionRequest request)
+        /// <returns></returns>        
+        public async Task<ExecutionResponse> ExecuteLambdaFunctionAsync(ExecutionRequest request)
         {
-            return new LambdaExecutor().Execute(request);
+            return await (new LambdaExecutor()).ExecuteAsync(request);
         }
 
 
