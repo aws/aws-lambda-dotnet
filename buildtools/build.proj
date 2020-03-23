@@ -154,13 +154,15 @@
         <PropertyGroup>
             <Command>dotnet test</Command>
         </PropertyGroup>
-        <Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests"/>
+		<Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests.NETCore31"/>
+        <Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests.NETCore21"/>
     </Target>
         <Target Name="test-lambda-test-tool-cicd" DependsOnTargets="build-lambda-test-tool-package-cicd">
         <PropertyGroup>
             <Command>dotnet test</Command>
         </PropertyGroup>
-        <Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests"/>
+		<Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests.NETCore31"/>
+        <Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests.NETCore21"/>
     </Target>
     <Target Name="install-lambda-test-tool" DependsOnTargets="build-lambda-test-tool-package">
         <Exec Command="dotnet tool uninstall -g Amazon.Lambda.TestTool-2.1" IgnoreExitCode="true"/>

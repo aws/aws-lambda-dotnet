@@ -99,7 +99,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventsTests.NETCore31", "te
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		test\EventsTests.Shared\EventsTests.Shared.projitems*{44e9d925-b61d-4234-97b7-61424c963ba6}*SharedItemsImports = 5
 		test\EventsTests.Shared\EventsTests.Shared.projitems*{a2cb78bb-e54f-48ca-bbfb-9553d27ef23d}*SharedItemsImports = 13
+		test\EventsTests.Shared\EventsTests.Shared.projitems*{d96e1572-c079-413a-bfa0-235000700ddb}*SharedItemsImports = 5
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
