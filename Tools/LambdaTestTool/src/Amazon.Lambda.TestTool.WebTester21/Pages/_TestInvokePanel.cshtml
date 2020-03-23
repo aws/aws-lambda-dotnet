@@ -1,0 +1,83 @@
+ <div class="tab-pane fade show active" id="sample-request-panel" role="tabpanel" aria-labelledby="sample-request-tab" style="margin-top: 10px">
+     
+     
+     <div class="row">
+         <div class="col-sm form-group">
+             <label class="" for="sample-requests">Example Requests:</label>
+             <select class="control" id="sample-requests" onchange="onLambdaRequestSelected()">
+                 <option id="void-select-request"> -- select a request -- </option>
+                 @if(Model.SampleRequests.ContainsKey(SampleRequests.SampleRequestManager.SAVED_REQUEST_GROUP))
+                 {
+                 <optgroup id="saved-select-request-group" label="@SampleRequests.SampleRequestManager.SAVED_REQUEST_GROUP">
+                     @foreach (var request in Model.SampleRequests[SampleRequests.SampleRequestManager.SAVED_REQUEST_GROUP])
+                     {
+                         <option value="@request.Filename">@request.Name</option>
+                     }
+                 </optgroup>
+                 }
+                 @foreach (var group in Model.SampleRequests.Keys)
+                 {
+                     @if(!string.Equals(group, SampleRequests.SampleRequestManager.SAVED_REQUEST_GROUP))
+                     { 
+                     <optgroup label="@group">
+                         @foreach (var request in Model.SampleRequests[group])
+                         {
+                             <option value="@request.Filename">@request.Name</option>
+                         }
+                     </optgroup>
+                     }
+                 }
+             </select>
+        </div>
+     </div>
+
+     <div class="row">
+         <div class="col-sm form-group">
+             <label class="col-xs-3 control-label" for="function-payload">Function Input:</label>
+             <textarea class="form-control" rows="10" id="function-payload" placeholder="JSON document as input to Lambda Function. Plain strings must be wrapped in quotes."></textarea>
+         </div>
+     </div>
+
+     <div class="row mt-3">
+         <div class="col-sm form-group">
+             <button class="btn btn-primary btn-sm" onclick="onExecute()">Execute Function</button>
+             <button type="button" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#save-request-prompt" onclick="onPreSaveClick()">Save Request</button>
+         </div>
+     </div>
+
+     <div class="row" id="results-panel" style="display: none;">
+         <div class="col-sm-6 form-group">
+             <label class="control-label" for="function-response">Response:</label><br/>
+             <small>The area below shows the result returned by your function execution.</small>
+             <pre class="form-control" rows="20" id="function-response" style="font-size: 75%"></pre>
+         </div>
+         <div class="col-sm-6 form-group">
+             <label class="control-label" for="function-logs">Log Output:</label><br/>
+             <small>The area below shows the logging calls in your code.</small>
+             <pre class="form-control" rows="20" id="function-logs" style="font-size: 75%"></pre>
+         </div>
+     </div>
+ </div>
+
+ <div class="modal" tabindex="-1" role="dialog" id="save-request-prompt">
+     <div class="modal-dialog" role="document">
+         <div class="modal-content">
+             <div class="modal-header">
+                 <h5 class="modal-title">Save Request</h5>
+                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                     <span aria-hidden="true">&times;</span>
+                 </button>
+             </div>
+             <div class="modal-body">
+                 <div class="form-group" for="save-request-name">
+                     <label class="control-label">Enter a request name: </label>
+                     <input id="save-request-name" type="text" class="form-control"/>
+                 </div>
+             </div>
+             <div class="modal-footer">
+                 <button type="button" class="btn btn-primary" onclick="onSaveRequest()">Save Changes</button>
+                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+             </div>
+         </div>
+     </div>
+ </div>

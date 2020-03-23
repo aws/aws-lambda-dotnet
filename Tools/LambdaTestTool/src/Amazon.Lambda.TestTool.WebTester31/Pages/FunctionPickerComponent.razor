@@ -1,0 +1,143 @@
+﻿@using Amazon.Lambda.TestTool.Runtime;
+@inject LocalLambdaOptions LambdaOptions
+
+<!-- Select Config File and Function Handler -->
+<div class="row">
+    <div class="col-sm form-group">
+        <label class="col-xs-3 control-label" for="config-file">Config File</label>
+        <div class="col-xs-5">
+            <select class="form-control" @bind="ConfigFile">
+                @foreach (var file in @LambdaOptions.LambdaConfigFiles)
+                {
+                    <option value="@file">@System.IO.Path.GetFileName(file)</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="col-sm form-group">
+        <label class="col-xs-3 control-label" for="functions-picker">Function</label>
+        <div class="col-xs-5">
+            <select class="form-control" name="color" @bind="FunctionHandler">
+                @if (AvailableFunctions != null)
+                {
+                    @foreach (var function in AvailableFunctions)
+                    {
+                        <option value="@function.FunctionInfo.Handler">@function.FunctionInfo.Name</option>
+                    }
+                }
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Select Profile and Region -->
+<div class="row">
+    <div class="col-sm form-group" for="functions-picker">
+        <label class="col-xs-3 control-label" for="aws-profile">AWS Credential Profile</label>
+        <select id="aws-profile" class="form-control" @bind="AWSProfile">
+            @if (AvailableAWSProfiles != null)
+            {
+                @foreach (var profile in @AvailableAWSProfiles)
+                {
+                    <option value="@profile">@profile</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-sm form-group" for="aws-region">
+        <label class="col-xs-3 control-label">AWS Region</label>
+        <input id="aws-region" type="text" class="form-control"  @bind="AWSRegion"/>
+    </div>
+</div>
+
+<!-- TODO: Add ability to set environment variables -->
+
+@code {
+
+    string _awsProfile;
+
+    public string AWSProfile
+    {
+        get => this._awsProfile;
+        set
+        {
+            this._awsProfile = value;
+            OnChangeAsync?.Invoke();
+        }
+    }
+
+    string _awsRegion;
+    public string AWSRegion
+    {
+        get => this._awsRegion;
+        set
+        {
+            this._awsRegion = value;
+            OnChangeAsync?.Invoke();
+        }
+    }
+
+    public Func<Task> OnChangeAsync { get; set; }
+
+    private string _configFile;
+    public string ConfigFile
+    {
+        get => this._configFile;
+        set
+        {
+            this._configFile = value;
+            UpdateConfigFileChange();
+
+            OnChangeAsync?.Invoke();
+        }
+    }
+
+    string _functionHandler;
+    public string FunctionHandler
+    {
+        get => this._functionHandler;
+        set
+        {
+            this._functionHandler = value;
+            OnChangeAsync?.Invoke();
+        }
+    }
+
+    IList<string> AvailableAWSProfiles;
+
+
+    IList<LambdaFunction> AvailableFunctions;
+
+    protected override Task OnInitializedAsync()
+    {
+        AvailableAWSProfiles = this.LambdaOptions.LambdaRuntime.AWSService.ListProfiles();
+
+
+        if(LambdaOptions.LambdaConfigFiles.Count > 0)
+        {
+            this.ConfigFile = LambdaOptions.LambdaConfigFiles[0];
+        }
+
+        return Task.CompletedTask;
+    }
+
+    void UpdateConfigFileChange()
+    {
+        var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(this.ConfigFile);
+        AvailableFunctions = this.LambdaOptions.LambdaRuntime.LoadLambdaFunctions(configInfo.FunctionInfos);
+        this.FunctionHandler = this.AvailableFunctions.First()?.FunctionInfo?.Handler;
+
+
+        if (configInfo.AWSProfile != null && this.AvailableAWSProfiles.Contains(configInfo.AWSProfile))
+        {
+            this.AWSProfile = configInfo.AWSProfile;
+        }
+
+        if(!string.IsNullOrEmpty(configInfo.AWSRegion))
+        {
+            this.AWSRegion = configInfo.AWSRegion;
+        }
+
+        this.StateHasChanged();
+    }
+}

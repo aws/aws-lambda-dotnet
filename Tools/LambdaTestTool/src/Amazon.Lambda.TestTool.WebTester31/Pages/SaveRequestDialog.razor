@@ -1,0 +1,45 @@
+﻿@using Amazon.Lambda.TestTool.SampleRequests;
+@inject LocalLambdaOptions LambdaOptions
+@inject IModalService ModalService
+
+<div class="simple-form" style="min-width: 400px">
+    <div class="form-group" for="save-request-name">
+        <label class="control-label">Enter a request name: </label>
+        <input id="save-request-name" type="text" class="form-control" @bind="SaveRequestName" />
+    </div>
+    <button type="button" class="btn btn-primary" @onclick="OnSaveChangesClicked">Save</button>
+    <button type="button" class="btn btn-secondary" @onclick="OnCancelClicked">Cancel</button>
+</div>
+
+
+@code {
+
+    public const string PARAMETER_NAME_REQUEST_BODY = "RequestBody";
+    public const string PARAMETER_NAME_CURRENT_NAME = "CurrentName";
+
+    public string SaveRequestName { get; set; }
+
+    [CascadingParameter] ModalParameters Parameters { get; set; }
+
+    protected override void OnInitialized()
+    {
+        SaveRequestName = Parameters.TryGet<string>(PARAMETER_NAME_CURRENT_NAME);
+    }
+
+
+    void OnSaveChangesClicked()
+    {
+        var requestBody = Parameters.Get<string>(PARAMETER_NAME_REQUEST_BODY);
+
+        var manager = new SampleRequestManager(this.LambdaOptions.GetPreferenceDirectory(true));
+        var systemName = manager.SaveRequest(this.SaveRequestName, requestBody);
+
+        ModalService.Close(ModalResult.Ok(systemName));
+    }
+
+
+    void OnCancelClicked()
+    {
+        ModalService.Close(ModalResult.Cancel());
+    }
+}
