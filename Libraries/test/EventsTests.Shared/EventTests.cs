@@ -110,6 +110,23 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        [Fact]
+        public void SetHeadersToHttpApiV2Response()
+        {
+            var response = new APIGatewayHttpApiV2ProxyResponse();
+            Assert.Null(response.Headers);
+
+            response.SetHeaderValues("name1", "value1", false);
+            Assert.Single(response.Headers);
+            Assert.Equal("value1", response.Headers["name1"]);
+
+            response.SetHeaderValues("name1", "value2", true);
+            Assert.Equal("value1,value2", response.Headers["name1"]);
+
+            response.SetHeaderValues("name1", "value3", false);
+            Assert.Equal("value3", response.Headers["name1"]);
+        }
+
         [Theory]
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
