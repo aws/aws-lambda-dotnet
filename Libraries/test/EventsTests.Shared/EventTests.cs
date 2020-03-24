@@ -45,7 +45,71 @@ namespace Amazon.Lambda.Tests
             var json = File.ReadAllText(filename);
             return new MemoryStream(UTF8Encoding.UTF8.GetBytes(json));
         }
-        
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+#endif
+        public void HttpApiV2Format(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("http-api-v2-request.json"))
+            {
+                var request = serializer.Deserialize<APIGatewayHttpApiV2ProxyRequest>(fileStream);
+
+                Assert.Equal("2.0", request.Version);
+                Assert.Equal("$default", request.RouteKey);
+                Assert.Equal("/my/path", request.RawPath);
+                Assert.Equal("parameter1=value1&parameter1=value2&parameter2=value", request.RawQueryString);
+                
+                Assert.Equal(2, request.Cookies.Length);
+                Assert.Equal("cookie1", request.Cookies[0]);
+                Assert.Equal("cookie2", request.Cookies[1]);
+
+                Assert.Equal(2, request.QueryStringParameters.Count);
+                Assert.Equal("value1,value2", request.QueryStringParameters["parameter1"]);
+                Assert.Equal("value", request.QueryStringParameters["parameter2"]);
+
+                Assert.Equal("Hello from Lambda", request.Body);
+                Assert.True(request.IsBase64Encoded);
+
+                Assert.Equal(2, request.StageVariables.Count);
+                Assert.Equal("value1", request.StageVariables["stageVariable1"]);
+                Assert.Equal("value2", request.StageVariables["stageVariable2"]);
+
+                var rc = request.RequestContext;
+                Assert.NotNull(rc);
+                Assert.Equal("123456789012", rc.AccountId);
+                Assert.Equal("api-id", rc.ApiId);
+                Assert.Equal("id.execute-api.us-east-1.amazonaws.com", rc.DomainName);
+                Assert.Equal("domain-id", rc.DomainPrefix);
+                Assert.Equal("request-id", rc.RequestId);
+                Assert.Equal("route-id", rc.RouteId);
+                Assert.Equal("$default-route", rc.RouteKey);
+                Assert.Equal("$default-stage", rc.Stage);
+                Assert.Equal("12/Mar/2020:19:03:58 +0000", rc.Time);
+                Assert.Equal(1583348638390, rc.TimeEpoch);
+
+                var auth = rc.Authorizer;
+                Assert.NotNull(auth);
+                Assert.Equal(2, auth.Jwt.Claims.Count);
+                Assert.Equal("value1", auth.Jwt.Claims["claim1"]);
+                Assert.Equal("value2", auth.Jwt.Claims["claim2"]);
+                Assert.Equal(2, auth.Jwt.Scopes.Length);
+                Assert.Equal("scope1", auth.Jwt.Scopes[0]);
+                Assert.Equal("scope2", auth.Jwt.Scopes[1]);
+
+                var http = rc.Http;
+                Assert.NotNull(http);
+                Assert.Equal("POST", http.Method);
+                Assert.Equal("/my/path", http.Path);
+                Assert.Equal("HTTP/1.1", http.Protocol);
+                Assert.Equal("IP", http.SourceIp);
+                Assert.Equal("agent", http.UserAgent);
+            }
+        }
+
         [Theory]
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
