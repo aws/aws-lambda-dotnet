@@ -1,0 +1,45 @@
+﻿{
+  "version": "2.0",
+  "routeKey": "ANY /{proxy+}",
+  "rawPath": "/api/rawquerystring/json",
+  "rawQueryString": "url=http://www.google.com&testDateTimeOffset=2019-03-12T16:06:06.549817+00:00",
+  "headers": {
+    "accept": "*/*",
+    "accept-encoding": "gzip, deflate",
+    "cache-control": "no-cache",
+    "content-length": "0",
+    "host": "uo9pe23ec6.execute-api.us-east-1.amazonaws.com",
+    "postman-token": "ff50e328-bd5a-4006-b0b5-39773f35b587",
+    "user-agent": "PostmanRuntime/7.20.1",
+    "x-amzn-trace-id": "Root=1-5e7aad53-0bd11d5603f9e6be3e88ab69",
+    "x-forwarded-for": "192.182.149.40",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "queryStringParameters": {
+    "testDateTimeOffset": "2019-03-12T16:06:06.549817 00:00",
+    "url": "http://www.google.com"
+  },
+  "requestContext": {
+    "accountId": "626492997873",
+    "apiId": "uo9pe23ec6",
+    "domainName": "uo9pe23ec6.execute-api.us-east-1.amazonaws.com",
+    "domainPrefix": "uo9pe23ec6",
+    "http": {
+      "method": "GET",
+      "path": "/api/rawquerystring/json",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "192.182.149.40",
+      "userAgent": "PostmanRuntime/7.20.1"
+    },
+    "requestId": "J7AFCgAYIAMEPCQ=",
+    "routeKey": "ANY /{proxy+}",
+    "stage": "$default",
+    "time": "25/Mar/2020:01:01:07 +0000",
+    "timeEpoch": 1585098067332
+  },
+  "pathParameters": {
+    "proxy": "api/rawquerystring/json"
+  },
+  "isBase64Encoded": false
+}

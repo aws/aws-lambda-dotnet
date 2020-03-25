@@ -1,0 +1,44 @@
+﻿{
+  "version": "2.0",
+  "routeKey": "ANY /{proxy+}",
+  "rawPath": "/api/errortests",
+  "rawQueryString": "id=aggregate-test",
+  "headers": {
+    "accept": "*/*",
+    "accept-encoding": "gzip, deflate",
+    "cache-control": "no-cache",
+    "content-length": "0",
+    "host": "uo9pe23ec6.execute-api.us-east-1.amazonaws.com",
+    "postman-token": "0471e719-69e0-40c6-8f60-aeaa55c2952c",
+    "user-agent": "PostmanRuntime/7.20.1",
+    "x-amzn-trace-id": "Root=1-5e7aeafc-ec625598fb1ec2b4f140342c",
+    "x-forwarded-for": "192.182.149.40",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "queryStringParameters": {
+    "id": "aggregate-test"
+  },
+  "requestContext": {
+    "accountId": "626492997873",
+    "apiId": "uo9pe23ec6",
+    "domainName": "uo9pe23ec6.execute-api.us-east-1.amazonaws.com",
+    "domainPrefix": "uo9pe23ec6",
+    "http": {
+      "method": "GET",
+      "path": "/api/errortests",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "192.182.149.40",
+      "userAgent": "PostmanRuntime/7.20.1"
+    },
+    "requestId": "J7mnZhseoAMEJHA=",
+    "routeKey": "ANY /{proxy+}",
+    "stage": "$default",
+    "time": "25/Mar/2020:05:24:12 +0000",
+    "timeEpoch": 1585113852093
+  },
+  "pathParameters": {
+    "proxy": "api/errortests"
+  },
+  "isBase64Encoded": false
+}
