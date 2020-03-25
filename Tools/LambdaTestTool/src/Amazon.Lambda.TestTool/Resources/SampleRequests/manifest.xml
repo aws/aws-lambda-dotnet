@@ -105,7 +105,7 @@
   </request>
   <request category="AWS">
     <name>CodeCommit</name>
-    <filename>codecommit.json</filename>
+    <filename>CodeCommit.json</filename>
   </request>
   <request category="AWS">
     <name>CodePipeline</name>
@@ -121,7 +121,7 @@
   </request>
   <request category="AWS">
     <name>Kinesis</name>
-    <filename>kinesis.json</filename>
+    <filename>Kinesis.json</filename>
   </request>
   <request category="AWS">
     <name>Kinesis Analytics - Compressed</name>
@@ -189,7 +189,7 @@
   </request>
   <request category="AWS">
     <name>SNS</name>
-    <filename>sns.json</filename>
+    <filename>SNS.json</filename>
   </request>
   <request category="AWS">
     <name>SQS</name>
