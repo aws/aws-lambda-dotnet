@@ -56,41 +56,7 @@
         <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew/netcore21"/>
         <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew/netcore31"/>
         <Copy SourceFiles="@(DeploymentNuGetConfig)" DestinationFolder="../Deployment" />
-		
-        <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\netcore3.1" WorkingDirectory="..\"/>
-		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebApp;ProjectName=AspNetCoreWebAppC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SimpleApplicationLoadBalancerFunction;ProjectName=SimpleApplicationLoadBalancerFunctionC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabelsC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabelsF;Lang=F#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.DetectImageLabels;ProjectName=DetectImageLabelsServerlessC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.DetectImageLabels;ProjectName=DetectImageLabelsServerlessF;Lang=F#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.CustomRuntimeFunction;ProjectName=CustomRuntimeFunctionC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.CustomRuntimeFunction;ProjectName=CustomRuntimeFunctionF;Lang=F#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.EmptyFunction;ProjectName=EmptyFunctionC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.EmptyFunction;ProjectName=EmptyFunctionF;Lang=F#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DynamoDB;ProjectName=DynamoDBFunctionC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DynamoDB;ProjectName=DynamoDBFunctionF;Lang=F#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.Kinesis;ProjectName=KinesisFunctionC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.Kinesis;ProjectName=KinesisFunctionF;Lang=F#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.KinesisFirehose;ProjectName=KinesisFirehoseFunctionC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.S3;ProjectName=S3FunctionC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.S3;ProjectName=S3FunctionF;Lang=F#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.S3;ProjectName=S3FunctionServerlessC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.S3;ProjectName=S3FunctionServerlessF;Lang=F#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SNS;ProjectName=SNSFunctionC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SQS;ProjectName=SQSFunctionC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPIC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPIF;Lang=F#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.DynamoDBBlogAPI;ProjectName=DynamoDBBlogAPIC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.EmptyServerless;ProjectName=EmptyServerlessC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.EmptyServerless;ProjectName=EmptyServerlessF;Lang=F#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.Giraffe;ProjectName=GiraffeF;Lang=F#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.LexBookTripSample;ProjectName=LexBookTripSampleC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.OrderFlowersChatbot;ProjectName=OrderFlowersChatbotC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldC;Lang=C#;Version=netcore31"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldF;Lang=F#;Version=netcore31"/>
-		
-		
+				
         <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\netcore2.1" WorkingDirectory="..\"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SimpleApplicationLoadBalancerFunction;ProjectName=SimpleApplicationLoadBalancerFunctionC;Lang=C#;Version=netcore21"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabelsC;Lang=C#;Version=netcore21"/>
@@ -122,6 +88,42 @@
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.OrderFlowersChatbot;ProjectName=OrderFlowersChatbotC;Lang=C#;Version=netcore21"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldC;Lang=C#;Version=netcore21"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldF;Lang=F#;Version=netcore21"/>
+		
+        <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\netcore3.1" WorkingDirectory="..\"/>
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebApp;ProjectName=AspNetCoreWebAppC;Lang=C#;Version=netcore31"/>
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.WebSocketAPI;ProjectName=WebSocketAPIC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SimpleApplicationLoadBalancerFunction;ProjectName=SimpleApplicationLoadBalancerFunctionC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabelsC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabelsF;Lang=F#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.DetectImageLabels;ProjectName=DetectImageLabelsServerlessC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.DetectImageLabels;ProjectName=DetectImageLabelsServerlessF;Lang=F#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.CustomRuntimeFunction;ProjectName=CustomRuntimeFunctionC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.CustomRuntimeFunction;ProjectName=CustomRuntimeFunctionF;Lang=F#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.EmptyFunction;ProjectName=EmptyFunctionC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.EmptyFunction;ProjectName=EmptyFunctionF;Lang=F#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DynamoDB;ProjectName=DynamoDBFunctionC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DynamoDB;ProjectName=DynamoDBFunctionF;Lang=F#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.Kinesis;ProjectName=KinesisFunctionC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.Kinesis;ProjectName=KinesisFunctionF;Lang=F#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.KinesisFirehose;ProjectName=KinesisFirehoseFunctionC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.S3;ProjectName=S3FunctionC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.S3;ProjectName=S3FunctionF;Lang=F#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.S3;ProjectName=S3FunctionServerlessC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.S3;ProjectName=S3FunctionServerlessF;Lang=F#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SNS;ProjectName=SNSFunctionC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SQS;ProjectName=SQSFunctionC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPIC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPIF;Lang=F#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.DynamoDBBlogAPI;ProjectName=DynamoDBBlogAPIC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.EmptyServerless;ProjectName=EmptyServerlessC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.EmptyServerless;ProjectName=EmptyServerlessF;Lang=F#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.Giraffe;ProjectName=GiraffeF;Lang=F#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.LexBookTripSample;ProjectName=LexBookTripSampleC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.OrderFlowersChatbot;ProjectName=OrderFlowersChatbotC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldC;Lang=C#;Version=netcore31"/>
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldF;Lang=F#;Version=netcore31"/>
+		
+
 
     </Target>
 
