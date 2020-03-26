@@ -198,7 +198,7 @@ namespace BlueprintBaseName._1
                 return new APIGatewayProxyResponse
                 {
                     StatusCode = (int)HttpStatusCode.OK,
-                    Body = "Data send to " + count + " connection" + (count == 1 ? "" : "s")
+                    Body = "Data sent to " + count + " connection" + (count == 1 ? "" : "s")
                 };
             }
             catch (Exception e)
