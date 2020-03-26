@@ -13,6 +13,19 @@ This project shows how to run a [Giraffe](https://github.com/giraffe-fsharp/Gira
 
 You may also have a test project depending on the options selected.
 
+### Configuring for API Gateway HTTP API ###
+
+API Gateway supports the original REST API and the new HTTP API. In addition HTTP API supports 2 different
+payload formats. When using the 2.0 format the base type of `LambdaEntryPoint` must be `Amazon.Lambda.AspNetCoreServer.APIGatewayHttpApiV2ProxyFunction`.
+For the 1.0 payload format the base type is the same as REST API which is `Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction`.
+**Note:** when using the `AWS::Serverless::Function` CloudFormation resource with an event type of `HttpApi` the default payload
+format is 2.0 so the base type of `LambdaEntryPoint` must be `Amazon.Lambda.AspNetCoreServer.APIGatewayHttpApiV2ProxyFunction`.
+
+### Configuring for Application Load Balancer ###
+
+To configure this project to handle requests from an Application Load Balancer instead of API Gateway change
+the base type of `LambdaEntryPoint` from `Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction` to 
+`Amazon.Lambda.AspNetCoreServer.ApplicationLoadBalancerFunction`.
 
 ## Here are some steps to follow from Visual Studio:
 

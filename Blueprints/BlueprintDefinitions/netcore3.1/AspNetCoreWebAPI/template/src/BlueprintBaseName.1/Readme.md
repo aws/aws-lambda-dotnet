@@ -19,6 +19,15 @@ public void ConfigureServices(IServiceCollection services)
 }
 ```
 
+### Configuring for API Gateway HTTP API ###
+
+API Gateway supports the original REST API and the new HTTP API. In addition HTTP API supports 2 different
+payload formats. When using the 2.0 format the base class of `LambdaEntryPoint` must be `Amazon.Lambda.AspNetCoreServer.APIGatewayHttpApiV2ProxyFunction`.
+For the 1.0 payload format the base class is the same as REST API which is `Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction`.
+**Note:** when using the `AWS::Serverless::Function` CloudFormation resource with an event type of `HttpApi` the default payload
+format is 2.0 so the base class of `LambdaEntryPoint` must be `Amazon.Lambda.AspNetCoreServer.APIGatewayHttpApiV2ProxyFunction`.
+
+
 ### Configuring for Application Load Balancer ###
 
 To configure this project to handle requests from an Application Load Balancer instead of API Gateway change
