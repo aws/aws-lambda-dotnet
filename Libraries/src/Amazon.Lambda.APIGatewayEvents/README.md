@@ -6,9 +6,13 @@ API Gateway events consist of a request that was routed to a Lambda function by 
 
 # Classes
 
-## APIGatewayProxyRequest
+|Class|Description|
+|-----|-----------|
+| [APIGatewayProxyRequest](./APIGatewayProxyRequest.cs) | Represents proxy request coming from REST API, HTTP API payload format 1.0 or WebSocket API. |
+| [APIGatewayProxyResponse](./APIGatewayProxyResponse.cs) | The return object for functions handling requests for REST API, HTTP API payload format 1.0 or WebSocket API. |
+| [APIGatewayHttpApiV2ProxyRequest](./APIGatewayHttpApiV2ProxyRequest.cs) | Represents proxy request coming from HTTP API payload format 2.0. |
+| [APIGatewayHttpApiV2ProxyResponse](./APIGatewayHttpApiV2ProxyResponse.cs) | The return object for functions handling requests for HTTP API payload format 2.0. |
 
-The [APIGatewayProxyRequest](./APIGatewayProxyRequest.cs) class contains information relating to the proxy request coming from the [Amazon API Gateway](https://aws.amazon.com/api-gateway/).
 
 # Sample Functions
 
@@ -35,28 +39,3 @@ public class Function
 }
 ```
 
-### Microsoft.AspNetCore.Mvc controller
-
-In a AspNetCore controller, An instance of this interface is attached to any `ControllerBase.Request.HttpContext` instances via the `Items` property using the key "[APIGATEWAY_REQUEST / APIGatewayRequest](../Amazon.Lambda.AspNetCoreServer/APIGatewayProxyFunction.cs)".
-
-The following is an example of accessing an instance of this class in a controller method.
-
-```csharp
-[ApiController]
-public class TestController : ControllerBase
-{
-    [HttpGet("/[controller]")]
-    public IActionResult Get()
-    {
-        Response.Headers.Add("Access-Control-Allow-Origin", "*"); // NOTE: Should be configured via app.UseCors in Startup.cs
-
-        var proxyRequest = (APIGatewayProxyRequest)Request.HttpContext.Items[APIGatewayProxyFunction.APIGATEWAY_REQUEST];
-        var tmp = new
-        {
-            proxyRequest.RequestContext.RequestId,
-            proxyRequest.RequestContext.Identity?.CognitoIdentityId
-        };
-        return new OkObjectResult(tmp);
-    }
-}
-```

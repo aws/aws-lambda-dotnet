@@ -8,10 +8,20 @@ or from an [Application Load Balancer](https://docs.aws.amazon.com/elasticloadba
 and converts that request into the classes the ASP.NET Core framework expects and then converts the response from the ASP.NET Core
 framework into the response body that API Gateway Proxy or Application Load Balancer understands.
 
-## Example Lambda Function
+## Lambda Entry Point
 
-In the ASP.NET Core application add a class that extends from [APIGatewayProxyFunction](../Amazon.Lambda.AspNetCoreServer/APIGatewayProxyFunction.cs)
-and implement the Init method.
+In the ASP.NET Core application add a class that will be the entry point for Lambda to call into the application. Commonly this class
+is called `LambdaEntryPoint`. The base class is determined based on where the Lambda functions will be invoked from.
+
+|Lambda Involve| Base Class |
+|----------|---------------|
+| API Gateway REST API | APIGatewayProxyFunction |
+| API Gateway WebSocket API | APIGatewayProxyFunction |
+| API Gateway HTTP API Payload 1.0 | APIGatewayProxyFunction |
+| API Gateway HTTP API Payload 2.0 | APIGatewayHttpApiV2ProxyFunction |
+| Application Load Balancer | ApplicationLoadBalancerFunction |
+
+**Note:** HTTP API default to payload 2.0 so unless 1.0 is explicitly set the base class should be APIGatewayHttpApiV2ProxyFunction.
 
 Here is an example implementation of the Lamba function in an ASP.NET Core Web API application.
 ```csharp
@@ -22,8 +32,32 @@ using Microsoft.AspNetCore.Hosting;
 
 namespace TestWebApp
 {
-    public class LambdaFunction : APIGatewayProxyFunction
+    /// <summary>
+    /// This class extends from APIGatewayProxyFunction which contains the method FunctionHandlerAsync which is the 
+    /// actual Lambda function entry point. The Lambda handler field should be set to
+    /// 
+    /// AWSServerless19::AWSServerless19.LambdaEntryPoint::FunctionHandlerAsync
+    /// </summary>
+    public class LambdaEntryPoint :
+
+        // The base class must be set to match the AWS service invoking the Lambda function. If not Amazon.Lambda.AspNetCoreServer
+        // will fail to convert the incoming request correctly into a valid ASP.NET Core request.
+        //
+        // API Gateway REST API                         -> Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction
+        // API Gateway HTTP API payload version 1.0     -> Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction
+        // API Gateway HTTP API payload version 2.0     -> Amazon.Lambda.AspNetCoreServer.APIGatewayHttpApiV2ProxyFunction
+        // Application Load Balancer                    -> Amazon.Lambda.AspNetCoreServer.ApplicationLoadBalancerFunction
+        // 
+        // Note: When using the AWS::Serverless::Function resource with an event type of "HttpApi" then payload version 2.0
+        // will be the default and you must make Amazon.Lambda.AspNetCoreServer.APIGatewayHttpApiV2ProxyFunction the base class.
+
+        Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction
     {
+        /// <summary>
+        /// The builder has configuration, logging and Amazon API Gateway already configured. The startup class
+        /// needs to be configured in this method using the UseStartup<>() method.
+        /// </summary>
+        /// <param name="builder"></param>
         protected override void Init(IWebHostBuilder builder)
         {
             builder
@@ -35,31 +69,22 @@ namespace TestWebApp
 
 The function handler for the Lambda function will be **TestWebApp::TestWebApp.LambdaFunction::FunctionHandlerAsync**.
 
-Once the function is deployed configure API Gateway with a HTTP Proxy to call the Lambda Function. Refer to the API Gateway 
-[developer guide](http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy.html) for more information.
 
-### Application Load Balancer Example
+## Access to Lambda Objects from HttpContext
 
-To be used with an Application Load Balancer from ELB the base class needs to be changed from APIGatewayProxyFunction to **ApplicationLoadBalancerFunction**.
+The original lambda request object and the `ILambdaContext` object can be accessed from the `HttpContext.Items` collection.
 
-```csharp
-using System.IO;
+| Constant | Object |
+|-------|--------|
+| AbstractAspNetCoreFunction.LAMBDA_CONTEXT | ILambdaContext |
+| AbstractAspNetCoreFunction.LAMBDA_REQUEST_OBJECT | <ul><li>APIGatewayProxyFunction -> APIGatewayProxyRequest</li><li>APIGatewayHttpApiV2ProxyFunction -> APIGatewayHttpApiV2ProxyRequest</li><li>ApplicationLoadBalancerFunction -> ApplicationLoadBalancerRequest</li></ul> |
 
-using Amazon.Lambda.AspNetCoreServer;
-using Microsoft.AspNetCore.Hosting;
 
-namespace TestWebApp
-{
-    public class LambdaFunction : ApplicationLoadBalancerFunction
-    {
-        protected override void Init(IWebHostBuilder builder)
-        {
-            builder
-                .UseStartup<Startup>();
-        }
-    }
-}
-```
+## JSON Serialization
+
+Starting with version 5.0.0 when targeting .NET Core 3.1 `Amazon.Lambda.Serialization.SystemTextJson`. When targeting previous 
+versions of .NET Core or using a version of Amazon.Lambda.AspNetCoreServer before 5.0.0 will use `Amazon.Lambda.Serialization.Json`.
+
 
 ## Web App Path Base
 
