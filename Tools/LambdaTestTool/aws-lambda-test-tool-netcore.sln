@@ -49,6 +49,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.Test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.Tests.NETCore31", "tests\Amazon.Lambda.TestTool.Tests.NETCore31\Amazon.Lambda.TestTool.Tests.NETCore31.csproj", "{E57ABB02-E8FC-4011-95D3-E9CB9412EDCB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8B0304AF-C6CF-4B62-B1B3-3F7C045B1BC4}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		tests\Amazon.Lambda.TestTool.Tests.Shared\Amazon.Lambda.TestTool.Tests.Shared.projitems*{594ee68c-10c0-4a19-9b61-377d0ab2f5ed}*SharedItemsImports = 5
