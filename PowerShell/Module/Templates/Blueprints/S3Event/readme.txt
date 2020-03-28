@@ -1,8 +1,9 @@
 This sample creates a Lambda function written in PowerShell that responds to an
 event from S3 when a new object, or object version, is created in a bucket. The
-script uses a cmdlet from the AWS Tools for PowerShell module (AWSPowerShell.NetCore)
-to read the object size and version and output them to the function logs.
+script uses a cmdlet from the AWS.Tools.S3 module to read the object size and 
+version and output them to the function logs.
 
-The script has a Requires statement for the latest version of the AWS Tools for
-PowerShell module. If you modify this example to not need cmdlets from that
-module you can safely delete this statement.
+The script has a Requires statement for the AWS.Tools.Commn as an example for how to declare modules on
+which your function is dependent and that will be bundled with your function on
+deployment. If you do not need to use cmdlets from this module you can safely delete
+this statement.

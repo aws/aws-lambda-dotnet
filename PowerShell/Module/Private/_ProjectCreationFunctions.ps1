@@ -38,14 +38,14 @@ function _initializeScriptFromTemplate
 
         if (($fileExt -ieq '.ps1') -Or ($fileExt -ieq '.psm1'))
         {
-            # Check to see if the script has stated a requirement on AWSPowerShell.NetCore and if so make the
+            # Check to see if the script has stated a requirement on AWS.Tools.* module and if so make the
             # version referenced match the version installed locally.
             $ast = [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$null, [ref]$null)
             if ($ast.ScriptRequirements.RequiredModules)
             {
                 $ast.ScriptRequirements.RequiredModules | ForEach-Object  -Process {
 
-                    if (!($_.Name -ieq 'AWSPowerShell.NetCore'))
+                    if (!($_.Name -ieq 'AWSPowerShell.NetCore') -and !($_.Name.StartsWith("AWS.Tools.")))
                     {
                         return
                     }
@@ -53,8 +53,8 @@ function _initializeScriptFromTemplate
                     $installedVersion = _getVersionOfLocalInstalledModule -Module $_.Name
                     if (!($installedVersion))
                     {
-                        Write-Warning 'This script requires the AWSPowerShell.NetCore module which is not installed locally.'
-                        Write-Warning 'To use the AWS CmdLets execute "Install-Module AWSPowerShell.NetCore" and then update the #Requires statement to the version installed. If you are not going to use the AWS CmdLets then remove the #Requires statement from the script.'
+                        Write-Warning "This script requires the $_.Name module which is not installed locally."
+                        Write-Warning "To use the AWS CmdLets execute ""Install-Module $_.Name"" and then update the #Requires statement to the version installed. If you are not going to use the AWS CmdLets then remove the #Requires statement from the script."
                     }
                     elseif ($installedVersion -ne $_.Version.ToString())
                     {
@@ -64,7 +64,7 @@ function _initializeScriptFromTemplate
                             if ($lines[$i].Contains('#Requires') -and $lines[$i].Contains($_.Name) -and $lines[$i].Contains($_.Version.ToString()) )
                             {
                                 $lines[$i] = $lines.Replace($_.Version.ToString(), $installedVersion)
-                                Write-Host ("Configuring script to use installed version $installedVersion of AWSPowerShell.NetCore.")
+                                Write-Host ("Configuring script to use installed version $installedVersion of $(_.Name)")
                                 break
                             }
                         }

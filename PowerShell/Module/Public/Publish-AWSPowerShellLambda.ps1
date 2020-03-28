@@ -21,6 +21,7 @@
     * Handler
     * Memory
     * Name
+    * Layer
     * IAMRoleArn
     * SecurityGroup
     * Subnet
@@ -51,6 +52,9 @@
 
     .PARAMETER Memory
     The amount of memory, in MB, your Lambda function is given when it executes inside AWS Lambda.
+
+    .PARAMETER Layer
+    The Lambda layers to include with the Lambda function.
 
     .PARAMETER ModuleRepository
     Custom repositories to use when downloading modules to satisfy your script's declared dependencies.
@@ -187,6 +191,9 @@ function Publish-AWSPowerShellLambda
         [string]$KmsKeyArn,
 
         [Parameter()]
+        [string[]]$Layer,
+
+        [Parameter()]
         [string[]]$Subnet,
 
         [Parameter()]
@@ -309,6 +316,7 @@ function Publish-AWSPowerShellLambda
         Region                 = $Region
         FunctionRole           = $IAMRoleArn
         FunctionMemory         = $Memory
+        FunctionLayer          = $Layer
         FunctionTimeout        = $Timeout
         PublishNewVersion      = $PublishNewVersion
         EnvironmentVariables   = $EnvironmentVariable
