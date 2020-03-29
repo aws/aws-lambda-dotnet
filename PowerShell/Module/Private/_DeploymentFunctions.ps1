@@ -76,7 +76,7 @@ function _deployProject
     try
     {
         $arguments = '"{0}"' -f $FunctionName
-        $arguments += ' --configuration Release --framework netcoreapp2.1 --function-runtime dotnetcore2.1'
+        $arguments += " --configuration Release --framework $AwsPowerShellTargetFramework --function-runtime $AwsPowerShellLambdaRuntime"
 
         $arguments += ' '
         $arguments += _setupAWSCredentialsCliArguments -ProfileName $ProfileName
@@ -230,7 +230,7 @@ function _packageProject
     try
     {
         $arguments = $Name
-        $arguments += ' --configuration Release --framework netcoreapp2.1 --function-runtime dotnetcore2.1'
+        $arguments += " --configuration Release --framework $AwsPowerShellTargetFramework --function-runtime $AwsPowerShellLambdaRuntime"
 
         if (($OutputPackage))
         {
@@ -543,10 +543,10 @@ function _validateDotnetInstall
     $application = Get-Command -Name dotnet
     if (!($application))
     {
-        throw '.NET Core 2.1 SDK was not found which is required to build the PowerShell Lambda package bundle. Download the .NET Core 2.1 SDK from https://www.microsoft.com/net/download'
+        throw '.NET Core 3.1 SDK was not found which is required to build the PowerShell Lambda package bundle. Download the .NET Core 3.1 SDK from https://www.microsoft.com/net/download'
     }
 
-    $minVersion = [System.Version]::Parse('2.1.300')
+    $minVersion = [System.Version]::Parse('3.1.100')
     $foundMin = $false
 
     $installedSDKs = & dotnet --list-sdks
@@ -564,7 +564,7 @@ function _validateDotnetInstall
 
     if (!($foundMin))
     {
-        throw 'The installed .NET Core SDK does not meet the minimum requirement to build the PowerShell Lambda package bundle. Download the .NET Core 2.1 SDK from https://www.microsoft.com/net/download'
+        throw 'The installed .NET Core SDK does not meet the minimum requirement to build the PowerShell Lambda package bundle. Download the .NET Core 3.1 SDK from https://www.microsoft.com/net/download'
     }
 }
 
