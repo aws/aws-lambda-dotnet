@@ -495,6 +495,7 @@ function _prepareDependentPowerShellModules
                 }
 
                 # in the Save-Module call, replace -RequiredVersion with @splat
+                Write-Host ('Saving module {0}' -f $_.Name)
                 Save-Module @splat
             }
         }
