@@ -27,7 +27,7 @@ Author = 'Amazon.com, Inc'
 CompanyName = 'Amazon.com, Inc'
 
 # Copyright statement for this module
-Copyright = 'Copyright 2012-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.'
+Copyright = 'Copyright 2012-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.'
 
 # Description of the functionality provided by this module
 Description = 'The AWS Lambda Tools for Powershell can be used to create and deploy AWS Lambda functions written in PowerShell.'
