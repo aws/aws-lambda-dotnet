@@ -15,8 +15,8 @@
 # This example demonstrates how to process an S3 Event that follows the process:
 # S3 Event -> SQS Queue -> Lambda Function
 
-#Requires -Modules @{ModuleName='AWS.Tools.Common';ModuleVersion='4.0.0.0'}
-#Requires -Modules @{ModuleName='AWS.Tools.S3';ModuleVersion='4.0.0.0'}
+#Requires -Modules @{ModuleName='AWS.Tools.Common';ModuleVersion='4.0.5.0'}
+#Requires -Modules @{ModuleName='AWS.Tools.S3';ModuleVersion='4.0.5.0'}
 
 # Uncomment to send the input event to CloudWatch Logs
 # Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)
