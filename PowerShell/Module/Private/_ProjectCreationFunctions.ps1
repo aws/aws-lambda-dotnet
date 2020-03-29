@@ -38,7 +38,7 @@ function _initializeScriptFromTemplate
 
         if (($fileExt -ieq '.ps1') -Or ($fileExt -ieq '.psm1'))
         {
-            # Check to see if the script has stated a requirement on AWS.Tools.* module and if so make the
+            # Check to see if the script has stated a requirement on AWSPowerShell.NetCore or AWS.Tools.* modules and if so make the
             # version referenced match the version installed locally.
             $ast = [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$null, [ref]$null)
             if ($ast.ScriptRequirements.RequiredModules)

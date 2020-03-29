@@ -7,7 +7,7 @@
 # The last item in the PowerShell pipeline will be returned as the result of the Lambda function.
 #
 # To include PowerShell modules with your Lambda function, like the AWS.Tools.S3 module, add a "#Requires" statement
-# indicating the module and version. If using an AWS.Tools.* module the must also be a requires for AWS.Tools.Common.
+# indicating the module and version. If using an AWS.Tools.* module the AWS.Tools.Common module must also be a required.
 #
 # This example demonstrates how to process an SQS Queue:
 # SQS Queue -> Lambda Function
