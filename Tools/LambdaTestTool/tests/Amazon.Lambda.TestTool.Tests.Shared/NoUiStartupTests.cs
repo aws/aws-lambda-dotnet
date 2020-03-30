@@ -70,7 +70,6 @@ namespace Amazon.Lambda.TestTool.Tests
 
             TestToolStartup.Startup("Unit Tests", null, new string[] { "--path", buildPath, "--no-ui", "--payload", "\"hello WORLD\"" }, runConfiguration);
             Assert.Contains("HELLO WORLD", runConfiguration.OutputWriter.ToString());
-            Assert.Contains("Setting AWS_PROFILE environment variable to default.", runConfiguration.OutputWriter.ToString());
             Assert.Contains("Setting AWS_REGION environment variable to us-west-2.", runConfiguration.OutputWriter.ToString());
         }
 

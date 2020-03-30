@@ -23,6 +23,7 @@
 
   <Target Name="PackageTestFunction" BeforeTargets="BeforeBuild">
     <Exec Command="dotnet tool install -g Amazon.Lambda.Tools" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Command="dotnet restore" />
     <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Command="dotnet lambda package -c Release" />
   </Target>
 
