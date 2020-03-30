@@ -1,0 +1,115 @@
+@page "/documentation"
+
+<h1 style="padding: 15px">@Constants.PRODUCT_NAME</h1>
+<hr />
+
+<p>
+    This tool can be used to help test .NET Lambda functions for debugging application logic. The .NET Lambda code will run within this tool's process allowing IDEs
+    attached to this tool to step through your .NET Core Lambda code. This tool runs the .NET Lambda code similarly
+    to how the AWS Lambda service runs .NET code but there are intended differences to make debugging simple, for example the host OS.
+    For that reason, this testing tool cannot help with diagnosing platform specific issues.
+</p>
+
+<h2>IDE Support</h2>
+<p>
+    Since this tool is a .NET Core application that loads the selected .NET code into its process any IDE that can debug .NET Core application can use this tool to debug .NET Lambda code.
+    The easiest way to use this tool is with Visual Studio and the <a href="@Constants.LINK_VS_TOOLKIT_MARKETPLACE" target="_blank">AWS Toolkit for Visual Studio</a>
+    which will automatically configure this tool when a .NET Core Lambda project is opened in Visual Studio. For how to setup this tool for other IDE like Visual Studio for Code or Rider from JetBrains check
+    click <a href="@Constants.LINK_GITHUB_TEST_TOOL_INSTALL_AND_RUN" target="_blank">here.</a>
+</p>
+
+<h2>Frequently Asked Questions</h2>
+<hr />
+<h4 class="faq-question">How does this tool load the provided .NET Lambda code?</h4>
+<p class="faq-answer">
+    .NET Core uses <a href="@Constants.LINK_MSDN_ASSEMBLY_LOAD_CONTEXT" target="_blank">AssemblyLoadContext</a> objects to load assemblies into a process.
+    Most applications including the .NET Lambda production environment load assemblies in the <b>Default</b> AssemblyLoadContext. This tool loads the provided .NET Lambda code in a separate
+    AssemblyLoadContext to avoid clashes with .NET assemblies used by this tool versus the .NET assemblies used by the provided .NET Lambda code. In some rare cases this difference can affect
+    how the .NET Lambda code runs within this tool compared to the actual Lambda environment.
+</p>
+
+<h4 class="faq-question">Why do I get a message saying the tool has been paused?</h4>
+<p class="faq-answer">
+    The web interface part of this tool was developed using Blazor Server Side which uses WebSockets to communicate from the browser to the backend ASP.NET Core process. When you are
+    debugging your Lambda code and are stopped at a breakpoint the ASP.NET Core process isn't responding on the WebSocket. That triggers the Blazor application to signal it isn't currently
+    getting any communication. Once you continue running the application the WebSocket will be reconnected. If the debugger is stopped, killing the test tool process, that will also bring
+    up the message about the application being paused. In this case you can close the browser window.
+</p>
+
+<h4 class="faq-question">Do I have to use the web interface to execute my .NET Lambda code?</h4>
+<p class="faq-answer">
+    In the default mode this tool uses the web interface to select the .NET Lambda code to run. It is also possible to skip using the web interface and identify the .NET Lambda code to run
+    using command line arguments. The key command line argument to set is <b>--no-ui</b> which will turn off the web interface. Using the <b>--help</b> command line argument you can see the list of
+    arguments that can be used to identify the .NET Lambda code and set environment settings like aws profile and region as well as a payload JSON document to be used as the function input.
+</p>
+
+<pre style="white-space: pre-wrap; background-color:lightgray;font-size:85%">
+&gt; dotnet lambda-test-tool-3.1 --help
+AWS .NET Core 3.1 Mock Lambda Test Tool (0.10.0)
+
+The .NET Lambda Test Tool can be launched in 2 modes. The default mode is to launch a web interface to select the Lambda code
+to execute with in the Lambda test tool. The second mode skips using the web interface and the Lambda code is identified
+using the commandline switches as described below. To switch to the no web interface mode use the --no-ui command line switch.
+
+These options are valid for either mode the Lambda test tool is running in.
+
+        --path &lt;directory&gt;                    The path to the lambda project to execute. If not set then the current directory will be used.
+
+These options are valid when using the web interface to select and execute the Lambda code.
+
+        --port &lt;port-number&gt;                  The port number used for the test tool's web interface.
+        --no-launch-window                    Disable auto launching the test tool's web interface in a browser.
+
+These options are valid in the no web interface mode.
+
+        --no-ui                               Disable launching the web interface and immediately execute the Lambda code.
+        --profile &lt;profile-name&gt;              Set the AWS credentials profile to provide credentials to the Lambda code.
+                                              If not set the profile from the config file will be used.
+        --region &lt;region-name&gt;                Set the AWS region to as the default region for the Lambda code being executed.
+                                              If not set the region from the config file will be used.
+        --config-file &lt;file-name&gt;             The config file to read for Lambda settings. If not set than aws-lambda-tools-defaults.json
+                                              will be used.
+        --function-handler &lt;handler-string&gt;   The Lambda function handler to identify the code to run. If not set then the function handler
+                                              from the config file will be used. This is the format of &lt;assembly::type-name::method-name&gt;.
+        --payload &lt;file-name&gt;                 The JSON payload to send to the Lambda function. This can be either an inline string or a
+                                              file path to a JSON file.
+        --pause-exit &lt;true or false&gt;          If set to true the test tool will pause waiting for a key input before exiting. The is useful
+                                              when executing from an IDE so you can avoid having the output window immediately disappear after
+                                              executing the Lambda code. The default value is true.
+</pre>
+
+<p class="faq-answer">
+    For command line arguments not set the defaults and config file will be used to determine the .NET Lambda code to run. For example if you just use the <b>--no-ui</b> argument then the
+    <b>aws-lambda-tools-defaults.json</b> will be searched for and used if found. The tool when then use the function handler, profile and region specified in the configuration file to run
+    .NET Lambda code.
+</p>
+
+<p>
+    Here is an example of a <b>launchSettings.json</b> file configured to use this tool without the web interface. Only <b>--no-ui</b> and <b>--payload</b> are set turning off the web interface
+    and indicating the contents of the payload.json file should be used as the function input. The function handler is identified from the project's <b>aws-lambda-tools-defaults.json</b> file.
+</p>
+
+<pre style="white-space: pre-wrap; background-color:lightgray;font-size:85%">
+{
+  "profiles": {
+    "Mock Lambda Test Tool": {
+      "commandName": "Executable",
+      "commandLineArgs": "--no-ui --payload payload.json",
+      "workingDirectory": ".\\bin\\$(Configuration)\\netcoreapp3.1",
+      "executablePath": "C:\\Users\\%USERNAME%\\.dotnet\\tools\\dotnet-lambda-test-tool-3.1.exe"
+    }
+  }
+}
+</pre>
+
+<h4 class="faq-question">How is the payload file in the --no-ui mode searched for?</h4>
+<p class="faq-answer">
+    The <b>--payload</b> switch points to a file location of a JSON document that is used as the function input. The file is searched using the following rules.
+    <ul>
+        <li>File is an absolute path.</li>
+        <li>File is in current directory where the Lambda assemblies can be found.</li>
+        <li>File is in Lambda project directory which is found looking up the parent directories from the Lambda assemblies directory.</li>
+        <li>File is in Properties directory along with the launchSettings.json file.</li>
+        <li>File is a saved request from the web interface. In this case you only need to set --payload to the name used to save the request.</li>
+    </ul>
+</p>

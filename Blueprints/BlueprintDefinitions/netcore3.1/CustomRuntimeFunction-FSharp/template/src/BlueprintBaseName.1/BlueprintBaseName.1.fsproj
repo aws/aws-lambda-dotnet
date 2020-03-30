@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AWSProjectType>Lambda</AWSProjectType>
+    <AssemblyName>bootstrap</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Function.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="aws-lambda-tools-defaults.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="1.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="aws-lambda-tools-defaults.json" />
+    <None Include="Readme.md" />
+  </ItemGroup>
+</Project>

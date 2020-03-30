@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 
 namespace Packager
 {
@@ -10,19 +11,27 @@ namespace Packager
             ProcessArgs(args, out var updateVersions);
 
             var outputDirectory = GetFullPath(@"../../Deployment/Blueprints");
-            var msbuildBased_2_1_Blueprints = GetFullPath(@"../BlueprintDefinitions/Msbuild-NETCore_2_1");
+            var blueprintPaths = new (string Source, string Output)[] { (Source: GetFullPath(@"../BlueprintDefinitions/netcore2.1"), Output: "vs2017"), (Source: GetFullPath(@"../BlueprintDefinitions/netcore3.1"), Output: "vs2019")};
             try
             {
                 Init(outputDirectory);
 
-                if (updateVersions)
+                foreach(var blueprintPath in blueprintPaths)
                 {
-                    var versionUpdater = new UpdatePackageReferenceVersions(msbuildBased_2_1_Blueprints);
-                    versionUpdater.Execute();
-                }
+                    if (updateVersions)
+                    {
+                        var versionUpdater = new UpdatePackageReferenceVersions(blueprintPath.Source);
+                        versionUpdater.Execute();
+                    }
 
-                var vsMsbuildPackager_2_1 = new VSMsbuildBlueprintPackager(msbuildBased_2_1_Blueprints, Path.Combine(outputDirectory, "VisualStudioBlueprintsMsbuild_2_1"));
-                vsMsbuildPackager_2_1.Execute();
+                    foreach(var jsonFile in Directory.GetFiles(blueprintPath.Source, "*.*", SearchOption.AllDirectories).Where(x => string.Equals(Path.GetExtension(x), ".json") || string.Equals(Path.GetExtension(x), ".template")))
+                    {
+                        Utilities.FormatJsonFile(jsonFile);
+                    }
+
+                    var packager = new VSMsbuildBlueprintPackager(blueprintPath.Source, Path.Combine(outputDirectory, new DirectoryInfo(blueprintPath.Output).Name));
+                    packager.Execute();
+                }
             }
             catch(Exception e)
             {

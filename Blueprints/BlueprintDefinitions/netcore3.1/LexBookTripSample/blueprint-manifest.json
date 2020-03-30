@@ -1,0 +1,14 @@
+{
+  "display-name": "Lex Book Trip Sample",
+  "system-name": "LexBookTripSample",
+  "description": "Amazon Lex getting started Book Trip sample",
+  "sort-order": 101,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "Custom",
+    "Lex"
+  ]
+}

@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>70aff681-844a-428c-aba2-7053e61d39c8</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Amazon.Lambda.TestTool.Tests.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AwsServiceTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommandLineParserTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ConsoleCaptureTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DefaultsFileParseTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DlqMonitorTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)InvokeFunctionTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LoadLambdaFunctionTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NoUiStartupTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SampleRequestTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestUtils.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,14 @@
+{
+  "display-name": "Simple Application Load Balancer Function",
+  "system-name": "SimpleApplicationLoadBalancerFunction",
+  "description": "A skeleton Lambda function to get started responding to Application Load Balancer events.",
+  "sort-order": 101,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "ALB",
+    "Simple"
+  ]
+}

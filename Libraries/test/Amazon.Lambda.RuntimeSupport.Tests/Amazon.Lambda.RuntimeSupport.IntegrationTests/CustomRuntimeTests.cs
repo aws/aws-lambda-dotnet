@@ -87,7 +87,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await RunTestExceptionAsync(lambdaClient, "TooLargeResponseBodyAsync", "", "Function.ResponseSizeTooLarge", "Response payload size (7340060 bytes) exceeded maximum allowed payload size (6291556 bytes).");
                     await RunTestSuccessAsync(lambdaClient, "LambdaEnvironmentAsync", "", "LambdaEnvironmentAsync-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "LambdaContextBasicAsync", "", "LambdaContextBasicAsync-SUCCESS");
-                    await RunTestSuccessAsync(lambdaClient, "GetPidDllImportAsync", "", "GetPidDllImportAsync-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "GetTimezoneNameAsync", "", "GetTimezoneNameAsync-UTC");
                 }
                 finally

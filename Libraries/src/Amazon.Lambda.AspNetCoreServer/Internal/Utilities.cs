@@ -69,6 +69,43 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             }
         }
 
+        /// <summary>
+        /// The RawQueryString property from the HTTP API V2 request is used instead of the QueryStringParameters
+        /// because QueryStringParameters url decodes the parameters taking out + from timestamps. ASP.NET Core
+        /// does expect the query string values to be URL encoded so the RawQueryString has to broken down into
+        /// pieces so the individual query string values can be url encoding and the recombined together.
+        /// </summary>
+        /// <param name="queryString"></param>
+        /// <returns></returns>
+        public static string CreateQueryStringParametersFromHttpApiV2(string queryString)
+        {
+            if (string.IsNullOrEmpty(queryString))
+                return null;
+
+            var sb = new StringBuilder("?");
+            foreach (var parameter in queryString.Split('&'))
+            {
+                if (sb.Length > 1)
+                {
+                    sb.Append("&");
+                }
+
+                int pos = parameter.IndexOf('=');
+                if(pos == -1)
+                {
+                    sb.Append(parameter);
+                }
+                else
+                {
+                    var name = parameter.Substring(0, pos);
+                    var value = parameter.Substring(pos + 1);
+                    sb.Append($"{name}={WebUtility.UrlEncode(value)}");
+                }
+            }
+
+            return sb.ToString();
+        }
+
         internal static string CreateQueryStringParameters(IDictionary<string, string> singleValues, IDictionary<string, IList<string>> multiValues, bool urlEncodeValue)
         {
             if (multiValues?.Count > 0)
