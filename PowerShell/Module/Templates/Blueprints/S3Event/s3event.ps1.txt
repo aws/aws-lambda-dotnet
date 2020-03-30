@@ -6,13 +6,14 @@
 #
 # The last item in the PowerShell pipeline will be returned as the result of the Lambda function.
 #
-# To include PowerShell modules with your Lambda function, like the AWSPowerShell.NetCore module, add a "#Requires" statement
-# indicating the module and version.
+# To include PowerShell modules with your Lambda function, like the AWS.Tools.S3 module, add a "#Requires" statement
+# indicating the module and version. If using an AWS.Tools.* module the AWS.Tools.Common module is also required.
 #
 # The following link contains documentation describing the structure of the S3 event object.
 # https://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
 
-#Requires -Modules @{ModuleName='AWSPowerShell.NetCore';ModuleVersion='3.3.428.0'}
+#Requires -Modules @{ModuleName='AWS.Tools.Common';ModuleVersion='4.0.5.0'}
+#Requires -Modules @{ModuleName='AWS.Tools.S3';ModuleVersion='4.0.5.0'}
 
 # Uncomment to send the input event to CloudWatch Logs
 # Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)

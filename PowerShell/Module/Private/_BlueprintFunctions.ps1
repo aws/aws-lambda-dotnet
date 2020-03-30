@@ -1,4 +1,4 @@
-$_blueprintsOnlinePath = '/LambdaSampleFunctions/powershell/v1/'
+$_blueprintsOnlinePath = '/LambdaSampleFunctions/powershell/v2/'
 $_modulePath = Split-Path -Path $PSScriptRoot -Parent
 $_blueprintsModulePath = Join-Path -Path $_modulePath -ChildPath 'Templates' -AdditionalChildPath 'Blueprints'
 $_manifestFilename = 'ps-lambda-blueprint-manifest.json'

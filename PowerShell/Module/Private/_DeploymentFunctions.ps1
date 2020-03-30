@@ -27,6 +27,9 @@ function _deployProject
         [int]$FunctionTimeout,
 
         [Parameter(Mandatory = $false)]
+        [string[]]$FunctionLayer,        
+
+        [Parameter(Mandatory = $false)]
         [Boolean]$PublishNewVersion,
 
         [Parameter(Mandatory = $false)]
@@ -73,7 +76,7 @@ function _deployProject
     try
     {
         $arguments = '"{0}"' -f $FunctionName
-        $arguments += ' --configuration Release --framework netcoreapp2.1 --function-runtime dotnetcore2.1'
+        $arguments += " --configuration Release --framework $AwsPowerShellTargetFramework --function-runtime $AwsPowerShellLambdaRuntime"
 
         $arguments += ' '
         $arguments += _setupAWSCredentialsCliArguments -ProfileName $ProfileName
@@ -98,6 +101,12 @@ function _deployProject
         if (($FunctionTimeout))
         {
             $arguments += " --function-timeout $FunctionTimeout"
+        }
+
+        $formattedLayers = _formatArray($FunctionLayer)
+        if(($formattedLayers))
+        {
+            $arguments += " --function-layers $formattedLayers"
         }
 
         if (($PublishNewVersion))
@@ -221,7 +230,7 @@ function _packageProject
     try
     {
         $arguments = $Name
-        $arguments += ' --configuration Release --framework netcoreapp2.1 --function-runtime dotnetcore2.1'
+        $arguments += " --configuration Release --framework $AwsPowerShellTargetFramework --function-runtime $AwsPowerShellLambdaRuntime"
 
         if (($OutputPackage))
         {
@@ -262,7 +271,7 @@ function _setupAWSCredentialsCliArguments
         return "--profile $ProfileName"
     }
 
-    # Look to see if the AWSPowerShell.NetCore module is loaded and that it was used to configure credentials for the shell.
+    # Look to see if the AWS module is loaded and that it was used to configure credentials for the shell.
     # If it has then pass those credentials into the Lambda dotnet CLI tool.
     if (Get-Command 'Get-AWSCredentials' -ErrorAction SilentlyContinue)
     {
@@ -449,11 +458,11 @@ function _prepareDependentPowerShellModules
 
             if ($_.Name -ieq 'AWSPowerShell')
             {
-                Write-Warning 'This script requires the AWSPowerShell module which is not supported. Please change the #Requires statement to AWSPowerShell.NetCore which is the "Core" platform edition of the AWS CmdLets. You are also required to install the AWSPowerShell.NetCore module if it is required.'
+                Write-Warning 'This script requires the AWSPowerShell module which is not supported. Please change the #Requires statement to use the service specifc modules like AWS.Tools.S3 which is compatible with PowerShell 6.0 and above.'
 
-                Write-Warning 'To use the AWS CmdLets execute "Install-Module AWSPowerShell.NetCore" and then update the #Requires statement to the version installed. If you are not going to use the AWS CmdLets then remove the #Requires statement from the script.'
+                Write-Warning 'To use the AWS CmdLets install the AWS.Tools.* module for the services needed and then update the #Requires statement to the version installed. If you are not going to use the AWS CmdLets then remove the #Requires statement from the script.'
 
-                throw 'The AWSPowerShell Module is not supported. Change the #Requires statement to reference the AWSPowerShell.NetCore module instead.'
+                throw 'The AWSPowerShell Module is not supported. Change the #Requires statement to reference the service specific modules like AWS.Tools.S3 module instead.'
             }
 
             $localModule = _findLocalModule -Name $_.Name -Version $_.Version
@@ -486,6 +495,7 @@ function _prepareDependentPowerShellModules
                 }
 
                 # in the Save-Module call, replace -RequiredVersion with @splat
+                Write-Host ('Saving module {0}' -f $_.Name)
                 Save-Module @splat
             }
         }
@@ -534,10 +544,10 @@ function _validateDotnetInstall
     $application = Get-Command -Name dotnet
     if (!($application))
     {
-        throw '.NET Core 2.1 SDK was not found which is required to build the PowerShell Lambda package bundle. Download the .NET Core 2.1 SDK from https://www.microsoft.com/net/download'
+        throw '.NET Core 3.1 SDK was not found which is required to build the PowerShell Lambda package bundle. Download the .NET Core 3.1 SDK from https://www.microsoft.com/net/download'
     }
 
-    $minVersion = [System.Version]::Parse('2.1.300')
+    $minVersion = [System.Version]::Parse('3.1.100')
     $foundMin = $false
 
     $installedSDKs = & dotnet --list-sdks
@@ -555,7 +565,7 @@ function _validateDotnetInstall
 
     if (!($foundMin))
     {
-        throw 'The installed .NET Core SDK does not meet the minimum requirement to build the PowerShell Lambda package bundle. Download the .NET Core 2.1 SDK from https://www.microsoft.com/net/download'
+        throw 'The installed .NET Core SDK does not meet the minimum requirement to build the PowerShell Lambda package bundle. Download the .NET Core 3.1 SDK from https://www.microsoft.com/net/download'
     }
 }
 

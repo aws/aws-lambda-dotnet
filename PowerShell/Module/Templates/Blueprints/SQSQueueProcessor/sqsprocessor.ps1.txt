@@ -6,13 +6,13 @@
 #
 # The last item in the PowerShell pipeline will be returned as the result of the Lambda function.
 #
-# To include PowerShell modules with your Lambda function, like the AWSPowerShell.NetCore module, add a "#Requires" statement
-# indicating the module and version.
+# To include PowerShell modules with your Lambda function, like the AWS.Tools.S3 module, add a "#Requires" statement
+# indicating the module and version. If using an AWS.Tools.* module the AWS.Tools.Common module is also required.
 #
 # This example demonstrates how to process an SQS Queue:
 # SQS Queue -> Lambda Function
 
-#Requires -Modules @{ModuleName='AWSPowerShell.NetCore';ModuleVersion='3.3.428.0'}
+#Requires -Modules @{ModuleName='AWS.Tools.Common';ModuleVersion='4.0.5.0'}
 
 # Uncomment to send the input event to CloudWatch Logs
 # Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)
