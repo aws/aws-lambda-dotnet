@@ -39,9 +39,7 @@
     <Target Name="package-blueprints" DependsOnTargets="init;run-blueprint-packager">
         <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/netcore2.1"/>
 		
-		<!-- Don't package the 3.1 template package until ready to .NET Core 3.1 Lambda runtime has shipped
 		<Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/netcore3.1"/>
-		-->
     </Target>
     <Target Name="run-blueprint-packager">
         <Exec Command="dotnet run -c $(Configuration) $(BlueprintPackagerArguments)" WorkingDirectory="..\Blueprints\BlueprintPackager"/>
