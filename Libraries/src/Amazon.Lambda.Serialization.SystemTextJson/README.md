@@ -1,8 +1,8 @@
 # Amazon.Lambda.Serialization.SystemTextJson
 
 This package contains a custom `Amazon.Lambda.Core.ILambdaSerializer` implementation which uses System.Text.Json to 
-serialize/deserialize .NET types in Lambda functions. This serializer targets .NET Core 3.1 so can be used the .NET Core 2.1
-Lambda runtime.
+serialize/deserialize .NET types in Lambda functions. This serializer targets .NET Core 3.1 so can not be used with 
+the .NET Core 2.1 Lambda runtime.
 
 If targeting .NET Core 3.1 this serializer is highly recommend over Amazon.Lambda.Serialization.Json and can significantly reduce
 cold start performance in Lambda.
