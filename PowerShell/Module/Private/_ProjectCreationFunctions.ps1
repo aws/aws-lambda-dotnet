@@ -64,7 +64,7 @@ function _initializeScriptFromTemplate
                             if ($lines[$i].Contains('#Requires') -and $lines[$i].Contains($_.Name) -and $lines[$i].Contains($_.Version.ToString()) )
                             {
                                 $lines[$i] = $lines.Replace($_.Version.ToString(), $installedVersion)
-                                Write-Host ("Configuring script to use installed version $installedVersion of $(_.Name)")
+                                Write-Host ("Configuring script to use installed version $installedVersion of ($_.Name)")
                                 break
                             }
                         }
