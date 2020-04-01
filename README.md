@@ -23,6 +23,7 @@ The table below shows the currently supported patch of each major version of .NE
   * [Creating a Deployment Package (C#)](https://docs.aws.amazon.com/lambda/latest/dg/lambda-dotnet-how-to-create-deployment-package.html)
 
 ### AWS Blog Posts
+* [Announcing AWS Lambda support for .NET Core 3.1](https://aws.amazon.com/blogs/compute/announcing-aws-lambda-supports-for-net-core-3-1/)
 * [Developing .NET Core AWS Lambda functions](https://aws.amazon.com/blogs/compute/developing-net-core-aws-lambda-functions/)
 * [.NET Core Global Tools for AWS](https://aws.amazon.com/blogs/developer/net-core-global-tools-for-aws/)
   * Important read of users of the dotnet Lambda CLI tool.
