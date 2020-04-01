@@ -1,3 +1,23 @@
+### Release 2020-03-31
+* **Amazon.Lambda.Serialization.SystemTextJson (1.0.0)**
+  * New JSON serializer based on System.Text.Json
+* **Amazon.Lambda.AspNetCoreServer (5.0.0)**
+  * Added support for API Gateway HTTP API using the new `APIGatewayHttpApiV2ProxyFunction` base class
+  * Fixed issue with HttpContext.RequestServices returning null
+  * Use new **Amazon.Lambda.Serialization.SystemTextJson** for JSON serialization when targeting .NET Core 3.1
+* **Amazon.Lambda.APIGatewayEvents (2.0.0)**
+  * Added support for API Gateway HTTP API support using `APIGatewayHttpApiV2ProxyRequest` and `APIGatewayHttpApiV2ProxyResponse` classes
+* **Amazon.Lambda.TestTool.WebTester21 (0.10.0)**
+  * Load Lambda code in separate AssemblyLoadContext to avoid assembly collisions
+  * Added new switch `--no-ui` to start debugging code immediately with using the web interface. More info can be found [here](https://github.com/aws/aws-lambda-dotnet/tree/master/Tools/LambdaTestTool#skip-using-the-web-interface)
+* **Amazon.Lambda.TestTool.WebTester31 (0.10.0)**
+  * New test tool for .NET Core 3.1 Lambda functions
+  * Uses same class library for loading and executing Lambda code
+  * Has separate UI built using Server Side Blazor framework
+* **Amazon.Lambda.Templates (4.0.0)**
+  * Updated templates to target .NET Core 3.1
+  * Added WebSocket API template
+
 ### Release 2019-12-18
 * **Amazon.Lambda.AspNetCoreServer (4.1.0)**
   * Pull Request [#558](https://github.com/aws/aws-lambda-dotnet/pull/558) Add support for response compression. Thanks [Justin Dearing](https://github.com/jdearing)
