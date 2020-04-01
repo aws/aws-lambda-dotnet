@@ -21,7 +21,7 @@ namespace Amazon.Lambda.RuntimeSupport
 {
     internal class LambdaContext : ILambdaContext
     {
-        private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1);
+        private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         private LambdaEnvironment _lambdaEnvironment;
         private RuntimeApiHeaders _runtimeApiHeaders;
@@ -69,6 +69,6 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public int MemoryLimitInMB => _memoryLimitInMB;
 
-        public TimeSpan RemainingTime => TimeSpan.FromMilliseconds(_deadlineMs - (DateTime.Now - UnixEpoch).TotalMilliseconds);
+        public TimeSpan RemainingTime => TimeSpan.FromMilliseconds(_deadlineMs - (DateTime.UtcNow - UnixEpoch).TotalMilliseconds);
     }
 }
