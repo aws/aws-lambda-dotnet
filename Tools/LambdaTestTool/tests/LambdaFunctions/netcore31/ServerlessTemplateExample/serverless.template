@@ -10,7 +10,7 @@
          "Type":"AWS::Serverless::Function",
          "Properties":{ 
             "Handler":"ServerlessTemplateExample::ServerlessTemplateExample.Functions::HelloWorld",
-            "Runtime":"dotnetcore2.1",
+            "Runtime":"dotnetcore3.1",
             "CodeUri":"",
             "Description":"",
             "MemorySize":256,
@@ -32,7 +32,7 @@
          "Properties":{ 
             "Handler":"ServerlessTemplateExample::ServerlessTemplateExample.Functions::ToUpper",
             "Role":null,
-            "Runtime":"dotnetcore2.1",
+            "Runtime":"dotnetcore3.1",
             "MemorySize":256,
             "Timeout":30,
             "Code":{ 
@@ -44,7 +44,7 @@
          "Type":"AWS::Lambda::Function",
          "Properties":{ 
             "Role":null,
-            "Runtime":"dotnetcore2.1",
+            "Runtime":"dotnetcore3.1",
             "MemorySize":256,
             "Timeout":30,
             "Code":{ 

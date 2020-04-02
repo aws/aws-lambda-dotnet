@@ -4,7 +4,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: An AWS Serverless Application.
 Globals:
   Function:
-    Runtime: "dotnetcore2.1"
+    Runtime: "dotnetcore3.1"
 Resources:
   MyHelloWorld:
     Type: AWS::Serverless::Function
