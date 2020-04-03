@@ -1,3 +1,8 @@
+### Release 2020-04-03
+* **Amazon.Lambda.RuntimeSupport (1.1.1)**
+  * Pull Request [#611](https://github.com/aws/aws-lambda-dotnet/pull/611) Fixes issue with RemainingTime from the LambdaContext returning negative values. Thanks [Martin Costello](https://github.com/martincostello)
+
+
 ### Release 2020-03-31
 * **Amazon.Lambda.Serialization.SystemTextJson (1.0.0)**
   * New JSON serializer based on System.Text.Json
