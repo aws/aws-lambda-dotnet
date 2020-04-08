@@ -1,3 +1,7 @@
+### Release 2020-04-07
+* **Amazon.Lambda.TestTool.WebTester21 (0.10.1)**
+  * Fixed issue with not correctly loading assemblies for the selected project in the custom AssemblyLoadContext.
+
 ### Release 2020-04-03
 * **Amazon.Lambda.RuntimeSupport (1.1.1)**
   * Pull Request [#611](https://github.com/aws/aws-lambda-dotnet/pull/611) Fixes issue with RemainingTime from the LambdaContext returning negative values. Thanks [Martin Costello](https://github.com/martincostello)
