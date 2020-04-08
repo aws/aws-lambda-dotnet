@@ -57,11 +57,11 @@ namespace Amazon.Lambda.TestTool.Runtime
             string assemblyPath = null;
 #if !NETCORE_2_1
             assemblyPath = _builtInResolver.ResolveAssemblyToPath(assemblyName);
+#endif
             if(assemblyPath == null || !File.Exists(assemblyPath))
             {
                 assemblyPath = _customResolver.ResolveAssemblyToPath(assemblyName);
             }
-#endif
             if (assemblyPath != null)
             {
                 return LoadFromAssemblyPath(assemblyPath);
