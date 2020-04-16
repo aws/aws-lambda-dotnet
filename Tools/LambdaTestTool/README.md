@@ -200,7 +200,7 @@ Remember when you update your version of the .NET Mock Lambda Test Tool to updat
 Follow the following steps to configure Rider
 * Select Run->Edit Configurations...
 * Push the `+` button to add a configuration and select `.NET Executable`
-* Set the `Exe path` field to the full path of `Amazon.Lambda.TestTool.dll` as described above
+* Set the `Exe path` field to the full path of `mazon.Lambda.TestTool.WebTesterXX.dll` as described above
 * Set the `Working directory` field to the .NET Core Lambda project root
 * Push OK
 
@@ -232,7 +232,7 @@ Follow these steps to configure Visual Studio for Mac:
 
 * Right click on .NET Core Lambda Project and select `Options`
 * Select the node Run -> Configurations -> Default
-* Set the `Start external program` field to the full path of `Amazon.Lambda.TestTool.dll` as described above
+* Set the `Start external program` field to the full path of `mazon.Lambda.TestTool.WebTesterXX.dll` as described above
 * Set the `Run in directory` field to the .NET Core Lambda project root
 
 Once this is done when you start the debugger in Visual Studio for Mac it will launch the .NET Mock Lambda Test Tool.
