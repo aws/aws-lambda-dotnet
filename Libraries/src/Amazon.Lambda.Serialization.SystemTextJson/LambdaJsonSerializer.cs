@@ -71,7 +71,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                     using (var debugWriter = new StringWriter())
                     using (var utf8Writer = new Utf8JsonWriter(responseStream))
                     {
-                        JsonSerializer.Serialize(utf8Writer, response);
+                        JsonSerializer.Serialize(utf8Writer, response, _options);
 
                         var jsonDocument = debugWriter.ToString();
                         Console.WriteLine($"Lambda Serialize {response.GetType().FullName}: {jsonDocument}");
