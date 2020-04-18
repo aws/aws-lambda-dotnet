@@ -48,7 +48,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var lambdaFunction = Activator.CreateInstance(functionType) as APIGatewayProxyFunction;
             var requestStream = new MemoryStream(System.Text.UTF8Encoding.UTF8.GetBytes(requestContent));
             var request = new Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer().Deserialize<APIGatewayProxyRequest>(requestStream);
-            await lambdaFunction.FunctionHandlerAsync(request, context);
+            var response = await lambdaFunction.FunctionHandlerAsync(request, context);
+            Assert.Equal(200, response.StatusCode);
             return lambdaFunction as IMethodsCalled;
         }
 
