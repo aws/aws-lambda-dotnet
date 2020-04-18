@@ -193,6 +193,9 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// registration for Lambda.
         /// </summary>
         /// <returns></returns>
+#if !NETCOREAPP_2_1
+        [Obsolete("Functions should migrate to CreateHostBuilder and use IHostBuilder to setup their ASP.NET Core application. In a future major version update of this library support for IWebHostBuilder will be removed for non .NET Core 2.1 Lambda functions.")]
+#endif
         protected virtual IWebHostBuilder CreateWebHostBuilder()
         {
             var builder = new WebHostBuilder()
