@@ -334,7 +334,9 @@ namespace Amazon.Lambda.AspNetCoreServer
             else
 #endif
             {
+#pragma warning disable 618
                 var builder = CreateWebHostBuilder();
+#pragma warning restore 618
 
                 var host = builder.Build();
                 PostCreateWebHost(host);
