@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -16,14 +16,8 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
     /// If the environment variable LAMBDA_NET_SERIALIZER_DEBUG is set to true the JSON coming
     /// in from Lambda and being sent back to Lambda will be logged.
     /// </para>
-    /// <para>
-    /// This serializer is obsolete because it uses inconsistent name casing when serializing to JSON. Fixing the
-    /// inconsistent casing issues would cause runtime breaking changes so the new type DefaultLambdaJsonSerializer was created.
-    /// https://github.com/aws/aws-lambda-dotnet/issues/624
-    /// </para>
     /// </summary>    
-    [Obsolete("This serializer is obsolete because it uses inconsistent name casing when serializing to JSON. Lambda functions should use the DefaultLambdaJsonSerializer type.")]
-    public class LambdaJsonSerializer : ILambdaSerializer
+    public class DefaultLambdaJsonSerializer : ILambdaSerializer
     {
         private const string DEBUG_ENVIRONMENT_VARIABLE_NAME = "LAMBDA_NET_SERIALIZER_DEBUG";
         private readonly JsonSerializerOptions _options;
@@ -32,13 +26,13 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         /// <summary>
         /// Constructs instance of serializer.
         /// </summary>        
-        public LambdaJsonSerializer()
+        public DefaultLambdaJsonSerializer()
         {
             _options = new JsonSerializerOptions()
             {
                 IgnoreNullValues = true,
                 PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = new AwsNamingPolicy(JsonNamingPolicy.CamelCase)
+                PropertyNamingPolicy = new AwsNamingPolicy()
             };
 
             _options.Converters.Add(new DateTimeConverter());
@@ -56,7 +50,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         /// Amazon.Lambda.Serialization.SystemTextJson's default settings have been applied.
         /// </summary>
         /// <param name="customizer"></param>
-        public LambdaJsonSerializer(Action<JsonSerializerOptions> customizer)
+        public DefaultLambdaJsonSerializer(Action<JsonSerializerOptions> customizer)
             : this()
         {
             customizer?.Invoke(this._options);
@@ -77,7 +71,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                     using (var debugWriter = new StringWriter())
                     using (var utf8Writer = new Utf8JsonWriter(responseStream))
                     {
-                        JsonSerializer.Serialize(utf8Writer, response);
+                        JsonSerializer.Serialize(utf8Writer, response, _options);
 
                         var jsonDocument = debugWriter.ToString();
                         Console.WriteLine($"Lambda Serialize {response.GetType().FullName}: {jsonDocument}");
@@ -99,8 +93,8 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
             {
                 throw new JsonSerializerException($"Error converting the response object of type {typeof(T).FullName} from the Lambda function to JSON: {e.Message}", e);
             }            
-        }  
-        
+        }
+
         /// <summary>
         /// Deserializes a stream to a particular type.
         /// </summary>
@@ -141,16 +135,19 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
             {
                 string message;
                 var targetType = typeof(T);
-                if(targetType == typeof(string))
+                if (targetType == typeof(string))
                 {
-                    message = $"Error converting the Lambda event JSON payload to a string. JSON strings must be quoted, for example \"Hello World\" in order to be converted to a string: {e.Message}";
+                    message =
+                        $"Error converting the Lambda event JSON payload to a string. JSON strings must be quoted, for example \"Hello World\" in order to be converted to a string: {e.Message}";
                 }
                 else
                 {
-                    message = $"Error converting the Lambda event JSON payload to type {targetType.FullName}: {e.Message}";
+                    message =
+                        $"Error converting the Lambda event JSON payload to type {targetType.FullName}: {e.Message}";
                 }
+
                 throw new JsonSerializerException(message, e);
-            }            
-        }        
+            }
+        }
     }
 }

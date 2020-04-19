@@ -1,5 +1,6 @@
 using Amazon.Lambda.Core;
 
+#pragma warning disable 618
 namespace Amazon.Lambda.Tests
 {
     using Amazon.Lambda;
@@ -50,6 +51,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void HttpApiV2Format(Type serializerType)
         {
@@ -131,6 +133,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void S3PutTest(Type serializerType)
         {
@@ -176,6 +179,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void KinesisTest(Type serializerType)
         {
@@ -220,6 +224,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void DynamoDbUpdateTest(Type serializerType)
         {
@@ -267,6 +272,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void CognitoTest(Type serializerType)
         {
@@ -307,6 +313,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void ConfigTest(Type serializerType)
         {
@@ -340,6 +347,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void SimpleEmailTest(Type serializerType)
         {
@@ -406,6 +414,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void SimpleEmailLambdaActionTest(Type serializerType)
         {
@@ -428,6 +437,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void SimpleEmailS3ActionTest(Type serializerType)
         {
@@ -462,6 +472,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void SNSTest(Type serializerType)
         {
@@ -509,6 +520,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void SQSTest(Type serializerType)
         {
@@ -577,6 +589,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void APIGatewayProxyRequestTest(Type serializerType)
         {
@@ -651,6 +664,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void APIGatewayProxyResponseTest(Type serializerType)
         {
@@ -685,6 +699,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void APIGatewayAuthorizerResponseTest(Type serializerType)
         {
@@ -739,6 +754,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void ApplicationLoadBalancerRequestSingleValueTest(Type serializerType)
         {
@@ -770,6 +786,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void ApplicationLoadBalancerRequestMultiValueTest(Type serializerType)
         {
@@ -810,6 +827,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void ApplicationLoadBalancerSingleHeaderResponseTest(Type serializerType)
         {
@@ -852,6 +870,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void ApplicationLoadBalancerMultiHeaderResponseTest(Type serializerType)
         {
@@ -898,6 +917,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void LexEvent(Type serializerType)
         {
@@ -939,6 +959,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void LexResponse(Type serializerType)
         {
@@ -987,6 +1008,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void KinesisFirehoseEvent(Type serializerType)
         {
@@ -1010,6 +1032,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void KinesisFirehoseResponseTest(Type serializerType)
         {
@@ -1041,6 +1064,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void KinesisAnalyticsOutputDeliveryEvent(Type serializerType)
         {
@@ -1060,6 +1084,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void KinesisAnalyticsOutputDeliveryResponseTest(Type serializerType)
         {
@@ -1087,6 +1112,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void KinesisAnalyticsInputProcessingEventTest(Type serializerType)
         {
@@ -1108,6 +1134,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void KinesisAnalyticsInputProcessingResponseTest(Type serializerType)
         {
@@ -1139,6 +1166,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void CloudWatchLogEvent(Type serializerType)
         {
@@ -1168,6 +1196,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void BatchJobStateChangeEventTest(Type serializerType)
         {
@@ -1219,6 +1248,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void ScheduledEventTest(Type serializerType)
         {
@@ -1250,6 +1280,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void ECSContainerInstanceStateChangeEventTest(Type serializerType)
         {
@@ -1300,6 +1331,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public void ECSTaskStateChangeEventTest(Type serializerType)
         {
@@ -1400,3 +1432,4 @@ namespace Amazon.Lambda.Tests
         }
     }
 }
+#pragma warning restore 618

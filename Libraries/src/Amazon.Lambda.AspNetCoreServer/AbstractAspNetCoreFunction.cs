@@ -343,7 +343,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 #if NETCOREAPP_2_1
         [LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 #elif NETCOREAPP_3_1
-        [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public virtual async Task<TRESPONSE> FunctionHandlerAsync(TREQUEST request, ILambdaContext lambdaContext)
         {

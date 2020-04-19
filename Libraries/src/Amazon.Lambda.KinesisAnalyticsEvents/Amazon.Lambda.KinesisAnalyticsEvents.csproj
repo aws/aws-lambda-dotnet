@@ -6,7 +6,7 @@
     <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - Amazon Kinesis Analytics package.</Description>
     <AssemblyTitle>Amazon.Lambda.KinesisAnalyticsEvents</AssemblyTitle>
-    <VersionPrefix>2.0.0</VersionPrefix>
+    <VersionPrefix>2.1.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.KinesisAnalyticsEvents</AssemblyName>
     <PackageId>Amazon.Lambda.KinesisAnalyticsEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;KinesisAnalytics</PackageTags>
@@ -14,9 +14,6 @@
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
     <DefineConstants>NETCOREAPP_3_1</DefineConstants>
-  </PropertyGroup>  
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
-    <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.1.1" />
-  </ItemGroup>  
+  </PropertyGroup>
+  
 </Project>

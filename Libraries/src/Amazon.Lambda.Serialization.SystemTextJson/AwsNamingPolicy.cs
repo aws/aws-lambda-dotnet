@@ -15,6 +15,27 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                 {"XAmzRequestId", "x-amz-request-id" }
             };
 
+        private readonly JsonNamingPolicy _fallbackNamingPolicy;
+
+        /// <summary>
+        /// Creates the AWS Naming policy. If the name matches one of the reserved AWS words it will return the
+        /// appropriate mapping for it. Otherwise the name will be return as is like the JsonDefaultNamingPolicy.
+        /// </summary>
+        public AwsNamingPolicy()
+        {
+            
+        }
+
+        /// <summary>
+        /// Creates the AWS Naming policy. If the name matches one of the reserved AWS words it will return the
+        /// appropriate mapping for it. Otherwise the JsonNamingPolicy passed in will be used to map the name.
+        /// </summary>
+        /// <param name="fallbackNamingPolicy"></param>
+        public AwsNamingPolicy(JsonNamingPolicy fallbackNamingPolicy)
+        {
+            _fallbackNamingPolicy = fallbackNamingPolicy;
+        }
+
         /// <summary>
         /// Map names that don't camel case.
         /// </summary>
@@ -27,7 +48,16 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                 return mapNamed;
             }
 
-            return JsonNamingPolicy.CamelCase.ConvertName(name);
+            if (_fallbackNamingPolicy == null)
+            {
+                // If no naming policy given then just return the name like the JsonDefaultNamingPolicy policy.
+                // https://github.com/dotnet/runtime/blob/master/src/libraries/System.Text.Json/src/System/Text/Json/Serialization/JsonDefaultNamingPolicy.cs
+                return name;
+            }
+            else
+            {
+                return _fallbackNamingPolicy.ConvertName(name);
+            }
         }
     }
 }
