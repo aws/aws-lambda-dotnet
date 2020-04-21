@@ -20,25 +20,31 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
     public class DefaultLambdaJsonSerializer : ILambdaSerializer
     {
         private const string DEBUG_ENVIRONMENT_VARIABLE_NAME = "LAMBDA_NET_SERIALIZER_DEBUG";
-        private readonly JsonSerializerOptions _options;
         private readonly bool _debug;
+        
+        /// <summary>
+        /// The options used to serialize JSON object.
+        /// </summary>
+        protected JsonSerializerOptions SerializerOptions { get; }
 
         /// <summary>
         /// Constructs instance of serializer.
         /// </summary>        
         public DefaultLambdaJsonSerializer()
         {
-            _options = new JsonSerializerOptions()
+            SerializerOptions = new JsonSerializerOptions()
             {
                 IgnoreNullValues = true,
                 PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = new AwsNamingPolicy()
+                PropertyNamingPolicy = new AwsNamingPolicy(),
+                Converters =
+                {
+                    new DateTimeConverter(),
+                    new MemoryStreamConverter(),
+                    new ConstantClassConverter()
+                }
             };
 
-            _options.Converters.Add(new DateTimeConverter());
-            _options.Converters.Add(new MemoryStreamConverter());
-            _options.Converters.Add(new ConstantClassConverter());
-            
             if (string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true", StringComparison.OrdinalIgnoreCase))
             {
                 this._debug = true;
@@ -53,7 +59,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         public DefaultLambdaJsonSerializer(Action<JsonSerializerOptions> customizer)
             : this()
         {
-            customizer?.Invoke(this._options);
+            customizer?.Invoke(this.SerializerOptions);
         }
 
         /// <summary>
@@ -71,7 +77,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                     using (var debugWriter = new StringWriter())
                     using (var utf8Writer = new Utf8JsonWriter(responseStream))
                     {
-                        JsonSerializer.Serialize(utf8Writer, response, _options);
+                        JsonSerializer.Serialize(utf8Writer, response, SerializerOptions);
 
                         var jsonDocument = debugWriter.ToString();
                         Console.WriteLine($"Lambda Serialize {response.GetType().FullName}: {jsonDocument}");
@@ -85,7 +91,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                 {
                     using (var writer = new Utf8JsonWriter(responseStream))
                     {
-                        JsonSerializer.Serialize(writer, response, _options);
+                        JsonSerializer.Serialize(writer, response, SerializerOptions);
                     }
                 }
             }
@@ -129,7 +135,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                     }
                 }
 
-                return JsonSerializer.Deserialize<T>(utf8Json, _options);
+                return JsonSerializer.Deserialize<T>(utf8Json, SerializerOptions);
             }
             catch (Exception e)
             {
