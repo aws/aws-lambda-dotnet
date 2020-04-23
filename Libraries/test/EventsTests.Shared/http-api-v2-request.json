@@ -41,6 +41,7 @@
     "timeEpoch": 1583348638390
   },
   "body": "Hello from Lambda",
+  "pathParameters": { "parameter1": "value1" },
   "isBase64Encoded": true,
   "stageVariables": {
     "stageVariable1": "value1",
