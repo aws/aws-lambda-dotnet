@@ -11,9 +11,5 @@
     <PackageId>Amazon.Lambda.KinesisAnalyticsEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;KinesisAnalytics</PackageTags>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <DefineConstants>NETCOREAPP_3_1</DefineConstants>
-  </PropertyGroup>
   
 </Project>

@@ -12,8 +12,4 @@
     <PackageTags>AWS;Amazon;Lambda;Lex</PackageTags>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <DefineConstants>NETCOREAPP_3_1</DefineConstants>
-  </PropertyGroup>
-
 </Project>
