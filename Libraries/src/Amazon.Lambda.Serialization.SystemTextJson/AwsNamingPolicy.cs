@@ -19,7 +19,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
 
         /// <summary>
         /// Creates the AWS Naming policy. If the name matches one of the reserved AWS words it will return the
-        /// appropriate mapping for it. Otherwise the name will be return as is like the JsonDefaultNamingPolicy.
+        /// appropriate mapping for it. Otherwise the name will be returned as is like the JsonDefaultNamingPolicy.
         /// </summary>
         public AwsNamingPolicy()
         {
@@ -48,16 +48,9 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                 return mapNamed;
             }
 
-            if (_fallbackNamingPolicy == null)
-            {
-                // If no naming policy given then just return the name like the JsonDefaultNamingPolicy policy.
-                // https://github.com/dotnet/runtime/blob/master/src/libraries/System.Text.Json/src/System/Text/Json/Serialization/JsonDefaultNamingPolicy.cs
-                return name;
-            }
-            else
-            {
-                return _fallbackNamingPolicy.ConvertName(name);
-            }
+            // If no naming policy given then just return the name like the JsonDefaultNamingPolicy policy.
+            // https://github.com/dotnet/runtime/blob/master/src/libraries/System.Text.Json/src/System/Text/Json/Serialization/JsonDefaultNamingPolicy.cs
+            return _fallbackNamingPolicy?.ConvertName(name) ?? name;
         }
     }
 }
