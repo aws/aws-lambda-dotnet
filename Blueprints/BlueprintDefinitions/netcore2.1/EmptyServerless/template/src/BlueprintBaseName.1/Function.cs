@@ -26,7 +26,7 @@ namespace BlueprintBaseName._1
         /// A Lambda function to respond to HTTP Get methods from API Gateway
         /// </summary>
         /// <param name="request"></param>
-        /// <returns>The list of blogs</returns>
+        /// <returns>The API Gateway response.</returns>
         public APIGatewayProxyResponse Get(APIGatewayProxyRequest request, ILambdaContext context)
         {
             context.Logger.LogLine("Get Request\n");
