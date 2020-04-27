@@ -88,11 +88,11 @@ public static IHostBuilder CreateHostBuilder(string[] args) =>
 
 Amazon.Lambda.AspNetCoreServer creates this `IHostBuilder` and configures all of the default settings needed to run the ASP.NET Core application in Lambda. 
 
-There are 2 `Init` methods that can be overriden to customize the `IHostBuilder`. The most common customization is to override the `Init(IWebHostBuilder)` method and set the startup class via the `UseStartup` method. To customize the `IHostBuilder` then override the `Init(IHostBuilder)`. **Do not call `ConfigureWebHostDefaults` when overriding `Init(IHostBuilder)` because Amazon.Lambda.AspNetCoreServer will call `ConfigureWebHostDefaults` when creating the `IHostBuilder`. By calling `ConfigureWebHostDefaults` in the `Init(IHostBuilder)` method causes the `IWebHostBuilder` to be configured twice.**
+There are two `Init` methods that can be overridden to customize the `IHostBuilder`. The most common customization is to override the `Init(IWebHostBuilder)` method and set the startup class via the `UseStartup` method. To customize the `IHostBuilder` then override the `Init(IHostBuilder)`. **Do not call `ConfigureWebHostDefaults` when overriding `Init(IHostBuilder)` because Amazon.Lambda.AspNetCoreServer will call `ConfigureWebHostDefaults` when creating the `IHostBuilder`. By calling `ConfigureWebHostDefaults` in the `Init(IHostBuilder)` method, the `IWebHostBuilder` will be configured twice.**
 
 If you want complete control over creating the `IHostBuilder` then override the `CreateHostBuilder` method. When overriding the `CreateHostBuilder` method neither of the `Init` methods will be called unless the override calls the base implementation. When overriding `CreateHostBuilder` it is recommended to call `ConfigureWebHostLambdaDefaults` instead of `ConfigureWebHostDefaults` to configure the `IWebHostBuilder` for Lambda.
 
-If the `CreateWebHostBuilder` is overriden in an ASP.NET Core 3.1 application then only the `IWebHostBuilder` is used for bootstrapping using the same pattern that ASP.NET Core 2.1 applications use. `CreateHostBuilder` and `Init(IHostBuilder)` will not be called when `CreateWebHostBuilder` is overriden.
+If the `CreateWebHostBuilder` is overridden in an ASP.NET Core 3.1 application then only the `IWebHostBuilder` is used for bootstrapping using the same pattern that ASP.NET Core 2.1 applications use. `CreateHostBuilder` and `Init(IHostBuilder)` will not be called when `CreateWebHostBuilder` is overridden.
 
 
 

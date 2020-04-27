@@ -251,7 +251,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// Setting the Startup class is required in this method.
         /// <para>
         /// It is recommended to not configure the IWebHostBuilder from this method. Instead configure the IWebHostBuilder
-        /// in the Init(IWebHostBuilder builder) method. If you configure the IWebHostBuilder in this method the IWebHostBuilder will
+        /// in the Init(IWebHostBuilder builder) method. If you configure the IWebHostBuilder in this method the IWebHostBuilder will be
         /// configured twice, here and and as part of CreateHostBuilder.
         /// </para>
         /// </summary>
@@ -338,8 +338,8 @@ namespace Amazon.Lambda.AspNetCoreServer
             _server = this._hostServices.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
             if (_server == null)
             {
-                throw new Exception("Failed to find the Lambda implementation for the IServer interface in the IServiceProvider for the Host. This happens if UseLambdaServer was " + 
-                        "not called when constructing the IWebHostBuilder. If CreateHostBuilder was overriden it is recommended that ConfigureWebHostLambdaDefaults should be used " + 
+                throw new Exception("Failed to find the Lambda implementation for the IServer interface in the IServiceProvider for the Host. This happens if UseLambdaServer was " +
+                        "not called when constructing the IWebHostBuilder. If CreateHostBuilder was overridden it is recommended that ConfigureWebHostLambdaDefaults should be used " + 
                         "instead of ConfigureWebHostDefaults to make sure the property Lambda services are registered.");
             }
             _logger = ActivatorUtilities.CreateInstance<Logger<APIGatewayProxyFunction>>(this._hostServices);

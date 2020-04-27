@@ -31,16 +31,16 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             // This makes sure there is only one registered IServer using LambdaServer and removes any other registrations.
             foreach (var serviceDescription in serviceDescriptions)
             {
-                // If Lambda server has already been added the skip out.
                 if (serviceDescription.ImplementationType == typeof(LambdaServer))
                 {
                     lambdaServiceCount++;
-                    if(lambdaServiceCount > 1)
+                    // If more then one LambdaServer registration has occurred then remove the extra registrations.
+                    if (lambdaServiceCount > 1)
                     {
                         toRemove.Add(serviceDescription);
                     }
                 }                        
-                // If there is an IServer registered that isn't LambdaServer then remove it. This is mostly likely caused
+                // If there is an IServer registered that isn't LambdaServer then remove it. This is most likely caused
                 // by leaving the UseKestrel call.
                 else
                 {
@@ -48,12 +48,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 }
             }
 
-            foreach(var serviceDescription in toRemove)
+            foreach (var serviceDescription in toRemove)
             {
                 services.Remove(serviceDescription);
             }
 
-            if(lambdaServiceCount == 0)
+            if (lambdaServiceCount == 0)
             {
                 services.AddSingleton<IServer, LambdaServer>();
             }
