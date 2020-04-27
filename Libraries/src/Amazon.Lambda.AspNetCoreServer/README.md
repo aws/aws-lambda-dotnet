@@ -69,6 +69,39 @@ namespace TestWebApp
 
 The function handler for the Lambda function will be **TestWebApp::TestWebApp.LambdaFunction::FunctionHandlerAsync**.
 
+## Bootstrapping application (IWebHostBuilder vs IHostBuilder)
+
+ASP.NET Core applications are bootstrapped by using a host builder. The host builder is used to configure all of the required services needed to run the ASP.NET Core application. With Amazon.Lambda.AspNetCoreServer there are multiple options for customizing the bootstrapping and they vary between targeted versions of .NET Core.
+
+### ASP.NET Core 3.1
+
+ASP.NET Core 3.1 uses the generic `IHostBuilder` to bootstrap the application. In a typical ASP.NET Core 3.1 application the `Program.cs` file will bootstrap the application using `IHostBuilder` like the following snippet shows. As part of creating the `IHostBuilder` an `IWebHostBuilder` is created by the `ConfigureWebHostDefaults` method.
+
+```csharp
+public static IHostBuilder CreateHostBuilder(string[] args) =>
+    Host.CreateDefaultBuilder(args)
+        .ConfigureWebHostDefaults(webBuilder =>
+        {
+            webBuilder.UseStartup<Startup>();
+        });
+```
+
+Amazon.Lambda.AspNetCoreServer creates this `IHostBuilder` and configures all of the default settings needed to run the ASP.NET Core application in Lambda. 
+
+There are 2 `Init` methods that can be overriden to customize the `IHostBuilder`. The most common customization is to override the `Init(IWebHostBuilder)` method and set the startup class via the `UseStartup` method. To customize the `IHostBuilder` then override the `Init(IHostBuilder)`. **Do not call `ConfigureWebHostDefaults` when overriding `Init(IHostBuilder)` because Amazon.Lambda.AspNetCoreServer will call `ConfigureWebHostDefaults` when creating the `IHostBuilder`. By calling `ConfigureWebHostDefaults` in the `Init(IHostBuilder)` method causes the `IWebHostBuilder` to be configured twice.**
+
+If you want complete control over creating the `IHostBuilder` then override the `CreateHostBuilder` method. When overriding the `CreateHostBuilder` method neither of the `Init` methods will be called unless the override calls the base implementation. When overriding `CreateHostBuilder` it is recommended to call `ConfigureWebHostLambdaDefaults` instead of `ConfigureWebHostDefaults` to configure the `IWebHostBuilder` for Lambda.
+
+If the `CreateWebHostBuilder` is overriden in an ASP.NET Core 3.1 application then only the `IWebHostBuilder` is used for bootstrapping using the same pattern that ASP.NET Core 2.1 applications use. `CreateHostBuilder` and `Init(IHostBuilder)` will not be called when `CreateWebHostBuilder` is overriden.
+
+
+
+### ASP.NET Core 2.1
+
+ASP.NET Core 2.1 applications are bootstrapped with the `IWebHostBuilder` type. Amazon.Lambda.AspNetCoreServer will create an instance of `IWebHostBuilder` and it can be customized by overriding the `Init(IWebHostBuilder)` method. The most common customization is configuring the startup class via the `UseStartup` method.
+
+If you want complete control over creating the `IWebHostBuilder` then override the `CreateWebHostBuilder` method. When overriding the `CreateWebHostBuilder` method the `Init(IWebHostBuilder)` method will not be called unless the override calls the base implementation or explicitly calls the `Init(IWebHostBuilder)` method.
+
 
 ## Access to Lambda Objects from HttpContext
 
