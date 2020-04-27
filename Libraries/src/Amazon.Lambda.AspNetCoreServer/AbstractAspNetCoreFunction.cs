@@ -259,7 +259,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             {
                 throw new Exception("Failed to find the implementation Lambda for the IServer registration. This can happen if UseLambdaServer was not called.");
             }
-            _logger = ActivatorUtilities.CreateInstance<Logger<APIGatewayProxyFunction>>(this._host.Services);
+            _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(this._host.Services);
         }
 
         /// <summary>
