@@ -78,6 +78,9 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("value1", request.StageVariables["stageVariable1"]);
                 Assert.Equal("value2", request.StageVariables["stageVariable2"]);
 
+                Assert.Equal(1, request.PathParameters.Count);
+                Assert.Equal("value1", request.PathParameters["parameter1"]);
+
                 var rc = request.RequestContext;
                 Assert.NotNull(rc);
                 Assert.Equal("123456789012", rc.AccountId);
