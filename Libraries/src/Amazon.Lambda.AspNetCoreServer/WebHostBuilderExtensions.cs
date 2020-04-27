@@ -39,19 +39,7 @@ namespace Microsoft.AspNetCore.Hosting
         {
             return hostBuilder.ConfigureServices(services =>
             {
-                var serviceDescription = services.FirstOrDefault(x => x.ServiceType == typeof(IServer));
-                if (serviceDescription != null)
-                {
-                    // If Lambda server has already been added the skip out.
-                    if (serviceDescription.ImplementationType == typeof(LambdaServer))
-                        return;
-                    // If there is already an IServer registered then remove it. This is mostly likely caused
-                    // by leaving the UseKestrel call.
-                    else
-                        services.Remove(serviceDescription);
-                }
-
-                services.AddSingleton<IServer, LambdaServer>();
+                Utilities.EnsureLambdaServerRegistered(services);
             });
         }
     }

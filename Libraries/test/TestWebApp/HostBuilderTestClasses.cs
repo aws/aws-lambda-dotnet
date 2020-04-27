@@ -93,5 +93,52 @@ namespace TestWebApp
             InitHostBuilder = true;
         }
     }
+
+
+    public class HostBuilderOverridingInitHostBuilderAndCallsConfigureWebHostDefaults : APIGatewayProxyFunction, IMethodsCalled
+    {
+        public bool InitHostBuilder { get; set; }
+        public bool InitHostWebBuilder { get; set; }
+
+
+        protected override void Init(IWebHostBuilder builder)
+        {
+            InitHostWebBuilder = true;
+        }
+
+        protected override void Init(IHostBuilder builder)
+        {
+            InitHostBuilder = true;
+
+            builder
+                  .ConfigureWebHostDefaults(webBuilder =>
+                  {
+                      webBuilder.UseStartup<Startup>();
+                  });
+        }
+    }
+
+    public class HostBuilderOverridingInitHostBuilderAndCallsConfigureWebHostLambdaDefaults : APIGatewayProxyFunction, IMethodsCalled
+    {
+        public bool InitHostBuilder { get; set; }
+        public bool InitHostWebBuilder { get; set; }
+
+
+        protected override void Init(IWebHostBuilder builder)
+        {
+            InitHostWebBuilder = true;
+        }
+
+        protected override void Init(IHostBuilder builder)
+        {
+            InitHostBuilder = true;
+
+            builder
+                  .ConfigureWebHostLambdaDefaults(webBuilder =>
+                  {
+                      webBuilder.UseStartup<Startup>();
+                  });
+        }
+    }
 }
 #endif

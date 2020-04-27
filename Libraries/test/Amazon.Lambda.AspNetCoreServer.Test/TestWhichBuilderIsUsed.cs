@@ -30,6 +30,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [InlineData(typeof(HostBuilderOverridingInit), true)]
         [InlineData(typeof(HostBuilderOverridingCreateWebHostBuilder), false)]
         [InlineData(typeof(HostBuilderOverridingCreateHostBuilder), true)]
+        [InlineData(typeof(HostBuilderOverridingInitHostBuilderAndCallsConfigureWebHostDefaults), true)]
+        [InlineData(typeof(HostBuilderOverridingInitHostBuilderAndCallsConfigureWebHostLambdaDefaults), true)]
         public async Task TestUsingGenericBaseClass(Type functionType, bool initHostCalled)
         {
             var methodsCalled = await InvokeAPIGatewayRequestWithContent(functionType);

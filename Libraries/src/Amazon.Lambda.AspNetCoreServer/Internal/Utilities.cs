@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using System;
 using System.Buffers;
@@ -18,6 +20,45 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
     /// </summary>
     public static class Utilities
     {
+
+        internal static void EnsureLambdaServerRegistered(IServiceCollection services)
+        {
+            IList<ServiceDescriptor> toRemove = new List<ServiceDescriptor>();
+            var serviceDescriptions = services.Where(x => x.ServiceType == typeof(IServer));
+            int lambdaServiceCount = 0;
+
+            // There can be more then one IServer implementation registered if the consumer called ConfigureWebHostDefaults in the Init override for the IHostBuilder.
+            // This makes sure there is only one registered IServer using LambdaServer and removes any other registrations.
+            foreach (var serviceDescription in serviceDescriptions)
+            {
+                // If Lambda server has already been added the skip out.
+                if (serviceDescription.ImplementationType == typeof(LambdaServer))
+                {
+                    lambdaServiceCount++;
+                    if(lambdaServiceCount > 1)
+                    {
+                        toRemove.Add(serviceDescription);
+                    }
+                }                        
+                // If there is an IServer registered that isn't LambdaServer then remove it. This is mostly likely caused
+                // by leaving the UseKestrel call.
+                else
+                {
+                    toRemove.Add(serviceDescription);
+                }
+            }
+
+            foreach(var serviceDescription in toRemove)
+            {
+                services.Remove(serviceDescription);
+            }
+
+            if(lambdaServiceCount == 0)
+            {
+                services.AddSingleton<IServer, LambdaServer>();
+            }
+        }
+
         internal static Stream ConvertLambdaRequestBodyToAspNetCoreBody(string body, bool isBase64Encoded)
         {
             Byte[] binaryBody;
