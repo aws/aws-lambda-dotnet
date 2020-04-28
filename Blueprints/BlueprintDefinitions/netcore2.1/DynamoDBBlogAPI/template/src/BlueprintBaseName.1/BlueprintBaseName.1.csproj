@@ -8,7 +8,7 @@
     <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.3.105.34" />
     <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.7.0" />
-    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.0.0" />
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
   </ItemGroup>
 </Project>
