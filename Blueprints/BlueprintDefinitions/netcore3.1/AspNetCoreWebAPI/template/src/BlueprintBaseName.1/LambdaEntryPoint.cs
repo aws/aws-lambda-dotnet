@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
-using System.IO;
+using Microsoft.Extensions.Hosting;
 
 namespace BlueprintBaseName._1
 {
@@ -38,6 +36,17 @@ namespace BlueprintBaseName._1
         {
             builder
                 .UseStartup<Startup>();
+        }
+
+        /// <summary>
+        /// Use this override to customize the services registered with the IHostBuilder. 
+        /// 
+        /// It is recommended not to call ConfigureWebHostDefaults to configure the IWebHostBuilder inside this method.
+        /// Instead customize the IWebHostBuilder in the Init(IWebHostBuilder) overload.
+        /// </summary>
+        /// <param name="builder"></param>
+        protected override void Init(IHostBuilder builder)
+        {
         }
     }
 }
