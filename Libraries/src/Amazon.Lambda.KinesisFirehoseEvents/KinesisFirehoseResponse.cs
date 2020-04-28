@@ -32,6 +32,9 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
         /// The transformed records from the KinesisFirehoseEvent.
         /// </summary>        
         [DataMember(Name = "records")]
+#if NETCOREAPP_3_1
+        [System.Text.Json.Serialization.JsonPropertyName("records")]
+#endif
         public IList<FirehoseRecord> Records { get; set; }
 
         /// <summary>
@@ -46,6 +49,9 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             ///transformed record is treated as a data transformation failure.
             /// </summary>
             [DataMember(Name = "recordId")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("recordId")]
+#endif
             public string RecordId { get; set; }
 
             /// <summary>
@@ -72,6 +78,9 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             /// </list>
             /// </summary>
             [DataMember(Name = "result")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("result")]
+#endif
             public string Result { get; set; }
 
             /// <summary>

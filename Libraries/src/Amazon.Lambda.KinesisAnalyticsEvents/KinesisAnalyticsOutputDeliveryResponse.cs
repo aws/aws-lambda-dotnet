@@ -28,6 +28,9 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
         /// The records.
         /// </value>
         [DataMember(Name = "records")]
+#if NETCOREAPP3_1
+        [System.Text.Json.Serialization.JsonPropertyName("records")]
+#endif
         public IList<Record> Records { get; set; }
 
         /// <summary>
@@ -43,6 +46,9 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// The record identifier.
             /// </value>
             [DataMember(Name = "recordId")]
+#if NETCOREAPP3_1
+            [System.Text.Json.Serialization.JsonPropertyName("recordId")]
+#endif
             public string RecordId { get; set; }
 
             /// <summary>
@@ -52,6 +58,9 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// The result.
             /// </value>
             [DataMember(Name = "result")]
+#if NETCOREAPP3_1
+            [System.Text.Json.Serialization.JsonPropertyName("result")]
+#endif
             public string Result { get; set; }
         }
     }
