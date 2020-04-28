@@ -1,3 +1,24 @@
+### Release 2020-04-28
+* **Amazon.Lambda.Serialization.SystemTextJson (2.0.0)**
+  * Added new `DefaultLambdaJsonSerializer` class to replace `LambdaJsonSerializer` has inconsistent casing issues with the JSON serialized from .NET objects.
+  * DefaultLambdaJsonSerializer addresses with with LambdaJsonSerializer not honoring the JsonSerializerOptions when LAMBDA_NET_SERIALIZER_DEBUG environment variable set.
+  * Added `CamelCaseLambdaJsonSerializer` for use cases where the JSON serialized from .NET object need camelCase.
+  * Obsoleted `LambdaJsonSerializer` due to issues with inconsistent JSON casing. Users should update to `DefaultLambdaJsonSerializer`.
+* **Amazon.Lambda.AspNetCoreServer (5.1.0)**
+  * When targeting .NET Core 3.1 bootstrapping switched to `IHostBuilder`.
+  * Updated [README](https://github.com/aws/aws-lambda-dotnet/tree/master/Libraries/src/Amazon.Lambda.AspNetCoreServer#bootstrapping-application-iwebhostbuilder-vs-ihostbuilder) explaining how bootstrapping works for Lambda. 
+* **Amazon.Lambda.APIGatewayEvents (2.0.0)**
+  * Add `PathParameters` to `APIGatewayHttpApiV2ProxyRequest`
+* **Amazon.Lambda.ApplicationLoadBalancerEvents (2.0.0)**
+  * Updated Application LoadBalancer response objects to have `JsonPropertyName` on the properties to make sure the casing matched what the Application LoadBalancer expected.
+* **Amazon.Lambda.KinesisAnalyticsEvents (2.1.0)**
+  * Updated Kinesis Analytics response objects to have `JsonPropertyName` on the properties to make sure the casing matched what Kinesis Analytics expected.
+* **Amazon.Lambda.LexEvents (2.0.0)**
+  * Updated Lex response objects to have `JsonPropertyName` on the properties to make sure the casing matched what Lex expected.
+* **Amazon.Lambda.Templates (4.1.1)**
+  * Updated blueprints to use latest versions of AWS packages
+  * Updated ASP.NET Core 3.1 blueprints to use `IHostBuilder`
+
 ### Release 2020-04-07
 * **Amazon.Lambda.TestTool.WebTester21 (0.10.1)**
   * Fixed issue with not correctly loading assemblies for the selected project in the custom AssemblyLoadContext.
