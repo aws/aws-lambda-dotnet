@@ -11,7 +11,7 @@ using Amazon.Lambda.LexEvents;
 using System.IO;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+[assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace BlueprintBaseName._1
 {
