@@ -44,18 +44,15 @@ namespace Amazon.Lambda.CloudWatchLogsEvents
                     return this.EncodedData;
 
                 var bytes = Convert.FromBase64String(this.EncodedData);
-                var uncompressedBytes = new List<byte>();
+                var uncompressedStream = new MemoryStream();
 
                 using (var stream = new GZipStream(new MemoryStream(bytes), CompressionMode.Decompress))
                 {
-                    int b;
-                    while((b = stream.ReadByte()) != -1)
-                    {
-                        uncompressedBytes.Add((byte)b);
-                    }
+                    stream.CopyTo(uncompressedStream);
+                    uncompressedStream.Position = 0;
                 }
 
-                var decodedString = Encoding.UTF8.GetString(uncompressedBytes.ToArray());
+                var decodedString = Encoding.UTF8.GetString(uncompressedStream.ToArray());
                 return decodedString;
             }
 	    }

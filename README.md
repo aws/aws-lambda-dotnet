@@ -11,8 +11,6 @@ The table below shows the currently supported patch of each major version of .NE
 
 |Version|Currently Supported Patch|In Development Queue|Latest Microsoft Release|
 |-------|-------------------------|--------------------|------------------------|
-|1.0|1.0.13|1.0.16|1.0.16|
-|2.0|2.0.9||2.0.9|
 |2.1|2.1.15||2.1.17|
 |3.1|3.1.1||3.1.3|
 

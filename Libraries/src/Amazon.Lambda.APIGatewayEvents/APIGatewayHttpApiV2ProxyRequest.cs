@@ -56,6 +56,11 @@ namespace Amazon.Lambda.APIGatewayEvents
         public string Body { get; set; }
 
         /// <summary>
+        /// Path parameters sent with the request.
+        /// </summary>
+        public IDictionary<string, string> PathParameters { get; set; }
+
+        /// <summary>
         /// True if the body of the request is base 64 encoded.
         /// </summary>
         public bool IsBase64Encoded { get; set; }

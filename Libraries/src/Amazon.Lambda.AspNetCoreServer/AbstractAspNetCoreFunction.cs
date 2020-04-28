@@ -342,7 +342,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                         "not called when constructing the IWebHostBuilder. If CreateHostBuilder was overridden it is recommended that ConfigureWebHostLambdaDefaults should be used " + 
                         "instead of ConfigureWebHostDefaults to make sure the property Lambda services are registered.");
             }
-            _logger = ActivatorUtilities.CreateInstance<Logger<APIGatewayProxyFunction>>(this._hostServices);
+            _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(this._hostServices);
         }
 
         /// <summary>

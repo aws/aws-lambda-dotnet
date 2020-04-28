@@ -6,13 +6,17 @@ The AWS .NET Mock Lambda Test Tool is a tool that can be used to load a .NET Cor
 
 **Note:** this tool is not a local Lambda environment. This tool is optimized for quick local debugging with minimal dependencies. For example, the targeted .NET Core Lambda code is run within the process of this tool which is run on the host OS. The host OS is usually Windows or macOS. The host OS is not Amazon Linux, the OS for the Lambda service. Due to these design differences, this tool is not intended to diagnose platform specific issues but instead it can be useful for debugging application logic issues.
 
-- [Getting Started](#getting-help)
-- [Installing and Running](#installing-and-running)
-- [Configure for Visual Studio](#configure-for-visual-studio)
-- [Configure for Visual Studio Code](#configure-for-visual-studio-code)
-- [Configure for JetBrains Rider](#configure-for-jetbrains-rider)
-- [Configure for Visual Studio for Mac](#configure-for-visual-studio-for-mac)
-- [Known Limitations](#known-limitations)
+- [The AWS .NET Mock Lambda Test Tool (Preview)](#the-aws-net-mock-lambda-test-tool-preview)
+  - [Getting help](#getting-help)
+  - [Versions of the tool](#versions-of-the-tool)
+  - [AWS Credentials](#aws-credentials)
+  - [Installing and running](#installing-and-running)
+  - [Skip using the web interface](#skip-using-the-web-interface)
+  - [Configure for Visual Studio](#configure-for-visual-studio)
+  - [Configure for Visual Studio Code](#configure-for-visual-studio-code)
+  - [Configure for JetBrains Rider](#configure-for-jetbrains-rider)
+  - [Configure for Visual Studio for Mac](#configure-for-visual-studio-for-mac)
+  - [Known Limitations](#known-limitations)
 
 ## Getting help
 
@@ -145,7 +149,7 @@ When a project is opened in Visual Studio the toolkit will detect the project is
 
 Before using Visual Studio Code you must follow the instructions above on installing the .NET Mock Lambda Test Tool.
 
-To debug with Visual Studio Code and the .NET Mock Lambda Test Tool edit the [launch.json](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) configuration file and have the `program` property point to `dotnet-lambda-test-tool-.1.exe` and make sure `cwd` is pointing the .NET Core Lambda project. Note that on a non-windows environment the executable will be called `dotnet-lambda-test-tool-3.1` without the ".exe" at the end. The `dotnet-lambda-test-tool-3.1.exe` executable can be found in the `.dotnet/tools` directory under your home directory. Depending on your file system settings, the `.dotnet` directory can appear hidden.
+To debug with Visual Studio Code and the .NET Mock Lambda Test Tool edit the [launch.json](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) configuration file and have the `program` property point to `dotnet-lambda-test-tool-3.1.exe` and make sure `cwd` is pointing the .NET Core Lambda project. Note that on a non-windows environment the executable will be called `dotnet-lambda-test-tool-3.1` without the ".exe" at the end. The `dotnet-lambda-test-tool-3.1.exe` executable can be found in the `.dotnet/tools` directory under your home directory. Depending on your file system settings, the `.dotnet` directory can appear hidden.
 
 ```json
 {
@@ -177,18 +181,26 @@ To customize the launch behavior for the debugger, you can pass additional argum
 
 Before using JetBrains Rider you must follow the instructions above on installing the .NET Mock Lambda Test Tool.
 
-Configuring  Rider to use the .NET Mock Lambda Test Tool is a little different compared to Visual Studio. For Rider the executable target needs to be the main assembly `Amazon.Lambda.TestTool.dll` for the Test Tool and **not** the Global Tool executable `dotnet-lambda-test-tool-3.1`. The path to `Amazon.Lambda.TestTool.dll` is:
+Configuring  Rider to use the .NET Mock Lambda Test Tool is a little different compared to Visual Studio. For Rider the executable target needs to be the entry assembly for the Test Tool and **not** the Global Tool executable. For .NET Core 3.1 the entry assembly is `Amazon.Lambda.TestTool.WebTester31.dll` and for .NET Core 2.1 the entry assembly is `Amazon.Lambda.TestTool.WebTester21.dll`.  
+
+The path to the .NET Core 3.1 entry assembly is:
 
 ```
-<home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-3.1/<nuget-version>/amazon.lambda.testtool-3.1/<nuget-version>/tools/netcoreapp3.1/any/Amazon.Lambda.TestTool.dll
+<home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-3.1/<nuget-version>/amazon.lambda.testtool-3.1/<nuget-version>/tools/netcoreapp3.1/any/Amazon.Lambda.TestTool.WebTester31.dll
 ```
+
+For .NET Core 2.1 the path is:
+```
+<home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-2.1/<nuget-version>/amazon.lambda.testtool-2.1/<nuget-version>/tools/netcoreapp2.1/any/Amazon.Lambda.TestTool.WebTester21.dll
+```
+
 
 Remember when you update your version of the .NET Mock Lambda Test Tool to update the nuget versions numbers in this path string for your IDE's configuration.
 
 Follow the following steps to configure Rider
 * Select Run->Edit Configurations...
 * Push the `+` button to add a configuration and select `.NET Executable`
-* Set the `Exe path` field to the full path of `Amazon.Lambda.TestTool.dll` as described above
+* Set the `Exe path` field to the full path of `mazon.Lambda.TestTool.WebTesterXX.dll` as described above
 * Set the `Working directory` field to the .NET Core Lambda project root
 * Push OK
 
@@ -200,18 +212,27 @@ After following these steps, any time you start the debugger in Rider, it will s
 
 Before using Visual Studio for Mac you must follow the instructions above on installing the .NET Mock Lambda Test Tool.
 
-Configuring Visual Studio for Mac to use the .NET Mock Lambda Test Tool is a little different compared to Visual Studio. For Visual Studio for Mac the executable target needs to be the main assembly `Amazon.Lambda.TestTool.dll` for the Test Tool and **not** the Global Tool executable `dotnet-lambda-test-tool-3.1`. The path to `Amazon.Lambda.TestTool.dll` is:
+Configuring Visual Studio for Mac to use the .NET Mock Lambda Test Tool is a little different compared to Visual Studio. For Visual Studio for Mac the executable target needs to be the entry assembly for the Test Tool and **not** the Global Tool executable. For .NET Core 3.1 the entry assembly is `Amazon.Lambda.TestTool.WebTester31.dll` and for .NET Core 2.1 the entry assembly is `Amazon.Lambda.TestTool.WebTester21.dll`.  
+
+The path to the .NET Core 3.1 entry assembly is:
 
 ```
-<home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-3.1/<nuget-version>/amazon.lambda.testtool-3.1/<nuget-version>/tools/netcoreapp3.1/any/Amazon.Lambda.TestTool.dll
+<home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-3.1/<nuget-version>/amazon.lambda.testtool-3.1/<nuget-version>/tools/netcoreapp3.1/any/Amazon.Lambda.TestTool.WebTester31.dll
 ```
+
+For .NET Core 2.1 the path is:
+```
+<home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-2.1/<nuget-version>/amazon.lambda.testtool-2.1/<nuget-version>/tools/netcoreapp2.1/any/Amazon.Lambda.TestTool.WebTester21.dll
+```
+
+
 Remember when you update your version of the .NET Mock Lambda Test Tool to update the nuget versions numbers in this path string for your IDE's configuration.
 
 Follow these steps to configure Visual Studio for Mac:
 
 * Right click on .NET Core Lambda Project and select `Options`
 * Select the node Run -> Configurations -> Default
-* Set the `Start external program` field to the full path of `Amazon.Lambda.TestTool.dll` as described above
+* Set the `Start external program` field to the full path of `mazon.Lambda.TestTool.WebTesterXX.dll` as described above
 * Set the `Run in directory` field to the .NET Core Lambda project root
 
 Once this is done when you start the debugger in Visual Studio for Mac it will launch the .NET Mock Lambda Test Tool.
