@@ -31,12 +31,10 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         /// <inheritdoc/>
-        protected override IWebHostBuilder CreateWebHostBuilder() =>
-            base.CreateWebHostBuilder().UseStartup<TStartup>();
-
-        /// <inheritdoc/>
         protected override void Init(IWebHostBuilder builder)
         {
+            builder.UseStartup<TStartup>();
         }
+
     }
 }

@@ -19,6 +19,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
+    /// <summary>
+    /// Base class for ASP.NET Core Lambda functions.
+    /// </summary>
     public abstract class AbstractAspNetCoreFunction
     {
         /// <summary>
@@ -33,9 +36,14 @@ namespace Amazon.Lambda.AspNetCoreServer
         public const string LAMBDA_REQUEST_OBJECT = "LambdaRequestObject";
     }
 
+    /// <summary>
+    /// Base class for ASP.NET Core Lambda functions.
+    /// </summary>
+    /// <typeparam name="TREQUEST"></typeparam>
+    /// <typeparam name="TRESPONSE"></typeparam>
     public abstract class AbstractAspNetCoreFunction<TREQUEST, TRESPONSE> : AbstractAspNetCoreFunction
     {
-        private protected IWebHost _host;
+        private protected IServiceProvider _hostServices;
         private protected LambdaServer _server;
         private protected ILogger _logger;
         private protected StartupMode _startupMode;
@@ -178,13 +186,16 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </code>
         /// </example>
         /// <param name="builder"></param>
-        protected abstract void Init(IWebHostBuilder builder);
+        protected virtual void Init(IWebHostBuilder builder) { }
 
         /// <summary>
         /// Creates the IWebHostBuilder similar to WebHost.CreateDefaultBuilder but replacing the registration of the Kestrel web server with a 
         /// registration for Lambda.
         /// </summary>
         /// <returns></returns>
+#if !NETCOREAPP_2_1
+        [Obsolete("Functions should migrate to CreateHostBuilder and use IHostBuilder to setup their ASP.NET Core application. In a future major version update of this library support for IWebHostBuilder will be removed for non .NET Core 2.1 Lambda functions.")]
+#endif
         protected virtual IWebHostBuilder CreateWebHostBuilder()
         {
             var builder = new WebHostBuilder()
@@ -226,8 +237,59 @@ namespace Amazon.Lambda.AspNetCoreServer
                     options.ValidateScopes = hostingContext.HostingEnvironment.IsDevelopment();
                 });
 
+            Init(builder);
+
+            // Swap out Kestrel as the webserver and use our implementation of IServer
+            builder.UseLambdaServer();
+
             return builder;
         }
+
+#if !NETCOREAPP_2_1
+        /// <summary>
+        /// Method to initialize the host builder before starting the host. In a typical Web API this is similar to the main function. 
+        /// Setting the Startup class is required in this method.
+        /// <para>
+        /// It is recommended to not configure the IWebHostBuilder from this method. Instead configure the IWebHostBuilder
+        /// in the Init(IWebHostBuilder builder) method. If you configure the IWebHostBuilder in this method the IWebHostBuilder will be
+        /// configured twice, here and and as part of CreateHostBuilder.
+        /// </para>
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// protected override void Init(IHostBuilder builder)
+        /// {
+        ///     builder
+        ///         .UseStartup&lt;Startup&gt;();
+        /// }
+        /// </code>
+        /// </example>
+        /// <param name="builder"></param>
+        protected virtual void Init(IHostBuilder builder) { }
+
+        /// <summary>
+        /// Creates the IHostBuilder similar to Host.CreateDefaultBuilder but replacing the registration of the Kestrel web server with a 
+        /// registration for Lambda.
+        /// <para>
+        /// When overriding this method it is recommended that ConfigureWebHostLambdaDefaults should be called instead of ConfigureWebHostDefaults to ensure the IWebHostBuilder
+        /// has the proper services configured for running in Lambda. That includes registering Lambda instead of Kestrel as the IServer implementation
+        /// for processing requests.
+        /// </para>
+        /// </summary>
+        /// <returns></returns>
+        protected virtual IHostBuilder CreateHostBuilder()
+        {
+            var builder = Host.CreateDefaultBuilder()
+                                .ConfigureWebHostLambdaDefaults(webBuilder =>
+                                {
+                                    Init(webBuilder);
+                                });
+
+            Init(builder);
+            return builder;
+        }
+#endif
+
 
         private protected bool IsStarted
         {
@@ -242,28 +304,49 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         protected void Start()
         {
-            var builder = CreateWebHostBuilder();
-            Init(builder);
+#if !NETCOREAPP_2_1
+            // For .NET Core 3.1 and above use the IHostBuilder instead of IWebHostBuilder used in .NET Core 2.1. If the user overrode CreateWebHostBuilder
+            // then fallback to the original .NET Core 2.1 behavior.
+            if (this.GetType().GetMethod("CreateWebHostBuilder", BindingFlags.NonPublic | BindingFlags.Instance).DeclaringType.FullName.StartsWith("Amazon.Lambda.AspNetCoreServer.AbstractAspNetCoreFunction"))
+            {
+                var builder = CreateHostBuilder();
+                builder.ConfigureServices(services =>
+                {
+                    Utilities.EnsureLambdaServerRegistered(services);
+                });                
 
-            // Swap out Kestrel as the webserver and use our implementation of IServer
-            builder.UseLambdaServer();
+                var host = builder.Build();
+                PostCreateHost(host);
 
+                host.Start();
+                this._hostServices = host.Services;
+            }
+            else
+#endif
+            {
+#pragma warning disable 618
+                var builder = CreateWebHostBuilder();
+#pragma warning restore 618
 
-            _host = builder.Build();
-            PostCreateWebHost(_host);
+                var host = builder.Build();
+                PostCreateWebHost(host);
 
-            _host.Start();
+                host.Start();
+                this._hostServices = host.Services;
+            }
 
-            _server = _host.Services.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
+            _server = this._hostServices.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
             if (_server == null)
             {
-                throw new Exception("Failed to find the implementation Lambda for the IServer registration. This can happen if UseLambdaServer was not called.");
+                throw new Exception("Failed to find the Lambda implementation for the IServer interface in the IServiceProvider for the Host. This happens if UseLambdaServer was " +
+                        "not called when constructing the IWebHostBuilder. If CreateHostBuilder was overridden it is recommended that ConfigureWebHostLambdaDefaults should be used " + 
+                        "instead of ConfigureWebHostDefaults to make sure the property Lambda services are registered.");
             }
-            _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(this._host.Services);
+            _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(this._hostServices);
         }
 
         /// <summary>
-        /// Creates a <see cref="HostingApplication.Context"/> object using the <see cref="LambdaServer"/> field in the class.
+        /// Creates a context object using the <see cref="LambdaServer"/> field in the class.
         /// </summary>
         /// <param name="features"><see cref="IFeatureCollection"/> implementation.</param>
         protected object CreateContext(IFeatureCollection features)
@@ -365,7 +448,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 PostMarshallItemsFeatureFeature(itemFeatures, request, lambdaContext);
             }
 
-            var scope = _host.Services.CreateScope();
+            var scope = this._hostServices.CreateScope();
             try
             {
                 ((IServiceProvidersFeature)features).RequestServices = scope.ServiceProvider;
@@ -474,7 +557,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         /// <summary>
-        /// This methid is called after the IWebHost is created from the IWebHostBuilder and the services have been configured. The
+        /// This method is called after the IWebHost is created from the IWebHostBuilder and the services have been configured. The
         /// WebHost hasn't been started yet.
         /// </summary>
         /// <param name="webHost"></param>
@@ -482,6 +565,18 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
 
         }
+
+#if !NETCOREAPP_2_1
+        /// <summary>
+        /// This method is called after the IHost is created from the IHostBuilder and the services have been configured. The
+        /// Host hasn't been started yet. If the CreateWebHostBuilder method is overloaded then IHostWebBuilder will be used to create
+        /// an IWebHost and this method will not be called.
+        /// </summary>
+        /// <param name="webHost"></param>
+        protected virtual void PostCreateHost(IHost webHost)
+        {            
+        }
+#endif
 
         /// <summary>
         /// This method is called after marshalling the incoming Lambda request
