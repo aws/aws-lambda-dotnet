@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Giraffe" Version="3.4.0" />
-    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="5.0.0" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppHandlers.fs" />

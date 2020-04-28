@@ -5,7 +5,7 @@
     <AWSProjectType>Lambda</AWSProjectType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="5.0.0" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\images\" />
