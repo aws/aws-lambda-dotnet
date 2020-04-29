@@ -7,7 +7,7 @@
 * **Amazon.Lambda.AspNetCoreServer (5.1.0)**
   * When targeting .NET Core 3.1 bootstrapping switched to `IHostBuilder`.
   * Updated [README](https://github.com/aws/aws-lambda-dotnet/tree/master/Libraries/src/Amazon.Lambda.AspNetCoreServer#bootstrapping-application-iwebhostbuilder-vs-ihostbuilder) explaining how bootstrapping works for Lambda. 
-* **Amazon.Lambda.APIGatewayEvents (2.0.0)**
+* **Amazon.Lambda.APIGatewayEvents (2.1.0)**
   * Add `PathParameters` to `APIGatewayHttpApiV2ProxyRequest`
 * **Amazon.Lambda.ApplicationLoadBalancerEvents (2.0.0)**
   * Updated Application LoadBalancer response objects to have `JsonPropertyName` on the properties to make sure the casing matched what the Application LoadBalancer expected.
