@@ -9,7 +9,7 @@
     },
     "WaitToActivate": {
       "Type": "Wait",
-      "SecondsPath": "$.WaitInSeconds",
+      "SecondsPath": "$.waitInSeconds",
       "Next": "Salutations"
     },
     "Salutations": {
