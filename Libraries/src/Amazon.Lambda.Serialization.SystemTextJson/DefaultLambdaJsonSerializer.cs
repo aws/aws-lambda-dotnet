@@ -72,12 +72,13 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
             {
                 if (_debug)
                 {
-                    using (var debugWriter = new StringWriter())
-                    using (var utf8Writer = new Utf8JsonWriter(responseStream))
+                    using (var debugStream = new MemoryStream())
+                    using (var utf8Writer = new Utf8JsonWriter(debugStream))
                     {
                         JsonSerializer.Serialize(utf8Writer, response, SerializerOptions);
-
-                        var jsonDocument = debugWriter.ToString();
+                        debugStream.Position = 0;
+                        using var debugReader = new StreamReader(debugStream);
+                        var jsonDocument = debugReader.ReadToEnd();
                         Console.WriteLine($"Lambda Serialize {response.GetType().FullName}: {jsonDocument}");
 
                         var writer = new StreamWriter(responseStream);
