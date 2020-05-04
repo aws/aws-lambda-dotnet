@@ -1,3 +1,11 @@
+### Release 2020-05-04
+* **Amazon.Lambda.Serialization.SystemTextJson (2.0.1)**
+  * Fixed issue with response not being written to log when LAMBDA_NET_SERIALIZER_DEBUG is set to true.
+* **Amazon.Lambda.AspNetCoreServer (5.1.1)**
+  * Updated to version 2.0.1 of Amazon.Lambda.Serialization.SystemTextJson
+* **Amazon.Lambda.Templates (4.1.2)**
+  * Updated blueprints to use latest versions of AWS packages
+
 ### Release 2020-04-28
 * **Amazon.Lambda.Serialization.SystemTextJson (2.0.0)**
   * Added new `DefaultLambdaJsonSerializer` class to replace `LambdaJsonSerializer` has inconsistent casing issues with the JSON serialized from .NET objects.
