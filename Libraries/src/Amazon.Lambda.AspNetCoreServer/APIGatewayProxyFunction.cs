@@ -141,7 +141,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 requestFeatures.Scheme = "https";
                 requestFeatures.Method = apiGatewayRequest.HttpMethod;
 
-                if (string.IsNullOrWhiteSpace(apiGatewayRequest.RequestContext?.DomainName))
+                if (string.IsNullOrWhiteSpace(apiGatewayRequest?.RequestContext?.DomainName))
                 {
                     _logger.LogWarning($"Request does not contain domain name information but is derived from {nameof(APIGatewayProxyFunction)}.");
                 }
@@ -199,8 +199,8 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                 if (!requestFeatures.Headers.ContainsKey("Host"))
                 {
-                    var apiId = apiGatewayRequest.RequestContext?.ApiId ?? "";
-                    var stage = apiGatewayRequest.RequestContext?.Stage ?? "";
+                    var apiId = apiGatewayRequest?.RequestContext?.ApiId ?? "";
+                    var stage = apiGatewayRequest?.RequestContext?.Stage ?? "";
 
                     requestFeatures.Headers["Host"] = $"apigateway-{apiId}-{stage}";
                 }
