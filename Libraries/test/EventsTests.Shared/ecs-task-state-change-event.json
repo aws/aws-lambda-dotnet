@@ -10,6 +10,31 @@
     "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef"
   ],
   "detail": {
+    "attachments": [
+      {
+        "id": "a7f304c8-ab44-4c9a-939e-e60e19600d48",
+        "type": "eni",
+        "status": "DELETED",
+        "details": [
+          {
+            "name": "subnetId",
+            "value": "subnet-0a4e7c6ae27b807d5"
+          },
+          {
+            "name": "networkInterfaceId",
+            "value": "eni-0097b893e94948589"
+          },
+          {
+            "name": "macAddress",
+            "value": "12:03:1c:c1:01:3f"
+          },
+          {
+            "name": "privateIPv4Address",
+            "value": "10.1.21.156"
+          }
+        ]
+      }
+    ],    
     "clusterArn": "arn:aws:ecs:us-east-1:111122223333:cluster/default",
     "containerInstanceArn": "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315",
     "containers": [
