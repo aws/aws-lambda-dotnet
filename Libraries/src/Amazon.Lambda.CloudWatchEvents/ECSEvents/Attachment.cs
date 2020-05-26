@@ -12,7 +12,7 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         /// Details of the attachment. For elastic network interfaces, this includes the
         /// network interface ID, the MAC address, the subnet ID, and the private IPv4 address.
         /// </summary>
-        public List<KeyValuePair<string, string>> Details { get; set; }
+        public List<NameValuePair> Details { get; set; }
 
         /// <summary>
         /// The unique identifier for the attachment.
@@ -29,5 +29,11 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         /// The type of the attachment, such as ElasticNetworkInterface.
         /// </summary>
         public string Type { get; set; }
+    }
+    
+    public class NameValuePair
+    {
+        public string Name { get; set; }
+        public string Value { get; set; }
     }
 }
