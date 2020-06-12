@@ -38,7 +38,7 @@ namespace BlueprintBaseName._1.Tests
 
             this.Configuration = builder.Build();
 
-            // Use the region and possible profile specified in the appsettings.json file to construct an Amaozn S3 service client.
+            // Use the region and possible profile specified in the appsettings.json file to construct an Amazon S3 service client.
             this.S3Client = Configuration.GetAWSOptions().CreateServiceClient<IAmazonS3>();
 
             // Create a bucket used for the test which will be deleted along with any data in the bucket once the test is complete.
