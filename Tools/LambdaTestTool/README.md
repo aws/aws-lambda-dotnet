@@ -80,13 +80,13 @@ To debug with Visual Studio Code and the .NET Mock Lambda Test Tool edit the [la
     "version": "0.2.0",
     "configurations": [
         {
-            "name": ".NET Core Launch (console)",
+            "name": "Mock Lambda Test Tool",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             "program": "<home-directory>/.dotnet/tools/dotnet-lambda-test-tool-2.1.exe",
             "args": [],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}\\bin\\Debug\\netcoreapp2.1",
             "console": "internalConsole",
             "stopAtEntry": false,
             "internalConsoleOptions": "openOnSessionStart"
