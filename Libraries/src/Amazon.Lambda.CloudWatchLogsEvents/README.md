@@ -11,7 +11,7 @@ public class Function
 {
     public string Handler(CloudWatchLogsEvent cloudWatchLogsEvent)
     {
-        Console.WriteLine($"Log content - {cloudWatchLogsEvent.Awslogs.Data}");
+        Console.WriteLine($"Log content - {cloudWatchLogsEvent.Awslogs.DecodeData()}");
     }
 }
 ```
