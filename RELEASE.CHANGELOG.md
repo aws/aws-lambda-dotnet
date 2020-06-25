@@ -1,3 +1,9 @@
+### Release 2020-06-24
+* **Amazon.Lambda.Logging.AspNetCore (3.0.1)**
+  * Pull request [#683](https://github.com/aws/aws-lambda-dotnet/pull/683) Fixed issue with using internal NullScope type. Thanks [Zdenek Havlin](https://github.com/wdolek)
+* **Amazon.Lambda.AspNetCoreServer (5.1.2)**
+  * Updated to use latest **Amazon.Lambda.Logging.AspNetCore** dependency.
+
 ### Release 2020-05-04
 * **Amazon.Lambda.Serialization.SystemTextJson (2.0.1)**
   * Fixed issue with response not being written to log when LAMBDA_NET_SERIALIZER_DEBUG is set to true.
