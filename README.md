@@ -4,6 +4,24 @@ Repository for the AWS NuGet packages and Blueprints to support writing AWS Lamb
 
 For a history of releases view the [release change log](RELEASE.CHANGELOG.md)
 
+## Table of Contents
+- [Version Status](#Version_Status)
+- [Learning Resources](#Learning_Resources)
+  - [Blog Posts](#AWS_Blog_Posts)
+  - [Community Posts](#Community_Posts)
+  - [Templates and Repos](#Templates_&_Repositories)
+  - [AWS Talks](#AWS_Recorded_Talks)
+  - [Community Talks](#Community_Recorded_Talks)
+- [NuGet Packages](#NuGet_Packages)
+  - [Events](#Events)
+  - [Lambda Tools](#Amazon.Lambda.Tools)
+  - [ASP.NET Core Server](#Amazon.Lambda.AspNetCoreServer)
+  - [Test Utilities](#Amazon.Lambda.TestUtilities)
+- [Blueprints](#Blueprints)
+  - [CLI Templates](#Dotnet_CLI_Templates)
+  - [Yeoman](#Yeoman_(Deprecated)) (Deprecated)
+- [Feedback and Contributing](#Feedback_and_Contributing)
+
 ## Version Status
 Our intention is to keep a regular patch and update cycle to ensure Lambda developers have access to the currently supported patch of each major version of .NET Core.  Given the development and deployment effort, our target is to have most rollouts complete in less than a month.  We do not expect it to be less than one week.  This enables us to ensure high quality deployments.  We will give special attention to any versions that contain security updates critical to .NET Core in AWS Lambda.
 
@@ -243,3 +261,7 @@ dotnet new lambda.EmptyFunction --name BlogFunction --profile default --region u
 ### Yeoman (Deprecated)
 
 The Yeoman generators have been deprecated in favor of the new **dotnet new** templates. They will not be migrated from the older project.json based project system.
+
+## Feedback and Contributing
+
+Small description on what the guidelines are for contributing and pointing them to [CONTRIBUTING.md](./CONTRIBUTING.MD) file which should go more in depth on the differences about opening a a bug, feature request or guidance issue or how to make a pull request.
