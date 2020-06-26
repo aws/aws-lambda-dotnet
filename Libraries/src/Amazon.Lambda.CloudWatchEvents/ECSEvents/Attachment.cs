@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
 {
@@ -33,7 +34,16 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
     
     public class NameValuePair
     {
+        [DataMember(Name = "name")]
+#if NETCOREAPP_3_1
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
+#endif
         public string Name { get; set; }
+        
+        [DataMember(Name = "value")]
+#if NETCOREAPP_3_1
+        [System.Text.Json.Serialization.JsonPropertyName("value")]
+#endif
         public string Value { get; set; }
     }
 }
