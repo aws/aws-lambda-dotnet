@@ -2,6 +2,7 @@
 
 This page outlines a collection of learning resources curated by the .NET SDK/Lambda team to best help guide learning and development with the various tools included in this repo.
 
+## Table of Contents
 - [General](#general)
 - [Blog Posts](#aws-blog-posts)
 - [Community Posts](#community-posts)
