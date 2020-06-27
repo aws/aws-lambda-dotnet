@@ -2,12 +2,12 @@
 
 This page outlines a collection of learning resources curated by the .NET SDK/Lambda team to best help guide learning and development with the various tools included in this repo.
 
-- [General](#General)
-- [Blog Posts](#AWS_Blog_Posts)
-- [Community Posts](#Community_Posts)
-- [Templates and Repos](#Templates_&_Repositories)
-- [AWS Talks](#AWS_Recorded_Talks)
-- [Community Talks](#Community_Recorded_Talks)
+- [General](#general)
+- [Blog Posts](#aws-blog-posts)
+- [Community Posts](#community-posts)
+- [Templates and Repos](#templates-&-repositories)
+- [AWS Talks](#aws-recorded-talks)
+- [Community Talks](#community-recorded-talks)
 
 ## General
 

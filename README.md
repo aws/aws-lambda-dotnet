@@ -5,17 +5,17 @@ Repository for the AWS NuGet packages and Blueprints to support writing AWS Lamb
 For a history of releases view the [release change log](RELEASE.CHANGELOG.md)
 
 ## Table of Contents
-- [Version Status](#Version_Status)
-- [NuGet Packages](#NuGet_Packages)
-  - [Events](#Events)
-  - [Lambda Tools](#Amazon.Lambda.Tools)
-  - [ASP.NET Core Server](#Amazon.Lambda.AspNetCoreServer)
-  - [Test Utilities](#Amazon.Lambda.TestUtilities)
-- [Blueprints](#Blueprints)
-  - [CLI Templates](#Dotnet_CLI_Templates)
-  - [Yeoman](#Yeoman_(Deprecated)) (Deprecated)
-- [Getting Help](#Getting_Help)
-- [Feedback and Contributing](#Feedback_and_Contributing)
+- [Version Status](#version-status)
+- [NuGet Packages](#nuget-packages)
+  - [Events](#events)
+  - [Lambda Tools](#amazonlambdatools)
+  - [ASP.NET Core Server](#amazonlambdaaspnetcoreserver)
+  - [Test Utilities](#amazonlambdatestUtilities)
+- [Blueprints](#blueprints)
+  - [CLI Templates](#dotnetclitemplates)
+  - [Yeoman](#yeoman-eprecated) (Deprecated)
+- [Getting Help](#getting-help)
+- [Feedback and Contributing](#feedback-and-contributing)
 
 ## Version Status
 Our intention is to keep a regular patch and update cycle to ensure Lambda developers have access to the currently supported patch of each major version of .NET Core.  Given the development and deployment effort, our target is to have most rollouts complete in less than a month.  We do not expect it to be less than one week.  This enables us to ensure high quality deployments.  We will give special attention to any versions that contain security updates critical to .NET Core in AWS Lambda.
