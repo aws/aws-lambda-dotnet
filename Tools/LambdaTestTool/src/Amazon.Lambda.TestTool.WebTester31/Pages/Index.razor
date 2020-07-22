@@ -1,5 +1,6 @@
 ﻿@page "/"
 
+@using System.Threading; 
 @using Amazon.Lambda.TestTool.Runtime;
 @using Amazon.Lambda.TestTool.SampleRequests;
 @inject LocalLambdaOptions LambdaOptions
@@ -151,17 +152,27 @@
 
     async Task OnExecuteClick()
     {
-        var function = this.LambdaOptions.LoadLambdaFuntion(FunctionPicker.ConfigFile, FunctionPicker.FunctionHandler);
 
-        var request = new ExecutionRequest()
+        ExecutionResponse response = null;
+
+        var ts = new ThreadStart(() =>
         {
-            Function = function,
-            AWSProfile = FunctionPicker.AWSProfile,
-            AWSRegion = FunctionPicker.AWSRegion,
-            Payload = this.FunctionInput
-        };
+            var function = this.LambdaOptions.LoadLambdaFuntion(FunctionPicker.ConfigFile, FunctionPicker.FunctionHandler);
 
-        var response = await this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunctionAsync(request);
+            var request = new ExecutionRequest()
+            {
+                Function = function,
+                AWSProfile = FunctionPicker.AWSProfile,
+                AWSRegion = FunctionPicker.AWSRegion,
+                Payload = this.FunctionInput
+            };
+
+            response = this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunctionAsync(request).GetAwaiter().GetResult();
+        });
+
+        var thread = new Thread(ts);
+        thread.Start();
+        thread.Join();
 
         if (response.IsSuccess)
         {
@@ -173,6 +184,7 @@
             this.FunctionResponse = response.Error;
             this.FunctionResponseStyle = ResponseErrorStyle;
         }
+
 
         this.FunctionLogs = response.Logs;
 
