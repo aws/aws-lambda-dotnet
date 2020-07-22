@@ -6,7 +6,7 @@
     <TargetFrameworks>netcoreapp2.1;netcoreapp3.1</TargetFrameworks>
     <Description>AWS Lambda PowerShell Host.</Description>
     <AssemblyTitle>Amazon.Lambda.PowerShellHost</AssemblyTitle>
-    <VersionPrefix>2.0.0</VersionPrefix>
+    <VersionPrefix>2.1.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.PowerShellHost</AssemblyName>
     <PackageId>Amazon.Lambda.PowerShellHost</PackageId>
     <PackageTags>AWS;Amazon;Lambda;PowerShell</PackageTags>
