@@ -143,5 +143,50 @@ namespace Amazon.Lambda.PowerShellTests
             Assert.Contains("Running against: 100 for SharedVariable: Hello Shared Variable", logger.Buffer.ToString());
         }
 #endif
+
+        [Fact]
+        public void CheckTempEnvironmentVariable()
+        {
+            // Non Lambda Environment
+            {
+                var logger = new TestLambdaLogger();
+                var context = new TestLambdaContext
+                {
+                    Logger = logger
+                };
+
+                var inputString = "\"hello world from powershell\"";
+                var function = new PowerShellScriptsAsFunctions.Function("TempEnvCheck.ps1");
+
+                var resultStream = function.ExecuteFunction(ConvertToStream(inputString), context);
+                var resultString = ConvertToString(resultStream);
+                Assert.Equal(Path.GetTempPath(), resultString);
+            }
+
+            // Lambda environment
+            try
+            {
+                Environment.SetEnvironmentVariable("LAMBDA_TASK_ROOT", "/var/task");
+
+                var logger = new TestLambdaLogger();
+                var context = new TestLambdaContext
+                {
+                    Logger = logger
+                };
+
+                var inputString = "\"hello world from powershell\"";
+                var function = new PowerShellScriptsAsFunctions.Function("TempEnvCheck.ps1");
+
+                var resultStream = function.ExecuteFunction(ConvertToStream(inputString), context);
+                var resultString = ConvertToString(resultStream);
+                Assert.Equal("/tmp", resultString);
+
+                Assert.Contains("/tmp/home", logger.Buffer.ToString());
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("LAMBDA_TASK_ROOT", null);
+            }
+        }
     }
 }
