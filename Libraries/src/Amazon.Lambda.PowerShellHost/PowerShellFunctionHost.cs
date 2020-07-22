@@ -166,11 +166,21 @@ $LambdaInput = ConvertFrom-Json -InputObject $LambdaInputString
 
 ";
 
-            var tempFolder = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LAMBDA_TASK_ROOT")) ? "/tmp" : Path.GetTempPath();
+            var isLambda = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LAMBDA_TASK_ROOT"));
+
+            var tempFolder = isLambda ? "/tmp" : Path.GetTempPath();
 
             executingScript += $"{Environment.NewLine}$env:TEMP=\"{tempFolder}\"";
             executingScript += $"{Environment.NewLine}$env:TMP=\"{tempFolder}\"";
             executingScript += $"{Environment.NewLine}$env:TMPDIR=\"{tempFolder}\"{Environment.NewLine}";
+
+            if(isLambda && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HOME")))
+            {
+                // Make sure to set HOME directory to avoid issue with using the -Parallel PowerShell feature. This works around
+                // a reported issue to the PowerShell team.
+                // https://github.com/PowerShell/PowerShell/issues/13189
+                Environment.SetEnvironmentVariable("HOME", $"{tempFolder}/home");
+            }
 
             executingScript += providedScript;
 

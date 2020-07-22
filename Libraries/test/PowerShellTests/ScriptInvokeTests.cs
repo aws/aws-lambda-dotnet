@@ -123,7 +123,70 @@ namespace Amazon.Lambda.PowerShellTests
             Assert.Contains("AWS Lambda", resultString);
         }
 
+#if NETCOREAPP3_1
+        [Fact]
+        public void ForObjectParallelTest()
+        {
+            var logger = new TestLambdaLogger();
+            var context = new TestLambdaContext
+            {
+                Logger = logger
+            };
 
+            var inputString = "";
+            var function = new PowerShellScriptsAsFunctions.Function("ForObjectParallel.ps1");
 
+            function.ExecuteFunction(ConvertToStream(inputString), context);
+
+            Assert.Contains("Running against: 1 for SharedVariable: Hello Shared Variable", logger.Buffer.ToString());
+            Assert.Contains("Running against: 50 for SharedVariable: Hello Shared Variable", logger.Buffer.ToString());
+            Assert.Contains("Running against: 100 for SharedVariable: Hello Shared Variable", logger.Buffer.ToString());
+        }
+#endif
+
+        [Fact]
+        public void CheckTempEnvironmentVariable()
+        {
+            // Non Lambda Environment
+            {
+                var logger = new TestLambdaLogger();
+                var context = new TestLambdaContext
+                {
+                    Logger = logger
+                };
+
+                var inputString = "\"hello world from powershell\"";
+                var function = new PowerShellScriptsAsFunctions.Function("TempEnvCheck.ps1");
+
+                var resultStream = function.ExecuteFunction(ConvertToStream(inputString), context);
+                var resultString = ConvertToString(resultStream);
+                Assert.Equal(Path.GetTempPath(), resultString);
+            }
+
+            // Lambda environment
+            try
+            {
+                Environment.SetEnvironmentVariable("LAMBDA_TASK_ROOT", "/var/task");
+
+                var logger = new TestLambdaLogger();
+                var context = new TestLambdaContext
+                {
+                    Logger = logger
+                };
+
+                var inputString = "\"hello world from powershell\"";
+                var function = new PowerShellScriptsAsFunctions.Function("TempEnvCheck.ps1");
+
+                var resultStream = function.ExecuteFunction(ConvertToStream(inputString), context);
+                var resultString = ConvertToString(resultStream);
+                Assert.Equal("/tmp", resultString);
+
+                Assert.Contains("/tmp/home", logger.Buffer.ToString());
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("LAMBDA_TASK_ROOT", null);
+            }
+        }
     }
 }
