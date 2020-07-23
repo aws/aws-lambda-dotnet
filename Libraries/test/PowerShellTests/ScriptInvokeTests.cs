@@ -163,9 +163,11 @@ namespace Amazon.Lambda.PowerShellTests
                 Assert.Equal(Path.GetTempPath(), resultString);
             }
 
+            var currentHome = Environment.GetEnvironmentVariable("HOME");
             // Lambda environment
             try
             {
+                Environment.SetEnvironmentVariable("HOME", null);
                 Environment.SetEnvironmentVariable("LAMBDA_TASK_ROOT", "/var/task");
 
                 var logger = new TestLambdaLogger();
@@ -186,6 +188,7 @@ namespace Amazon.Lambda.PowerShellTests
             finally
             {
                 Environment.SetEnvironmentVariable("LAMBDA_TASK_ROOT", null);
+                Environment.SetEnvironmentVariable("HOME", currentHome);
             }
         }
     }
