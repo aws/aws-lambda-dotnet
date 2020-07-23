@@ -1,3 +1,11 @@
+### Release 2020-07-23
+* **Amazon.Lambda.TestTool-3.1 (0.10.1)**
+  * Fixed issue with dead locking getting triggered Lambda function being executed blocks on async calls.
+* **Amazon.Lambda.PowerShellHost (2.1.0)**
+  * Set the HOME environment variable before executing PowerShell script. This is a work around to the following PowerShell issue: [PowerShell/PowerShell/issues/13189](https://github.com/PowerShell/PowerShell/issues/13189) 
+* **Amazon.Lambda.AspNetCoreServer (5.1.3)**
+  * Pull request [#672](https://github.com/aws/aws-lambda-dotnet/pull/672) Improve error handling when marshalling API Gateway request. Thanks [Grahame Horner](https://github.com/grahamehorner)
+
 ### Release 2020-06-24
 * **Amazon.Lambda.Logging.AspNetCore (3.0.1)**
   * Pull request [#683](https://github.com/aws/aws-lambda-dotnet/pull/683) Fixed issue with using internal NullScope type. Thanks [Zdenek Havlin](https://github.com/wdolek)
