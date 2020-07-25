@@ -36,6 +36,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestGetAllValuesWithStartupModeFirstRequest()
+        {
+            var context = new TestLambdaContext();
+
+            var response = await this.InvokeApplicationLoadBalancerRequest(context, "values-get-all-alb-request.json", StartupMode.FirstRequest);
+
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("[\"value1\",\"value2\"]", response.Body);
+            Assert.True(response.Headers.ContainsKey("Content-Type"));
+            Assert.Equal("application/json; charset=utf-8", response.Headers["Content-Type"]);
+
+            Assert.Contains("OnStarting Called", ((TestLambdaLogger)context.Logger).Buffer.ToString());
+        }
+
+        [Fact]
         public async Task TestGetQueryStringValue()
         {
             var response = await this.InvokeApplicationLoadBalancerRequest("values-get-querystring-alb-request.json");
@@ -225,9 +240,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             return await InvokeApplicationLoadBalancerRequest(new TestLambdaContext(), fileName);
         }
 
-        private async Task<ApplicationLoadBalancerResponse> InvokeApplicationLoadBalancerRequest(TestLambdaContext context, string fileName)
+        private async Task<ApplicationLoadBalancerResponse> InvokeApplicationLoadBalancerRequest(
+            TestLambdaContext context,
+            string fileName,
+            StartupMode startupMode = StartupMode.Constructor)
         {
-            var lambdaFunction = new ALBLambdaFunction();
+            var lambdaFunction = new ALBLambdaFunction(startupMode);
             var filePath = Path.Combine(Path.GetDirectoryName(this.GetType().GetTypeInfo().Assembly.Location), fileName);
             var requestStr = File.ReadAllText(filePath);
             var request = JsonConvert.DeserializeObject<ApplicationLoadBalancerRequest>(requestStr);
