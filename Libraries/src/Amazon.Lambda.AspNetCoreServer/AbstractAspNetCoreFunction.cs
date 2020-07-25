@@ -189,6 +189,22 @@ namespace Amazon.Lambda.AspNetCoreServer
         protected virtual void Init(IWebHostBuilder builder) { }
 
         /// <summary>
+        /// Method to perform any action before initializing the web host. This is only invoked if StartupMode is set to FirstRequest.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// protected override async Task PreInitAsync()
+        /// {
+        ///     configuration = await LoadConfiguration();
+        /// }
+        /// </code>
+        /// </example>
+        protected virtual Task PreInitAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
         /// Creates the IWebHostBuilder similar to WebHost.CreateDefaultBuilder but replacing the registration of the Kestrel web server with a 
         /// registration for Lambda.
         /// </summary>
@@ -432,6 +448,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         {
             if (!IsStarted)
             {
+                await PreInitAsync();
                 Start();
             }
 
