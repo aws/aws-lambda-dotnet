@@ -49,7 +49,7 @@ This page outlines a collection of learning resources curated by the .NET SDK/La
 
 ## AWS Recorded Talks
 * [Building a .NET Serverless Application on AWS](https://www.youtube.com/watch?v=TZUtB1xXduo) By Abby Fuller, Tara Walker and Nicki Klien 2018
-  * Demo of a serverless application using the AWS .NET SDK, AWS Lambda, AWS CodeBuild, AWS X-Ray, Amazon Dynamo DB Accelorator (DAX), and the AWS Toolkit for Visual Studio.
+  * Demo of a serverless application using the AWS .NET SDK, AWS Lambda, AWS CodeBuild, AWS X-Ray, Amazon Dynamo DB Accelerator (DAX), and the AWS Toolkit for Visual Studio.
 * [Serverless Applications with AWS](https://www.youtube.com/watch?v=sgXq5-UGRt8&list=PL03Lrmd9CiGei7clxJEyIIbVTm5NWJPm7) - From NDC Minnesota 2018 by Norm Johanson
   * Description of how .NET Core Lambda works
   * Explain how AWS Lambda scales
