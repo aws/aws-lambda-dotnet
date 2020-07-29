@@ -27,6 +27,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
     {
         private const string DEBUG_ENVIRONMENT_VARIABLE_NAME = "LAMBDA_NET_SERIALIZER_DEBUG";
         private readonly JsonSerializerOptions _options;
+        private readonly JsonWriterOptions WriterOptions;
         private readonly bool _debug;
 
         /// <summary>
@@ -44,7 +45,12 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
             _options.Converters.Add(new DateTimeConverter());
             _options.Converters.Add(new MemoryStreamConverter());
             _options.Converters.Add(new ConstantClassConverter());
-            
+
+            WriterOptions = new JsonWriterOptions()
+            {
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+
             if (string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true", StringComparison.OrdinalIgnoreCase))
             {
                 this._debug = true;
@@ -63,6 +69,18 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         }
 
         /// <summary>
+        /// Constructs instance of serializer with the option to customize the JsonSerializerOptions after the 
+        /// Amazon.Lambda.Serialization.SystemTextJson's default settings have been applied.
+        /// </summary>
+        /// <param name="customizer"></param>
+        /// <param name="jsonWriterCustomizer"></param>
+        public LambdaJsonSerializer(Action<JsonSerializerOptions> customizer, Action<JsonWriterOptions> jsonWriterCustomizer)
+            : this(customizer)
+        {
+            jsonWriterCustomizer?.Invoke(this.WriterOptions);
+        }
+
+        /// <summary>
         /// Serializes a particular object to a stream.
         /// </summary>
         /// <typeparam name="T">Type of object to serialize.</typeparam>
@@ -75,7 +93,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                 if (_debug)
                 {
                     using (var debugWriter = new StringWriter())
-                    using (var utf8Writer = new Utf8JsonWriter(responseStream))
+                    using (var utf8Writer = new Utf8JsonWriter(responseStream, WriterOptions))
                     {
                         JsonSerializer.Serialize(utf8Writer, response);
 
@@ -89,7 +107,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                 }
                 else
                 {
-                    using (var writer = new Utf8JsonWriter(responseStream))
+                    using (var writer = new Utf8JsonWriter(responseStream, WriterOptions))
                     {
                         JsonSerializer.Serialize(writer, response, _options);
                     }
