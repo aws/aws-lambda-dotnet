@@ -73,7 +73,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                 if (_debug)
                 {
                     using (var debugStream = new MemoryStream())
-                    using (var utf8Writer = new Utf8JsonWriter(debugStream))
+                    using (var utf8Writer = new Utf8JsonWriter(debugStream, new JsonWriterOptions { Encoder = SerializerOptions.Encoder }))
                     {
                         JsonSerializer.Serialize(utf8Writer, response, SerializerOptions);
                         debugStream.Position = 0;
@@ -88,7 +88,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                 }
                 else
                 {
-                    using (var writer = new Utf8JsonWriter(responseStream))
+                    using (var writer = new Utf8JsonWriter(responseStream, new JsonWriterOptions { Encoder = SerializerOptions.Encoder }))
                     {
                         JsonSerializer.Serialize(writer, response, SerializerOptions);
                     }
