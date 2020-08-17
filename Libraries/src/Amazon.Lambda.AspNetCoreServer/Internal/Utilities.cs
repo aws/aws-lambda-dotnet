@@ -123,28 +123,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             if (string.IsNullOrEmpty(queryString))
                 return null;
 
-            var sb = new StringBuilder("?");
-            foreach (var parameter in queryString.Split('&'))
-            {
-                if (sb.Length > 1)
-                {
-                    sb.Append("&");
-                }
-
-                int pos = parameter.IndexOf('=');
-                if(pos == -1)
-                {
-                    sb.Append(parameter);
-                }
-                else
-                {
-                    var name = parameter.Substring(0, pos);
-                    var value = parameter.Substring(pos + 1);
-                    sb.Append($"{name}={WebUtility.UrlEncode(value)}");
-                }
-            }
-
-            return sb.ToString();
+            return "?" + queryString;
         }
 
         internal static string CreateQueryStringParameters(IDictionary<string, string> singleValues, IDictionary<string, IList<string>> multiValues, bool urlEncodeValue)

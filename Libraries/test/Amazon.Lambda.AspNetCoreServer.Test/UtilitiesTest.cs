@@ -12,11 +12,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Theory]
         [InlineData(null, null)]
         [InlineData("", null)]
-        [InlineData("name=foo bar", "?name=foo+bar")]
-        [InlineData("name=foo+bar", "?name=foo%2Bbar")]
-        [InlineData("param1", "?param1")]
-        [InlineData("param=value1&param=value2", "?param=value1&param=value2")]
-        [InlineData("url=http://www.google.com&testDateTimeOffset=2019-03-12T16:06:06.549817+00:00", "?url=http%3A%2F%2Fwww.google.com&testDateTimeOffset=2019-03-12T16%3A06%3A06.549817%2B00%3A00")]
+        [InlineData("name=foo bar", "?name=foo bar")]
+        [InlineData("name=foo+bar", "?name=foo+bar")]
+        [InlineData("url=http://www.google.com&testDateTimeOffset=2019-03-12T16:06:06.549817+00:00", "?url=http://www.google.com&testDateTimeOffset=2019-03-12T16:06:06.549817+00:00")]
         public void TestHttpApiV2QueryStringEncoding(string starting, string expected)
         {
             var encoded = Utilities.CreateQueryStringParametersFromHttpApiV2(starting);
