@@ -131,6 +131,11 @@ namespace Amazon.Lambda.AspNetCoreServer
                     requestFeatures.Headers["Host"] = apiGatewayRequest.RequestContext.DomainName;
                 }
 
+                if (apiGatewayRequest.Cookies != null)
+                {
+                    // Add Cookies from the event
+                    requestFeatures.Headers["Cookie"] = String.Join("; ", apiGatewayRequest.Cookies);
+                }
 
                 if (!string.IsNullOrEmpty(apiGatewayRequest.Body))
                 {
