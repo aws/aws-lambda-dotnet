@@ -192,6 +192,30 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.NotEqual(200, response.StatusCode);
         }
 
+        [Fact]
+        public async Task TestReturningCookie()
+        {
+            var response = await this.InvokeAPIGatewayRequest("cookies-get-returned-httpapi-v2-request.json");
+
+            Assert.StartsWith("TestCookie=TestValue", response.Headers["Set-Cookie"]);
+        }
+
+        [Fact]
+        public async Task TestSingleCookie()
+        {
+            var response = await this.InvokeAPIGatewayRequest("cookies-get-single-httpapi-v2-request.json");
+
+            Assert.Equal("TestValue", response.Body);
+        }
+
+        [Fact]
+        public async Task TestMultipleCookie()
+        {
+            var response = await this.InvokeAPIGatewayRequest("cookies-get-multiple-httpapi-v2-request.json");
+
+            Assert.Equal("TestValue3", response.Body);
+        }
+
         private async Task<APIGatewayHttpApiV2ProxyResponse> InvokeAPIGatewayRequest(string fileName)
         {
             return await InvokeAPIGatewayRequestWithContent(new TestLambdaContext(), GetRequestContent(fileName));

@@ -1,0 +1,49 @@
+﻿{
+  "version": "2.0",
+  "routeKey": "ANY /{proxy+}",
+  "rawPath": "/api/cookietests/TestCookie3",
+  "rawQueryString": "",
+  "headers": {
+    "accept": "*/*",
+    "accept-encoding": "gzip, deflate",
+    "cache-control": "no-cache",
+    "content-length": "41",
+    "content-type": "application/json",
+    "contentlength": "45",
+    "host": "uo9pe23ec6.execute-api.us-east-1.amazonaws.com",
+    "postman-token": "18165e8d-ecd0-4e4c-8fd2-4963a0af62d1",
+    "user-agent": "PostmanRuntime/7.20.1",
+    "x-amzn-trace-id": "Root=1-5e7ae61f-bb13a2d967a67dd51b8aca50",
+    "x-forwarded-for": "192.182.149.40",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "requestContext": {
+    "accountId": "626492997873",
+    "apiId": "uo9pe23ec6",
+    "domainName": "uo9pe23ec6.execute-api.us-east-1.amazonaws.com",
+    "domainPrefix": "uo9pe23ec6",
+    "http": {
+      "method": "GET",
+      "path": "/api/cookietests/TestCookie3",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "192.182.149.40",
+      "userAgent": "PostmanRuntime/7.20.1"
+    },
+    "requestId": "J7jk9g-7oAMEJGw=",
+    "routeKey": "ANY /{proxy+}",
+    "stage": "$default",
+    "time": "25/Mar/2020:05:03:27 +0000",
+    "timeEpoch": 1585112607686
+  },
+  "pathParameters": {
+    "proxy": "api/cookietests/TestCookie3"
+  },
+  "cookies": [
+    "TestCookie1=TestValue1",
+    "TestCookie2=TestValue2",
+    "TestCookie3=TestValue3"
+  ],
+  "body": null,
+  "isBase64Encoded": false
+}
