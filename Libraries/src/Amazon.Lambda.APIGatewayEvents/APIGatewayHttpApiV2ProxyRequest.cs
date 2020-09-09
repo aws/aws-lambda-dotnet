@@ -252,6 +252,15 @@ namespace Amazon.Lambda.APIGatewayEvents
             /// </summary>
             public JwtDescription Jwt { get; set; }
 
+            /// <summary>
+            /// The Lambda authorizer description.
+            /// </summary>
+            public IDictionary<string, string> Lambda { get; set; }
+
+            /// <summary>
+            /// The IAM description.
+            /// </summary>
+            public IAM IAM { get; set; }
 
             /// <summary>
             /// Describes the information in the JWT token
@@ -266,6 +275,68 @@ namespace Amazon.Lambda.APIGatewayEvents
                 /// List of the scopes for the requester.
                 /// </summary>
                 public string[] Scopes { get; set; }
+            }
+
+            /// <summary>
+            /// Describes the information in the IAM context
+            /// </summary>
+            public class IAM
+            {
+            /// <summary>
+            /// The access key.
+            /// </summary>
+            public string AccessKey { get; set; }
+
+            /// <summary>
+            /// The account id.
+            /// </summary>
+            public string AccountId { get; set; }
+
+            /// <summary>
+            /// The caller id.
+            /// </summary>
+            public string CallerId { get; set; }
+
+            /// <summary>
+            /// The Cognito Identity.
+            /// </summary>
+            public CognitoIdentity CognitoIdentity { get; set; }
+
+            /// <summary>
+            /// The principal org id.
+            /// </summary>
+            public string PrincipalOrgId { get; set; }
+
+            /// <summary>
+            /// The user Arn.
+            /// </summary>
+            public string UserArn { get; set; }
+
+            /// <summary>
+            /// The user id.
+            /// </summary>
+            public string UserId { get; set; }
+            }
+
+            /// <summary>
+            /// Describes the information in the CognitoIdentity
+            /// </summary>
+            public class CognitoIdentity
+            {
+            /// <summary>
+            /// List of the amr.
+            /// </summary>
+            public string[] Amr { get; set; }
+
+            /// <summary>
+            /// The identity id.
+            /// </summary>
+            public string IdentityId { get; set; }
+
+            /// <summary>
+            /// The identity pool id.
+            /// </summary>
+            public string IdentityPoolId { get; set; }
             }
         }
     }
