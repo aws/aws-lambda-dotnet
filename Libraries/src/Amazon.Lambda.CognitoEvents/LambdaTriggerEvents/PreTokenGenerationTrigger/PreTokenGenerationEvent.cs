@@ -12,11 +12,11 @@ namespace Amazon.Lambda.CognitoEvents.LambdaTriggerEvents.PreTokenGenerationTrig
         /// <summary>
         /// The request from the Amazon Cognito service.
         /// </summary>
-        new public PreTokenGenerationRequest Request { get; set; }
+        public PreTokenGenerationRequest Request { get; set; }
 
         /// <summary>
         /// The response from your Lambda trigger.
         /// </summary>
-        new public PreTokenGenerationResponse Response { get; set; }
+        public PreTokenGenerationResponse Response { get; set; }
     }
 }

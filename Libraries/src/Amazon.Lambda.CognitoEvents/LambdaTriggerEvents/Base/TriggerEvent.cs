@@ -35,16 +35,5 @@
         /// The caller contex
         /// </summary>
         public CallerContext CallerContext { get; set; }
-
-        /// <summary>
-        /// The request from the Amazon Cognito service.
-        /// </summary>
-        public TriggerRequest Request { get; set; }
-
-        /// <summary>
-        /// The response from your Lambda trigger.
-        /// The return parameters in the response depend on the triggering event.
-        /// </summary>
-        public TriggerResponse Response { get; set; }
     }
 }
