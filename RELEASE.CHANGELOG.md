@@ -1,3 +1,13 @@
+### Release 2020-09-16
+* **Amazon.Lambda.Serialization.SystemTextJson (2.0.2)**
+  * Added default JsonWriterOptions to change serialization of quotation marks from ascii representation to an escaped quote
+* **Amazon.Lambda.AspNetCoreServer (5.1.5)**
+  * Updated to version 2.0.2 of Amazon.Lambda.Serialization.SystemTextJson
+  
+### Release 2020-09-09
+* **Amazon.Lambda.AspNetCoreServer (5.1.4)**
+  * Pull request [#729](https://github.com/aws/aws-lambda-dotnet/pull/729) Added code to load cookies from HTTPv2 request. Thanks [Andy Hopper](https://github.com/andyhopp)
+
 ### Release 2020-07-23
 * **Amazon.Lambda.TestTool-3.1 (0.10.1)**
   * Fixed issue with dead locking getting triggered Lambda function being executed blocks on async calls.
