@@ -202,4 +202,4 @@ To learn more about the various packages in this repo, please reference our [Lea
 If those resources are not sufficient to answer your question or resolve your issue, please feel free to open an [issue](https://github.com/aws/aws-lambda-dotnet/issues/new/choose) on this repo.
 
 ## Feedback and Contributing
-We welcome community contributions to our codebase and tools! If you would like to contribute, please read through the [CONTRIBUTING.md](./CONTRIBUTING.MD) document (our contribution guide) and check issues and open pull requests to ensure that the fix/feature you want to contribute is not already in development.
+We welcome community contributions to our codebase and tools! If you would like to contribute, please read through the [CONTRIBUTING.md](./CONTRIBUTING.md) document (our contribution guide) and check issues and open pull requests to ensure that the fix/feature you want to contribute is not already in development.
