@@ -202,13 +202,13 @@ namespace Amazon.Lambda.APIGatewayEvents
             /// The date before which the certificate is invalid. Present when a client accesses an API by using a custom domain name 
             /// that has mutual TLS enabled. Present only in access logs if mutual TLS authentication fails.
             /// </summary>
-            public DateTime NotBefore { get; set; }
+            public string NotBefore { get; set; }
 
             /// <summary>
             /// The date after which the certificate is invalid. Present when a client accesses an API by using a custom domain name that 
             /// has mutual TLS enabled. Present only in access logs if mutual TLS authentication fails.
             /// </summary>
-            public DateTime NotAfter { get; set; }
+            public string NotAfter { get; set; }
         }
 
         /// <summary>

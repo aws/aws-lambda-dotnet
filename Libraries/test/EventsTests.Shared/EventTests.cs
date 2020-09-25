@@ -96,6 +96,15 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("12/Mar/2020:19:03:58 +0000", rc.Time);
                 Assert.Equal(1583348638390, rc.TimeEpoch);
 
+                var clientCert = request.RequestContext.Authentication.ClientCert;
+                Assert.Equal("CERT_CONTENT", clientCert.ClientCertPem);
+                Assert.Equal("www.example.com", clientCert.SubjectDN);
+                Assert.Equal("Example issuer", clientCert.IssuerDN);
+                Assert.Equal("a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1", clientCert.SerialNumber);
+
+                Assert.Equal("May 28 12:30:02 2019 GMT", clientCert.Validity.NotBefore);
+                Assert.Equal("Aug  5 09:36:04 2021 GMT", clientCert.Validity.NotAfter);
+
                 var auth = rc.Authorizer;
                 Assert.NotNull(auth);
                 Assert.Equal(2, auth.Jwt.Claims.Count);
@@ -644,6 +653,15 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(identity.UserAgent, "PostmanRuntime/2.4.5");
                 Assert.Equal(identity.User, "theUser");
                 Assert.Equal("IAM_user_access_key", identity.AccessKey);
+
+                var clientCert = identity.ClientCert;
+                Assert.Equal("CERT_CONTENT", clientCert.ClientCertPem);
+                Assert.Equal("www.example.com", clientCert.SubjectDN);
+                Assert.Equal("Example issuer", clientCert.IssuerDN);
+                Assert.Equal("a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1", clientCert.SerialNumber);
+
+                Assert.Equal("May 28 12:30:02 2019 GMT", clientCert.Validity.NotBefore);
+                Assert.Equal("Aug  5 09:36:04 2021 GMT", clientCert.Validity.NotAfter);
 
                 Handle(proxyEvent);
             }
