@@ -49,15 +49,26 @@
       "userArn": "theUserArn",
       "userAgent": "PostmanRuntime/2.4.5",
       "user": "theUser",
-      "accessKey": "IAM_user_access_key"
+      "accessKey": "IAM_user_access_key",
+      "clientCert": {
+        "clientCertPem": "CERT_CONTENT",
+        "subjectDN": "www.example.com",
+        "issuerDN": "Example issuer",
+        "serialNumber": "a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1",
+        "validity": {
+          "notBefore": "May 28 12:30:02 2019 GMT",
+          "notAfter": "Aug  5 09:36:04 2021 GMT"
+        }
+      }
     },
-    "resourcePath": "/{proxy+}",
-    "httpMethod": "POST",
-    "apiId": "gy415nuibc",
-    "connectionId": "d034bc98-beed-4fdf-9e85-11bfc15bf734",
-    "domainName": "somerandomdomain.net",
-    "requestTime": "20/Feb/2018:22:48:57 +0000",
-    "requestTimeEpoch": 1519166937665
+      "resourcePath": "/{proxy+}",
+      "httpMethod": "POST",
+      "apiId": "gy415nuibc",
+      "connectionId": "d034bc98-beed-4fdf-9e85-11bfc15bf734",
+      "domainName": "somerandomdomain.net",
+      "requestTime": "20/Feb/2018:22:48:57 +0000",
+      "requestTimeEpoch": 1519166937665
+    
   },
   "body": "{\r\n\t\"a\": 1\r\n}"
 }
