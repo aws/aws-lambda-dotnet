@@ -19,16 +19,17 @@ namespace Amazon.Lambda.TestUtilities
         public StringBuilder Buffer { get; } = new StringBuilder();
 
         /// <summary>
-        /// Write log messages to the console.
+        /// Write log messages to the console and the Buffer without appending a newline terminator.
         /// </summary>
         /// <param name="message"></param>
         public void Log(string message)
         {
-            LogLine(message);
+            Buffer.Append(message);
+            Console.Write(message);
         }
 
         /// <summary>
-        /// Write log messages to the console.
+        /// Write log messages to the console and the Buffer with a newline terminator.
         /// </summary>
         /// <param name="message"></param>
         public void LogLine(string message)

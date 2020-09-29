@@ -196,6 +196,11 @@
             public string DomainName { get; set; }
 
             /// <summary>
+            /// The first label of the DomainName. This is often used as a caller/customer identifier.
+            /// </summary>
+            public string DomainPrefix { get; set; }
+
+            /// <summary>
             /// The event type: CONNECT, MESSAGE, or DISCONNECT.
             /// <para>
             /// This field is only set for WebSocket API requests.
@@ -332,6 +337,69 @@
             /// The user
             /// </summary>
             public string User { get; set; }
+
+
+            /// <summary>
+            /// Properties for a client certificate.
+            /// </summary>
+            public ProxyRequestClientCert ClientCert { get; set; }
+        }
+
+        /// <summary>
+        /// Container for the properties of the client certificate.
+        /// </summary>
+        public class ProxyRequestClientCert
+        {
+            /// <summary>
+            /// The PEM-encoded client certificate that the client presented during mutual TLS authentication. 
+            /// Present when a client accesses an API by using a custom domain name that has mutual 
+            /// TLS enabled. Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string ClientCertPem { get; set; }
+
+            /// <summary>
+            /// The distinguished name of the subject of the certificate that a client presents. 
+            /// Present when a client accesses an API by using a custom domain name that has 
+            /// mutual TLS enabled. Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string SubjectDN { get; set; }
+
+            /// <summary>
+            /// The distinguished name of the issuer of the certificate that a client presents. 
+            /// Present when a client accesses an API by using a custom domain name that has 
+            /// mutual TLS enabled. Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string IssuerDN { get; set; }
+
+            /// <summary>
+            /// The serial number of the certificate. Present when a client accesses an API by 
+            /// using a custom domain name that has mutual TLS enabled. 
+            /// Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string SerialNumber { get; set; }
+
+            /// <summary>
+            /// The rules for when the client cert is valid.
+            /// </summary>
+            public ClientCertValidity Validity { get; set; }
+        }
+
+        /// <summary>
+        /// Container for the validation properties of a client cert.
+        /// </summary>
+        public class ClientCertValidity
+        {
+            /// <summary>
+            /// The date before which the certificate is invalid. Present when a client accesses an API by using a custom domain name 
+            /// that has mutual TLS enabled. Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string NotBefore { get; set; }
+
+            /// <summary>
+            /// The date after which the certificate is invalid. Present when a client accesses an API by using a custom domain name that 
+            /// has mutual TLS enabled. Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string NotAfter { get; set; }
         }
     }
 }
