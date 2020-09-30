@@ -1,3 +1,9 @@
+### Release 2020-09-30
+* **Amazon.Lambda.APIGatewayEvents (2.2.0)**
+  * Added new properties for API Gateway's mutual tls feature.
+* **Amazon.Lambda.AspNetCoreServer (5.1.6)**
+  * Updated to version 2.2.0 of Amazon.Lambda.APIGatewayEvents
+
 ### Release 2020-09-16
 * **Amazon.Lambda.Serialization.SystemTextJson (2.0.2)**
   * Added default JsonWriterOptions to change serialization of quotation marks from ascii representation to an escaped quote
