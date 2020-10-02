@@ -37,13 +37,13 @@ namespace Amazon.Lambda.TestTool.Runtime
                     Environment.SetEnvironmentVariable("AWS_PROFILE", request.AWSProfile);
                 }
 
-
-                var context = new LocalLambdaContext()
-                {
-                    Logger = logger,
-                    AwsRequestId = Guid.NewGuid().ToString(),
-                    FunctionName = request.Function.FunctionInfo.Name
-                };
+                var context = GetLambdaContextForRequest(request.LambdaContext, logger);
+                //var context = new LocalLambdaContext()
+                //{
+                //    Logger = logger,
+                //    AwsRequestId = Guid.NewGuid().ToString(),
+                //    FunctionName = request.Function.FunctionInfo.Name
+                //};
 
                 object instance = null;
                 if (!request.Function.LambdaMethod.IsStatic)
@@ -81,6 +81,22 @@ namespace Amazon.Lambda.TestTool.Runtime
             response.Logs = logger.Buffer;
 
             return response;
+        }
+
+        private ILambdaContext GetLambdaContextForRequest(string requestLambdaContext, LocalLambdaLogger defaultLogger)
+        {
+            if (string.IsNullOrWhiteSpace(requestLambdaContext))
+            {
+                return new LocalLambdaContext()
+                {
+                    Logger = defaultLogger
+                };
+            }
+            
+            return new LocalLambdaContext()
+            {
+                Logger = defaultLogger
+            };
         }
 
         private static string SeachForDllNotFoundException(Exception e)

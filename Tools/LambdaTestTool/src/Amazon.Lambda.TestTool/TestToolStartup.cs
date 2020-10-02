@@ -131,6 +131,8 @@ namespace Amazon.Lambda.TestTool
             LambdaFunction lambdaFunction = LoadLambdaFunction(configInfo, localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
 
             string payload = DeterminePayload(localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
+            string lambdaContext = DetermineLambdaContext(localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
+            
 
             var awsProfile = commandOptions.AWSProfile ?? configInfo.AWSProfile;
             if (!string.IsNullOrEmpty(awsProfile))
@@ -166,7 +168,8 @@ namespace Amazon.Lambda.TestTool
                 AWSProfile = awsProfile,
                 AWSRegion = awsRegion,
                 Payload = payload,
-                Function = lambdaFunction
+                Function = lambdaFunction,
+                LambdaContext = lambdaContext
             };
 
             ExecuteRequest(request, localLambdaOptions, runConfiguration);
@@ -265,6 +268,61 @@ namespace Amazon.Lambda.TestTool
 
             runConfiguration.OutputWriter.WriteLine($"... Using function handler {functionHandler}");
             return lambdaFunction;
+        }
+
+        private static string DetermineLambdaContext(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration)
+        {
+            var lambdaContext = commandOptions.LambdaContext;
+
+            bool contextFileFound = false;
+            if (!string.IsNullOrEmpty(lambdaContext))
+            {
+                if (Path.IsPathFullyQualified(lambdaContext) && File.Exists(lambdaContext))
+                {
+                    runConfiguration.OutputWriter.WriteLine($"... Using context with from the file {lambdaContext}");
+                    lambdaContext = File.ReadAllText(lambdaContext);
+                    contextFileFound = true;
+                }
+                else
+                {
+                    // Look to see if the context value is a file in
+                    // * Directory with user Lambda assemblies.
+                    // * Lambda project directory
+                    // * Properties directory under the project directory. This is to make it easy to reconcile from the launchSettings.json file.
+                    // * Is a saved sample request from the web interface
+                    var possiblePaths = new[]
+                    {
+                        Path.Combine(lambdaAssemblyDirectory, lambdaContext),
+                        Path.Combine(lambdaProjectDirectory, lambdaContext),
+                        Path.Combine(lambdaProjectDirectory, "Properties", lambdaContext),
+                        Path.Combine(localLambdaOptions.GetPreferenceDirectory(false), new SampleRequestManager(localLambdaOptions.GetPreferenceDirectory(false)).GetSaveRequestRelativePath(lambdaContext))
+                    };
+                    foreach (var possiblePath in possiblePaths)
+                    {
+                        if (File.Exists(possiblePath))
+                        {
+                            runConfiguration.OutputWriter.WriteLine($"... Using payload with from the file {Path.GetFullPath(possiblePath)}");
+                            lambdaContext = File.ReadAllText(possiblePath);
+                            contextFileFound = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!contextFileFound)
+            {
+                if (!string.IsNullOrEmpty(lambdaContext))
+                {
+                    runConfiguration.OutputWriter.WriteLine($"... Using context with the value {lambdaContext}");
+                }
+                else
+                {
+                    runConfiguration.OutputWriter.WriteLine("... No context configured. If a payload is required set the --lambdaContext switch to a file path or a JSON document.");
+                }
+            }
+
+            return lambdaContext;
         }
 
         private static string DeterminePayload(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration)

@@ -8,6 +8,7 @@ function onExecute() {
     functionInvokeParameters.payload = $("#function-payload").val();
     functionInvokeParameters.profile = $("#aws-profile").val();
     functionInvokeParameters.region = $("#aws-region").val();
+    functionInvokeParameters.lambdaContext = $("#function-context").val();
 
 
     $.post(

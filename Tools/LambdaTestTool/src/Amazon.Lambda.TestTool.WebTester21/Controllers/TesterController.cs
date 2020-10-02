@@ -82,6 +82,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
                 request.Payload = parameters.Payload;
                 request.AWSProfile = parameters.Profile;
                 request.AWSRegion = parameters.Region;
+                request.LambdaContext = parameters.LambdaContext;
             }
             
 

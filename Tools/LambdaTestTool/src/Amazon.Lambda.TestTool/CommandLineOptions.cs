@@ -27,6 +27,8 @@ namespace Amazon.Lambda.TestTool
 
         public bool PauseExit { get; set; } = true;
 
+        public string LambdaContext { get; set; }
+
         public static CommandLineOptions Parse(string[] args)
         {
             var options = new CommandLineOptions();
@@ -83,6 +85,10 @@ namespace Amazon.Lambda.TestTool
                         break;
                     case "--payload":
                         options.Payload = GetNextStringValue(i);
+                        i++;
+                        break;
+                    case "--lambaContext":
+                        options.LambdaContext = GetNextStringValue(i);
                         i++;
                         break;
                     case "--pause-exit":

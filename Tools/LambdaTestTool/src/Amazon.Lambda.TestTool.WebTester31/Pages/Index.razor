@@ -58,6 +58,18 @@
     </div>
 </div>
 
+<div class="row">
+    <div class="col-sm form-group">
+        <label class="col-xs-3 control-label" for="function-context">Lambda Context Input:</label>
+        <textarea class="form-control" rows="10" @bind="LambdaContextInput" placeholder="JSON document to pass a custome Lambda Context object. If nothing is passed, only the logger will be set. Plain strings must be wrapped in quotes."></textarea>
+        <p style="margin-top:10px">
+            <b>Tip:</b> If a Lambda function using the default serializer, Amazon.Lambda.Serialization.Json, is deployed with the environment variable <b>LAMBDA_NET_SERIALIZER_DEBUG</b> set to <b>true</b>
+            the JSON input for the Lambda function will be written to CloudWatch Logs. The captured JSON can then be used in this tool to step
+            through the code.
+        </p>
+    </div>
+</div>
+
 
 <div class="row mt-3">
     <div class="col-sm form-group">
@@ -98,6 +110,8 @@
     public string FunctionResponse { get; set; }
 
     public string FunctionLogs { get; set; }
+
+    public string LambdaContextInput { get; set; }
 
     string _selectedSampleRequestName;
     string SelectedSampleRequestName
@@ -164,7 +178,8 @@
                 Function = function,
                 AWSProfile = FunctionPicker.AWSProfile,
                 AWSRegion = FunctionPicker.AWSRegion,
-                Payload = this.FunctionInput
+                Payload = this.FunctionInput,
+                LambdaContext = this.LambdaContextInput
             };
 
             response = this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunctionAsync(request).GetAwaiter().GetResult();

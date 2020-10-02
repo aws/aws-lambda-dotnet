@@ -6,5 +6,6 @@ namespace Amazon.Lambda.TestTool
         public string Profile { get; set; }
         public string Region { get; set; }
         public string Payload { get; set; }
+        public string LambdaContext { get; set; }
     }
 }
