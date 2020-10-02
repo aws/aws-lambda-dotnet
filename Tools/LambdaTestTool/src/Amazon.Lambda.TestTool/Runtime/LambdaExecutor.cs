@@ -8,6 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestTool.Runtime.LambdaMocks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Amazon.Lambda.TestTool.Runtime
 {
@@ -83,7 +85,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             return response;
         }
 
-        private ILambdaContext GetLambdaContextForRequest(string requestLambdaContext, LocalLambdaLogger defaultLogger)
+        private ILambdaContext GetLambdaContextForRequest(string requestLambdaContext, ILambdaLogger defaultLogger)
         {
             if (string.IsNullOrWhiteSpace(requestLambdaContext))
             {
@@ -92,10 +94,14 @@ namespace Amazon.Lambda.TestTool.Runtime
                     Logger = defaultLogger
                 };
             }
-            
+            JObject json = JObject.Parse(requestLambdaContext);
             return new LocalLambdaContext()
             {
-                Logger = defaultLogger
+                Logger = defaultLogger,
+                AwsRequestId = json["AwsRequestId"]?.Value<string>(),
+                FunctionName = json["FunctionName"]?.Value<string>(),
+                FunctionVersion = json["FunctionVersion"]?.Value<string>(),
+                MemoryLimitInMB = json["MemoryLimitInMB"] != null && json["MemoryLimitInMB"].HasValues && int.TryParse(json["MemoryLimitInMB"].Value<string>(), out var _) ? json["MemoryLimitInMB"].Value<int>() : 0,
             };
         }
 

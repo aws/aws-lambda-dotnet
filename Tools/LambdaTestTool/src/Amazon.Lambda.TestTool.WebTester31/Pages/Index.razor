@@ -61,7 +61,7 @@
 <div class="row">
     <div class="col-sm form-group">
         <label class="col-xs-3 control-label" for="function-context">Lambda Context Input:</label>
-        <textarea class="form-control" rows="10" @bind="LambdaContextInput" placeholder="JSON document to pass a custome Lambda Context object. If nothing is passed, only the logger will be set. Plain strings must be wrapped in quotes."></textarea>
+        <textarea class="form-control" rows="10" id="function-context" @bind="LambdaContextInput" placeholder="JSON document to pass a custom Lambda Context object. If nothing is passed, only the logger will be set. Plain strings must be wrapped in quotes.">{"AwsRequestId":"123abc"}</textarea>
         <p style="margin-top:10px">
             <b>Tip:</b> If a Lambda function using the default serializer, Amazon.Lambda.Serialization.Json, is deployed with the environment variable <b>LAMBDA_NET_SERIALIZER_DEBUG</b> set to <b>true</b>
             the JSON input for the Lambda function will be written to CloudWatch Logs. The captured JSON can then be used in this tool to step
