@@ -40,7 +40,9 @@ namespace Amazon.Lambda.TestTool.Runtime
 
                 var context = new LocalLambdaContext()
                 {
-                    Logger = logger
+                    Logger = logger,
+                    AwsRequestId = Guid.NewGuid().ToString(),
+                    FunctionName = request.Function.FunctionInfo.Name
                 };
 
                 object instance = null;
