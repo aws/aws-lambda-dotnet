@@ -34,3 +34,8 @@
 /Blueprints/YeomanGenerator/generator-aws-lambda-dotnet/app/manifest.js
 /Tools/LambdaTestTool/Amazon.Lambda.TestTool/ExternalCommands/App
 global.json
+
+#Ncrunch
+*.ncrunchproject
+*.ncrunchsolution
+*NCrunch*
