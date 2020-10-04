@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon.Lambda.TestTool.Runtime;
 using Amazon.Lambda.TestTool.WebTester.Models;
@@ -108,6 +109,19 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
                 var manager = new SampleRequestManager(this.LambdaOptions.GetPreferenceDirectory(true));
                 return manager.SaveRequest(requestName, content);
             }
+        }
+
+        [HttpGet("request/sample-context")]
+        public async Task<string> GetSampleLambdaContext()
+        {
+            var manager = new SampleLambdaContextManager();
+            var context = manager.GetSampleContextRequest();
+            var serializerOptions = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+
+            return System.Text.Json.JsonSerializer.Serialize(context, serializerOptions);
         }
     }
 }

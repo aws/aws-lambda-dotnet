@@ -41,7 +41,8 @@
     <div class="row">
         <div class="col-sm form-group">
             <label class="col-xs-3 control-label" for="function-context">Lambda Context Input:</label>
-            <textarea class="form-control" rows="10" id="function-context" placeholder="JSON document to pass a custome Lambda Context object. If nothing is passed, only the logger will be set. Plain strings must be wrapped in quotes.">{"AwsRequestId":"123abc"}</textarea>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="onGenerateSampleLambdaContext()">Generate Sample Context</button>
+            <textarea class="form-control" rows="10" id="function-context" placeholder="JSON document to pass a custome Lambda Context object. If nothing is passed, only the logger will be set. Plain strings must be wrapped in quotes."></textarea>
         </div>
     </div>
 

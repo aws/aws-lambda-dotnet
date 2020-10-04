@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 using Amazon.Lambda.Core;
 
 namespace Amazon.Lambda.TestTool.Runtime.LambdaMocks
@@ -15,6 +16,7 @@ namespace Amazon.Lambda.TestTool.Runtime.LambdaMocks
         public string LogGroupName { get; set; }
         public string LogStreamName { get; set; }
         public int MemoryLimitInMB { get; set; }
+        [JsonIgnore]
         public TimeSpan RemainingTime { get; set; }
     }
 }
