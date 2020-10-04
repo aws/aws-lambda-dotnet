@@ -3,11 +3,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestTool.Runtime.LambdaMocks;
+using Amazon.Runtime.Internal;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -40,12 +42,6 @@ namespace Amazon.Lambda.TestTool.Runtime
                 }
 
                 var context = GetLambdaContextForRequest(request.LambdaContext, logger);
-                //var context = new LocalLambdaContext()
-                //{
-                //    Logger = logger,
-                //    AwsRequestId = Guid.NewGuid().ToString(),
-                //    FunctionName = request.Function.FunctionInfo.Name
-                //};
 
                 object instance = null;
                 if (!request.Function.LambdaMethod.IsStatic)
@@ -85,7 +81,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             return response;
         }
 
-        private ILambdaContext GetLambdaContextForRequest(string requestLambdaContext, ILambdaLogger defaultLogger)
+        public ILambdaContext GetLambdaContextForRequest(string requestLambdaContext, ILambdaLogger defaultLogger)
         {
             if (string.IsNullOrWhiteSpace(requestLambdaContext))
             {
@@ -94,14 +90,21 @@ namespace Amazon.Lambda.TestTool.Runtime
                     Logger = defaultLogger
                 };
             }
-            JObject json = JObject.Parse(requestLambdaContext);
-            return new LocalLambdaContext()
+
+            var json = JsonConvert.DeserializeObject<LocalLambdaContext>(requestLambdaContext); 
+
+            return new LocalLambdaContext
             {
+                AwsRequestId = json.AwsRequestId,
+                FunctionName = json.FunctionName,
+                FunctionVersion = json.FunctionVersion,
                 Logger = defaultLogger,
-                AwsRequestId = json["AwsRequestId"]?.Value<string>(),
-                FunctionName = json["FunctionName"]?.Value<string>(),
-                FunctionVersion = json["FunctionVersion"]?.Value<string>(),
-                MemoryLimitInMB = json["MemoryLimitInMB"] != null && json["MemoryLimitInMB"].HasValues && int.TryParse(json["MemoryLimitInMB"].Value<string>(), out var _) ? json["MemoryLimitInMB"].Value<int>() : 0,
+                LogGroupName = json.LogGroupName,
+                InvokedFunctionArn = json.InvokedFunctionArn,
+                MemoryLimitInMB = json.MemoryLimitInMB,
+                Identity = json.Identity,
+                LogStreamName = json.LogStreamName,
+                ClientContext = json.ClientContext
             };
         }
 
