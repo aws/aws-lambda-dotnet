@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestTool.Runtime.LambdaMocks;
-using Amazon.Runtime.Internal;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Amazon.Lambda.TestTool.Runtime
 {

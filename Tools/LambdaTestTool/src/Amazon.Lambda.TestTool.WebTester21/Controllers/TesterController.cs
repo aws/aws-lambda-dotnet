@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon.Lambda.TestTool.Runtime;
 using Amazon.Lambda.TestTool.WebTester.Models;
@@ -116,7 +115,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
         {
             var manager = new SampleLambdaContextManager();
             var context = manager.GetSampleContextRequest();
-            var serializerOptions = new JsonSerializerOptions
+            var serializerOptions = new System.Text.Json.JsonSerializerOptions
             {
                 WriteIndented = true
             };

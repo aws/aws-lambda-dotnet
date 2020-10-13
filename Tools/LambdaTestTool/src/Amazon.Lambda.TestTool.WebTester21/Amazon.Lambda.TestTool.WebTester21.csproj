@@ -33,6 +33,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Pages\**\*" CopyToOutputDirectory="Always" />
+    <None Remove="Pages\_ContextInputPanel.cshtml" />
+    <None Remove="Pages\_FunctionInputPanel.cshtml" />
     <Content Include="embedded-wwwroot\css\font-awesome.min.css" />
   </ItemGroup>  
 
