@@ -36,6 +36,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="System.IO.Pipelines" version="4.7.2">
+      <IncludeAssets>compile</IncludeAssets>
+    </PackageReference>
     <ProjectReference Include="..\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
   </ItemGroup>
 
