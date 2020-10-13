@@ -87,7 +87,7 @@ namespace Amazon.Lambda.TestTool
                         options.Payload = GetNextStringValue(i);
                         i++;
                         break;
-                    case "--lambaContext":
+                    case "--lambdaContext":
                         options.LambdaContext = GetNextStringValue(i);
                         i++;
                         break;

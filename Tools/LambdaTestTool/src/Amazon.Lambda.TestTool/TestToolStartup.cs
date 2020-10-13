@@ -129,11 +129,10 @@ namespace Amazon.Lambda.TestTool
             string configFile = DetermineConfigFile(commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory);
             LambdaConfigInfo configInfo = LoadLambdaConfigInfo(configFile, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
             LambdaFunction lambdaFunction = LoadLambdaFunction(configInfo, localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
-
-            string payload = DeterminePayload(localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
-            string lambdaContext = DetermineLambdaContext(localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
             
-
+            string payload = DetermineInputValue(localLambdaOptions, commandOptions.Payload, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
+            string lambdaContext = DetermineInputValue(localLambdaOptions, commandOptions.LambdaContext, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
+            
             var awsProfile = commandOptions.AWSProfile ?? configInfo.AWSProfile;
             if (!string.IsNullOrEmpty(awsProfile))
             {
@@ -270,18 +269,16 @@ namespace Amazon.Lambda.TestTool
             return lambdaFunction;
         }
 
-        private static string DetermineLambdaContext(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration)
+        private static string DetermineInputValue(LocalLambdaOptions localLambdaOptions, string input, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration)
         {
-            var lambdaContext = commandOptions.LambdaContext;
-
-            bool contextFileFound = false;
-            if (!string.IsNullOrEmpty(lambdaContext))
+            bool inputFileFound = false;
+            if (!string.IsNullOrEmpty(input))
             {
-                if (Path.IsPathFullyQualified(lambdaContext) && File.Exists(lambdaContext))
+                if (Path.IsPathFullyQualified(input) && File.Exists(input))
                 {
-                    runConfiguration.OutputWriter.WriteLine($"... Using context with from the file {lambdaContext}");
-                    lambdaContext = File.ReadAllText(lambdaContext);
-                    contextFileFound = true;
+                    runConfiguration.OutputWriter.WriteLine($"... Using input with from the file {input}");
+                    input = File.ReadAllText(input);
+                    inputFileFound = true;
                 }
                 else
                 {
@@ -292,92 +289,37 @@ namespace Amazon.Lambda.TestTool
                     // * Is a saved sample request from the web interface
                     var possiblePaths = new[]
                     {
-                        Path.Combine(lambdaAssemblyDirectory, lambdaContext),
-                        Path.Combine(lambdaProjectDirectory, lambdaContext),
-                        Path.Combine(lambdaProjectDirectory, "Properties", lambdaContext),
-                        Path.Combine(localLambdaOptions.GetPreferenceDirectory(false), new SampleRequestManager(localLambdaOptions.GetPreferenceDirectory(false)).GetSaveRequestRelativePath(lambdaContext))
+                        Path.Combine(lambdaAssemblyDirectory, input),
+                        Path.Combine(lambdaProjectDirectory, input),
+                        Path.Combine(lambdaProjectDirectory, "Properties", input),
+                        Path.Combine(localLambdaOptions.GetPreferenceDirectory(false), new SampleRequestManager(localLambdaOptions.GetPreferenceDirectory(false)).GetSaveRequestRelativePath(input))
                     };
                     foreach (var possiblePath in possiblePaths)
                     {
                         if (File.Exists(possiblePath))
                         {
-                            runConfiguration.OutputWriter.WriteLine($"... Using payload with from the file {Path.GetFullPath(possiblePath)}");
-                            lambdaContext = File.ReadAllText(possiblePath);
-                            contextFileFound = true;
+                            runConfiguration.OutputWriter.WriteLine($"... Using input with from the file {Path.GetFullPath(possiblePath)}");
+                            input = File.ReadAllText(possiblePath);
+                            inputFileFound = true;
                             break;
                         }
                     }
                 }
             }
 
-            if (!contextFileFound)
+            if (!inputFileFound)
             {
-                if (!string.IsNullOrEmpty(lambdaContext))
+                if (!string.IsNullOrEmpty(input))
                 {
-                    runConfiguration.OutputWriter.WriteLine($"... Using context with the value {lambdaContext}");
+                    runConfiguration.OutputWriter.WriteLine($"... Using input with the value {input}");
                 }
                 else
                 {
-                    runConfiguration.OutputWriter.WriteLine("... No context configured. If a payload is required set the --lambdaContext switch to a file path or a JSON document.");
+                    runConfiguration.OutputWriter.WriteLine("... No input configured. If an input is required set the input parameter, --lambdaContext or --payload, to switch to a file path or a JSON document.");
                 }
             }
 
-            return lambdaContext;
-        }
-
-        private static string DeterminePayload(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, string lambdaProjectDirectory, RunConfiguration runConfiguration)
-        {
-            var payload = commandOptions.Payload;
-
-            bool payloadFileFound = false;
-            if (!string.IsNullOrEmpty(payload))
-            {
-                if (Path.IsPathFullyQualified(payload) && File.Exists(payload))
-                {
-                    runConfiguration.OutputWriter.WriteLine($"... Using payload with from the file {payload}");
-                    payload = File.ReadAllText(payload);
-                    payloadFileFound = true;
-                }
-                else
-                {
-                    // Look to see if the payload value is a file in
-                    // * Directory with user Lambda assemblies.
-                    // * Lambda project directory
-                    // * Properties directory under the project directory. This is to make it easy to reconcile from the launchSettings.json file.
-                    // * Is a saved sample request from the web interface
-                    var possiblePaths = new[]
-                    {
-                        Path.Combine(lambdaAssemblyDirectory, payload),
-                        Path.Combine(lambdaProjectDirectory, payload),
-                        Path.Combine(lambdaProjectDirectory, "Properties", payload),
-                        Path.Combine(localLambdaOptions.GetPreferenceDirectory(false), new SampleRequestManager(localLambdaOptions.GetPreferenceDirectory(false)).GetSaveRequestRelativePath(payload))
-                    };
-                    foreach (var possiblePath in possiblePaths)
-                    {
-                        if (File.Exists(possiblePath))
-                        {
-                            runConfiguration.OutputWriter.WriteLine($"... Using payload with from the file {Path.GetFullPath(possiblePath)}");
-                            payload = File.ReadAllText(possiblePath);
-                            payloadFileFound = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!payloadFileFound)
-            {
-                if (!string.IsNullOrEmpty(payload))
-                {
-                    runConfiguration.OutputWriter.WriteLine($"... Using payload with the value {payload}");
-                }
-                else
-                {
-                    runConfiguration.OutputWriter.WriteLine("... No payload configured. If a payload is required set the --payload switch to a file path or a JSON document.");
-                }
-            }
-
-            return payload;
+            return input;
         }
 
         private static void ExecuteRequest(ExecutionRequest request, LocalLambdaOptions localLambdaOptions, RunConfiguration runConfiguration)
