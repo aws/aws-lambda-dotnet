@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - SNSEvents package.</Description>
     <TargetFrameworks>netstandard1.3;netstandard2.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.SNSEvents</AssemblyTitle>
-    <VersionPrefix>1.1.0</VersionPrefix>
+    <VersionPrefix>1.2.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.SNSEvents</AssemblyName>
     <PackageId>Amazon.Lambda.SNSEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
