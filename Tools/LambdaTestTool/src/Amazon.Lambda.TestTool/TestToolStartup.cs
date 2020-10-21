@@ -174,7 +174,7 @@ namespace Amazon.Lambda.TestTool
 
             if (runConfiguration.Mode == RunConfiguration.RunMode.Normal && commandOptions.PauseExit)
             {
-                Console.WriteLine("Press any key to exist");
+                Console.WriteLine("Press any key to exit");
                 Console.ReadKey();
             }
         }
