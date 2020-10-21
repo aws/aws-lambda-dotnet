@@ -197,7 +197,18 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var response = await this.InvokeAPIGatewayRequest("cookies-get-returned-httpapi-v2-request.json");
 
-            Assert.StartsWith("TestCookie=TestValue", response.Headers["Set-Cookie"]);
+            Assert.Collection(response.Cookies,
+                actual => Assert.StartsWith("TestCookie=TestValue", actual));
+        }
+
+        [Fact]
+        public async Task TestReturningMultipleCookies()
+        {
+            var response = await this.InvokeAPIGatewayRequest("cookies-get-multiple-returned-httpapi-v2-request.json");
+
+            Assert.Collection(response.Cookies.OrderBy(s => s),
+                actual => Assert.StartsWith("TestCookie1=TestValue1", actual),
+                actual => Assert.StartsWith("TestCookie2=TestValue2", actual));
         }
 
         [Fact]

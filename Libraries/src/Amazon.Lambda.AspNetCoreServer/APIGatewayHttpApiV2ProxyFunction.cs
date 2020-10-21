@@ -14,6 +14,7 @@ using Amazon.Lambda.AspNetCoreServer.Internal;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using System.Globalization;
 using Microsoft.Extensions.Primitives;
+using Microsoft.Net.Http.Headers;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -198,6 +199,14 @@ namespace Amazon.Lambda.AspNetCoreServer
                 response.Headers = new Dictionary<string, string>();
                 foreach (var kvp in responseFeatures.Headers)
                 {
+                    if (kvp.Key.Equals(HeaderNames.SetCookie, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        // Cookies must be passed through the proxy response property and not as a 
+                        // header to be able to pass back multiple cookies in a single request.
+                        response.Cookies = kvp.Value.ToArray();
+                        continue;
+                    }
+
                     response.SetHeaderValues(kvp.Key, kvp.Value.ToArray(), false);
 
                     // Remember the Content-Type for possible later use
