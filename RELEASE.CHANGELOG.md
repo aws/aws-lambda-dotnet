@@ -1,3 +1,56 @@
+### Release 2020-10-21
+* **Amazon.Lambda.APIGatewayEvents (2.3.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.ApplicationLoadBalancerEvents (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.AspNetCoreServer (5.2.0)**
+  * Update code signing certificate for signing the assembly.
+  * Pull request [#751](https://github.com/aws/aws-lambda-dotnet/pull/751) Return cookies through proxy response message to support multiple cookies. Thanks [Peter Liljenberg](https://github.com/petli)
+* **Amazon.Lambda.CloudWatchEvents (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.CloudWatchLogsEvents (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.CognitoEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.ConfigEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.Core (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.DynamoDBEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+  * Updated to latest version of AWSSDK.DynamoDBv2.
+* **Amazon.Lambda.KinesisAnalyticsEvents (2.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.KinesisEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+  * Updated to latest version of AWSSDK.Kinesis.
+* **Amazon.Lambda.KinesisFirehoseEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.LexEvents (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.Logging.AspNetCore (3.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.PowerShellHost (2.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.RuntimeSupport (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.S3Events (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+  * Updated to latest version of AWSSDK.S3.
+* **Amazon.Lambda.Serialization.Json (1.8.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.Serialization.SystemTextJson (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.SimpleEmailEvents (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.SNSEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.SQSEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.TestUtilities (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+
+
 ### Release 2020-09-30
 * **Amazon.Lambda.APIGatewayEvents (2.2.0)**
   * Added new properties for API Gateway's mutual tls feature.
