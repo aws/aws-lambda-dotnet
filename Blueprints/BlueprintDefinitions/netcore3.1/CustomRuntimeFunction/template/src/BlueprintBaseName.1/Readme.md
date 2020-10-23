@@ -3,7 +3,6 @@
 This starter project consists of:
 * Function.cs - contains a class with a Main method that starts the bootstrap, and a single function handler method
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
-* bootstrap - a Linux bash script that is invoked by the AWS Lambda infrastructure to start the function
 
 You may also have a test project depending on the options selected.
 
