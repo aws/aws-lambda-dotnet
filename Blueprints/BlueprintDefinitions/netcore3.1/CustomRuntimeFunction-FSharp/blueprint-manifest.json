@@ -1,7 +1,7 @@
 {
   "display-name": "Custom Runtime Function",
   "system-name": "CustomRuntimeFunction",
-  "description": "Use Lambda Custom Runtime feature to build Lambda functions using .NET Core 2.2, 3.0 or 3.1.",
+  "description": "Use Lambda Custom Runtime feature to build Lambda functions using .NET 5.",
   "sort-order": 101,
   "hidden-tags": [
     "F#",
