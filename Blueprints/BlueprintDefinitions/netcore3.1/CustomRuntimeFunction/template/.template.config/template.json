@@ -5,7 +5,7 @@
     "Lambda",
     "Function"
   ],
-  "name": "Lambda Custom Runtime Function (.NET Core 3.1)",
+  "name": "Lambda Custom Runtime Function (.NET 5.0)",
   "identity": "AWS.Lambda.Function.CustomRuntimeFunction.CSharp",
   "groupIdentity": "AWS.Lambda.Function.CustomRuntimFunction",
   "shortName": "lambda.CustomRuntimeFunction",
