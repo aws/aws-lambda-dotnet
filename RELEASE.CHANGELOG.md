@@ -1,3 +1,7 @@
+### Release 2020-10-30
+* **Amazon.Lambda.Templates (4.2.0)**
+  * Updated custom runtime templates to target .NET 5.
+
 ### Release 2020-10-21
 * **Amazon.Lambda.APIGatewayEvents (2.3.0)**
   * Update code signing certificate for signing the assembly.
