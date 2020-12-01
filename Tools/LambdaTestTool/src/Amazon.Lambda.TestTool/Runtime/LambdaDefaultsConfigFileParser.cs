@@ -45,7 +45,7 @@ namespace Amazon.Lambda.TestTool.Runtime
 
 
             var templateFileName = !string.IsNullOrEmpty(configFile.Template) ? configFile.Template : null;
-            var functionHandler = !string.IsNullOrEmpty(configFile.FunctionHandler) ? configFile.FunctionHandler : null;
+            var functionHandler = !string.IsNullOrEmpty(configFile.DetermineHandler()) ? configFile.DetermineHandler() : null;
 
             if (!string.IsNullOrEmpty(templateFileName))
             {
@@ -142,9 +142,20 @@ namespace Amazon.Lambda.TestTool.Runtime
                     continue;
                 }
 
-                var handler = properties.Children.ContainsKey("Handler")
-                    ? ((YamlScalarNode) properties.Children["Handler"])?.Value
-                    : null;
+                string handler = null;
+                if(properties.Children.ContainsKey("Handler"))
+                {
+                    handler = ((YamlScalarNode)properties.Children["Handler"])?.Value;
+                }
+
+                if(string.IsNullOrEmpty(handler))
+                {
+                    if(properties.Children.TryGetValue("ImageConfig", out var imageConfigNode) && 
+                        imageConfigNode is YamlMappingNode && ((YamlMappingNode)imageConfigNode).Children.TryGetValue("Command", out var imageCommandNode))
+                    {
+                        handler = (imageCommandNode as YamlScalarNode)?.Value;
+                    }
+                }
 
                 if (!string.IsNullOrEmpty(handler))
                 {
@@ -216,11 +227,16 @@ namespace Amazon.Lambda.TestTool.Runtime
                     continue;
                 }
 
-                JsonElement handlerProperty;
-                if (!propertiesProperty.TryGetProperty("Handler", out handlerProperty))
-                    continue;
-
-                var handler = handlerProperty.GetString();
+                string handler = null;
+                if (propertiesProperty.TryGetProperty("Handler", out var handlerProperty))
+                {
+                    handler = handlerProperty.GetString();
+                }
+                else if(propertiesProperty.TryGetProperty("ImageConfig", out var imageConfigProperty) &&
+                        imageConfigProperty.TryGetProperty("Command", out var imageCommandProperty))
+                {
+                    handler = imageCommandProperty.GetString();
+                }
 
                 if (!string.IsNullOrEmpty(handler))
                 {

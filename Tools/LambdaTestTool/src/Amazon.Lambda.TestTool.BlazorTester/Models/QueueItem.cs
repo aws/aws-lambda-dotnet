@@ -1,4 +1,4 @@
-namespace Amazon.Lambda.TestTool.WebTester31.Models
+namespace Amazon.Lambda.TestTool.BlazorTester.Models
 {
     public class QueueItem
     {

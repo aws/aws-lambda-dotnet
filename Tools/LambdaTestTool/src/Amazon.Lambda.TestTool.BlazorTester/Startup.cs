@@ -15,7 +15,7 @@ using Microsoft.Extensions.Hosting;
 
 using Blazored.Modal;
 
-namespace Amazon.Lambda.TestTool.WebTester31
+namespace Amazon.Lambda.TestTool.BlazorTester
 {
     public class Startup
     {

@@ -27,6 +27,29 @@
             }
          }
       },
+      "MyHelloWorldImageCommand":{ 
+         "Type":"AWS::Serverless::Function",
+         "Properties":{ 
+            "PackageType" : "Image",
+            "ImageConfig" : {
+                "Command" : "ServerlessTemplateExample::ServerlessTemplateExample.Functions::HelloWorldImageFunction"
+            },
+            "ImageUri":"",
+            "Description":"",
+            "MemorySize":256,
+            "Timeout":30,
+            "Role":null,
+            "Policies":[ 
+               "AWSLambdaFullAccess"
+            ],
+            "Environment":{ 
+
+            },
+            "Events":{ 
+
+            }
+         }
+      },
       "MyToUpper":{ 
          "Type":"AWS::Lambda::Function",
          "Properties":{ 
