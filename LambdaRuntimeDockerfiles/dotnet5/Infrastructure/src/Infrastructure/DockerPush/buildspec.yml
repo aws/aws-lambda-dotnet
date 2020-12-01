@@ -1,0 +1,13 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      dotnet: 3.1
+  build:
+    commands:
+      - pwsh LambdaRuntimeDockerfiles/dotnet5/Infrastructure/src/Infrastructure/DockerPush/build.ps1
+        -SourceEcr $SOURCE_ECR
+        -EcrRepositoryName $ECR_REPOSITORY_NAME
+        -SourceImageTag $CODEBUILD_RESOLVED_SOURCE_VERSION
+        -DestinationEcrs $DESTINATION_ECRS
+        -DestinationImageTag $DESTINATION_IMAGE_TAG
