@@ -21,23 +21,22 @@ namespace Infrastructure
     {
         public Source Source { get; } = new Source();
         public Ecrs Ecrs { get; } = new Ecrs();
-        public string EcrRepositoryName { get; } = Environment.GetEnvironmentVariable("ECR_REPOSITORY_NAME");
+        public string EcrRepositoryName { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_ECR_REPOSITORY_NAME");
         public const string ProjectRoot = "LambdaRuntimeDockerfiles/dotnet5/Infrastructure/src/Infrastructure";
         public const string ProjectName = "aws-lambda-dotnet-5-container-image";
     }
 
     internal class Source
     {
-        public string RepositoryArn { get; } = Environment.GetEnvironmentVariable("SOURCE_REPOSITORY_ARN");
-        public string BranchName { get; } = Environment.GetEnvironmentVariable("SOURCE_BRANCH_NAME");
-        public string CrossAccountRoleArn { get; } = Environment.GetEnvironmentVariable("SOURCE_CROSS_ACCOUNT_ROLE_ARN");
+        public string RepositoryArn { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_SOURCE_REPOSITORY_ARN");
+        public string BranchName { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_SOURCE_BRANCH_NAME");
+        public string CrossAccountRoleArn { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_SOURCE_CROSS_ACCOUNT_ROLE_ARN");
     }
 
     internal class Ecrs
     {
-        public string Base { get; } = Environment.GetEnvironmentVariable("BASE_ECRS");
-        public string Stage { get; } = Environment.GetEnvironmentVariable("STAGE_ECR");
-        public string Beta { get; } = Environment.GetEnvironmentVariable("BETA_ECRS");
-        public string Prod { get; } = Environment.GetEnvironmentVariable("PROD_ECRS");
+        public string Stage { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_STAGE_ECR");
+        public string Beta { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_BETA_ECRS");
+        public string Prod { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_PROD_ECRS");
     }
 }

@@ -14,13 +14,15 @@
  */
 
 using Amazon.CDK;
-using Amazon.CDK.AWS.CodeCommit;
 using Amazon.CDK.AWS.CodePipeline;
 using Amazon.CDK.AWS.CodePipeline.Actions;
 using Amazon.CDK.Pipelines;
 using System.Collections.Generic;
+using System.Linq;
 using Amazon.CDK.AWS.CodeBuild;
 using Amazon.CDK.AWS.IAM;
+using Repository = Amazon.CDK.AWS.CodeCommit.Repository;
+using RepositoryProps = Amazon.CDK.AWS.ECR.RepositoryProps;
 
 
 namespace Infrastructure
@@ -51,6 +53,11 @@ namespace Infrastructure
                 });
             }
 
+            // Strict ordering is required to make sure CloudFormation template doesn't result in false difference
+            var environmentVariablesToCopy = System.Environment.GetEnvironmentVariables()
+                .Keys.Cast<string>()
+                .Where(variable => variable.StartsWith("AWS_LAMBDA_"))
+                .OrderBy(variable => variable);
 
             // Self mutation
             var pipeline = new CdkPipeline(this, "Pipeline", new CdkPipelineProps
@@ -80,26 +87,17 @@ namespace Infrastructure
                     },
                     BuildCommands = new[] {"dotnet build"},
                     SynthCommand = "cdk synth",
-                    CopyEnvironmentVariables = new[]
-                    {
-                        "SOURCE_REPOSITORY_ARN",
-                        "SOURCE_BRANCH_NAME",
-                        "SOURCE_CROSS_ACCOUNT_ROLE_ARN",
-                        "BASE_ECRS",
-                        "STAGE_ECR",
-                        "BETA_ECRS",
-                        "PROD_ECRS",
-                        "ECR_REPOSITORY_NAME",
-                    }
+                    CopyEnvironmentVariables = environmentVariablesToCopy.ToArray()
                 })
             });
 
+            var stageEcr = GetStageEcr(this, configuration);
 
             // Stage
             var dockerBuild = new Project(this, "DockerBuild", new ProjectProps()
             {
                 BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerBuild/buildspec.yml"),
-                Description = $"Builds and pushes image to {configuration.Ecrs.Stage}",
+                Description = $"Builds and pushes image to {stageEcr}",
                 Environment = new BuildEnvironment()
                 {
                     BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
@@ -112,9 +110,8 @@ namespace Infrastructure
                 }),
                 EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
                 {
-                    {"BASE_ECRS", new BuildEnvironmentVariable() {Value = configuration.Ecrs.Base}},
-                    {"STAGE_ECR", new BuildEnvironmentVariable {Value = configuration.Ecrs.Stage}},
-                    {"ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = configuration.EcrRepositoryName}}
+                    {"AWS_LAMBDA_STAGE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
+                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = configuration.EcrRepositoryName}}
                 }
             });
 
@@ -130,81 +127,106 @@ namespace Infrastructure
 
 
             // Beta
-            var betaDockerPush = new Project(this, "Beta-DockerPush", new ProjectProps()
+            if (!string.IsNullOrWhiteSpace(configuration.Ecrs.Beta))
             {
-                BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerPush/buildspec.yml"),
-                Description = $"Pushes staged image to {configuration.Ecrs.Beta}",
-                Environment = new BuildEnvironment()
+                var betaDockerPush = new Project(this, "Beta-DockerPush", new ProjectProps()
                 {
-                    BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
-                    Privileged = true
-                },
-                Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps()
+                    BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerPush/buildspec.yml"),
+                    Description = $"Pushes staged image to {configuration.Ecrs.Beta}",
+                    Environment = new BuildEnvironment()
+                    {
+                        BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
+                        Privileged = true
+                    },
+                    Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps()
+                    {
+                        Repository = repository,
+                        BranchOrRef = configuration.Source.BranchName
+                    }),
+                    EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
+                    {
+                        {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
+                        {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = configuration.EcrRepositoryName}},
+                        {"AWS_LAMBDA_DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Beta}},
+                        {"AWS_LAMBDA_DESTINATION_IMAGE_TAG", new BuildEnvironmentVariable {Value = "beta"}},
+                    }
+                });
+
+                betaDockerPush.AddToRolePolicy(ecrPolicy);
+
+                var betaDockerPushStage = pipeline.AddStage("Beta-DockerPush");
+                betaDockerPushStage.AddActions(new CodeBuildAction(new CodeBuildActionProps()
                 {
-                    Repository = repository,
-                    BranchOrRef = configuration.Source.BranchName
-                }),
-                EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
-                {
-                    {"SOURCE_ECR", new BuildEnvironmentVariable {Value = configuration.Ecrs.Stage}},
-                    {"ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = configuration.EcrRepositoryName}},
-                    {"DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Beta}},
-                    {"DESTINATION_IMAGE_TAG", new BuildEnvironmentVariable {Value = "beta"}},
-                }
-            });
-
-            betaDockerPush.AddToRolePolicy(ecrPolicy);
-
-            var betaDockerPushStage = pipeline.AddStage("Beta-DockerPush");
-            betaDockerPushStage.AddActions(new CodeBuildAction(new CodeBuildActionProps()
-            {
-                Input = sourceArtifact,
-                Project = betaDockerPush,
-                ActionName = "DockerPush"
-            }));
-
-
-            // Manual Approval
-            var manualApprovalStage = pipeline.AddStage("Prod-ManualApproval");
-            manualApprovalStage.AddActions(new ManualApprovalAction(new ManualApprovalActionProps()
-            {
-                ActionName = "ManualApproval"
-            }));
+                    Input = sourceArtifact,
+                    Project = betaDockerPush,
+                    ActionName = "DockerPush"
+                }));
+            }
 
 
             // Prod
-            var prodDockerPush = new Project(this, "Prod-DockerPush", new ProjectProps()
+            if (!string.IsNullOrWhiteSpace(configuration.Ecrs.Prod))
             {
-                BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerPush/buildspec.yml"),
-                Description = $"Pushes staged image to {configuration.Ecrs.Prod}",
-                Environment = new BuildEnvironment()
+                // Manual Approval
+                var manualApprovalStage = pipeline.AddStage("Prod-ManualApproval");
+                manualApprovalStage.AddActions(new ManualApprovalAction(new ManualApprovalActionProps()
                 {
-                    BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
-                    Privileged = true
-                },
-                Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps()
-                {
-                    Repository = repository,
-                    BranchOrRef = "dotnet5/cdk"
-                }),
-                EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
-                {
-                    {"SOURCE_ECR", new BuildEnvironmentVariable {Value = configuration.Ecrs.Stage}},
-                    {"ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = configuration.EcrRepositoryName}},
-                    {"DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Prod}},
-                    {"DESTINATION_IMAGE_TAG", new BuildEnvironmentVariable {Value = "beta"}}, // Prod images are also tagged as beta
-                }
-            });
+                    ActionName = "ManualApproval"
+                }));
 
-            prodDockerPush.AddToRolePolicy(ecrPolicy);
 
-            var prodDockerPushStage = pipeline.AddStage("Prod-DockerPush");
-            prodDockerPushStage.AddActions(new CodeBuildAction(new CodeBuildActionProps()
+                var prodDockerPush = new Project(this, "Prod-DockerPush", new ProjectProps()
+                {
+                    BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerPush/buildspec.yml"),
+                    Description = $"Pushes staged image to {configuration.Ecrs.Prod}",
+                    Environment = new BuildEnvironment()
+                    {
+                        BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
+                        Privileged = true
+                    },
+                    Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps()
+                    {
+                        Repository = repository,
+                        BranchOrRef = "dotnet5/cdk"
+                    }),
+                    EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
+                    {
+                        {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
+                        {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = configuration.EcrRepositoryName}},
+                        {"AWS_LAMBDA_DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Prod}},
+                        {"AWS_LAMBDA_DESTINATION_IMAGE_TAG", new BuildEnvironmentVariable {Value = "beta"}}, // Prod images are also tagged as beta
+                    }
+                });
+
+                prodDockerPush.AddToRolePolicy(ecrPolicy);
+
+                var prodDockerPushStage = pipeline.AddStage("Prod-DockerPush");
+                prodDockerPushStage.AddActions(new CodeBuildAction(new CodeBuildActionProps()
+                {
+                    Input = sourceArtifact,
+                    Project = prodDockerPush,
+                    ActionName = "DockerPush"
+                }));
+            }
+        }
+
+        private string GetStageEcr(Construct scope, Configuration configuration)
+        {
+            if (string.IsNullOrWhiteSpace(configuration.Ecrs.Stage))
             {
-                Input = sourceArtifact,
-                Project = prodDockerPush,
-                ActionName = "DockerPush"
-            }));
+                var repository = new Amazon.CDK.AWS.ECR.Repository(scope, "StageEcr", new RepositoryProps
+                {
+                    RepositoryName = configuration.EcrRepositoryName
+                });
+                return GetEcr(repository.RepositoryUri);
+            }
+
+            return configuration.Ecrs.Stage;
+        }
+
+        private static string GetEcr(string ecrRepositoryUri)
+        {
+            return ecrRepositoryUri.Split('/')[0];
         }
     }
 }

@@ -1,7 +1,4 @@
 param (
-    [Parameter(HelpMessage = "ECRs to pull base images.")]
-    [string] $BaseEcrs,
-
     [Parameter(HelpMessage = "ECR to push built image.")]
     [string] $StageEcr,
 
@@ -21,18 +18,6 @@ aws ecr get-login-password --region $StageRegion | docker login --username AWS -
 if (!$?)
 {
     Write-Error "Failed to login in ${StageEcr}"
-}
-
-# Login in base ECRs
-foreach ($BaseEcr in $BaseEcrs.Split(";"))
-{
-    # Login in the source ECR
-    $BaseRegion = $BaseEcr.Split(".")[3]
-    aws ecr get-login-password --region $BaseRegion | docker login --username AWS --password-stdin $BaseEcr
-    if (!$?)
-    {
-        Write-Error "Failed to login in ${BaseEcr}"
-    }
 }
 
 $SourceNameTagPair = "aws-lambda-dotnet-5:latest"
