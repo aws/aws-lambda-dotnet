@@ -13,17 +13,16 @@
  * permissions and limitations under the License.
  */
 
-using Amazon.CDK;
-using Amazon.CDK.AWS.CodePipeline;
-using Amazon.CDK.AWS.CodePipeline.Actions;
-using Amazon.CDK.Pipelines;
 using System.Collections.Generic;
 using System.Linq;
+using Amazon.CDK;
 using Amazon.CDK.AWS.CodeBuild;
+using Amazon.CDK.AWS.CodeCommit;
+using Amazon.CDK.AWS.CodePipeline;
+using Amazon.CDK.AWS.CodePipeline.Actions;
 using Amazon.CDK.AWS.IAM;
-using Repository = Amazon.CDK.AWS.CodeCommit.Repository;
+using Amazon.CDK.Pipelines;
 using RepositoryProps = Amazon.CDK.AWS.ECR.RepositoryProps;
-
 
 namespace Infrastructure
 {
@@ -47,7 +46,7 @@ namespace Infrastructure
             IRole codeCommitRole = null;
             if (!string.IsNullOrWhiteSpace(configuration.Source.CrossAccountRoleArn))
             {
-                codeCommitRole = Role.FromRoleArn(this, "CodeCommitRole", configuration.Source.CrossAccountRoleArn, new FromRoleArnOptions()
+                codeCommitRole = Role.FromRoleArn(this, "CodeCommitRole", configuration.Source.CrossAccountRoleArn, new FromRoleArnOptions
                 {
                     Mutable = false // Flag to indicate CDK to not modify the role
                 });
@@ -94,16 +93,16 @@ namespace Infrastructure
             var stageEcr = GetStageEcr(this, configuration);
 
             // Stage
-            var dockerBuild = new Project(this, "DockerBuild", new ProjectProps()
+            var dockerBuild = new Project(this, "DockerBuild", new ProjectProps
             {
                 BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerBuild/buildspec.yml"),
                 Description = $"Builds and pushes image to {stageEcr}",
-                Environment = new BuildEnvironment()
+                Environment = new BuildEnvironment
                 {
                     BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
                     Privileged = true
                 },
-                Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps()
+                Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
                 {
                     Repository = repository,
                     BranchOrRef = configuration.Source.BranchName
@@ -118,7 +117,7 @@ namespace Infrastructure
             dockerBuild.AddToRolePolicy(ecrPolicy);
 
             var dockerBuildStage = pipeline.AddStage("Stage-DockerBuild");
-            dockerBuildStage.AddActions(new CodeBuildAction(new CodeBuildActionProps()
+            dockerBuildStage.AddActions(new CodeBuildAction(new CodeBuildActionProps
             {
                 Input = sourceArtifact,
                 Project = dockerBuild,
@@ -126,19 +125,64 @@ namespace Infrastructure
             }));
 
 
+            var smokeTests = new Project(this, "SmokeTests", new ProjectProps
+            {
+                BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/SmokeTests/buildspec.yml"),
+                Description = "Runs smoke tests on the built image.",
+                Environment = new BuildEnvironment
+                {
+                    BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
+                    Privileged = true
+                },
+                Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
+                {
+                    Repository = repository,
+                    BranchOrRef = configuration.Source.BranchName
+                }),
+                EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
+                {
+                    {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
+                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = configuration.EcrRepositoryName}},
+                }
+            });
+
+            var smokeTestsPolicy = new PolicyStatement(new PolicyStatementProps
+            {
+                Effect = Effect.ALLOW,
+                Actions = new[]
+                {
+                    "sts:*",
+                    "iam:*",
+                    "ecr:*",
+                    "lambda:*"
+                },
+                Resources = new[] {"*"}
+            });
+
+            smokeTests.AddToRolePolicy(smokeTestsPolicy);
+
+            var smokeTestsStage = pipeline.AddStage("SmokeTests");
+            smokeTestsStage.AddActions(new CodeBuildAction(new CodeBuildActionProps
+            {
+                Input = sourceArtifact,
+                Project = smokeTests,
+                ActionName = "SmokeTests"
+            }));
+
+
             // Beta
             if (!string.IsNullOrWhiteSpace(configuration.Ecrs.Beta))
             {
-                var betaDockerPush = new Project(this, "Beta-DockerPush", new ProjectProps()
+                var betaDockerPush = new Project(this, "Beta-DockerPush", new ProjectProps
                 {
                     BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerPush/buildspec.yml"),
                     Description = $"Pushes staged image to {configuration.Ecrs.Beta}",
-                    Environment = new BuildEnvironment()
+                    Environment = new BuildEnvironment
                     {
                         BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
                         Privileged = true
                     },
-                    Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps()
+                    Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
                     {
                         Repository = repository,
                         BranchOrRef = configuration.Source.BranchName
@@ -155,7 +199,7 @@ namespace Infrastructure
                 betaDockerPush.AddToRolePolicy(ecrPolicy);
 
                 var betaDockerPushStage = pipeline.AddStage("Beta-DockerPush");
-                betaDockerPushStage.AddActions(new CodeBuildAction(new CodeBuildActionProps()
+                betaDockerPushStage.AddActions(new CodeBuildAction(new CodeBuildActionProps
                 {
                     Input = sourceArtifact,
                     Project = betaDockerPush,
@@ -169,22 +213,22 @@ namespace Infrastructure
             {
                 // Manual Approval
                 var manualApprovalStage = pipeline.AddStage("Prod-ManualApproval");
-                manualApprovalStage.AddActions(new ManualApprovalAction(new ManualApprovalActionProps()
+                manualApprovalStage.AddActions(new ManualApprovalAction(new ManualApprovalActionProps
                 {
                     ActionName = "ManualApproval"
                 }));
 
 
-                var prodDockerPush = new Project(this, "Prod-DockerPush", new ProjectProps()
+                var prodDockerPush = new Project(this, "Prod-DockerPush", new ProjectProps
                 {
                     BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerPush/buildspec.yml"),
                     Description = $"Pushes staged image to {configuration.Ecrs.Prod}",
-                    Environment = new BuildEnvironment()
+                    Environment = new BuildEnvironment
                     {
                         BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
                         Privileged = true
                     },
-                    Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps()
+                    Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
                     {
                         Repository = repository,
                         BranchOrRef = "dotnet5/cdk"
@@ -201,7 +245,7 @@ namespace Infrastructure
                 prodDockerPush.AddToRolePolicy(ecrPolicy);
 
                 var prodDockerPushStage = pipeline.AddStage("Prod-DockerPush");
-                prodDockerPushStage.AddActions(new CodeBuildAction(new CodeBuildActionProps()
+                prodDockerPushStage.AddActions(new CodeBuildAction(new CodeBuildActionProps
                 {
                     Input = sourceArtifact,
                     Project = prodDockerPush,

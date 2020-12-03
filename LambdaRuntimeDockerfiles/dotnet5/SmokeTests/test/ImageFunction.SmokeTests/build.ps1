@@ -1,6 +1,6 @@
 param (
     [Parameter()]
-    [string] $Region = 'sa-east-1',
+    [string] $Region = "us-west-2",
 
     [Parameter()]
     [string] $RepositoryName = 'image-function-tests',
@@ -9,62 +9,77 @@ param (
     [string] $AWSPowerShellVersion = '4.1.5.0',
 
     [Parameter()]
-    [bool] $DeleteRepository = $false
+    [bool] $DeleteRepository = $false,
+
+    [Parameter()]
+    [string] $BaseImage = "aws-lambda-dotnet:local"
 )
 
-# Load AWS Tools for PowerShell required docker image push
-if (-not (Get-Module -ListAvailable -Name AWS.Tools.ECR | Where-Object { $_.Version -eq $AWSPowerShellVersion })) {
-    Write-Host "Installing AWS.Tools.ECR $AWSPowerShellVersion"
-    Install-Module -Name AWS.Tools.ECR -RequiredVersion $AWSPowerShellVersion -Force -SkipPublisherCheck
-}
-Import-Module -Name AWS.Tools.ECR -RequiredVersion $AWSPowerShellVersion
-
-if (-not (Get-Module -ListAvailable -Name AWS.Tools.SecurityToken | Where-Object { $_.Version -eq $AWSPowerShellVersion })) {
-    Write-Host "Installing AWS.Tools.SecurityToken $AWSPowerShellVersion"
-    Install-Module -Name AWS.Tools.SecurityToken -RequiredVersion $AWSPowerShellVersion -Force -SkipPublisherCheck
-}
-Import-Module -Name AWS.Tools.SecurityToken -RequiredVersion $AWSPowerShellVersion
-
 # Check whether the repository exists or not, if not create one
-Get-ECRRepository -RepositoryName $RepositoryName -Region $Region
+aws ecr describe-repositories --repository-names ${RepositoryName}
 if (!$?) {
-    New-ECRRepository -RepositoryName $RepositoryName -Region $Region
+    aws ecr create-repository --repository-name ${RepositoryName}
 }
-
-# Get login credential and login to docker
-$LoginResponse = Get-ECRLoginCommand -Region $Region
-Invoke-Expression $LoginResponse.Command
 
 # Get AccountId required for building Image URI
-$AccountId = (Get-STSCallerIdentity).Account
+$AccountId = aws sts get-caller-identity --query Account --output text
+
+$Ecr = "$AccountId.dkr.ecr.$Region.amazonaws.com"
+
+# Get login credential and login to docker
+aws ecr get-login-password | docker login --username AWS --password-stdin $Ecr
+if (!$?)
+{
+    Write-Error "Failed to login in $Ecr"
+}
 
 # Generate a random tag to make sure multiple test runs don't conflict
 $Tag = New-Guid
-$ImageUri = "$AccountId.dkr.ecr.$Region.amazonaws.com/${repositoryName}:${Tag}"
+$SourceNameTagPair = "${RepositoryName}:latest"
+$DestinationUri = "${Ecr}/${repositoryName}:${Tag}"
 
 # Build and push Docker Image to ECR
 try {
     Write-Host "Building and pushing ImageFunction to $RepositoryName ECR repository"
     Push-Location "$PSScriptRoot\..\ImageFunction"
-    docker build -t ${RepositoryName} .
-    docker tag "${RepositoryName}:latest" $ImageUri
-    docker push $ImageUri
+
+    docker build -t ${SourceNameTagPair} --build-arg BASE_IMAGE=$BaseImage .
+
+    docker tag "${SourceNameTagPair}" $DestinationUri
+    if (!$?)
+    {
+        Write-Error "Failed to tag. SourceTag: ${SourceNameTagPair}, TargetTag: ${DestinationUri}"
+    }
+
+    docker push $DestinationUri
+    if (!$?)
+    {
+        Write-Error "Failed to push at ${DestinationUri}"
+    }
 }
 finally {
     Pop-Location
 }
 
 # Set environment variable to be consumed in tests
-$env:AWS_LAMBDA_IMAGE_URI = $ImageUri
+$env:AWS_LAMBDA_IMAGE_URI = $DestinationUri
 
 # Run Smoke Tests against pushed Image
 try {
     Write-Host "Running Smoke Tests"
     Push-Location $PSScriptRoot
     dotnet test .\ImageFunction.SmokeTests.csproj -v n
+
+    if (!$?)
+    {
+        Write-Error "Smoke tests failed."
+    }
 }
 finally {
     Pop-Location
+
+    # Delete image pushed for testing
+    aws ecr batch-delete-image --repository-name $RepositoryName --image-ids imageTag=$Tag
 }
 
 If ($DeleteRepository) {
