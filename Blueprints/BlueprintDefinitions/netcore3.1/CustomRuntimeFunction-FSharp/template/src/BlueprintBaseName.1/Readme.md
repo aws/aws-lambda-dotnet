@@ -3,7 +3,6 @@
 This starter project consists of:
 * Function.fs - contains a main function that starts the bootstrap, and a single function handler
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
-* bootstrap - a Linux bash script that is invoked by the AWS Lambda infrastructure to start the function
 
 You may also have a test project depending on the options selected.
 
