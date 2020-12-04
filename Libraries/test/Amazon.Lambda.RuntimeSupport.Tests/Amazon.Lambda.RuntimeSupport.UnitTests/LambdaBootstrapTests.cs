@@ -13,6 +13,8 @@
  * permissions and limitations under the License.
  */
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,7 +37,16 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public LambdaBootstrapTests()
         {
             _environmentVariables = new TestEnvironmentVariables();
-            _testRuntimeApiClient = new TestRuntimeApiClient(_environmentVariables);
+            var headers = new Dictionary<string, IEnumerable<string>>
+            {
+                {
+                    RuntimeApiHeaders.HeaderAwsRequestId, new List<string> {"request_id"}
+                },
+                {
+                    RuntimeApiHeaders.HeaderInvokedFunctionArn, new List<string> {"invoked_function_arn"}
+                }
+            };
+            _testRuntimeApiClient = new TestRuntimeApiClient(_environmentVariables, headers);
             _testInitializer = new TestInitializer();
             _testFunction = new TestHandler();
             _testWrapper = HandlerWrapper.GetHandlerWrapper(_testFunction.HandlerVoidVoidSync);
@@ -177,6 +188,29 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             Assert.False(_testInitializer.InitializerWasCalled);
             Assert.True(_testFunction.HandlerWasCalled);
+        }
+
+        [Fact]
+        public void VerifyUserAgentStringSet()
+        {
+            var client = LambdaBootstrap.ConstructHttpClient();
+            var values = client.DefaultRequestHeaders.GetValues("User-Agent");
+            Assert.Single(values);
+
+            var userAgent = values.First();
+            Assert.StartsWith("aws-lambda-dotnet", userAgent);
+
+            var topLevelTokens = userAgent.Split('/');
+            Assert.Equal(2, topLevelTokens.Length);
+
+            var versions = topLevelTokens[1].Split('-');
+            Assert.Equal(2, versions.Length);
+
+            var dotnetVersion = Version.Parse(versions[0]);
+            Assert.True(Version.Parse("2.0.0") < dotnetVersion);
+
+            var runtimeLambdaSupportVersion = Version.Parse(versions[1]);
+            Assert.True(Version.Parse("1.0.0") <= runtimeLambdaSupportVersion);
         }
     }
 }

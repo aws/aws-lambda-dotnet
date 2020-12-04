@@ -1,0 +1,195 @@
+﻿@page "/"
+
+@using System.Threading; 
+@using Amazon.Lambda.TestTool.Runtime;
+@using Amazon.Lambda.TestTool.SampleRequests;
+@inject LocalLambdaOptions LambdaOptions
+@inject IModalService Modal
+
+<h2>@Constants.PRODUCT_NAME</h2>
+
+<p>
+    Run .NET Lambda function code inside this tool. IDEs can attach their debuggers to this tool and step through 
+    the Lambda code.
+</p>
+
+<FunctionPickerComponent @ref="FunctionPicker" />
+
+
+<div class="row">
+    <div class="col-sm form-group">
+        <label class="" for="sample-requests">Example Requests:</label>
+        <select class="control" id="sample-requests" @bind="SelectedSampleRequestName">
+            <option id="void-select-request"> -- select a request -- </option>
+            @if (@SampleRequests.ContainsKey(SampleRequestManager.SAVED_REQUEST_GROUP))
+            {
+                <optgroup id="saved-select-request-group" label="@SampleRequestManager.SAVED_REQUEST_GROUP">
+                    @foreach (var request in SampleRequests[SampleRequestManager.SAVED_REQUEST_GROUP])
+                    {
+                        <option value="@request.Filename">@request.Name</option>
+                    }
+                </optgroup>
+            }
+            @foreach (var group in SampleRequests.Keys)
+            {
+                @if (!string.Equals(group, SampleRequestManager.SAVED_REQUEST_GROUP))
+                {
+                    <optgroup label="@group">
+                        @foreach (var request in SampleRequests[group])
+                        {
+                            <option value="@request.Filename">@request.Name</option>
+                        }
+                    </optgroup>
+                }
+            }
+        </select>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm form-group">
+        <label class="col-xs-3 control-label" for="function-payload">Function Input:</label>
+        <textarea class="form-control" rows="10" @bind="FunctionInput" placeholder="JSON document as input to Lambda Function. Plain strings must be wrapped in quotes."></textarea>
+        <p style="margin-top:10px">
+            <b>Tip:</b> If a Lambda function using the default serializer, Amazon.Lambda.Serialization.Json, is deployed with the environment variable <b>LAMBDA_NET_SERIALIZER_DEBUG</b> set to <b>true</b>
+            the JSON input for the Lambda function will be written to CloudWatch Logs. The captured JSON can then be used in this tool to step
+            through the code.
+        </p>
+    </div>
+</div>
+
+
+<div class="row mt-3">
+    <div class="col-sm form-group">
+        <button class="btn btn-primary btn-sm" @onclick="OnExecuteClick">Execute Function</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#save-request-prompt" @onclick="OnSaveRequestClick">Save Request</button>
+    </div>
+</div>
+
+<div class="row" id="results-panel" >
+    <div class="col-sm-6 form-group">
+        <label class="control-label" for="function-response">Response:</label><br />
+        <small>The area below shows the result returned by your function execution.</small>
+        <pre class="form-control" rows="20" id="function-response" style="@FunctionResponseStyle">@FunctionResponse</pre>
+    </div>
+    <div class="col-sm-6 form-group">
+        <label class="control-label" for="function-logs">Log Output:</label><br />
+        <small>The area below shows the logging calls in your code.</small>
+        <pre class="form-control" rows="20" id="function-logs" style="white-space: pre-wrap; height: min-content; font-size: 75%">@FunctionLogs</pre>
+    </div>
+</div>
+
+
+
+@code {
+
+    const string ResponseSuccessStyle = "white-space: pre-wrap; height: min-content; font-size: 75%; color: black";
+    const string ResponseErrorStyle = "white-space: pre-wrap; height: min-content; font-size: 75%; color: red";
+
+    string ResultsPanelStyle { get; set; } = "display: none;";
+    string FunctionResponseStyle { get; set; } = ResponseSuccessStyle;
+
+    FunctionPickerComponent FunctionPicker { get; set; }
+
+    public IDictionary<string, IList<LambdaRequest>> SampleRequests { get; set; }
+
+    public string FunctionInput { get; set; }
+
+    public string FunctionResponse { get; set; }
+
+    public string FunctionLogs { get; set; }
+
+    string _selectedSampleRequestName;
+    string SelectedSampleRequestName
+    {
+        get => this._selectedSampleRequestName;
+        set
+        {
+            this._selectedSampleRequestName = value;
+            this.FunctionInput = SampleRequestManager.GetRequest(this._selectedSampleRequestName);
+            this.StateHasChanged();
+        }
+    }
+
+    SampleRequestManager SampleRequestManager { get; set; }
+
+    protected override void OnInitialized()
+    {
+        this.SampleRequestManager = new SampleRequestManager(LambdaOptions.GetPreferenceDirectory(false));
+        this.SampleRequests = SampleRequestManager.GetSampleRequests();
+    }
+
+    void OnSaveRequestClick()
+    {
+        var parameters = new ModalParameters();
+        parameters.Add(SaveRequestDialog.PARAMETER_NAME_REQUEST_BODY, this.FunctionInput);
+
+
+        if(SampleRequestManager.TryDetermineSampleRequestName(SelectedSampleRequestName, out var sampleRequestName))
+        {
+            parameters.Add(SaveRequestDialog.PARAMETER_NAME_CURRENT_NAME, sampleRequestName);
+        }
+
+        Modal.OnClose += OnSaveRequestClosed;
+        Modal.Show<SaveRequestDialog>("Save Request", parameters);
+    }
+
+    void OnSaveRequestClosed(ModalResult modalResult)
+    {
+        Modal.OnClose -= OnSaveRequestClosed;
+
+        if (modalResult.Cancelled)
+        {
+            return;
+        }
+
+        this.SampleRequests = SampleRequestManager.GetSampleRequests();
+        this.SelectedSampleRequestName = modalResult.Data as string;
+
+        this.StateHasChanged();
+    }
+
+
+    async Task OnExecuteClick()
+    {
+
+        ExecutionResponse response = null;
+
+        var ts = new ThreadStart(() =>
+        {
+            var function = this.LambdaOptions.LoadLambdaFuntion(FunctionPicker.ConfigFile, FunctionPicker.FunctionHandler);
+
+            var request = new ExecutionRequest()
+            {
+                Function = function,
+                AWSProfile = FunctionPicker.AWSProfile,
+                AWSRegion = FunctionPicker.AWSRegion,
+                Payload = this.FunctionInput
+            };
+
+            response = this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunctionAsync(request).GetAwaiter().GetResult();
+        });
+
+        var thread = new Thread(ts);
+        thread.Start();
+        thread.Join();
+
+        if (response.IsSuccess)
+        {
+            this.FunctionResponse = response.Response;
+            this.FunctionResponseStyle = ResponseSuccessStyle;
+        }
+        else
+        {
+            this.FunctionResponse = response.Error;
+            this.FunctionResponseStyle = ResponseErrorStyle;
+        }
+
+
+        this.FunctionLogs = response.Logs;
+
+        ResultsPanelStyle = "display: block";
+
+        this.StateHasChanged();
+    }
+}

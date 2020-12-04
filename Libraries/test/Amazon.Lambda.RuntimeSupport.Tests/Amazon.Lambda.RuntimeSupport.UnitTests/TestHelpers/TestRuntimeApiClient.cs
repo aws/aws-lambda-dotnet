@@ -12,6 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+using Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,12 +28,10 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         private IEnvironmentVariables _environmentVariables;
         private Dictionary<string, IEnumerable<string>> _headers;
 
-        public TestRuntimeApiClient(IEnvironmentVariables environmentVariables)
+        public TestRuntimeApiClient(IEnvironmentVariables environmentVariables, Dictionary<string, IEnumerable<string>> headers)
         {
             _environmentVariables = environmentVariables;
-            _headers = new Dictionary<string, IEnumerable<string>>();
-            _headers.Add(RuntimeApiHeaders.HeaderAwsRequestId, new List<string>() { "request_id" });
-            _headers.Add(RuntimeApiHeaders.HeaderInvokedFunctionArn, new List<string>() { "invoked_function_arn" });
+            _headers = headers;
         }
 
         public bool GetNextInvocationAsyncCalled { get; private set; }
@@ -45,6 +44,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public string LastTraceId { get; private set; }
         public byte[] FunctionInput { get; set; }
         public Stream LastOutputStream { get; private set; }
+        public Exception LastRecordedException { get; private set; }
 
         public void VerifyOutput(string expectedOutput)
         {
@@ -91,12 +91,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 InputStream = inputStream,
                 LambdaContext = new LambdaContext(
                     new RuntimeApiHeaders(_headers),
-                    new LambdaEnvironment(_environmentVariables))
+                    new LambdaEnvironment(_environmentVariables),
+                    new TestDateTimeHelper())
             });
         }
 
         public Task ReportInitializationErrorAsync(Exception exception, CancellationToken cancellationToken = default)
         {
+            LastRecordedException = exception;
             ReportInitializationErrorAsyncExceptionCalled = true;
             return Task.Run(() => { });
         }
@@ -109,6 +111,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         public Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default)
         {
+            LastRecordedException = exception;
             ReportInvocationErrorAsyncExceptionCalled = true;
             return Task.Run(() => { });
         }

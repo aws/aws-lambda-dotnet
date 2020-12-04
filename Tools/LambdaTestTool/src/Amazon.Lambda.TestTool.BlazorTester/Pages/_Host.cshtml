@@ -1,0 +1,55 @@
+﻿@page "/"
+@namespace Amazon.Lambda.TestTool.BlazorTester.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Constants.PRODUCT_NAME</title>
+    <base href="~/" />
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link href="css/site.css" rel="stylesheet" />
+    <link href="css/font-awesome.min.css" rel="stylesheet" />
+    <link href="css/blazored-modal.css" rel="stylesheet" />
+</head>
+<body>
+
+    <div id="components-reconnect-modal" class="my-reconnect-modal components-reconnect-hide">
+        <div class="show failed refused">
+            <div class="center-text">
+                <p>
+                    @Constants.PRODUCT_NAME has paused. This can happen for the following reasons.
+                    <ul>
+                        <li>The attached debugger is currently on a breakpoint. The test tool will resume when execution has continued in the debugger.</li>
+                        <li>The debugger or test tool process has stopped. If so, this window can be closed.</li>
+                    </ul>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <app>
+        <component type="typeof(App)" render-mode="ServerPrerendered" />
+    </app>
+
+    <div id="blazor-error-ui">
+        <environment include="Staging,Production">
+            An error has occurred. This application may no longer respond until reloaded.
+        </environment>
+        <environment include="Development">
+            An unhandled exception has occurred. See browser dev tools for details.
+        </environment>
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.server.js"></script>
+
+
+</body>
+</html>

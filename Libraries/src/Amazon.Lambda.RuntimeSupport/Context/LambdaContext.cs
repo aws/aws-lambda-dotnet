@@ -16,31 +16,39 @@ using Amazon.Lambda.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
     internal class LambdaContext : ILambdaContext
     {
-        private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        internal static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         private LambdaEnvironment _lambdaEnvironment;
         private RuntimeApiHeaders _runtimeApiHeaders;
-
+        private IDateTimeHelper _dateTimeHelper;
         private long _deadlineMs;
         private int _memoryLimitInMB;
         private Lazy<CognitoIdentity> _cognitoIdentityLazy;
         private Lazy<CognitoClientContext> _cognitoClientContextLazy;
 
         public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment)
+            : this(runtimeApiHeaders, lambdaEnvironment, new DateTimeHelper())
         {
+        }
+
+        public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IDateTimeHelper dateTimeHelper)
+        {
+
             _lambdaEnvironment = lambdaEnvironment;
             _runtimeApiHeaders = runtimeApiHeaders;
+            _dateTimeHelper = dateTimeHelper;
 
             int.TryParse(_lambdaEnvironment.FunctionMemorySize, out _memoryLimitInMB);
             long.TryParse(_runtimeApiHeaders.DeadlineMs, out _deadlineMs);
             _cognitoIdentityLazy = new Lazy<CognitoIdentity>(() => CognitoIdentity.FromJson(runtimeApiHeaders.CognitoIdentityJson));
             _cognitoClientContextLazy = new Lazy<CognitoClientContext>(() => CognitoClientContext.FromJson(runtimeApiHeaders.ClientContextJson));
-            
+
             // set environment variable so that if the function uses the XRay client it will work correctly
             _lambdaEnvironment.SetXAmznTraceId(_runtimeApiHeaders.TraceId);
         }
@@ -69,6 +77,6 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public int MemoryLimitInMB => _memoryLimitInMB;
 
-        public TimeSpan RemainingTime => TimeSpan.FromMilliseconds(_deadlineMs - (DateTime.UtcNow - UnixEpoch).TotalMilliseconds);
+        public TimeSpan RemainingTime => TimeSpan.FromMilliseconds(_deadlineMs - (_dateTimeHelper.UtcNow - UnixEpoch).TotalMilliseconds);
     }
 }

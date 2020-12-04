@@ -1,3 +1,24 @@
+### Release 2020-12-01
+* **Amazon.Lambda.RuntimeSupport (1.3.0)**
+  * This version is the implementation for Lambda Runtime Interface Client used in the .NET 5 base container image `public.ecr.aws/lambda/dotnet:5.0`
+  * Added support to load user's .NET function based on function handler string. 
+* **Amazon.Lambda.Templates (5.0.0)**
+  * Added templates targeting .NET 5 as container images.
+  * Fixed .NET 5 Custom Runtime template to use `DefaultLambdaJsonSerializer`
+* **Amazon.Lambda.TestTool-2.1 (0.11.0)**
+  * Added support for reading container image configuration information from `aws-lambda-tools-defaults.json` or the CloudFormation template.
+* **Amazon.Lambda.TestTool-3.1 (0.11.0)**
+  * Added support for reading container image configuration information from `aws-lambda-tools-defaults.json` or the CloudFormation template.
+* **Amazon.Lambda.TestTool-5.0 (0.11.0)**
+  * New version of the test tool to support .NET 5.0. Feature set and codebase is same as the .NET Core 3.1 just retargeted to .NET 5.0.
+* **AWS Lambda .NET 5 Base Image**
+  * Added the **LambdaRuntimeDockerfiles** directory to this repository which contains the Dockerfile used to build AWS Lambda .NET 5 base image.
+
+
+### Release 2020-10-30
+* **Amazon.Lambda.Templates (4.2.0)**
+  * Updated custom runtime templates to target .NET 5.
+
 ### Release 2020-10-21
 * **Amazon.Lambda.APIGatewayEvents (2.3.0)**
   * Update code signing certificate for signing the assembly.

@@ -41,7 +41,27 @@ namespace Amazon.Lambda.RuntimeSupport
 
         private HandlerWrapper() { }
 
-            /// <summary>
+        /// <summary>
+        /// Get a HandlerWrapper that will call the given delegate on function invocation.
+        /// </summary>
+        /// <param name="invokeDelegate">Action called for each invocation of the Lambda function</param>
+        /// <returns>A HandlerWrapper</returns>
+        public static HandlerWrapper GetHandlerWrapper(Action<Stream, ILambdaContext, MemoryStream> invokeDelegate)
+        {
+
+            var handlerWrapper = new HandlerWrapper();
+            handlerWrapper.Handler = invocation =>
+            {
+                handlerWrapper.OutputStream.SetLength(0);
+                invokeDelegate(invocation.InputStream, invocation.LambdaContext, handlerWrapper.OutputStream);
+                handlerWrapper.OutputStream.Position = 0;
+                var response = new InvocationResponse(handlerWrapper.OutputStream, false);
+                return Task.FromResult(response);
+            };
+            return handlerWrapper;
+        }
+
+        /// <summary>
         /// Get a HandlerWrapper that will call the given method on function invocation.
         /// Note that you may have to cast your handler to its specific type to help the compiler.
         /// Example handler signature: Task Handler();
