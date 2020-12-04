@@ -16,6 +16,17 @@ namespace Amazon.Lambda.TestTool
         [JsonPropertyName("function-name")]
         public string FunctionName { get; set; }
 
+        [JsonPropertyName("image-command")]
+        public string ImageCommand { get; set; }
+
         public string ConfigFileLocation { get; set; }
+
+        public string DetermineHandler()
+        {
+            if (!string.IsNullOrEmpty(this.FunctionHandler))
+                return this.FunctionHandler;
+
+            return this.ImageCommand;
+        }
     }
 }

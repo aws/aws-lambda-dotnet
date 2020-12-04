@@ -1,0 +1,17 @@
+﻿{
+  "env": {
+    "EnvironmentKey1": "EnvironmentValue1",
+    "EnvironmentKey2": "EnvironmentValue2"
+  },
+  "client": {
+    "app_package_name": "AppPackageName1",
+    "app_title": "AppTitle1",
+    "app_version_code": "AppVersionCode1",
+    "app_version_name": "AppVersionName1",
+    "installation_id": "InstallationId1"
+  },
+  "custom": {
+    "CustomKey1": "CustomValue1",
+    "CustomKey2": "CustomValue2"
+  }
+}
