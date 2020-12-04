@@ -227,7 +227,7 @@ namespace Amazon.Lambda.APIGatewayEvents
             public string Path { get; set; }
 
             /// <summary>
-            /// The protocal used ot make the rquest
+            /// The protocal used to make the rquest
             /// </summary>
             public string Protocol { get; set; }
 
@@ -252,6 +252,78 @@ namespace Amazon.Lambda.APIGatewayEvents
             /// </summary>
             public JwtDescription Jwt { get; set; }
 
+            /// <summary>
+            /// The Lambda authorizer description
+            /// </summary>
+            public IDictionary<string, object> Lambda { get; set; }
+
+            /// <summary>
+            /// The IAM authorizer description
+            /// </summary>
+            public IAMDescription IAM { get; set; }
+
+
+            /// <summary>
+            /// Describes the information from an IAM authorizer
+            /// </summary>
+            public class IAMDescription
+            {
+                /// <summary>
+                /// The Access Key of the IAM Authorizer
+                /// </summary>
+                public string AccessKey { get; set; }
+
+                /// <summary>
+                /// The Account Id of the IAM Authorizer
+                /// </summary>
+                public string AccountId { get; set; }
+
+                /// <summary>
+                /// The Caller Id of the IAM Authorizer
+                /// </summary>
+                public string CallerId { get; set; }
+
+                /// <summary>
+                /// The Cognito Identity of the IAM Authorizer
+                /// </summary>
+                public CognitoIdentityDescription CognitoIdentity { get; set; }
+
+                /// <summary>
+                /// The Principal Org Id of the IAM Authorizer
+                /// </summary>
+                public string PrincipalOrgId { get; set; }
+
+                /// <summary>
+                /// The User ARN of the IAM Authorizer
+                /// </summary>
+                public string UserARN { get; set; }
+
+                /// <summary>
+                /// The User Id of the IAM Authorizer
+                /// </summary>
+                public string UserId { get; set; }
+            }
+
+            /// <summary>
+            /// The Cognito identity description for an IAM authorizer
+            /// </summary>
+            public class CognitoIdentityDescription
+            {
+                /// <summary>
+                /// The AMR of the IAM Authorizer
+                /// </summary>
+                public IList<string> AMR { get; set; }
+
+                /// <summary>
+                /// The Identity Id of the IAM Authorizer
+                /// </summary>
+                public string IdentityId { get; set; }
+
+                /// <summary>
+                /// The Identity Pool Id of the IAM Authorizer
+                /// </summary>
+                public string IdentityPoolId { get; set; }
+            }
 
             /// <summary>
             /// Describes the information in the JWT token
