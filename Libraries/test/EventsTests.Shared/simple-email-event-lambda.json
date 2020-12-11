@@ -88,6 +88,9 @@
           },
           "virusVerdict": {
             "status": "PASS"
+          },
+          "dmarcVerdict": {
+            "status": "PASS"
           }
         }
       },
