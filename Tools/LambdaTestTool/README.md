@@ -197,10 +197,12 @@ For .NET Core 2.1 the path is:
 
 Remember when you update your version of the .NET Mock Lambda Test Tool to update the nuget versions numbers in this path string for your IDE's configuration.
 
+**Note**: if using the .NET Core Mock Lambda Test Tool **3.1** version **0.11.0**, you will need to use the BlazorTester DLL (`Amazon.Lambda.TestTool.BlazorTester.dll`) and set the `Exe path` to the full path of the BlazorTester DLL. This applies to .NET Core 3.1
+
 Follow the following steps to configure Rider
 * Select Run->Edit Configurations...
 * Push the `+` button to add a configuration and select `.NET Executable`
-* Set the `Exe path` field to the full path of `mazon.Lambda.TestTool.WebTesterXX.dll` as described above
+* Set the `Exe path` field to the full path of `Amazon.Lambda.TestTool.WebTesterXX.dll` as described above
 * Set the `Working directory` field to the .NET Core Lambda project root
 * Push OK
 
@@ -225,14 +227,13 @@ For .NET Core 2.1 the path is:
 <home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-2.1/<nuget-version>/amazon.lambda.testtool-2.1/<nuget-version>/tools/netcoreapp2.1/any/Amazon.Lambda.TestTool.WebTester21.dll
 ```
 
-
 Remember when you update your version of the .NET Mock Lambda Test Tool to update the nuget versions numbers in this path string for your IDE's configuration.
 
 Follow these steps to configure Visual Studio for Mac:
 
 * Right click on .NET Core Lambda Project and select `Options`
 * Select the node Run -> Configurations -> Default
-* Set the `Start external program` field to the full path of `mazon.Lambda.TestTool.WebTesterXX.dll` as described above
+* Set the `Start external program` field to the full path of `Amazon.Lambda.TestTool.WebTesterXX.dll` as described above
 * Set the `Run in directory` field to the .NET Core Lambda project root
 
 Once this is done when you start the debugger in Visual Studio for Mac it will launch the .NET Mock Lambda Test Tool.
