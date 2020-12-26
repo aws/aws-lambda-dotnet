@@ -148,12 +148,16 @@ namespace Amazon.Lambda.TestTool.Runtime
                     handler = ((YamlScalarNode)properties.Children["Handler"])?.Value;
                 }
 
-                if(string.IsNullOrEmpty(handler))
+                if (string.IsNullOrEmpty(handler) && properties.Children.ContainsKey("ImageConfig"))
                 {
-                    if(properties.Children.TryGetValue("ImageConfig", out var imageConfigNode) && 
-                        imageConfigNode is YamlMappingNode && ((YamlMappingNode)imageConfigNode).Children.TryGetValue("Command", out var imageCommandNode))
+                    var imageConfigNode = properties.Children["ImageConfig"] as YamlMappingNode;
+                    if (imageConfigNode.Children.ContainsKey("Command"))
                     {
-                        handler = (imageCommandNode as YamlScalarNode)?.Value;
+                        var imageCommandNode = imageConfigNode.Children["Command"] as YamlSequenceNode;
+                        // Grab the first element assuming that is the function handler.
+                        var en = imageCommandNode.GetEnumerator();
+                        en.MoveNext();
+                        handler = ((YamlScalarNode)en.Current)?.Value;
                     }
                 }
 
@@ -182,7 +186,6 @@ namespace Amazon.Lambda.TestTool.Runtime
                 var handler = resourceBody.Children.ContainsKey("handler")
                     ? ((YamlScalarNode) resourceBody.Children["handler"])?.Value
                     : null;
-
                 
                 if (handler == null) continue;
                 if (string.IsNullOrEmpty(handler)) continue;
@@ -235,7 +238,13 @@ namespace Amazon.Lambda.TestTool.Runtime
                 else if(propertiesProperty.TryGetProperty("ImageConfig", out var imageConfigProperty) &&
                         imageConfigProperty.TryGetProperty("Command", out var imageCommandProperty))
                 {
-                    handler = imageCommandProperty.GetString();
+                    if(imageCommandProperty.GetArrayLength() > 0)
+                    {
+                        // Grab the first element assuming that is the function handler.
+                        var en = imageCommandProperty.EnumerateArray();
+                        en.MoveNext();
+                        handler = en.Current.GetString();
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(handler))
