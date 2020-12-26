@@ -32,7 +32,7 @@
          "Properties":{ 
             "PackageType" : "Image",
             "ImageConfig" : {
-                "Command" : "ServerlessTemplateExample::ServerlessTemplateExample.Functions::HelloWorldImageFunction"
+                "Command" : ["ServerlessTemplateExample::ServerlessTemplateExample.Functions::HelloWorldImageFunction"]
             },
             "ImageUri":"",
             "Description":"",
