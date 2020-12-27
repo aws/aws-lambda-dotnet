@@ -34,8 +34,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="authtest-access-request.json" />
     <None Remove="missing-resource-request.json" />
+    <None Remove="mtls-request.json" />
     <None Remove="values-get-all-httpapi-request.json" />
   </ItemGroup>
 
