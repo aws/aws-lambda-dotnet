@@ -251,8 +251,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 var clientCertPem = apiGatewayRequest?.RequestContext?.Identity?.ClientCert?.ClientCertPem;
                 if (clientCertPem != null)
                 {
-                    clientCertPem = clientCertPem.Replace("-----BEGIN CERTIFICATE-----", string.Empty);
-                    clientCertPem = clientCertPem.Replace("-----END CERTIFICATE-----", string.Empty);
+                    clientCertPem = clientCertPem.Substring(28, clientCertPem.Length - 53);
                     tlsConnectionFeature.ClientCertificate = new X509Certificate2(Convert.FromBase64String(clientCertPem));
                 }
                 PostMarshallTlsConnectionFeature(tlsConnectionFeature, apiGatewayRequest, lambdaContext);
