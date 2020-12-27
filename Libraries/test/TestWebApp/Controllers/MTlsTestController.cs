@@ -9,7 +9,7 @@ namespace TestWebApp.Controllers
         [HttpGet]
         public string Get()
         {
-            return Request.HttpContext.Connection.ClientCertificate.Subject;
+            return Request.HttpContext.Connection.ClientCertificate?.Subject;
         }
     }
 }
