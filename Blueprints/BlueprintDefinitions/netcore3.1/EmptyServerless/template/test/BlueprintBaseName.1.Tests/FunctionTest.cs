@@ -19,7 +19,7 @@ namespace BlueprintBaseName._1.Tests
         }
 
         [Fact]
-        public void TetGetMethod()
+        public void TestGetMethod()
         {
             TestLambdaContext context;
             APIGatewayProxyRequest request;
