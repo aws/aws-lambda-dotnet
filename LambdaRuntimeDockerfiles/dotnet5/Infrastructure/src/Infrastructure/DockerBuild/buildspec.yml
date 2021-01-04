@@ -6,7 +6,6 @@ phases:
   build:
     commands:
       - pwsh LambdaRuntimeDockerfiles/dotnet5/Infrastructure/src/Infrastructure/DockerBuild/build.ps1
-        -BaseEcrs $BASE_ECRS
-        -StageEcr $STAGE_ECR
-        -EcrRepositoryName $ECR_REPOSITORY_NAME
+        -StageEcr $AWS_LAMBDA_STAGE_ECR
+        -EcrRepositoryName $AWS_LAMBDA_ECR_REPOSITORY_NAME
         -ImageTag $CODEBUILD_RESOLVED_SOURCE_VERSION

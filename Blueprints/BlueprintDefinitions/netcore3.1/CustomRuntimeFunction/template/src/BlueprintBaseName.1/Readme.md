@@ -3,7 +3,6 @@
 This starter project consists of:
 * Function.cs - contains a class with a Main method that starts the bootstrap, and a single function handler method
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS
-* bootstrap - a Linux bash script that is invoked by the AWS Lambda infrastructure to start the function
 
 You may also have a test project depending on the options selected.
 
@@ -50,6 +49,7 @@ to prejit the .NET assemblies. This saves the .NET Core runtime from doing a lot
 assemblies to a native format. ReadyToRun must be used on the same platform as the platform that will run the .NET application. In Lambda's case
 that means you have to build the Lambda package bundle in a Linux environment. To enable ReadyToRun edit the aws-lambda-tools-defaults.json
 file to add /p:PublishReadyToRun=true to the msbuild-parameters parameter.
+
 
 ## Using AWS .NET Mock Lambda Test Tool
 

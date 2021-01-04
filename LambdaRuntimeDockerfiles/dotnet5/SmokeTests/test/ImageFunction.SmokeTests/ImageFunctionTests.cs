@@ -20,7 +20,7 @@ namespace ImageFunction.SmokeTests
 {
     public class ImageFunctionTests : IDisposable
     {
-        private static readonly RegionEndpoint TestRegion = RegionEndpoint.SAEast1;
+        private static readonly RegionEndpoint TestRegion = RegionEndpoint.USWest2;
         private readonly AmazonLambdaClient _lambdaClient;
         private readonly AmazonIdentityManagementServiceClient _iamClient;
         private readonly string _executionRoleName;

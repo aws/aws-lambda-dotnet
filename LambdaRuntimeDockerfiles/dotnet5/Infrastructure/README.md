@@ -24,7 +24,6 @@ Infrastructure project allows to create pipeline to build and push .NET 5 Lambda
 .\bootstrap.ps1 `
 -SourceRepositoryArn "arn:aws:codecommit:us-west-2:CdkAccountId:aws-lambda-dotnet" `
 -SourceBranchName "main" `
--BaseEcrs "AccountId.dkr.ecr.us-west-2.amazonaws.com" `
 -StageEcr "AccountId.dkr.ecr.us-west-2.amazonaws.com" `
 -BetaEcrs "AccountId.dkr.ecr.us-west-2.amazonaws.com;AccountId.dkr.ecr.us-west-2.amazonaws.com" `
 -ProdEcrs "AccountId.dkr.ecr.us-west-2.amazonaws.com;AccountId.dkr.ecr.us-west-2.amazonaws.com" `
@@ -38,7 +37,6 @@ If source repository exists in a separate AWS account, provide `SourceCrossAccou
 -SourceRepositoryArn "arn:aws:codecommit:us-west-2:AccoundIdA:aws-lambda-dotnet" `
 -SourceCrossAccountRoleArn "arn:aws:iam::SourceAccountId:role/aws-lambda-dotnet-source-account-role" `
 -SourceBranchName "main" `
--BaseEcrs "AccountId.dkr.ecr.us-west-2.amazonaws.com" `
 -StageEcr "AccountId.dkr.ecr.us-west-2.amazonaws.com" `
 -BetaEcrs "AccountId.dkr.ecr.us-west-2.amazonaws.com;AccountId.dkr.ecr.us-west-2.amazonaws.com" `
 -ProdEcrs "AccountId.dkr.ecr.us-west-2.amazonaws.com;AccountId.dkr.ecr.us-west-2.amazonaws.com" `

@@ -1,4 +1,6 @@
-FROM aws-lambda-dotnet:local AS base
+ARG BASE_IMAGE=aws-lambda-dotnet:local
+
+FROM $BASE_IMAGE AS base
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0-buster-slim as build
 COPY . /src
