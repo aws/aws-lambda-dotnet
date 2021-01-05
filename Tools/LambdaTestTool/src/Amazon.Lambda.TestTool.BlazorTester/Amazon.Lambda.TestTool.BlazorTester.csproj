@@ -4,35 +4,17 @@
   
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <Description>A tool to help debug and test your .NET Core 3.1 AWS Lambda functions locally.</Description>
+    <Description>A tool to help debug and test your .NET Core AWS Lambda functions locally.</Description>
     <LangVersion>Latest</LangVersion>
-    <VersionPrefix>0.11.0</VersionPrefix>
+    <VersionPrefix>0.11.1</VersionPrefix>
     <Product>AWS .NET Lambda Test Tool</Product>
     <Copyright>Apache 2</Copyright>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
     <NoWarn>1701;1702;1591;1587;3021;NU5100;CS1591</NoWarn>
     <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release' ">
-    <TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
-  </PropertyGroup>
-  
-  <PropertyGroup Condition=" '$(Configuration)' == 'PackNETCoreApp31' ">
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <ToolCommandName>dotnet-lambda-test-tool-3.1</ToolCommandName>
-    <IsPackable>true</IsPackable>
-    <PackAsTool>true</PackAsTool>
-    <PackageId>Amazon.Lambda.TestTool-3.1</PackageId>
-  </PropertyGroup>
-  
-  <PropertyGroup Condition=" '$(Configuration)' == 'PackNET50' ">
-    <TargetFramework>net5.0</TargetFramework>
-    <ToolCommandName>dotnet-lambda-test-tool-5.0</ToolCommandName>
-    <IsPackable>true</IsPackable>
-    <PackAsTool>true</PackAsTool>
-    <PackageId>Amazon.Lambda.TestTool-5.0</PackageId>
+	<TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
   </PropertyGroup>  
+
 
     <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
 		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="3.1.0" />
