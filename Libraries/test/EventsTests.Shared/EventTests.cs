@@ -460,6 +460,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.Ses.Receipt.DKIMVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.SPFVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.VirusVerdict.Status, "PASS");
+                Assert.Equal(record.Ses.Receipt.DMARCVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.ProcessingTimeMillis, 574);
                 
                 Handle(sesEvent);
