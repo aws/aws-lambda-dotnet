@@ -5,6 +5,13 @@
   "Parameters": {},
   "Conditions": {},
   "Resources": {
+    "AspNetCoreApi": {
+      "Type": "AWS::Serverless::Api",
+      "Properties": {
+          "StageName": "Prod",
+          "BinaryMediaTypes": [ "*~1*" ]
+      }
+    },
     "AspNetCoreFunction": {
       "Type": "AWS::Serverless::Function",
       "Properties": {
@@ -25,14 +32,16 @@
             "Type": "Api",
             "Properties": {
               "Path": "/{proxy+}",
-              "Method": "ANY"
+              "Method": "ANY",
+              "RestApiId": { "Ref" : "AspNetCoreApi" }
             }
           },
           "RootResource": {
             "Type": "Api",
             "Properties": {
               "Path": "/",
-              "Method": "ANY"
+              "Method": "ANY",
+              "RestApiId": { "Ref" : "AspNetCoreApi" }
             }
           }
         }
@@ -43,7 +52,7 @@
     "ApiURL": {
       "Description": "API endpoint URL for Prod environment",
       "Value": {
-        "Fn::Sub": "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+        "Fn::Sub": "https://${AspNetCoreApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
       }
     }
   }
