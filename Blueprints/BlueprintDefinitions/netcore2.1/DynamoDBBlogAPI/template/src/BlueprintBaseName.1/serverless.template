@@ -59,7 +59,7 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambdaFullAccess"
+          "AWSLambda_FullAccess"
         ],
         "Environment": {
           "Variables": {
@@ -98,7 +98,7 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambdaFullAccess"
+          "AWSLambda_FullAccess"
         ],
         "Environment": {
           "Variables": {
@@ -137,7 +137,7 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambdaFullAccess"
+          "AWSLambda_FullAccess"
         ],
         "Environment": {
           "Variables": {
@@ -176,7 +176,7 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambdaFullAccess"
+          "AWSLambda_FullAccess"
         ],
         "Environment": {
           "Variables": {

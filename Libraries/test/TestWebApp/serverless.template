@@ -15,7 +15,7 @@
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
-        "Policies": [ "AWSLambdaFullAccess" ],
+        "Policies": [ "AWSLambda_FullAccess" ],
         "Events": {
           "PutResource": {
             "Type": "Api",

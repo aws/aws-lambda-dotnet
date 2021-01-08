@@ -17,7 +17,7 @@
             "Timeout":30,
             "Role":null,
             "Policies":[ 
-               "AWSLambdaFullAccess"
+               "AWSLambda_FullAccess"
             ],
             "Environment":{ 
 
@@ -40,7 +40,7 @@
             "Timeout":30,
             "Role":null,
             "Policies":[ 
-               "AWSLambdaFullAccess"
+               "AWSLambda_FullAccess"
             ],
             "Environment":{ 
 
