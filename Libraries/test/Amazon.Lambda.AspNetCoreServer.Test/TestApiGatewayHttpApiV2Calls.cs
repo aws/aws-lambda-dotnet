@@ -193,6 +193,14 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestAuthMTls()
+        {
+            var response = await this.InvokeAPIGatewayRequest("mtls-request-httpapi-v2.json");
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("O=Internet Widgits Pty Ltd, S=Some-State, C=AU", response.Body);
+        }
+
+        [Fact]
         public async Task TestReturningCookie()
         {
             var response = await this.InvokeAPIGatewayRequest("cookies-get-returned-httpapi-v2-request.json");
