@@ -22,7 +22,7 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambdaFullAccess"
+          "AWSLambda_FullAccess"
         ],
         "Events": {
           "ProxyResource": {

@@ -18,7 +18,7 @@
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
-        "Policies": [ "AWSLambdaFullAccess" ],
+        "Policies": [ "AWSLambda_FullAccess" ],
         "Environment" : {
         },
         "Events": {
@@ -39,7 +39,7 @@
         "Timeout":30,
         "Role":null,
         "Policies":[ 
-            "AWSLambdaFullAccess"
+            "AWSLambda_FullAccess"
         ],
         "Environment":{ 
 
