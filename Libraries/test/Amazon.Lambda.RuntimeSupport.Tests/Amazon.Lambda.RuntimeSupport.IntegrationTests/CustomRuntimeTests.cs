@@ -22,6 +22,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -212,6 +213,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     AssumeRolePolicyDocument = LAMBDA_ASSUME_ROLE_POLICY
                 };
                 ExecutionRoleArn = (await iamClient.CreateRoleAsync(createRoleRequest)).Role.Arn;
+
+                // Wait for role to propagate.
+                await Task.Delay(10000);
                 return false;
             }
         }
@@ -237,6 +241,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 FilePath = GetDeploymentZipPath()
             };
             await s3Client.PutObjectAsync(putObjectRequest);
+
+            // Wait for bucket to propagate.
+            await Task.Delay(5000);
         }
 
         private async Task DeleteDeploymentZipAndBucketAsync(AmazonS3Client s3Client, string bucketName)
