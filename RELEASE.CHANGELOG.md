@@ -1,4 +1,19 @@
+### Release 2021-01-11
+* **Amazon.Lambda.AspNetCoreServer (5.3.0)**
+  * Pull request [#787](https://github.com/aws/aws-lambda-dotnet/pull/787). Add support for ITlsConnectionFeature and marshall the APIGW client cert to HttpContext. Thanks [Damian Hickey](https://github.com/damianh)
+* **Amazon.Lambda.SimpleEmailEvents (2.2.0)**
+  * Pull request [#777](https://github.com/aws/aws-lambda-dotnet/pull/777). Add DMARC verdict. Thanks [Luís Sousa](https://github.com/luiscnsousa).
+* **Amazon.Lambda.TestTool-3.1 (0.11.1)**
+  * Fixed issue with incorrectly parsing ImageUri from the serverless.template.
+* **Amazon.Lambda.TestTool-5.0 (0.11.1)**
+  * Fixed issue with incorrectly parsing ImageUri from the serverless.template.
+* **Amazon.Lambda.Templates (5.1.0)**
+  * Update all references to the deprecated AWSLambdaFullAccess managed policy to AWSLambda_FullAccess
+  * Pull request [#755](https://github.com/aws/aws-lambda-dotnet/pull/755). Added Support for Binary Media Types in AspNetCoreWebApp Blueprint. Thanks [Carlos Santos](https://github.com/csantos).
+
 ### Release 2020-12-01
+* **Amazon.Lambda.APIGatewayEvents (2.4.0)**
+  * Add Lambda and IAM authorizer fields to APIGatewayHttpApiV2ProxyRequest
 * **Amazon.Lambda.RuntimeSupport (1.3.0)**
   * This version is the implementation for Lambda Runtime Interface Client used in the .NET 5 base container image `public.ecr.aws/lambda/dotnet:5.0`
   * Added support to load user's .NET function based on function handler string. 
