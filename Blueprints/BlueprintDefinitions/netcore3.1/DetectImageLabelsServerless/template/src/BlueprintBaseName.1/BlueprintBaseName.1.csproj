@@ -3,13 +3,12 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AWSProjectType>Lambda</AWSProjectType>
-
     <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.5.5.2" />
-    <PackageReference Include="AWSSDK.Rekognition" Version="3.5.2.15" />
+    <PackageReference Include="AWSSDK.S3" Version="3.5.7.5" />
+    <PackageReference Include="AWSSDK.Rekognition" Version="3.5.2.31" />
     <PackageReference Include="Amazon.Lambda.Core" Version="1.2.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.S3Events" Version="1.2.0" />

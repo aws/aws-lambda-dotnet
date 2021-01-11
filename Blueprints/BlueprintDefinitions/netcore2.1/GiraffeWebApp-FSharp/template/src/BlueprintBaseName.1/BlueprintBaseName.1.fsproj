@@ -6,14 +6,13 @@
     <EnableDefaultContentItems>false</EnableDefaultContentItems>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AWSProjectType>Lambda</AWSProjectType>
-
     <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Giraffe" Version="3.4.0" />
-    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="5.2.0" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="5.3.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppHandlers.fs" />
