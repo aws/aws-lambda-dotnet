@@ -8,8 +8,10 @@
     "AspNetCoreApi": {
       "Type": "AWS::Serverless::Api",
       "Properties": {
-          "StageName": "Prod",
-          "BinaryMediaTypes": [ "*~1*" ]
+        "StageName": "Prod",
+        "BinaryMediaTypes": [
+          "*~1*"
+        ]
       }
     },
     "AspNetCoreFunction": {
@@ -33,7 +35,9 @@
             "Properties": {
               "Path": "/{proxy+}",
               "Method": "ANY",
-              "RestApiId": { "Ref" : "AspNetCoreApi" }
+              "RestApiId": {
+                "Ref": "AspNetCoreApi"
+              }
             }
           },
           "RootResource": {
@@ -41,7 +45,9 @@
             "Properties": {
               "Path": "/",
               "Method": "ANY",
-              "RestApiId": { "Ref" : "AspNetCoreApi" }
+              "RestApiId": {
+                "Ref": "AspNetCoreApi"
+              }
             }
           }
         }
