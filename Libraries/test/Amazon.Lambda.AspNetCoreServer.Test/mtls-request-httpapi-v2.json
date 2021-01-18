@@ -1,0 +1,60 @@
+﻿{
+  "version": "2.0",
+  "routeKey": "ANY /{proxy+}",
+  "rawPath": "/api/mtlstest",
+  "rawQueryString": "",
+  "headers": {
+    "accept": "*/*",
+    "accept-encoding": "gzip, deflate",
+    "cache-control": "no-cache",
+    "content-length": "0",
+    "host": "uo9pe23ec6.execute-api.us-east-1.amazonaws.com",
+    "postman-token": "94d77afd-073d-4e32-8529-8192f5750371",
+    "user-agent": "PostmanRuntime/7.20.1",
+    "x-amzn-trace-id": "Root=1-5e7aeb83-0b67e2a8010700549b3ca4a4",
+    "x-forwarded-for": "192.182.149.40",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "requestContext": {
+    "accountId": "626492997873",
+    "apiId": "uo9pe23ec6",
+    "authorizer": {
+      "jwt": {
+        "claims": {
+          "cognito:groups": "Admin",
+          "phone_number_verified": "true",
+          "cognito:username": "normj",
+          "aud": "3mushfc8sgm8uoacvif5vhkt49",
+          "event_id": "75760f58-f984-11e7-8d4a-2389efc50d68",
+          "token_use": "id",
+          "auth_time": "1515973296",
+          "you_are_special": "true"
+        }
+      }
+    },
+    "domainName": "uo9pe23ec6.execute-api.us-east-1.amazonaws.com",
+    "domainPrefix": "uo9pe23ec6",
+    "http": {
+      "method": "GET",
+      "path": "/api/mtlstest",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "192.182.149.40",
+      "userAgent": "PostmanRuntime/7.20.1"
+    },
+    "requestId": "J7m8fgZWoAMEJEA=",
+    "routeKey": "ANY /{proxy+}",
+    "stage": "$default",
+    "time": "25/Mar/2020:05:26:27 +0000",
+    "timeEpoch": 1585113987055,
+    "authentication" : {
+      "clientCert": {
+        "clientCertPem": "-----BEGIN CERTIFICATE-----\nMIIB3zCCAYWgAwIBAgIUImttQCULqkHxYbDivb1fzRNFYG8wCgYIKoZIzj0EAwIw\nRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoMGElu\ndGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yMDA5MTgxNDQyMzlaFw0yMTA5MTMx\nNDQyMzlaMEUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYD\nVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwWTATBgcqhkjOPQIBBggqhkjO\nPQMBBwNCAARwfxEb6RX+fwiz70spEdLTfK/ite5ZGfysbalM/ZlnUjWZ+Cwk+aEc\nKkER2GWoZ6Fiw3PcOlQzY8dGHMdkkHhGo1MwUTAdBgNVHQ4EFgQUOYFYa+w94G7t\nMGD3bpM3T04WAxswHwYDVR0jBBgwFoAUOYFYa+w94G7tMGD3bpM3T04WAxswDwYD\nVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiEAxX7N6e+2NfuwR70u3AX0\nmx5ZP9uQhdrvOi8qDBHSMMoCIEQenUMtTfYfOU8FwT3WZO4S5JB5jvPg9hCnlXPj\nNwaC\n-----END CERTIFICATE-----"
+      } 
+    } 
+  },
+  "pathParameters": {
+    "proxy": "api/authtest"
+  },
+  "isBase64Encoded": false
+}

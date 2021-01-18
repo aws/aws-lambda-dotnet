@@ -6,14 +6,14 @@
     <Description>Amazon Lambda .NET Core support - S3Events package.</Description>
     <TargetFrameworks>netstandard1.3;netstandard2.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.S3Events</AssemblyTitle>
-    <VersionPrefix>1.1.0</VersionPrefix>
+    <VersionPrefix>1.2.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.S3Events</AssemblyName>
     <PackageId>Amazon.Lambda.S3Events</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.3.31.15" />
+    <PackageReference Include="AWSSDK.S3" Version="3.5.3.5" />
   </ItemGroup>
 
 </Project>

@@ -8,8 +8,8 @@
   "profile": "DefaultProfile",
   "region": "DefaultRegion",
   "configuration": "Release",
-  "framework": "netcoreapp2.0",
-  "function-runtime": "dotnetcore2.0",
+  "framework": "netcoreapp3.1",
+  "function-runtime": "dotnetcore3.1",
   "function-memory-size": 256,
   "function-timeout": 30,
   "function-handler": "BlueprintBaseName.1::BlueprintBaseName._1.Function::FunctionHandler"

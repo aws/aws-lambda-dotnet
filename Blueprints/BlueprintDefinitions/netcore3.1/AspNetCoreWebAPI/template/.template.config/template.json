@@ -8,7 +8,7 @@
   ],
   "name": "Lambda ASP.NET Core Web API",
   "identity": "AWS.Lambda.Serverless.AspNetCoreWebAPI.CSharp",
-  "groupIdentity": "AWS.Lambda.AspNetCoreWebAPI.Serverless",
+  "groupIdentity": "AWS.Lambda.Serverless.AspNetCoreWebAPI",
   "shortName": "serverless.AspNetCoreWebAPI",
   "tags": {
     "language": "C#",

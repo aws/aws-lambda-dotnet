@@ -124,6 +124,49 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void HttpApiV2FormatLambdaAuthorizer(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("http-api-v2-request-lambda-authorizer.json"))
+            {
+                var request = serializer.Deserialize<APIGatewayHttpApiV2ProxyRequest>(fileStream);
+                Assert.Equal("value", request.RequestContext.Authorizer.Lambda["key"]?.ToString());
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void HttpApiV2FormatIAMAuthorizer(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("http-api-v2-request-iam-authorizer.json"))
+            {
+                var request = serializer.Deserialize<APIGatewayHttpApiV2ProxyRequest>(fileStream);
+                var iam = request.RequestContext.Authorizer.IAM;
+                Assert.NotNull(iam);
+                Assert.Equal("ARIA2ZJZYVUEREEIHAKY", iam.AccessKey);
+                Assert.Equal("1234567890", iam.AccountId);
+                Assert.Equal("AROA7ZJZYVRE7C3DUXHH6:CognitoIdentityCredentials", iam.CallerId);
+                Assert.Equal("foo", iam.CognitoIdentity.AMR[0]);
+                Assert.Equal("us-east-1:3f291106-8703-466b-8f2b-3ecee1ca56ce", iam.CognitoIdentity.IdentityId);
+                Assert.Equal("us-east-1:4f291106-8703-466b-8f2b-3ecee1ca56ce", iam.CognitoIdentity.IdentityPoolId);
+                Assert.Equal("AwsOrgId", iam.PrincipalOrgId);
+                Assert.Equal("arn:aws:iam::1234567890:user/Admin", iam.UserARN);
+                Assert.Equal("AROA2ZJZYVRE7Y3TUXHH6", iam.UserId);
+
+            }
+        }
+
         [Fact]
         public void SetHeadersToHttpApiV2Response()
         {
@@ -417,6 +460,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.Ses.Receipt.DKIMVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.SPFVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.VirusVerdict.Status, "PASS");
+                Assert.Equal(record.Ses.Receipt.DMARCVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.ProcessingTimeMillis, 574);
                 
                 Handle(sesEvent);

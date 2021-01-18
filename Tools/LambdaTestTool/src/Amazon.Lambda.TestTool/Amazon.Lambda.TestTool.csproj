@@ -3,18 +3,10 @@
   <Import Project="..\..\..\..\buildtools\common.props" />
   
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.1;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.1;netcoreapp3.1;net5.0</TargetFrameworks>
     <Description>Common code for the AWS .NET Core Lambda Mock Test Tool.</Description>
     <NoWarn>1701;1702;1591;1587;3021;NU5100;CS1591</NoWarn>
   </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
-    <DefineConstants>NETCORE_2_1</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
-    <DefineConstants>NETCORE_3_1</DefineConstants>
-  </PropertyGroup>
-
 
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
@@ -33,8 +25,21 @@
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="3.1.1" />
   </ItemGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)' == 'PackNETCoreApp31' ">
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)' == 'PackNET50' ">
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>    
 
-  <ItemGroup>
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net5.0' ">
+	    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="5.0.0" />
+    </ItemGroup>
+
+
+	<ItemGroup>
     <EmbeddedResource Include="Resources\**" />
   </ItemGroup>  
   

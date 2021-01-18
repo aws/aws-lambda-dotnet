@@ -21,6 +21,18 @@ namespace TestWebApp.Controllers
             return String.Empty;
         }
 
+        [HttpGet("multiple")]
+        public string GetMulti()
+        {
+            var cookieOptions = new Microsoft.AspNetCore.Http.CookieOptions
+            {
+                Expires = DateTime.Now.AddMinutes(5)
+            };
+            Response.Cookies.Append("TestCookie1", "TestValue1", cookieOptions);
+            Response.Cookies.Append("TestCookie2", "TestValue2", cookieOptions);
+            return String.Empty;
+        }
+
         [HttpGet("{id}")]
         public string Get(string id)
         {

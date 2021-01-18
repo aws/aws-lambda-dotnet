@@ -7,6 +7,7 @@
     <PropertyGroup>
         <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
         <PackCommand>dotnet pack --no-build -c $(Configuration) -o $(MSBuildThisFileDirectory)/../Deployment/nuget-packages</PackCommand>
+		<PackWithConfigurationCommand>dotnet pack --no-build -o $(MSBuildThisFileDirectory)/../Deployment/nuget-packages</PackWithConfigurationCommand>
         <SignAssembly Condition=" '$(SignAssembly)' == '' ">true</SignAssembly>
         <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
         <BlueprintPackagerArguments Condition="'$(UpdateBlueprintPackageVersions)'=='true'">--updateVersions</BlueprintPackagerArguments>
@@ -88,6 +89,15 @@
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldF;Lang=F#;Version=netcore21"/>
 		
         <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\netcore3.1" WorkingDirectory="..\"/>
+		
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.image.EmptyFunction;ProjectName=ImageEmptyFunctionC;Lang=C#;Version=netcore31"/>
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.image.EmptyFunction;ProjectName=ImageEmptyFunctionF;Lang=F#;Version=netcore31"/>
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.image.AspNetCoreWebAPI;ProjectName=ImageAspNetCoreWebApiC;Lang=C#;Version=netcore31"/>
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.image.AspNetCoreWebAPI;ProjectName=ImageAspNetCoreWebApiF;Lang=F#;Version=netcore31"/>		
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.image.EmptyServerless;ProjectName=ImageEmptyServerlessC;Lang=C#;Version=netcore31"/>
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.image.EmptyServerless;ProjectName=ImageEmptyServerlessF;Lang=F#;Version=netcore31"/>
+
+		
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebApp;ProjectName=AspNetCoreWebAppC;Lang=C#;Version=netcore31"/>
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.WebSocketAPI;ProjectName=WebSocketAPIC;Lang=C#;Version=netcore31"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SimpleApplicationLoadBalancerFunction;ProjectName=SimpleApplicationLoadBalancerFunctionC;Lang=C#;Version=netcore31"/>
@@ -147,8 +157,8 @@
     <Target Name="build-lambda-test-tool-package" DependsOnTargets="init">
         <Exec Command="dotnet msbuild aws-lambda-test-tool-netcore.sln /t:Rebuild /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Tools\LambdaTestTool"/>
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.WebTester21"/>
-        <Exec Command="$(PackCommand)" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.WebTester31"/>
-
+        <Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester31-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>
+		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester50-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>		
     </Target>
     <Target Name="build-lambda-test-tool-package-cicd" DependsOnTargets="init">
         <Exec Command="dotnet msbuild -restore /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Tools\LambdaTestTool"/>

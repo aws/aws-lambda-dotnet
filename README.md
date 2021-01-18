@@ -5,27 +5,21 @@ Repository for the AWS NuGet packages and Blueprints to support writing AWS Lamb
 For a history of releases view the [release change log](RELEASE.CHANGELOG.md)
 
 ## Table of Contents
-- [Version Status](#version-status)
-- [NuGet Packages](#nuget-packages)
-  - [Events](#events)
-  - [Lambda Tools](#amazonlambdatools)
-  - [ASP.NET Core Server](#amazonlambdaaspnetcoreserver)
-  - [Test Utilities](#amazonlambdatestUtilities)
-- [Blueprints](#blueprints)
-  - [CLI Templates](#dotnet-cli-templates)
-  - [Yeoman](#yeoman-deprecated) (Deprecated)
-- [Getting Help](#getting-help)
-- [Feedback and Contributing](#feedback-and-contributing)
+- [AWS Lambda for .NET Core ![Gitter](https://gitter.im/aws/aws-lambda-dotnet?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)](#aws-lambda-for-net-core-img-srchttpsbadgesgitterimjoin20chatsvg-altgitter)
+  - [Table of Contents](#table-of-contents)
+  - [NuGet Packages](#nuget-packages)
+    - [Events](#events)
+    - [Amazon.Lambda.Tools](#amazonlambdatools)
+      - [Global Tool Migration](#global-tool-migration)
+        - [Migrating from DotNetCliToolReference](#migrating-from-dotnetclitoolreference)
+    - [Amazon.Lambda.AspNetCoreServer](#amazonlambdaaspnetcoreserver)
+    - [Amazon.Lambda.TestUtilities](#amazonlambdatestutilities)
+  - [Blueprints](#blueprints)
+    - [Dotnet CLI Templates](#dotnet-cli-templates)
+    - [Yeoman (Deprecated)](#yeoman-deprecated)
+  - [Getting Help](#getting-help)
+  - [Feedback and Contributing](#feedback-and-contributing)
 
-## Version Status
-Our intention is to keep a regular patch and update cycle to ensure Lambda developers have access to the currently supported patch of each major version of .NET Core.  Given the development and deployment effort, our target is to have most rollouts complete in less than a month.  We do not expect it to be less than one week.  This enables us to ensure high quality deployments.  We will give special attention to any versions that contain security updates critical to .NET Core in AWS Lambda.
-
-The table below shows the currently supported patch of each major version of .NET Core in AWS Lambda, the next version(s) we plan on deploying, and the latest version released by Microsoft.  These are subject to change and we'll keep this table as up-to-date as possible.
-
-|Version|Currently Supported Patch|In Development Queue|Latest Microsoft Release|
-|-------|-------------------------|--------------------|------------------------|
-|2.1|2.1.15|2.1.18|2.1.18|
-|3.1|3.1.1|3.1.4|3.1.4|
 
 ## NuGet Packages
 This repo contains a number of different tools and libraries to support development of Lambdas using .NET. These packages have individual README docs outlining specific information for that particular package. These packages are cataloged here.

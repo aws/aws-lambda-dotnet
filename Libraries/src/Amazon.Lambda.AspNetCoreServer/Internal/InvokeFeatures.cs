@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 #endif
 using System.Net;
 using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,7 +26,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                              IHttpRequestFeature,
                              IHttpResponseFeature,
                              IHttpConnectionFeature,
-                             IServiceProvidersFeature
+                             IServiceProvidersFeature,
+                             ITlsConnectionFeature
 
 #if !NETCOREAPP_2_1
                              ,IHttpResponseBodyFeature
@@ -46,9 +48,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             this[typeof(IHttpResponseFeature)] = this;
             this[typeof(IHttpConnectionFeature)] = this;
             this[typeof(IServiceProvidersFeature)] = this;
+            this[typeof(ITlsConnectionFeature)] = this;
 #if !NETCOREAPP_2_1
             this[typeof(IHttpResponseBodyFeature)] = this;
-#endif            
+#endif
         }
 
         #region IFeatureCollection
@@ -127,11 +130,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
 #endregion
         
-#region IItemsFeature
+        #region IItemsFeature
         IDictionary<object, object> IItemsFeature.Items { get; set; }
 #endregion
         
-#region IHttpAuthenticationFeature
+        #region IHttpAuthenticationFeature
         ClaimsPrincipal IHttpAuthenticationFeature.User { get; set; }
         
 #if NETCOREAPP_2_1
@@ -139,7 +142,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 #endif
 #endregion
 
-#region IHttpRequestFeature
+        #region IHttpRequestFeature
         string IHttpRequestFeature.Protocol { get; set; }
 
         string IHttpRequestFeature.Scheme { get; set; }
@@ -160,7 +163,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
 #endregion
 
-#region IHttpResponseFeature
+        #region IHttpResponseFeature
         int IHttpResponseFeature.StatusCode
         {
             get;
@@ -340,6 +343,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             get; 
             set; 
         }
+
+        #endregion
+
+        #region ITlsConnectionFeatures
+
+        public Task<X509Certificate2> GetClientCertificateAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(ClientCertificate);
+        }
+
+        public X509Certificate2 ClientCertificate { get; set; }
 
         #endregion
     }

@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <Import Project="..\..\..\..\buildtools\common.props" />
+  
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Description>A tool to help debug and test your .NET Core AWS Lambda functions locally.</Description>
+    <LangVersion>Latest</LangVersion>
+    <VersionPrefix>0.11.1</VersionPrefix>
+    <Product>AWS .NET Lambda Test Tool</Product>
+    <Copyright>Apache 2</Copyright>
+    <PackageTags>AWS;Amazon;Lambda</PackageTags>
+    <NoWarn>1701;1702;1591;1587;3021;NU5100;CS1591</NoWarn>
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+	<TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
+  </PropertyGroup>  
+
+
+    <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="3.1.0" />
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net5.0' ">
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="5.0.0" />
+    </ItemGroup>
+
+  <ItemGroup>
+	  <PackageReference Include="Blazored.Modal" Version="3.1.2" />
+	  <ProjectReference Include="..\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\**" />
+  </ItemGroup>
+
+</Project>

@@ -1,22 +1,38 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <VersionPrefix>1.1.1</VersionPrefix>
+    <VersionPrefix>1.3.0</VersionPrefix>
+    <Description>Provides a bootstrap and Lambda Runtime API Client to help you to develop custom .NET Core Lambda Runtimes.</Description>
+    <VersionPrefix>1.3.0</VersionPrefix>
     <Description>Provides a bootstrap and Lambda Runtime API Client to help you  to develop custom .NET Core Lambda Runtimes.</Description>
     <AssemblyTitle>Amazon.Lambda.RuntimeSupport</AssemblyTitle>
     <AssemblyName>Amazon.Lambda.RuntimeSupport</AssemblyName>
     <PackageId>Amazon.Lambda.RuntimeSupport</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
+
+    <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(ExecutableOutputType)'=='true' ">
+    <TargetFramework>net5.0</TargetFramework>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="NSwag.MSBuild" Version="12.0.4" />
+    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="lambda-entrypoint.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <!--Regenerate InternalClientGenerated.txt by running: dotnet msbuild -t:GenerateClient Amazon.Lambda.RuntimeSupport.Client.csproj-->
   <Target Name="GenerateClient">

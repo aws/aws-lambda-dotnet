@@ -1,0 +1,299 @@
+@page "/monitor-dlq"
+
+@using System.Timers
+@using Amazon.Lambda.TestTool.Runtime
+@using Amazon.Lambda.TestTool.BlazorTester.Models
+
+@implements IDisposable
+
+@inject LocalLambdaOptions LambdaOptions
+@inject IModalService Modal
+
+
+<h2>Monitor Dead Letter Queue</h2>
+<p>
+    An Amazon SQS queue can be designated as the <a href="@Constants.LINK_DLQ_DEVELOEPR_GUIDE">dead letter queue</a> for a Lambda function. When
+    Lambda functions fail to handle an asynchronous request, like an Amazon S3 or Amazon DynamoDB Stream event, the failed request is sent to the queue.
+</p>
+<p>
+    When monitoring is enabled the @Constants.PRODUCT_NAME will read the request from the queue and begin executing it within your debugging environment.
+</p>
+
+<FunctionPickerComponent @ref="FunctionPicker" />
+
+<div class="col-sm form-group" for="aws-dlq-queues">
+    <label class="col-xs-3 control-label">Amazon SQS Queue:</label>
+    <select id="aws-dlq-queues" class="form-control" @bind="SelectedQueueUrl">
+        @foreach (var queue in AvailableQueues)
+        {
+            <option value="@queue.QueueUrl">@queue.QueueName</option>
+        }
+
+    </select>
+    <i id="spinnerDlqQueues" class="fa fa-spinner" style="font-size: 24px; margin: 5px; visibility: hidden;"></i>
+</div>
+
+<div class="row mt-3">
+    <div class="col-sm-9">
+        <div class="form-group @(IsRunning ? "collapse" : "" )" id="start-monitor-div" style="@(IsRunning ? "visibility: hidden" : "visibility: visible" )">
+            <button class="btn btn-primary btn-sm" @onclick="OnStartMonitoring">Start Monitoring</button>
+        </div>
+        <div class="form-group @(IsRunning ? "" : "collapse" )" id="stop-monitor-div" style="@(IsRunning ? "visibility: visible" : "visibility: hidden" )">
+            <i class="fa fa-spinner fa-spin" style="font-size: 24px; margin: 5px;"></i>
+            <button class="btn btn-secondary btn-sm" @onclick="OnStopMonitoring">
+                Stop Monitoring
+            </button>
+        </div>
+        <div class="alert alert-warning @(string.IsNullOrEmpty(ErrorMessage) ? "collapse" : "")" style="margin-left: 10px" role="alert" id="monitor-error-msg-div">
+            @ErrorMessage
+        </div>
+    </div>
+    <div class="form-group float-right col-sm-3" id="purge-dlq-div" style="@(string.IsNullOrEmpty(this.SelectedQueueUrl) ? "visibility: hidden" : "visibility: visible")">
+        <button class="btn btn-danger float-right btn-sm" @onclick="OnPurgeDlqClick">Purge Queue</button>
+    </div>
+</div>
+
+
+<div>
+    <table class="table" id="dlg-log-table">
+        <thead>
+            <tr>
+                <th scope="col"></th>
+                <th scope="col">Time</th>
+                <th scope="col">Logs</th>
+                <th scope="col">Error</th>
+                <th scope="col">Event</th>
+            </tr>
+        </thead>
+        <tbody id="dlg-log-table-body">
+            @if (this.Logs != null)
+            {
+                @foreach (var log in this.Logs)
+                {
+                    <tr>
+                        <th></th>
+                        <td>@log.ProcessTime</td>
+                        @if (string.IsNullOrEmpty(log.Logs) || log.Logs.Length <= MAX_LOG_TABLE_TEXT_LENGTH)
+                        {
+                            <td>@FormatForLogTable(log.Logs)</td>
+                        }
+                        else
+                        {
+                            <td><span class="fake-link" @onclick="() => ShowExpandedText(log.Logs)">@FormatForLogTable(log.Logs)</span></td>
+                        }
+                        @if (string.IsNullOrEmpty(log.Error) || log.Error.Length <= MAX_LOG_TABLE_TEXT_LENGTH)
+                        {
+                            <td>@FormatForLogTable(log.Error)</td>
+                        }
+                        else
+                        {
+                            <td><span class="fake-link" @onclick="() => ShowExpandedText(log.Error)">@FormatForLogTable(log.Error)</span></td>
+                        }
+                        @if (string.IsNullOrEmpty(log.Event) || log.Event.Length <= MAX_LOG_TABLE_TEXT_LENGTH)
+                        {
+                            <td>@FormatForLogTable(log.Event)</td>
+                        }
+                        else
+                        {
+                            <td><span class="fake-link" @onclick="() => ShowExpandedText(log.Event)">@FormatForLogTable(log.Event)</span></td>
+                        }
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+
+    const int MAX_LOG_TABLE_TEXT_LENGTH = 50;
+
+    FunctionPickerComponent _functionPicker;
+
+    string ErrorMessage { get; set; }
+
+
+    DlqMonitor _dlqMonitor;
+    Timer _logRefreshTimer;
+
+    FunctionPickerComponent FunctionPicker
+    {
+        get => _functionPicker;
+        set
+        {
+            _functionPicker = value;
+            FunctionPicker.OnChangeAsync = this.OnFunctionPickerChange;
+
+            _ = OnFunctionPickerChange();
+        }
+    }
+
+    IList<QueueItem> AvailableQueues { get; set; } = new List<QueueItem>();
+
+    public string SelectedQueueUrl { get; set; }
+
+    public bool IsRunning { get; set; }
+
+    IList<DlqMonitor.LogRecord> Logs { get; set; } = new List<DlqMonitor.LogRecord>();
+
+
+    void OnStartMonitoring()
+    {
+        Logs.Clear();
+        this.ErrorMessage = null;
+        try
+        {
+            var function = this.LambdaOptions.LoadLambdaFuntion(FunctionPicker.ConfigFile, FunctionPicker.FunctionHandler);
+            _dlqMonitor = new DlqMonitor(this.LambdaOptions.LambdaRuntime, function, FunctionPicker.AWSProfile, FunctionPicker.AWSRegion, SelectedQueueUrl);
+            _dlqMonitor.Start();
+            IsRunning = true;
+
+            if (_logRefreshTimer != null)
+            {
+                _logRefreshTimer.Dispose();
+                _logRefreshTimer = null;
+            }
+
+            _logRefreshTimer = new Timer
+            {
+                Interval = 5000,
+                AutoReset = true
+            };
+            _logRefreshTimer.Elapsed += RefreshLogs;
+            _logRefreshTimer.Start();
+        }
+        catch(Exception e)
+        {
+            this.ErrorMessage = "Error starting monitoring: " + e.Message;
+        }
+
+        this.StateHasChanged();
+    }
+
+    void RefreshLogs(object sender, ElapsedEventArgs e)
+    {
+        const int MAX_LOGS = 3;
+
+        if (_dlqMonitor == null)
+        {
+            return;
+        }
+
+        var newLogs = _dlqMonitor.FetchNewLogs();
+        this.Logs = this.Logs.Concat(newLogs).OrderByDescending(x => x.ProcessTime).Take(MAX_LOGS).ToList();
+        base.InvokeAsync(() => this.StateHasChanged());
+    }
+
+    void OnStopMonitoring()
+    {
+        IsRunning = false;
+        _dlqMonitor?.Stop();
+        _dlqMonitor = null;
+
+        _logRefreshTimer.Dispose();
+        _logRefreshTimer = null;
+    }
+
+    void OnPurgeDlqClick()
+    {
+        var parameters = new ModalParameters();
+        parameters.Add(ConfirmDialog.PARAMETER_NAME_MESSAGE, "Are you sure you want to delete all messages from the SQS queue?");
+        Modal.OnClose += OnPurgeDlqClickConfirmed;
+        Modal.Show<ConfirmDialog>("Confirm Purging Queue", parameters);
+    }
+
+    void OnPurgeDlqClickConfirmed(ModalResult result)
+    {
+        Modal.OnClose -= OnPurgeDlqClickConfirmed;
+        if (result.Cancelled)
+            return;
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                await this.LambdaOptions.LambdaRuntime.AWSService.PurgeQueueAsync(FunctionPicker.AWSProfile, FunctionPicker.AWSRegion, SelectedQueueUrl);
+            }
+            catch(Exception e)
+            {
+                this.ErrorMessage = "Error purging messages from queue: " + e.Message;
+                _ = base.InvokeAsync(() => this.StateHasChanged());
+            }
+        });
+    }
+
+    string _lastFetchQueueSettings;
+    async Task OnFunctionPickerChange()
+    {
+        if (string.IsNullOrEmpty(FunctionPicker.AWSProfile) || string.IsNullOrEmpty(FunctionPicker.AWSRegion))
+        {
+            _lastFetchQueueSettings = "";
+            AvailableQueues.Clear();
+            this.StateHasChanged();
+            return;
+        }
+
+        var fetchQueueSettings = $"profile={FunctionPicker.AWSProfile},region={FunctionPicker.AWSRegion}";
+        if (!string.Equals(_lastFetchQueueSettings, fetchQueueSettings))
+        {
+            _lastFetchQueueSettings = fetchQueueSettings;
+            this.ErrorMessage = null;
+            this.SelectedQueueUrl = null;
+            try
+            {
+                var queueUrls = await this.LambdaOptions.LambdaRuntime.AWSService.ListQueuesAsync(FunctionPicker.AWSProfile, FunctionPicker.AWSRegion);
+
+                AvailableQueues.Clear();
+                foreach (var queueUrl in queueUrls)
+                {
+                    AvailableQueues.Add(new QueueItem { QueueUrl = queueUrl });
+                }
+
+                if (AvailableQueues.Count > 0)
+                {
+                    SelectedQueueUrl = AvailableQueues[0].QueueUrl;
+                }
+            }
+            catch(Exception e)
+            {
+                this.ErrorMessage = "Error listing queues: " + e.Message;
+            }
+
+            this.StateHasChanged();
+        }
+    }
+
+    string FormatForLogTable(string text)
+    {
+        if (text == null)
+            return string.Empty;
+
+        text = text.Replace("\n", "").Replace("\r", "");
+        if (text.Length > MAX_LOG_TABLE_TEXT_LENGTH)
+            text = text.Substring(0, MAX_LOG_TABLE_TEXT_LENGTH);
+
+        return text;
+    }
+
+    void ShowExpandedText(string text)
+    {
+        var parameters = new ModalParameters();
+        parameters.Add(ExpandedTextDialog.PARAMETER_NAME_FULL_TEXT, text);
+        Modal.Show<ExpandedTextDialog>("Full Text", parameters);
+    }
+
+    public void Dispose()
+    {
+        if (this._logRefreshTimer != null)
+        {
+            this._logRefreshTimer.Dispose();
+            this._logRefreshTimer = null;
+        }
+
+        if (this._dlqMonitor != null)
+        {
+            _dlqMonitor.Stop();
+            _dlqMonitor = null;
+        }
+    }
+}

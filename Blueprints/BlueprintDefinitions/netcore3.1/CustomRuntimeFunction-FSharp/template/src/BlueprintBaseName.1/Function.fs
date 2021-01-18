@@ -6,6 +6,12 @@ open Amazon.Lambda.Serialization.SystemTextJson
 
 open System
 
+// This project specifies the serializer used to convert Lambda event into .NET classes in the project's main 
+// main function. This assembly register a serializer for use when the project is being debugged using the
+// AWS .NET Mock Lambda Test Tool.
+[<assembly: LambdaSerializer(typeof<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>)>]
+()
+
 module Function =
 
 
@@ -29,7 +35,7 @@ module Function =
     let main _args =
     
         let handler = Func<string, ILambdaContext, string>(functionHandler)
-        use handlerWrapper = HandlerWrapper.GetHandlerWrapper(handler, new LambdaJsonSerializer())
+        use handlerWrapper = HandlerWrapper.GetHandlerWrapper(handler, new DefaultLambdaJsonSerializer())
         use bootstrap = new LambdaBootstrap(handlerWrapper)
    
         bootstrap.RunAsync().GetAwaiter().GetResult()

@@ -13,7 +13,9 @@
  * permissions and limitations under the License.
  */
 using System;
+using System.IO;
 using System.Net.Http;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -59,7 +61,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         /// <returns></returns>
         public LambdaBootstrap(LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer = null)
-            : this(new HttpClient(), handler, initializer, ownsHttpClient: true)
+            : this(ConstructHttpClient(), handler, initializer, ownsHttpClient: true)
         { }
 
         /// <summary>
@@ -169,6 +171,21 @@ namespace Amazon.Lambda.RuntimeSupport
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Utility method for creating an HttpClient used by LambdaBootstrap to interact with the Lambda Runtime API.
+        /// </summary>
+        /// <returns></returns>
+        public static HttpClient ConstructHttpClient()
+        {
+            var dotnetRuntimeVersion = new DirectoryInfo(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory()).Name;
+            var amazonLambdaRuntimeSupport = typeof(LambdaBootstrap).Assembly.GetName().Version;
+            var userAgentString = $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}";
+
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("User-Agent", userAgentString);
+            return client;
         }
 
         #region IDisposable Support

@@ -17,6 +17,7 @@
 **/Deployment/
 **/packages
 **/launchSettings.json
+**/Debug/
 
 **/project.lock.json
 
@@ -34,6 +35,8 @@
 /Blueprints/YeomanGenerator/generator-aws-lambda-dotnet/app/manifest.js
 /Tools/LambdaTestTool/Amazon.Lambda.TestTool/ExternalCommands/App
 global.json
+
+**/cdk.out/**
 
 #Ncrunch
 *.ncrunchproject

@@ -14,6 +14,7 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using System.Globalization;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -243,6 +244,16 @@ namespace Amazon.Lambda.AspNetCoreServer
                 // Call consumers customize method in case they want to change how API Gateway's request
                 // was marshalled into ASP.NET Core request.
                 PostMarshallConnectionFeature(connectionFeatures, apiGatewayRequest, lambdaContext);
+            }
+
+            {
+                var tlsConnectionFeature = (ITlsConnectionFeature) features;
+                var clientCertPem = apiGatewayRequest?.RequestContext?.Identity?.ClientCert?.ClientCertPem;
+                if (clientCertPem != null)
+                {
+                    tlsConnectionFeature.ClientCertificate = Utilities.GetX509Certificate2FromPem(clientCertPem);
+                }
+                PostMarshallTlsConnectionFeature(tlsConnectionFeature, apiGatewayRequest, lambdaContext);
             }
         }
 

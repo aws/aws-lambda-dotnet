@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool", "s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.WebTester21", "src\Amazon.Lambda.TestTool.WebTester21\Amazon.Lambda.TestTool.WebTester21.csproj", "{B7B05CC4-C3FA-4E78-A4CC-6055DA59495C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.WebTester31", "src\Amazon.Lambda.TestTool.WebTester31\Amazon.Lambda.TestTool.WebTester31.csproj", "{E615A185-BBB0-4A92-8C61-47F699FFDA7F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.BlazorTester", "src\Amazon.Lambda.TestTool.BlazorTester\Amazon.Lambda.TestTool.BlazorTester.csproj", "{E615A185-BBB0-4A92-8C61-47F699FFDA7F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{28C935E3-4FB4-4B09-A9DB-26A1EB04CDE0}"
 EndProject

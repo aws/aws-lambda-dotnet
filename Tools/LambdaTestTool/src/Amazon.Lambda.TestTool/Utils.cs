@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Amazon.Lambda.TestTool.Runtime;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -134,13 +135,21 @@ namespace Amazon.Lambda.TestTool
                         {
                             PropertyNameCaseInsensitive = true
                         });
+                        configFile.ConfigFileLocation = file;
 
-                        if (!string.IsNullOrEmpty(configFile.Framework) && configFile.Framework.StartsWith("netcoreapp") &&
-                            (!string.IsNullOrEmpty(configFile.FunctionHandler) ||
-                            (!string.IsNullOrEmpty(configFile.Template) && File.Exists(Path.Combine(lambdaFunctionDirectory, configFile.Template)))))
+                        if (!string.IsNullOrEmpty(configFile.DetermineHandler()))
                         {
                             Console.WriteLine($"Found Lambda config file {file}");
                             configFiles.Add(file);
+                        }
+                        else if(!string.IsNullOrEmpty(configFile.Template) && File.Exists(Path.Combine(lambdaFunctionDirectory, configFile.Template)))
+                        {
+                            var config = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
+                            if(config.FunctionInfos?.Count > 0)
+                            {
+                                Console.WriteLine($"Found Lambda config file {file}");
+                                configFiles.Add(file);
+                            }
                         }
                     }
                     catch

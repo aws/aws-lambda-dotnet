@@ -139,6 +139,11 @@ namespace Amazon.Lambda.SimpleEmailEvents
             public SimpleEmailVerdict VirusVerdict { get; set; }
 
             /// <summary>
+            /// The DMARC verdict of the message, e.g. status: PASS.
+            /// </summary>
+            public SimpleEmailVerdict DMARCVerdict { get; set; }
+
+            /// <summary>
             /// The action of the message (i.e, which lambda was invoked, where it was stored in S3, etc)
             /// </summary>
             public TReceiptAction Action { get; set; }
@@ -203,7 +208,7 @@ namespace Amazon.Lambda.SimpleEmailEvents
     }
 
     /// <summary>
-    /// Verdict to return status of Spam, DKIM, SPF, and Virus.
+    /// Verdict to return status of Spam, DKIM, SPF, Virus, and DMARC.
     /// </summary>
     public class SimpleEmailVerdict
     {
