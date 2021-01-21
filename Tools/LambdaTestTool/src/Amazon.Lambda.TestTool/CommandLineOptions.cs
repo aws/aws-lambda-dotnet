@@ -167,6 +167,8 @@ namespace Amazon.Lambda.TestTool
             Console.WriteLine("\t                                      from the config file will be used. This is the format of <assembly::type-name::method-name>.");
             Console.WriteLine("\t--payload <file-name>                 The JSON payload to send to the Lambda function. This can be either an inline string or a");
             Console.WriteLine("\t                                      file path to a JSON file.");
+            Console.WriteLine("\t--lambdaContext <file-name>           The JSON Context object to send to the Lambda function. This can be either an inline string or a");
+            Console.WriteLine("\t                                      file path to a JSON file.");
             Console.WriteLine("\t--pause-exit <true or false>          If set to true the test tool will pause waiting for a key input before exiting. The is useful");
             Console.WriteLine("\t                                      when executing from an IDE so you can avoid having the output window immediately disappear after");
             Console.WriteLine("\t                                      executing the Lambda code. The default value is true.");
