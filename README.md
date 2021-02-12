@@ -22,7 +22,7 @@ For a history of releases view the [release change log](RELEASE.CHANGELOG.md)
 
 
 ## NuGet Packages
-This repo contains a number of different tools and libraries to support development of Lambdas using .NET. These packages have individual README docs outlining specific information for that particular package. These packages are cataloged here.
+This repo contains a number of different tools and libraries to support development of Lambda functions using .NET. These packages have individual README docs outlining specific information for that particular package. These packages are cataloged here.
 
 ### Events
 
