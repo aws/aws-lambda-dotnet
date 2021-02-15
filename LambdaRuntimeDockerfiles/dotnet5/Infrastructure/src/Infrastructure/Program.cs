@@ -29,7 +29,10 @@ namespace Infrastructure
         {
             var configuration = new Configuration();
             var app = new App();
-            new PipelineStack(app, Configuration.ProjectName, configuration);
+            new PipelineStack(app, Configuration.ProjectName, configuration, new StackProps 
+            { 
+                TerminationProtection = true
+            });
             app.Synth();
         }
     }
