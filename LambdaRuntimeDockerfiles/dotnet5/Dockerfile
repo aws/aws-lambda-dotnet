@@ -54,9 +54,9 @@ RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/a
 
 
 FROM base as final
-ARG DOTNET_VERSION
+ARG ASPNET_VERSION
 
-ENV DOTNET_VERSION $DOTNET_VERSION
+ENV DOTNET_VERSION $ASPNET_VERSION
 
 COPY --from=builder-net5 ["/dotnet", "/var/lang/bin"]
 
