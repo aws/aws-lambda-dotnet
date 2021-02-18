@@ -267,6 +267,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         internal static X509Certificate2 GetX509Certificate2FromPem(string clientCertPem)
         {
+            clientCertPem = clientCertPem.TrimEnd('\n');
             if (!clientCertPem.StartsWith("-----BEGIN CERTIFICATE-----") || !clientCertPem.EndsWith("-----END CERTIFICATE-----"))
             {
                 throw new InvalidOperationException(
