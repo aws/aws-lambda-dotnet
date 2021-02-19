@@ -6,7 +6,7 @@
     <Description>Amazon.Lambda.AspNetCoreServer makes it easy to run ASP.NET Core Web API applications as AWS Lambda functions.</Description>
     <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.AspNetCoreServer</AssemblyTitle>
-    <VersionPrefix>5.3.0</VersionPrefix>
+    <VersionPrefix>5.3.1</VersionPrefix>
     <AssemblyName>Amazon.Lambda.AspNetCoreServer</AssemblyName>
     <PackageId>Amazon.Lambda.AspNetCoreServer</PackageId>
     <PackageTags>AWS;Amazon;Lambda;aspnetcore</PackageTags>
