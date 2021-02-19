@@ -1,7 +1,7 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=5.0.1
-ARG ASPNET_SHA512=fec655aed2e73288e84d940fd356b596e266a3e74c37d9006674c4f923fb7cde5eafe30b7dcb43251528166c02724df5856e7174f1a46fc33036b0f8db92688a
+ARG ASPNET_VERSION=5.0.3
+ARG ASPNET_SHA512=188618b07cd5c97a34c77efccc7c4eba10a52681592ef711a005c82d243e601891418e0dcc27a22aae7dd6ae33d35e0bb7aa9b9fc022746c6c2414bd25cdb110
 ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2
 
 FROM $AMAZON_LINUX AS base
@@ -54,9 +54,9 @@ RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/a
 
 
 FROM base as final
-ARG DOTNET_VERSION
+ARG ASPNET_VERSION
 
-ENV DOTNET_VERSION $DOTNET_VERSION
+ENV DOTNET_VERSION $ASPNET_VERSION
 
 COPY --from=builder-net5 ["/dotnet", "/var/lang/bin"]
 
