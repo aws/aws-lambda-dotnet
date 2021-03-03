@@ -48,7 +48,8 @@
         "Role": null,
         "Policies": [
           "AWSLambda_FullAccess",
-          "AmazonRekognitionReadOnlyAccess"
+          "AmazonRekognitionReadOnlyAccess",
+          "AmazonS3ReadOnlyAccess"
         ],
         "Events": {
           "NewImagesBucket": {
