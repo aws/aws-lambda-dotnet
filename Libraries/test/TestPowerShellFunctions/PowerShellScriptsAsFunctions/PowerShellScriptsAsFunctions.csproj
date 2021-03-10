@@ -21,11 +21,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
-    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.7.0" />
-    <PackageReference Include="Amazon.Lambda.TestUtilities" Version="1.1.0" />
-  </ItemGroup>
-  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
     <ProjectReference Include="..\..\..\src\Amazon.Lambda.PowerShellHost\Amazon.Lambda.PowerShellHost.csproj" />
+    <ProjectReference Include="..\..\..\src\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.csproj" />
+    <ProjectReference Include="..\..\..\src\Amazon.Lambda.TestUtilities\Amazon.Lambda.TestUtilities.csproj" />
   </ItemGroup>
 </Project>

@@ -16,7 +16,7 @@
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
     <PackageReference Include="LitJson" Version="0.13.0" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.3.102.64" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.0" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
   </ItemGroup>
   <ItemGroup>
