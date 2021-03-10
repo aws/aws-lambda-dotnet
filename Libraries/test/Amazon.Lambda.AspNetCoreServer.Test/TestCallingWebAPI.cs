@@ -302,6 +302,14 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestAuthMTlsWithTrailingNewLine()
+        {
+            var response = await this.InvokeAPIGatewayRequest("mtls-request-trailing-newline.json");
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("O=Internet Widgits Pty Ltd, S=Some-State, C=AU", response.Body);
+        }
+
+        [Fact]
         public async Task TestAuthTestAccess_CustomLambdaAuthorizerClaims()
         {
             var response =
