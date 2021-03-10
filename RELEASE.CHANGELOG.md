@@ -1,3 +1,7 @@
+### Release 2021-02-19
+* **Amazon.Lambda.AspNetCoreServer (5.3.1)**
+  * Pull request [#815](https://github.com/aws/aws-lambda-dotnet/pull/815). Fix for when the certificate PEM string contains a trailing new line ('\n'). Thanks [Damian Hickey](https://github.com/damianh)
+
 ### Release 2021-01-11
 * **Amazon.Lambda.AspNetCoreServer (5.3.0)**
   * Pull request [#787](https://github.com/aws/aws-lambda-dotnet/pull/787). Add support for ITlsConnectionFeature and marshall the APIGW client cert to HttpContext. Thanks [Damian Hickey](https://github.com/damianh)
