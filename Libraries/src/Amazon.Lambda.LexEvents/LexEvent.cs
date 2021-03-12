@@ -30,7 +30,7 @@ namespace Amazon.Lambda.LexEvents
         /// The text used to process the request.
         /// </summary>
         public string InputTranscript { get; set; }
-
+        
         /// <summary>
         /// Application-specific session attributes that the client sent in the request. If you want 
         /// Amazon Lex to include them in the response to the client, your Lambda function should 
