@@ -11,7 +11,7 @@ namespace Amazon.Lambda.LexEvents
     public class LexEvent
     {
         /// <summary>
-        /// The version of the message that identifies the format of the event data going into the
+        /// The version of the message that identifies the format of the event data going into the 
         /// Lambda function and the expected format of the response from a Lambda function.
         /// </summary>
         public string MessageVersion { get; set; }
@@ -32,14 +32,14 @@ namespace Amazon.Lambda.LexEvents
         public string InputTranscript { get; set; }
 
         /// <summary>
-        /// Application-specific session attributes that the client sent in the request. If you want
-        /// Amazon Lex to include them in the response to the client, your Lambda function should
+        /// Application-specific session attributes that the client sent in the request. If you want 
+        /// Amazon Lex to include them in the response to the client, your Lambda function should 
         /// send these back to Amazon Lex in response.
         /// </summary>
         public IDictionary<string, string> SessionAttributes { get; set; }
 
         /// <summary>
-        /// Request-specific attributes that the client sends in the request. Use request attributes to
+        /// Request-specific attributes that the client sends in the request. Use request attributes to 
         /// pass information that doesn't need to persist for the entire session.
         /// </summary>
         public IDictionary<string, string> RequestAttributes { get; set; }
@@ -50,12 +50,12 @@ namespace Amazon.Lambda.LexEvents
         public LexBot Bot { get; set; }
 
         /// <summary>
-        /// For each user input, the client sends the request to Amazon Lex using one of the runtime API operations,
-        /// PostContent or PostText. From the API request parameters, Amazon Lex determines whether the response
+        /// For each user input, the client sends the request to Amazon Lex using one of the runtime API operations, 
+        /// PostContent or PostText. From the API request parameters, Amazon Lex determines whether the response 
         /// to the client (user) is text or voice, and sets this field accordingly.
         /// <para>
-        /// The Lambda function can use this information to generate an appropriate message.
-        /// For example, if the client expects a voice response, your Lambda function could return
+        /// The Lambda function can use this information to generate an appropriate message. 
+        /// For example, if the client expects a voice response, your Lambda function could return 
         /// Speech Synthesis Markup LanguageSpeech Synthesis Markup Language (SSML) instead of text.
         /// </para>
         /// </summary>
@@ -102,7 +102,7 @@ namespace Amazon.Lambda.LexEvents
             public string Name { get; set; }
 
             /// <summary>
-            /// List of slots that are configured for the intent and values that are recognized by
+            /// List of slots that are configured for the intent and values that are recognized by 
             /// Amazon Lex in the user conversation from the beginning. Otherwise, the values are null.
             /// </summary>
             public IDictionary<string, string> Slots { get; set; }
@@ -118,7 +118,7 @@ namespace Amazon.Lambda.LexEvents
             public IDictionary<string, SlotDetail> SlotDetails { get; set; }
 
             /// <summary>
-            /// The ConfirmationStatus provides the user response to a confirmation prompt, if there is one.
+            /// The ConfirmationStatus provides the user response to a confirmation prompt, if there is one. 
             /// </summary>
             public string ConfirmationStatus { get; set; }
         }
