@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace Amazon.Lambda.LexEvents
 {
@@ -82,7 +83,7 @@ namespace Amazon.Lambda.LexEvents
         /// Gets and sets the property NluIntentConfidence.
         /// Provides a score that indicates how confident Amazon Lex is that the returned intent is the one that matches the user's intent.
         /// </summary>
-        public class LexNLUIntentConfidence
+        public class LexNluIntentConfidence
         {
             /// <summary>
             /// The score is between 0.0 and 1.0.
@@ -110,7 +111,7 @@ namespace Amazon.Lambda.LexEvents
             /// <summary>
             /// Gets and sets the property NluIntentConfidence.
             /// </summary>
-            public LexNLUIntentConfidence NLUIntentConfidence { get; set; }
+            public LexNluIntentConfidence NluIntentConfidence { get; set; }
 
             /// <summary>
             /// Provides additional information about a slot value.
