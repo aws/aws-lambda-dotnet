@@ -87,6 +87,18 @@ namespace Amazon.Lambda.TestTool.Tests
         }
 
         [Fact]
+        public async Task WithEventParameterTest()
+        {
+
+            var response = await ExecuteFunctionAsync(
+                "FunctionSignatureExamples::FunctionSignatureExamples.InstanceMethods::WithEventParameter",
+                null);
+
+            Assert.True(response.IsSuccess);
+            Assert.Equal("\"WithEventParameter-event-not-null\"", response.Response);
+        }
+
+        [Fact]
         public async Task TaskWithNoResultTest()
         {
             var payload = "\"TestData\"";
