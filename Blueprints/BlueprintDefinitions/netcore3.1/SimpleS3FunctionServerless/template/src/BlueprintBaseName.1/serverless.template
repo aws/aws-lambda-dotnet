@@ -48,7 +48,6 @@
         "Role": null,
         "Policies": [
           "AWSLambda_FullAccess",
-          "AmazonRekognitionReadOnlyAccess",
           "AmazonS3ReadOnlyAccess"
         ],
         "Events": {
