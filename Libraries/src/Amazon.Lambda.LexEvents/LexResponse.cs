@@ -42,6 +42,15 @@
         public IList<LexActiveContext> ActiveContexts { get; set; }
 
         /// <summary>
+        /// If included, sets values for one or more recent intents. You can include information for up to three intents.
+        /// </summary>
+        [DataMember(Name = "recentIntentSummaryView", EmitDefaultValue = false)]
+#if NETCOREAPP3_1
+        [System.Text.Json.Serialization.JsonPropertyName("recentIntentSummaryView")]
+#endif
+        public IList<LexRecentIntentSummaryViewType> RecentIntentSummaryView { get; set; }
+
+        /// <summary>
         /// The class representing the dialog action.
         /// </summary>
         [DataContract]

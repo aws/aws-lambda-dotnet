@@ -1017,6 +1017,25 @@ namespace Amazon.Lambda.Tests
 
                 Assert.Equal("resolved value1", lexEvent.CurrentIntent.SlotDetails["slot name2"].Resolutions[0]["value1"]);
                 Assert.Equal("resolved value2", lexEvent.CurrentIntent.SlotDetails["slot name2"].Resolutions[1]["value2"]);
+
+                Assert.Equal("intent-name", lexEvent.AlternativeIntents[0].Name);
+                Assert.Equal(5.5, lexEvent.AlternativeIntents[0].NluIntentConfidenceScore);
+
+                Assert.Equal("Name", lexEvent.RecentIntentSummaryView[0].IntentName);
+                Assert.Equal("Label", lexEvent.RecentIntentSummaryView[0].CheckpointLabel);
+                Assert.Equal("value1", lexEvent.RecentIntentSummaryView[0].Slots["key1"]);
+                Assert.Equal("Confirmed", lexEvent.RecentIntentSummaryView[0].ConfirmationStatus);
+                Assert.Equal("ElicitIntent", lexEvent.RecentIntentSummaryView[0].DialogActionType);
+                Assert.Equal("Fulfilled", lexEvent.RecentIntentSummaryView[0].FulfillmentState);
+                Assert.Equal("NextSlot", lexEvent.RecentIntentSummaryView[0].SlotToElicit);
+
+                Assert.Equal("name", lexEvent.ActiveContexts[0].Name);
+                Assert.Equal(100, lexEvent.ActiveContexts[0].TimeToLive.TimeToLiveInSeconds);
+                Assert.Equal(5, lexEvent.ActiveContexts[0].TimeToLive.TurnsToLive);
+                Assert.Equal("value", lexEvent.ActiveContexts[0].Parameters["key"]);
+
+                Assert.Equal("sentiment", lexEvent.SentimentResponse.SentimentLabel);
+                Assert.Equal("score", lexEvent.SentimentResponse.SentimentScore);
             }
         }
 
@@ -1056,6 +1075,19 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(1, lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons.Count);
                 Assert.Equal("button-text", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons[0].Text);
                 Assert.Equal("value sent to server on button click", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons[0].Value);
+
+                Assert.Equal("name", lexResponse.ActiveContexts[0].Name);
+                Assert.Equal(100, lexResponse.ActiveContexts[0].TimeToLive.TimeToLiveInSeconds);
+                Assert.Equal(5, lexResponse.ActiveContexts[0].TimeToLive.TurnsToLive);
+                Assert.Equal("value", lexResponse.ActiveContexts[0].Parameters["key"]);
+
+                Assert.Equal("Name", lexResponse.RecentIntentSummaryView[0].IntentName);
+                Assert.Equal("Label", lexResponse.RecentIntentSummaryView[0].CheckpointLabel);
+                Assert.Equal("value1", lexResponse.RecentIntentSummaryView[0].Slots["key1"]);
+                Assert.Equal("Confirmed", lexResponse.RecentIntentSummaryView[0].ConfirmationStatus);
+                Assert.Equal("ElicitIntent", lexResponse.RecentIntentSummaryView[0].DialogActionType);
+                Assert.Equal("Fulfilled", lexResponse.RecentIntentSummaryView[0].FulfillmentState);
+                Assert.Equal("NextSlot", lexResponse.RecentIntentSummaryView[0].SlotToElicit);
 
                 MemoryStream ms = new MemoryStream();                
                 serializer.Serialize<LexResponse>(lexResponse, ms);
