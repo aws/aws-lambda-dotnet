@@ -190,6 +190,50 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
+        public void S3ObjectLambdaEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("s3-object-lambda-event.json"))
+            {
+                var s3Event = serializer.Deserialize<S3ObjectLambdaEvent>(fileStream);
+
+                Assert.Equal("requestId", s3Event.XAmzRequestId);
+                Assert.Equal("https://my-s3-ap-111122223333.s3-accesspoint.us-east-1.amazonaws.com/example?X-Amz-Security-Token=<snip>", s3Event.GetObjectContext.InputS3Url);
+                Assert.Equal("io-use1-001", s3Event.GetObjectContext.OutputRoute);
+                Assert.Equal("OutputToken", s3Event.GetObjectContext.OutputToken);
+
+                Assert.Equal("arn:aws:s3-object-lambda:us-east-1:111122223333:accesspoint/example-object-lambda-ap", s3Event.Configuration.AccessPointArn);
+                Assert.Equal("arn:aws:s3:us-east-1:111122223333:accesspoint/example-ap", s3Event.Configuration.SupportingAccessPointArn);
+                Assert.Equal("{}", s3Event.Configuration.Payload);
+
+                Assert.Equal("https://object-lambda-111122223333.s3-object-lambda.us-east-1.amazonaws.com/example", s3Event.UserRequest.Url);
+                Assert.Equal("object-lambda-111122223333.s3-object-lambda.us-east-1.amazonaws.com", s3Event.UserRequest.Headers["Host"]);
+
+                Assert.Equal("AssumedRole", s3Event.UserIdentity.Type);
+                Assert.Equal("principalId", s3Event.UserIdentity.PrincipalId);
+                Assert.Equal("arn:aws:sts::111122223333:assumed-role/Admin/example", s3Event.UserIdentity.Arn);
+                Assert.Equal("111122223333", s3Event.UserIdentity.AccountId);
+                Assert.Equal("accessKeyId", s3Event.UserIdentity.AccessKeyId);
+                
+                Assert.Equal("false", s3Event.UserIdentity.SessionContext.Attributes.MfaAuthenticated);
+                Assert.Equal("Wed Mar 10 23:41:52 UTC 2021", s3Event.UserIdentity.SessionContext.Attributes.CreationDate);
+
+                Assert.Equal("Role", s3Event.UserIdentity.SessionContext.SessionIssuer.Type);
+                Assert.Equal("principalId", s3Event.UserIdentity.SessionContext.SessionIssuer.PrincipalId);
+                Assert.Equal("arn:aws:iam::111122223333:role/Admin", s3Event.UserIdentity.SessionContext.SessionIssuer.Arn);
+                Assert.Equal("111122223333", s3Event.UserIdentity.SessionContext.SessionIssuer.AccountId);
+                Assert.Equal("Admin", s3Event.UserIdentity.SessionContext.SessionIssuer.UserName);
+
+                Assert.Equal("1.00", s3Event.ProtocolVersion);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
         public void S3PutTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
