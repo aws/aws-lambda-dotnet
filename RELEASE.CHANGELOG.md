@@ -1,3 +1,15 @@
+### Release 2021-03-24
+* **Amazon.Lambda.S3 (1.3.0)**
+  * Added event object for S3 Object Lambda.
+* **Amazon.Lambda.LexEvents (2.2.0)**
+  * Pull request [#833](https://github.com/aws/aws-lambda-dotnet/pull/833). Added advanced options for LexBot events. Thanks [ssorc3](https://github.com/ssorc3)
+* **Amazon.Lambda.TestTool-2.1 (0.11.2)**
+  * Pull request [#834](https://github.com/aws/aws-lambda-dotnet/pull/834). Fixed issue invoking Lambda function in test tool with no payload. Thanks [#russau](https://github.com/russau).
+* **Amazon.Lambda.TestTool-3.1 (0.11.2)**
+  * Pull request [#834](https://github.com/aws/aws-lambda-dotnet/pull/834). Fixed issue invoking Lambda function in test tool with no payload. Thanks [#russau](https://github.com/russau).
+* **Amazon.Lambda.TestTool-5.0 (0.11.2)**
+  * Pull request [#834](https://github.com/aws/aws-lambda-dotnet/pull/834). Fixed issue invoking Lambda function in test tool with no payload. Thanks [#russau](https://github.com/russau).
+
 ### Release 2021-02-19
 * **Amazon.Lambda.AspNetCoreServer (5.3.1)**
   * Pull request [#815](https://github.com/aws/aws-lambda-dotnet/pull/815). Fix for when the certificate PEM string contains a trailing new line ('\n'). Thanks [Damian Hickey](https://github.com/damianh)
