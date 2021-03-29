@@ -4,12 +4,12 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - Serialization.Json package.</Description>
-    <TargetFrameworks>netstandard1.3;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.Serialization.Json</AssemblyTitle>
     <AssemblyName>Amazon.Lambda.Serialization.Json</AssemblyName>
     <PackageId>Amazon.Lambda.Serialization.Json</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-    <VersionPrefix>1.8.0</VersionPrefix>
+    <VersionPrefix>2.0.0</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
