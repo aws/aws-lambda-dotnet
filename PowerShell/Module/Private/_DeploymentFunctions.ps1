@@ -324,28 +324,31 @@ function _configureAmazonLambdaTools
 {
     Write-Host 'Restoring .NET Lambda deployment tool'
 
-    Write-Verbose -Message 'Installing .NET Global Tool Amazon.Lambda.Tools'
+    # see if tool is already installed
+    $amazonLambdaToolsInstalled = & dotnet tool list -g | Select-String -Pattern Amazon.Lambda.Tools -SimpleMatch -Quiet
 
     # When "-Verbose" switch was used this output was not hidden.
     # Using stream redirection to force hide all output from the dotnet cli call
-    & dotnet tool install -g Amazon.Lambda.Tools *>&1 | Out-Null
-
-    if ($LASTEXITCODE -ne 0)
+    if (-not $amazonLambdaToolsInstalled)
     {
-        Write-Verbose -Message 'Error installing, attempting to update Amazon.Lambda.Tools'
+        Write-Verbose -Message 'Installing .NET Global Tool Amazon.Lambda.Tools'
+        & dotnet tool install -g Amazon.Lambda.Tools *>&1 | Out-Null
+    }
+    else
+    {
+        Write-Verbose -Message 'Updating .NET Global Tool Amazon.Lambda.Tools'
 
         # When "-Verbose" switch was used this output was not hidden.
         # Using stream redirection to force hide all output from the dotnet cli call
         & dotnet tool update -g Amazon.Lambda.Tools *>&1 | Out-Null
+    }
 
-        if ($LASTEXITCODE -ne 0)
-        {
-            $msg = @"
+    if ($LASTEXITCODE -ne 0) {
+        $msg = @"
 Error configuring .NET CLI AWS Lambda deployment tools: $LastExitCode
 CALLSTACK:$(Get-PSCallStack | Out-String)
 "@
-            throw $msg
-        }
+        throw $msg
     }
 
     $toolsFolder = Join-Path -Path '~' -ChildPath '.dotnet' -AdditionalChildPath 'tools'

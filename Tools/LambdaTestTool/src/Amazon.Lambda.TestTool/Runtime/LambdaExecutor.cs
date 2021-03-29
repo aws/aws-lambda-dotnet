@@ -194,9 +194,10 @@ namespace Amazon.Lambda.TestTool.Runtime
                 {
                     parmValues[i] = context;
                 }
-                else if(request.Payload != null)
+                else
                 {
-                    var stream = new MemoryStream(Encoding.UTF8.GetBytes(request.Payload));
+                    var bytes = Encoding.UTF8.GetBytes((request.Payload != null) ? request.Payload : "{}");
+                    var stream = new MemoryStream(bytes);
                     if (request.Function.Serializer != null)
                     {
                         var genericMethodInfo = request.Function.Serializer.GetType()

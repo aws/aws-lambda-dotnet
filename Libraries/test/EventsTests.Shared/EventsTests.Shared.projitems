@@ -30,6 +30,7 @@
     <Content Include="$(MSBuildThisFileDirectory)logs-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)proxy-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)s3-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)s3-object-lambda-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)scheduled-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)simple-email-event-lambda.json" />
     <Content Include="$(MSBuildThisFileDirectory)simple-email-event-s3.json" />

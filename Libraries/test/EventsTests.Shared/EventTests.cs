@@ -190,6 +190,50 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
+        public void S3ObjectLambdaEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("s3-object-lambda-event.json"))
+            {
+                var s3Event = serializer.Deserialize<S3ObjectLambdaEvent>(fileStream);
+
+                Assert.Equal("requestId", s3Event.XAmzRequestId);
+                Assert.Equal("https://my-s3-ap-111122223333.s3-accesspoint.us-east-1.amazonaws.com/example?X-Amz-Security-Token=<snip>", s3Event.GetObjectContext.InputS3Url);
+                Assert.Equal("io-use1-001", s3Event.GetObjectContext.OutputRoute);
+                Assert.Equal("OutputToken", s3Event.GetObjectContext.OutputToken);
+
+                Assert.Equal("arn:aws:s3-object-lambda:us-east-1:111122223333:accesspoint/example-object-lambda-ap", s3Event.Configuration.AccessPointArn);
+                Assert.Equal("arn:aws:s3:us-east-1:111122223333:accesspoint/example-ap", s3Event.Configuration.SupportingAccessPointArn);
+                Assert.Equal("{}", s3Event.Configuration.Payload);
+
+                Assert.Equal("https://object-lambda-111122223333.s3-object-lambda.us-east-1.amazonaws.com/example", s3Event.UserRequest.Url);
+                Assert.Equal("object-lambda-111122223333.s3-object-lambda.us-east-1.amazonaws.com", s3Event.UserRequest.Headers["Host"]);
+
+                Assert.Equal("AssumedRole", s3Event.UserIdentity.Type);
+                Assert.Equal("principalId", s3Event.UserIdentity.PrincipalId);
+                Assert.Equal("arn:aws:sts::111122223333:assumed-role/Admin/example", s3Event.UserIdentity.Arn);
+                Assert.Equal("111122223333", s3Event.UserIdentity.AccountId);
+                Assert.Equal("accessKeyId", s3Event.UserIdentity.AccessKeyId);
+                
+                Assert.Equal("false", s3Event.UserIdentity.SessionContext.Attributes.MfaAuthenticated);
+                Assert.Equal("Wed Mar 10 23:41:52 UTC 2021", s3Event.UserIdentity.SessionContext.Attributes.CreationDate);
+
+                Assert.Equal("Role", s3Event.UserIdentity.SessionContext.SessionIssuer.Type);
+                Assert.Equal("principalId", s3Event.UserIdentity.SessionContext.SessionIssuer.PrincipalId);
+                Assert.Equal("arn:aws:iam::111122223333:role/Admin", s3Event.UserIdentity.SessionContext.SessionIssuer.Arn);
+                Assert.Equal("111122223333", s3Event.UserIdentity.SessionContext.SessionIssuer.AccountId);
+                Assert.Equal("Admin", s3Event.UserIdentity.SessionContext.SessionIssuer.UserName);
+
+                Assert.Equal("1.00", s3Event.ProtocolVersion);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
         public void S3PutTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1017,6 +1061,25 @@ namespace Amazon.Lambda.Tests
 
                 Assert.Equal("resolved value1", lexEvent.CurrentIntent.SlotDetails["slot name2"].Resolutions[0]["value1"]);
                 Assert.Equal("resolved value2", lexEvent.CurrentIntent.SlotDetails["slot name2"].Resolutions[1]["value2"]);
+
+                Assert.Equal("intent-name", lexEvent.AlternativeIntents[0].Name);
+                Assert.Equal(5.5, lexEvent.AlternativeIntents[0].NluIntentConfidenceScore);
+
+                Assert.Equal("Name", lexEvent.RecentIntentSummaryView[0].IntentName);
+                Assert.Equal("Label", lexEvent.RecentIntentSummaryView[0].CheckpointLabel);
+                Assert.Equal("value1", lexEvent.RecentIntentSummaryView[0].Slots["key1"]);
+                Assert.Equal("Confirmed", lexEvent.RecentIntentSummaryView[0].ConfirmationStatus);
+                Assert.Equal("ElicitIntent", lexEvent.RecentIntentSummaryView[0].DialogActionType);
+                Assert.Equal("Fulfilled", lexEvent.RecentIntentSummaryView[0].FulfillmentState);
+                Assert.Equal("NextSlot", lexEvent.RecentIntentSummaryView[0].SlotToElicit);
+
+                Assert.Equal("name", lexEvent.ActiveContexts[0].Name);
+                Assert.Equal(100, lexEvent.ActiveContexts[0].TimeToLive.TimeToLiveInSeconds);
+                Assert.Equal(5, lexEvent.ActiveContexts[0].TimeToLive.TurnsToLive);
+                Assert.Equal("value", lexEvent.ActiveContexts[0].Parameters["key"]);
+
+                Assert.Equal("sentiment", lexEvent.SentimentResponse.SentimentLabel);
+                Assert.Equal("score", lexEvent.SentimentResponse.SentimentScore);
             }
         }
 
@@ -1056,6 +1119,19 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(1, lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons.Count);
                 Assert.Equal("button-text", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons[0].Text);
                 Assert.Equal("value sent to server on button click", lexResponse.DialogAction.ResponseCard.GenericAttachments[0].Buttons[0].Value);
+
+                Assert.Equal("name", lexResponse.ActiveContexts[0].Name);
+                Assert.Equal(100, lexResponse.ActiveContexts[0].TimeToLive.TimeToLiveInSeconds);
+                Assert.Equal(5, lexResponse.ActiveContexts[0].TimeToLive.TurnsToLive);
+                Assert.Equal("value", lexResponse.ActiveContexts[0].Parameters["key"]);
+
+                Assert.Equal("Name", lexResponse.RecentIntentSummaryView[0].IntentName);
+                Assert.Equal("Label", lexResponse.RecentIntentSummaryView[0].CheckpointLabel);
+                Assert.Equal("value1", lexResponse.RecentIntentSummaryView[0].Slots["key1"]);
+                Assert.Equal("Confirmed", lexResponse.RecentIntentSummaryView[0].ConfirmationStatus);
+                Assert.Equal("ElicitIntent", lexResponse.RecentIntentSummaryView[0].DialogActionType);
+                Assert.Equal("Fulfilled", lexResponse.RecentIntentSummaryView[0].FulfillmentState);
+                Assert.Equal("NextSlot", lexResponse.RecentIntentSummaryView[0].SlotToElicit);
 
                 MemoryStream ms = new MemoryStream();                
                 serializer.Serialize<LexResponse>(lexResponse, ms);

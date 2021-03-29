@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace Amazon.Lambda.LexEvents
 {
@@ -11,15 +12,19 @@ namespace Amazon.Lambda.LexEvents
     public class LexEvent
     {
         /// <summary>
-        /// The version of the message that identifies the format of the event data going into the 
-        /// Lambda function and the expected format of the response from a Lambda function.
+        /// Provides the intent name, slots, and confirmationStatus fields.
         /// </summary>
-        public string MessageVersion { get; set; }
+        public LexCurrentIntent CurrentIntent { get; set; }
 
         /// <summary>
-        /// To indicate why Amazon Lex is invoking the Lambda function
+        /// Provides additional information about a slot value.
         /// </summary>
-        public string InvocationSource { get; set; }
+        public IDictionary<string, SlotDetail> SlotDetails { get; set; }
+
+        /// <summary>
+        /// The Lex bot invoking the Lambda function
+        /// </summary>
+        public LexBot Bot { get; set; }
 
         /// <summary>
         /// This value is provided by the client application. Amazon Lex passes it to the Lambda function.
@@ -30,24 +35,11 @@ namespace Amazon.Lambda.LexEvents
         /// The text used to process the request.
         /// </summary>
         public string InputTranscript { get; set; }
-        
-        /// <summary>
-        /// Application-specific session attributes that the client sent in the request. If you want 
-        /// Amazon Lex to include them in the response to the client, your Lambda function should 
-        /// send these back to Amazon Lex in response.
-        /// </summary>
-        public IDictionary<string, string> SessionAttributes { get; set; }
 
         /// <summary>
-        /// Request-specific attributes that the client sends in the request. Use request attributes to 
-        /// pass information that doesn't need to persist for the entire session.
+        /// To indicate why Amazon Lex is invoking the Lambda function
         /// </summary>
-        public IDictionary<string, string> RequestAttributes { get; set; }
-
-        /// <summary>
-        /// The Lex bot invoking the Lambda function
-        /// </summary>
-        public LexBot Bot { get; set; }
+        public string InvocationSource { get; set; }
 
         /// <summary>
         /// For each user input, the client sends the request to Amazon Lex using one of the runtime API operations, 
@@ -62,10 +54,63 @@ namespace Amazon.Lambda.LexEvents
         public string OutputDialogMode { get; set; }
 
         /// <summary>
-        /// Provides the intent name, slots, and confirmationStatus fields.
+        /// The version of the message that identifies the format of the event data going into the 
+        /// Lambda function and the expected format of the response from a Lambda function.
         /// </summary>
-        public LexCurrentIntent CurrentIntent { get; set; }
+        public string MessageVersion { get; set; }
 
+        /// <summary>
+        /// Application-specific session attributes that the client sent in the request. If you want 
+        /// Amazon Lex to include them in the response to the client, your Lambda function should 
+        /// send these back to Amazon Lex in response.
+        /// </summary>
+        public IDictionary<string, string> SessionAttributes { get; set; }
+
+        /// <summary>
+        /// Request-specific attributes that the client sends in the request. Use request attributes to 
+        /// pass information that doesn't need to persist for the entire session.
+        /// </summary>
+        public IDictionary<string, string> RequestAttributes { get; set; }
+
+        /// <summary>
+        /// A List of alternative intents that are returned when the bot is in advanced mode
+        /// </summary>
+        public IList<LexCurrentIntent> AlternativeIntents { get; set; }
+
+        /// <summary>
+        /// The result of an Amazon Comprehend sentiment analysis of the last utterance.
+        /// </summary>
+        public LexSentimentResponseType SentimentResponse { get; set; }
+        /// <summary>
+        /// If included, sets values for one or more recent intents. You can include information for up to three intents.
+        /// </summary>
+        public IList<LexRecentIntentSummaryViewType> RecentIntentSummaryView { get; set; }
+
+
+        /// <summary>
+        /// Gets and sets the property ActiveContexts.
+        /// A list of active contexts for the session.A context can be set when an intent is fulfilled or by calling the PostContent, PostText, or PutSession operation.
+        /// You can use a context to control the intents that can follow up an intent, or to modify the operation of your application.
+        /// </summary>
+        public IList<LexActiveContext> ActiveContexts { get; set; }
+
+
+
+        /// <summary>
+        /// Class representing the sentiment response.
+        /// </summary>
+        public class LexSentimentResponseType
+        {
+            /// <summary>
+            /// Gets and sets the SentimentLabel
+            /// </summary>
+            public string SentimentLabel { get; set; }
+
+            /// <summary>
+            /// Gets and sets the SentimentScore
+            /// </summary>
+            public string SentimentScore { get; set; }
+        }
 
         /// <summary>
         /// The class representing the current intent for the Lambda function to process.
@@ -87,6 +132,13 @@ namespace Amazon.Lambda.LexEvents
             /// Provides additional information about a slot value.
             /// </summary>
             public IDictionary<string, SlotDetail> SlotDetails { get; set; }
+
+            /// <summary>
+            /// Gets and sets the property NluIntentConfidence.
+            /// </summary>
+            public float NluIntentConfidenceScore { get; set; }
+
+
 
             /// <summary>
             /// The ConfirmationStatus provides the user response to a confirmation prompt, if there is one. 
