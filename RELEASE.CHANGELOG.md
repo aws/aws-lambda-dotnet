@@ -1,3 +1,29 @@
+### Release 2021-03-29
+* **Amazon.Lambda.CognitoEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.ConfigEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.Core (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.DynamoDBEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.KinesisEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.S3Events (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.Serialization.Json (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.SimpleEmailEvents (3.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.SNSEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.SQSEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.SQSEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.TestUtilities (2.0.0)**
+  * Netstandard 1.3 support removed
+
 ### Release 2021-03-24
 * **Amazon.Lambda.S3 (1.3.0)**
   * Added event object for S3 Object Lambda.
@@ -18,7 +44,7 @@
 * **Amazon.Lambda.AspNetCoreServer (5.3.0)**
   * Pull request [#787](https://github.com/aws/aws-lambda-dotnet/pull/787). Add support for ITlsConnectionFeature and marshall the APIGW client cert to HttpContext. Thanks [Damian Hickey](https://github.com/damianh)
 * **Amazon.Lambda.SimpleEmailEvents (2.2.0)**
-  * Pull request [#777](https://github.com/aws/aws-lambda-dotnet/pull/777). Add DMARC verdict. Thanks [Luís Sousa](https://github.com/luiscnsousa).
+  * Pull request [#777](https://github.com/aws/aws-lambda-dotnet/pull/777). Add DMARC verdict. Thanks [Luï¿½s Sousa](https://github.com/luiscnsousa).
 * **Amazon.Lambda.TestTool-3.1 (0.11.1)**
   * Fixed issue with incorrectly parsing ImageUri from the serverless.template.
 * **Amazon.Lambda.TestTool-5.0 (0.11.1)**
