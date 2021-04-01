@@ -13,6 +13,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.APIGatewayEvents;
 
 namespace Amazon.Lambda.AspNetCoreServer.Internal
 {
@@ -112,12 +113,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         }
 
         /// <summary>
-        /// The RawQueryString property from the HTTP API V2 request is used instead of the QueryStringParameters
-        /// because QueryStringParameters url decodes the parameters taking out + from timestamps. ASP.NET Core
-        /// does expect the query string values to be URL encoded so the RawQueryString has to broken down into
-        /// pieces so the individual query string values can be url encoding and the recombined together.
+        /// Add a '?' to the start of a non-empty query string, otherwise return null.
         /// </summary>
-        /// <param name="queryString"></param>
+        /// <remarks>
+        /// The ASP.NET MVC pipeline expects the query string to be URL-escaped.  Since the value in
+        /// <see cref="APIGatewayHttpApiV2ProxyRequest.RawQueryString"/> should already be escaped this
+        /// method does not perform any escaping itself.  This ensures identical behaviour when an MVC app
+        /// is run through an API Gateway with this framework or in a standalone Kestrel instance.
+        /// </remarks>
+        /// <param name="queryString">URL-escaped query string without initial '?'</param>
         /// <returns></returns>
         public static string CreateQueryStringParametersFromHttpApiV2(string queryString)
         {
