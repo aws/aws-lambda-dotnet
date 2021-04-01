@@ -135,6 +135,80 @@ namespace Amazon.Lambda.APIGatewayEvents
             /// Gets and sets the request time as an epoch.
             /// </summary>
             public long TimeEpoch { get; set; }
+
+            /// <summary>
+            /// Properties for authentication.
+            /// </summary>
+            public ProxyRequestAuthentication Authentication { get; set; }
+        }
+
+
+        /// <summary>
+        /// Container for authentication properties.
+        /// </summary>
+        public class ProxyRequestAuthentication
+        {
+            /// <summary>
+            /// Properties for a client certificate.
+            /// </summary>
+            public ProxyRequestClientCert ClientCert { get; set; }
+        }
+
+        /// <summary>
+        /// Container for the properties of the client certificate.
+        /// </summary>
+        public class ProxyRequestClientCert
+        {
+            /// <summary>
+            /// The PEM-encoded client certificate that the client presented during mutual TLS authentication. 
+            /// Present when a client accesses an API by using a custom domain name that has mutual 
+            /// TLS enabled. Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string ClientCertPem { get; set; }
+
+            /// <summary>
+            /// The distinguished name of the subject of the certificate that a client presents. 
+            /// Present when a client accesses an API by using a custom domain name that has 
+            /// mutual TLS enabled. Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string SubjectDN { get; set; }
+
+            /// <summary>
+            /// The distinguished name of the issuer of the certificate that a client presents. 
+            /// Present when a client accesses an API by using a custom domain name that has 
+            /// mutual TLS enabled. Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string IssuerDN { get; set; }
+
+            /// <summary>
+            /// The serial number of the certificate. Present when a client accesses an API by 
+            /// using a custom domain name that has mutual TLS enabled. 
+            /// Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string SerialNumber { get; set; }
+
+            /// <summary>
+            /// The rules for when the client cert is valid.
+            /// </summary>
+            public ClientCertValidity Validity { get; set; }
+        }
+
+        /// <summary>
+        /// Container for the validation properties of a client cert.
+        /// </summary>
+        public class ClientCertValidity
+        {
+            /// <summary>
+            /// The date before which the certificate is invalid. Present when a client accesses an API by using a custom domain name 
+            /// that has mutual TLS enabled. Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string NotBefore { get; set; }
+
+            /// <summary>
+            /// The date after which the certificate is invalid. Present when a client accesses an API by using a custom domain name that 
+            /// has mutual TLS enabled. Present only in access logs if mutual TLS authentication fails.
+            /// </summary>
+            public string NotAfter { get; set; }
         }
 
         /// <summary>
@@ -153,7 +227,7 @@ namespace Amazon.Lambda.APIGatewayEvents
             public string Path { get; set; }
 
             /// <summary>
-            /// The protocal used ot make the rquest
+            /// The protocal used to make the rquest
             /// </summary>
             public string Protocol { get; set; }
 
@@ -178,6 +252,78 @@ namespace Amazon.Lambda.APIGatewayEvents
             /// </summary>
             public JwtDescription Jwt { get; set; }
 
+            /// <summary>
+            /// The Lambda authorizer description
+            /// </summary>
+            public IDictionary<string, object> Lambda { get; set; }
+
+            /// <summary>
+            /// The IAM authorizer description
+            /// </summary>
+            public IAMDescription IAM { get; set; }
+
+
+            /// <summary>
+            /// Describes the information from an IAM authorizer
+            /// </summary>
+            public class IAMDescription
+            {
+                /// <summary>
+                /// The Access Key of the IAM Authorizer
+                /// </summary>
+                public string AccessKey { get; set; }
+
+                /// <summary>
+                /// The Account Id of the IAM Authorizer
+                /// </summary>
+                public string AccountId { get; set; }
+
+                /// <summary>
+                /// The Caller Id of the IAM Authorizer
+                /// </summary>
+                public string CallerId { get; set; }
+
+                /// <summary>
+                /// The Cognito Identity of the IAM Authorizer
+                /// </summary>
+                public CognitoIdentityDescription CognitoIdentity { get; set; }
+
+                /// <summary>
+                /// The Principal Org Id of the IAM Authorizer
+                /// </summary>
+                public string PrincipalOrgId { get; set; }
+
+                /// <summary>
+                /// The User ARN of the IAM Authorizer
+                /// </summary>
+                public string UserARN { get; set; }
+
+                /// <summary>
+                /// The User Id of the IAM Authorizer
+                /// </summary>
+                public string UserId { get; set; }
+            }
+
+            /// <summary>
+            /// The Cognito identity description for an IAM authorizer
+            /// </summary>
+            public class CognitoIdentityDescription
+            {
+                /// <summary>
+                /// The AMR of the IAM Authorizer
+                /// </summary>
+                public IList<string> AMR { get; set; }
+
+                /// <summary>
+                /// The Identity Id of the IAM Authorizer
+                /// </summary>
+                public string IdentityId { get; set; }
+
+                /// <summary>
+                /// The Identity Pool Id of the IAM Authorizer
+                /// </summary>
+                public string IdentityPoolId { get; set; }
+            }
 
             /// <summary>
             /// Describes the information in the JWT token

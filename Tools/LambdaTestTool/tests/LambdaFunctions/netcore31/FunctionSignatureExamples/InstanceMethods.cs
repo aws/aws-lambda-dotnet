@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.Core;
+using Amazon.Lambda.S3Events;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -43,6 +44,12 @@ namespace FunctionSignatureExamples
         {
             context.Logger.LogLine("Calling WithGenericParameter");
             return string.Join(',', values.ToArray());
+        }
+
+        public string WithEventParameter(S3Event evnt, ILambdaContext context)
+        {
+            context.Logger.LogLine("Calling WithEventParameter");
+            return "WithEventParameter-" + ((evnt != null) ? "event-not-null" : "event-null");
         }
     }
 }

@@ -23,6 +23,33 @@
     },
     "confirmationStatus": "None, Confirmed, or Denied (intent confirmation, if configured)"
   },
+  "alternativeIntents": [
+    {
+      "name": "intent-name",
+      "nluIntentConfidenceScore": 5.5,
+      "slots": {
+        "slot name1": "value",
+        "slot name2": "value"
+      },
+      "slotDetails": {
+        "slot name1": {
+          "resolutions": [
+            { "value": "resolved value" },
+            { "value": "resolved value" }
+          ],
+          "originalValue": "original text"
+        },
+        "slot name2": {
+          "resolutions": [
+            { "value1": "resolved value" },
+            { "value2": "resolved value" }
+          ],
+          "originalValue": "original text"
+        }
+      },
+      "confirmationStatus": "None, Confirmed, or Denied (intent confirmation, if configured)"
+    }
+  ],
   "bot": {
     "name": "bot name",
     "alias": "bot alias",
@@ -40,5 +67,35 @@
   "requestAttributes": {
     "key1": "value1",
     "key2": "value2"
-  }
+  },
+  "recentIntentSummaryView": [
+    {
+      "intentName": "Name",
+      "checkpointLabel": "Label",
+      "slots": {
+        "key1": "value1",
+        "key2": "value2"
+      },
+      "confirmationStatus": "Confirmed",
+      "dialogActionType": "ElicitIntent",
+      "fulfillmentState": "Fulfilled",
+      "slotToElicit": "NextSlot"
+    }
+  ],
+  "sentimentResponse": {
+    "sentimentLabel": "sentiment",
+    "sentimentScore": "score"
+  },
+  "activeContexts": [
+    {
+      "timeToLive": {
+        "timeToLiveInSeconds": 100,
+        "turnsToLive": 5
+      },
+      "name": "name",
+      "parameters": {
+        "key": "value"
+      }
+    }
+  ]
 }

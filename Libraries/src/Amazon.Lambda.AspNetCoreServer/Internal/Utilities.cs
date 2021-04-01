@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -242,5 +243,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             // Double-escape any %2F (encoded / characters) so that they survive URL decoding the path.
             .Replace("%2F", "%252F")
             .Replace("%2f", "%252f"));
+
+        internal static X509Certificate2 GetX509Certificate2FromPem(string clientCertPem)
+        {
+            clientCertPem = clientCertPem.TrimEnd('\n');
+            if (!clientCertPem.StartsWith("-----BEGIN CERTIFICATE-----") || !clientCertPem.EndsWith("-----END CERTIFICATE-----"))
+            {
+                throw new InvalidOperationException(
+                    "Client certificate PEM was invalid. Expected to start with '-----BEGIN CERTIFICATE-----' " +
+                    "and end with '-----END CERTIFICATE-----'.");
+            }
+
+            // Remove "-----BEGIN CERTIFICATE-----\n" and "-----END CERTIFICATE-----"
+            clientCertPem = clientCertPem.Substring(28, clientCertPem.Length - 53);
+
+            return new X509Certificate2(Convert.FromBase64String(clientCertPem));
+        }
     }
 }

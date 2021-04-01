@@ -52,10 +52,12 @@ namespace Amazon.Lambda.TestTool
 
                 var lambdaAssemblyDirectory = commandOptions.Path ?? Directory.GetCurrentDirectory();
 
-#if NETCORE_2_1
+#if NETCOREAPP2_1
                 var targetFramework = "netcoreapp2.1";
-#elif NETCORE_3_1
+#elif NETCOREAPP3_1
                 var targetFramework = "netcoreapp3.1";
+#elif NET5_0
+                var targetFramework = "net5.0";
 #endif
 
                 // Check to see if running in debug mode from this project's directory which means the test tool is being debugged.
@@ -174,7 +176,7 @@ namespace Amazon.Lambda.TestTool
 
             if (runConfiguration.Mode == RunConfiguration.RunMode.Normal && commandOptions.PauseExit)
             {
-                Console.WriteLine("Press any key to exist");
+                Console.WriteLine("Press any key to exit");
                 Console.ReadKey();
             }
         }

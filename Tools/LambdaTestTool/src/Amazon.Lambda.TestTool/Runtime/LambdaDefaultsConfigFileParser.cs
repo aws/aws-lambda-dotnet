@@ -45,7 +45,7 @@ namespace Amazon.Lambda.TestTool.Runtime
 
 
             var templateFileName = !string.IsNullOrEmpty(configFile.Template) ? configFile.Template : null;
-            var functionHandler = !string.IsNullOrEmpty(configFile.FunctionHandler) ? configFile.FunctionHandler : null;
+            var functionHandler = !string.IsNullOrEmpty(configFile.DetermineHandler()) ? configFile.DetermineHandler() : null;
 
             if (!string.IsNullOrEmpty(templateFileName))
             {
@@ -142,9 +142,24 @@ namespace Amazon.Lambda.TestTool.Runtime
                     continue;
                 }
 
-                var handler = properties.Children.ContainsKey("Handler")
-                    ? ((YamlScalarNode) properties.Children["Handler"])?.Value
-                    : null;
+                string handler = null;
+                if(properties.Children.ContainsKey("Handler"))
+                {
+                    handler = ((YamlScalarNode)properties.Children["Handler"])?.Value;
+                }
+
+                if (string.IsNullOrEmpty(handler) && properties.Children.ContainsKey("ImageConfig"))
+                {
+                    var imageConfigNode = properties.Children["ImageConfig"] as YamlMappingNode;
+                    if (imageConfigNode.Children.ContainsKey("Command"))
+                    {
+                        var imageCommandNode = imageConfigNode.Children["Command"] as YamlSequenceNode;
+                        // Grab the first element assuming that is the function handler.
+                        var en = imageCommandNode.GetEnumerator();
+                        en.MoveNext();
+                        handler = ((YamlScalarNode)en.Current)?.Value;
+                    }
+                }
 
                 if (!string.IsNullOrEmpty(handler))
                 {
@@ -171,7 +186,6 @@ namespace Amazon.Lambda.TestTool.Runtime
                 var handler = resourceBody.Children.ContainsKey("handler")
                     ? ((YamlScalarNode) resourceBody.Children["handler"])?.Value
                     : null;
-
                 
                 if (handler == null) continue;
                 if (string.IsNullOrEmpty(handler)) continue;
@@ -216,11 +230,22 @@ namespace Amazon.Lambda.TestTool.Runtime
                     continue;
                 }
 
-                JsonElement handlerProperty;
-                if (!propertiesProperty.TryGetProperty("Handler", out handlerProperty))
-                    continue;
-
-                var handler = handlerProperty.GetString();
+                string handler = null;
+                if (propertiesProperty.TryGetProperty("Handler", out var handlerProperty))
+                {
+                    handler = handlerProperty.GetString();
+                }
+                else if(propertiesProperty.TryGetProperty("ImageConfig", out var imageConfigProperty) &&
+                        imageConfigProperty.TryGetProperty("Command", out var imageCommandProperty))
+                {
+                    if(imageCommandProperty.GetArrayLength() > 0)
+                    {
+                        // Grab the first element assuming that is the function handler.
+                        var en = imageCommandProperty.EnumerateArray();
+                        en.MoveNext();
+                        handler = en.Current.GetString();
+                    }
+                }
 
                 if (!string.IsNullOrEmpty(handler))
                 {

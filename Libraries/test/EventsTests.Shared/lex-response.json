@@ -3,6 +3,32 @@
     "key1": "value1",
     "key2": "value2"
   },
+  "recentIntentSummaryView": [
+    {
+      "intentName": "Name",
+      "checkpointLabel": "Label",
+      "slots": {
+        "key1": "value1",
+        "key2": "value2"
+      },
+      "confirmationStatus": "Confirmed",
+      "dialogActionType": "ElicitIntent",
+      "fulfillmentState": "Fulfilled",
+      "slotToElicit": "NextSlot"
+    }
+  ],
+  "activeContexts": [
+    {
+      "timeToLive": {
+        "timeToLiveInSeconds": 100,
+        "turnsToLive": 5
+      },
+      "name": "name",
+      "parameters": {
+        "key": "value"
+      }
+    }
+  ],
   "dialogAction": {
     "type": "ElicitIntent, ElicitSlot, ConfirmIntent, Delegate, or Close",
     "fulfillmentState": "Fulfilled or Failed",

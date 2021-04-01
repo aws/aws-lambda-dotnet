@@ -41,6 +41,22 @@ namespace Amazon.Lambda.TestTool.Tests
                 File.Delete(jsonFile);
             }
         }
+        [Fact]
+        public void LambdaFunctionWithImageCommand()
+        {
+            var jsonFile = WriteTempConfigFile("{\"image-command\" : \"Assembly::Type::Method\", \"function-name\" : \"TheFunc\"}");
+            try
+            {
+                var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
+                Assert.Single(configInfo.FunctionInfos);
+                Assert.Equal("Assembly::Type::Method", configInfo.FunctionInfos[0].Handler);
+                Assert.Equal("TheFunc", configInfo.FunctionInfos[0].Name);
+            }
+            finally
+            {
+                File.Delete(jsonFile);
+            }
+        }
 
         [Fact]
         public void NoProfile()
@@ -109,15 +125,18 @@ namespace Amazon.Lambda.TestTool.Tests
 
             var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(defaultsFilePath);
             
-            Assert.Equal(2, configInfo.FunctionInfos.Count);
+            Assert.Equal(3, configInfo.FunctionInfos.Count);
             Assert.Equal("default", configInfo.AWSProfile);
             Assert.Equal("us-west-2", configInfo.AWSRegion);
             
             Assert.Equal("MyHelloWorld", configInfo.FunctionInfos[0].Name);
             Assert.Equal("ServerlessTemplateExample::ServerlessTemplateExample.Functions::HelloWorld", configInfo.FunctionInfos[0].Handler);
-            
-            Assert.Equal("MyToUpper", configInfo.FunctionInfos[1].Name);
-            Assert.Equal("ServerlessTemplateExample::ServerlessTemplateExample.Functions::ToUpper", configInfo.FunctionInfos[1].Handler);
+
+            Assert.Equal("MyHelloWorldImageCommand", configInfo.FunctionInfos[1].Name);
+            Assert.Equal("ServerlessTemplateExample::ServerlessTemplateExample.Functions::HelloWorldImageFunction", configInfo.FunctionInfos[1].Handler);
+
+            Assert.Equal("MyToUpper", configInfo.FunctionInfos[2].Name);
+            Assert.Equal("ServerlessTemplateExample::ServerlessTemplateExample.Functions::ToUpper", configInfo.FunctionInfos[2].Handler);
 
         }
         
@@ -128,19 +147,23 @@ namespace Amazon.Lambda.TestTool.Tests
 
             var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(defaultsFilePath);
             
-            Assert.Equal(2, configInfo.FunctionInfos.Count);
+            Assert.Equal(3, configInfo.FunctionInfos.Count);
             Assert.Equal("default", configInfo.AWSProfile);
             Assert.Equal("us-west-2", configInfo.AWSRegion);
             
             Assert.Equal("MyHelloWorld", configInfo.FunctionInfos[0].Name);
             Assert.Equal("ServerlessTemplateYamlExample::ServerlessTemplateYamlExample.Functions::HelloWorld", configInfo.FunctionInfos[0].Handler);
-            
-            Assert.Equal("MyToUpper", configInfo.FunctionInfos[1].Name);
-            Assert.Equal("ServerlessTemplateYamlExample::ServerlessTemplateYamlExample.Functions::ToUpper", configInfo.FunctionInfos[1].Handler);
+
+            Assert.Equal("MyHelloWorldImageCommand", configInfo.FunctionInfos[1].Name);
+            Assert.Equal("ServerlessTemplateExample::ServerlessTemplateExample.Functions::HelloWorldImageFunction", configInfo.FunctionInfos[1].Handler);
+
+            Assert.Equal("MyToUpper", configInfo.FunctionInfos[2].Name);
+            Assert.Equal("ServerlessTemplateYamlExample::ServerlessTemplateYamlExample.Functions::ToUpper", configInfo.FunctionInfos[2].Handler);
 
         }        
+
         [Fact]
-        public void LoadServerlessFuncitonBasedYamlTemplateConfig()
+        public void LoadServerlessFunctionBasedYamlTemplateConfig()
         {
             var defaultsFilePath = TestUtils.GetLambdaFunctionSourceFile("ServerlessFunctionTemplateYamlExample", "aws-lambda-tools-defaults.json");
 

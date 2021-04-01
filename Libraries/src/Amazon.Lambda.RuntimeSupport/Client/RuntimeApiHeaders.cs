@@ -32,7 +32,7 @@ namespace Amazon.Lambda.RuntimeSupport
             AwsRequestId = GetHeaderValueRequired(headers, HeaderAwsRequestId);
             ClientContextJson = GetHeaderValueOrNull(headers, HeaderClientContext);
             CognitoIdentityJson = GetHeaderValueOrNull(headers, HeaderCognitoIdentity);
-            InvokedFunctionArn = GetHeaderValueRequired(headers, HeaderInvokedFunctionArn);
+            InvokedFunctionArn = GetHeaderValueOrNull(headers, HeaderInvokedFunctionArn);
             TraceId = GetHeaderValueOrNull(headers, HeaderTraceId);
         }
 

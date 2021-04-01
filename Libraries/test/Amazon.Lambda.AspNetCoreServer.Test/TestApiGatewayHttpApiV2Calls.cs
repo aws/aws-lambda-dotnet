@@ -192,6 +192,49 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.NotEqual(200, response.StatusCode);
         }
 
+        [Fact]
+        public async Task TestAuthMTls()
+        {
+            var response = await this.InvokeAPIGatewayRequest("mtls-request-httpapi-v2.json");
+            Assert.Equal(200, response.StatusCode);
+            Assert.Equal("O=Internet Widgits Pty Ltd, S=Some-State, C=AU", response.Body);
+        }
+
+        [Fact]
+        public async Task TestReturningCookie()
+        {
+            var response = await this.InvokeAPIGatewayRequest("cookies-get-returned-httpapi-v2-request.json");
+
+            Assert.Collection(response.Cookies,
+                actual => Assert.StartsWith("TestCookie=TestValue", actual));
+        }
+
+        [Fact]
+        public async Task TestReturningMultipleCookies()
+        {
+            var response = await this.InvokeAPIGatewayRequest("cookies-get-multiple-returned-httpapi-v2-request.json");
+
+            Assert.Collection(response.Cookies.OrderBy(s => s),
+                actual => Assert.StartsWith("TestCookie1=TestValue1", actual),
+                actual => Assert.StartsWith("TestCookie2=TestValue2", actual));
+        }
+
+        [Fact]
+        public async Task TestSingleCookie()
+        {
+            var response = await this.InvokeAPIGatewayRequest("cookies-get-single-httpapi-v2-request.json");
+
+            Assert.Equal("TestValue", response.Body);
+        }
+
+        [Fact]
+        public async Task TestMultipleCookie()
+        {
+            var response = await this.InvokeAPIGatewayRequest("cookies-get-multiple-httpapi-v2-request.json");
+
+            Assert.Equal("TestValue3", response.Body);
+        }
+
         private async Task<APIGatewayHttpApiV2ProxyResponse> InvokeAPIGatewayRequest(string fileName)
         {
             return await InvokeAPIGatewayRequestWithContent(new TestLambdaContext(), GetRequestContent(fileName));

@@ -15,6 +15,18 @@ Resources:
       Timeout: 30
       Policies:
       - AWSLambdaBasicExecutionRole
+  MyHelloWorldImageCommand:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageConfig:
+        Command: 
+        - ServerlessTemplateExample::ServerlessTemplateExample.Functions::HelloWorldImageFunction
+      ImageUri: ''
+      MemorySize: 256
+      Timeout: 30
+      Policies:
+      - AWSLambdaBasicExecutionRole
   MyToUpper:
     Type: AWS::Lambda::Function
     Properties:

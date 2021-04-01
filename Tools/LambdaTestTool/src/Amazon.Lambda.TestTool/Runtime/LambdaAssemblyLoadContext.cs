@@ -12,7 +12,7 @@ namespace Amazon.Lambda.TestTool.Runtime
 {
     public class LambdaAssemblyLoadContext : AssemblyLoadContext
     {
-#if !NETCORE_2_1
+#if !NETCOREAPP2_1
         private AssemblyDependencyResolver _builtInResolver;
 #endif
         private CustomAssemblyResolver _customResolver;
@@ -22,7 +22,7 @@ namespace Amazon.Lambda.TestTool.Runtime
 
         public LambdaAssemblyLoadContext(string lambdaPath)
             :
-#if !NETCORE_2_1
+#if !NETCOREAPP2_1
             base("LambdaContext")
         {
             _builtInResolver = new AssemblyDependencyResolver(lambdaPath);   
@@ -55,10 +55,10 @@ namespace Amazon.Lambda.TestTool.Runtime
                 return null;
 
             string assemblyPath = null;
-#if !NETCORE_2_1
+#if !NETCOREAPP2_1
             assemblyPath = _builtInResolver.ResolveAssemblyToPath(assemblyName);
 #endif
-            if(assemblyPath == null || !File.Exists(assemblyPath))
+            if (assemblyPath == null || !File.Exists(assemblyPath))
             {
                 assemblyPath = _customResolver.ResolveAssemblyToPath(assemblyName);
             }
@@ -74,7 +74,7 @@ namespace Amazon.Lambda.TestTool.Runtime
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
         {
             string libraryPath = null;
-#if !NETCORE_2_1
+#if !NETCOREAPP2_1
             libraryPath = _builtInResolver.ResolveUnmanagedDllToPath(unmanagedDllName);
 #endif
             if (libraryPath != null)

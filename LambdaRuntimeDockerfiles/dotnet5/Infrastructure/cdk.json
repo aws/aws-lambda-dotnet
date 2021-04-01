@@ -1,0 +1,10 @@
+{
+    "app": "dotnet run -p src/Infrastructure/Infrastructure.csproj",
+    "context": {
+        "@aws-cdk/core:enableStackNameDuplicates": "true",
+        "aws-cdk:enableDiffNoFail": "true",
+        "@aws-cdk/core:stackRelativeExports": "true",
+        "@aws-cdk/aws-ecr-assets:dockerIgnoreSupport": true,
+        "@aws-cdk/core:newStyleStackSynthesis": true
+    }
+}

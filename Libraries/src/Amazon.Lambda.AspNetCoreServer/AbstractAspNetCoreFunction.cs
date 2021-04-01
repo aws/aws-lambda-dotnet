@@ -631,6 +631,19 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         /// <summary>
+        /// This method is called after marshalling the incoming Lambda request
+        /// into ASP.NET Core's ITlsConnectionFeature. Derived classes can overwrite this method to alter
+        /// the how the marshalling was done.
+        /// </summary>
+        /// <param name="aspNetCoreConnectionFeature"></param>
+        /// <param name="lambdaRequest"></param>
+        /// <param name="lambdaContext"></param>
+        protected virtual void PostMarshallTlsConnectionFeature(ITlsConnectionFeature aspNetCoreConnectionFeature, TREQUEST lambdaRequest, ILambdaContext lambdaContext)
+        {
+
+        }
+
+        /// <summary>
         /// This method is called after marshalling the IHttpResponseFeature that came
         /// back from making the request into ASP.NET Core into the Lamdba response object. Derived classes can overwrite this method to alter
         /// the how the marshalling was done.

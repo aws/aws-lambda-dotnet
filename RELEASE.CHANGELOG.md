@@ -1,3 +1,150 @@
+### Release 2021-03-29
+* **Amazon.Lambda.CognitoEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.ConfigEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.Core (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.DynamoDBEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.KinesisEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.S3Events (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.Serialization.Json (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.SimpleEmailEvents (3.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.SNSEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.SQSEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.SQSEvents (2.0.0)**
+  * Netstandard 1.3 support removed
+* **Amazon.Lambda.TestUtilities (2.0.0)**
+  * Netstandard 1.3 support removed
+
+### Release 2021-03-24
+* **Amazon.Lambda.S3 (1.3.0)**
+  * Added event object for S3 Object Lambda.
+* **Amazon.Lambda.LexEvents (2.2.0)**
+  * Pull request [#833](https://github.com/aws/aws-lambda-dotnet/pull/833). Added advanced options for LexBot events. Thanks [ssorc3](https://github.com/ssorc3)
+* **Amazon.Lambda.TestTool-2.1 (0.11.2)**
+  * Pull request [#834](https://github.com/aws/aws-lambda-dotnet/pull/834). Fixed issue invoking Lambda function in test tool with no payload. Thanks [#russau](https://github.com/russau).
+* **Amazon.Lambda.TestTool-3.1 (0.11.2)**
+  * Pull request [#834](https://github.com/aws/aws-lambda-dotnet/pull/834). Fixed issue invoking Lambda function in test tool with no payload. Thanks [#russau](https://github.com/russau).
+* **Amazon.Lambda.TestTool-5.0 (0.11.2)**
+  * Pull request [#834](https://github.com/aws/aws-lambda-dotnet/pull/834). Fixed issue invoking Lambda function in test tool with no payload. Thanks [#russau](https://github.com/russau).
+
+### Release 2021-02-19
+* **Amazon.Lambda.AspNetCoreServer (5.3.1)**
+  * Pull request [#815](https://github.com/aws/aws-lambda-dotnet/pull/815). Fix for when the certificate PEM string contains a trailing new line ('\n'). Thanks [Damian Hickey](https://github.com/damianh)
+
+### Release 2021-01-11
+* **Amazon.Lambda.AspNetCoreServer (5.3.0)**
+  * Pull request [#787](https://github.com/aws/aws-lambda-dotnet/pull/787). Add support for ITlsConnectionFeature and marshall the APIGW client cert to HttpContext. Thanks [Damian Hickey](https://github.com/damianh)
+* **Amazon.Lambda.SimpleEmailEvents (2.2.0)**
+  * Pull request [#777](https://github.com/aws/aws-lambda-dotnet/pull/777). Add DMARC verdict. Thanks [Lu�s Sousa](https://github.com/luiscnsousa).
+* **Amazon.Lambda.TestTool-3.1 (0.11.1)**
+  * Fixed issue with incorrectly parsing ImageUri from the serverless.template.
+* **Amazon.Lambda.TestTool-5.0 (0.11.1)**
+  * Fixed issue with incorrectly parsing ImageUri from the serverless.template.
+* **Amazon.Lambda.Templates (5.1.0)**
+  * Update all references to the deprecated AWSLambdaFullAccess managed policy to AWSLambda_FullAccess
+  * Pull request [#755](https://github.com/aws/aws-lambda-dotnet/pull/755). Added Support for Binary Media Types in AspNetCoreWebApp Blueprint. Thanks [Carlos Santos](https://github.com/csantos).
+
+### Release 2020-12-01
+* **Amazon.Lambda.APIGatewayEvents (2.4.0)**
+  * Add Lambda and IAM authorizer fields to APIGatewayHttpApiV2ProxyRequest
+* **Amazon.Lambda.RuntimeSupport (1.3.0)**
+  * This version is the implementation for Lambda Runtime Interface Client used in the .NET 5 base container image `public.ecr.aws/lambda/dotnet:5.0`
+  * Added support to load user's .NET function based on function handler string. 
+* **Amazon.Lambda.Templates (5.0.0)**
+  * Added templates targeting .NET 5 as container images.
+  * Fixed .NET 5 Custom Runtime template to use `DefaultLambdaJsonSerializer`
+* **Amazon.Lambda.TestTool-2.1 (0.11.0)**
+  * Added support for reading container image configuration information from `aws-lambda-tools-defaults.json` or the CloudFormation template.
+* **Amazon.Lambda.TestTool-3.1 (0.11.0)**
+  * Added support for reading container image configuration information from `aws-lambda-tools-defaults.json` or the CloudFormation template.
+* **Amazon.Lambda.TestTool-5.0 (0.11.0)**
+  * New version of the test tool to support .NET 5.0. Feature set and codebase is same as the .NET Core 3.1 just retargeted to .NET 5.0.
+* **AWS Lambda .NET 5 Base Image**
+  * Added the **LambdaRuntimeDockerfiles** directory to this repository which contains the Dockerfile used to build AWS Lambda .NET 5 base image.
+
+
+### Release 2020-10-30
+* **Amazon.Lambda.Templates (4.2.0)**
+  * Updated custom runtime templates to target .NET 5.
+
+### Release 2020-10-21
+* **Amazon.Lambda.APIGatewayEvents (2.3.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.ApplicationLoadBalancerEvents (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.AspNetCoreServer (5.2.0)**
+  * Update code signing certificate for signing the assembly.
+  * Pull request [#751](https://github.com/aws/aws-lambda-dotnet/pull/751) Return cookies through proxy response message to support multiple cookies. Thanks [Peter Liljenberg](https://github.com/petli)
+* **Amazon.Lambda.CloudWatchEvents (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.CloudWatchLogsEvents (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.CognitoEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.ConfigEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.Core (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.DynamoDBEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+  * Updated to latest version of AWSSDK.DynamoDBv2.
+* **Amazon.Lambda.KinesisAnalyticsEvents (2.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.KinesisEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+  * Updated to latest version of AWSSDK.Kinesis.
+* **Amazon.Lambda.KinesisFirehoseEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.LexEvents (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.Logging.AspNetCore (3.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.PowerShellHost (2.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.RuntimeSupport (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.S3Events (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+  * Updated to latest version of AWSSDK.S3.
+* **Amazon.Lambda.Serialization.Json (1.8.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.Serialization.SystemTextJson (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.SimpleEmailEvents (2.1.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.SNSEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.SQSEvents (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+* **Amazon.Lambda.TestUtilities (1.2.0)**
+  * Update code signing certificate for signing the assembly.
+
+
+### Release 2020-09-30
+* **Amazon.Lambda.APIGatewayEvents (2.2.0)**
+  * Added new properties for API Gateway's mutual tls feature.
+* **Amazon.Lambda.AspNetCoreServer (5.1.6)**
+  * Updated to version 2.2.0 of Amazon.Lambda.APIGatewayEvents
+
+### Release 2020-09-16
+* **Amazon.Lambda.Serialization.SystemTextJson (2.0.2)**
+  * Added default JsonWriterOptions to change serialization of quotation marks from ascii representation to an escaped quote
+* **Amazon.Lambda.AspNetCoreServer (5.1.5)**
+  * Updated to version 2.0.2 of Amazon.Lambda.Serialization.SystemTextJson
+  
+### Release 2020-09-09
+* **Amazon.Lambda.AspNetCoreServer (5.1.4)**
+  * Pull request [#729](https://github.com/aws/aws-lambda-dotnet/pull/729) Added code to load cookies from HTTPv2 request. Thanks [Andy Hopper](https://github.com/andyhopp)
+
 ### Release 2020-07-23
 * **Amazon.Lambda.TestTool-3.1 (0.10.1)**
   * Fixed issue with dead locking getting triggered Lambda function being executed blocks on async calls.

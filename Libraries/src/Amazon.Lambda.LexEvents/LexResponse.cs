@@ -32,6 +32,25 @@
         public LexDialogAction DialogAction { get; set; }
 
         /// <summary>
+        /// If included, sets the value for one or more contexts. This is an optional field
+        /// For example, you can include a context to make one or more intents that have that context as an input eligible for recognition in the next turn of the conversation.
+        /// </summary>
+        [DataMember(Name = "activeContexts", EmitDefaultValue=false)]
+#if NETCOREAPP3_1
+        [System.Text.Json.Serialization.JsonPropertyName("activeContexts")]
+#endif
+        public IList<LexActiveContext> ActiveContexts { get; set; }
+
+        /// <summary>
+        /// If included, sets values for one or more recent intents. You can include information for up to three intents.
+        /// </summary>
+        [DataMember(Name = "recentIntentSummaryView", EmitDefaultValue = false)]
+#if NETCOREAPP3_1
+        [System.Text.Json.Serialization.JsonPropertyName("recentIntentSummaryView")]
+#endif
+        public IList<LexRecentIntentSummaryViewType> RecentIntentSummaryView { get; set; }
+
+        /// <summary>
         /// The class representing the dialog action.
         /// </summary>
         [DataContract]

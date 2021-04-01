@@ -73,8 +73,6 @@ public void Configure(ILoggerFactory loggerFactory)
         .Build();
 
     var loggerOptions = new LambdaLoggerOptions(configuration);
-    var loggerfactory = new TestLoggerFactory()
-        .AddLambdaLogger(loggerOptions);
 
     // Configure Lambda logging
     loggerFactory

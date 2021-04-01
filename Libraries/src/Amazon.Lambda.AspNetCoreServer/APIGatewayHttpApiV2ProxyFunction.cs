@@ -13,7 +13,9 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using System.Globalization;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Primitives;
+using Microsoft.Net.Http.Headers;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -131,6 +133,11 @@ namespace Amazon.Lambda.AspNetCoreServer
                     requestFeatures.Headers["Host"] = apiGatewayRequest.RequestContext.DomainName;
                 }
 
+                if (apiGatewayRequest.Cookies != null)
+                {
+                    // Add Cookies from the event
+                    requestFeatures.Headers["Cookie"] = String.Join("; ", apiGatewayRequest.Cookies);
+                }
 
                 if (!string.IsNullOrEmpty(apiGatewayRequest.Body))
                 {
@@ -169,6 +176,17 @@ namespace Amazon.Lambda.AspNetCoreServer
                 // was marshalled into ASP.NET Core request.
                 PostMarshallConnectionFeature(connectionFeatures, apiGatewayRequest, lambdaContext);
             }
+
+            {
+                var tlsConnectionFeature = (ITlsConnectionFeature)features;
+                var clientCertPem = apiGatewayRequest?.RequestContext?.Authentication?.ClientCert?.ClientCertPem;
+                if (clientCertPem != null)
+                {
+                    tlsConnectionFeature.ClientCertificate = Utilities.GetX509Certificate2FromPem(clientCertPem);
+                }
+
+                PostMarshallTlsConnectionFeature(tlsConnectionFeature, apiGatewayRequest, lambdaContext);
+            }
         }
 
         /// <summary>
@@ -193,6 +211,14 @@ namespace Amazon.Lambda.AspNetCoreServer
                 response.Headers = new Dictionary<string, string>();
                 foreach (var kvp in responseFeatures.Headers)
                 {
+                    if (kvp.Key.Equals(HeaderNames.SetCookie, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        // Cookies must be passed through the proxy response property and not as a 
+                        // header to be able to pass back multiple cookies in a single request.
+                        response.Cookies = kvp.Value.ToArray();
+                        continue;
+                    }
+
                     response.SetHeaderValues(kvp.Key, kvp.Value.ToArray(), false);
 
                     // Remember the Content-Type for possible later use

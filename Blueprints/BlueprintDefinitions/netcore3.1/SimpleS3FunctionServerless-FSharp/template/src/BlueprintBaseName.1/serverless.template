@@ -47,8 +47,8 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambdaFullAccess",
-          "AmazonRekognitionReadOnlyAccess"
+          "AWSLambda_FullAccess",
+          "AmazonS3ReadOnlyAccess"
         ],
         "Events": {
           "NewImagesBucket": {
