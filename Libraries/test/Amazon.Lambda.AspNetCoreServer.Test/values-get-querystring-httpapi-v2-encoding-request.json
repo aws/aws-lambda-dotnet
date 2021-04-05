@@ -2,7 +2,7 @@
   "version": "2.0",
   "routeKey": "ANY /{proxy+}",
   "rawPath": "/api/rawquerystring/json",
-  "rawQueryString": "url=http://www.google.com&testDateTimeOffset=2019-03-12T16:06:06.549817+00:00",
+  "rawQueryString": "url=http://www.google.com&testDateTimeOffset=2019-03-12T16%3A06%3A06.549817%2B00%3A00",
   "headers": {
     "accept": "*/*",
     "accept-encoding": "gzip, deflate",
