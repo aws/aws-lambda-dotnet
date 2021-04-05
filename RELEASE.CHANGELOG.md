@@ -1,4 +1,10 @@
 ### Release 2021-03-29
+* **Amazon.Lambda.AspNetCoreServer (6.0.0)**
+  * [Breaking Change] Pull request [#721](https://github.com/aws/aws-lambda-dotnet/pull/721). Fixes double encoding issue with query string parameters. Thanks [Peter Liljenberg](https://github.com/petli)
+* **Amazon.Lambda.S3 (2.0.1)**
+  * Fixed bug with deserializing XAmzRequestId property of S3ObjectLambdaEvent.
+  
+### Release 2021-03-29
 * **Amazon.Lambda.CognitoEvents (2.0.0)**
   * Netstandard 1.3 support removed
 * **Amazon.Lambda.ConfigEvents (2.0.0)**
