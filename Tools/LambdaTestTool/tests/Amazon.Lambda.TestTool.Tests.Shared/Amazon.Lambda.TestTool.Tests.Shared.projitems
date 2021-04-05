@@ -20,4 +20,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)SampleRequestTests.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestUtils.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)call-valuescontroller-request.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

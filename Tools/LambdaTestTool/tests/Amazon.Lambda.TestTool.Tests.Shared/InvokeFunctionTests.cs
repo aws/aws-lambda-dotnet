@@ -146,9 +146,28 @@ namespace Amazon.Lambda.TestTool.Tests
             Assert.NotNull(response.Error);
         }
 
+#if NETCORE_3_1
+        [Fact]
+        public async Task CallValuesControllerInAspNetCoreApp()
+        {
+            var payload = File.ReadAllText("call-valuescontroller-request.txt");
+            var response = await ExecuteFunctionAsync("AspNetCoreAPIExample",
+                "AspNetCoreAPIExample::AspNetCoreAPIExample.LambdaEntryPoint::FunctionHandlerAsync",
+                payload);
+
+            Assert.True(response.IsSuccess);
+            Assert.Contains("value1", response.Response);
+        }
+#endif
+
         private async Task<ExecutionResponse> ExecuteFunctionAsync(string handler, string payload)
         {
-            var buildPath = TestUtils.GetLambdaFunctionBuildPath("FunctionSignatureExamples");
+            return await ExecuteFunctionAsync("FunctionSignatureExamples", handler, payload);
+        }
+
+        private async Task<ExecutionResponse> ExecuteFunctionAsync(string projectName, string handler, string payload)
+        {
+            var buildPath = TestUtils.GetLambdaFunctionBuildPath(projectName);
 
             var runtime = LocalLambdaRuntime.Initialize(buildPath);
             var configInfo = new LambdaFunctionInfo
@@ -165,8 +184,8 @@ namespace Amazon.Lambda.TestTool.Tests
                 Function = function,
                 AWSRegion = "us-west-2",
                 Payload = payload
-            }; 
-            
+            };
+
             var response = await runtime.ExecuteLambdaFunctionAsync(request);
             return response;
         }
