@@ -1,4 +1,12 @@
-### Release 2021-03-29
+### Release 2021-04-06
+* **Amazon.Lambda.TestTool-2.1 (0.11.3)**
+  * Fixed issue with testing ASP.NET Core based Lambda functions and services registered in the IServiceCollection not resolving.
+* **Amazon.Lambda.TestTool-3.1 (0.11.3)**
+  * Fixed issue with testing ASP.NET Core based Lambda functions and services registered in the IServiceCollection not resolving.
+* **Amazon.Lambda.TestTool-5.0 (0.11.3)**
+  * Fixed issue with testing ASP.NET Core based Lambda functions and services registered in the IServiceCollection not resolving.
+
+### Release 2021-04-05
 * **Amazon.Lambda.AspNetCoreServer (6.0.0)**
   * [Breaking Change] Pull request [#721](https://github.com/aws/aws-lambda-dotnet/pull/721). Fixes double encoding issue with query string parameters. Thanks [Peter Liljenberg](https://github.com/petli)
 * **Amazon.Lambda.S3 (2.0.1)**
