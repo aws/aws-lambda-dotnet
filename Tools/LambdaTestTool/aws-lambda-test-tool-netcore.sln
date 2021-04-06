@@ -54,6 +54,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspNetCoreAPIExample", "tests\LambdaFunctions\netcore31\AspNetCoreAPIExample\AspNetCoreAPIExample.csproj", "{5E1FF56C-9691-45B4-A961-24950A2C106C}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		tests\Amazon.Lambda.TestTool.Tests.Shared\Amazon.Lambda.TestTool.Tests.Shared.projitems*{594ee68c-10c0-4a19-9b61-377d0ab2f5ed}*SharedItemsImports = 5
@@ -133,6 +135,10 @@ Global
 		{E57ABB02-E8FC-4011-95D3-E9CB9412EDCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E57ABB02-E8FC-4011-95D3-E9CB9412EDCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E57ABB02-E8FC-4011-95D3-E9CB9412EDCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E1FF56C-9691-45B4-A961-24950A2C106C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E1FF56C-9691-45B4-A961-24950A2C106C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E1FF56C-9691-45B4-A961-24950A2C106C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E1FF56C-9691-45B4-A961-24950A2C106C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -159,6 +165,7 @@ Global
 		{70AFF681-844A-428C-ABA2-7053E61D39C8} = {28C935E3-4FB4-4B09-A9DB-26A1EB04CDE0}
 		{594EE68C-10C0-4A19-9B61-377D0AB2F5ED} = {28C935E3-4FB4-4B09-A9DB-26A1EB04CDE0}
 		{E57ABB02-E8FC-4011-95D3-E9CB9412EDCB} = {28C935E3-4FB4-4B09-A9DB-26A1EB04CDE0}
+		{5E1FF56C-9691-45B4-A961-24950A2C106C} = {0B078893-2F43-4C0C-88FE-98D0839ED7A9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E6C77567-6F16-4EE3-8743-ADE6B68434FD}

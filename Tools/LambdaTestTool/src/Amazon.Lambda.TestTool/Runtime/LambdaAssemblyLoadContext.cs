@@ -62,13 +62,38 @@ namespace Amazon.Lambda.TestTool.Runtime
             {
                 assemblyPath = _customResolver.ResolveAssemblyToPath(assemblyName);
             }
+
+            if (assemblyPath == null)
+            {
+                assemblyPath = SearchMicrosoftAspNetCoreApp(assemblyName);
+            }
+
             if (assemblyPath != null)
             {
                 return LoadFromAssemblyPath(assemblyPath);
             }
 
-
             return null;
+        }
+
+        /// <summary>
+        /// See if the assembly being loaded is coming from the Microsoft.AspNetCore.App runtime. If so
+        /// then load that assembly. 
+        /// 
+        /// This is done because if fallback to the Default AssemblyLoadContext is used then services added 
+        /// to the IServiceCollection will not be resolved. They will be added from the Lambda context but be 
+        /// attempted to resolved in the Default context. The Default context doesn't have access to the types in the
+        /// Lambda context and so they will fail to resolve.
+        /// </summary>
+        /// <param name="assemblyName"></param>
+        /// <returns></returns>
+        private string SearchMicrosoftAspNetCoreApp(AssemblyName assemblyName)
+        {
+            var pathMicrosoftAspNetCoreApp = Path.GetDirectoryName(typeof(string).Assembly.Location).Replace("Microsoft.NETCore.App", "Microsoft.AspNetCore.App");
+            var assemblyDllName = assemblyName.Name + ".dll";
+            var fullPath = Path.Combine(pathMicrosoftAspNetCoreApp, assemblyDllName);
+
+            return File.Exists(fullPath) ? fullPath : null;
         }
 
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
