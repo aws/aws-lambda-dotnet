@@ -59,7 +59,8 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambda_FullAccess"
+          "AWSLambda_FullAccess",
+          "AmazonDynamoDBFullAccess"
         ],
         "Environment": {
           "Variables": {
@@ -98,7 +99,8 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambda_FullAccess"
+          "AWSLambda_FullAccess",
+          "AmazonDynamoDBFullAccess"
         ],
         "Environment": {
           "Variables": {
@@ -137,7 +139,8 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambda_FullAccess"
+          "AWSLambda_FullAccess",
+          "AmazonDynamoDBFullAccess"
         ],
         "Environment": {
           "Variables": {
@@ -176,7 +179,8 @@
         "Timeout": 30,
         "Role": null,
         "Policies": [
-          "AWSLambda_FullAccess"
+          "AWSLambda_FullAccess",
+          "AmazonDynamoDBFullAccess"
         ],
         "Environment": {
           "Variables": {
