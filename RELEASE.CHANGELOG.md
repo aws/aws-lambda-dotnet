@@ -1,3 +1,7 @@
+### Release 2021-04-30
+* **Amazon.Lambda.AspNetCoreServer (6.0.0)**
+  * Remove unnecessary log message that was cluttering the attached CloudWatch Log stream
+
 ### Release 2021-04-06
 * **Amazon.Lambda.TestTool-2.1 (0.11.3)**
   * Fixed issue with testing ASP.NET Core based Lambda functions and services registered in the IServiceCollection not resolving.
