@@ -142,11 +142,6 @@ namespace Amazon.Lambda.AspNetCoreServer
                 requestFeatures.Scheme = "https";
                 requestFeatures.Method = apiGatewayRequest.HttpMethod;
 
-                if (string.IsNullOrWhiteSpace(apiGatewayRequest?.RequestContext?.DomainName))
-                {
-                    _logger.LogWarning($"Request does not contain domain name information but is derived from {nameof(APIGatewayProxyFunction)}.");
-                }
-
                 string path = null;
                 if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy") &&
                     !string.IsNullOrEmpty(apiGatewayRequest.Resource))
