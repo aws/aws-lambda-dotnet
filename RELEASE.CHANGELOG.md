@@ -1,3 +1,8 @@
+### Release 2021-05-02
+* **Amazon.Lambda.Templates (5.3.0)**
+  * Fixed permission issue in DynamoDB Blog blueprint
+  * Updated dependencies on AWS libraries
+    
 ### Release 2021-04-30
 * **Amazon.Lambda.AspNetCoreServer (6.0.0)**
   * Remove unnecessary log message that was cluttering the attached CloudWatch Log stream
