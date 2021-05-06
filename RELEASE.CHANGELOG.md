@@ -1,3 +1,8 @@
+### Release 2021-05-06
+* **AWSLambdaPSCore PowerShell Module (2.1.0)**
+    * Pull Request [#726](https://github.com/aws/aws-lambda-dotnet/pull/726) the default version of PowerShell Core to 6.1.1. Thanks [Ben Gelens](https://github.com/bgelens)
+    * Set HOME environment variable for PowerShell Lambda (work around for [PowerShell/PowerShell#13189](https://github.com/PowerShell/PowerShell/issues/13189))
+
 ### Release 2021-05-02
 * **Amazon.Lambda.Templates (5.3.0)**
   * Fixed permission issue in DynamoDB Blog blueprint
