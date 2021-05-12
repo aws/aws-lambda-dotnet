@@ -168,7 +168,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         {
             get;
             set;
-        }
+        } = 200;
 
         string IHttpResponseFeature.ReasonPhrase
         {
