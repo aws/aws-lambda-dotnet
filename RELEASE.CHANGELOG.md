@@ -1,4 +1,8 @@
 ### Release 2021-05-06
+* **Amazon.Lambda.AspNetCoreServer (6.0.2)**
+  * Fixed issue with HTTP Status Code not being initialized to 200.
+
+### Release 2021-05-06
 * **AWSLambdaPSCore PowerShell Module (2.1.0)**
     * Pull Request [#726](https://github.com/aws/aws-lambda-dotnet/pull/726) the default version of PowerShell Core to 6.1.1. Thanks [Ben Gelens](https://github.com/bgelens)
     * Set HOME environment variable for PowerShell Lambda (work around for [PowerShell/PowerShell#13189](https://github.com/PowerShell/PowerShell/issues/13189))
