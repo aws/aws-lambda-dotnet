@@ -1058,9 +1058,11 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(2, lexEvent.CurrentIntent.SlotDetails.Count);
                 Assert.Equal("resolved value1", lexEvent.CurrentIntent.SlotDetails["slot name1"].Resolutions[0]["value1"]);
                 Assert.Equal("resolved value2", lexEvent.CurrentIntent.SlotDetails["slot name1"].Resolutions[1]["value2"]);
+                Assert.Equal("original text", lexEvent.CurrentIntent.SlotDetails["slot name1"].OriginalValue);
 
                 Assert.Equal("resolved value1", lexEvent.CurrentIntent.SlotDetails["slot name2"].Resolutions[0]["value1"]);
                 Assert.Equal("resolved value2", lexEvent.CurrentIntent.SlotDetails["slot name2"].Resolutions[1]["value2"]);
+                Assert.Equal("original text", lexEvent.CurrentIntent.SlotDetails["slot name2"].OriginalValue);
 
                 Assert.Equal("intent-name", lexEvent.AlternativeIntents[0].Name);
                 Assert.Equal(5.5, lexEvent.AlternativeIntents[0].NluIntentConfidenceScore);
