@@ -36,6 +36,7 @@
     <ProjectReference Include="..\..\src\Amazon.Lambda.CloudWatchEvents\Amazon.Lambda.CloudWatchEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.CloudWatchLogsEvents\Amazon.Lambda.CloudWatchLogsEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.ConnectEvents\Amazon.Lambda.ConnectEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.KinesisAnalyticsEvents\Amazon.Lambda.KinesisAnalyticsEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.KinesisFirehoseEvents\Amazon.Lambda.KinesisFirehoseEvents.csproj" />

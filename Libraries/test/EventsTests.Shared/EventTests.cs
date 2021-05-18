@@ -10,6 +10,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.DynamoDBEvents;
     using Amazon.Lambda.CognitoEvents;
     using Amazon.Lambda.ConfigEvents;
+    using Amazon.Lambda.ConnectEvents;
     using Amazon.Lambda.SimpleEmailEvents;
     using Amazon.Lambda.SNSEvents;
     using Amazon.Lambda.SQSEvents;
@@ -440,6 +441,46 @@ namespace Amazon.Lambda.Tests
             Console.WriteLine($"AWS Config rule - {configEvent.ConfigRuleName}");
             Console.WriteLine($"Invoking event JSON - {configEvent.InvokingEvent}");
             Console.WriteLine($"Event version - {configEvent.Version}");
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void ConnectContactFlowTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("connect-contactflow-event.json"))
+            {
+                var contactFlowEvent = serializer.Deserialize<ContactFlowEvent>(fileStream);
+                Assert.Equal(contactFlowEvent.Name, "ContactFlowEvent");
+                Assert.NotNull(contactFlowEvent.Details);
+
+                Assert.NotNull(contactFlowEvent.Details.ContactData);
+                Assert.NotNull(contactFlowEvent.Details.ContactData.Attributes);
+                Assert.Equal(contactFlowEvent.Details.ContactData.Attributes.Count, 0);
+                Assert.Equal(contactFlowEvent.Details.ContactData.Channel, "VOICE");
+                Assert.Equal(contactFlowEvent.Details.ContactData.ContactId, "4a573372-1f28-4e26-b97b-XXXXXXXXXXX");
+                Assert.NotNull(contactFlowEvent.Details.ContactData.CustomerEndpoint);
+                Assert.Equal(contactFlowEvent.Details.ContactData.CustomerEndpoint.Address, "+1234567890");
+                Assert.Equal(contactFlowEvent.Details.ContactData.CustomerEndpoint.Type, "TELEPHONE_NUMBER");
+                Assert.Equal(contactFlowEvent.Details.ContactData.InitialContactId, "4a573372-1f28-4e26-b97b-XXXXXXXXXXX");
+                Assert.Equal(contactFlowEvent.Details.ContactData.InitiationMethod, "INBOUND | OUTBOUND | TRANSFER | CALLBACK");
+                Assert.Equal(contactFlowEvent.Details.ContactData.InstanceARN, "arn:aws:connect:aws-region:1234567890:instance/c8c0e68d-2200-4265-82c0-XXXXXXXXXX");
+                Assert.Equal(contactFlowEvent.Details.ContactData.PreviousContactId, "4a573372-1f28-4e26-b97b-XXXXXXXXXXX");
+                Assert.NotNull(contactFlowEvent.Details.ContactData.Queue);
+                Assert.Equal(contactFlowEvent.Details.ContactData.Queue.Arn, "arn:aws:connect:eu-west-2:111111111111:instance/cccccccc-bbbb-dddd-eeee-ffffffffffff/queue/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+                Assert.Equal(contactFlowEvent.Details.ContactData.Queue.Name, "PasswordReset");
+                Assert.NotNull(contactFlowEvent.Details.ContactData.SystemEndpoint);
+                Assert.Equal(contactFlowEvent.Details.ContactData.SystemEndpoint.Address, "+1234567890");
+                Assert.Equal(contactFlowEvent.Details.ContactData.SystemEndpoint.Type, "TELEPHONE_NUMBER");
+
+                Assert.NotNull(contactFlowEvent.Details.Parameters);
+                Assert.Equal(contactFlowEvent.Details.Parameters.Count, 1);
+                Assert.Equal(contactFlowEvent.Details.Parameters["sentAttributeKey"], "sentAttributeValue");
+            }
         }
 
         [Theory]
