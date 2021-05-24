@@ -1309,6 +1309,59 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
+        public void KinesisAnalyticsStreamsInputProcessingEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-analytics-streamsinputpreprocessing-event.json"))
+            {
+                var kinesisAnalyticsEvent = serializer.Deserialize<KinesisAnalyticsStreamsInputPreprocessingEvent>(fileStream);
+                Assert.Equal("00540a87-5050-496a-84e4-e7d92bbaf5e2", kinesisAnalyticsEvent.InvocationId);
+                Assert.Equal("arn:aws:kinesis:us-east-1:AAAAAAAAAAAA:stream/lambda-test", kinesisAnalyticsEvent.StreamArn);
+                Assert.Equal("arn:aws:kinesisanalytics:us-east-1:12345678911:application/lambda-test", kinesisAnalyticsEvent.ApplicationArn);
+                Assert.Equal(1, kinesisAnalyticsEvent.Records.Count);
+
+                Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisAnalyticsEvent.Records[0].RecordId);
+                Assert.Equal("aGVsbG8gd29ybGQ=", kinesisAnalyticsEvent.Records[0].Base64EncodedData);
+
+                Assert.NotNull(kinesisAnalyticsEvent.Records[0].RecordMetadata);
+                Assert.Equal("shardId-000000000003", kinesisAnalyticsEvent.Records[0].RecordMetadata.ShardId);
+                Assert.Equal("7400791606", kinesisAnalyticsEvent.Records[0].RecordMetadata.PartitionKey);
+                Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisAnalyticsEvent.Records[0].RecordMetadata.SequenceNumber);
+                Assert.Equal(1520280173, kinesisAnalyticsEvent.Records[0].RecordMetadata.ApproximateArrivalEpoch);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void KinesisAnalyticsFirehoseInputProcessingEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-analytics-firehoseinputpreprocessing-event.json"))
+            {
+                var kinesisAnalyticsEvent = serializer.Deserialize<KinesisAnalyticsFirehoseInputPreprocessingEvent>(fileStream);
+                Assert.Equal("00540a87-5050-496a-84e4-e7d92bbaf5e2", kinesisAnalyticsEvent.InvocationId);
+                Assert.Equal("arn:aws:firehose:us-east-1:AAAAAAAAAAAA:deliverystream/lambda-test", kinesisAnalyticsEvent.StreamArn);
+                Assert.Equal("arn:aws:kinesisanalytics:us-east-1:12345678911:application/lambda-test", kinesisAnalyticsEvent.ApplicationArn);
+                Assert.Equal(1, kinesisAnalyticsEvent.Records.Count);
+
+                Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisAnalyticsEvent.Records[0].RecordId);
+                Assert.Equal("aGVsbG8gd29ybGQ=", kinesisAnalyticsEvent.Records[0].Base64EncodedData);
+
+                Assert.NotNull(kinesisAnalyticsEvent.Records[0].RecordMetadata);
+                Assert.Equal(1520280173, kinesisAnalyticsEvent.Records[0].RecordMetadata.ApproximateArrivalEpoch);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
         public void CloudWatchLogEvent(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
