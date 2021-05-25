@@ -1482,35 +1482,74 @@ namespace Amazon.Lambda.Tests
                 var ecsEvent = serializer.Deserialize<ECSTaskStateChangeEvent>(fileStream);
 
                 Assert.Equal(ecsEvent.Version, "0");
-                Assert.Equal(ecsEvent.Id, "9bcdac79-b31f-4d3d-9410-fbd727c29fab");
+                Assert.Equal(ecsEvent.Id, "3317b2af-7005-947d-b652-f55e762e571a");
                 Assert.Equal(ecsEvent.DetailType, "ECS Task State Change");
                 Assert.Equal(ecsEvent.Source, "aws.ecs");
                 Assert.Equal(ecsEvent.Account, "111122223333");
-                Assert.Equal(ecsEvent.Time.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:06Z").ToUniversalTime());
-                Assert.Equal(ecsEvent.Region, "us-east-1");
+                Assert.Equal(ecsEvent.Time.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:58Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Region, "us-west-2");
+                Assert.NotNull(ecsEvent.Resources);
                 Assert.Equal(ecsEvent.Resources.Count, 1);
-                Assert.Equal(ecsEvent.Resources[0], "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef");
+                Assert.Equal(ecsEvent.Resources[0], "arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad");
+                Assert.NotNull(ecsEvent.Detail);
                 Assert.IsType(typeof(Task), ecsEvent.Detail);
-                Assert.Equal(ecsEvent.Detail.ClusterArn, "arn:aws:ecs:us-east-1:111122223333:cluster/default");
-                Assert.Equal(ecsEvent.Detail.ContainerInstanceArn, "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315");
+
+                Assert.NotNull(ecsEvent.Detail.Attachments);
+                Assert.Equal(ecsEvent.Detail.Attachments.Count, 1);
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Id, "1789bcae-ddfb-4d10-8ebe-8ac87ddba5b8");
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Type, "eni");
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Status, "ATTACHED");
+                Assert.NotNull(ecsEvent.Detail.Attachments[0].Details);
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Details.Count, 4);
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[0].Name, "subnetId");
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[0].Value, "subnet-abcd1234");
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[1].Name, "networkInterfaceId");
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[1].Value, "eni-abcd1234");
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[2].Name, "macAddress");
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[2].Value, "0a:98:eb:a7:29:ba");
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[3].Name, "privateIPv4Address");
+                Assert.Equal(ecsEvent.Detail.Attachments[0].Details[3].Value, "10.0.0.139");
+
+                Assert.Equal(ecsEvent.Detail.AvailabilityZone, "us-west-2c");
+                Assert.Equal(ecsEvent.Detail.ClusterArn, "arn:aws:ecs:us-west-2:111122223333:cluster/FargateCluster");
+
+                Assert.NotNull(ecsEvent.Detail.Containers);
                 Assert.Equal(ecsEvent.Detail.Containers.Count, 1);
-                Assert.Equal(ecsEvent.Detail.Containers[0].ContainerArn, "arn:aws:ecs:us-east-1:111122223333:container/3305bea1-bd16-4217-803d-3e0482170a17");
+                Assert.Equal(ecsEvent.Detail.Containers[0].ContainerArn, "arn:aws:ecs:us-west-2:111122223333:container/cf159fd6-3e3f-4a9e-84f9-66cbe726af01");
                 Assert.Equal(ecsEvent.Detail.Containers[0].ExitCode, 0);
-                Assert.Equal(ecsEvent.Detail.Containers[0].LastStatus, "STOPPED");
-                Assert.Equal(ecsEvent.Detail.Containers[0].Name, "xray");
-                Assert.Equal(ecsEvent.Detail.Containers[0].TaskArn, "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef");
-                Assert.Equal(ecsEvent.Detail.CreatedAt.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:05.702Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Detail.Containers[0].LastStatus, "RUNNING");
+                Assert.Equal(ecsEvent.Detail.Containers[0].Name, "FargateApp");
+                Assert.Equal(ecsEvent.Detail.Containers[0].Image, "111122223333.dkr.ecr.us-west-2.amazonaws.com/hello-repository:latest");
+                Assert.Equal(ecsEvent.Detail.Containers[0].ImageDigest, "sha256:74b2c688c700ec95a93e478cdb959737c148df3fbf5ea706abe0318726e885e6");
+                Assert.Equal(ecsEvent.Detail.Containers[0].RuntimeId, "ad64cbc71c7fb31c55507ec24c9f77947132b03d48d9961115cf24f3b7307e1e");
+                Assert.Equal(ecsEvent.Detail.Containers[0].TaskArn, "arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad");
+                Assert.NotNull(ecsEvent.Detail.Containers[0].NetworkInterfaces);
+                Assert.Equal(ecsEvent.Detail.Containers[0].NetworkInterfaces.Count, 1);
+                Assert.Equal(ecsEvent.Detail.Containers[0].NetworkInterfaces[0].AttachmentId, "1789bcae-ddfb-4d10-8ebe-8ac87ddba5b8");
+                Assert.Equal(ecsEvent.Detail.Containers[0].NetworkInterfaces[0].PrivateIpv4Address, "10.0.0.139");
+                Assert.Equal(ecsEvent.Detail.Containers[0].Cpu, "0");
+
+                Assert.Equal(ecsEvent.Detail.CreatedAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:34.402Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Detail.LaunchType, "FARGATE");
+                Assert.Equal(ecsEvent.Detail.Cpu, "256");
+                Assert.Equal(ecsEvent.Detail.Memory, "512");
                 Assert.Equal(ecsEvent.Detail.DesiredStatus, "RUNNING");
-                Assert.Equal(ecsEvent.Detail.Group, "task-group");
+                Assert.Equal(ecsEvent.Detail.Group, "family:sample-fargate");
                 Assert.Equal(ecsEvent.Detail.LastStatus, "RUNNING");
+
                 Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides.Count, 1);
-                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides[0].Name, "xray");
-                Assert.Equal(ecsEvent.Detail.StartedAt.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:06.8Z").ToUniversalTime());
-                Assert.Equal(ecsEvent.Detail.StartedBy, "ecs-svc/9223370556150183303");
-                Assert.Equal(ecsEvent.Detail.UpdatedAt.ToUniversalTime(), DateTime.Parse("2016-12-06T16:41:06.975Z").ToUniversalTime());
-                Assert.Equal(ecsEvent.Detail.TaskArn, "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef");
-                Assert.Equal(ecsEvent.Detail.TaskDefinitionArn, "arn:aws:ecs:us-east-1:111122223333:task-definition/xray:2");
+                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides[0].Name, "FargateApp");
+
+                Assert.Equal(ecsEvent.Detail.Connectivity, "CONNECTED");
+                Assert.Equal(ecsEvent.Detail.ConnectivityAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:38.453Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Detail.PullStartedAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:52.103Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Detail.StartedAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:58.103Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Detail.PullStoppedAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:55.103Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Detail.UpdatedAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:58.103Z").ToUniversalTime());
+                Assert.Equal(ecsEvent.Detail.TaskArn, "arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad");
+                Assert.Equal(ecsEvent.Detail.TaskDefinitionArn, "arn:aws:ecs:us-west-2:111122223333:task-definition/sample-fargate:1");
                 Assert.Equal(ecsEvent.Detail.Version, 4);
+                Assert.Equal(ecsEvent.Detail.PlatformVersion, "1.3.0");
 
                 Handle(ecsEvent);
             }
