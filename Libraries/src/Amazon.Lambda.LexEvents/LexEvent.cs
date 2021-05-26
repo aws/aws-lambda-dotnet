@@ -136,7 +136,7 @@ namespace Amazon.Lambda.LexEvents
             /// <summary>
             /// Gets and sets the property NluIntentConfidence.
             /// </summary>
-            public float NluIntentConfidenceScore { get; set; }
+            public double? NluIntentConfidenceScore { get; set; }
 
 
 
