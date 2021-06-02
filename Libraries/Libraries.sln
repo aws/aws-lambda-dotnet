@@ -27,6 +27,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.APIGatewayEve
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.CognitoEvents", "src\Amazon.Lambda.CognitoEvents\Amazon.Lambda.CognitoEvents.csproj", "{105B1BBB-4114-4D86-812E-EFFBB6E47CE5}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.ConnectEvents", "src\Amazon.Lambda.ConnectEvents\Amazon.Lambda.ConnectEvents.csproj", "{690F1C8C-A702-472D-9B72-7280F41D4B47}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.ConfigEvents", "src\Amazon.Lambda.ConfigEvents\Amazon.Lambda.ConfigEvents.csproj", "{6BF4EC9F-FB9E-4898-81F7-B392BF83D2B0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.DynamoDBEvents", "src\Amazon.Lambda.DynamoDBEvents\Amazon.Lambda.DynamoDBEvents.csproj", "{CB170908-F770-4554-A974-9653562F1042}"
@@ -39,7 +41,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.SNSEvents", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestUtilities", "src\Amazon.Lambda.TestUtilities\Amazon.Lambda.TestUtilities.csproj", "{0083B713-6399-479D-AA06-58D3E87F167D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.AspNetCoreServer.Test", "test\Amazon.Lambda.AspNetCoreServer.Test\Amazon.Lambda.AspNetCoreServer.Test.csproj", "{5B48AEA8-5702-45A8-9D89-CEB986E6DBC1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.AspNetCoreServer.Test", "test\Amazon.Lambda.AspNetCoreServer.Test\Amazon.Lambda.AspNetCoreServer.Test.csproj", "{5B48AEA8-5702-45A8-9D89-CEB986E6DBC1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestWebApp", "test\TestWebApp\TestWebApp.csproj", "{101ABE51-390D-41DF-A70B-2BD3B08B2CC7}"
 EndProject
@@ -63,7 +65,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TestFunctionFSharp", "TestF
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FSharpJsonSerializer", "test\TestFunctionFSharp\FSharpJsonSerializer\FSharpJsonSerializer.csproj", "{8C9EA16D-6055-421B-ABE7-1B0E35259DFC}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TestFunctionFSharp", "test\TestFunctionFSharp\TestFunctionFSharp\TestFunctionFSharp.fsproj", "{CB38FA21-5814-4573-94C7-3672D61BC8B8}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TestFunctionFSharp", "test\TestFunctionFSharp\TestFunctionFSharp\TestFunctionFSharp.fsproj", "{CB38FA21-5814-4573-94C7-3672D61BC8B8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestFunctionCSharp", "test\TestFunctionFSharp\TestFunctionCSharp\TestFunctionCSharp.csproj", "{2810A66B-3A03-4889-A4D0-0E8838474A4A}"
 EndProject
@@ -140,6 +142,10 @@ Global
 		{105B1BBB-4114-4D86-812E-EFFBB6E47CE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{105B1BBB-4114-4D86-812E-EFFBB6E47CE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{105B1BBB-4114-4D86-812E-EFFBB6E47CE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{690F1C8C-A702-472D-9B72-7280F41D4B47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{690F1C8C-A702-472D-9B72-7280F41D4B47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{690F1C8C-A702-472D-9B72-7280F41D4B47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{690F1C8C-A702-472D-9B72-7280F41D4B47}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6BF4EC9F-FB9E-4898-81F7-B392BF83D2B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6BF4EC9F-FB9E-4898-81F7-B392BF83D2B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6BF4EC9F-FB9E-4898-81F7-B392BF83D2B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -284,6 +290,7 @@ Global
 		{25813AAC-F0B3-4591-AA99-67983394623B} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{480D89E0-4334-4903-82CD-1B8ADF09D019} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{105B1BBB-4114-4D86-812E-EFFBB6E47CE5} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{690F1C8C-A702-472D-9B72-7280F41D4B47} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{6BF4EC9F-FB9E-4898-81F7-B392BF83D2B0} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{CB170908-F770-4554-A974-9653562F1042} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{3ED92849-4103-4AEF-B406-FF856C134C4B} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}

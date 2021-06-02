@@ -21,6 +21,7 @@
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-firehoseinputpreprocessing-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-inputpreprocessing-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-inputpreprocessing-response.json" />
+    <Content Include="$(MSBuildThisFileDirectory)connect-contactflow-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-outputdelivery-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-outputdelivery-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-streamsinputpreprocessing-event.json" />
