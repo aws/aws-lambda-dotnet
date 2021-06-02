@@ -33,6 +33,11 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         public List<Attribute> Attributes { get; set; }
 
         /// <summary>
+        /// The capacity provider associated with the container instance.
+        /// </summary>
+        public string CapacityProviderName { get; set; }
+
+        /// <summary>
         /// The Amazon Resource Name (ARN) of the container instance.
         /// The ARN contains the arn:aws:ecs namespace, followed by the region of the container instance,
         /// the AWS account ID of the container instance owner, the container-instance namespace,
@@ -87,6 +92,16 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         /// running on the container instance are removed if possible.
         /// </summary>
         public string Status { get; set; }
+
+        /// <summary>
+        /// The reason that the container instance reached its current status.
+        /// </summary>
+        public string StatusReason { get; set; }
+
+        /// <summary>
+        /// The metadata that you apply to the container instance to help you categorize and organize them. Each tag consists of a key and an optional value, both of which you define.
+        /// </summary>
+        public List<KeyValuePair<string, string>> Tags { get; set; }
 
         /// <summary>
         /// The version counter for the container instance.

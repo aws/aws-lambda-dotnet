@@ -1,17 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
+﻿namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
 {
     /// <summary>
-    /// https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerInstance.html
+    /// An attribute is a name-value pair associated with an Amazon ECS object. 
+    /// https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Attribute.html
     /// </summary>
     public class Attribute
     {
         /// <summary>
-        /// The attributes set for the container instance, either by the Amazon ECS container agent at instance
-        /// registration or manually with the PutAttributes operation.
+        /// The name of the attribute. The name must contain between 1 and 128 characters 
+        /// and name may contain letters (uppercase and lowercase), numbers, hyphens, 
+        /// underscores, forward slashes, back slashes, or periods.
         /// </summary>
         public string Name { get; set; }
 
@@ -28,9 +26,9 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         public string TargetType { get; set; }
 
         /// <summary>
-        /// The value of the attribute. Up to 128 letters (uppercase and lowercase), numbers,
-        /// hyphens, underscores, periods, at signs (@), forward slashes, colons, and spaces are
-        /// allowed.
+        /// The value of the attribute. The value must contain between 1 and 128 characters and may 
+        /// contain letters (uppercase and lowercase), numbers, hyphens, underscores, periods, at signs (@), 
+        /// forward slashes, back slashes, colons, or spaces. The value cannot contain any leading or trailing whitespace.
         /// </summary>
         public string Value { get; set; }
     }

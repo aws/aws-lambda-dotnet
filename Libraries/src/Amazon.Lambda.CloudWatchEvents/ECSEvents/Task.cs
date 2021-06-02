@@ -10,9 +10,24 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
     public class Task
     {
         /// <summary>
-        /// The elastic network adapter associated with the task if the task uses the awsvpc network mode.
+        /// The Elastic Network Adapter associated with the task if the task uses the awsvpc network mode.
         /// </summary>
         public List<Attachment> Attachments { get; set; }
+
+        /// <summary>
+        /// The attributes of the task.
+        /// </summary>
+        public List<Attribute> Attributes { get; set; }
+
+        /// <summary>
+        /// The availability zone of the task.
+        /// </summary>
+        public string AvailabilityZone { get; set; }
+
+        /// <summary>
+        /// The capacity provider associated with the task.
+        /// </summary>
+        public string CapacityProviderName { get; set; }
 
         /// <summary>
         /// The ARN of the cluster that hosts the task.
@@ -59,6 +74,16 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         public string DesiredStatus { get; set; }
 
         /// <summary>
+        /// Whether or not execute command functionality is enabled for this task. If true, this enables execute command functionality on all containers in the task.
+        /// </summary>
+        public bool EnableExecuteCommand { get; set; }
+
+        /// <summary>
+        /// The ephemeral storage settings for the task.
+        /// </summary>
+        public EphemeralStorage EphemeralStorage { get; set; }
+
+        /// <summary>
         /// The Unix time stamp for when the task execution stopped.
         /// </summary>
         public DateTime ExecutionStoppedAt { get; set; }
@@ -76,6 +101,11 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         /// See https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Task.html for extra info.
         /// </summary>
         public string HealthStatus { get; set; }
+
+        /// <summary>
+        /// The Elastic Inference accelerator associated with the task.
+        /// </summary>
+        public List<InferenceAccelerator> InferenceAccelerators { get; set; }
 
         /// <summary>
         /// The last known status of the task. For more information,
@@ -131,9 +161,31 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         public string StartedBy { get; set; }
 
         /// <summary>
+        /// The stop code indicating why a task was stopped. The stoppedReason may contain additional details.
+        /// </summary>
+        public string StopCode { get; set; }
+
+        /// <summary>
         /// The Unix time stamp for when the task stops (transitions from the RUNNING state to STOPPED).
         /// </summary>
         public DateTime StoppedAt { get; set; }
+
+        /// <summary>
+        /// The reason that the task was stopped.
+        /// </summary>
+        public string StoppedReason { get; set; }
+
+        /// <summary>
+        /// The Unix timestamp for when the task stops (transitions from the RUNNING state to STOPPED).
+        /// </summary>
+        public DateTime StoppingAt { get; set; }
+
+        /// <summary>
+        /// The metadata that you apply to the task to help you categorize and organize them. Each tag consists 
+        /// of a key and an optional value, both of which you define. 
+        /// See https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Task.html for extra info.
+        /// </summary>
+        public List<KeyValuePair<string, string>> Tags { get; set; }
 
         /// <summary>
         /// The Amazon Resource Name (ARN) of the task.
