@@ -155,6 +155,11 @@ namespace Amazon.Lambda.LexEvents
             /// The resolutions array contains a list of additional values recognized for the slot.
             /// </summary>
             public IList<Dictionary<string, string>> Resolutions { get; set; }
+
+            /// <summary>
+            /// The originalValue field contains the value that was entered by the user for the slot.
+            /// </summary>
+            public string OriginalValue { get; set; }
         }
 
         /// <summary>
