@@ -1050,6 +1050,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("value2", lexEvent.CurrentIntent.Slots["slot name2"]);
                 Assert.Equal("None, Confirmed, or Denied (intent confirmation, if configured)", lexEvent.CurrentIntent.ConfirmationStatus);
                 Assert.Equal("Text used to process the request", lexEvent.InputTranscript);
+                Assert.Null(lexEvent.CurrentIntent.NluIntentConfidenceScore);
 
                 Assert.Equal(2, lexEvent.RequestAttributes.Count);
                 Assert.Equal("value1", lexEvent.RequestAttributes["key1"]);
@@ -1064,6 +1065,9 @@ namespace Amazon.Lambda.Tests
 
                 Assert.Equal("intent-name", lexEvent.AlternativeIntents[0].Name);
                 Assert.Equal(5.5, lexEvent.AlternativeIntents[0].NluIntentConfidenceScore);
+
+                Assert.Equal("intent-name", lexEvent.AlternativeIntents[1].Name);
+                Assert.Null(lexEvent.AlternativeIntents[1].NluIntentConfidenceScore);
 
                 Assert.Equal("Name", lexEvent.RecentIntentSummaryView[0].IntentName);
                 Assert.Equal("Label", lexEvent.RecentIntentSummaryView[0].CheckpointLabel);
