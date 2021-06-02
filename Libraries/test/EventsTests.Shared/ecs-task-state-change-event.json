@@ -1,42 +1,83 @@
 ﻿{
   "version": "0",
-  "id": "9bcdac79-b31f-4d3d-9410-fbd727c29fab",
+  "id": "3317b2af-7005-947d-b652-f55e762e571a",
   "detail-type": "ECS Task State Change",
   "source": "aws.ecs",
   "account": "111122223333",
-  "time": "2016-12-06T16:41:06Z",
-  "region": "us-east-1",
+  "time": "2020-01-23T17:57:58Z",
+  "region": "us-west-2",
   "resources": [
-    "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef"
+    "arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad"
   ],
   "detail": {
-    "clusterArn": "arn:aws:ecs:us-east-1:111122223333:cluster/default",
-    "containerInstanceArn": "arn:aws:ecs:us-east-1:111122223333:container-instance/b54a2a04-046f-4331-9d74-3f6d7f6ca315",
-    "containers": [
+    "attachments": [
       {
-        "containerArn": "arn:aws:ecs:us-east-1:111122223333:container/3305bea1-bd16-4217-803d-3e0482170a17",
-        "exitCode": 0,
-        "lastStatus": "STOPPED",
-        "name": "xray",
-        "taskArn": "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef"
+        "id": "1789bcae-ddfb-4d10-8ebe-8ac87ddba5b8",
+        "type": "eni",
+        "status": "ATTACHED",
+        "details": [
+          {
+            "name": "subnetId",
+            "value": "subnet-abcd1234"
+          },
+          {
+            "name": "networkInterfaceId",
+            "value": "eni-abcd1234"
+          },
+          {
+            "name": "macAddress",
+            "value": "0a:98:eb:a7:29:ba"
+          },
+          {
+            "name": "privateIPv4Address",
+            "value": "10.0.0.139"
+          }
+        ]
       }
     ],
-    "createdAt": "2016-12-06T16:41:05.702Z",
+    "availabilityZone": "us-west-2c",
+    "clusterArn": "arn:aws:ecs:us-west-2:111122223333:cluster/FargateCluster",
+    "containers": [
+      {
+        "containerArn": "arn:aws:ecs:us-west-2:111122223333:container/cf159fd6-3e3f-4a9e-84f9-66cbe726af01",
+        "lastStatus": "RUNNING",
+        "name": "FargateApp",
+        "image": "111122223333.dkr.ecr.us-west-2.amazonaws.com/hello-repository:latest",
+        "imageDigest": "sha256:74b2c688c700ec95a93e478cdb959737c148df3fbf5ea706abe0318726e885e6",
+        "runtimeId": "ad64cbc71c7fb31c55507ec24c9f77947132b03d48d9961115cf24f3b7307e1e",
+        "taskArn": "arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad",
+        "networkInterfaces": [
+          {
+            "attachmentId": "1789bcae-ddfb-4d10-8ebe-8ac87ddba5b8",
+            "privateIpv4Address": "10.0.0.139"
+          }
+        ],
+        "cpu": "0"
+      }
+    ],
+    "createdAt": "2020-01-23T17:57:34.402Z",
+    "launchType": "FARGATE",
+    "cpu": "256",
+    "memory": "512",
     "desiredStatus": "RUNNING",
-    "group": "task-group",
+    "group": "family:sample-fargate",
     "lastStatus": "RUNNING",
     "overrides": {
       "containerOverrides": [
         {
-          "name": "xray"
+          "name": "FargateApp"
         }
       ]
     },
-    "startedAt": "2016-12-06T16:41:06.8Z",
-    "startedBy": "ecs-svc/9223370556150183303",
-    "updatedAt": "2016-12-06T16:41:06.975Z",
-    "taskArn": "arn:aws:ecs:us-east-1:111122223333:task/b99d40b3-5176-4f71-9a52-9dbd6f1cebef",
-    "taskDefinitionArn": "arn:aws:ecs:us-east-1:111122223333:task-definition/xray:2",
-    "version": 4
+    "connectivity": "CONNECTED",
+    "connectivityAt": "2020-01-23T17:57:38.453Z",
+    "pullStartedAt": "2020-01-23T17:57:52.103Z",
+    "startedAt": "2020-01-23T17:57:58.103Z",
+    "pullStoppedAt": "2020-01-23T17:57:55.103Z",
+    "updatedAt": "2020-01-23T17:57:58.103Z",
+    "taskArn": "arn:aws:ecs:us-west-2:111122223333:task/FargateCluster/c13b4cb40f1f4fe4a2971f76ae5a47ad",
+    "taskDefinitionArn": "arn:aws:ecs:us-west-2:111122223333:task-definition/sample-fargate:1",
+    "version": 4,
+    "platformVersion": "1.3.0"
   }
 }
