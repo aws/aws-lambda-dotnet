@@ -1,3 +1,12 @@
+### Release 2021-06-02
+* **Amazon.Lambda.CloudWatchEvents (3.0.0)**
+  * [Breaking Change] Updated the model definitions for ECSTaskStateChangeEvent.
+* **Amazon.Lambda.KinesisAnalyticsEvents (2.2.1)**
+  * Added missing System.Text.Json.Serialization.JsonPropertyName attribute for some properties in KinesisAnalyticsFirehoseInputPreprocessingEvent and KinesisAnalyticsStreamsInputPreprocessingEvent classes.
+* **Amazon.Lambda.LexEvents (3.0.0)**
+  * Added OriginalValue field to SlotDetail class for LexEvent.
+  * [Breaking Change] Changed data type of LexCurrentIntent.NluIntentConfidenceScore to Nullable\<double\> for LexEvent.
+
 ### Release 2021-05-06
 * **Amazon.Lambda.AspNetCoreServer (6.0.2)**
   * Fixed issue with HTTP Status Code not being initialized to 200.
