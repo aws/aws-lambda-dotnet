@@ -5,11 +5,7 @@ phases:
       dotnet: 3.1
   pre_build:
     commands:
-      - yum install tar --assumeyes
-      - yum install gzip --assumeyes
-      - curl -sSL https://dot.net/v1/dotnet-install.sh --output dotnet-install.sh
-      - chmod +x dotnet-install.sh
-      - source ./dotnet-install.sh --version 5.0.100
+      - curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 5.0
   build:
     commands:
       - pwsh LambdaRuntimeDockerfiles/dotnet5/Infrastructure/src/Infrastructure/SmokeTests/build.ps1
