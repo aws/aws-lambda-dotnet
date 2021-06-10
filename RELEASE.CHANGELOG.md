@@ -1,3 +1,7 @@
+### Release 2021-06-09
+* **Amazon.Lambda.ConnectEvents (1.0.0)**
+  * Added support for Amazon Connect ContactFlow event.
+
 ### Release 2021-06-02
 * **Amazon.Lambda.CloudWatchEvents (3.0.0)**
   * [Breaking Change] Updated the model definitions for ECSTaskStateChangeEvent.
