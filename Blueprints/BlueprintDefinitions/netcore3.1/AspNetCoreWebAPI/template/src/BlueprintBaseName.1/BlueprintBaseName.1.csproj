@@ -7,6 +7,6 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="6.0.1" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="6.0.2" />
   </ItemGroup>
 </Project>
