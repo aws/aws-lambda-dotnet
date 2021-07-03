@@ -1,0 +1,158 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "Template that creates a S3 bucket and a Lambda function that will be invoked when new objects are upload to the bucket.",
+  "Parameters": {
+    "BucketName": {
+      "Type": "String",
+      "Description": "Name of S3 bucket to be created. The Lambda function will be invoked when new objects are upload to the bucket. If left blank a name will be generated.",
+      "MinLength": "0"
+    }
+  },
+  "Conditions": {
+    "BucketNameGenerated": {
+      "Fn::Equals": [
+        {
+          "Ref": "BucketName"
+        },
+        ""
+      ]
+    }
+  },
+  "Resources": {
+    "Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::If": [
+            "BucketNameGenerated",
+            {
+              "Ref": "AWS::NoValue"
+            },
+            {
+              "Ref": "BucketName"
+            }
+          ]
+        }
+      }
+    },
+    "S3AccessPoint": {
+      "Type": "AWS::S3::AccessPoint",
+      "Properties": {
+        "Name": {
+          "Fn::Join": [
+            "",
+            [
+              {
+                "Ref": "Bucket"
+              },
+              "-sap"
+            ]
+          ]
+        },
+        "Bucket": {
+          "Ref": "Bucket"
+        }
+      }
+    },
+    "LambdaAccessPoint": {
+      "Type": "AWS::S3ObjectLambda::AccessPoint",
+      "Properties": {
+        "Name": {
+          "Fn::Join": [
+            "",
+            [
+              {
+                "Ref": "Bucket"
+              },
+              "-lap"
+            ]
+          ]
+        },
+        "ObjectLambdaConfiguration": {
+          "SupportingAccessPoint": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:aws:s3:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":",
+                {
+                  "Ref": "AWS::AccountId"
+                },
+                ":accesspoint/",
+                {
+                  "Ref": "S3AccessPoint"
+                }
+              ]
+            ]
+          },
+          "TransformationConfigurations": [
+            {
+              "Actions": [
+                "GetObject"
+              ],
+              "ContentTransformation": {
+                "AwsLambda": {
+                  "FunctionArn": {
+                    "Fn::GetAtt": [
+                      "ObjectTransformFunction",
+                      "Arn"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ObjectTransformFunction": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Function::FunctionHandler",
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "Description": "Function to transform the request object",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambda_FullAccess",
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "writegetobjectresponse",
+                "Action": [
+                  "s3-object-lambda:WriteGetObjectResponse"
+                ],
+                "Effect": "Allow",
+                "Resource": "*"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "Bucket": {
+      "Value": {
+        "Ref": "Bucket"
+      },
+      "Description": "Bucket that will invoke the lambda function when new objects are created."
+    },
+    "LambdaAccessPoint": {
+      "Value": {
+        "Fn::GetAtt": [
+          "LambdaAccessPoint",
+          "Arn"
+        ]
+      },
+      "Description": "The ARN of the Lambda Access Point. Use this value for the BucketName property when making S3 GetObject requests with the AWS SDKs."
+    }
+  }
+}

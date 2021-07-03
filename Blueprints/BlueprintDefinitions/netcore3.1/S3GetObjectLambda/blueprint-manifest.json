@@ -1,0 +1,13 @@
+{
+  "display-name": "S3 Get Object Lambda",
+  "system-name": "S3GetObjectLambdaServerless",
+  "description": "Creates a S3 Lambda Access Point and a Lambda function that transforms objects durng a GET request.",
+  "sort-order": 200,
+  "hidden-tags": [
+    "C#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "S3"
+  ]
+}
