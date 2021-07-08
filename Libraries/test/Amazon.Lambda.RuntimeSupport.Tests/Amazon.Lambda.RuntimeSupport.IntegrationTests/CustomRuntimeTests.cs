@@ -375,7 +375,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 throw new NoDeploymentPackageFoundException();
             }
 
-            var deploymentZipFile = Path.Combine(testsProjectDirectory, DeploymentPackageZipRelativePath);
+            var deploymentZipFile = Path.Combine(testsProjectDirectory, DeploymentPackageZipRelativePath.Replace('\\', Path.DirectorySeparatorChar));
 
             if(!File.Exists(deploymentZipFile))
             {

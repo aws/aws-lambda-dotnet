@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.IdentityManagement" Version="3.7.0" />
-    <PackageReference Include="AWSSDK.Lambda" Version="3.7.0" />
+    <PackageReference Include="AWSSDK.Lambda" Version="3.7.4.9" />
     <PackageReference Include="AWSSDK.S3" Version="3.7.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.1.1" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
@@ -24,7 +24,8 @@
   <Target Name="PackageTestFunction" BeforeTargets="BeforeBuild">
     <Exec Command="dotnet tool install -g Amazon.Lambda.Tools" IgnoreExitCode="true" />
     <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Command="dotnet restore" />
-    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Command="dotnet lambda package -c Release" />
+    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release" />
+    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --function-architecture arm64" />
   </Target>
 
 </Project>

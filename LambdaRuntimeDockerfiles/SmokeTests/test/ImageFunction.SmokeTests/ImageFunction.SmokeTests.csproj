@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Framework)'=='net5.0' ">
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Framework)'=='net6.0' ">
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.0" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
+    <PackageReference Include="AWSSDK.ECR" Version="3.7.1.14" />
+    <PackageReference Include="AWSSDK.IdentityManagement" Version="3.7.2.62" />
+    <PackageReference Include="AWSSDK.Lambda" Version="3.7.4.9" />
+  </ItemGroup>
+
+</Project>

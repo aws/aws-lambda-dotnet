@@ -3,7 +3,7 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net5.0;net6.0</TargetFrameworks>
     <VersionPrefix>1.3.0</VersionPrefix>
     <Description>Provides a bootstrap and Lambda Runtime API Client to help you to develop custom .NET Core Lambda Runtimes.</Description>
     <VersionPrefix>1.3.0</VersionPrefix>
@@ -18,7 +18,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(ExecutableOutputType)'=='true' ">
-    <TargetFramework>net5.0</TargetFramework>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
