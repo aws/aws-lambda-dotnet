@@ -495,7 +495,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                     }
 
                     _logger.LogError(sb.ToString());
-                    defaultStatusCode = 500;
+                    ((IHttpResponseFeature)features).StatusCode = 500;
                 }
                 catch (ReflectionTypeLoadException rex)
                 {
@@ -516,14 +516,14 @@ namespace Amazon.Lambda.AspNetCoreServer
                     }
 
                     _logger.LogError(sb.ToString());
-                    defaultStatusCode = 500;
+                    ((IHttpResponseFeature)features).StatusCode = 500;
                 }
                 catch (Exception e)
                 {
                     ex = e;
                     if (rethrowUnhandledError) throw;
                     _logger.LogError($"Unknown error responding to request: {this.ErrorReport(e)}");
-                    defaultStatusCode = 500;
+                    ((IHttpResponseFeature)features).StatusCode = 500;
                 }
 
                 if (features.ResponseStartingEvents != null)
