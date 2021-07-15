@@ -43,7 +43,7 @@
   },
   "primaryOutputs": [
     {
-      "path": "./src/BlueprintBaseName.1/BlueprintBaseName.1.csproj"
+      "path": "src/BlueprintBaseName.1/BlueprintBaseName.1.csproj"
     }
   ]
 }
