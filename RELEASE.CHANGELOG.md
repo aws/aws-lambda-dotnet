@@ -1,3 +1,7 @@
+### Release 2021-07-15
+* **Amazon.Lambda.AspNetCoreServer (6.0.3)**
+  * Fixed issue with internal server errors not returning as HTTP status code 500
+  
 ### Release 2021-06-09
 * **Amazon.Lambda.ConnectEvents (1.0.0)**
   * Added support for Amazon Connect ContactFlow event.
