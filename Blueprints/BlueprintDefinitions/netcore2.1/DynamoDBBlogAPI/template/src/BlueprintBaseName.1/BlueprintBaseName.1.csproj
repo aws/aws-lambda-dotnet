@@ -7,7 +7,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.0.36" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.0.44" />
     <PackageReference Include="Amazon.Lambda.Core" Version="2.0.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="2.0.0" />
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.4.0" />

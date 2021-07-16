@@ -10,7 +10,7 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="2.0.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="2.0.0" />
     <PackageReference Include="Amazon.Lambda.S3Events" Version="2.0.1" />
-    <PackageReference Include="AWSSDK.S3" Version="3.7.1.7" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.1.15" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Function.fs" />
