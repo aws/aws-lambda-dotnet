@@ -82,6 +82,7 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
                 request.Payload = parameters.Payload;
                 request.AWSProfile = parameters.Profile;
                 request.AWSRegion = parameters.Region;
+                request.LambdaContext = parameters.LambdaContext;
             }
             
 
@@ -107,6 +108,19 @@ namespace Amazon.Lambda.TestTool.WebTester.Controllers
                 var manager = new SampleRequestManager(this.LambdaOptions.GetPreferenceDirectory(true));
                 return manager.SaveRequest(requestName, content);
             }
+        }
+
+        [HttpGet("request/sample-context")]
+        public async Task<string> GetSampleLambdaContext()
+        {
+            var manager = new SampleLambdaContextManager();
+            var context = manager.GetSampleContextRequest();
+            var serializerOptions = new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+
+            return System.Text.Json.JsonSerializer.Serialize(context, serializerOptions);
         }
     }
 }

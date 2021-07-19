@@ -37,3 +37,8 @@
 global.json
 
 **/cdk.out/**
+
+#Ncrunch
+*.ncrunchproject
+*.ncrunchsolution
+*NCrunch*

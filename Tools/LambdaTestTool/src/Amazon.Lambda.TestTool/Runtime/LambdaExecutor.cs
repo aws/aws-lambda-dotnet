@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -8,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestTool.Runtime.LambdaMocks;
+using Newtonsoft.Json;
 
 namespace Amazon.Lambda.TestTool.Runtime
 {
@@ -37,11 +37,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                     Environment.SetEnvironmentVariable("AWS_PROFILE", request.AWSProfile);
                 }
 
-
-                var context = new LocalLambdaContext()
-                {
-                    Logger = logger
-                };
+                var context = GetLambdaContextForRequest(request.LambdaContext, logger);
 
                 object instance = null;
                 if (!request.Function.LambdaMethod.IsStatic)
@@ -79,6 +75,33 @@ namespace Amazon.Lambda.TestTool.Runtime
             response.Logs = logger.Buffer;
 
             return response;
+        }
+
+        public ILambdaContext GetLambdaContextForRequest(string requestLambdaContext, ILambdaLogger defaultLogger)
+        {
+            if (string.IsNullOrWhiteSpace(requestLambdaContext))
+            {
+                return new LocalLambdaContext()
+                {
+                    Logger = defaultLogger
+                };
+            }
+
+            var json = JsonConvert.DeserializeObject<LocalLambdaContext>(requestLambdaContext); 
+
+            return new LocalLambdaContext
+            {
+                AwsRequestId = json.AwsRequestId,
+                FunctionName = json.FunctionName,
+                FunctionVersion = json.FunctionVersion,
+                Logger = defaultLogger,
+                LogGroupName = json.LogGroupName,
+                InvokedFunctionArn = json.InvokedFunctionArn,
+                MemoryLimitInMB = json.MemoryLimitInMB,
+                Identity = json.Identity,
+                LogStreamName = json.LogStreamName,
+                ClientContext = json.ClientContext
+            };
         }
 
         private static string SeachForDllNotFoundException(Exception e)

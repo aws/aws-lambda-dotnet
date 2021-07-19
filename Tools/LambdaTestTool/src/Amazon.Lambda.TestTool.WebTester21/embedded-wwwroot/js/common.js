@@ -81,3 +81,11 @@ function onLambdaRequestSelected(data) {
         functionPayload.val(data);
     });
 }
+
+function onGenerateSampleLambdaContext() {
+    $.get("webtester-api/Tester/request/sample-context/", function (data) {
+
+        var lambdaContext = $("#function-context");
+        lambdaContext.val(data);
+    });
+}
