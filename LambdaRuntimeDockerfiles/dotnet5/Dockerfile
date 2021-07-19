@@ -6,35 +6,6 @@ ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2
 
 FROM $AMAZON_LINUX AS base
 
-FROM base AS builder-deps
-COPY --from=base / /rootfs
-RUN yum install -d1 -y --installroot=/rootfs \
-    ca-certificates \
-    \
-    # .NET dependencies
-    libc6 \
-    libgcc1 \
-    libgssapi-krb5-2 \
-    libicu63 \
-    libssl1.1 \
-    libstdc++6 \
-    zlib1g
-
-FROM base
-COPY --from=builder-deps /rootfs /
-
-# Setup custom dotnet env variables
-# See here for more info: https://github.com/dotnet/docs/blob/master/docs/core/tools/dotnet.md
-ENV \
-    # Enable detection of running in a container
-    DOTNET_RUNNING_IN_CONTAINER=true \
-    # Lambda is optionated about installing tooling under /var
-    DOTNET_ROOT=/var/lang/dotnet \
-    # Don't display welcome message on first run
-    DOTNET_NOLOGO=true \
-    # Disable Microsoft's telemetry collection
-    DOTNET_CLI_TELEMETRY_OPTOUT=true
-
 FROM base AS builder-net5
 ARG ASPNET_VERSION
 ARG ASPNET_SHA512
