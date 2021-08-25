@@ -357,6 +357,34 @@ namespace Amazon.Lambda.Tests
 
             Handle(dynamodbEvent);
         }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void DynamoDbBatchItemFailuresTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("dynamodb-batchitemfailures-response.json"))
+            {
+                var dynamoDbStreamsEventResponse = serializer.Deserialize<StreamsEventResponse>(fileStream);
+
+                Assert.Equal(1, dynamoDbStreamsEventResponse.BatchItemFailures.Count);
+                Assert.Equal("1405400000000002063282832", dynamoDbStreamsEventResponse.BatchItemFailures[0].ItemIdentifier);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<StreamsEventResponse>(dynamoDbStreamsEventResponse, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("dynamodb-batchitemfailures-response.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
         private static void Handle(DynamoDBEvent ddbEvent)
         {
             foreach (var record in ddbEvent.Records)
