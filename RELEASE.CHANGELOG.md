@@ -1,7 +1,11 @@
+### Release 2021-08-26
+* **Amazon.Lambda.DynamoDBEvents (2.1.0)**
+  * Added support for reporting batch item failures when processing streams for DynamoDBEvent.
+
 ### Release 2021-07-15
 * **Amazon.Lambda.AspNetCoreServer (6.0.3)**
   * Fixed issue with internal server errors not returning as HTTP status code 500
-  
+
 ### Release 2021-06-09
 * **Amazon.Lambda.ConnectEvents (1.0.0)**
   * Added support for Amazon Connect ContactFlow event.
