@@ -23,3 +23,36 @@ public class Function
     }
 }
 ```
+
+The following is a sample class and Lambda function that receives Amazon DynamoDB event record data as an input and uses `StreamsEventResponse` object to return batch item failures, if any. (Note that by default anything written to Console will be logged as CloudWatch Logs events.)
+
+```csharp
+public class Function
+{
+    public StreamsEventResponse Handler(DynamoDBEvent ddbEvent)
+    {
+        var batchItemFailures = new List<StreamsEventResponse.BatchItemFailure>();
+        string curRecordSequenceNumber = string.Empty;
+
+        foreach (var record in ddbEvent.Records)
+        {
+            try
+            {
+                //Process your record
+                var ddbRecord = record.Dynamodb;
+                var keys = string.Join(", ", ddbRecord.Keys.Keys);
+                curRecordSequenceNumber = ddbRecord.SequenceNumber;
+                Console.WriteLine($"{record.EventID} - Keys = [{keys}], Size = {ddbRecord.SizeBytes} bytes");
+            }
+            catch (Exception e)
+            {
+                //Return failed record's sequence number
+                batchItemFailures.Add(new StreamsEventResponse.BatchItemFailure() { ItemIdentifier = curRecordSequenceNumber });
+                return new StreamsEventResponse() { BatchItemFailures = batchItemFailures };
+            }
+        }
+        Console.WriteLine($"Successfully processed {ddbEvent.Records.Count} records.");
+        return new StreamsEventResponse() { BatchItemFailures = batchItemFailures };
+    }
+}
+```
