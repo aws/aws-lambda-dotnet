@@ -68,7 +68,7 @@ If already installed check if new version is available.
 
 Execute unit tests
 ```
-    cd "BlueprintBaseName/test/BlueprintBaseName.1.Tests"
+    cd "BlueprintBaseName.1/test/BlueprintBaseName.1.Tests"
     dotnet test
 ```
 

@@ -37,6 +37,6 @@ Execute unit tests
 
 Deploy application
 ```
-    cd "BlueprintBaseName/src/BlueprintBaseName"
+    cd "BlueprintBaseName.1/src/BlueprintBaseName.1"
     dotnet lambda deploy-serverless
 ```
