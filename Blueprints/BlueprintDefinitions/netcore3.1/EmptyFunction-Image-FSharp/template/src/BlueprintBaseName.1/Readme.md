@@ -26,15 +26,15 @@ FROM public.ecr.aws/lambda/dotnet:5.0 AS base
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0-buster-slim as build
 WORKDIR /src
-COPY ["BlueprintBaseName.fsproj", "BlueprintBaseName/"]
-RUN dotnet restore "BlueprintBaseName/BlueprintBaseName.fsproj"
+COPY ["BlueprintBaseName.1.fsproj", "BlueprintBaseName.1/"]
+RUN dotnet restore "BlueprintBaseName.1/BlueprintBaseName.1.fsproj"
 
-WORKDIR "/src/BlueprintBaseName"
+WORKDIR "/src/BlueprintBaseName.1"
 COPY . .
-RUN dotnet build "BlueprintBaseName.fsproj" --configuration Release --output /app/build
+RUN dotnet build "BlueprintBaseName.1.fsproj" --configuration Release --output /app/build
 
 FROM build AS publish
-RUN dotnet publish "BlueprintBaseName.fsproj" \
+RUN dotnet publish "BlueprintBaseName.1.fsproj" \
             --configuration Release \ 
             --runtime linux-x64 \
             --self-contained false \ 
@@ -83,12 +83,12 @@ dotnet tool update -g Amazon.Lambda.Tools
 
 Execute unit tests
 ```
-cd "BlueprintBaseName/test/BlueprintBaseName.Tests"
+cd "BlueprintBaseName.1/test/BlueprintBaseName.1.Tests"
 dotnet test
 ```
 
 Deploy function to AWS Lambda
 ```
-cd "BlueprintBaseName/src/BlueprintBaseName"
+cd "BlueprintBaseName.1/src/BlueprintBaseName.1"
 dotnet lambda deploy-function
 ```
