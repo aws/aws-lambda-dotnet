@@ -9,7 +9,7 @@
   "region": "DefaultRegion",
   "configuration": "Release",
   "framework": "net5.0",
-  "function-runtime": "provided",
+  "function-runtime": "provided.al2",
   "function-memory-size": 256,
   "function-timeout": 30,
   "function-handler": "bootstrap::BlueprintBaseName._1.Function::FunctionHandler",
