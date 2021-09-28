@@ -12,5 +12,5 @@
   "function-memory-size": 256,
   "function-timeout": 30,
   "image-command": "BlueprintBaseName.1::BlueprintBaseName._1.Function::FunctionHandler",
-  "docker-host-build-output-dir": "./bin/Release/net5.0/linux-x64/publish"
+  "docker-host-build-output-dir": "./bin/Release/lambda-publish"
 }
