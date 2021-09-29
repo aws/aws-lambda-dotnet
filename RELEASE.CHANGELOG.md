@@ -1,3 +1,10 @@
+### Release 2021-09-28
+* **Amazon.Lambda.Templates (5.5.0)**
+  * Updated PackageReference versions for AWS SDK for .NET
+  * Updated container image blueprints to use .NET version independent publish path.
+  * Updated custom runtime blueprints to use provided.al2 Lambda runtime
+  * Fixed issue with project name not correctly replacing all instances of BlueprintBaseName
+
 ### Release 2021-08-26
 * **Amazon.Lambda.DynamoDBEvents (2.1.0)**
   * Added support for reporting batch item failures when processing streams for DynamoDBEvent.
