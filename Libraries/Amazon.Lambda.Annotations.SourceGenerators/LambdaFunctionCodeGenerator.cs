@@ -169,6 +169,8 @@ namespace {LambdaFunctionMethodSymbol.ContainingNamespace}
 
             var {LambdaFunctionMethodSymbol.ContainingType.Name.ToCamelCase()} = scope.ServiceProvider.GetRequiredService<{LambdaFunctionMethodSymbol.ContainingType}>();");
 
+            // TODO: implement input parameter parsing
+
             if (LambdaFunctionReturnsVoidOrTask)
             {
                 // If Lambda function doesn't return, call the method without the return value.
@@ -206,6 +208,7 @@ namespace {LambdaFunctionMethodSymbol.ContainingNamespace}
                 }
                 else
                 {
+                    // TODO: Lambda function must use the configured serializer than System.Text.Json
                     source.AppendLine($@"
             var body = System.Text.Json.JsonSerializer.Serialize(response);");
                 }
