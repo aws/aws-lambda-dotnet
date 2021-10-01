@@ -13,10 +13,10 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction]
-        public Task SayHelloAsync()
+        public async Task SayHelloAsync()
         {
             Console.WriteLine("Hello");
-            return Task.CompletedTask;
+            await Task.CompletedTask;
         }
     }
 }

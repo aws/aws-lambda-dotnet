@@ -7,7 +7,7 @@ namespace TestServerlessApp
     public class ComplexCalculator
     {
         [LambdaFunction]
-        public Tuple<double, double> Plus()
+        public Tuple<double, double> Add()
         {
             var c1 = new Complex(4, 2);
             var c2 = new Complex(2, 4);

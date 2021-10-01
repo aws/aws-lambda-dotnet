@@ -6,7 +6,7 @@ namespace TestServerlessApp.Services
 {
     public interface ISimpleCalculatorService
     {
-        int Plus(int x, int y);
+        int Add(int x, int y);
         int Subtract(int x, int y);
         int Multiply(int x, int y);
         int Divide(int x, int y);
@@ -24,7 +24,7 @@ namespace TestServerlessApp.Services
             return x * y;
         }
 
-        public int Plus(int x, int y)
+        public int Add(int x, int y)
         {
             return x + y;
         }

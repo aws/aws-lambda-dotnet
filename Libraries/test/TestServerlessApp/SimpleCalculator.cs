@@ -49,10 +49,10 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction]
-        public int Plus()
+        public int Add()
         {
 
-            return _simpleCalculatorService.Plus(4, 2);
+            return _simpleCalculatorService.Add(4, 2);
         }
 
         [LambdaFunction]
@@ -72,7 +72,7 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction]
-        public async Task<int> Divide()
+        public async Task<int> DivideAsync()
         {
             return await Task.FromResult(_simpleCalculatorService.Divide(4, 2));
         }

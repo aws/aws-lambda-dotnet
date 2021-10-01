@@ -13,7 +13,94 @@ namespace Amazon.Lambda.Annotations.SourceGenerators
         private readonly MethodDeclarationSyntax _lambdaFunctionMethodSyntax;
         private readonly ClassDeclarationSyntax _startupSyntax;
         private readonly GeneratorExecutionContext _context;
-        private string _returnType;
+        private IMethodSymbol _lambdaFunctionMethodModel;
+        private IMethodSymbol _configureMethodSymbol;
+
+        /// <summary>
+        /// Returns class name of the generated method.
+        /// </summary>
+        public string ClassName => $"{LambdaFunctionMethodSymbol.ContainingType.Name}_{LambdaFunctionMethodSymbol.Name}_Generated";
+
+        /// <summary>
+        /// Represents simplified Lambda function,
+        /// It may or may not have the parameters such as customer input and ILambdaContext.
+        /// </summary>
+        public IMethodSymbol LambdaFunctionMethodSymbol
+        {
+            get
+            {
+                if (_lambdaFunctionMethodModel == null)
+                {
+                    var methodModel = _context.Compilation.GetSemanticModel(_lambdaFunctionMethodSyntax.SyntaxTree);
+                    _lambdaFunctionMethodModel = methodModel.GetDeclaredSymbol(_lambdaFunctionMethodSyntax);
+                }
+
+                return _lambdaFunctionMethodModel;
+            }
+        }
+
+        public INamedTypeSymbol ReturnType => LambdaFunctionMethodSymbol.ReturnType as INamedTypeSymbol;
+        
+        /// <summary>
+        /// Represents the Configure(IServiceCollection) method in the LambdaStartup attributed class.
+        /// </summary>
+        /// <exception cref="NotSupportedException">Thrown when multiple LambdaStartup attributed classes exist in the project.</exception>
+        public IMethodSymbol ConfigureMethodSymbol
+        {
+            get
+            {
+                if (_configureMethodSymbol == null)
+                {
+                    var iServiceCollectionSymbol =
+                        _context.Compilation.GetTypeByMetadataName(
+                            "Microsoft.Extensions.DependencyInjection.IServiceCollection");
+
+                    var classModel = _context.Compilation.GetSemanticModel(_startupSyntax.SyntaxTree);
+                    foreach (var member in _startupSyntax.Members.Where(member => member.Kind() == SyntaxKind.MethodDeclaration))
+                    {
+                        var methodSyntax = (MethodDeclarationSyntax)member;
+                        var methodSymbol = classModel.GetDeclaredSymbol(methodSyntax);
+                        if (methodSymbol != null
+                            && methodSymbol.Parameters.Count() == 1
+                            && methodSymbol.Parameters[0].Type.Equals(iServiceCollectionSymbol, SymbolEqualityComparer.Default))
+                        {
+                            if (_configureMethodSymbol != null)
+                            {
+                                throw new NotSupportedException(
+                                    "Multiple LambdaStartup classes are not allowed in a Lambda project.");
+                            }
+
+                            _configureMethodSymbol = methodSymbol;
+                            break;
+                        }
+                    }
+                }
+
+                return _configureMethodSymbol;
+            }
+        }
+
+        /// <summary>
+        /// Returns whether the simplified Lambda function returns void or <see cref="System.Threading.Tasks.Task"/>.
+        /// </summary>
+        public bool LambdaFunctionReturnsVoidOrTask
+        {
+            get
+            {
+                if (LambdaFunctionMethodSymbol.ReturnsVoid)
+                {
+                    return true;
+                }
+
+                var taskSymbol = _context.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task");
+                if (LambdaFunctionMethodSymbol.ReturnType.Equals(taskSymbol, SymbolEqualityComparer.Default))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
 
         public LambdaFunctionCodeGenerator(
             MethodDeclarationSyntax lambdaFunctionMethodSyntax,
@@ -25,157 +112,133 @@ namespace Amazon.Lambda.Annotations.SourceGenerators
             _context = context;
         }
 
+        /// <summary>
+        /// Generates <see cref="SourceText"/> for the LambdaFunction including setting up the dependency injection.
+        /// </summary>
+        /// <returns>A <see cref="Tuple"/> containing source file name hint and source text.</returns>
         public (string, SourceText) GenerateSource()
         {
-            var methodModel = _context.Compilation.GetSemanticModel(_lambdaFunctionMethodSyntax.SyntaxTree);
-            var methodSymbol = methodModel.GetDeclaredSymbol(_lambdaFunctionMethodSyntax);
-            if (methodSymbol == null)
-            {
-                throw new InvalidOperationException($"Symbol not found.");
-            }
-            var className = $"{methodSymbol.ContainingType.Name}_{methodSymbol.Name}_Generated";
-            var returnType = methodSymbol.ReturnType as INamedTypeSymbol;
+            var apiGatewayResponseSymbol =
+                _context.Compilation.GetTypeByMetadataName("Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse");
 
-            var classModel = _context.Compilation.GetSemanticModel(_startupSyntax.SyntaxTree);
-            MethodDeclarationSyntax startupMethodSyntax = null;
-            IMethodSymbol startupMethodSymbol = null;
-            foreach (var member in _startupSyntax.Members)
-            {
-                if (member.Kind() == SyntaxKind.MethodDeclaration)
-                {
-                    startupMethodSyntax = (MethodDeclarationSyntax)member;
-                    startupMethodSymbol = classModel.GetDeclaredSymbol(startupMethodSyntax);
-                    if (startupMethodSymbol != null && startupMethodSymbol.Parameters.Count() == 1 && startupMethodSymbol.Parameters[0].Type.ToString() == "Microsoft.Extensions.DependencyInjection.IServiceCollection" && startupMethodSymbol.DeclaredAccessibility == Accessibility.Public)
-                    {
-                        break;
-                    }
-                }
-            }
-
-            var returnTypeString = "";
-            if (methodSymbol.ReturnsVoid)
-            {
-                returnTypeString = "APIGatewayProxyResponse";
-            }
-            else
-            {
-                returnTypeString = "APIGatewayProxyResponse";
-            }
-
-            if (methodSymbol.IsAsync)
+            var returnTypeString = "APIGatewayProxyResponse";
+            if (LambdaFunctionMethodSymbol.IsAsync)
             {
                 returnTypeString = $"System.Threading.Tasks.Task<{returnTypeString}>";
             }
 
             var source = new StringBuilder(
-$@"using System;
+                $@"using System;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 
-namespace {methodSymbol.ContainingNamespace}
+namespace {LambdaFunctionMethodSymbol.ContainingNamespace}
 {{
-    public class {className} 
+    public class {ClassName} 
     {{
         private readonly ServiceProvider serviceProvider;
 
-        public {className}()
+        public {ClassName}()
         {{
-            var services = new ServiceCollection();");
-            if (startupMethodSymbol != null)
+            var services = new ServiceCollection();
+
+            // By default, Lambda function class is added to the service container using the scoped lifetime
+            // because web dependencies are normally scoped to the client request. To use a different lifetime,
+            // specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
+            services.AddScoped<{LambdaFunctionMethodSymbol.ContainingType}>();");
+
+            // Call Configure method if LambdaStartup is provided
+            if (ConfigureMethodSymbol != null)
             {
                 source.Append($@"
-            var startup = new {startupMethodSymbol.ContainingType}();
-            startup.{startupMethodSymbol.Name}(services);"
-                );
+            var startup = new {ConfigureMethodSymbol.ContainingType}();
+            startup.{ConfigureMethodSymbol.Name}(services);");
             }
 
             source.Append($@"
             serviceProvider = services.BuildServiceProvider();
         }}
 
-        public{(methodSymbol.IsAsync ? " async " : " ")}{returnTypeString} {methodSymbol.Name}(APIGatewayProxyRequest request, ILambdaContext _context)
+        public{(LambdaFunctionMethodSymbol.IsAsync ? " async " : " ")}{returnTypeString} {LambdaFunctionMethodSymbol.Name}(APIGatewayProxyRequest request, ILambdaContext _context)
         {{
+            // Create a scope for every request, 
+            // this allows creating scoped dependencies without creating a scope manually. 
             using var scope = serviceProvider.CreateScope();
 
-            var {methodSymbol.ContainingType.Name.ToCamelCase()} = scope.ServiceProvider.GetRequiredService<{methodSymbol.ContainingType}>();"
-            );
+            var {LambdaFunctionMethodSymbol.ContainingType.Name.ToCamelCase()} = scope.ServiceProvider.GetRequiredService<{LambdaFunctionMethodSymbol.ContainingType}>();");
 
-            if (methodSymbol.ReturnsVoid)
+            if (LambdaFunctionReturnsVoidOrTask)
             {
-                if (methodSymbol.IsAsync)
+                // If Lambda function doesn't return, call the method without the return value.
+                if (LambdaFunctionMethodSymbol.IsAsync)
                 {
                     source.Append($@"
-            await {methodSymbol.ContainingType.Name.ToCamelCase()}.{methodSymbol.Name}();
-
-            return new APIGatewayProxyResponse
-            {{
-                StatusCode = 200
-            }};"
-                    );
+            await {LambdaFunctionMethodSymbol.ContainingType.Name.ToCamelCase()}.{LambdaFunctionMethodSymbol.Name}();");
                 }
                 else
                 {
                     source.Append($@"
-            {methodSymbol.ContainingType.Name.ToCamelCase()}.{methodSymbol.Name}();
-
-            return new APIGatewayProxyResponse
-            {{
-                StatusCode = 200
-            }};"
-                    );
+            {LambdaFunctionMethodSymbol.ContainingType.Name.ToCamelCase()}.{LambdaFunctionMethodSymbol.Name}();");
                 }
             }
             else
             {
-                if (methodSymbol.IsAsync)
+                // Lambda function returns a value, therefore, call the method with response.
+                if (LambdaFunctionMethodSymbol.IsAsync)
                 {
                     source.Append($@"
-            var response = await {methodSymbol.ContainingType.Name.ToCamelCase()}.{methodSymbol.Name}();"
-                    );
+            var response = await {LambdaFunctionMethodSymbol.ContainingType.Name.ToCamelCase()}.{LambdaFunctionMethodSymbol.Name}();");
                 }
                 else
                 {
                     source.Append($@"
-            var response = {methodSymbol.ContainingType.Name.ToCamelCase()}.{methodSymbol.Name}();"
-                    );
+            var response = {LambdaFunctionMethodSymbol.ContainingType.Name.ToCamelCase()}.{LambdaFunctionMethodSymbol.Name}();");
                 }
 
-                if (returnType.ToString() == "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse")
-                {
-                    source.Append($@"
-            return response;");
-                }
-                else if (returnType.IsValueType)
+                // Serialize the response to a string because APIGatewayProxyResponse body only allows string type.
+                if (ReturnType.IsValueType)
                 {
                     source.AppendLine($@"
-            return new APIGatewayProxyResponse
-            {{
-                StatusCode = 200,
-                Body = response.ToString(),
-                Headers = new Dictionary<string, string> 
-                {{
-                    {{ ""Content-Type"", ""text/plain"" }}
-                }}
-            }};"
+            var body = response.ToString();"
                     );
                 }
                 else
                 {
                     source.AppendLine($@"
-            return new APIGatewayProxyResponse
-            {{
-                StatusCode = 200,
-                Body = System.Text.Json.JsonSerializer.Serialize(response),
-                Headers = new Dictionary<string, string> 
-                {{
-                    {{ ""Content-Type"", ""text/plain"" }}
-                }}
-            }};");
+            var body = System.Text.Json.JsonSerializer.Serialize(response);");
                 }
             }
 
+            // Lambda function can have APIGatewayProxyResponse return type
+            // In this case, there is no need to transform the response
+            // Generated method must return the same response back to client
+            if (ReturnType.Equals(apiGatewayResponseSymbol, SymbolEqualityComparer.Default))
+            {
+                source.Append($@"
+            return response;");
+            }
+            else
+            {
+                source.Append($@"
+            return new APIGatewayProxyResponse
+            {{
+                StatusCode = 200,");
+
+                if (!LambdaFunctionReturnsVoidOrTask)
+                {
+                    source.Append($@"
+                Body = body,
+                Headers = new Dictionary<string, string> 
+                {{
+                    {{ ""Content-Type"", ""text/plain"" }}
+                }}");
+                }
+
+                source.Append($@"
+            }};");
+            }
 
             source.Append($@"
         }}
@@ -183,7 +246,7 @@ namespace {methodSymbol.ContainingNamespace}
 }}"
             );
 
-            return ($"{className}.cs", SourceText.From(source.ToString(), Encoding.UTF8));
+            return ($"{ClassName}.cs", SourceText.From(source.ToString(), Encoding.UTF8));
         }
     }
 }

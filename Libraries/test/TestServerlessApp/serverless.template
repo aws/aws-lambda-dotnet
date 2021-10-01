@@ -3,7 +3,7 @@
   "Transform": "AWS::Serverless-2016-10-31",
   "Description": "An AWS Serverless Application.",
   "Resources": {
-    "SayHello": {
+    "GreeterSayHello": {
       "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello",
@@ -19,7 +19,145 @@
           "RootGet": {
             "Type": "Api",
             "Properties": {
-              "Path": "/SayHello",
+              "Path": "/Greeter/SayHello",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "GreeterSayHelloAsync": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync",
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/Greeter/SayHelloAsync",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "SimpleCalculatorAdd": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Add_Generated::Add",
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/SimpleCalculator/Add",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "SimpleCalculatorSubtract": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract",
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/SimpleCalculator/Subtract",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "SimpleCalculatorMultiply": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply",
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/SimpleCalculator/Multiply",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "SimpleCalculatorDivideAsync": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync",
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/SimpleCalculator/DivideAsync",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "ComplexCalculatorAdd": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add",
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/ComplexCalculator/Add",
               "Method": "GET"
             }
           }

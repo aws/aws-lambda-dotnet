@@ -14,10 +14,6 @@ namespace TestServerlessApp
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddScoped<ISimpleCalculatorService, SimpleCalculatorService>();
-
-            services.AddTransient<SimpleCalculator>();
-            services.AddScoped<ComplexCalculator>();
-            services.AddSingleton<Greeter>();
         }
     }
 }
