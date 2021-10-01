@@ -18,6 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="aws-lambda-tools-defaults.json" />
+    <None Include="Dockerfile" />
     <None Include="Readme.md" />
   </ItemGroup>
 </Project>
