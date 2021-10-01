@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29613.14
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31717.71
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}"
 EndProject
@@ -102,6 +102,14 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HandlerTest", "test\HandlerTest\HandlerTest.csproj", "{E88231E0-B249-49AE-B764-DB6C9615F6CA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HandlerTestNoSerializer", "test\HandlerTestNoSerializer\HandlerTestNoSerializer.csproj", "{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestServerlessApp", "test\TestServerlessApp\TestServerlessApp.csproj", "{3D322CAB-0DDD-4C84-B3ED-0862F244AF5C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.Annotations.SourceGenerators.Tests", "test\Amazon.Lambda.Annotations.SourceGenerators.Tests\Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj", "{D76F2C74-3D7F-4DB3-BA1A-F2EA14749253}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.Annotations", "src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj", "{ADA9AF37-A8C1-47E6-BBBD-5C7E49C26C0E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.Annotations.SourceGenerator", "src\Amazon.Lambda.Annotations.SourceGenerator\Amazon.Lambda.Annotations.SourceGenerator.csproj", "{3C617909-D61F-4AA8-B11C-4C9ECC865D75}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -278,6 +286,22 @@ Global
 		{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D322CAB-0DDD-4C84-B3ED-0862F244AF5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D322CAB-0DDD-4C84-B3ED-0862F244AF5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D322CAB-0DDD-4C84-B3ED-0862F244AF5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D322CAB-0DDD-4C84-B3ED-0862F244AF5C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D76F2C74-3D7F-4DB3-BA1A-F2EA14749253}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D76F2C74-3D7F-4DB3-BA1A-F2EA14749253}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D76F2C74-3D7F-4DB3-BA1A-F2EA14749253}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D76F2C74-3D7F-4DB3-BA1A-F2EA14749253}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADA9AF37-A8C1-47E6-BBBD-5C7E49C26C0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADA9AF37-A8C1-47E6-BBBD-5C7E49C26C0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADA9AF37-A8C1-47E6-BBBD-5C7E49C26C0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADA9AF37-A8C1-47E6-BBBD-5C7E49C26C0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C617909-D61F-4AA8-B11C-4C9ECC865D75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C617909-D61F-4AA8-B11C-4C9ECC865D75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C617909-D61F-4AA8-B11C-4C9ECC865D75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C617909-D61F-4AA8-B11C-4C9ECC865D75}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -328,6 +352,10 @@ Global
 		{44E9D925-B61D-4234-97B7-61424C963BA6} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{E88231E0-B249-49AE-B764-DB6C9615F6CA} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4} = {B5BD0336-7D08-492C-8489-42C987E29B39}
+		{3D322CAB-0DDD-4C84-B3ED-0862F244AF5C} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{D76F2C74-3D7F-4DB3-BA1A-F2EA14749253} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{ADA9AF37-A8C1-47E6-BBBD-5C7E49C26C0E} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{3C617909-D61F-4AA8-B11C-4C9ECC865D75} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}
