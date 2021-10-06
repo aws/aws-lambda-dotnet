@@ -9,7 +9,7 @@ The current experience for building .NET Lambda functions falls into 2 categorie
 All Lambda runtimes share a common low level programming experience. That experience is to write a function that takes in an event and Lambda context object. The developer inspects the event object and often based on the data in the event object dispatches it to certain business logic. This is a very low level experience which requires developers to write a lot of boiler plate code. Below is a simple example of an API Gateway Lambda function.
 
 
-```
+```csharp
 public APIGatewayProxyResponse LambdaMathPlus(APIGatewayProxyRequest request, ILambdaContext context)
 {
     if (!request.PathParameters.TryGetValue("x", out var xs))
@@ -58,7 +58,7 @@ The alternative for writing .NET Lambda functions for REST APIs is to use .NET’s
 Here is an example of a ASP.NET Core REST controller doing similar logic to the low level example mentions before.
 
 
-```
+```csharp
 [Route("[controller]")]
 public class MathController : ControllerBase
 {
@@ -118,7 +118,7 @@ Since this tooling is pushed into the .NET compiler it will work on all of AWS’s
 
 Earlier we talked about the basic Lambda programming model and we used an example of a Lambda function that was doing a simple plus math operation. That Lambda function took about 20 lines code which was full of undesirable boiler plate code. Using Amazon.Lambda.Annotations that example becomes this:
 
-```
+```csharp
 public class Functions
 {
     [LambdaFunction]
@@ -145,7 +145,7 @@ The basic Lambda programming model hasn’t changed and a Lambda function is requi
 
 For the simple plus math operation example the generated code would look something like this:
 
-```
+```csharp
 using System;
 using System.Collections.Generic;
 using Amazon.Lambda.Core;
@@ -204,7 +204,7 @@ The developer will never have to see this code as this whole experience will be 
 
 The source generator will have 2 responsibilities. The first is the code generation as discussed earlier. The second is maintaining the Lambda resource defined in the CloudFormation template or CDK project. Because the actual .NET function that Lambda will call is generated at runtime this is critical to make sure the function handler string is set correctly. For the Lambda function above the source generator will add to the CloudFormation template the following snippet.
 
-```
+```json
     "MathLambdaFunctionsFunctionsPlus": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -247,7 +247,7 @@ To keep the logic of our Lambda functions simple we will abstract the actual mat
 Like ASP.NET Core we will register a “startup” class. This is a class that has methods for configuring the services and the request pipeline. To keep the experience similar the user can write a “startup” class and indicated it is the startup class by adding the **LambdaStartup** attribute. Here is an example of a “startup” class for our calculator project.
 
 
-```
+```csharp
 [LambdaStartup]
 public class Startup
 {
@@ -302,7 +302,7 @@ In this case the Lambda functions are defined in a class called LambdaFunctions.
 The source generator will generate code that wraps each of the Lambda functions. It will have executed the “startup” class and the constructor of LambdaFunctions during the Lambda functions initialization stage. The constructors parameters for LambdaFunctions will be supplied by services registered by the dependency injection framework. This is very similar to how API controllers are created in an ASP.NET Core project.
 
 
-```
+```csharp
 public class LambdaFunctions
 {
     ICalculatorService _calculator;
