@@ -6,7 +6,7 @@ The current experience for building .NET Lambda functions falls into 2 categorie
 
 ### Basic Lambda experience
 
-All Lambda runtimes share a common low level programming experience. That experience is to write a function that takes in an event and Lambda context object. The developer inspect the event object and often based on the data in the event object dispatches it to certain business logic. This is a very low level experience which requires developers to write a lot of boiler plate code. Below is a simple example of an API Gateway Lambda function.
+All Lambda runtimes share a common low level programming experience. That experience is to write a function that takes in an event and Lambda context object. The developer inspects the event object and often based on the data in the event object dispatches it to certain business logic. This is a very low level experience which requires developers to write a lot of boiler plate code. Below is a simple example of an API Gateway Lambda function.
 
 
 ```
@@ -55,7 +55,7 @@ The alternative for writing .NET Lambda functions for REST APIs is to use .NET’s
     * Define policies and add annotations to request paths that ensure the caller has the permissions for the policies.
 
 
-Here is an example of a ASP.NET Core REST controller doing similar logic to the low level example mention before.
+Here is an example of a ASP.NET Core REST controller doing similar logic to the low level example mentions before.
 
 
 ```
@@ -80,7 +80,7 @@ public class MathController : ControllerBase
 There are a few significant negative side effect for writing REST APIs for Lambda using ASP.NET Core. 
 
 * Significant impact to cold start due to size of the framework and reliance on reflection.
-* The common features of ASP.NET Core for REST APIs are supported in Lambda but a significant number of the features are not and there is no clear indication what is and isn’t supported.
+* The common features of ASP.NET Core for REST APIs are supported in Lambda but a significant number of the features are not and there is no clear indication what is and isn’t supported. For example SignalR, Blazor Serverside and response eventing.
 * The usage of API Gateway is dumbed down because the API Gateway REST API is defined as a single wild card resource path letting ASP.NET Core handling the routing. This takes away a lot of the features of API Gateway like per resource path IAM permissions and memory sizing. 
 * ASP.NET Core can only be used for defining REST APIs. It can not be used for other types of Lambda functions like S3 events.
 
@@ -89,7 +89,7 @@ There are a few significant negative side effect for writing REST APIs for Lambd
 To improve the experience of writing Lambda functions we need an experience that is similar to what developers are used to with ASP.NET Core without the negative side effects. The major goals are:
 
 * An experience similar to what .NET developers are used in frameworks like ASP.NET Core
-    * Although it will follow similar patterns we will not reuse the same classes as ASP.NET Core to avoid an implicit contract agreements between the developer and the framework.
+    * Although it will follow similar patterns we will not reuse the same classes as ASP.NET Core to avoid an implicit contract agreement between the developer and the framework.
 * No significant impact to cold start
     * Measuring with a prototype the plus math operation cold start was in the **~320ms** the same as the basic Lambda programming model. Using ASP.NET Core the cold start was **~1,200ms**.
 * Can be used for more scenarios then just REST APIs
@@ -100,7 +100,7 @@ To improve the experience of writing Lambda functions we need an experience that
 
 ## The new experience for writing .NET Lambda functions
 
-To create a new experience for developing .NET Lambda functions we will use a combination of .NET attributes developer apply to their code and C# source generators to generate code and CloudFormation snippets at compile time. This will remove the need for reflection at runtime and the only runtime overhead component will be the inclusion of the new .NET attributes and interfaces. The .NET attributes will have negligible effect to cold start.
+To create a new experience for developing .NET Lambda functions we will use a combination of .NET attributes developers apply to their code and C# source generator to generate code and CloudFormation snippets at compile time. This will remove the need for reflection at runtime and the only runtime overhead component will be the inclusion of the new .NET attributes and interfaces. The .NET attributes will have negligible effect to cold start.
 
 ### What are C# source generators?
 
@@ -130,7 +130,7 @@ public class Functions
 }
 ```
 
-Their is no boiler plate code in this snippet. The **LambdaFunction** attribute signifies this is a piece of code that should be exposed as a Lambda function. The **ApiRoute** sets up the event source for the Lambda function. This similar pattern can be used for other event sources like S3 events.
+There is no boiler plate code in this snippet. The **LambdaFunction** attribute signifies this is a piece of code that should be exposed as a Lambda function. The **ApiRoute** sets up the event source for the Lambda function. This similar pattern can be used for other event sources like S3 events.
 
 ### What happens when you compile?
 
@@ -340,7 +340,7 @@ Here is a preliminary list of .NET attributes that will tell the source generato
 * LambdaFunction
     * Placed on a method. Indicates this method should be exposed as a Lambda function.
 * LambdaStartup
-    * Placed on a class. Indicates this type should be used as the startup class and is used to configure the dependency injection and middleware.
+    * Placed on a class. Indicates this type should be used as the startup class and is used to configure the dependency injection and middleware. There can only be one class in a Lambda project with this attribute.
 * LambdaCloudFormationTemplate 
     * Assembly level attribute that configures where the CloudFormation data is written.
 * ApiGatewayHttpApi & ApiGatewayRestAPI
