@@ -190,7 +190,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             _logger.LogDebug($"UCL : Searching for LambdaSerializerAttribute at method level");
             var customerSerializerAttribute = CustomerMethodInfo.GetCustomAttributes().SingleOrDefault(a => Types.IsLambdaSerializerAttribute(a.GetType()));
 
-            _logger.LogDebug($"UCL : LambdaSerializerAttribute at assembly level {(customerSerializerAttribute != null ? "found" : "not found")}");
+            _logger.LogDebug($"UCL : LambdaSerializerAttribute at method level {(customerSerializerAttribute != null ? "found" : "not found")}");
 
             // only check the assembly if the LambdaSerializerAttribute does not exist on the method
             if (customerSerializerAttribute == null)
