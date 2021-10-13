@@ -13,19 +13,19 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
     public class Resource
     {
         /// <summary>
-        /// When the <code>DoubleValue</code> type is set, the value of the resource must be a
+        /// When the <c>DoubleValue</c> type is set, the value of the resource must be a
         /// double precision floating-point type.
         /// </summary>
         public double DoubleValue { get; set; }
 
         /// <summary>
-        /// When the <code>IntegerValue</code> type is set, the value of the resource must be
+        /// When the <c>IntegerValue</c> type is set, the value of the resource must be
         /// an integer.
         /// </summary>
         public int IntegerValue { get; set; }
 
         /// <summary>
-        /// When the <code>LongValue</code> type is set, the value of the resource must be an
+        /// When the <c>LongValue</c> type is set, the value of the resource must be an
         /// extended precision floating-point type.
         /// </summary>
         public long LongValue { get; set; }

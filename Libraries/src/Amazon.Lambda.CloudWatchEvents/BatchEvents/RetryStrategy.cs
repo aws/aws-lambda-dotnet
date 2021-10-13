@@ -1,4 +1,6 @@
-﻿namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
+﻿using System.Collections.Generic;
+
+namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
 {
     /// <summary>
     /// The retry strategy associated with a job.
@@ -12,5 +14,11 @@
         /// RUNNABLE that many times.
         /// </summary>
         public int Attempts { get; set; }
+
+        /// <summary>
+        /// Array of up to 5 objects that specify conditions under which the job should be retried or failed. 
+        /// If this parameter is specified, then the <c>attempts</c> parameter must also be specified.
+        /// </summary>
+        public List<EvaluateOnExit> EvaluateOnExit { get; set; }
     }
 }
