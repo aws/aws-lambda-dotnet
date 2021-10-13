@@ -38,6 +38,11 @@ namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
         public List<JobDependency> DependsOn { get; set; }
 
         /// <summary>
+        /// The Amazon Resource Name (ARN) of the job.
+        /// </summary>
+        public string JobArn { get; set; }
+
+        /// <summary>
         /// The job definition that is used by this job.
         /// </summary>
         public string JobDefinition { get; set; }
@@ -75,6 +80,18 @@ namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
         public Dictionary<string, string> Parameters { get; set; }
 
         /// <summary>
+        /// The platform capabilities required by the job definition. If no value is specified, it defaults to <c>EC2</c>. Jobs run on Fargate resources specify <c>FARGATE</c>.
+        /// </summary>
+        public List<string> PlatformCapabilities { get; set; }
+
+        /// <summary>
+        /// Specifies whether to propagate the tags from the job or job definition to the corresponding Amazon ECS task. If no value is specified, the tags aren't propagated. 
+        /// Tags can only be propagated to the tasks during task creation. For tags with the same name, job tags are given priority over job definitions tags. 
+        /// If the total number of combined tags from the job and job definition is over 50, the job is moved to the <c>FAILED</c> state.
+        /// </summary>
+        public bool PropagateTags { get; set; }
+
+        /// <summary>
         /// The retry strategy to use for this job if an attempt fails.
         /// </summary>
         public RetryStrategy RetryStrategy { get; set; }
@@ -101,6 +118,11 @@ namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
         /// job transitioned from the RUNNING state to a terminal state, such as SUCCEEDED or FAILED).
         /// </summary>
         public long StoppedAt { get; set; }
+
+        /// <summary>
+        /// The tags applied to the job.
+        /// </summary>
+        public Dictionary<string, string> Tags { get; set; }
 
         /// <summary>
         /// The timeout configuration for the job.
