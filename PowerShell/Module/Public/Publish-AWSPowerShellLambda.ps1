@@ -53,6 +53,9 @@
     .PARAMETER Memory
     The amount of memory, in MB, your Lambda function is given when it executes inside AWS Lambda.
 
+    .PARAMETER Architecture
+    The architecture of the Lambda function. Valid values: x86_64 or arm64. Default is x86_64
+
     .PARAMETER Layer
     The Lambda layers to include with the Lambda function.
 
@@ -73,6 +76,15 @@
 
     .PARAMETER ProfileName
     The AWS credentials profile to use when publishing to AWS Lambda. If not set environment credentials will be used.
+
+    .PARAMETER AWSAccessKeyId
+    The AWS access key id. Used when setting credentials explicitly instead of using ProfileName.
+
+    .PARAMETER AWSSecretKey
+    The AWS secret key. Used when setting credentials explicitly instead of using ProfileName.
+
+    .PARAMETER AWSSessionToken
+    The AWS session token. Used when setting credentials explicitly instead of using ProfileName.
 
     .PARAMETER ProjectDirectory
     The directory containing the AWS Lambda PowerShell project to publish.
@@ -170,6 +182,15 @@ function Publish-AWSPowerShellLambda
         [string]$ProfileName,
 
         [Parameter()]
+        [string]$AWSAccessKeyId,
+
+        [Parameter()]
+        [string]$AWSSecretKey,
+
+        [Parameter()]
+        [string]$AWSSessionToken,
+
+        [Parameter()]
         [string]$Region,
 
         [Parameter()]
@@ -177,6 +198,10 @@ function Publish-AWSPowerShellLambda
 
         [Parameter()]
         [int]$Memory,
+
+        [Parameter()]
+        [ValidateSet('x86_64', 'arm64')]
+        [string]$Architecture,
 
         [Parameter()]
         [int]$Timeout,
@@ -313,9 +338,13 @@ function Publish-AWSPowerShellLambda
         FunctionHandler        = $_handler
         PowerShellFunction     = $PowerShellFunctionHandler
         Profile                = $ProfileName
+        AWSAccessKeyId         = $AWSAccessKeyId
+        AWSSecretKey           = $AWSSecretKey
+        AWSSessionToken        = $AWSSessionToken
         Region                 = $Region
         FunctionRole           = $IAMRoleArn
         FunctionMemory         = $Memory
+        FunctionArchitecture   = $Architecture
         FunctionLayer          = $Layer
         FunctionTimeout        = $Timeout
         PublishNewVersion      = $PublishNewVersion

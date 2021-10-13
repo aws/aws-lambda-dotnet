@@ -36,6 +36,9 @@
     .PARAMETER ScriptPath
     The path to the PowerShell script file to be published to AWS Lambda.
 
+    .PARAMETER Architecture
+    The architecture of the Lambda function. Valid values: x86_64 or arm64. Default is x86_64
+        
     .PARAMETER StagingDirectory
     Optional parameter to set the directory where the AWS Lambda package bundle for a standalone script deployment
     will be created. If not set the system temp directory will be used.
@@ -83,7 +86,11 @@ function New-AWSPowerShellLambdaPackage
         [String]$OutputPackage,
 
         [Parameter()]
-        [string[]]$ModuleRepository
+        [string[]]$ModuleRepository,  
+
+        [Parameter()]
+        [ValidateSet('x86_64', 'arm64')]
+        [string]$Architecture      
     )
 
     _validateDotnetInstall
@@ -179,7 +186,7 @@ function New-AWSPowerShellLambdaPackage
 
     Write-Host "Creating deployment package at $OutputPackage"
 
-    _packageProject -OutputPackage $OutputPackage -BuildDirectory $_buildDirectory
+    _packageProject -OutputPackage $OutputPackage -BuildDirectory $_buildDirectory -FunctionArchitecture $Architecture
 
     if ($PSCmdlet.ParameterSetName -eq 'PackageScript')
     {
