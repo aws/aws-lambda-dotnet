@@ -1,4 +1,4 @@
-﻿namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
+﻿namespace Amazon.Lambda.CloudWatchEvents
 {
     /// <summary>
     /// 

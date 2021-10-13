@@ -17,23 +17,275 @@
     "attempts": [],
     "createdAt": 1508781340401,
     "retryStrategy": {
-      "attempts": 1
+      "attempts": 1,
+      "evaluateOnExit": [
+        {
+          "onStatusReason": "*",
+          "onReason": "*",
+          "onExitCode": "*",
+          "action": "EXIT"
+        }
+      ]
     },
     "dependsOn": [],
     "jobDefinition": "arn:aws:batch:us-east-1:aws_account_id:job-definition/first-run-job-definition:1",
-    "parameters": {},
+    "parameters": {
+      "test": "abc" 
+    },
     "container": {
       "image": "busybox",
+      "resourceRequirements": [
+        {
+          "type": "MEMORY",
+          "value": "2000"
+        },
+        {
+          "type": "VCPU",
+          "value": "2"
+        }
+      ],
       "vcpus": 2,
       "memory": 2000,
       "command": [
         "echo",
         "'hello world'"
       ],
-      "volumes": [],
-      "environment": [],
-      "mountPoints": [],
-      "ulimits": []
-    }
+      "volumes": [
+        {
+          "host": {
+            "sourcePath": "/data"
+          },
+          "name": "myhostsource"
+        },
+        {
+          "name": "efs",
+          "efsVolumeConfiguration": {
+            "fileSystemId": "fs-XXXXXXXXX",
+            "rootDirectory": "/",
+            "transitEncryption": "ENABLED",
+            "TransitEncryptionPort": 12345,
+            "authorizationConfig": {
+              "accessPointId": "fsap-XXXXXXXXXXXXXXXXX",
+              "iam": "ENABLED"
+            }
+          }
+        }
+      ],
+      "environment": [
+        {
+          "name": "MANAGED_BY_AWS",
+          "value": "STARTED_BY_STEP_FUNCTIONS"
+        }
+      ],
+      "mountPoints": [
+        {
+          "containerPath": "/data",
+          "readOnly": true,
+          "sourceVolume": "myhostsource"
+        },
+        {
+          "containerPath": "/mount/efs",
+          "sourceVolume": "efs"
+        }
+      ],
+      "ulimits": [
+        {
+          "hardLimit": 2048,
+          "name": "nofile",
+          "softLimit": 2048
+        }
+      ],
+      "linuxParameters": {
+        "devices": [
+          {
+            "hostPath": "/dev/xvdc",
+            "containerPath": "/dev/sda",
+            "permissions": [
+              "MKNOD"
+            ]
+          }
+        ],
+        "initProcessEnabled": true,
+        "sharedMemorySize": 64,
+        "tmpfs": [
+          {
+            "containerPath": "/run",
+            "size": 65536,
+            "mountOptions": [
+              "noexec",
+              "nosuid"
+            ]
+          }
+        ],
+        "maxSwap": 1024,
+        "swappiness": 55
+      },
+      "logConfiguration": {
+        "logDriver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        },
+        "secretOptions": [
+          {
+            "name": "apikey",
+            "valueFrom": "ddApiKey"
+          }
+        ]
+      },
+      "secrets": [
+        {
+          "name": "DATABASE_PASSWORD",
+          "valueFrom": "arn:aws:ssm:us-east-1:awsExampleAccountID:parameter/awsExampleParameter"
+        }
+      ],
+      "networkConfiguration": {
+        "assignPublicIp": "ENABLED"
+      },
+      "fargatePlatformConfiguration": {
+        "platformVersion": "LATEST"
+      }
+    },
+    "nodeProperties": {
+      "numNodes": 0,
+      "mainNode": 0,
+      "nodeRangeProperties": [
+        {
+          "targetNodes": "0:1",
+          "container": {
+            "image": "busybox",
+            "resourceRequirements": [
+              {
+                "type": "MEMORY",
+                "value": "2000"
+              },
+              {
+                "type": "VCPU",
+                "value": "2"
+              }
+            ],
+            "vcpus": 2,
+            "memory": 2000,
+            "command": [
+              "echo",
+              "'hello world'"
+            ],
+            "jobRoleArn": "arn:aws:iam::awsExampleAccountID:role/awsExampleRoleName",
+            "executionRoleArn": "arn:aws:iam::awsExampleAccountID:role/awsExampleRoleName",
+            "volumes": [
+              {
+                "host": {
+                  "sourcePath": "/data"
+                },
+                "name": "myhostsource"
+              },
+              {
+                "name": "efs",
+                "efsVolumeConfiguration": {
+                  "fileSystemId": "fs-XXXXXXXXX",
+                  "rootDirectory": "/",
+                  "transitEncryption": "ENABLED",
+                  "TransitEncryptionPort": 12345,
+                  "authorizationConfig": {
+                    "accessPointId": "fsap-XXXXXXXXXXXXXXXXX",
+                    "iam": "ENABLED"
+                  }
+                }
+              }
+            ],
+            "environment": [
+              {
+                "name": "MANAGED_BY_AWS",
+                "value": "STARTED_BY_STEP_FUNCTIONS"
+              }
+            ],
+            "mountPoints": [
+              {
+                "containerPath": "/data",
+                "readOnly": true,
+                "sourceVolume": "myhostsource"
+              },
+              {
+                "containerPath": "/mount/efs",
+                "sourceVolume": "efs"
+              }
+            ],
+            "readonlyRootFilesystem": true,
+            "privileged": true,
+            "ulimits": [
+              {
+                "hardLimit": 2048,
+                "name": "nofile",
+                "softLimit": 2048
+              }
+            ],
+            "user": "testuser",
+            "instanceType": "p3.2xlarge",
+            "linuxParameters": {
+              "devices": [
+                {
+                  "hostPath": "/dev/xvdc",
+                  "containerPath": "/dev/sda",
+                  "permissions": [
+                    "MKNOD"
+                  ]
+                }
+              ],
+              "initProcessEnabled": true,
+              "sharedMemorySize": 64,
+              "tmpfs": [
+                {
+                  "containerPath": "/run",
+                  "size": 65536,
+                  "mountOptions": [
+                    "noexec",
+                    "nosuid"
+                  ]
+                }
+              ],
+              "maxSwap": 1024,
+              "swappiness": 55
+            },
+            "logConfiguration": {
+              "logDriver": "awslogs",
+              "options": {
+                "awslogs-group": "awslogs-wordpress",
+                "awslogs-stream-prefix": "awslogs-example"
+              },
+              "secretOptions": [
+                {
+                  "name": "apikey",
+                  "valueFrom": "ddApiKey"
+                }
+              ]
+            },
+            "secrets": [
+              {
+                "name": "DATABASE_PASSWORD",
+                "valueFrom": "arn:aws:ssm:us-east-1:awsExampleAccountID:parameter/awsExampleParameter"
+              }
+            ],
+            "networkConfiguration": {
+              "assignPublicIp": "DISABLED"
+            },
+            "fargatePlatformConfiguration": {
+              "platformVersion": "LATEST"
+            }
+          }
+        }
+      ]
+    },
+    "propagateTags": true,
+    "timeout": {
+      "attemptDurationSeconds": 90
+    },
+    "tags": {
+      "Service": "Batch",
+      "Name": "JobDefinitionTag",
+      "Expected": "MergeTag"
+    },
+    "platformCapabilities": [
+      "FARGATE"
+    ]
   }
 }
