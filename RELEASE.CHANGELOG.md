@@ -1,3 +1,8 @@
+### Release 2021-10-15
+* **AWSLambdaPSCore PowerShell Module (2.2.0)**
+  * Added ability to set AWS credentials explicilty using `-AWSAccessKeyId`, `-AWSSecretKey`, and `-AWSSessionToken`
+  * Added `-Architecture` parameter to configure the Lambda function to use ARM64 architecture
+  
 ### Release 2021-09-28
 * **Amazon.Lambda.Templates (5.5.0)**
   * Updated PackageReference versions for AWS SDK for .NET
