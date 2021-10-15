@@ -15,6 +15,15 @@ function _deployProject
         [string]$ProfileName,
 
         [Parameter(Mandatory = $false)]
+        [string]$AWSAccessKeyId,        
+
+        [Parameter(Mandatory = $false)]
+        [string]$AWSSecretKey,
+
+        [Parameter(Mandatory = $false)]
+        [string]$AWSSessionToken,
+
+        [Parameter(Mandatory = $false)]
         [string]$Region,
 
         [Parameter(Mandatory = $false)]
@@ -22,6 +31,9 @@ function _deployProject
 
         [Parameter(Mandatory = $false)]
         [int]$FunctionMemory,
+
+        [Parameter(Mandatory = $false)]
+        [string]$FunctionArchitecture,
 
         [Parameter(Mandatory = $false)]
         [int]$FunctionTimeout,
@@ -79,7 +91,7 @@ function _deployProject
         $arguments += " --configuration Release --framework $AwsPowerShellTargetFramework --function-runtime $AwsPowerShellLambdaRuntime"
 
         $arguments += ' '
-        $arguments += _setupAWSCredentialsCliArguments -ProfileName $ProfileName
+        $arguments += _setupAWSCredentialsCliArguments -ProfileName $ProfileName -AWSAccessKeyId $AWSAccessKeyId -AWSSecretKey $AWSSecretKey -AWSSessionToken $AWSSessionToken
         $arguments += ' '
         $arguments += _setupAWSRegionCliArguments -Region $Region
 
@@ -97,6 +109,12 @@ function _deployProject
         {
             $arguments += " --function-memory-size $FunctionMemory"
         }
+
+
+        if (($FunctionArchitecture))
+        {
+            $arguments += " --function-architecture $FunctionArchitecture"
+        }        
 
         if (($FunctionTimeout))
         {
@@ -218,7 +236,10 @@ function _packageProject
         [string]$OutputPackage,
 
         [Parameter(Mandatory = $false)]
-        [string]$BuildDirectory
+        [string]$BuildDirectory,
+
+        [Parameter(Mandatory = $false)]
+        [string]$FunctionArchitecture        
     )
 
     _validateDotnetInstall
@@ -235,6 +256,11 @@ function _packageProject
         if (($OutputPackage))
         {
             $arguments += " --output-package `"$OutputPackage`""
+        }
+
+        if($FunctionArchitecture)
+        {
+            $arguments += " --function-architecture $FunctionArchitecture"
         }
         $amazonLambdaToolsPath = _configureAmazonLambdaTools
 
@@ -263,12 +289,37 @@ function _setupAWSCredentialsCliArguments
 {
     param
     (
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AWSAccessKeyId,
+        [string]$AWSSecretKey,
+        [string]$AWSSessionToken
     )
 
     if ($ProfileName)
     {
         return "--profile $ProfileName"
+    }
+
+    if ($AWSAccessKeyId -or $AWSSecretKey -or $AWSSessionToken)
+    {
+        if(!($AWSAccessKeyId))
+        {
+            throw "The AWSAccessKeyId parameter is required when AWSSecretKey or AWSSessionToken are set."
+        }
+
+        if(!($AWSSecretKey))
+        {
+            throw "The AWSSecretKey parameter is required when AWSAccessKeyId is set."
+        }
+        
+        $arguments = "--aws-access-key-id $AWSAccessKeyId --aws-secret-key $AWSSecretKey"
+
+        if($AWSSessionToken)
+        {
+            $arguments += " --aws-session-token $AWSSessionToken"
+        }
+
+        return $arguments
     }
 
     # Look to see if the AWS module is loaded and that it was used to configure credentials for the shell.
