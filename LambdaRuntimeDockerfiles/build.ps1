@@ -11,7 +11,7 @@ function Write-Status($string)
     Write-Host
 }
 
-# docker layout and dependcies based on this repo: https://github.com/dotnet/dotnet-docker
+# docker layout and dependencies based on this repo: https://github.com/dotnet/dotnet-docker
 
 try
 {
