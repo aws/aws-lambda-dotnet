@@ -1,4 +1,4 @@
-namespace Amazon.Lambda.Annotations.SourceGenerator
+namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
 {
     public static class StringExtensions
     {

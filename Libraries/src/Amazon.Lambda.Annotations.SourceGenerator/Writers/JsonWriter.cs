@@ -93,8 +93,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var lastProperty = pathList.LastOrDefault();
             if (string.IsNullOrEmpty((lastProperty)))
             {
-                throw new InvalidOperationException(
-                    "Cannot set a token at {jsonPath} because the terminal property is null or empty");
+                throw new InvalidOperationException($"Cannot set a token at {jsonPath} because the terminal property is null or empty");
             }
             var currentNode = _rootNode;
 

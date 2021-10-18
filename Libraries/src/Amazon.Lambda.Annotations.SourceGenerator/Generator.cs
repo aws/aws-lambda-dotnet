@@ -1,10 +1,10 @@
-﻿using System.IO;
-using System.IO.Abstractions;
-using System.Linq;
+﻿using System.IO.Abstractions;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Microsoft.CodeAnalysis;
-using Newtonsoft.Json.Linq;
+using System.Text;
+using Amazon.Lambda.Annotations.SourceGenerator.Templates;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
@@ -29,25 +29,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 return;
             }
 
+            var semanticModelProvider = new SemanticModelProvider(context);
+            var configureMethodModel = semanticModelProvider.GetConfigureMethodModel(receiver.StartupClass);
+
             var annotationReport = new AnnotationReport();
             var fileSystem = new FileSystem();
             var templateFinder = new CloudFormationTemplateFinder(fileSystem);
             var projectRootDirectory = string.Empty;
 
-            foreach (var lambdaFunction in receiver.LambdaFunctions)
+            foreach (var lambdaMethod in receiver.LambdaMethods)
             {
-                var lambdaFunctionModel = new LambdaFunctionModel();
-                // the lambdaFunctionModel property values will be set based on the source generator refactor that Ganesh is working on as per
-                // https://github.com/aws/aws-lambda-dotnet/pull/931
-                
-                var codeGenerator = new LambdaFunctionCodeGenerator(lambdaFunction, receiver.StartupClass, context);
-                var (hint, sourceText) = codeGenerator.GenerateSource();
-                context.AddSource(hint, sourceText);
-                
-                annotationReport.LambdaFunctions.Add(lambdaFunctionModel);
-                
+                var lambdaMethodModel = semanticModelProvider.GetMethodSemanticModel(lambdaMethod);
+                var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context);
+                var template = new LambdaFunctionTemplate(model);
+                var sourceText = template.TransformText();
+                context.AddSource($"{model.GeneratedMethod.ContainingType.Name}.g.cs", SourceText.From(sourceText, Encoding.UTF8, SourceHashAlgorithm.Sha256));
+
+                annotationReport.LambdaFunctions.Add(model);
+
                 if (string.IsNullOrEmpty(projectRootDirectory))
-                    projectRootDirectory = templateFinder.DetermineProjectRootDirectory(lambdaFunction.SyntaxTree.FilePath);
+                    projectRootDirectory = templateFinder.DetermineProjectRootDirectory(lambdaMethod.SyntaxTree.FilePath);
             }
 
             annotationReport.CloudFormationTemplatePath = templateFinder.FindCloudFormationTemplate(projectRootDirectory);

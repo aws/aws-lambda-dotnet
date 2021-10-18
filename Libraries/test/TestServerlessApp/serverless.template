@@ -17,10 +17,11 @@
         ],
         "Events": {
           "RootGet": {
-            "Type": "Api",
+            "Type": "HttpApi",
             "Properties": {
               "Path": "/Greeter/SayHello",
-              "Method": "GET"
+              "Method": "GET",
+              "PayloadFormatVersion" : "1.0"
             }
           }
         }
@@ -40,10 +41,11 @@
         ],
         "Events": {
           "RootGet": {
-            "Type": "Api",
+            "Type": "HttpApi",
             "Properties": {
               "Path": "/Greeter/SayHelloAsync",
-              "Method": "GET"
+              "Method": "GET",
+              "PayloadFormatVersion" : "1.0"
             }
           }
         }
@@ -155,10 +157,11 @@
         ],
         "Events": {
           "RootGet": {
-            "Type": "Api",
+            "Type": "HttpApi",
             "Properties": {
               "Path": "/ComplexCalculator/Add",
-              "Method": "GET"
+              "Method": "GET",
+              "PayloadFormatVersion" : "2.0"
             }
           }
         }

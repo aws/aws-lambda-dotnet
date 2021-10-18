@@ -8,6 +8,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis" Version="3.11.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.11.0" />
     <PackageReference Include="System.IO.Abstractions" Version="13.2.47" />
+    <PackageReference Include="System.CodeDom" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,7 +27,26 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="..\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
+    <ProjectReference Include="..\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" OutputItemType="Analyzer" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Templates\LambdaFunctionTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>LambdaFunctionTemplate.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Templates\LambdaFunctionTemplate.cs">
+      <DependentUpon>LambdaFunctionTemplate.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 
 </Project>
