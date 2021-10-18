@@ -20,21 +20,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
 
-                        ("Greeter.cs", File.ReadAllText(Path.Combine("TestServerlessApp", "Greeter.cs"))),
-                        ("LambdaFunctionAttribute.cs", File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
-                        ("LambdaStartupAttribute.cs", File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "Greeter.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "Greeter.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                     },
                     GeneratedSources =
                     {
                         (
                             typeof(SourceGenerator.Generator),
-                            "Greeter_SayHello_Generated.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "Greeter_SayHello_Generated.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            "Greeter_SayHello_Generated.g.cs",
+                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "Greeter_SayHello_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         ),
                         (
                             typeof(SourceGenerator.Generator),
-                            "Greeter_SayHelloAsync_Generated.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "Greeter_SayHelloAsync_Generated.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            "Greeter_SayHelloAsync_Generated.g.cs",
+                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "Greeter_SayHelloAsync_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
                     }
                 }
@@ -62,23 +62,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (
                             typeof(SourceGenerator.Generator),
-                            "SimpleCalculator_Add_Generated.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_Add_Generated.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            "SimpleCalculator_Add_Generated.g.cs",
+                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_Add_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         ),
                         (
                             typeof(SourceGenerator.Generator),
-                            "SimpleCalculator_Subtract_Generated.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_Subtract_Generated.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            "SimpleCalculator_Subtract_Generated.g.cs",
+                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_Subtract_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         ),
                         (
                             typeof(SourceGenerator.Generator),
-                            "SimpleCalculator_Multiply_Generated.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_Multiply_Generated.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            "SimpleCalculator_Multiply_Generated.g.cs",
+                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_Multiply_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         ),
                         (
                             typeof(SourceGenerator.Generator),
-                            "SimpleCalculator_DivideAsync_Generated.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_DivideAsync_Generated.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            "SimpleCalculator_DivideAsync_Generated.g.cs",
+                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_DivideAsync_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
 
                     }
@@ -104,8 +104,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (
                             typeof(SourceGenerator.Generator),
-                            "ComplexCalculator_Add_Generated.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "ComplexCalculator_Add_Generated.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            "ComplexCalculator_Add_Generated.g.cs",
+                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "ComplexCalculator_Add_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
                     }
                 }

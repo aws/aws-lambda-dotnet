@@ -9,7 +9,7 @@
         "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello",
         "Runtime": "dotnetcore3.1",
         "CodeUri": "",
-        "MemorySize": 256,
+        "MemorySize": 1024,
         "Timeout": 30,
         "Role": null,
         "Policies": [
@@ -17,10 +17,11 @@
         ],
         "Events": {
           "RootGet": {
-            "Type": "Api",
+            "Type": "HttpApi",
             "Properties": {
               "Path": "/Greeter/SayHello",
-              "Method": "GET"
+              "Method": "GET",
+              "PayloadFormatVersion": "1.0"
             }
           }
         }
@@ -33,17 +34,18 @@
         "Runtime": "dotnetcore3.1",
         "CodeUri": "",
         "MemorySize": 256,
-        "Timeout": 30,
+        "Timeout": 50,
         "Role": null,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
         "Events": {
           "RootGet": {
-            "Type": "Api",
+            "Type": "HttpApi",
             "Properties": {
               "Path": "/Greeter/SayHelloAsync",
-              "Method": "GET"
+              "Method": "GET",
+              "PayloadFormatVersion": "1.0"
             }
           }
         }
@@ -155,10 +157,11 @@
         ],
         "Events": {
           "RootGet": {
-            "Type": "Api",
+            "Type": "HttpApi",
             "Properties": {
               "Path": "/ComplexCalculator/Add",
-              "Method": "GET"
+              "Method": "GET",
+              "PayloadFormatVersion": "2.0"
             }
           }
         }
