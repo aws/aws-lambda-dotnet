@@ -8,7 +8,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 {
     internal class SyntaxReceiver : ISyntaxContextReceiver
     {
-        public List<MethodDeclarationSyntax> LambdaFunctions { get; } = new List<MethodDeclarationSyntax>();
+        public List<MethodDeclarationSyntax> LambdaMethods { get; } = new List<MethodDeclarationSyntax>();
 
         public ClassDeclarationSyntax StartupClass { get; private set; }
 
@@ -21,7 +21,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDeclarationSyntax);
                 if (methodSymbol.GetAttributes().Any(attr => attr.AttributeClass.Name == nameof(LambdaFunctionAttribute)))
                 {
-                    LambdaFunctions.Add(methodDeclarationSyntax);
+                    LambdaMethods.Add(methodDeclarationSyntax);
                 }
             }
 

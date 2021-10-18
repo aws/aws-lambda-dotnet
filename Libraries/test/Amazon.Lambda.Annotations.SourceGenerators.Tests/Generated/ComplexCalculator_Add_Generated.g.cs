@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
 
@@ -8,26 +7,27 @@ namespace TestServerlessApp
 {
     public class ComplexCalculator_Add_Generated
     {
-        private readonly TestServerlessApp.ComplexCalculator complexCalculator;
+        private readonly ComplexCalculator complexCalculator;
 
         public ComplexCalculator_Add_Generated()
         {
-            complexCalculator = new TestServerlessApp.ComplexCalculator();
+            complexCalculator = new ComplexCalculator();
         }
 
-        public APIGatewayProxyResponse Add(APIGatewayProxyRequest request, ILambdaContext _context)
+        public APIGatewayHttpApiV2ProxyResponse Add(APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
         {
             var response = complexCalculator.Add();
+
             var body = System.Text.Json.JsonSerializer.Serialize(response);
 
-            return new APIGatewayProxyResponse
+            return new APIGatewayHttpApiV2ProxyResponse
             {
-                StatusCode = 200,
                 Body = body,
                 Headers = new Dictionary<string, string>
                 {
-                    { "Content-Type", "text/plain" }
-                }
+                    {"Content-Type", "application/json"}
+                },
+                StatusCode = 200
             };
         }
     }
