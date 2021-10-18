@@ -1,4 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Amazon.Lambda.Annotations.SourceGenerator.Models;
+using Amazon.Lambda.Annotations.SourceGenerator.Templates;
+using Microsoft.CodeAnalysis;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
@@ -23,9 +25,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 return;
             }
 
-            foreach (var lambdaFunction in receiver.LambdaFunctions)
+            foreach (var lambdaMethod in receiver.LambdaMethods)
             {
-                var codeGenerator = new LambdaFunctionCodeGenerator(lambdaFunction, receiver.StartupClass, context);
+                var codeGenerator = new LambdaFunctionCodeGenerator(lambdaMethod, receiver.StartupClass, context);
                 var (hint, sourceText) = codeGenerator.GenerateSource();
                 context.AddSource(hint, sourceText);
             }

@@ -27,6 +27,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(APIGatewayProxyRequest).Assembly.Location))
                         .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
                         .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
+                        .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(APIRouteAttribute).Assembly.Location))
                         .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location));
                 });
             }

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
 
@@ -8,19 +8,24 @@ namespace TestServerlessApp
 {
     public class Greeter_SayHelloAsync_Generated
     {
-        private readonly TestServerlessApp.Greeter greeter;
+        private readonly Greeter greeter;
 
         public Greeter_SayHelloAsync_Generated()
         {
-            greeter = new TestServerlessApp.Greeter();
+            greeter = new Greeter();
         }
 
-        public async System.Threading.Tasks.Task<APIGatewayProxyResponse> SayHelloAsync(APIGatewayProxyRequest request, ILambdaContext _context)
+        public async Task<APIGatewayProxyResponse> SayHelloAsync(APIGatewayProxyRequest request, ILambdaContext context)
         {
             await greeter.SayHelloAsync();
+
             return new APIGatewayProxyResponse
             {
-                StatusCode = 200,
+                Headers = new Dictionary<string, string>
+                {
+                    {"Content-Type", "text/plain"}
+                },
+                StatusCode = 200
             };
         }
     }

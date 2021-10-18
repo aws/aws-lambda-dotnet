@@ -1,0 +1,164 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#
+    foreach (var ns in _model.GeneratedMethod.Usings)
+    {
+#>
+using <#= ns #>;
+<#
+    }
+#>
+
+namespace <#= _model.LambdaMethod.ContainingNamespace #>
+{
+    public class <#= _model.GeneratedMethod.ContainingType.Name #>
+    {
+<#
+    if (_model.LambdaMethod.UsingDependencyInjection)
+    {
+#>
+        private readonly ServiceProvider serviceProvider;
+<#
+    }
+    else
+    {
+#>
+        private readonly <#= _model.LambdaMethod.ContainingType.Name #> <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>;
+<#
+    }
+#>
+
+        public <#= _model.GeneratedMethod.ContainingType.Name #>()
+        {
+<#
+    if (_model.LambdaMethod.UsingDependencyInjection)
+    {
+#>
+            var services = new ServiceCollection();
+
+            // By default, Lambda function class is added to the service container using the singleton lifetime
+            // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
+            services.AddSingleton<<#= _model.LambdaMethod.ContainingType.Name #>>();
+
+            var startup = new <#= _model.StartupType.FullName #>();
+            startup.ConfigureServices(services);
+            serviceProvider = services.BuildServiceProvider();
+<#
+    }
+    else
+    {
+#>
+            <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #> = new <#= _model.LambdaMethod.ContainingType.Name #>();
+<#
+    }
+#>
+        }
+
+        public <#= _model.LambdaMethod.IsAsync ? "async Task<" : "" #><#= _model.GeneratedMethod.ResponseType.Name #><#= _model.LambdaMethod.IsAsync ? ">" : "" #> <#= _model.LambdaMethod.Name #>(<#= _model.GeneratedMethod.RequestType.Name #> request, ILambdaContext context)
+        {
+<#
+    if (_model.LambdaMethod.UsingDependencyInjection)
+    {
+#>
+            // Create a scope for every request,
+            // this allows creating scoped dependencies without creating a scope manually.
+            using var scope = serviceProvider.CreateScope();
+            var <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #> = scope.ServiceProvider.GetRequiredService<<#= _model.LambdaMethod.ContainingType.Name #>>();
+<#
+    }
+
+    var parameters = string.Join(",", _model.LambdaMethod.Parameters.Select(p => p.Name));
+
+    foreach (var parameter in _model.LambdaMethod.Parameters)
+    {
+        if (parameter.Attributes.Any(att => att.FullName == "Amazon.Lambda.Annotations.FromServicesAttribute"))
+        {
+#>
+            var <#= parameter.Name #> = scope.ServiceProvider.GetRequiredService<<#= parameter.Type.FullName #>>();
+<#
+        }
+    }
+
+    if (_model.LambdaMethod.ReturnsVoidOrTask)
+    {
+#>
+            <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+<#
+    }
+    else
+    {
+#>
+            var response = <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+<#
+    }
+
+    if (_model.LambdaMethod.Events.Contains(EventType.API))
+    {
+        if (_model.GeneratedMethod.ResponseType.FullName == _model.LambdaMethod.ReturnType.FullName)
+        {
+#>
+            return response;
+<#
+        }
+        else
+        {
+            if (!_model.LambdaMethod.ReturnsVoidOrTask)
+            {
+                if (_model.LambdaMethod.ReturnType.IsValueType)
+                {
+#>
+
+            var body = response.ToString();
+<#
+                }
+                else if (_model.LambdaMethod.ReturnType.IsString())
+                {
+                    // no action
+                }
+                else
+                {
+#>
+
+            var body = <#= _model.Serializer #>.Serialize(response);
+<#
+                }
+            }
+#>
+
+            return new <#= _model.GeneratedMethod.ResponseType.Name #>
+            {
+<#
+            if (!_model.LambdaMethod.ReturnsVoidOrTask)
+            {
+                if (_model.LambdaMethod.ReturnType.IsString())
+                {
+#>
+                Body = response,
+<#
+                }
+                else
+                {
+#>
+                Body = body,
+<#
+                }
+            }
+#>
+                Headers = new Dictionary<string, string>
+                {
+                    {"Content-Type", "text/plain"}
+                },
+                StatusCode = 200
+            };
+<#
+        }
+    }
+#>
+        }
+    }
+}

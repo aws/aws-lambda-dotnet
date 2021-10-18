@@ -23,12 +23,14 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction]
+        [APIRoute]
         public int Add()
         {
             return _simpleCalculatorService.Add(4, 2);
         }
 
         [LambdaFunction]
+        [APIRoute]
         public APIGatewayProxyResponse Subtract([FromServices]ISimpleCalculatorService simpleCalculatorService)
         {
             return new APIGatewayProxyResponse
@@ -39,12 +41,15 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction]
+        [APIRoute]
+
         public string Multiply()
         {
             return _simpleCalculatorService.Multiply(4, 2).ToString();
         }
 
         [LambdaFunction]
+        [APIRoute]
         public async Task<int> DivideAsync()
         {
             return await Task.FromResult(_simpleCalculatorService.Divide(4, 2));

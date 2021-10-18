@@ -7,6 +7,7 @@ namespace TestServerlessApp
     public class ComplexCalculator
     {
         [LambdaFunction]
+        [APIRoute]
         public Tuple<double, double> Add()
         {
             var c1 = new Complex(4, 2);
