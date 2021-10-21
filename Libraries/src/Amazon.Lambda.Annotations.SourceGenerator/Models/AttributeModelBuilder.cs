@@ -22,12 +22,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 var data = new FromPathAttributeData();
                 foreach (var pair in att.NamedArguments)
                 {
-                    if (pair.Key == nameof(data.Name))
+                    if (pair.Key == nameof(data.Name) && pair.Value.Value is string value)
                     {
-                        if (pair.Value.Value is string value)
-                        {
-                            data.Name = value;
-                        }
+                        data.Name = value;
                     }
                 }
 
