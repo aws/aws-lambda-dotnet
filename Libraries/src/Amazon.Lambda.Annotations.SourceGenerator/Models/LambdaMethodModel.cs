@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
@@ -8,6 +10,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// </summary>
     public class LambdaMethodModel
     {
+        private AttributeModel<LambdaFunctionAttributeData> _lambdaFunctionAttribute;
+
         /// <summary>
         /// Returns true if original method is an async method
         /// </summary>
@@ -55,5 +59,34 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// symbol is not contained within a type.
         /// </summary>
         public TypeModel ContainingType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the attributes of original method. There always exist <see cref="Annotations.LambdaFunctionAttribute"/> in the list.
+        /// </summary>
+        public IList<AttributeModel> Attributes { get; set; }
+
+        /// <summary>
+        /// Gets <see cref="Annotations.LambdaFunctionAttribute"/> attribute.
+        /// </summary>
+        public AttributeModel<LambdaFunctionAttributeData> LambdaFunctionAttribute
+        {
+            get
+            {
+                if (_lambdaFunctionAttribute == null)
+                {
+                    var model = Attributes.First(att => att.Type.FullName == TypeFullNames.LambdaFunctionAttribute);
+                    if (model is AttributeModel<LambdaFunctionAttributeData> lambdaFunctionAttributeModel)
+                    {
+                        _lambdaFunctionAttribute = lambdaFunctionAttributeModel;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Lambda method must has a {TypeFullNames.LambdaFunctionAttribute} attribute");
+                    }
+                }
+
+                return _lambdaFunctionAttribute;
+            }
+        }
     }
 }

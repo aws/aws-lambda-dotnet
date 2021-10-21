@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Amazon.Lambda.Annotations.SourceGenerator.Serialization;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
@@ -29,11 +30,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// </summary>
         public string Serializer { get; set; }
 
-        public string Handler { get; set; }
-        public string Name { get; set; }
-        public int Timeout { get; set; }
-        public int MemorySize { get; set; }
-        public string Role { get; set; }
-        public string Policies { get; set; }
+        /// <inheritdoc />
+        public string Handler => $"{LambdaMethod.ContainingNamespace}::{GeneratedMethod.ContainingType.FullName}::{LambdaMethod.Name}";
+
+        /// <inheritdoc />
+        public string Name => LambdaMethod.LambdaFunctionAttribute.Data.Name ??
+                              string.Join(string.Empty, GeneratedMethod.ContainingType.FullName.Where(char.IsLetterOrDigit));
+
+        /// <inheritdoc />
+        public uint? Timeout => LambdaMethod.LambdaFunctionAttribute.Data.Timeout;
+
+        /// <inheritdoc />
+        public uint? MemorySize => LambdaMethod.LambdaFunctionAttribute.Data.MemorySize;
+
+        /// <inheritdoc />
+        public string Role => LambdaMethod.LambdaFunctionAttribute.Data.Role;
+
+        /// <inheritdoc />
+        public string Policies => LambdaMethod.LambdaFunctionAttribute.Data.Policies;
     }
 }

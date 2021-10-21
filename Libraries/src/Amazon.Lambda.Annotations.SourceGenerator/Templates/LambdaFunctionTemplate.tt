@@ -5,6 +5,7 @@
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
 <#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes" #>
 <#
     foreach (var ns in _model.GeneratedMethod.Usings)
     {
@@ -69,14 +70,15 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
             var <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #> = scope.ServiceProvider.GetRequiredService<<#= _model.LambdaMethod.ContainingType.Name #>>();
+
 <#
     }
 
-    var parameters = string.Join(",", _model.LambdaMethod.Parameters.Select(p => p.Name));
+    var parameters = string.Join(", ", _model.LambdaMethod.Parameters.Select(p => p.Name));
 
     foreach (var parameter in _model.LambdaMethod.Parameters)
     {
-        if (parameter.Attributes.Any(att => att.FullName == "Amazon.Lambda.Annotations.FromServicesAttribute"))
+        if (parameter.Attributes.Any(att => att.Type.FullName == "Amazon.Lambda.Annotations.FromServicesAttribute"))
         {
 #>
             var <#= parameter.Name #> = scope.ServiceProvider.GetRequiredService<<#= parameter.Type.FullName #>>();

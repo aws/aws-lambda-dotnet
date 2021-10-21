@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
@@ -21,6 +22,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// Gets or sets the attributes of parameter. If this parameter has no attributes, returns
         /// an empty list.
         /// </summary>
-        public IList<TypeModel> Attributes { get; set; }
+        public IList<AttributeModel> Attributes { get; set; }
     }
 }

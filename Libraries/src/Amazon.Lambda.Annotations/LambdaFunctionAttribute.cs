@@ -15,12 +15,12 @@ namespace Amazon.Lambda.Annotations
         /// <summary>
         /// The amount of time in seconds that Lambda allows a function to run before stopping it.
         /// </summary>
-        public int Timeout { get; set; }
+        public uint Timeout { get; set; }
 
         /// <summary>
         /// The amount of memory available to your Lambda function at runtime.
         /// </summary>
-        public int MemorySize { get; set; }
+        public uint MemorySize { get; set; }
 
         /// <summary>
         /// The IAM Role assumed by the Lambda function during its execution.

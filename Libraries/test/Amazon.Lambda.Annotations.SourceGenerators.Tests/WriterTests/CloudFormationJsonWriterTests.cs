@@ -216,10 +216,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             mockFileManager.WriteAllText(ServerlessTemplateFilePath, originalContent);
             return mockFileManager;
         }
-        private ILambdaFunctionSerializable GetLambdaFunctionModel(string handler, string name, int timeout, 
-            int memorySize, string role, string policies)
+        private LambdaFunctionModelTest GetLambdaFunctionModel(string handler, string name, uint? timeout, 
+            uint? memorySize, string role, string policies)
         {
-            return new LambdaFunctionModel
+            return new LambdaFunctionModelTest
             {
                 Handler = handler,
                 Name = name,
@@ -242,6 +242,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             }
 
             return annotationReport;
+        }
+
+        public class LambdaFunctionModelTest : ILambdaFunctionSerializable
+        {
+            public string Handler { get; set; }
+            public string Name { get; set; }
+            public uint? Timeout { get; set; }
+            public uint? MemorySize { get; set; }
+            public string Role { get; set; }
+            public string Policies { get; set; }
         }
     }
 }

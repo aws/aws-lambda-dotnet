@@ -18,17 +18,5 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 
             return model;
         }
-
-        public static TypeModel Build(IParameterSymbol symbol)
-        {
-            var model = new TypeModel
-            {
-                Name = symbol.Name,
-                FullName = symbol.Type.ToDisplayString(),
-                IsValueType = symbol.Type.IsValueType
-            };
-
-            return model;
-        }
     }
 }

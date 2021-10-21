@@ -12,6 +12,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 
         /// <summary>
         /// Gets or sets the full qualified name of the type.
+        /// In some cases such as value types (ex. int), FullName will be the alias i.e. int in spite of System.Int32.
         /// </summary>
         public string FullName { get; set; }
 
