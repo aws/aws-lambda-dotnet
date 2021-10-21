@@ -88,7 +88,7 @@
           "RootGet": {
             "Type": "Api",
             "Properties": {
-              "Path": "/SimpleCalculator/Subtract",
+              "Path": "/SimpleCalculator/Subtract/{first}/{second}",
               "Method": "GET"
             }
           }

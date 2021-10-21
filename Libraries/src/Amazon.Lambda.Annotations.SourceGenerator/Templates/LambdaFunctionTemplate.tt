@@ -69,17 +69,25 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
             var <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #> = scope.ServiceProvider.GetRequiredService<<#= _model.LambdaMethod.ContainingType.Name #>>();
+
 <#
     }
 
-    var parameters = string.Join(",", _model.LambdaMethod.Parameters.Select(p => p.Name));
+    var parameters = string.Join(", ", _model.LambdaMethod.Parameters.Select(p => p.Name));
 
     foreach (var parameter in _model.LambdaMethod.Parameters)
     {
-        if (parameter.Attributes.Any(att => att.FullName == "Amazon.Lambda.Annotations.FromServicesAttribute"))
+        if (parameter.Attributes.Any(att => att.Type.FullName == "Amazon.Lambda.Annotations.FromServicesAttribute"))
         {
 #>
             var <#= parameter.Name #> = scope.ServiceProvider.GetRequiredService<<#= parameter.Type.FullName #>>();
+<#
+        }
+        else if (parameter.Attributes.Any(att => att.Type.FullName == "Amazon.Lambda.Annotations.FromPathAttribute"))
+        {
+            var attribute = parameter.Attributes.First(att => att.Type.FullName == "Amazon.Lambda.Annotations.FromPathAttribute");
+#>
+            var <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.PathParameters["<#= ((AttributeModel<FromPathAttributeData>)attribute)?.Data?.Name ?? parameter.Name #>"], typeof(<#= parameter.Type.FullName #>));
 <#
         }
     }

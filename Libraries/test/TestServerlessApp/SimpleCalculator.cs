@@ -31,18 +31,17 @@ namespace TestServerlessApp
 
         [LambdaFunction]
         [APIRoute]
-        public APIGatewayProxyResponse Subtract([FromServices]ISimpleCalculatorService simpleCalculatorService)
+        public APIGatewayProxyResponse Subtract([FromPath(Name = "first")]int x, [FromPath]int second, [FromServices]ISimpleCalculatorService simpleCalculatorService)
         {
             return new APIGatewayProxyResponse
             {
                 StatusCode = 200,
-                Body = simpleCalculatorService.Subtract(4, 2).ToString()
+                Body = simpleCalculatorService.Subtract(x, second).ToString()
             };
         }
 
         [LambdaFunction]
         [APIRoute]
-
         public string Multiply()
         {
             return _simpleCalculatorService.Multiply(4, 2).ToString();

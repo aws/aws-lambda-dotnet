@@ -29,8 +29,11 @@ namespace TestServerlessApp
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
+
+            var x = (int)Convert.ChangeType(request.PathParameters["first"], typeof(int));
+            var second = (int)Convert.ChangeType(request.PathParameters["second"], typeof(int));
             var simpleCalculatorService = scope.ServiceProvider.GetRequiredService<TestServerlessApp.Services.ISimpleCalculatorService>();
-            var response = simpleCalculator.Subtract(simpleCalculatorService);
+            var response = simpleCalculator.Subtract(x, second, simpleCalculatorService);
             return response;
         }
     }

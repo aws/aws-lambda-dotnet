@@ -242,17 +242,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write(">();\r\n");
+            this.Write(">();\r\n\r\n");
             
-            #line 72 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 73 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
     }
 
-    var parameters = string.Join(",", _model.LambdaMethod.Parameters.Select(p => p.Name));
+    var parameters = string.Join(", ", _model.LambdaMethod.Parameters.Select(p => p.Name));
 
     foreach (var parameter in _model.LambdaMethod.Parameters)
     {
-        if (parameter.Attributes.Any(att => att.FullName == "Amazon.Lambda.Annotations.FromServicesAttribute"))
+        if (parameter.Attributes.Any(att => att.Type.FullName == "Amazon.Lambda.Annotations.FromServicesAttribute"))
         {
 
             
@@ -260,21 +260,61 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            var ");
             
-            #line 82 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 83 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = scope.ServiceProvider.GetRequiredService<");
             
-            #line 82 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 83 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(">();\r\n");
             
-            #line 83 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 84 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+
+        }
+        else if (parameter.Attributes.Any(att => att.Type.FullName == "Amazon.Lambda.Annotations.FromPathAttribute"))
+        {
+            var attribute = parameter.Attributes.First(att => att.Type.FullName == "Amazon.Lambda.Annotations.FromPathAttribute");
+
+            
+            #line default
+            #line hidden
+            this.Write("            var ");
+            
+            #line 90 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
+            
+            #line default
+            #line hidden
+            this.Write(" = (");
+            
+            #line 90 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
+            
+            #line default
+            #line hidden
+            this.Write(")Convert.ChangeType(request.PathParameters[\"");
+            
+            #line 90 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(((AttributeModel<FromPathAttributeData>)attribute)?.Data?.Name ?? parameter.Name));
+            
+            #line default
+            #line hidden
+            this.Write("\"], typeof(");
+            
+            #line 90 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
+            
+            #line default
+            #line hidden
+            this.Write("));\r\n");
+            
+            #line 91 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
         }
     }
@@ -287,34 +327,34 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            ");
             
-            #line 90 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 98 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.IsAsync ? "await " : ""));
             
             #line default
             #line hidden
             
-            #line 90 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 98 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
             this.Write(".");
             
-            #line 90 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 98 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.Name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 90 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 98 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameters));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 91 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 99 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
     }
     else
@@ -325,34 +365,34 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            var response = ");
             
-            #line 96 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 104 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.IsAsync ? "await " : ""));
             
             #line default
             #line hidden
             
-            #line 96 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 104 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
             this.Write(".");
             
-            #line 96 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 104 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.Name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 96 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 104 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameters));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 97 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 105 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
     }
 
@@ -366,7 +406,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            return response;\r\n");
             
-            #line 106 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 114 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
         }
         else
@@ -381,7 +421,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("\r\n            var body = response.ToString();\r\n");
             
-            #line 117 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 125 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
                 }
                 else if (_model.LambdaMethod.ReturnType.IsString())
@@ -396,14 +436,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("\r\n            var body = ");
             
-            #line 127 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 135 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.Serializer));
             
             #line default
             #line hidden
             this.Write(".Serialize(response);\r\n");
             
-            #line 128 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 136 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
                 }
             }
@@ -413,14 +453,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("\r\n            return new ");
             
-            #line 133 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 141 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ResponseType.Name));
             
             #line default
             #line hidden
             this.Write("\r\n            {\r\n");
             
-            #line 135 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 143 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
             if (!_model.LambdaMethod.ReturnsVoidOrTask)
             {
@@ -432,7 +472,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("                Body = response,\r\n");
             
-            #line 142 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 150 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
                 }
                 else
@@ -443,7 +483,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("                Body = body,\r\n");
             
-            #line 148 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 156 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
                 }
             }
@@ -455,7 +495,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "                {\"Content-Type\", \"text/plain\"}\r\n                },\r\n            " +
                     "    StatusCode = 200\r\n            };\r\n");
             
-            #line 158 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 166 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
         }
     }
