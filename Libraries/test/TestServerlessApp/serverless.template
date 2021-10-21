@@ -9,7 +9,7 @@
         "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello",
         "Runtime": "dotnetcore3.1",
         "CodeUri": "",
-        "MemorySize": 256,
+        "MemorySize": 1024,
         "Timeout": 30,
         "Role": null,
         "Policies": [
@@ -21,7 +21,7 @@
             "Properties": {
               "Path": "/Greeter/SayHello",
               "Method": "GET",
-              "PayloadFormatVersion" : "1.0"
+              "PayloadFormatVersion": "1.0"
             }
           }
         }
@@ -34,7 +34,7 @@
         "Runtime": "dotnetcore3.1",
         "CodeUri": "",
         "MemorySize": 256,
-        "Timeout": 30,
+        "Timeout": 50,
         "Role": null,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -45,7 +45,7 @@
             "Properties": {
               "Path": "/Greeter/SayHelloAsync",
               "Method": "GET",
-              "PayloadFormatVersion" : "1.0"
+              "PayloadFormatVersion": "1.0"
             }
           }
         }
@@ -143,7 +143,7 @@
         }
       }
     },
-    "ComplexCalculatorAdd": {
+    "TestServerlessAppComplexCalculatorAddGenerated": {
       "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add",
@@ -161,7 +161,7 @@
             "Properties": {
               "Path": "/ComplexCalculator/Add",
               "Method": "GET",
-              "PayloadFormatVersion" : "2.0"
+              "PayloadFormatVersion": "2.0"
             }
           }
         }
