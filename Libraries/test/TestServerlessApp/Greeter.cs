@@ -6,14 +6,14 @@ namespace TestServerlessApp
 {
     public class Greeter
     {
-        [LambdaFunction]
+        [LambdaFunction(Name = "GreeterSayHello", MemorySize = 1024)]
         [HttpApi(HttpApiVersion.V1)]
         public void SayHello()
         {
             Console.WriteLine("Hello");
         }
 
-        [LambdaFunction]
+        [LambdaFunction(Name = "GreeterSayHelloAsync", Timeout = 50)]
         [HttpApi(HttpApiVersion.V1)]
         public async Task SayHelloAsync()
         {

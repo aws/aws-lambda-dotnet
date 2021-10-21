@@ -22,14 +22,14 @@ namespace TestServerlessApp
             this._simpleCalculatorService = simpleCalculatorService;
         }
 
-        [LambdaFunction]
+        [LambdaFunction(Name = "SimpleCalculatorAdd")]
         [RestApi]
         public int Add()
         {
             return _simpleCalculatorService.Add(4, 2);
         }
 
-        [LambdaFunction]
+        [LambdaFunction(Name = "SimpleCalculatorSubtract")]
         [RestApi]
         public APIGatewayProxyResponse Subtract([FromServices]ISimpleCalculatorService simpleCalculatorService)
         {
@@ -40,15 +40,14 @@ namespace TestServerlessApp
             };
         }
 
-        [LambdaFunction]
+        [LambdaFunction(Name = "SimpleCalculatorMultiply")]
         [RestApi]
-
         public string Multiply()
         {
             return _simpleCalculatorService.Multiply(4, 2).ToString();
         }
 
-        [LambdaFunction]
+        [LambdaFunction(Name = "SimpleCalculatorDivideAsync")]
         [RestApi]
         public async Task<int> DivideAsync()
         {

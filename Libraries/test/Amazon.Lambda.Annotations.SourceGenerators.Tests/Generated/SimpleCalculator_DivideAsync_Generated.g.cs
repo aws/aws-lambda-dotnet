@@ -30,6 +30,7 @@ namespace TestServerlessApp
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
+
             var response = await simpleCalculator.DivideAsync();
 
             var body = System.Text.Json.JsonSerializer.Serialize(response);

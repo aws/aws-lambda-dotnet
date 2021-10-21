@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -10,7 +11,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// </summary>
     public static class ParameterModelBuilder
     {
-        public static IList<ParameterModel> Build(IMethodSymbol methodSymbol)
+        public static IList<ParameterModel> Build(IMethodSymbol methodSymbol,
+            GeneratorExecutionContext context)
         {
             var models = new List<ParameterModel>();
 
@@ -19,8 +21,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 models.Add(new ParameterModel
                 {
                     Name = parameter.Name,
-                    Type = TypeModelBuilder.Build(parameter),
-                    Attributes = parameter.GetAttributes().Select(att => TypeModelBuilder.Build(att.AttributeClass)).ToList()
+                    Type = TypeModelBuilder.Build(parameter.Type),
+                    Attributes = parameter.GetAttributes().Select(att => AttributeModelBuilder.Build(att, context)).ToList()
                 });
             }
 

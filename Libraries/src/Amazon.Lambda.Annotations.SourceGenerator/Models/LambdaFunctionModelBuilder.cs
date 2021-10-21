@@ -18,7 +18,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 LambdaMethod = lambdaMethod,
                 Serializer = "System.Text.Json.JsonSerializer", // TODO: replace serializer with assembly serializer
                 StartupType = configureMethodSymbol != null ? TypeModelBuilder.Build(configureMethodSymbol.ContainingType) : null,
-                Handler = $"{lambdaMethod.ContainingNamespace}::{generatedMethod.ContainingType.FullName}::{lambdaMethod.Name}"
             };
 
             return model;

@@ -13,5 +13,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string APIGatewayHttpApiV2ProxyResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse";
         public const string MemoryStream = "System.IO.MemoryStream";
         public const string HttpApiVersion = "Amazon.Lambda.Annotations.HttpApiVersion";
+        public const string LambdaFunctionAttribute = "Amazon.Lambda.Annotations.LambdaFunctionAttribute";
     }
 }
