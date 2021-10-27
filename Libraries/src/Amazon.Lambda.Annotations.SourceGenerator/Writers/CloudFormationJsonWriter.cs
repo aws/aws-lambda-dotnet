@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO.Abstractions;
+using System.IO;
 using System.Linq;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Newtonsoft.Json.Linq;
@@ -9,17 +9,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 {
     public class CloudFormationJsonWriter : IAnnotationReportWriter
     {
-        private readonly IFileSystem _fileSystem;
         private IJsonWriter _jsonWriter;
 
-        public CloudFormationJsonWriter(IFileSystem fileSystem)
+        public CloudFormationJsonWriter()
         {
-            _fileSystem = fileSystem;
         }
 
         public void ApplyReport(AnnotationReport report)
         {
-            var originalContent = _fileSystem.File.ReadAllText(report.CloudFormationTemplatePath);
+            var originalContent = File.ReadAllText(report.CloudFormationTemplatePath);
             _jsonWriter = string.IsNullOrEmpty(originalContent)
                 ? CreateNewTemplate()
                 : new JsonWriter(JObject.Parse(originalContent));
@@ -32,7 +30,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             RemoveOrphanedLambdaFunctions(processedLambdaFunctions);
-            _fileSystem.File.WriteAllText(report.CloudFormationTemplatePath, _jsonWriter.GetPrettyJson());
+            File.WriteAllText(report.CloudFormationTemplatePath, _jsonWriter.GetPrettyJson());
         }
         
         private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction)
