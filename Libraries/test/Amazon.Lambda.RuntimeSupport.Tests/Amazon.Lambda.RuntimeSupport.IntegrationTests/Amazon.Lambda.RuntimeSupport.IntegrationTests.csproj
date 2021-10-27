@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <DefineConstants Condition="'$(SkipRuntimeSupportIntegTests)'=='true'">SKIP_RUNTIME_SUPPORT_INTEG_TESTS</DefineConstants>
   </PropertyGroup>
 

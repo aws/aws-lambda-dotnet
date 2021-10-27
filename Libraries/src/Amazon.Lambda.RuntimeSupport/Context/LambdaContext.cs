@@ -69,7 +69,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public string InvokedFunctionArn => _runtimeApiHeaders.InvokedFunctionArn;
 
-        public ILambdaLogger Logger => new LambdaConsoleLogger();
+        public ILambdaLogger Logger => new LambdaConsoleLogger() { CurrentAwsRequestId = _runtimeApiHeaders.AwsRequestId };
 
         public string LogGroupName => _lambdaEnvironment.LogGroupName;
 

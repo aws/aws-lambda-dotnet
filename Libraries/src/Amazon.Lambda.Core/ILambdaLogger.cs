@@ -1,5 +1,41 @@
 namespace Amazon.Lambda.Core
 {
+#if NET6_0_OR_GREATER
+    /// <summary>
+    /// Log Level for logging messages
+    /// </summary>
+    public enum LogLevel 
+    {
+        /// <summary>
+        /// Trace level logging
+        /// </summary>
+        Trace = 0,
+        /// <summary>
+        /// Debug level logging
+        /// </summary>
+        Debug = 1,
+
+        /// <summary>
+        /// Information level logging
+        /// </summary>
+        Information = 2,
+
+        /// <summary>
+        /// Warning level logging
+        /// </summary>
+        Warning = 3,
+
+        /// <summary>
+        /// Error level logging
+        /// </summary>
+        Error = 4,
+
+        /// <summary>
+        /// Critical level logging
+        /// </summary>
+        Critical = 5
+    }
+#endif
     /// <summary>
     /// Lambda runtime logger.
     /// </summary>
@@ -22,6 +58,52 @@ namespace Amazon.Lambda.Core
         /// </summary>
         /// <param name="message"></param>
         void LogLine(string message);
+
+#if NET6_0_OR_GREATER
+
+        /// <summary>
+        /// Log message catagorized by the given log level
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="message"></param>
+        void Log(LogLevel level, string message) => LogLine(message);
+
+        /// <summary>
+        /// Log trace message
+        /// </summary>
+        /// <param name="message"></param>
+        void LogTrace(string message) => Log(LogLevel.Trace, message);
+
+        /// <summary>
+        /// Log debug message
+        /// </summary>
+        /// <param name="message"></param>
+        void LogDebug(string message) => Log(LogLevel.Debug, message);
+
+        /// <summary>
+        /// Log information message
+        /// </summary>
+        /// <param name="message"></param>
+        void LogInformation(string message) => Log(LogLevel.Information, message);
+
+        /// <summary>
+        /// Log warning message
+        /// </summary>
+        /// <param name="message"></param>
+        void LogWarning(string message) => Log(LogLevel.Warning, message);
+
+        /// <summary>
+        /// Log error message
+        /// </summary>
+        /// <param name="message"></param>
+        void LogError(string message) => Log(LogLevel.Error, message);
+
+        /// <summary>
+        /// Log critical message
+        /// </summary>
+        /// <param name="message"></param>
+        void LogCritical(string message) => Log(LogLevel.Critical, message);
+#endif
 
     }
 }
