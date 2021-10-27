@@ -178,6 +178,19 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                                     ],
                                     'Handler': 'MyAssembly::MyNamespace.MyType::Handler'
                                   }
+                                },
+                                'MethodNotCreatedFromAnnotationsPackage': {
+                                  'Type': 'AWS::Serverless::Function',
+                                  'Properties': {
+                                    'Runtime': 'dotnetcore3.1',
+                                    'CodeUri': '',
+                                    'MemorySize': 128,
+                                    'Timeout': 100,
+                                    'Policies': [
+                                      'AWSLambdaBasicExecutionRole'
+                                    ],
+                                    'Handler': 'MyAssembly::MyNamespace.MyType::Handler'
+                                  }
                                 }
                               }
                             }";
@@ -194,6 +207,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var rootToken = JObject.Parse(mockFileSystem.File.ReadAllText(ServerlessTemplateFilePath));
             Assert.Null(rootToken["Resources"]["ObsoleteMethod"]);
             Assert.NotNull(rootToken["Resources"]["NewMethod"]);
+            Assert.NotNull(rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]);
         }
 
         private MockFileSystem GetMockFileSystem(string originalContent)
