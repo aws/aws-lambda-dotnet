@@ -42,7 +42,7 @@ RUN dotnet build "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=t
 FROM builder AS publish
 RUN dotnet publish "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net5.0 -f net5.0 --runtime linux-x64 --self-contained false -p:PublishReadyToRun=true -c Release -o /app/publish
 RUN apt-get update && apt-get install -y dos2unix
-RUN dos2unix /app/publish/lambda-entrypoint.sh
+RUN dos2unix /app/publish/bootstrap.sh
 
 FROM final
 WORKDIR /var/task
@@ -59,8 +59,8 @@ ENV \
 
 COPY --from=publish /app/publish /var/runtime
 
-COPY --from=publish /app/publish/lambda-entrypoint.sh /
-RUN rm -f /var/runtime/lambda-entrypoint.sh && \
-    chmod +x /lambda-entrypoint.sh
+COPY --from=publish /app/publish/bootstrap.sh /
+RUN rm -f /var/runtime/bootstrap.sh && \
+    chmod +x /bootstrap.sh
 
-ENTRYPOINT ["/lambda-entrypoint.sh"]
+ENTRYPOINT ["/bootstrap.sh"]
