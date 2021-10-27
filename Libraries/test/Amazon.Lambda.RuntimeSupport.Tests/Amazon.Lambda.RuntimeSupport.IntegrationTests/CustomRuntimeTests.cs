@@ -49,12 +49,13 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
         ".Trim();
 
-        private const string ExecutionRoleName = "runtimesupporttestingrole";
         private const string TestBucketRoot = "runtimesupporttesting-";
-        private const string FunctionName = "CustomRuntimeFunctionTest";
         private const string DeploymentZipKey = "CustomRuntimeFunctionTest.zip";
         private const string DeploymentPackageZipRelativePath = @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip";
         private const string TestsProjectDirectoryName = "Amazon.Lambda.RuntimeSupport.Tests";
+
+        private string ExecutionRoleName = "runtimesupporttestingrole-" + DateTime.Now.Ticks;
+        private string FunctionName = "CustomRuntimeFunctionTest-" + DateTime.Now.Ticks;
 
         private static string ExecutionRoleArn { get; set; }
 
@@ -228,7 +229,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         /// Return true if it already existed.
         /// </summary>
         /// <returns></returns>
-        private static async Task<bool> ValidateAndSetIamRoleArn(AmazonIdentityManagementServiceClient iamClient)
+        private async Task<bool> ValidateAndSetIamRoleArn(AmazonIdentityManagementServiceClient iamClient)
         {
             var getRoleRequest = new GetRoleRequest
             {
@@ -324,7 +325,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             return await lambdaClient.InvokeAsync(request);
         }
 
-        private static async Task UpdateHandlerAsync(AmazonLambdaClient lambdaClient, string handler, Dictionary<string, string> environmentVariables = null)
+        private async Task UpdateHandlerAsync(AmazonLambdaClient lambdaClient, string handler, Dictionary<string, string> environmentVariables = null)
         {
             var updateFunctionConfigurationRequest = new UpdateFunctionConfigurationRequest
             {
@@ -339,7 +340,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             await lambdaClient.UpdateFunctionConfigurationAsync(updateFunctionConfigurationRequest);
         }
 
-        private static async Task CreateFunctionAsync(AmazonLambdaClient lambdaClient, string bucketName)
+        private async Task CreateFunctionAsync(AmazonLambdaClient lambdaClient, string bucketName)
         {
             await DeleteFunctionIfExistsAsync(lambdaClient);
 
@@ -387,7 +388,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             }
         }
 
-        private static async Task DeleteFunctionIfExistsAsync(AmazonLambdaClient lambdaClient)
+        private async Task DeleteFunctionIfExistsAsync(AmazonLambdaClient lambdaClient)
         {
             var request = new DeleteFunctionRequest
             {
