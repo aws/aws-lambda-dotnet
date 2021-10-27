@@ -29,7 +29,7 @@
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="lambda-entrypoint.sh">
+    <None Update="bootstrap.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
