@@ -1,6 +1,6 @@
 ﻿using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
-using Amazon.Lambda.Serialization.Json;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using System;
 using System.IO;
 using System.Net.Http;
@@ -22,7 +22,7 @@ namespace CustomRuntimeFunctionTest
         private static readonly Lazy<string> SevenMBString = new Lazy<string>(() => { return new string('X', 1024 * 1024 * 7); });
 
         private static MemoryStream ResponseStream = new MemoryStream();
-        private static JsonSerializer JsonSerializer = new JsonSerializer();
+        private static DefaultLambdaJsonSerializer JsonSerializer = new DefaultLambdaJsonSerializer();
         private static LambdaEnvironment LambdaEnvironment = new LambdaEnvironment();
 
         private static async Task Main(string[] args)
@@ -35,6 +35,9 @@ namespace CustomRuntimeFunctionTest
             {
                 switch (handler)
                 {
+                    case nameof(LoggingTest):
+                        bootstrap = new LambdaBootstrap(LoggingTest);
+                        break;
                     case nameof(ToUpperAsync):
                         bootstrap = new LambdaBootstrap(ToUpperAsync);
                         break;
@@ -92,6 +95,17 @@ namespace CustomRuntimeFunctionTest
                 handlerWrapper?.Dispose();
                 bootstrap?.Dispose();
             }
+        }
+
+        private static Task<InvocationResponse> LoggingTest(InvocationRequest invocation)
+        {
+            invocation.LambdaContext.Logger.LogTrace("A trace log");
+            invocation.LambdaContext.Logger.LogDebug("A debug log");
+            invocation.LambdaContext.Logger.LogInformation("A information log");
+            invocation.LambdaContext.Logger.LogWarning("A warning log");
+            invocation.LambdaContext.Logger.LogError("A error log");
+            invocation.LambdaContext.Logger.LogCritical("A critical log");
+            return Task.FromResult(GetInvocationResponse(nameof(LoggingTest), true));
         }
 
         private static Task<InvocationResponse> ToUpperAsync(InvocationRequest invocation)
@@ -155,7 +169,7 @@ namespace CustomRuntimeFunctionTest
         private static Task<InvocationResponse> NetworkingProtocolsAsync(InvocationRequest invocation)
         {
             var type = typeof(Socket).GetTypeInfo().Assembly.GetType("System.Net.SocketProtocolSupportPal");
-            var method = type.GetMethod("IsProtocolSupported", BindingFlags.NonPublic | BindingFlags.Static);
+            var method = type.GetMethod("IsSupported", BindingFlags.NonPublic | BindingFlags.Static);
             var ipv4Supported = method.Invoke(null, new object[] { AddressFamily.InterNetwork });
             var ipv6Supported = method.Invoke(null, new object[] { AddressFamily.InterNetworkV6 });
 

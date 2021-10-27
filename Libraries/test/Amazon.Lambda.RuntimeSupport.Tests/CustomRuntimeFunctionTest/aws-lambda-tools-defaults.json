@@ -2,7 +2,6 @@
   "profile": "default",
   "region": "us-west-2",
   "configuration": "Release",
-  "framework": "netcoreapp2.2",
   "msbuild-parameters": "--self-contained true",
   "function-runtime": "provided",
   "function-memory-size": 256,

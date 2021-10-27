@@ -20,6 +20,7 @@ using Amazon.S3.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -52,7 +53,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         private const string TestBucketRoot = "runtimesupporttesting-";
         private const string FunctionName = "CustomRuntimeFunctionTest";
         private const string DeploymentZipKey = "CustomRuntimeFunctionTest.zip";
-        private const string DeploymentPackageZipRelativePath = @"CustomRuntimeFunctionTest\bin\Release\netcoreapp2.2\CustomRuntimeFunctionTest.zip";
+        private const string DeploymentPackageZipRelativePath = @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip";
         private const string TestsProjectDirectoryName = "Amazon.Lambda.RuntimeSupport.Tests";
 
         private static string ExecutionRoleArn { get; set; }
@@ -74,6 +75,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 try
                 {
                     roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
+
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", null);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", "debug");
 
                     await RunTestSuccessAsync(lambdaClient, "ToUpperAsync", "message", "ToUpperAsync-MESSAGE");
                     await RunTestSuccessAsync(lambdaClient, "PingAsync", "ping", "PingAsync-pong");
@@ -121,6 +125,38 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 Assert.Equal(expectedErrorMessage, exception["errorMessage"].ToString());
             }
         }
+
+        private async Task RunLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler, string logLevel)
+        {
+            var environmentVariables = new Dictionary<string, string>();
+            if(!string.IsNullOrEmpty(logLevel))
+            {
+                environmentVariables["AWS_LAMBDA_HANDLER_LOG_LEVEL"] = logLevel;
+            }
+            await UpdateHandlerAsync(lambdaClient, handler, environmentVariables);
+
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.True(invokeResponse.FunctionError == null);
+
+            var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+
+            Assert.Contains("info\tA information log", log);
+            Assert.Contains("warn\tA warning log", log);
+            Assert.Contains("fail\tA error log", log);
+            Assert.Contains("crit\tA critical log", log);
+
+            if(string.IsNullOrEmpty(logLevel))
+            {
+                Assert.DoesNotContain($"a {logLevel} log".ToLower(), log.ToLower());
+            }
+            else
+            {
+                Assert.Contains($"a {logLevel} log".ToLower(), log.ToLower());
+            }
+
+        }
+
 
         private async Task RunTestSuccessAsync(AmazonLambdaClient lambdaClient, string handler, string input, string expectedResponse)
         {
@@ -282,17 +318,23 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var request = new InvokeRequest
             {
                 FunctionName = FunctionName,
-                Payload = payload
+                Payload = payload,
+                LogType = LogType.Tail
             };
             return await lambdaClient.InvokeAsync(request);
         }
 
-        private static async Task UpdateHandlerAsync(AmazonLambdaClient lambdaClient, string handler)
+        private static async Task UpdateHandlerAsync(AmazonLambdaClient lambdaClient, string handler, Dictionary<string, string> environmentVariables = null)
         {
             var updateFunctionConfigurationRequest = new UpdateFunctionConfigurationRequest
             {
                 FunctionName = FunctionName,
-                Handler = handler
+                Handler = handler,
+                Environment = new Model.Environment
+                {
+                    IsVariablesSet = true,
+                    Variables = environmentVariables ?? new Dictionary<string, string>()
+                }
             };
             await lambdaClient.UpdateFunctionConfigurationAsync(updateFunctionConfigurationRequest);
         }
