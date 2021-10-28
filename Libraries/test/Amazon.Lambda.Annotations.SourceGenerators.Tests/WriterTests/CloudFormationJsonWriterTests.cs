@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.IO.Abstractions.TestingHelpers;
+using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Newtonsoft.Json.Linq;
@@ -15,17 +15,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         public void AddSingletonFunctionToEmptyTemplate()
         {
             // ARRANGE
-            var mockFileSystem = GetMockFileSystem(string.Empty);
+            var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, null, null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileSystem);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
             var report = GetAnnotationReport(new() {lambdaFunctionModel});
 
             // ACT 
             cloudFormationJsonWriter.ApplyReport(report);
             
             // ASSERT
-            var rootToken = JObject.Parse(mockFileSystem.File.ReadAllText(ServerlessTemplateFilePath));
+            var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             var functionToken = rootToken["Resources"]["TestMethod"];
             var propertiesToken = functionToken["Properties"];
             
@@ -45,8 +45,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         public void SwitchFromPolicyToRole()
         {
             // ARRANGE
-            var mockFileSystem = GetMockFileSystem(string.Empty);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileSystem);
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
             
             //ACT - USE POLICY
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
@@ -55,7 +55,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             cloudFormationJsonWriter.ApplyReport(report);
             
             // ASSERT
-            var rootToken = JObject.Parse(mockFileSystem.File.ReadAllText(ServerlessTemplateFilePath));
+            var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             var policyArray = rootToken["Resources"]["TestMethod"]["Properties"]["Policies"];
             Assert.Equal(new(){"Policy1", "Policy2", "Policy3"}, policyArray.ToObject<List<string>>());
             Assert.Null(rootToken["Resources"]["TestMethod"]["Properties"]["Role"]);
@@ -67,7 +67,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             cloudFormationJsonWriter.ApplyReport(report);
             
             // ASSERT
-            rootToken = JObject.Parse(mockFileSystem.File.ReadAllText(ServerlessTemplateFilePath));
+            rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             Assert.Equal("Basic", rootToken["Resources"]["TestMethod"]["Properties"]["Role"]);
             Assert.Null(rootToken["Resources"]["TestMethod"]["Properties"]["Policies"]);
             
@@ -78,7 +78,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             cloudFormationJsonWriter.ApplyReport(report);
             
             // ASSERT
-            rootToken = JObject.Parse(mockFileSystem.File.ReadAllText(ServerlessTemplateFilePath));
+            rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             policyArray = rootToken["Resources"]["TestMethod"]["Properties"]["Policies"];
             Assert.Equal(new(){"Policy1", "Policy2", "Policy3"}, policyArray.ToObject<List<string>>());
             Assert.Null(rootToken["Resources"]["TestMethod"]["Properties"]["Role"]);
@@ -88,17 +88,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         public void UseRefForPolicies()
         {
             // ARRANGE
-            var mockFileSystem = GetMockFileSystem(string.Empty);
+            var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, null, "Policy1, @Policy2, Policy3");
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileSystem);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
             var report = GetAnnotationReport(new() {lambdaFunctionModel});
             
             // ACT 
             cloudFormationJsonWriter.ApplyReport(report);
             
             // ASSERT
-            var rootToken = JObject.Parse(mockFileSystem.File.ReadAllText(ServerlessTemplateFilePath));
+            var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             var policies = rootToken["Resources"]["TestMethod"]["Properties"]["Policies"] as JArray;
             Assert.Equal(3, policies.Count);
             Assert.Equal("Policy1", policies[0]);
@@ -110,17 +110,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         public void UseRefForRole()
         {
             // ARRANGE
-            var mockFileSystem = GetMockFileSystem(string.Empty);
+            var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, "@Basic", null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileSystem);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
             var report = GetAnnotationReport(new() {lambdaFunctionModel});
             
             // ACT
             cloudFormationJsonWriter.ApplyReport(report);
             
             // ASSERT
-            var rootToken = JObject.Parse(mockFileSystem.File.ReadAllText(ServerlessTemplateFilePath));
+            var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             Assert.Equal("Basic", rootToken["Resources"]["TestMethod"]["Properties"]["Role"]["Ref"]);
         }
 
@@ -128,17 +128,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         public void RenameFunction()
         {
             // ARRANGE
-            var mockFileSystem = GetMockFileSystem(string.Empty);
+            var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "OldName", 45, 512, "@Basic", null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileSystem);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
             var report = GetAnnotationReport(new() {lambdaFunctionModel});
             
             // ACT
             cloudFormationJsonWriter.ApplyReport(report);
             
             // ASSERT
-            var rootToken = JObject.Parse(mockFileSystem.File.ReadAllText(ServerlessTemplateFilePath));
+            var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             Assert.NotNull(rootToken["Resources"]["OldName"]);
             Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", 
                 rootToken["Resources"]["OldName"]["Properties"]["Handler"]);
@@ -148,7 +148,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             cloudFormationJsonWriter.ApplyReport(report);
             
             // ASSERT
-            rootToken = JObject.Parse(mockFileSystem.File.ReadAllText(ServerlessTemplateFilePath));
+            rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             Assert.Null(rootToken["Resources"]["OldName"]);
             Assert.NotNull(rootToken["Resources"]["NewName"]);
             Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", 
@@ -178,31 +178,44 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                                     ],
                                     'Handler': 'MyAssembly::MyNamespace.MyType::Handler'
                                   }
+                                },
+                                'MethodNotCreatedFromAnnotationsPackage': {
+                                  'Type': 'AWS::Serverless::Function',
+                                  'Properties': {
+                                    'Runtime': 'dotnetcore3.1',
+                                    'CodeUri': '',
+                                    'MemorySize': 128,
+                                    'Timeout': 100,
+                                    'Policies': [
+                                      'AWSLambdaBasicExecutionRole'
+                                    ],
+                                    'Handler': 'MyAssembly::MyNamespace.MyType::Handler'
+                                  }
                                 }
                               }
                             }";
-            var mockFileSystem = GetMockFileSystem(originalContent);
+            var mockFileManager = GetMockFileManager(originalContent);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "NewMethod", 45, 512, null, null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileSystem);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
             var report = GetAnnotationReport(new() {lambdaFunctionModel});
             
             // ACT
             cloudFormationJsonWriter.ApplyReport(report);
             
             // ASSERT
-            var rootToken = JObject.Parse(mockFileSystem.File.ReadAllText(ServerlessTemplateFilePath));
+            var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             Assert.Null(rootToken["Resources"]["ObsoleteMethod"]);
             Assert.NotNull(rootToken["Resources"]["NewMethod"]);
+            Assert.NotNull(rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]);
         }
 
-        private MockFileSystem GetMockFileSystem(string originalContent)
+        private IFileManager GetMockFileManager(string originalContent)
         {
-            var mockFileSystem = new MockFileSystem();
-            mockFileSystem.AddFile(ServerlessTemplateFilePath, originalContent);
-            return mockFileSystem;
+            var mockFileManager = new InMemoryFileManager();
+            mockFileManager.WriteAllText(ServerlessTemplateFilePath, originalContent);
+            return mockFileManager;
         }
-
         private ILambdaFunctionSerializable GetLambdaFunctionModel(string handler, string name, int timeout, 
             int memorySize, string role, string policies)
         {
