@@ -1,10 +1,8 @@
-﻿using System.IO;
-using System.IO.Abstractions;
-using System.Linq;
+﻿using System.Diagnostics;
+using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Microsoft.CodeAnalysis;
-using Newtonsoft.Json.Linq;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
@@ -14,10 +12,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public Generator()
         {
 #if DEBUG
-            //if (!Debugger.IsAttached)
-            //{
-            //    Debugger.Launch();
-            //}
+            // if (!Debugger.IsAttached)
+            // {
+            //     Debugger.Launch();
+            // }
 #endif
         }
 
@@ -30,8 +28,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             }
 
             var annotationReport = new AnnotationReport();
-            var fileSystem = new FileSystem();
-            var templateFinder = new CloudFormationTemplateFinder(fileSystem);
+            var templateFinder = new CloudFormationTemplateFinder(new FileManager(), new DirectoryManager());
             var projectRootDirectory = string.Empty;
 
             foreach (var lambdaFunction in receiver.LambdaFunctions)
@@ -51,7 +48,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             }
 
             annotationReport.CloudFormationTemplatePath = templateFinder.FindCloudFormationTemplate(projectRootDirectory);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(fileSystem);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(new FileManager(), new JsonWriter());
             cloudFormationJsonWriter.ApplyReport(annotationReport);
         }
 

@@ -1,32 +1,33 @@
 using System;
 using System.IO;
-using System.IO.Abstractions;
 using System.Linq;
-using Newtonsoft.Json;
+using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Newtonsoft.Json.Linq;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
     public class CloudFormationTemplateFinder
     {
-        private readonly IFileSystem _fileSystem;
+        private readonly IFileManager _fileManager;
+        private readonly IDirectoryManager _directoryManager;
 
-        public CloudFormationTemplateFinder(IFileSystem fileSystem)
+        public CloudFormationTemplateFinder(IFileManager fileManager, IDirectoryManager directoryManager)
         {
-            _fileSystem = fileSystem;
+            _fileManager = fileManager;
+            _directoryManager = directoryManager;
         }
 
         public string DetermineProjectRootDirectory(string sourceFilePath)
         {
-            if (!_fileSystem.File.Exists(sourceFilePath))
+            if (!_fileManager.Exists(sourceFilePath))
                 return string.Empty;
 
-            var directoryPath = _fileSystem.Path.GetDirectoryName(sourceFilePath);
+            var directoryPath = _directoryManager.GetDirectoryName(sourceFilePath);
             while (!string.IsNullOrEmpty(directoryPath))
             {
-                if (_fileSystem.Directory.GetFiles(directoryPath, "*.csproj").Length == 1)
+                if (_directoryManager.GetFiles(directoryPath, "*.csproj").Length == 1)
                     return directoryPath;
-                directoryPath = _fileSystem.Path.GetDirectoryName(directoryPath);
+                directoryPath = _directoryManager.GetDirectoryName(directoryPath);
             }
 
             return string.Empty;
@@ -34,16 +35,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
         public string FindCloudFormationTemplate(string projectRootDirectory)
         {
-            if (!_fileSystem.Directory.Exists(projectRootDirectory))
+            if (!_directoryManager.Exists(projectRootDirectory))
                 throw new DirectoryNotFoundException("Failed to find the project root directory");
 
             var templateAbsolutePath = string.Empty;
             
-            var defaultConfigFile = _fileSystem.Directory
-                .GetFiles(projectRootDirectory, "aws-lambda-tools-defaults.json", SearchOption.AllDirectories)
+            var defaultConfigFile = _directoryManager.GetFiles(projectRootDirectory, "aws-lambda-tools-defaults.json", SearchOption.AllDirectories)
                 .FirstOrDefault();
 
-            if (_fileSystem.File.Exists(defaultConfigFile))
+            if (_fileManager.Exists(defaultConfigFile))
                 // the templateAbsolutePath will be empty if the template property is not found in the default config file
                 templateAbsolutePath = GetTemplatePathFromDefaultConfigFile(defaultConfigFile);
 
@@ -52,8 +52,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             if (string.IsNullOrEmpty(templateAbsolutePath))
                 templateAbsolutePath = Path.Combine(projectRootDirectory, "serverless.template");
                 
-            if (!_fileSystem.File.Exists(templateAbsolutePath))
-                _fileSystem.File.Create(templateAbsolutePath).Close();
+            if (!_fileManager.Exists(templateAbsolutePath))
+                _fileManager.Create(templateAbsolutePath).Close();
             
             return templateAbsolutePath;
         }
@@ -63,7 +63,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             JToken rootToken;
             try
             {
-                rootToken = JObject.Parse(_fileSystem.File.ReadAllText(defaultConfigFile));
+                rootToken = JObject.Parse(_fileManager.ReadAllText(defaultConfigFile));
             }
             catch (Exception)
             {
@@ -75,7 +75,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             if (string.IsNullOrEmpty(templateRelativePath))
                 return string.Empty;
 
-            var templateAbsolutePath = _fileSystem.Path.Combine(_fileSystem.Path.GetDirectoryName(defaultConfigFile), templateRelativePath);
+            var templateAbsolutePath = Path.Combine(_directoryManager.GetDirectoryName(defaultConfigFile), templateRelativePath);
             return templateAbsolutePath;
         }
     }

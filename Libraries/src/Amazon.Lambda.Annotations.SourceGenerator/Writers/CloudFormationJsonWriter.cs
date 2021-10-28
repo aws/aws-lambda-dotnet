@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO.Abstractions;
 using System.Linq;
+using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Newtonsoft.Json.Linq;
 
@@ -9,20 +9,24 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 {
     public class CloudFormationJsonWriter : IAnnotationReportWriter
     {
-        private readonly IFileSystem _fileSystem;
-        private IJsonWriter _jsonWriter;
+        private readonly IFileManager _fileManager;
+        private readonly IJsonWriter _jsonWriter;
 
-        public CloudFormationJsonWriter(IFileSystem fileSystem)
+        public CloudFormationJsonWriter(IFileManager fileManager, IJsonWriter jsonWriter)
         {
-            _fileSystem = fileSystem;
+            _fileManager = fileManager;
+            _jsonWriter = jsonWriter;
         }
 
         public void ApplyReport(AnnotationReport report)
         {
-            var originalContent = _fileSystem.File.ReadAllText(report.CloudFormationTemplatePath);
-            _jsonWriter = string.IsNullOrEmpty(originalContent)
-                ? CreateNewTemplate()
-                : new JsonWriter(JObject.Parse(originalContent));
+            var originalContent = _fileManager.ReadAllText(report.CloudFormationTemplatePath);
+            
+            if (string.IsNullOrEmpty(originalContent))
+                CreateNewTemplate();
+            else
+                _jsonWriter.Parse(originalContent);
+
             var processedLambdaFunctions = new HashSet<string>();
             
             foreach (var lambdaFunction in report.LambdaFunctions)
@@ -32,7 +36,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             RemoveOrphanedLambdaFunctions(processedLambdaFunctions);
-            _fileSystem.File.WriteAllText(report.CloudFormationTemplatePath, _jsonWriter.GetPrettyJson());
+            _fileManager.WriteAllText(report.CloudFormationTemplatePath, _jsonWriter.GetPrettyJson());
         }
         
         private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction)
@@ -80,12 +84,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray("AWSLambdaBasicExecutionRole"));
         }
         
-        private IJsonWriter CreateNewTemplate()
+        private void CreateNewTemplate()
         {
-            var jsonWriter = new JsonWriter();
-            jsonWriter.SetToken("AWSTemplateFormatVersion", "2010-09-09");
-            jsonWriter.SetToken("Transform", "AWS::Serverless-2016-10-31");
-            return jsonWriter;
+            var content = @"{'AWSTemplateFormatVersion' : '2010-09-09', 'Transform' : 'AWS::Serverless-2016-10-31'}";
+            _jsonWriter.Parse(content);
         }
         
         private void RemoveOrphanedLambdaFunctions(HashSet<string> processedLambdaFunctions)

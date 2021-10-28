@@ -7,7 +7,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 {
     public class JsonWriter : IJsonWriter
     {
-        private readonly JObject _rootNode;
+        private JObject _rootNode;
 
         public JsonWriter()
         {
@@ -36,12 +36,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         public void SetToken(string jsonPath, JToken token)
         {
+            if (token == null)
+            {
+                return;
+            }
+                
             var pathList = jsonPath.Split('.');
             var lastProperty = pathList.LastOrDefault();
             if (string.IsNullOrEmpty((lastProperty)))
             {
-                throw new InvalidOperationException(
-                    "Cannot set a token at {jsonPath} because the terminal property is null or empty");
+                throw new InvalidOperationException($"Cannot set a token at '{jsonPath}' because the terminal property is null or empty");
             }
             var currentNode = _rootNode;
 
@@ -55,7 +59,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 currentNode = currentNode[property] as JObject;
                 if (currentNode == null)
                 {
-                    throw new InvalidOperationException($"Cannot set a value at {jsonPath} because the token at {property} does not represent a {typeof(JObject)}");
+                    throw new InvalidOperationException($"Cannot set a value at '{jsonPath}' because the token at {property} does not represent a {typeof(JObject)}");
                 }
             }
 
@@ -70,7 +74,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 {
                     return defaultToken;
                 }
-                throw new InvalidOperationException($"{jsonPath} does not exist in the JSON model");
+                throw new InvalidOperationException($"'{jsonPath}' does not exist in the JSON model");
             }
 
             JToken currentNode = _rootNode;
@@ -94,7 +98,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (string.IsNullOrEmpty((lastProperty)))
             {
                 throw new InvalidOperationException(
-                    "Cannot set a token at {jsonPath} because the terminal property is null or empty");
+                    $"Cannot remove the token at '{jsonPath}' because the terminal property is null or empty");
             }
             var currentNode = _rootNode;
 
@@ -110,6 +114,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         public string GetPrettyJson()
         {
             return JsonConvert.SerializeObject(_rootNode, formatting: Formatting.Indented);
+        }
+
+        public void Parse(string content)
+        {
+            _rootNode = string.IsNullOrEmpty(content) ? new JObject() : JObject.Parse(content);
         }
     }
 }

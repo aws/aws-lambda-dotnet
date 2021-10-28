@@ -9,5 +9,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         JToken GetToken(string jsonPath, JToken defaultToken = null);
         void RemoveToken(string jsonPath);
         string GetPrettyJson();
+        void Parse(string content);
     }
 }
