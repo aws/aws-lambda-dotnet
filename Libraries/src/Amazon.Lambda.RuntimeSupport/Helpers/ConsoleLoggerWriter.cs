@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Amazon.Lambda.RuntimeSupport.Bootstrap;
+using System;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -114,6 +116,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         {
             Console.SetOut(_wrappedStdOutWriter);
             Console.SetError(_wrappedStdErrorWriter);
+
+            ConfigureLoggingActionField();
         }
 
         public LogLevelLoggerWriter(TextWriter stdOutWriter, TextWriter stdErrorWriter)
@@ -123,6 +127,25 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             _consoleErrorWriter = stdErrorWriter;
             _wrappedStdErrorWriter = new WrapperTextWriter(_consoleErrorWriter, LogLevel.Error.ToString());
+        }
+
+        /// <summary>
+        /// Set a special callback on Amazon.Lambda.Core.LambdaLogger to redirect its logging to FormattedWriteLine.
+        /// This allows outputting logging with time and account id but not have LogLevel. This is important for
+        /// Amazon.Lambda.Logging.AspNetCore which already provides a string with a log level.
+        /// </summary>
+        private void ConfigureLoggingActionField()
+        {
+            var lambdaILoggerType = typeof(Amazon.Lambda.Core.LambdaLogger);
+            if (lambdaILoggerType == null)
+                return;
+
+            var loggingActionField = lambdaILoggerType.GetTypeInfo().GetField("_loggingAction", BindingFlags.NonPublic | BindingFlags.Static);
+            if (loggingActionField == null)
+                return;
+
+            Action<string> callback = (message => FormattedWriteLine(null, message));
+            loggingActionField.SetValue(null, callback);
         }
 
         public void SetCurrentAwsRequestId(string awsRequestId)
@@ -179,16 +202,24 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             internal void FormattedWriteLine(string level, string message)
             {
-                var displayLevel = level;
-                if (Enum.TryParse<LogLevel>(level, true, out var levelEnum))
+                string line;
+                if(!string.IsNullOrEmpty(level))
                 {
-                    if (levelEnum < _minmumLogLevel)
-                        return;
+                    var displayLevel = level;
+                    if (Enum.TryParse<LogLevel>(level, true, out var levelEnum))
+                    {
+                        if (levelEnum < _minmumLogLevel)
+                            return;
 
-                    displayLevel = ConvertLogLevelToLabel(levelEnum);
+                        displayLevel = ConvertLogLevelToLabel(levelEnum);
+                    }
+
+                    line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{displayLevel}\t{message ?? string.Empty}";
                 }
-
-                var line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{displayLevel}\t{message ?? string.Empty}";
+                else
+                {
+                    line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{message ?? string.Empty}";
+                }
                 _innerWriter.WriteLine(line);
             }
 
