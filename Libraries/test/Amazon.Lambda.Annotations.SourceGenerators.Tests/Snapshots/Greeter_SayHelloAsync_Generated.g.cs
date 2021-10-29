@@ -18,7 +18,13 @@ namespace TestServerlessApp
 
         public async Task<APIGatewayProxyResponse> SayHelloAsync(APIGatewayProxyRequest request, ILambdaContext context)
         {
-            await greeter.SayHelloAsync();
+            var firstNames = default(System.Collections.Generic.IEnumerable<string>);
+            if (request.Headers?.ContainsKey("names") == true)
+            {
+                firstNames = request.Headers["names"].Split(",").Select(q => (string)Convert.ChangeType(q, typeof(string))).ToList();
+            }
+
+            await greeter.SayHelloAsync(firstNames);
 
             return new APIGatewayProxyResponse
             {

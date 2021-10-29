@@ -34,6 +34,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
                 };
             }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.FromHeaderAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = FromHeaderAttributeBuilder.Build(att);
+                model = new AttributeModel<FromHeaderAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
             else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.HttpApiAttribute), SymbolEqualityComparer.Default))
             {
                 var data = HttpApiAttributeBuilder.Build(att);
