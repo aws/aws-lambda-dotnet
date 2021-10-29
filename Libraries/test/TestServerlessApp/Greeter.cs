@@ -24,9 +24,17 @@ namespace TestServerlessApp
 
         [LambdaFunction(Name = "GreeterSayHelloAsync", Timeout = 50)]
         [HttpApi(HttpApiVersion.V1)]
-        public async Task SayHelloAsync()
+        public async Task SayHelloAsync([FromHeader(Name = "names")]IEnumerable<string> firstNames)
         {
-            Console.WriteLine("Hello");
+            if (firstNames == null)
+            {
+                return;
+            }
+
+            foreach (var firstName in firstNames)
+            {
+                Console.WriteLine($"Hello {firstName}");
+            }
             await Task.CompletedTask;
         }
     }

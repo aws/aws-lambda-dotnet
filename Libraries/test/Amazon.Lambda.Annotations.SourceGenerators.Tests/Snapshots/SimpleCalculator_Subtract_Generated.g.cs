@@ -31,8 +31,20 @@ namespace TestServerlessApp
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
 
+            var x = default(int);
+            if (request.Headers?.ContainsKey("x") == true)
+            {
+                x = (int)Convert.ChangeType(request.Headers["x"], typeof(int));
+            }
+
+            var y = default(int);
+            if (request.Headers?.ContainsKey("y") == true)
+            {
+                y = (int)Convert.ChangeType(request.Headers["y"], typeof(int));
+            }
+
             var simpleCalculatorService = scope.ServiceProvider.GetRequiredService<TestServerlessApp.Services.ISimpleCalculatorService>();
-            var response = simpleCalculator.Subtract(simpleCalculatorService);
+            var response = simpleCalculator.Subtract(x, y, simpleCalculatorService);
             return response;
         }
     }

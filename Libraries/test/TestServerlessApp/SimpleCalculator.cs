@@ -31,12 +31,12 @@ namespace TestServerlessApp
 
         [LambdaFunction(Name = "SimpleCalculatorSubtract")]
         [RestApi]
-        public APIGatewayProxyResponse Subtract([FromServices]ISimpleCalculatorService simpleCalculatorService)
+        public APIGatewayProxyResponse Subtract([FromHeader]int x, [FromHeader]int y, [FromServices]ISimpleCalculatorService simpleCalculatorService)
         {
             return new APIGatewayProxyResponse
             {
                 StatusCode = 200,
-                Body = simpleCalculatorService.Subtract(4, 2).ToString()
+                Body = simpleCalculatorService.Subtract(x, y).ToString()
             };
         }
 

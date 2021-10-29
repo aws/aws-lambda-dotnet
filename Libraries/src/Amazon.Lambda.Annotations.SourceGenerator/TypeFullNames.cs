@@ -15,6 +15,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string HttpApiVersion = "Amazon.Lambda.Annotations.HttpApiVersion";
         public const string LambdaFunctionAttribute = "Amazon.Lambda.Annotations.LambdaFunctionAttribute";
         public const string FromQueryAttribute = "Amazon.Lambda.Annotations.FromQueryAttribute";
+        public const string FromHeaderAttribute = "Amazon.Lambda.Annotations.FromHeaderAttribute";
         public const string FromServiceAttribute = "Amazon.Lambda.Annotations.FromServicesAttribute";
         public const string IEnumerable = "System.Collections.IEnumerable";
     }

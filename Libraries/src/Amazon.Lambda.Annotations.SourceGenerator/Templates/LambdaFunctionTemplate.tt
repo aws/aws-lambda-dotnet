@@ -79,6 +79,8 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
     if (_model.LambdaMethod.Events.Contains(EventType.API))
     {
         var parameters = string.Join(", ", _model.LambdaMethod.Parameters.Select(p => p.Name));
+        var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute);
+        var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<HttpApiAttribute>;
         foreach (var parameter in _model.LambdaMethod.Parameters)
         {
             if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromServiceAttribute))
@@ -89,8 +91,6 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             }
             else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
             {
-                var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute);
-                var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<HttpApiAttribute>;
                 var fromQueryAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromQueryAttribute) as AttributeModel<FromQueryAttribute>;
 
                 // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
@@ -143,6 +143,66 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             if (request.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
             {
                 <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullName #>));
+            }
+
+<#
+                }
+
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute))
+            {
+                var fromHeaderAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute) as AttributeModel<FromHeaderAttribute>;
+
+                // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                var headerKey = fromHeaderAttribute?.Data?.Name ?? parameter.Name;
+
+                var headers = "Headers";
+
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+<#
+
+                if (parameter.Type.IsEnumerable && parameter.Type.IsGenericType)
+                {
+                    // In HTTP API V2 multiple values for the same header are represented via comma separated string
+                    // Therefore, it is required to split the string to convert to an enumerable
+                    // and convert individual item to target data type.
+                    var commaSplit = "";
+                    if (httpApiAttribute?.Data.Version == HttpApiVersion.V2)
+                    {
+                        commaSplit = @".Split("","")";
+                    }
+
+                    // HTTP API V1 and Rest API, multiple values for the same header are provided
+                    // dedicated dictionary of string key and list value.
+                    if (restApiAttribute != null || httpApiAttribute?.Data.Version == HttpApiVersion.V1)
+                    {
+                        headers = "MultiValueHeaders";
+                    }
+
+                    if (parameter.Type.TypeArguments.Count != 1)
+                    {
+                        throw new NotSupportedException("Only one type argument is supported for generic types.");
+                    }
+
+                    // Generic types are mapped using Select statement to the target parameter type argument.
+                    var typeArgument = parameter.Type.TypeArguments.First();
+                    var select = $".Select(q => ({typeArgument.FullName})Convert.ChangeType(q, typeof({typeArgument.FullName}))).ToList()";
+#>
+            if (request.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
+            {
+                <#= parameter.Name #> = request.<#= headers #>["<#= headerKey #>"]<#= commaSplit #><#= select #>;
+            }
+
+<#
+                }
+                else
+                {
+                    // Non-generic types are mapped directly to the target parameter.
+#>
+            if (request.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
+            {
+                <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.<#= headers #>["<#= headerKey #>"], typeof(<#= parameter.Type.FullName #>));
             }
 
 <#
