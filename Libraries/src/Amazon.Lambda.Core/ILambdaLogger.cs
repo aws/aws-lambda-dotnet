@@ -66,43 +66,50 @@ namespace Amazon.Lambda.Core
         /// </summary>
         /// <param name="level"></param>
         /// <param name="message"></param>
-        void Log(LogLevel level, string message) => LogLine(message);
+        void Log(string level, string message) => LogLine(message);
+
+        /// <summary>
+        /// Log message catagorized by the given log level
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="message"></param>
+        void Log(LogLevel level, string message) => Log(level.ToString(), message);
 
         /// <summary>
         /// Log trace message
         /// </summary>
         /// <param name="message"></param>
-        void LogTrace(string message) => Log(LogLevel.Trace, message);
+        void LogTrace(string message) => Log(LogLevel.Trace.ToString(), message);
 
         /// <summary>
         /// Log debug message
         /// </summary>
         /// <param name="message"></param>
-        void LogDebug(string message) => Log(LogLevel.Debug, message);
+        void LogDebug(string message) => Log(LogLevel.Debug.ToString(), message);
 
         /// <summary>
         /// Log information message
         /// </summary>
         /// <param name="message"></param>
-        void LogInformation(string message) => Log(LogLevel.Information, message);
+        void LogInformation(string message) => Log(LogLevel.Information.ToString(), message);
 
         /// <summary>
         /// Log warning message
         /// </summary>
         /// <param name="message"></param>
-        void LogWarning(string message) => Log(LogLevel.Warning, message);
+        void LogWarning(string message) => Log(LogLevel.Warning.ToString(), message);
 
         /// <summary>
         /// Log error message
         /// </summary>
         /// <param name="message"></param>
-        void LogError(string message) => Log(LogLevel.Error, message);
+        void LogError(string message) => Log(LogLevel.Error.ToString(), message);
 
         /// <summary>
         /// Log critical message
         /// </summary>
         /// <param name="message"></param>
-        void LogCritical(string message) => Log(LogLevel.Critical, message);
+        void LogCritical(string message) => Log(LogLevel.Critical.ToString(), message);
 #endif
 
     }

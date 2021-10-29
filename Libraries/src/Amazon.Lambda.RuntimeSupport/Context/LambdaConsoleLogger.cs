@@ -13,12 +13,20 @@
  * permissions and limitations under the License.
  */
 using Amazon.Lambda.Core;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 using System;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
     internal class LambdaConsoleLogger : ILambdaLogger
     {
+        private IConsoleLoggerWriter _consoleLoggerRedirector;
+
+        public LambdaConsoleLogger(IConsoleLoggerWriter consoleLoggerRedirector)
+        {
+            _consoleLoggerRedirector = consoleLoggerRedirector;
+        }
+
         public void Log(string message)
         {
             Console.Write(message);
@@ -26,53 +34,15 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public void LogLine(string message)
         {
-            Console.WriteLine(message);
+            _consoleLoggerRedirector.FormattedWriteLine(message);
         }
 
         public string CurrentAwsRequestId { get; set; }
 
 #if NET6_0_OR_GREATER
-        const string LOG_LEVEL_ENVIRONMENT_VARAIBLE = "AWS_LAMBDA_HANDLER_LOG_LEVEL";
-        private LogLevel _minmumLogLevel = LogLevel.Information;
-
-        internal LambdaConsoleLogger()
+        public void Log(string level, string message)
         {
-            var envLogLevel = Environment.GetEnvironmentVariable(LOG_LEVEL_ENVIRONMENT_VARAIBLE); ;
-            if(!string.IsNullOrEmpty(envLogLevel))
-            {
-                if(Enum.TryParse(typeof(LogLevel), envLogLevel, true, out var result))
-                {
-                    _minmumLogLevel = (LogLevel)result;
-                }
-            }
-        }
-
-        public void Log(LogLevel level, string message)
-        {
-            if (level < _minmumLogLevel)
-                return;
-
-            var line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{ConvertLogLevelToLabel(level)}\t{message}";
-            Console.WriteLine(line);
-        }
-
-        /// <summary>
-        /// Convert LogLevel enums to the the same string label that console provider for Microsoft.Extensions.Logging.ILogger uses.
-        /// </summary>
-        /// <param name="level"></param>
-        /// <returns></returns>
-        private string ConvertLogLevelToLabel(LogLevel level)
-        {
-            return level switch
-            {
-                LogLevel.Trace => "trce",
-                LogLevel.Debug => "dbug",
-                LogLevel.Information => "info",
-                LogLevel.Warning => "warn",
-                LogLevel.Error => "fail",
-                LogLevel.Critical => "crit",
-                _ => ""
-            };
+            _consoleLoggerRedirector.FormattedWriteLine(level, message);
         }
 #endif
     }
