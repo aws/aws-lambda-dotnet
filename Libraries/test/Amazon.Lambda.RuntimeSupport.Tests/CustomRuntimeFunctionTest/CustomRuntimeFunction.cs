@@ -109,6 +109,8 @@ namespace CustomRuntimeFunctionTest
             Console.WriteLine("A stdout info message");
             Console.Error.WriteLine("A stderror error message");
 
+            Amazon.Lambda.Core.LambdaLogger.Log("A fake message level");
+
             return Task.FromResult(GetInvocationResponse(nameof(LoggingTest), true));
         }
 
