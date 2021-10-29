@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using Amazon.Lambda.Annotations.SourceGenerator.Serialization;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
