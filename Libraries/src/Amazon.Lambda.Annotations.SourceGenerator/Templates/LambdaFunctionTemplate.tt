@@ -98,6 +98,10 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 
                 var queryStringParameters = "QueryStringParameters";
 
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+<#
+
                 if (parameter.Type.IsEnumerable && parameter.Type.IsGenericType)
                 {
                     // In HTTP API V2 multiple values for the same parameter are represented via comma separated string
@@ -125,14 +129,22 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                     var typeArgument = parameter.Type.TypeArguments.First();
                     var select = $".Select(q => ({typeArgument.FullName})Convert.ChangeType(q, typeof({typeArgument.FullName}))).ToList()";
 #>
-            var <#= parameter.Name #> = request.<#= queryStringParameters #>["<#= parameterKey #>"]<#= commaSplit #><#= select #>;
+            if (request.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
+            {
+                <#= parameter.Name #> = request.<#= queryStringParameters #>["<#= parameterKey #>"]<#= commaSplit #><#= select #>;
+            }
+
 <#
                 }
                 else
                 {
                     // Non-generic types are mapped directly to the target parameter.
 #>
-            var <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullName #>));
+            if (request.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
+            {
+                <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullName #>));
+            }
+
 <#
                 }
 
