@@ -23,14 +23,14 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction(Name = "SimpleCalculatorAdd")]
-        [RestApi]
+        [RestApi(HttpMethod.Get, "/SimpleCalculator/Add")]
         public int Add([FromQuery]int x, [FromQuery]int y)
         {
             return _simpleCalculatorService.Add(x, y);
         }
 
         [LambdaFunction(Name = "SimpleCalculatorSubtract")]
-        [RestApi]
+        [RestApi(HttpMethod.Get, "/SimpleCalculator/Subtract")]
         public APIGatewayProxyResponse Subtract([FromHeader]int x, [FromHeader]int y, [FromServices]ISimpleCalculatorService simpleCalculatorService)
         {
             return new APIGatewayProxyResponse
@@ -41,17 +41,17 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction(Name = "SimpleCalculatorMultiply")]
-        [RestApi]
-        public string Multiply()
+        [RestApi(HttpMethod.Get, "/SimpleCalculator/Multiply/{x}/{y}")]
+        public string Multiply(int x, int y)
         {
-            return _simpleCalculatorService.Multiply(4, 2).ToString();
+            return _simpleCalculatorService.Multiply(x, y).ToString();
         }
 
         [LambdaFunction(Name = "SimpleCalculatorDivideAsync")]
-        [RestApi]
-        public async Task<int> DivideAsync()
+        [RestApi(template: "/SimpleCalculator/DivideAsync/{x}/{y}", method: HttpMethod.Get)]
+        public async Task<int> DivideAsync([FromRoute(Name = "x")]int first, [FromRoute(Name = "y")]int second)
         {
-            return await Task.FromResult(_simpleCalculatorService.Divide(4, 2));
+            return await Task.FromResult(_simpleCalculatorService.Divide(first, second));
         }
     }
 }

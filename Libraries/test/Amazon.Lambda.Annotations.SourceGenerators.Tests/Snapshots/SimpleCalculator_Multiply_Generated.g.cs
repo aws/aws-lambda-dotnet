@@ -31,7 +31,19 @@ namespace TestServerlessApp
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
 
-            var response = simpleCalculator.Multiply();
+            var x = default(int);
+            if (request.PathParameters?.ContainsKey("x") == true)
+            {
+                x = (int)Convert.ChangeType(request.PathParameters["x"], typeof(int));
+            }
+
+            var y = default(int);
+            if (request.PathParameters?.ContainsKey("y") == true)
+            {
+                y = (int)Convert.ChangeType(request.PathParameters["y"], typeof(int));
+            }
+
+            var response = simpleCalculator.Multiply(x, y);
 
             return new APIGatewayProxyResponse
             {

@@ -7,15 +7,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     {
         public static HttpApiAttribute Build(AttributeData att)
         {
-            var data = new HttpApiAttribute(HttpApiVersion.V2);
-            foreach (var pair in att.NamedArguments)
+            if (att.ConstructorArguments.Length != 3)
             {
-                if (pair.Key == nameof(data.Version) && pair.Value.Value is HttpApiVersion version)
-                {
-                    data.Version = version;
-                }
+                throw new NotSupportedException($"{TypeFullNames.HttpApiAttribute} must have constructor with 3 arguments.");
             }
 
+            var method = (HttpMethod)att.ConstructorArguments[0].Value;
+            var version = (HttpApiVersion)att.ConstructorArguments[1].Value;
+            var template = att.ConstructorArguments[2].Value as string;
+
+            var data = new HttpApiAttribute(method, version, template);
             return data;
         }
     }

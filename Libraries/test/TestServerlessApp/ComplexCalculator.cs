@@ -10,7 +10,7 @@ namespace TestServerlessApp
     public class ComplexCalculator
     {
         [LambdaFunction]
-        [HttpApi(HttpApiVersion.V2)]
+        [HttpApi(HttpMethod.Post, HttpApiVersion.V2, "/ComplexCalculator/Add")]
         public Tuple<double, double> Add([FromBody]string complexNumbers)
         {
             var components = complexNumbers.Split(";");
@@ -38,7 +38,7 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction]
-        [HttpApi(HttpApiVersion.V2)]
+        [HttpApi(HttpMethod.Post, HttpApiVersion.V2, "/ComplexCalculator/Subtract")]
         public Tuple<double, double> Subtract([FromBody]IList<IList<int>> complexNumbers)
         {
             if (complexNumbers.Count() != 2)

@@ -43,10 +43,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
                 };
             }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.FromRouteAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = FromRouteAttributeBuilder.Build(att);
+                model = new AttributeModel<FromRouteAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
             else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.HttpApiAttribute), SymbolEqualityComparer.Default))
             {
                 var data = HttpApiAttributeBuilder.Build(att);
                 model = new AttributeModel<HttpApiAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.RestApiAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = RestApiAttributeBuilder.Build(att);
+                model = new AttributeModel<RestApiAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)

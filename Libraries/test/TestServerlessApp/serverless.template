@@ -128,7 +128,7 @@
           "RootGet": {
             "Type": "Api",
             "Properties": {
-              "Path": "/SimpleCalculator/Multiply",
+              "Path": "/SimpleCalculator/Multiply/{x}/{y}",
               "Method": "GET"
             }
           }
@@ -154,7 +154,7 @@
           "RootGet": {
             "Type": "Api",
             "Properties": {
-              "Path": "/SimpleCalculator/DivideAsync",
+              "Path": "/SimpleCalculator/DivideAsync/{x}/{y}",
               "Method": "GET"
             }
           }
