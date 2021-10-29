@@ -42,15 +42,15 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Remove="Generated\**" />
+      <Compile Remove="Snapshots\**" />
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="Generated\**" />
+      <Content Include="Snapshots\**" />
     </ItemGroup>
 
   <ItemGroup>
-    <Content Update="Generated\**">
+    <Content Update="Snapshots\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

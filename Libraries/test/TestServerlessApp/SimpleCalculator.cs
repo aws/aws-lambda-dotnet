@@ -24,9 +24,9 @@ namespace TestServerlessApp
 
         [LambdaFunction(Name = "SimpleCalculatorAdd")]
         [RestApi]
-        public int Add()
+        public int Add([FromQuery]int x, [FromQuery]int y)
         {
-            return _simpleCalculatorService.Add(4, 2);
+            return _simpleCalculatorService.Add(x, y);
         }
 
         [LambdaFunction(Name = "SimpleCalculatorSubtract")]

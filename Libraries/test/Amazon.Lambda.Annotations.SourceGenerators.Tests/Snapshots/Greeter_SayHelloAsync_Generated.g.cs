@@ -1,22 +1,24 @@
-using System;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
 
 namespace TestServerlessApp
 {
-    public class Greeter_SayHello_Generated
+    public class Greeter_SayHelloAsync_Generated
     {
         private readonly Greeter greeter;
 
-        public Greeter_SayHello_Generated()
+        public Greeter_SayHelloAsync_Generated()
         {
             greeter = new Greeter();
         }
 
-        public APIGatewayProxyResponse SayHello(APIGatewayProxyRequest request, ILambdaContext context)
+        public async Task<APIGatewayProxyResponse> SayHelloAsync(APIGatewayProxyRequest request, ILambdaContext context)
         {
-            greeter.SayHello();
+            await greeter.SayHelloAsync();
 
             return new APIGatewayProxyResponse
             {

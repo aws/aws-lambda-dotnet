@@ -17,13 +17,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             var model = new LambdaMethodModel
             {
                 IsAsync = lambdaMethodSymbol.IsAsync,
-                ReturnType = TypeModelBuilder.Build(lambdaMethodSymbol.ReturnType),
+                ReturnType = TypeModelBuilder.Build(lambdaMethodSymbol.ReturnType, context),
                 ReturnsVoidOrTask = lambdaMethodSymbol.ReturnsVoid || lambdaMethodSymbol.ReturnType.Equals(context.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task"), SymbolEqualityComparer.Default),
                 Parameters = ParameterModelBuilder.Build(lambdaMethodSymbol, context),
                 Name = lambdaMethodSymbol.Name,
                 ContainingNamespace = lambdaMethodSymbol.ContainingNamespace.ToDisplayString(),
                 Events = EventTypeBuilder.Build(lambdaMethodSymbol, context),
-                ContainingType = TypeModelBuilder.Build(lambdaMethodSymbol.ContainingType),
+                ContainingType = TypeModelBuilder.Build(lambdaMethodSymbol.ContainingType, context),
                 UsingDependencyInjection = configureMethodSymbol != null,
                 Attributes = lambdaMethodSymbol.GetAttributes().Select(att => AttributeModelBuilder.Build(att, context)).ToList()
             };

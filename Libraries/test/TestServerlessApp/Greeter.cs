@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda.Annotations;
 
@@ -8,9 +9,12 @@ namespace TestServerlessApp
     {
         [LambdaFunction(Name = "GreeterSayHello", MemorySize = 1024)]
         [HttpApi(HttpApiVersion.V1)]
-        public void SayHello()
+        public void SayHello([FromQuery(Name = "names")]IEnumerable<string> firstNames)
         {
-            Console.WriteLine("Hello");
+            foreach (var firstName in firstNames)
+            {
+                Console.WriteLine($"Hello {firstName}");
+            }
         }
 
         [LambdaFunction(Name = "GreeterSayHelloAsync", Timeout = 50)]

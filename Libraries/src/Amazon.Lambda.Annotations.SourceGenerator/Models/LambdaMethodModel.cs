@@ -10,7 +10,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// </summary>
     public class LambdaMethodModel
     {
-        private AttributeModel<LambdaFunctionAttributeData> _lambdaFunctionAttribute;
+        private AttributeModel<LambdaFunctionAttribute> _lambdaFunctionAttribute;
 
         /// <summary>
         /// Returns true if original method is an async method
@@ -68,14 +68,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// <summary>
         /// Gets <see cref="Annotations.LambdaFunctionAttribute"/> attribute.
         /// </summary>
-        public AttributeModel<LambdaFunctionAttributeData> LambdaFunctionAttribute
+        public AttributeModel<LambdaFunctionAttribute> LambdaFunctionAttribute
         {
             get
             {
                 if (_lambdaFunctionAttribute == null)
                 {
                     var model = Attributes.First(att => att.Type.FullName == TypeFullNames.LambdaFunctionAttribute);
-                    if (model is AttributeModel<LambdaFunctionAttributeData> lambdaFunctionAttributeModel)
+                    if (model is AttributeModel<LambdaFunctionAttribute> lambdaFunctionAttributeModel)
                     {
                         _lambdaFunctionAttribute = lambdaFunctionAttributeModel;
                     }

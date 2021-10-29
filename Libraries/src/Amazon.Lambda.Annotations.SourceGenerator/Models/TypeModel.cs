@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
     /// <summary>
@@ -20,6 +22,22 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// True if this type is a value type.
         /// </summary>
         public bool IsValueType { get; set; }
+
+        /// <summary>
+        /// True if this type or some containing type has type parameters.
+        /// </summary>
+        public bool IsGenericType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type arguments that have been substituted for the type parameters.
+        /// Returns empty when there are not type arguments
+        /// </summary>
+        public IList<TypeModel> TypeArguments { get; set; }
+
+        /// <summary>
+        /// True, if the type implements IEnumerable interface.
+        /// </summary>
+        public bool IsEnumerable { get; set; }
 
         /// <summary>
         /// True if this type is a <see cref="string"/> type.

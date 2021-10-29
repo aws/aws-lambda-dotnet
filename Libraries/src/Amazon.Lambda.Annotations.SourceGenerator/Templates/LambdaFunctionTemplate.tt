@@ -6,6 +6,7 @@
 <#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
 <#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
 <#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes" #>
+<#@ import namespace="Microsoft.CodeAnalysis" #>
 <#
     foreach (var ns in _model.GeneratedMethod.Usings)
     {
@@ -69,38 +70,88 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
-            var <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #> = scope.ServiceProvider.GetRequiredService<<#= _model.LambdaMethod.ContainingType.Name #>>();
+            var <#=
+                _model.LambdaMethod.ContainingType.Name.ToCamelCase() #> = scope.ServiceProvider.GetRequiredService<<#= _model.LambdaMethod.ContainingType.Name #>>();
 
-<#
-    }
-
-    var parameters = string.Join(", ", _model.LambdaMethod.Parameters.Select(p => p.Name));
-
-    foreach (var parameter in _model.LambdaMethod.Parameters)
-    {
-        if (parameter.Attributes.Any(att => att.Type.FullName == "Amazon.Lambda.Annotations.FromServicesAttribute"))
-        {
-#>
-            var <#= parameter.Name #> = scope.ServiceProvider.GetRequiredService<<#= parameter.Type.FullName #>>();
-<#
-        }
-    }
-
-    if (_model.LambdaMethod.ReturnsVoidOrTask)
-    {
-#>
-            <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
-<#
-    }
-    else
-    {
-#>
-            var response = <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
 <#
     }
 
     if (_model.LambdaMethod.Events.Contains(EventType.API))
     {
+        var parameters = string.Join(", ", _model.LambdaMethod.Parameters.Select(p => p.Name));
+        foreach (var parameter in _model.LambdaMethod.Parameters)
+        {
+            if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromServiceAttribute))
+            {
+#>
+            var <#= parameter.Name #> = scope.ServiceProvider.GetRequiredService<<#= parameter.Type.FullName #>>();
+<#
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
+            {
+                var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute);
+                var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<HttpApiAttribute>;
+                var fromQueryAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromQueryAttribute) as AttributeModel<FromQueryAttribute>;
+
+                // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                var parameterKey = fromQueryAttribute?.Data?.Name ?? parameter.Name;
+
+                var queryStringParameters = "QueryStringParameters";
+
+                if (parameter.Type.IsEnumerable && parameter.Type.IsGenericType)
+                {
+                    // In HTTP API V2 multiple values for the same parameter are represented via comma separated string
+                    // Therefore, it is required to split the string to convert to an enumerable
+                    // and convert individual item to target data type.
+                    var commaSplit = "";
+                    if (httpApiAttribute?.Data.Version == HttpApiVersion.V2)
+                    {
+                        commaSplit = @".Split("","")";
+                    }
+
+                    // HTTP API V1 and Rest API, multiple values for the same parameter are provided
+                    // dedicated dictionary of string key and list value.
+                    if (restApiAttribute != null || httpApiAttribute?.Data.Version == HttpApiVersion.V1)
+                    {
+                        queryStringParameters = "MultiValueQueryStringParameters";
+                    }
+
+                    if (parameter.Type.TypeArguments.Count != 1)
+                    {
+                        throw new NotSupportedException("Only one type argument is supported for generic types.");
+                    }
+
+                    // Generic types are mapped using Select statement to the target parameter type argument.
+                    var typeArgument = parameter.Type.TypeArguments.First();
+                    var select = $".Select(q => ({typeArgument.FullName})Convert.ChangeType(q, typeof({typeArgument.FullName}))).ToList()";
+#>
+            var <#= parameter.Name #> = request.<#= queryStringParameters #>["<#= parameterKey #>"]<#= commaSplit #><#= select #>;
+<#
+                }
+                else
+                {
+                    // Non-generic types are mapped directly to the target parameter.
+#>
+            var <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullName #>));
+<#
+                }
+
+            }
+        }
+
+        if (_model.LambdaMethod.ReturnsVoidOrTask)
+        {
+#>
+            <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+<#
+        }
+        else
+        {
+#>
+            var response = <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+<#
+        }
+
         if (_model.GeneratedMethod.ResponseType.FullName == _model.LambdaMethod.ReturnType.FullName)
         {
 #>
