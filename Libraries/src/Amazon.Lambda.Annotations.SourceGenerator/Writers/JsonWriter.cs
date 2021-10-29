@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -21,6 +22,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         public bool Exists(string jsonPath)
         {
+            if (!IsValidPath(jsonPath))
+            {
+                throw new InvalidDataException($"'{jsonPath}' is not a valid '{nameof(jsonPath)}'");
+            }
+            
             JToken currentNode = _rootNode;
             foreach (var property in jsonPath.Split('.'))
             {
@@ -36,6 +42,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         public void SetToken(string jsonPath, JToken token)
         {
+            if (!IsValidPath(jsonPath))
+            {
+                throw new InvalidDataException($"'{jsonPath}' is not a valid '{nameof(jsonPath)}'");
+            }
             if (token == null)
             {
                 return;
@@ -119,6 +129,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         public void Parse(string content)
         {
             _rootNode = string.IsNullOrEmpty(content) ? new JObject() : JObject.Parse(content);
+        }
+        
+        private bool IsValidPath(string jsonPath)
+        {
+            if (string.IsNullOrWhiteSpace(jsonPath))
+                return false;
+            
+            return !jsonPath.Split('.').Any(x => string.IsNullOrWhiteSpace(x));
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -24,6 +25,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.True(jsonWriter.Exists("Person.Gender"));
             Assert.False(jsonWriter.Exists("Person.Weight"));
             Assert.False(jsonWriter.Exists("Person.Name.MiddleName"));
+            Assert.Throws<InvalidDataException>(() => jsonWriter.Exists("Person..Name.FirstName"));
+            Assert.Throws<InvalidDataException>(() => jsonWriter.Exists("  "));
+            Assert.Throws<InvalidDataException>(() => jsonWriter.Exists("..."));
+            Assert.Throws<InvalidDataException>(() => jsonWriter.Exists(""));
         }
 
         [Fact]
