@@ -10,12 +10,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             var data = new HttpApiAttribute(HttpApiVersion.V2);
             foreach (var pair in att.NamedArguments)
             {
-                if (pair.Key == nameof(data.Version))
+                if (pair.Key == nameof(data.Version) && pair.Value.Value is HttpApiVersion version)
                 {
-                    if (pair.Value.Value is HttpApiVersion version)
-                    {
-                        data.Version = version;
-                    }
+                    data.Version = version;
                 }
             }
 
