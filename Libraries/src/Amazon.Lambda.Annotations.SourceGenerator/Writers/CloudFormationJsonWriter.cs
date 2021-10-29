@@ -31,6 +31,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             
             foreach (var lambdaFunction in report.LambdaFunctions)
             {
+                if (!ShouldProcessLambdaFunction(lambdaFunction)) 
+                    continue;
                 ProcessLambdaFunction(lambdaFunction);
                 processedLambdaFunctions.Add(lambdaFunction.Name);
             }
@@ -38,12 +40,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             RemoveOrphanedLambdaFunctions(processedLambdaFunctions);
             _fileManager.WriteAllText(report.CloudFormationTemplatePath, _jsonWriter.GetPrettyJson());
         }
+
+        private bool ShouldProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction)
+        {
+            var lambdaFunctionPath = $"Resources.{lambdaFunction.Name}";
+            
+            if (!_jsonWriter.Exists(lambdaFunctionPath))
+                return true;
+            
+            var creationTool = _jsonWriter.GetToken($"{lambdaFunctionPath}.Metadata.Tool", string.Empty);
+            return string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal);
+        }
         
         private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction)
         {
             var lambdaFunctionPath = $"Resources.{lambdaFunction.Name}";
             var propertiesPath = $"{lambdaFunctionPath}.Properties";
-            
+
             if (!_jsonWriter.Exists(lambdaFunctionPath))
                 ApplyLambdaFunctionDefaults(lambdaFunctionPath, propertiesPath);
 

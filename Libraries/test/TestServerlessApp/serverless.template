@@ -5,6 +5,9 @@
   "Resources": {
     "GreeterSayHello": {
       "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello",
         "Runtime": "dotnetcore3.1",
@@ -29,6 +32,9 @@
     },
     "GreeterSayHelloAsync": {
       "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync",
         "Runtime": "dotnetcore3.1",
@@ -53,6 +59,9 @@
     },
     "SimpleCalculatorAdd": {
       "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Add_Generated::Add",
         "Runtime": "dotnetcore3.1",
@@ -76,6 +85,9 @@
     },
     "SimpleCalculatorSubtract": {
       "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract",
         "Runtime": "dotnetcore3.1",
@@ -99,6 +111,9 @@
     },
     "SimpleCalculatorMultiply": {
       "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply",
         "Runtime": "dotnetcore3.1",
@@ -122,6 +137,9 @@
     },
     "SimpleCalculatorDivideAsync": {
       "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync",
         "Runtime": "dotnetcore3.1",
@@ -145,6 +163,9 @@
     },
     "TestServerlessAppComplexCalculatorAddGenerated": {
       "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add",
         "Runtime": "dotnetcore3.1",
