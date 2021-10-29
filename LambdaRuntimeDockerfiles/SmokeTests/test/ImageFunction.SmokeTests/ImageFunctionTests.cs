@@ -95,7 +95,10 @@ namespace ImageFunction.SmokeTests
             var invokeResponse = await InvokeFunctionAsync(payload);
 
             Assert.True(invokeResponse.HttpStatusCode == HttpStatusCode.OK);
-            Assert.True(invokeResponse.FunctionError == null);
+            if(invokeResponse.FunctionError != null)
+            {
+                throw new Exception($"Lambda function {handler} failed: {invokeResponse.FunctionError}");
+            }    
 
             await using var responseStream = invokeResponse.Payload;
             using var sr = new StreamReader(responseStream);
@@ -234,7 +237,16 @@ namespace ImageFunction.SmokeTests
             });
             _executionRoleArn = response.Role.Arn;
 
-            // Wait  5 seconds to let execution role propagate
+            // Wait  10 seconds to let execution role propagate
+            await Task.Delay(10000);
+
+            await _iamClient.AttachRolePolicyAsync(new AttachRolePolicyRequest
+            {
+                RoleName = _executionRoleName,
+                PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+            });
+
+            // Wait  10 seconds to let execution role propagate
             await Task.Delay(10000);
         }
 
@@ -308,6 +320,15 @@ namespace ImageFunction.SmokeTests
         {
             try
             {
+                await _iamClient.DetachRolePolicyAsync(new DetachRolePolicyRequest
+                {
+                    RoleName = _executionRoleName,
+                    PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                });
+
+                // Wait 10 seconds to let execution role propagate
+                await Task.Delay(10000);
+
                 await _iamClient.DeleteRoleAsync(new DeleteRoleRequest
                 {
                     RoleName = _executionRoleName
