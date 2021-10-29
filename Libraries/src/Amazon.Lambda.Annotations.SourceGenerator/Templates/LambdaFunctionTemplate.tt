@@ -7,6 +7,7 @@
 <#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
 <#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes" #>
 <#@ import namespace="Microsoft.CodeAnalysis" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Validation" #>
 <#
     foreach (var ns in _model.GeneratedMethod.Usings)
     {
@@ -79,8 +80,23 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
     if (_model.LambdaMethod.Events.Contains(EventType.API))
     {
         var parameters = string.Join(", ", _model.LambdaMethod.Parameters.Select(p => p.Name));
-        var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute);
+        var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute) as AttributeModel<RestApiAttribute>;
         var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<HttpApiAttribute>;
+
+        if (restApiAttribute != null && httpApiAttribute != null)
+        {
+            throw new NotSupportedException($"A method cannot have both {TypeFullNames.RestApiAttribute} and {TypeFullNames.HttpApiAttribute} attribute at the same time.");
+        }
+
+        var routeParameters = restApiAttribute?.Data?.GetTemplateParameters() ?? httpApiAttribute?.Data?.GetTemplateParameters() ?? new HashSet<string>();
+
+        var (routeTemplateValid, missingRouteParams) = RouteParametersValidator.Validate(routeParameters, _model.LambdaMethod.Parameters);
+        if (!routeTemplateValid)
+        {
+            var template = restApiAttribute?.Data?.Template ?? httpApiAttribute?.Data?.Template ?? string.Empty;
+            throw new InvalidOperationException($"Route template {template} is invalid. Missing {string.Join(",", missingRouteParams)} parameters in method definition.");
+        }
+
         foreach (var parameter in _model.LambdaMethod.Parameters)
         {
             if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromServiceAttribute))
@@ -151,7 +167,9 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             }
             else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute))
             {
-                var fromHeaderAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute) as AttributeModel<FromHeaderAttribute>;
+                var fromHeaderAttribute =
+                    parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute) as
+                        AttributeModel<FromHeaderAttribute>;
 
                 // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
                 var headerKey = fromHeaderAttribute?.Data?.Name ?? parameter.Name;
@@ -187,7 +205,8 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 
                     // Generic types are mapped using Select statement to the target parameter type argument.
                     var typeArgument = parameter.Type.TypeArguments.First();
-                    var select = $".Select(q => ({typeArgument.FullName})Convert.ChangeType(q, typeof({typeArgument.FullName}))).ToList()";
+                    var select =
+                        $".Select(q => ({typeArgument.FullName})Convert.ChangeType(q, typeof({typeArgument.FullName}))).ToList()";
 #>
             if (request.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
             {
@@ -207,7 +226,6 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 
 <#
                 }
-
             }
             else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromBodyAttribute))
             {
@@ -226,6 +244,25 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 
 <#
                 }
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) || routeParameters.Contains(parameter.Name))
+            {
+                var fromRouteAttribute = parameter.Attributes?.FirstOrDefault(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) as AttributeModel<FromRouteAttribute>;
+
+                // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                var routeKey = fromRouteAttribute?.Data?.Name ?? parameter.Name;
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            if (request.PathParameters?.ContainsKey("<#= routeKey #>") == true)
+            {
+                <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.PathParameters["<#= routeKey #>"], typeof(<#= parameter.Type.FullName #>));
+            }
+
+<#
+            }
+            else
+            {
+                throw new NotSupportedException($"{parameter.Name} parameter of type {parameter.Type.FullName} passing is not supported.");
             }
         }
 

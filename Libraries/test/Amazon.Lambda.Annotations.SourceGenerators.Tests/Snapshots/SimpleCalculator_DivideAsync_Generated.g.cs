@@ -32,7 +32,19 @@ namespace TestServerlessApp
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
 
-            var response = await simpleCalculator.DivideAsync();
+            var first = default(int);
+            if (request.PathParameters?.ContainsKey("x") == true)
+            {
+                first = (int)Convert.ChangeType(request.PathParameters["x"], typeof(int));
+            }
+
+            var second = default(int);
+            if (request.PathParameters?.ContainsKey("y") == true)
+            {
+                second = (int)Convert.ChangeType(request.PathParameters["y"], typeof(int));
+            }
+
+            var response = await simpleCalculator.DivideAsync(first, second);
 
             var body = System.Text.Json.JsonSerializer.Serialize(response);
 

@@ -8,7 +8,7 @@ namespace TestServerlessApp
     public class Greeter
     {
         [LambdaFunction(Name = "GreeterSayHello", MemorySize = 1024)]
-        [HttpApi(HttpApiVersion.V1)]
+        [HttpApi(HttpMethod.Get, HttpApiVersion.V1, "/Greeter/SayHello")]
         public void SayHello([FromQuery(Name = "names")]IEnumerable<string> firstNames)
         {
             if (firstNames == null)
@@ -23,7 +23,7 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction(Name = "GreeterSayHelloAsync", Timeout = 50)]
-        [HttpApi(HttpApiVersion.V1)]
+        [HttpApi(HttpMethod.Get, HttpApiVersion.V1, "/Greeter/SayHelloAsync")]
         public async Task SayHelloAsync([FromHeader(Name = "names")]IEnumerable<string> firstNames)
         {
             if (firstNames == null)

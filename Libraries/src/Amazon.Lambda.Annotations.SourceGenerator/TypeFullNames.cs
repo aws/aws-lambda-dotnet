@@ -17,6 +17,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string FromQueryAttribute = "Amazon.Lambda.Annotations.FromQueryAttribute";
         public const string FromHeaderAttribute = "Amazon.Lambda.Annotations.FromHeaderAttribute";
         public const string FromBodyAttribute = "Amazon.Lambda.Annotations.FromBodyAttribute";
+        public const string FromRouteAttribute = "Amazon.Lambda.Annotations.FromRouteAttribute";
         public const string FromServiceAttribute = "Amazon.Lambda.Annotations.FromServicesAttribute";
         public const string IEnumerable = "System.Collections.IEnumerable";
     }

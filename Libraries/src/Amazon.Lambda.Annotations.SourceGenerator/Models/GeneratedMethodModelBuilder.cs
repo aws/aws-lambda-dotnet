@@ -97,7 +97,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 throw new InvalidOperationException($"{TypeFullNames.HttpApiAttribute} must have a constructor with parameter.");
             }
 
-            var versionArgument = httpApiAttribute.ConstructorArguments[0];
+            var versionArgument = httpApiAttribute.ConstructorArguments[1];
             if (versionArgument.Type == null)
             {
                 throw new InvalidOperationException($"{versionArgument.Type} type cannot be null for {TypeFullNames.HttpApiAttribute}.");

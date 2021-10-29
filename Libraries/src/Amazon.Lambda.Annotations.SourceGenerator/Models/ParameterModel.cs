@@ -22,6 +22,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// Gets or sets the attributes of parameter. If this parameter has no attributes, returns
         /// an empty list.
         /// </summary>
-        public IList<AttributeModel> Attributes { get; set; }
+        public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
     }
 }
