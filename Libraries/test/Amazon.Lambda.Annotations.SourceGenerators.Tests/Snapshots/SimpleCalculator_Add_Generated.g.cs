@@ -31,8 +31,18 @@ namespace TestServerlessApp
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
 
-            var x = (int)Convert.ChangeType(request.QueryStringParameters["x"], typeof(int));
-            var y = (int)Convert.ChangeType(request.QueryStringParameters["y"], typeof(int));
+            var x = default(int);
+            if (request.QueryStringParameters?.ContainsKey("x") == true)
+            {
+                x = (int)Convert.ChangeType(request.QueryStringParameters["x"], typeof(int));
+            }
+
+            var y = default(int);
+            if (request.QueryStringParameters?.ContainsKey("y") == true)
+            {
+                y = (int)Convert.ChangeType(request.QueryStringParameters["y"], typeof(int));
+            }
+
             var response = simpleCalculator.Add(x, y);
 
             var body = response.ToString();

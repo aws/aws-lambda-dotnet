@@ -11,6 +11,11 @@ namespace TestServerlessApp
         [HttpApi(HttpApiVersion.V1)]
         public void SayHello([FromQuery(Name = "names")]IEnumerable<string> firstNames)
         {
+            if (firstNames == null)
+            {
+                return;
+            }
+
             foreach (var firstName in firstNames)
             {
                 Console.WriteLine($"Hello {firstName}");

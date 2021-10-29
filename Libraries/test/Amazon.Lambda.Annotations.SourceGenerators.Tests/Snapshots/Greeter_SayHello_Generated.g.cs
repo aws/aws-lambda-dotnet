@@ -17,7 +17,12 @@ namespace TestServerlessApp
 
         public APIGatewayProxyResponse SayHello(APIGatewayProxyRequest request, ILambdaContext context)
         {
-            var firstNames = request.QueryStringParameters["names"].Split(",").Select(q => (string)Convert.ChangeType(q, typeof(string))).ToList();
+            var firstNames = default(System.Collections.Generic.IEnumerable<string>);
+            if (request.QueryStringParameters?.ContainsKey("names") == true)
+            {
+                firstNames = request.QueryStringParameters["names"].Split(",").Select(q => (string)Convert.ChangeType(q, typeof(string))).ToList();
+            }
+
             greeter.SayHello(firstNames);
 
             return new APIGatewayProxyResponse
