@@ -147,7 +147,11 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             Assert.Contains("fail\tA error log", log);
             Assert.Contains("crit\tA critical log", log);
 
-            if(string.IsNullOrEmpty(logLevel))
+            Assert.Contains("info\tA stdout info message", log);
+
+            Assert.Contains("fail\tA stderror error message", log);
+
+            if (string.IsNullOrEmpty(logLevel))
             {
                 Assert.DoesNotContain($"a {logLevel} log".ToLower(), log.ToLower());
             }

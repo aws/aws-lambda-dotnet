@@ -105,6 +105,10 @@ namespace CustomRuntimeFunctionTest
             invocation.LambdaContext.Logger.LogWarning("A warning log");
             invocation.LambdaContext.Logger.LogError("A error log");
             invocation.LambdaContext.Logger.LogCritical("A critical log");
+
+            Console.WriteLine("A stdout info message");
+            Console.Error.WriteLine("A stderror error message");
+
             return Task.FromResult(GetInvocationResponse(nameof(LoggingTest), true));
         }
 

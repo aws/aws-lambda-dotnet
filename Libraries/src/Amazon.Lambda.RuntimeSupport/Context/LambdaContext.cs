@@ -31,18 +31,20 @@ namespace Amazon.Lambda.RuntimeSupport
         private int _memoryLimitInMB;
         private Lazy<CognitoIdentity> _cognitoIdentityLazy;
         private Lazy<CognitoClientContext> _cognitoClientContextLazy;
+        private IConsoleLoggerWriter _consoleLogger;
 
-        public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment)
-            : this(runtimeApiHeaders, lambdaEnvironment, new DateTimeHelper())
+        public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IConsoleLoggerWriter consoleLogger)
+            : this(runtimeApiHeaders, lambdaEnvironment, new DateTimeHelper(), consoleLogger)
         {
         }
 
-        public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IDateTimeHelper dateTimeHelper)
+        public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IDateTimeHelper dateTimeHelper, IConsoleLoggerWriter consoleLogger)
         {
 
             _lambdaEnvironment = lambdaEnvironment;
             _runtimeApiHeaders = runtimeApiHeaders;
             _dateTimeHelper = dateTimeHelper;
+            _consoleLogger = consoleLogger;
 
             int.TryParse(_lambdaEnvironment.FunctionMemorySize, out _memoryLimitInMB);
             long.TryParse(_runtimeApiHeaders.DeadlineMs, out _deadlineMs);
@@ -69,7 +71,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public string InvokedFunctionArn => _runtimeApiHeaders.InvokedFunctionArn;
 
-        public ILambdaLogger Logger => new LambdaConsoleLogger() { CurrentAwsRequestId = _runtimeApiHeaders.AwsRequestId };
+        public ILambdaLogger Logger => new LambdaConsoleLogger(_consoleLogger);
 
         public string LogGroupName => _lambdaEnvironment.LogGroupName;
 

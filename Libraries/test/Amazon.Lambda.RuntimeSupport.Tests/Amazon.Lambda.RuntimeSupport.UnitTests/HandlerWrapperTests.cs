@@ -641,7 +641,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 var invocation = new InvocationRequest
                 {
                     InputStream = new MemoryStream(input ?? new byte[0]),
-                    LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment)
+                    LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.SimpleLoggerWriter())
                 };
 
                 var invocationResponse = await handlerWrapper.Handler(invocation);
