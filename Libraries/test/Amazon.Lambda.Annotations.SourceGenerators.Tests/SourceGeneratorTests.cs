@@ -28,12 +28,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (
                             typeof(SourceGenerator.Generator),
                             "Greeter_SayHello_Generated.g.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "Greeter_SayHello_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "Greeter_SayHello_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         ),
                         (
                             typeof(SourceGenerator.Generator),
                             "Greeter_SayHelloAsync_Generated.g.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "Greeter_SayHelloAsync_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "Greeter_SayHelloAsync_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
                     }
                 }
@@ -62,22 +62,22 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (
                             typeof(SourceGenerator.Generator),
                             "SimpleCalculator_Add_Generated.g.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_Add_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Add_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         ),
                         (
                             typeof(SourceGenerator.Generator),
                             "SimpleCalculator_Subtract_Generated.g.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_Subtract_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Subtract_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         ),
                         (
                             typeof(SourceGenerator.Generator),
                             "SimpleCalculator_Multiply_Generated.g.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_Multiply_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Multiply_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         ),
                         (
                             typeof(SourceGenerator.Generator),
                             "SimpleCalculator_DivideAsync_Generated.g.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "SimpleCalculator_DivideAsync_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_DivideAsync_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
 
                     }
@@ -104,7 +104,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (
                             typeof(SourceGenerator.Generator),
                             "ComplexCalculator_Add_Generated.g.cs",
-                            SourceText.From(File.ReadAllText(Path.Combine("Generated", "ComplexCalculator_Add_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "ComplexCalculator_Add_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
                     }
                 }

@@ -21,7 +21,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 models.Add(new ParameterModel
                 {
                     Name = parameter.Name,
-                    Type = TypeModelBuilder.Build(parameter.Type),
+                    Type = TypeModelBuilder.Build(parameter.Type, context),
                     Attributes = parameter.GetAttributes().Select(att => AttributeModelBuilder.Build(att, context)).ToList()
                 });
             }

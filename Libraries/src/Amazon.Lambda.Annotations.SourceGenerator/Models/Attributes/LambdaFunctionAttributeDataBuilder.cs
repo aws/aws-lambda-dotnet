@@ -7,9 +7,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     /// </summary>
     public static class LambdaFunctionAttributeDataBuilder
     {
-        public static LambdaFunctionAttributeData Build(AttributeData att)
+        public static LambdaFunctionAttribute Build(AttributeData att)
         {
-            var data = new LambdaFunctionAttributeData();
+            var data = new LambdaFunctionAttribute();
 
             foreach (var pair in att.NamedArguments)
             {

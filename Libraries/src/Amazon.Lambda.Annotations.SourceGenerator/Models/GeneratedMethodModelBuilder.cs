@@ -33,6 +33,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             var namespaces = new List<string>
             {
                 "System",
+                "System.Linq",
                 "System.Collections.Generic"
             };
 
@@ -60,7 +61,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute))
             {
                 var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse);
-                return TypeModelBuilder.Build(symbol);
+                return TypeModelBuilder.Build(symbol, context);
             }
             else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute))
             {
@@ -70,12 +71,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                     case HttpApiVersion.V1:
                     {
                         var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse);
-                        return TypeModelBuilder.Build(symbol);;
+                        return TypeModelBuilder.Build(symbol, context);;
                     }
                     case HttpApiVersion.V2:
                     {
                         var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse);
-                        return TypeModelBuilder.Build(symbol);;
+                        return TypeModelBuilder.Build(symbol, context);;
                     }
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -84,7 +85,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             else
             {
                 var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.MemoryStream);
-                return TypeModelBuilder.Build(symbol);
+                return TypeModelBuilder.Build(symbol, context);
             }
         }
 
@@ -121,7 +122,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute))
             {
                 var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyRequest);
-                return TypeModelBuilder.Build(symbol);
+                return TypeModelBuilder.Build(symbol, context);
             }
             else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute))
             {
@@ -131,12 +132,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                     case HttpApiVersion.V1:
                     {
                         var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyRequest);
-                        return TypeModelBuilder.Build(symbol);;
+                        return TypeModelBuilder.Build(symbol, context);;
                     }
                     case HttpApiVersion.V2:
                     {
                         var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyRequest);
-                        return TypeModelBuilder.Build(symbol);;
+                        return TypeModelBuilder.Build(symbol, context);;
                     }
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -145,7 +146,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             else
             {
                 var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.MemoryStream);
-                return TypeModelBuilder.Build(symbol);
+                return TypeModelBuilder.Build(symbol, context);
             }
         }
 

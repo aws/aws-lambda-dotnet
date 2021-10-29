@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
@@ -30,7 +31,9 @@ namespace TestServerlessApp
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
 
-            var response = simpleCalculator.Add();
+            var x = (int)Convert.ChangeType(request.QueryStringParameters["x"], typeof(int));
+            var y = (int)Convert.ChangeType(request.QueryStringParameters["y"], typeof(int));
+            var response = simpleCalculator.Add(x, y);
 
             var body = response.ToString();
 

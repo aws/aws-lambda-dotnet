@@ -19,17 +19,35 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.LambdaFunctionAttribute), SymbolEqualityComparer.Default))
             {
                 var data = LambdaFunctionAttributeDataBuilder.Build(att);
-                model = new AttributeModel<LambdaFunctionAttributeData>
+                model = new AttributeModel<LambdaFunctionAttribute>
                 {
                     Data = data,
-                    Type = TypeModelBuilder.Build(att.AttributeClass)
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.FromQueryAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = FromQueryAttributeBuilder.Build(att);
+                model = new AttributeModel<FromQueryAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.HttpApiAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = HttpApiAttributeBuilder.Build(att);
+                model = new AttributeModel<HttpApiAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
                 };
             }
             else
             {
                 model = new AttributeModel
                 {
-                    Type = TypeModelBuilder.Build(att.AttributeClass)
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
                 };
             }
 

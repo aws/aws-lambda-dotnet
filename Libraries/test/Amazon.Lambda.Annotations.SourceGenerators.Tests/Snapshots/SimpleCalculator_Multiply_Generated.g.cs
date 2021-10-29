@@ -1,17 +1,17 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
 
 namespace TestServerlessApp
 {
-    public class SimpleCalculator_DivideAsync_Generated
+    public class SimpleCalculator_Multiply_Generated
     {
         private readonly ServiceProvider serviceProvider;
 
-        public SimpleCalculator_DivideAsync_Generated()
+        public SimpleCalculator_Multiply_Generated()
         {
             var services = new ServiceCollection();
 
@@ -24,23 +24,21 @@ namespace TestServerlessApp
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public async Task<APIGatewayProxyResponse> DivideAsync(APIGatewayProxyRequest request, ILambdaContext context)
+        public APIGatewayProxyResponse Multiply(APIGatewayProxyRequest request, ILambdaContext context)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
 
-            var response = await simpleCalculator.DivideAsync();
-
-            var body = System.Text.Json.JsonSerializer.Serialize(response);
+            var response = simpleCalculator.Multiply();
 
             return new APIGatewayProxyResponse
             {
-                Body = body,
+                Body = response,
                 Headers = new Dictionary<string, string>
                 {
-                    {"Content-Type", "application/json"}
+                    {"Content-Type", "text/plain"}
                 },
                 StatusCode = 200
             };
