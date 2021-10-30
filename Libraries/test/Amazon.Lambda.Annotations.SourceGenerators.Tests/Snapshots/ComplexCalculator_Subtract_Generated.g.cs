@@ -6,20 +6,20 @@ using Amazon.Lambda.APIGatewayEvents;
 
 namespace TestServerlessApp
 {
-    public class ComplexCalculator_Add_Generated
+    public class ComplexCalculator_Subtract_Generated
     {
         private readonly ComplexCalculator complexCalculator;
 
-        public ComplexCalculator_Add_Generated()
+        public ComplexCalculator_Subtract_Generated()
         {
             complexCalculator = new ComplexCalculator();
         }
 
-        public APIGatewayHttpApiV2ProxyResponse Add(APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
+        public APIGatewayHttpApiV2ProxyResponse Subtract(APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
         {
-            var complexNumbers = request.Body;
+            var complexNumbers = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.IList<System.Collections.Generic.IList<int>>>(request.Body);
 
-            var response = complexCalculator.Add(complexNumbers);
+            var response = complexCalculator.Subtract(complexNumbers);
 
             var body = System.Text.Json.JsonSerializer.Serialize(response);
 
