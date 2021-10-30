@@ -1,0 +1,56 @@
+name: Source Generator CI
+
+on: [pull_request]
+
+jobs:
+  source-generator-test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Set git to use CRLF
+    # Without CRLF, source generator test add space at beginning
+      run: git config --global core.autocrlf true
+
+    - uses: actions/checkout@v2
+    - name: Setup .NET 3.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+    - name: Setup .NET 5.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Restore dependencies
+      run: dotnet restore Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj
+    - name: Build
+      run: dotnet build Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --no-restore
+    - name: Test
+      run:  dotnet test Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --no-build --verbosity normal --logger trx --results-directory "TestResults"
+    - name: Upload test results
+      uses: actions/upload-artifact@v2
+      with:
+        name: source-generator-test-result
+        path: TestResults
+      # Use always() to always run this step to publish test results when there are test failures
+      if: ${{ always() }}
+
+  test-app-build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET 3.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+    - name: Restore dependencies
+      run: dotnet restore Libraries/test/TestServerlessApp/TestServerlessApp.csproj
+    - name: Build
+      run: dotnet build Libraries/test/TestServerlessApp/TestServerlessApp.csproj --no-restore
+    - name: Upload built assemblies
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-app-build-result
+        path: Libraries/test/TestServerlessApp/bin/Debug/netcoreapp3.1
