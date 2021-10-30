@@ -210,6 +210,51 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.NotNull(rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]);
         }
 
+        [Fact]
+        public void DoNotModifyFunctionWithoutRequiredMetadata()
+        {
+            // ARRANGE
+            var originalContent = @"{
+                              'AWSTemplateFormatVersion': '2010-09-09',
+                              'Transform': 'AWS::Serverless-2016-10-31',
+                              'Resources': {
+                                'MethodNotCreatedFromAnnotationsPackage': {
+                                  'Type': 'AWS::Serverless::Function',
+                                  'Properties': {
+                                    'Runtime': 'dotnetcore3.1',
+                                    'CodeUri': '',
+                                    'MemorySize': 128,
+                                    'Timeout': 100,
+                                    'Policies': [
+                                      'AWSLambdaBasicExecutionRole'
+                                    ],
+                                    'Handler': 'MyAssembly::MyNamespace.MyType::Handler'
+                                  }
+                                }
+                              }
+                            }";
+            
+            var mockFileManager = GetMockFileManager(originalContent);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "MethodNotCreatedFromAnnotationsPackage", 45, 512, null, "Policy1, Policy2, Policy3");
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
+            var report = GetAnnotationReport(new() {lambdaFunctionModel});
+            
+            // ACT
+            cloudFormationJsonWriter.ApplyReport(report);
+            
+            // ASSERT
+            var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            
+            Assert.NotNull(rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]);
+            Assert.Equal(128, rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]["Properties"]["MemorySize"]); // unchanged
+            Assert.Equal(100, rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]["Properties"]["Timeout"]); // unchanged
+            
+            var policies = rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]["Properties"]["Policies"] as JArray;
+            Assert.Equal(1, policies.Count);
+            Assert.Equal("AWSLambdaBasicExecutionRole", policies[0]); // unchanged
+        }
+
         private IFileManager GetMockFileManager(string originalContent)
         {
             var mockFileManager = new InMemoryFileManager();
