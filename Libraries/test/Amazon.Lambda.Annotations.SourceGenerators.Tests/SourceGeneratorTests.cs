@@ -105,6 +105,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             typeof(SourceGenerator.Generator),
                             "ComplexCalculator_Add_Generated.g.cs",
                             SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "ComplexCalculator_Add_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ComplexCalculator_Subtract_Generated.g.cs",
+                            SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "ComplexCalculator_Subtract_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
                     }
                 }

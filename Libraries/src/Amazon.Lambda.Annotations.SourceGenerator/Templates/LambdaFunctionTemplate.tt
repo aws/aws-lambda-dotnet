@@ -209,6 +209,24 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                 }
 
             }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromBodyAttribute))
+            {
+                // string parameter does not need to be de-serialized
+                if (parameter.Type.IsString())
+                {
+ #>
+            var <#= parameter.Name #> = request.Body;
+
+<#
+                }
+                else
+                {
+ #>
+            var <#= parameter.Name #> = <#= _model.Serializer #>.Deserialize<<#= parameter.Type.FullName #>>(request.Body);
+
+<#
+                }
+            }
         }
 
         if (_model.LambdaMethod.ReturnsVoidOrTask)
