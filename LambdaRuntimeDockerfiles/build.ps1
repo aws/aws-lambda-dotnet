@@ -25,7 +25,18 @@ try
 
     if (Test-Path -Path (Join-Path $PWD -ChildPath '.\LambdaRuntimeDockerfiles\Images\' | Join-Path -ChildPath $TargetFramework | Join-Path -ChildPath  $Architecture | Join-Path -ChildPath 'Dockerfile') -PathType Leaf)
     {
-        $Tag = "dot$TargetFramework.0-runtime:base-image-$Architecture"
+		if ($TargetFramework -eq "net6")
+		{
+			$Tag = "dotnet6-runtime:base-image-$Architecture"
+		}
+		elseif($TargetFramework -eq "net5")
+		{
+			$Tag = "dotnet5.0-runtime:base-image-$Architecture"
+		}
+		else
+		{
+			throw "Unable to determine tag for target framework $TargetFramework" 
+		}
 
         Write-Status "Building $TargetFramework base image: $Tag"
         docker build -f (Join-Path $PWD -ChildPath '.\LambdaRuntimeDockerfiles\Images\' | Join-Path -ChildPath $TargetFramework | Join-Path -ChildPath  $Architecture | Join-Path -ChildPath 'Dockerfile') -t $Tag .
