@@ -14,7 +14,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
     /// Implements the ASP.NET Core IServer interface and exposes the application object for the Lambda function
     /// to initiate a web request.
     /// </summary>
-    internal class LambdaServer : IServer
+    public class LambdaServer : IServer
     {
         /// <summary>
         /// The application is used by the Lambda function to initiate a web request through the ASP.NET Core framework.
@@ -26,18 +26,18 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         {
         }
 
-        public Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken)
+        public virtual Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken)
         {
             this.Application = new ApplicationWrapper<TContext>(application);
             return Task.CompletedTask;
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public virtual Task StopAsync(CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
 
-        internal abstract class ApplicationWrapper
+        public abstract class ApplicationWrapper
         {
             internal abstract object CreateContext(IFeatureCollection features);
 
@@ -46,7 +46,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             internal abstract void DisposeContext(object context, Exception exception);
         }
 
-        internal class ApplicationWrapper<TContext> : ApplicationWrapper, IHttpApplication<TContext>
+        public class ApplicationWrapper<TContext> : ApplicationWrapper, IHttpApplication<TContext>
         {
             private readonly IHttpApplication<TContext> _application;
 

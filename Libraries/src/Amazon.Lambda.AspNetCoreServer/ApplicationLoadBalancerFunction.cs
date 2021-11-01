@@ -42,6 +42,16 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         }
 
+        /// <summary>
+        /// Constructor used by Amazon.Lambda.AspNetCoreServer.Hosting to support ASP.NET Core projects using the Minimal API style.
+        /// </summary>
+        /// <param name="hostedServices"></param>
+        protected ApplicationLoadBalancerFunction(IServiceProvider hostedServices)
+            : base(hostedServices)
+        {
+            _hostServices = hostedServices;
+        }
+
 
         /// <inheritdoc/>
         protected override void MarshallRequest(InvokeFeatures features, ApplicationLoadBalancerRequest lambdaRequest, ILambdaContext lambdaContext)
