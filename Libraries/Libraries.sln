@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29613.14
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31815.197
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}"
 EndProject
@@ -102,6 +102,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HandlerTest", "test\HandlerTest\HandlerTest.csproj", "{E88231E0-B249-49AE-B764-DB6C9615F6CA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HandlerTestNoSerializer", "test\HandlerTestNoSerializer\HandlerTestNoSerializer.csproj", "{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.AspNetCoreServer.Hosting", "src\Amazon.Lambda.AspNetCoreServer.Hosting\Amazon.Lambda.AspNetCoreServer.Hosting.csproj", "{02908C6F-FBDF-4949-B039-0F4632265B90}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomRuntimeAspNetCoreMinimalApiTest", "test\Amazon.Lambda.RuntimeSupport.Tests\CustomRuntimeAspNetCoreMinimalApiTest\CustomRuntimeAspNetCoreMinimalApiTest.csproj", "{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -278,6 +282,14 @@ Global
 		{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02908C6F-FBDF-4949-B039-0F4632265B90}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02908C6F-FBDF-4949-B039-0F4632265B90}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02908C6F-FBDF-4949-B039-0F4632265B90}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02908C6F-FBDF-4949-B039-0F4632265B90}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -328,6 +340,8 @@ Global
 		{44E9D925-B61D-4234-97B7-61424C963BA6} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{E88231E0-B249-49AE-B764-DB6C9615F6CA} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4} = {B5BD0336-7D08-492C-8489-42C987E29B39}
+		{02908C6F-FBDF-4949-B039-0F4632265B90} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}

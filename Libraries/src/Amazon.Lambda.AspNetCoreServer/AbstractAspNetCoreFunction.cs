@@ -111,6 +111,17 @@ namespace Amazon.Lambda.AspNetCoreServer
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="hostedServices"></param>
+        protected AbstractAspNetCoreFunction(IServiceProvider hostedServices)
+        {
+            _hostServices = hostedServices;
+            _server = this._hostServices.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
+            _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(this._hostServices);
+        }
+
+        /// <summary>
         /// Defines the default treatment of response content.
         /// </summary>
         public ResponseContentEncoding DefaultResponseContentEncoding { get; set; } = ResponseContentEncoding.Default;

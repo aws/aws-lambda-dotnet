@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	
+  <Import Project="..\..\..\buildtools\common.props" />	
+
+  <PropertyGroup>
+	<Description>Package for running ASP.NET Core applications using the Minimal API style as a AWS Lambda function.</Description>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	<Version>0.9.0</Version>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+    <AssemblyName>Amazon.Lambda.AspNetCoreServer.Hosting</AssemblyName>
+    <PackageId>Amazon.Lambda.AspNetCoreServer.Hosting</PackageId>	  
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>		
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
+    <ProjectReference Include="..\Amazon.Lambda.AspNetCoreServer\Amazon.Lambda.AspNetCoreServer.csproj" />
+    <ProjectReference Include="..\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj" />
+  </ItemGroup>
+
+</Project>
