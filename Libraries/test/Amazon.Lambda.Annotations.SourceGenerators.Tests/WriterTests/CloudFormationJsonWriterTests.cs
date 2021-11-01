@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
@@ -233,23 +234,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                                 }
                               }
                             }";
-            
+
             var mockFileManager = GetMockFileManager(originalContent);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "MethodNotCreatedFromAnnotationsPackage", 45, 512, null, "Policy1, Policy2, Policy3");
             var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
             var report = GetAnnotationReport(new() {lambdaFunctionModel});
-            
+
             // ACT
             cloudFormationJsonWriter.ApplyReport(report);
-            
+
             // ASSERT
             var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
-            
+
             Assert.NotNull(rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]);
             Assert.Equal(128, rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]["Properties"]["MemorySize"]); // unchanged
             Assert.Equal(100, rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]["Properties"]["Timeout"]); // unchanged
-            
+
             var policies = rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]["Properties"]["Policies"] as JArray;
             Assert.Equal(1, policies.Count);
             Assert.Equal("AWSLambdaBasicExecutionRole", policies[0]); // unchanged
@@ -297,6 +298,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public uint? MemorySize { get; set; }
             public string Role { get; set; }
             public string Policies { get; set; }
+            public IList<Attribute> Attributes { get; set; }
         }
     }
 }

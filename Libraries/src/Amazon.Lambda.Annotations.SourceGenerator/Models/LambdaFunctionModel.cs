@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
@@ -47,5 +49,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 
         /// <inheritdoc />
         public string Policies => LambdaMethod.LambdaFunctionAttribute.Data.Policies;
+
+        /// <inheritdoc />
+        public IList<Attribute> Attributes => LambdaMethod.Attributes
+            .Where(model => model is AttributeModel<Attribute>)
+            .Select(model => (model as AttributeModel<Attribute>)?.Data).ToList();
     }
 }

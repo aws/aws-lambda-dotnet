@@ -1,4 +1,7 @@
-﻿namespace Amazon.Lambda.Annotations.SourceGenerator.Models
+﻿using System;
+using System.Collections.Generic;
+
+namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
     public interface ILambdaFunctionSerializable
     {
@@ -35,5 +38,11 @@
         /// Resource based policies that grants permissions to access other AWS resources.
         /// </summary>
         string Policies { get; }
+
+        /// <summary>
+        /// List of attributes applied to the Lambda method that are used to generate serverless.template.
+        /// There always exists <see cref="Annotations.LambdaFunctionAttribute"/> in the list.
+        /// </summary>
+        IList<Attribute> Attributes { get; }
     }
 }
