@@ -53,10 +53,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Setup .NET 3.1
+    - name: Setup .NET 5.0
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.x
+        dotnet-version: 5.0.x
     - name: Restore dependencies
       run: dotnet restore Libraries/test/TestServerlessApp/TestServerlessApp.csproj
     - name: Build
