@@ -1,0 +1,38 @@
+﻿{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Resources": {
+    "GreeterSayHello": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 1024,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello"
+      }
+    },
+    "GreeterSayHelloAsync": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 50,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync"
+      }
+    }
+  }
+}

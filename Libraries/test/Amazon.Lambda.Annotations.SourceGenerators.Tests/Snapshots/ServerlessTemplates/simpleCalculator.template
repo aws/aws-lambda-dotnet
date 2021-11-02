@@ -1,0 +1,70 @@
+﻿{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Resources": {
+    "SimpleCalculatorAdd": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Add_Generated::Add"
+      }
+    },
+    "SimpleCalculatorSubtract": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract"
+      }
+    },
+    "SimpleCalculatorMultiply": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply"
+      }
+    },
+    "SimpleCalculatorDivideAsync": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync"
+      }
+    }
+  }
+}

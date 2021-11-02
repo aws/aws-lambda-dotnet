@@ -30,6 +30,7 @@
         </Content>
         <Content Remove="..\TestServerlessApp\obj\**" />
         <Content Remove="..\TestServerlessApp\bin\**" />
+        <Content Remove="..\TestServerlessApp\serverless.template" />
     </ItemGroup>
 
     <ItemGroup>

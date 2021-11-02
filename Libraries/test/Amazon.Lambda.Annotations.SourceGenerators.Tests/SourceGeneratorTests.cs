@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,6 +39,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     }
                 }
             }.RunAsync();
+
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template"));
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            VerifyServerlessTemplateSnapshot(expectedTemplateContent, actualTemplateContent);
         }
 
         [Fact]
@@ -83,6 +88,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     }
                 }
             }.RunAsync();
+
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "simpleCalculator.template"));
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            VerifyServerlessTemplateSnapshot(expectedTemplateContent, actualTemplateContent);
         }
 
         [Fact]
@@ -114,6 +123,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     }
                 }
             }.RunAsync();
+
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "complexCalculator.template"));
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            VerifyServerlessTemplateSnapshot(expectedTemplateContent, actualTemplateContent);
+        }
+
+        private void VerifyServerlessTemplateSnapshot(string expectedTemplateContent, string actualTemplateContent)
+        {
+            expectedTemplateContent = expectedTemplateContent.Replace("\r\n", Environment.NewLine).
+                Replace("\n", Environment.NewLine).
+                Replace("\r\r\n", Environment.NewLine);
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
     }
 }

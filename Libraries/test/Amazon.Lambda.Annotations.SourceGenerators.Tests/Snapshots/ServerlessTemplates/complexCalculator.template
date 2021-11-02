@@ -1,0 +1,38 @@
+﻿{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Resources": {
+    "TestServerlessAppComplexCalculatorAddGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Handler": "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add"
+      }
+    },
+    "TestServerlessAppComplexCalculatorSubtractGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Handler": "TestServerlessApp::TestServerlessApp.ComplexCalculator_Subtract_Generated::Subtract"
+      }
+    }
+  }
+}
