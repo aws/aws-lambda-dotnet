@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+
+    <!-- This is required to allow copying all the dependnceis to bin directory which can be copied after to nuget package based on nuspec -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,9 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Generator dependencies -->
+    <!-- Generator dependencies, update Libraries/src/Amazon.Lambda.Annotations.nuspec whenever a new generator dependency is added.  -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" GeneratePathProperty="true" PrivateAssets="all" />
-    <PackageReference Include="System.IO.Abstractions" Version="13.2.47" GeneratePathProperty="true" PrivateAssets="all" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -23,7 +25,6 @@
   <Target Name="GetDependencyTargetPaths">
     <ItemGroup>
       <TargetPathWithTargetPlatformMoniker Include="$(PKGNewtonsoft_Json)\lib\netstandard2.0\Newtonsoft.Json.dll" IncludeRuntimeDependency="false" />
-      <TargetPathWithTargetPlatformMoniker Include="$(PKGSystem_IO_Abstractions)\lib\netstandard2.0\System.IO.Abstractions.dll" IncludeRuntimeDependency="false" />
     </ItemGroup>
   </Target>
 
