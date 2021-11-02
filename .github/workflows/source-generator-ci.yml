@@ -3,8 +3,7 @@ name: Source Generator CI
 on: [pull_request]
 
 jobs:
-  source-generator-test:
-
+  source-generator-build-pack-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,9 +21,22 @@ jobs:
       with:
         dotnet-version: 5.0.x
     - name: Restore dependencies
-      run: dotnet restore Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj
+      run: |
+        dotnet restore Libraries/src/Amazon.Lambda.Annotations/Amazon.Lambda.Annotations.csproj
+        dotnet restore Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj
     - name: Build
-      run: dotnet build Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --no-restore
+      run: |
+        dotnet build Libraries/src/Amazon.Lambda.Annotations/Amazon.Lambda.Annotations.csproj --no-restore
+        dotnet build Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --no-restore
+    - name: Pack
+      run: dotnet pack Libraries/src/Amazon.Lambda.Annotations/Amazon.Lambda.Annotations.csproj -p:NuspecFile=../Amazon.Lambda.Annotations.nuspec --no-build --output "PackResults"
+    - name: Upload pack results
+      uses: actions/upload-artifact@v2
+      with:
+        name: source-generator-nuget-package
+        path: PackResults
+      # Use always() to always run this step to publish test results when there are test failures
+      if: ${{ always() }}
     - name: Test
       run:  dotnet test Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --no-build --verbosity normal --logger trx --results-directory "TestResults"
     - name: Upload test results
