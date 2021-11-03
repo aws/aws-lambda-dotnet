@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
@@ -12,7 +12,7 @@
     <AssemblyName>Amazon.Lambda.RuntimeSupport</AssemblyName>
     <PackageId>Amazon.Lambda.RuntimeSupport</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-
+	<PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
   </PropertyGroup>
@@ -22,6 +22,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+	<None Include="README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+	<ItemGroup>
     <PackageReference Include="NSwag.MSBuild" Version="12.0.4" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>

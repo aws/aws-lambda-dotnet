@@ -6,6 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="get-weatherforecast-request.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="get-weatherforecast-request.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AWSSDK.IdentityManagement" Version="3.7.0" />
     <PackageReference Include="AWSSDK.Lambda" Version="3.7.4.9" />
     <PackageReference Include="AWSSDK.S3" Version="3.7.0" />
@@ -21,11 +31,20 @@
     <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
+  </ItemGroup>
+
   <Target Name="PackageTestFunction" BeforeTargets="BeforeBuild">
     <Exec Command="dotnet tool install -g Amazon.Lambda.Tools" IgnoreExitCode="true" />
-    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Command="dotnet restore" />
+
+	<Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Command="dotnet restore" />
     <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release" />
     <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --function-architecture arm64" />
+
+	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Command="dotnet restore" />
+	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release" />
+	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --function-architecture arm64" />	  
   </Target>
 
 </Project>

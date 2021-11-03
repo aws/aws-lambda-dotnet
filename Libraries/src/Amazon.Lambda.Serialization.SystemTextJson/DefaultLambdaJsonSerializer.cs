@@ -17,21 +17,41 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
     /// in from Lambda and being sent back to Lambda will be logged.
     /// </para>
     /// </summary>    
-    public class DefaultLambdaJsonSerializer : ILambdaSerializer
+    public class DefaultLambdaJsonSerializer : AbstractLambdaJsonSerializer, ILambdaSerializer
     {
-        private const string DEBUG_ENVIRONMENT_VARIABLE_NAME = "LAMBDA_NET_SERIALIZER_DEBUG";
-        private readonly bool _debug;
-        
         /// <summary>
         /// The options used to serialize JSON object.
         /// </summary>
         protected JsonSerializerOptions SerializerOptions { get; }
-        protected JsonWriterOptions WriterOptions { get; }
 
         /// <summary>
         /// Constructs instance of serializer.
         /// </summary>        
         public DefaultLambdaJsonSerializer()
+            : this(null, null)
+        {
+
+        }
+
+        /// <summary>
+        /// Constructs instance of serializer with the option to customize the JsonSerializerOptions after the 
+        /// Amazon.Lambda.Serialization.SystemTextJson's default settings have been applied.
+        /// </summary>
+        /// <param name="customizer"></param>
+        public DefaultLambdaJsonSerializer(Action<JsonSerializerOptions> customizer)
+            : this(customizer, null)
+        {
+            
+        }
+
+        /// <summary>
+        /// Constructs instance of serializer with the option to customize the JsonSerializerOptions after the 
+        /// Amazon.Lambda.Serialization.SystemTextJson's default settings have been applied.
+        /// </summary>
+        /// <param name="customizer"></param>
+        /// <param name="jsonWriterCustomizer"></param>
+        public DefaultLambdaJsonSerializer(Action<JsonSerializerOptions> customizer, Action<JsonWriterOptions> jsonWriterCustomizer)
+            : base(jsonWriterCustomizer)
         {
             SerializerOptions = new JsonSerializerOptions()
             {
@@ -46,131 +66,20 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                 }
             };
 
-            WriterOptions = new JsonWriterOptions()
-            {
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            };
-
-            this._debug = string.Equals(Environment.GetEnvironmentVariable(DEBUG_ENVIRONMENT_VARIABLE_NAME), "true",
-                StringComparison.OrdinalIgnoreCase); 
-        }
-
-        /// <summary>
-        /// Constructs instance of serializer with the option to customize the JsonSerializerOptions after the 
-        /// Amazon.Lambda.Serialization.SystemTextJson's default settings have been applied.
-        /// </summary>
-        /// <param name="customizer"></param>
-        public DefaultLambdaJsonSerializer(Action<JsonSerializerOptions> customizer)
-            : this()
-        {
             customizer?.Invoke(this.SerializerOptions);
-        }
-
-        /// <summary>
-        /// Constructs instance of serializer with the option to customize the JsonSerializerOptions after the 
-        /// Amazon.Lambda.Serialization.SystemTextJson's default settings have been applied.
-        /// </summary>
-        /// <param name="customizer"></param>
-        /// <param name="jsonWriterCustomizer"></param>
-        public DefaultLambdaJsonSerializer(Action<JsonSerializerOptions> customizer, Action<JsonWriterOptions> jsonWriterCustomizer)
-            : this(customizer)
-        {
             jsonWriterCustomizer?.Invoke(this.WriterOptions);
         }
 
-        /// <summary>
-        /// Serializes a particular object to a stream.
-        /// </summary>
-        /// <typeparam name="T">Type of object to serialize.</typeparam>
-        /// <param name="response">Object to serialize.</param>
-        /// <param name="responseStream">Output stream.</param>        
-        public void Serialize<T>(T response, Stream responseStream)
+        /// <inheritdoc/>
+        protected override void InternalSerialize<T>(Utf8JsonWriter writer, T response)
         {
-            try
-            {
-                if (_debug)
-                {
-                    using (var debugStream = new MemoryStream())
-                    using (var utf8Writer = new Utf8JsonWriter(debugStream, WriterOptions))
-                    {
-                        JsonSerializer.Serialize(utf8Writer, response, SerializerOptions);
-                        debugStream.Position = 0;
-                        using var debugReader = new StreamReader(debugStream);
-                        var jsonDocument = debugReader.ReadToEnd();
-                        Console.WriteLine($"Lambda Serialize {response.GetType().FullName}: {jsonDocument}");
-
-                        var writer = new StreamWriter(responseStream);
-                        writer.Write(jsonDocument);
-                        writer.Flush();
-                    }
-                }
-                else
-                {
-                    using (var writer = new Utf8JsonWriter(responseStream, WriterOptions))
-                    {
-                        JsonSerializer.Serialize(writer, response, SerializerOptions);
-                    }
-                }
-            }
-            catch(Exception e)
-            {
-                throw new JsonSerializerException($"Error converting the response object of type {typeof(T).FullName} from the Lambda function to JSON: {e.Message}", e);
-            }            
+            JsonSerializer.Serialize(writer, response, SerializerOptions);
         }
 
-        /// <summary>
-        /// Deserializes a stream to a particular type.
-        /// </summary>
-        /// <typeparam name="T">Type of object to deserialize to.</typeparam>
-        /// <param name="requestStream">Stream to serialize.</param>
-        /// <returns>Deserialized object from stream.</returns>
-        public T Deserialize<T>(Stream requestStream)
+        /// <inheritdoc/>
+        protected override T InternalDeserialize<T>(byte[] utf8Json)
         {
-            try
-            {
-                byte[] utf8Json = null;
-                if (_debug)
-                {
-                    var json = new StreamReader(requestStream).ReadToEnd();
-                    Console.WriteLine($"Lambda Deserialize {typeof(T).FullName}: {json}");
-                    utf8Json = UTF8Encoding.UTF8.GetBytes(json);
-                }
-
-                if (utf8Json == null)
-                {
-                    if (requestStream is MemoryStream ms)
-                    {
-                        utf8Json = ms.ToArray();
-                    }
-                    else
-                    {
-                        using (var copy = new MemoryStream())
-                        {
-                            requestStream.CopyTo(copy);
-                            utf8Json = copy.ToArray();
-                        }
-                    }
-                }
-
-                return JsonSerializer.Deserialize<T>(utf8Json, SerializerOptions);
-            }
-            catch (Exception e)
-            {
-                string message;
-                var targetType = typeof(T);
-                if (targetType == typeof(string))
-                {
-                    message =
-                        $"Error converting the Lambda event JSON payload to a string. JSON strings must be quoted, for example \"Hello World\" in order to be converted to a string: {e.Message}";
-                }
-                else
-                {
-                    message =
-                        $"Error converting the Lambda event JSON payload to type {targetType.FullName}: {e.Message}";
-                }
-
-                throw new JsonSerializerException(message, e);
-            }
+            return JsonSerializer.Deserialize<T>(utf8Json, SerializerOptions);
         }
     }
 }
