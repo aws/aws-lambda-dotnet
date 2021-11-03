@@ -10,8 +10,12 @@
         <PackageId>Amazon.Lambda.Serialization.SystemTextJson</PackageId>
         <PackageTags>AWS;Amazon;Lambda</PackageTags>
         <VersionPrefix>2.2.0</VersionPrefix>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
-
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\"/>
+	</ItemGroup>
+	
     <ItemGroup>
         <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
     </ItemGroup>
