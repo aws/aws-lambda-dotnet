@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
@@ -197,6 +198,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 }
             };
             await lambdaClient.UpdateFunctionConfigurationAsync(updateFunctionConfigurationRequest);
+            // Wait for eventual consistency of function change.
+            Thread.Sleep(3000);
         }
 
         protected async Task CreateFunctionAsync(IAmazonLambda lambdaClient, string bucketName)
