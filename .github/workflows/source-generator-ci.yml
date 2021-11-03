@@ -26,10 +26,10 @@ jobs:
         dotnet restore Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj
     - name: Build
       run: |
-        dotnet build Libraries/src/Amazon.Lambda.Annotations/Amazon.Lambda.Annotations.csproj --no-restore
-        dotnet build Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --no-restore
+        dotnet build Libraries/src/Amazon.Lambda.Annotations/Amazon.Lambda.Annotations.csproj --no-restore --configuration Release
+        dotnet build Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --no-restore --configuration Release
     - name: Pack
-      run: dotnet pack Libraries/src/Amazon.Lambda.Annotations/Amazon.Lambda.Annotations.csproj -p:NuspecFile=../Amazon.Lambda.Annotations.nuspec --no-build --output "PackResults"
+      run: dotnet pack Libraries/src/Amazon.Lambda.Annotations/Amazon.Lambda.Annotations.csproj -p:NuspecFile=../Amazon.Lambda.Annotations.nuspec --no-build --configuration Release --output "PackResults"
     - name: Upload pack results
       uses: actions/upload-artifact@v2
       with:
@@ -38,7 +38,7 @@ jobs:
       # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
     - name: Test
-      run:  dotnet test Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --no-build --verbosity normal --logger trx --results-directory "TestResults"
+      run:  dotnet test Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --no-build --configuration Release --verbosity normal --logger trx --results-directory "TestResults"
     - name: Upload test results
       uses: actions/upload-artifact@v2
       with:
@@ -60,7 +60,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore Libraries/test/TestServerlessApp/TestServerlessApp.csproj
     - name: Build
-      run: dotnet build Libraries/test/TestServerlessApp/TestServerlessApp.csproj --no-restore
+      run: dotnet build Libraries/test/TestServerlessApp/TestServerlessApp.csproj --no-restore --configuration Release
     - name: Upload built assemblies
       uses: actions/upload-artifact@v2
       with:
