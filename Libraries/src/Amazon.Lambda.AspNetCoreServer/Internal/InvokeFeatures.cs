@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-#if !NETCOREAPP_2_1
+#if !NETCOREAPP2_1
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 #endif
@@ -29,7 +29,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                              IServiceProvidersFeature,
                              ITlsConnectionFeature
 
-#if !NETCOREAPP_2_1
+#if !NETCOREAPP2_1
                              ,IHttpResponseBodyFeature
 #endif
     /*
@@ -49,7 +49,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             this[typeof(IHttpConnectionFeature)] = this;
             this[typeof(IServiceProvidersFeature)] = this;
             this[typeof(ITlsConnectionFeature)] = this;
-#if !NETCOREAPP_2_1
+#if !NETCOREAPP2_1
             this[typeof(IHttpResponseBodyFeature)] = this;
 #endif
         }
@@ -136,8 +136,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         
         #region IHttpAuthenticationFeature
         ClaimsPrincipal IHttpAuthenticationFeature.User { get; set; }
-        
-#if NETCOREAPP_2_1
+
+#if NETCOREAPP2_1
         Microsoft.AspNetCore.Http.Features.Authentication.IAuthenticationHandler IHttpAuthenticationFeature.Handler { get; set; }
 #endif
 #endregion
@@ -250,7 +250,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         #endregion
 
         #region IHttpResponseBodyFeature
-#if !NETCOREAPP_2_1
+#if !NETCOREAPP2_1
         Stream IHttpResponseBodyFeature.Stream => ((IHttpResponseFeature)this).Body;
 
         private PipeWriter _pipeWriter;
