@@ -10,6 +10,11 @@
     <AssemblyName>Amazon.Lambda.Core</AssemblyName>
     <PackageId>Amazon.Lambda.Core</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+	
+  <ItemGroup>
+	<None Include="README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>	
 
 </Project>

@@ -12,6 +12,7 @@
     <PackageTags>AWS;Amazon;Lambda;aspnetcore</PackageTags>
     <LangVersion>Latest</LangVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
@@ -21,6 +22,9 @@
     <DefineConstants>NETCOREAPP_3_1</DefineConstants>
   </PropertyGroup>
 
+  <ItemGroup>
+	<None Include="README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>	
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj" />
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
