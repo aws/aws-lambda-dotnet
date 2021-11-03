@@ -12,7 +12,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.Features.Authentication;
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
 using Microsoft.Extensions.Hosting;
 #endif
 
@@ -204,7 +204,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// registration for Lambda.
         /// </summary>
         /// <returns></returns>
-#if !NETCOREAPP_2_1
+#if !NETCOREAPP2_1
         [Obsolete("Functions should migrate to CreateHostBuilder and use IHostBuilder to setup their ASP.NET Core application. In a future major version update of this library support for IWebHostBuilder will be removed for non .NET Core 2.1 Lambda functions.")]
 #endif
         protected virtual IWebHostBuilder CreateWebHostBuilder()
@@ -256,7 +256,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             return builder;
         }
 
-#if !NETCOREAPP_2_1
+#if !NETCOREAPP2_1
         /// <summary>
         /// Method to initialize the host builder before starting the host. In a typical Web API this is similar to the main function. 
         /// Setting the Startup class is required in this method.
@@ -315,7 +315,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         protected void Start()
         {
-#if !NETCOREAPP_2_1
+#if !NETCOREAPP2_1
             // For .NET Core 3.1 and above use the IHostBuilder instead of IWebHostBuilder used in .NET Core 2.1. If the user overrode CreateWebHostBuilder
             // then fallback to the original .NET Core 2.1 behavior.
             if (this.GetType().GetMethod("CreateWebHostBuilder", BindingFlags.NonPublic | BindingFlags.Instance).DeclaringType.FullName.StartsWith("Amazon.Lambda.AspNetCoreServer.AbstractAspNetCoreFunction"))
@@ -434,9 +434,9 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="request"></param>
         /// <param name="lambdaContext"></param>
         /// <returns></returns>
-#if NETCOREAPP_2_1
+#if NETCOREAPP2_1
         [LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
-#elif NETCOREAPP_3_1
+#elif NETCOREAPP3_1_OR_GREATER
         [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
         public virtual async Task<TRESPONSE> FunctionHandlerAsync(TREQUEST request, ILambdaContext lambdaContext)
@@ -577,7 +577,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         }
 
-#if !NETCOREAPP_2_1
+#if !NETCOREAPP2_1
         /// <summary>
         /// This method is called after the IHost is created from the IHostBuilder and the services have been configured. The
         /// Host hasn't been started yet. If the CreateWebHostBuilder method is overloaded then IHostWebBuilder will be used to create
