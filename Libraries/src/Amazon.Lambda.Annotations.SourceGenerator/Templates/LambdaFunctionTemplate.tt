@@ -79,7 +79,23 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 
     if (_model.LambdaMethod.Events.Contains(EventType.API))
     {
-        var parameters = string.Join(", ", _model.LambdaMethod.Parameters.Select(p => p.Name));
+        var parameters = string.Join(", ", _model.LambdaMethod.Parameters
+            .Select(p =>
+            {
+                // Pass the same context parameter for ILambdaContext that comes from the generated method.
+                if (p.Type.FullName == TypeFullNames.ILambdaContext)
+                {
+                    return "context";
+                }
+
+                // Pass the same request parameter for Request Type that comes from the generated method.
+                if (p.Type.FullName == _model.GeneratedMethod.RequestType.FullName)
+                {
+                    return "request";
+                }
+
+                return p.Name;
+            }));
         var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute) as AttributeModel<RestApiAttribute>;
         var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<HttpApiAttribute>;
 
@@ -99,7 +115,11 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 
         foreach (var parameter in _model.LambdaMethod.Parameters)
         {
-            if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromServiceAttribute))
+            if (parameter.Type.FullName == TypeFullNames.ILambdaContext || parameter.Type.FullName == _model.GeneratedMethod.RequestType.FullName)
+            {
+                // No action required for ILambdaContext and RequestType, they are passed from the generated method parameter directly to the original method.
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromServiceAttribute))
             {
 #>
             var <#= parameter.Name #> = scope.ServiceProvider.GetRequiredService<<#= parameter.Type.FullName #>>();

@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon.Lambda.Annotations;
+using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
@@ -9,8 +12,10 @@ namespace TestServerlessApp
     {
         [LambdaFunction(Name = "GreeterSayHello", MemorySize = 1024)]
         [HttpApi(HttpMethod.Get, HttpApiVersion.V1, "/Greeter/SayHello")]
-        public void SayHello([FromQuery(Name = "names")]IEnumerable<string> firstNames)
+        public void SayHello([FromQuery(Name = "names")]IEnumerable<string> firstNames, APIGatewayProxyRequest request, ILambdaContext context)
         {
+            context.Logger.Log($"Request {JsonSerializer.Serialize(request)}");
+
             if (firstNames == null)
             {
                 return;
