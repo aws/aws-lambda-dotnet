@@ -1,6 +1,10 @@
 name: Source Generator CI
 
-on: [pull_request]
+on:
+  push:
+    branches:
+      - feature/annotations
+  pull_request:
 
 jobs:
   source-generator-build-pack-test:
