@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Text.Json;
 using System.Threading;
 using Amazon.Lambda.Annotations;
+using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
@@ -11,8 +14,10 @@ namespace TestServerlessApp
     {
         [LambdaFunction]
         [HttpApi(HttpMethod.Post, HttpApiVersion.V2, "/ComplexCalculator/Add")]
-        public Tuple<double, double> Add([FromBody]string complexNumbers)
+        public Tuple<double, double> Add([FromBody]string complexNumbers, ILambdaContext context, APIGatewayHttpApiV2ProxyRequest request)
         {
+            context.Logger.Log($"Request {JsonSerializer.Serialize(request)}");
+
             var components = complexNumbers.Split(";");
             if (components.Length != 2)
             {

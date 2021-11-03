@@ -19,7 +19,7 @@ namespace TestServerlessApp
         {
             var complexNumbers = request.Body;
 
-            var response = complexCalculator.Add(complexNumbers);
+            var response = complexCalculator.Add(complexNumbers, context, request);
 
             var body = System.Text.Json.JsonSerializer.Serialize(response);
 

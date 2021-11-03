@@ -23,7 +23,7 @@ namespace TestServerlessApp
                 firstNames = request.MultiValueQueryStringParameters["names"].Select(q => (string)Convert.ChangeType(q, typeof(string))).ToList();
             }
 
-            greeter.SayHello(firstNames);
+            greeter.SayHello(firstNames, request, context);
 
             return new APIGatewayProxyResponse
             {

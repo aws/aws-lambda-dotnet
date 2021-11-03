@@ -19,6 +19,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string FromBodyAttribute = "Amazon.Lambda.Annotations.FromBodyAttribute";
         public const string FromRouteAttribute = "Amazon.Lambda.Annotations.FromRouteAttribute";
         public const string FromServiceAttribute = "Amazon.Lambda.Annotations.FromServicesAttribute";
+        public const string ILambdaContext = "Amazon.Lambda.Core.ILambdaContext";
         public const string IEnumerable = "System.Collections.IEnumerable";
     }
 }
