@@ -252,7 +252,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal(100, rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]["Properties"]["Timeout"]); // unchanged
 
             var policies = rootToken["Resources"]["MethodNotCreatedFromAnnotationsPackage"]["Properties"]["Policies"] as JArray;
-            Assert.Equal(1, policies.Count);
+            Assert.NotNull(policies);
+            Assert.Single(policies);
             Assert.Equal("AWSLambdaBasicExecutionRole", policies[0]); // unchanged
         }
 
