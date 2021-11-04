@@ -15,7 +15,16 @@
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Add_Generated::Add"
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Add_Generated::Add",
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/SimpleCalculator/Add",
+              "Method": "GET"
+            }
+          }
+        }
       }
     },
     "SimpleCalculatorSubtract": {
@@ -31,7 +40,16 @@
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract"
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract",
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/SimpleCalculator/Subtract",
+              "Method": "GET"
+            }
+          }
+        }
       }
     },
     "SimpleCalculatorMultiply": {
@@ -47,7 +65,16 @@
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply"
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply",
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/SimpleCalculator/Multiply/{x}/{y}",
+              "Method": "GET"
+            }
+          }
+        }
       }
     },
     "SimpleCalculatorDivideAsync": {
@@ -63,7 +90,16 @@
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync"
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync",
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/SimpleCalculator/DivideAsync/{x}/{y}",
+              "Method": "GET"
+            }
+          }
+        }
       }
     }
   }

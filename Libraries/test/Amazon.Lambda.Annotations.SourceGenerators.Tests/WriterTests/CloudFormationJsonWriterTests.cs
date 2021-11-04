@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
+using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -298,7 +299,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public uint? MemorySize { get; set; }
             public string Role { get; set; }
             public string Policies { get; set; }
-            public IList<Attribute> Attributes { get; set; }
+            public IList<AttributeModel> Attributes { get; set; }
         }
     }
 }
