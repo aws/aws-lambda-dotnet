@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
+using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Newtonsoft.Json.Linq;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
@@ -82,14 +83,55 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken($"{propertiesPath}.Role");
             }
             
-            // Processing of RestApiRoutes will be added after RestApiRouteAttribute is modeled.
+            if (lambdaFunction.Attributes != null && lambdaFunction.Attributes.Any())
+                ProcessLambdaFunctionAttributes(lambdaFunction);
+        }
+
+        private void ProcessLambdaFunctionAttributes(ILambdaFunctionSerializable lambdaFunction)
+        {
+            foreach (var attributeModel in lambdaFunction.Attributes)
+            {
+                switch (attributeModel)
+                {
+                    case AttributeModel<HttpApiAttribute> httpApiAttributeModel:
+                        ProcessHttpApiAttribute(lambdaFunction, httpApiAttributeModel.Data);
+                        break;
+                    case AttributeModel<RestApiAttribute> restApiAttributeModel:
+                        ProcessRestApiAttribute(lambdaFunction, restApiAttributeModel.Data);
+                        break;
+                }
+            }
+        }
+
+        private void ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute)
+        {
+            var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
+            var methodName = restApiAttribute.Method.ToString();
+            var methodPath = $"{eventPath}.Root{methodName}";
+
+            _jsonWriter.SetToken($"{methodPath}.Type", "Api");
+            _jsonWriter.SetToken($"{methodPath}.Properties.Path", restApiAttribute.Template);
+            _jsonWriter.SetToken($"{methodPath}.Properties.Method", methodName.ToUpper());
+        }
+
+        private void ProcessHttpApiAttribute(ILambdaFunctionSerializable lambdaFunction, HttpApiAttribute httpApiAttribute)
+        {
+            var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
+            var methodName = httpApiAttribute.Method.ToString();
+            var methodPath = $"{eventPath}.Root{methodName}";
+            var version = httpApiAttribute.Version == HttpApiVersion.V1 ? "1.0" : "2.0";
+
+            _jsonWriter.SetToken($"{methodPath}.Type", "HttpApi");
+            _jsonWriter.SetToken($"{methodPath}.Properties.Path", httpApiAttribute.Template);
+            _jsonWriter.SetToken($"{methodPath}.Properties.Method", methodName.ToUpper());
+            _jsonWriter.SetToken($"{methodPath}.Properties.PayloadFormatVersion", version);
         }
         
         private void ApplyLambdaFunctionDefaults(string lambdaFunctionPath, string propertiesPath)
         {
             _jsonWriter.SetToken($"{lambdaFunctionPath}.Type", "AWS::Serverless::Function");
             _jsonWriter.SetToken($"{lambdaFunctionPath}.Metadata.Tool", "Amazon.Lambda.Annotations");
-            
+
             _jsonWriter.SetToken($"{propertiesPath}.Runtime", "dotnetcore3.1");
             _jsonWriter.SetToken($"{propertiesPath}.CodeUri", "");
             _jsonWriter.SetToken($"{propertiesPath}.MemorySize", 256);

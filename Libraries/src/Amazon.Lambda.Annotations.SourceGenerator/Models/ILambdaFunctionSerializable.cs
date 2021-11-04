@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
@@ -43,6 +44,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// List of attributes applied to the Lambda method that are used to generate serverless.template.
         /// There always exists <see cref="Annotations.LambdaFunctionAttribute"/> in the list.
         /// </summary>
-        IList<Attribute> Attributes { get; }
+        IList<AttributeModel> Attributes { get; }
     }
 }
