@@ -23,12 +23,12 @@ try
     # so it can include the Amazon.Lambda.RuntimeSupport project in its Docker Build Context
     Push-Location $PSScriptRoot\..   
 
-    if (Test-Path -Path (Join-Path $PWD '.\LambdaRuntimeDockerfiles\Images\' $TargetFramework $Architecture 'Dockerfile') -PathType Leaf)
+    if (Test-Path -Path (Join-Path $PWD -ChildPath '.\LambdaRuntimeDockerfiles\Images\' | Join-Path -ChildPath $TargetFramework | Join-Path -ChildPath  $Architecture | Join-Path -ChildPath 'Dockerfile') -PathType Leaf)
     {
         $Tag = "dot$TargetFramework.0-runtime:base-image-$Architecture"
 
         Write-Status "Building $TargetFramework base image: $Tag"
-        docker build -f (Join-Path $PWD '.\LambdaRuntimeDockerfiles\Images\' $TargetFramework $Architecture 'Dockerfile') -t $Tag .
+        docker build -f (Join-Path $PWD -ChildPath '.\LambdaRuntimeDockerfiles\Images\' | Join-Path -ChildPath $TargetFramework | Join-Path -ChildPath  $Architecture | Join-Path -ChildPath 'Dockerfile') -t $Tag .
     }
 }
 finally
