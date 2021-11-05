@@ -10,12 +10,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// <summary>
         /// Gets or sets type of response returned by the generated Lambda function.
         /// </summary>
-        public TypeModel ResponseType { get; set; }
+        public TypeModel ReturnType { get; set; }
 
         /// <summary>
-        /// Gets or sets type of request accepted by the generated Lambda function.
+        /// Gets or sets type of parameters accepted by the generated Lambda function.
         /// </summary>
-        public TypeModel RequestType { get; set; }
+        public IList<ParameterModel> Parameters { get; set; }
 
         /// <summary>
         /// Gets or sets list of namespaces required to facilitate generated statements.

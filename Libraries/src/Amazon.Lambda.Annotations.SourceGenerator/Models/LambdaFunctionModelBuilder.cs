@@ -10,8 +10,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     {
         public static LambdaFunctionModel Build(IMethodSymbol lambdaMethodSymbol, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context)
         {
-            var generatedMethod = GeneratedMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, context);
             var lambdaMethod = LambdaMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, context);
+            var generatedMethod = GeneratedMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, lambdaMethod, context);
             var model = new LambdaFunctionModel()
             {
                 GeneratedMethod = generatedMethod,

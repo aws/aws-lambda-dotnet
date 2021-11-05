@@ -62,7 +62,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 #>
         }
 
-        public <#= _model.LambdaMethod.IsAsync ? "async Task<" : "" #><#= _model.GeneratedMethod.ResponseType.Name #><#= _model.LambdaMethod.IsAsync ? ">" : "" #> <#= _model.LambdaMethod.Name #>(<#= _model.GeneratedMethod.RequestType.Name #> request, ILambdaContext context)
+        public <#= _model.LambdaMethod.IsAsync ? "async Task<" : "" #><#= _model.GeneratedMethod.ReturnType.Name #><#= _model.LambdaMethod.IsAsync ? ">" : "" #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
         {
 <#
     if (_model.LambdaMethod.UsingDependencyInjection)
@@ -89,7 +89,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                 }
 
                 // Pass the same request parameter for Request Type that comes from the generated method.
-                if (p.Type.FullName == _model.GeneratedMethod.RequestType.FullName)
+                if (TypeFullNames.Requests.Contains(p.Type.FullName))
                 {
                     return "request";
                 }
@@ -115,7 +115,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 
         foreach (var parameter in _model.LambdaMethod.Parameters)
         {
-            if (parameter.Type.FullName == TypeFullNames.ILambdaContext || parameter.Type.FullName == _model.GeneratedMethod.RequestType.FullName)
+            if (parameter.Type.FullName == TypeFullNames.ILambdaContext || TypeFullNames.Requests.Contains(parameter.Type.FullName))
             {
                 // No action required for ILambdaContext and RequestType, they are passed from the generated method parameter directly to the original method.
             }
@@ -299,7 +299,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 <#
         }
 
-        if (_model.GeneratedMethod.ResponseType.FullName == _model.LambdaMethod.ReturnType.FullName)
+        if (_model.GeneratedMethod.ReturnType.FullName == _model.LambdaMethod.ReturnType.FullName)
         {
 #>
             return response;
@@ -330,7 +330,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             }
 #>
 
-            return new <#= _model.GeneratedMethod.ResponseType.Name #>
+            return new <#= _model.GeneratedMethod.ReturnType.Name #>
             {
 <#
             if (!_model.LambdaMethod.ReturnsVoidOrTask)
