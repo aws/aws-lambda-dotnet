@@ -5,7 +5,10 @@
     "TestServerlessAppComplexCalculatorAddGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootPost"
+        ]
       },
       "Properties": {
         "Runtime": "dotnetcore3.1",
@@ -31,7 +34,10 @@
     "TestServerlessAppComplexCalculatorSubtractGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootPost"
+        ]
       },
       "Properties": {
         "Runtime": "dotnetcore3.1",
