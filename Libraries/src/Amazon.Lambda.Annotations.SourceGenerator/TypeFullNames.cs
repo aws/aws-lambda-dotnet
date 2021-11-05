@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
     /// <summary>
@@ -21,5 +23,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string FromServiceAttribute = "Amazon.Lambda.Annotations.FromServicesAttribute";
         public const string ILambdaContext = "Amazon.Lambda.Core.ILambdaContext";
         public const string IEnumerable = "System.Collections.IEnumerable";
+
+        public static HashSet<string> Requests = new HashSet<string>
+        {
+            APIGatewayProxyRequest,
+            APIGatewayHttpApiV2ProxyRequest
+        };
     }
 }
