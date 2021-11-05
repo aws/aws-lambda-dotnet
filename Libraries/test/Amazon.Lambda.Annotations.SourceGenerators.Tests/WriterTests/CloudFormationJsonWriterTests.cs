@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
@@ -6,6 +5,7 @@ using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using JsonWriter = Amazon.Lambda.Annotations.SourceGenerator.Writers.JsonWriter;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
@@ -258,6 +258,57 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal("AWSLambdaBasicExecutionRole", policies[0]); // unchanged
         }
 
+        [Fact]
+        public void EventAttributesTest()
+        {
+            // ARRANGE - USE A HTTP GET METHOD
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "TestMethod", 45, 512, null, null);
+            var httpAttributeModel = new AttributeModel<HttpApiAttribute>()
+            {
+                Data = new HttpApiAttribute(HttpMethod.Get, HttpApiVersion.V1, "/Calculator/Add")
+            };
+            lambdaFunctionModel.Attributes = new List<AttributeModel>() {httpAttributeModel};
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
+            
+            // ACT
+            cloudFormationJsonWriter.ApplyReport(report);
+            
+            // ASSERT
+            var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            var getToken = rootToken["Resources"]["TestMethod"]["Properties"]["Events"]["RootGet"];
+
+            Assert.NotNull(getToken);
+            Assert.Equal("HttpApi", getToken["Type"]);
+            Assert.Equal("/Calculator/Add", getToken["Properties"]["Path"]);
+            Assert.Equal("GET", getToken["Properties"]["Method"]);
+            Assert.Equal("1.0", getToken["Properties"]["PayloadFormatVersion"]);
+            
+            // ARRANGE - CHANGE TO A HTTP POST METHOD
+            httpAttributeModel = new AttributeModel<HttpApiAttribute>()
+            {
+                Data = new HttpApiAttribute(HttpMethod.Post, HttpApiVersion.V2, "/Calculator/Add")
+            };
+            lambdaFunctionModel.Attributes = new List<AttributeModel>() {httpAttributeModel};
+            
+            // ACT
+            cloudFormationJsonWriter.ApplyReport(report);
+            
+            // ASSERT
+            rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            getToken = rootToken["Resources"]["TestMethod"]["Properties"]["Events"]["RootGet"];
+            var postToken = rootToken["Resources"]["TestMethod"]["Properties"]["Events"]["RootPost"];
+
+            Assert.Null(getToken); // Verify that the HTTP GET method entry is deleted
+            Assert.NotNull(postToken);
+            Assert.Equal("HttpApi", postToken["Type"]);
+            Assert.Equal("/Calculator/Add", postToken["Properties"]["Path"]);
+            Assert.Equal("POST", postToken["Properties"]["Method"]);
+            Assert.Equal("2.0", postToken["Properties"]["PayloadFormatVersion"]);
+        }
+
         private IFileManager GetMockFileManager(string originalContent)
         {
             var mockFileManager = new InMemoryFileManager();
@@ -300,7 +351,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public uint? MemorySize { get; set; }
             public string Role { get; set; }
             public string Policies { get; set; }
-            public IList<AttributeModel> Attributes { get; set; }
+            public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
         }
     }
 }

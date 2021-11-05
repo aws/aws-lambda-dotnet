@@ -51,6 +51,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public string Policies => LambdaMethod.LambdaFunctionAttribute.Data.Policies;
 
         /// <inheritdoc />
-        public IList<AttributeModel> Attributes => LambdaMethod.Attributes;
+        public IList<AttributeModel> Attributes => LambdaMethod.Attributes ?? new List<AttributeModel>();
     }
 }

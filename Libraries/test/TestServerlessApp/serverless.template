@@ -6,7 +6,10 @@
     "GreeterSayHello": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
       },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello",
@@ -33,7 +36,10 @@
     "GreeterSayHelloAsync": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
       },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync",
@@ -60,7 +66,10 @@
     "SimpleCalculatorAdd": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
       },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Add_Generated::Add",
@@ -86,7 +95,10 @@
     "SimpleCalculatorSubtract": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
       },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract",
@@ -112,7 +124,10 @@
     "SimpleCalculatorMultiply": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
       },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply",
@@ -138,7 +153,10 @@
     "SimpleCalculatorDivideAsync": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
       },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync",
@@ -164,7 +182,10 @@
     "TestServerlessAppComplexCalculatorAddGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootPost"
+        ]
       },
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add",
