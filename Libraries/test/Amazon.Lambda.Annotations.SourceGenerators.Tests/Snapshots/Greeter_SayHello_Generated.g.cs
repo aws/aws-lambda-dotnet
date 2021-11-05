@@ -15,7 +15,7 @@ namespace TestServerlessApp
             greeter = new Greeter();
         }
 
-        public APIGatewayProxyResponse SayHello(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
+        public Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse SayHello(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
         {
             var firstNames = default(System.Collections.Generic.IEnumerable<string>);
             if (request.MultiValueQueryStringParameters?.ContainsKey("names") == true)

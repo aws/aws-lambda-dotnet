@@ -15,7 +15,7 @@ namespace TestServerlessApp
             complexCalculator = new ComplexCalculator();
         }
 
-        public APIGatewayHttpApiV2ProxyResponse Subtract(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
+        public Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse Subtract(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
         {
             var complexNumbers = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.IList<System.Collections.Generic.IList<int>>>(request.Body);
 

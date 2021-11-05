@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.Core;
@@ -52,6 +54,41 @@ namespace TestServerlessApp
         public async Task<int> DivideAsync([FromRoute(Name = "x")]int first, [FromRoute(Name = "y")]int second)
         {
             return await Task.FromResult(_simpleCalculatorService.Divide(first, second));
+        }
+
+        [LambdaFunction(Name = "PI")]
+        public double Pi([FromServices]ISimpleCalculatorService simpleCalculatorService)
+        {
+            return simpleCalculatorService.PI();
+        }
+
+        [LambdaFunction(Name = "Random")]
+        public int Random(int maxValue, ILambdaContext context)
+        {
+            context.Logger.Log($"Max value: {maxValue}");
+            return new Random().Next(maxValue);
+        }
+
+        [LambdaFunction(Name = "Randoms")]
+        public IList<int> Randoms(RandomsInput input, ILambdaContext context)
+        {
+            context.Logger.Log($"Count: {input.Count}");
+            context.Logger.Log($"Max value: {input.MaxValue}");
+
+            var random = new Random();
+            var nums = new List<int>();
+            for (int i = 0; i < input.Count; i++)
+            {
+                nums.Add(random.Next(input.MaxValue));
+            }
+
+            return nums;
+        }
+
+        public class RandomsInput
+        {
+            public int Count { get; set; }
+            public int MaxValue { get; set; }
         }
     }
 }
