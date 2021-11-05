@@ -83,8 +83,22 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             typeof(SourceGenerator.Generator),
                             "SimpleCalculator_DivideAsync_Generated.g.cs",
                             SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_DivideAsync_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "SimpleCalculator_Pi_Generated.g.cs",
+                            SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Pi_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "SimpleCalculator_Random_Generated.g.cs",
+                            SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Random_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "SimpleCalculator_Randoms_Generated.g.cs",
+                            SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Randoms_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
-
                     }
                 }
             }.RunAsync();

@@ -21,7 +21,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             {
                 Usings = BuildUsings(lambdaMethodSymbol, configureMethodSymbol, context),
                 Parameters = BuildParameters(lambdaMethodSymbol, lambdaMethodModel, context),
-                ReturnType = BuildResponseType(lambdaMethodSymbol, context),
+                ReturnType = BuildResponseType(lambdaMethodSymbol, lambdaMethodModel, context),
                 ContainingType = BuildContainingType(lambdaMethodSymbol),
             };
             return model;
@@ -57,7 +57,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             return namespaces;
         }
 
-        private static TypeModel BuildResponseType(IMethodSymbol lambdaMethodSymbol, GeneratorExecutionContext context)
+        private static TypeModel BuildResponseType(IMethodSymbol lambdaMethodSymbol,
+            LambdaMethodModel lambdaMethodModel, GeneratorExecutionContext context)
         {
             if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute))
             {
@@ -85,8 +86,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             }
             else
             {
-                var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.MemoryStream);
-                return TypeModelBuilder.Build(symbol, context);
+                return lambdaMethodModel.ReturnType;
             }
         }
 

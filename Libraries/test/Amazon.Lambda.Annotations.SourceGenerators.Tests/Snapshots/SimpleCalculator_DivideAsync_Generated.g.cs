@@ -25,7 +25,7 @@ namespace TestServerlessApp
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public async Task<APIGatewayProxyResponse> DivideAsync(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
+        public async Task<Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse> DivideAsync(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.

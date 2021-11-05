@@ -62,7 +62,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 #>
         }
 
-        public <#= _model.LambdaMethod.IsAsync ? "async Task<" : "" #><#= _model.GeneratedMethod.ReturnType.Name #><#= _model.LambdaMethod.IsAsync ? ">" : "" #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
+        public <#= _model.LambdaMethod.IsAsync ? "async Task<" : "" #><#= _model.GeneratedMethod.ReturnType.FullName #><#= _model.LambdaMethod.IsAsync ? ">" : "" #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
         {
 <#
     if (_model.LambdaMethod.UsingDependencyInjection)
@@ -346,6 +346,43 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 #>
                 StatusCode = 200
             };
+<#
+        }
+    }
+    else if (_model.LambdaMethod.Events.Count == 0)
+    {
+        var parameters = string.Join(", ", _model.LambdaMethod.Parameters
+            .Select(p =>
+            {
+                // Pass the same context parameter for ILambdaContext that comes from the generated method.
+                if (p.Type.FullName == TypeFullNames.ILambdaContext)
+                {
+                    return "context";
+                }
+
+                return p.Name;
+            }));
+
+        foreach (var parameter in _model.LambdaMethod.Parameters)
+        {
+            if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromServiceAttribute))
+            {
+#>
+            var <#= parameter.Name #> = scope.ServiceProvider.GetRequiredService<<#= parameter.Type.FullName #>>();
+<#
+            }
+        }
+
+        if (_model.LambdaMethod.ReturnsVoidOrTask)
+        {
+#>
+            return <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+<#
+        }
+        else
+        {
+#>
+            return <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
 <#
         }
     }
