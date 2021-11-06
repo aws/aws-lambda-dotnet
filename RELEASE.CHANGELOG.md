@@ -1,3 +1,19 @@
+### Release 2021-11-05
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.0.0)**
+  * New package to make easy to configure ASP.NET Core project using minimal api style as Lambda functions.
+* **Amazon.Lambda.AspNetCoreServer (6.1.0)**
+  * Changes to support the new Amazon.Lambda.AspNetCoreServer.Hosting packages
+* **Amazon.Lambda.Core (2.1.0)**
+  * Add new Log level APIs for .NET 6
+* **Amazon.Lambda.Serialization.SystemTextJson (2.2.0)**
+  * Add new source generator based serializers for .NET 6
+* **Amazon.Lambda.RuntimeSupport (1.4.0)**
+  * Added new LambdaBootstrapBuilder class to build the LambdaBootstrap
+  * Implemented the new Amazon.Lambda.Core logging APIs for .NET 6
+* **Amazon.Lambda.CloudWatchEvents (4.0.0)**
+  * [Breaking Change] Moved NameValue class from Amazon.Lambda.CloudWatchEvents.ECSEvents to Amazon.Lambda.CloudWatchEvents namespace for reusability.
+  * [Breaking Change] Updated the model definitions for BatchJobStateChangeEvent.
+
 ### Release 2021-10-15
 * **AWSLambdaPSCore PowerShell Module (2.2.0)**
   * Added ability to set AWS credentials explicilty using `-AWSAccessKeyId`, `-AWSSecretKey`, and `-AWSSessionToken`
