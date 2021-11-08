@@ -60,8 +60,7 @@ ENV \
 
 COPY --from=publish /app/publish /var/runtime
 
-COPY --from=publish /app/publish/bootstrap.sh /
-RUN rm -f /var/runtime/bootstrap.sh && \
-    chmod +x /bootstrap.sh
+RUN mv /var/runtime/bootstrap.sh /var/runtime/bootstrap && \
+    chmod +x /var/runtime/bootstrap
 
-ENTRYPOINT ["/bootstrap.sh"]
+ENTRYPOINT ["/var/runtime/bootstrap"]
