@@ -2,7 +2,7 @@
 
 The Lambda Annotation design is a new programming model for writing .NET Lambda function. At a high level the new programming model allows for idiomatic .NET coding patterns and uses [C# source generator](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview) technology to bridge the gap between the Lambda programming model to the more idiomatic programming model.
 
-The current experience for building .NET Lambda functions falls into 2 categories. One is to use the basic Lambda experience that is common for all Lambda Languages. The second approach which is applicable only for REST APIs is to use the ASP.NET Core framework. 
+The current experience for building .NET Lambda functions falls into 2 categories. One is to use the basic Lambda experience that is common for all Lambda Languages. The second approach which is applicable only for REST APIs is to use the ASP .NET Core framework. 
 
 ### Basic Lambda experience
 
@@ -44,7 +44,7 @@ Developers also have to keep a CloudFormation template that links to actual piec
 
 ### ASP.NET Core Lambda Functions
 
-The alternative for writing .NET Lambda functions for REST APIs is to use .NET’s ASP.NET Core web framework. This has been a popular feature of our .NET experience since the beginning. It allows developers to write REST APIs in a well known and documented framework. The style is idiomatic .NET using .NET attributes and reflection to map HTTP request data into corresponding to method parameters. Some of the features that are most appreciated with this approach are:
+The alternative for writing .NET Lambda functions for REST APIs is to use .NET's ASP.NET Core web framework. This has been a popular feature of our .NET experience since the beginning. It allows developers to write REST APIs in a well known and documented framework. The style is idiomatic .NET using .NET attributes and reflection to map HTTP request data into corresponding to method parameters. Some of the features that are most appreciated with this approach are:
 
 * .NET Attributes for mapping route mapping and HTTP request data
 * Injecting middleware into request pipelines 
@@ -80,7 +80,7 @@ public class MathController : ControllerBase
 There are a few significant negative side effect for writing REST APIs for Lambda using ASP.NET Core. 
 
 * Significant impact to cold start due to size of the framework and reliance on reflection.
-* The common features of ASP.NET Core for REST APIs are supported in Lambda but a significant number of the features are not and there is no clear indication what is and isn’t supported. For example SignalR, Blazor Serverside and response eventing.
+* The common features of ASP.NET Core for REST APIs are supported in Lambda but a significant number of the features are not and there is no clear indication what is and isn't supported. For example SignalR, Blazor Serverside and response eventing.
 * The usage of API Gateway is dumbed down because the API Gateway REST API is defined as a single wild card resource path letting ASP.NET Core handling the routing. This takes away a lot of the features of API Gateway like per resource path IAM permissions and memory sizing. 
 * ASP.NET Core can only be used for defining REST APIs. It can not be used for other types of Lambda functions like S3 events.
 
@@ -114,7 +114,7 @@ For more information about source generator implementation see appendix A.
 
 A developer gets started by including the **Amazon.Lambda.Annotations** NuGet package. No other tooling is required. This package contains 2 .NET assemblies. One assembly is used at runtime and contains the new Lambda attributes. The second assembly is the source generator which is used at compile time. 
 
-Since this tooling is pushed into the .NET compiler it will work on all of AWS’s tooling for deploying .NET Lambda functions. Whether that is our Visual Studio or command line tooling, using SAM with Rider and Visual Studio Code, or developer’s own custom process as long at it is CloudFormation based. We could potentially make it extensible to support other tooling that third parties could use to integrate with Terraform, Pulumi or [LambdaSharp](https://lambdasharp.net/) from one of our community heroes.
+Since this tooling is pushed into the .NET compiler it will work on all of AWS's tooling for deploying .NET Lambda functions. Whether that is our Visual Studio or command line tooling, using SAM with Rider and Visual Studio Code, or developer's own custom process as long at it is CloudFormation based. We could potentially make it extensible to support other tooling that third parties could use to integrate with Terraform, Pulumi or [LambdaSharp](https://lambdasharp.net/) from one of our community heroes.
 
 Earlier we talked about the basic Lambda programming model and we used an example of a Lambda function that was doing a simple plus math operation. That Lambda function took about 20 lines code which was full of undesirable boiler plate code. Using Amazon.Lambda.Annotations that example becomes this:
 
@@ -122,7 +122,7 @@ Earlier we talked about the basic Lambda programming model and we used an exampl
 public class Functions
 {
     [LambdaFunction]
-    [ApiRoute("/plus/{x}/{y}")]
+    [RestApi("/plus/{x}/{y}")]
     public int Plus(int x, int y)
     {
         return x + y;
@@ -130,11 +130,11 @@ public class Functions
 }
 ```
 
-There is no boiler plate code in this snippet. The **LambdaFunction** attribute signifies this is a piece of code that should be exposed as a Lambda function. The **ApiRoute** sets up the event source for the Lambda function. This similar pattern can be used for other event sources like S3 events.
+There is no boiler plate code in this snippet. The **LambdaFunction** attribute signifies this is a piece of code that should be exposed as a Lambda function. The **RestApi** sets up the event source for the Lambda function. This similar pattern can be used for other event sources like S3 events.
 
 ### What happens when you compile?
 
-The basic Lambda programming model hasn’t changed and a Lambda function is required to take one argument only which is the Lambda event object. When the code above compiles the source generator is invoked by the .NET compiler. The source generator will generate the Lambda basic function taking in the single event. The generated code will be responsible for:
+The basic Lambda programming model hasn't changed and a Lambda function is required to take one argument only which is the Lambda event object. When the code above compiles the source generator is invoked by the .NET compiler. The source generator will generate the Lambda basic function taking in the single event. The generated code will be responsible for:
 
 * If enabled, during initial invocation run provided method for configuring dependency injection.
 * If any middleware is registered execute it before or after each request
@@ -224,7 +224,7 @@ The source generator will have 2 responsibilities. The first is the code generat
             "Type": "Api",
             "Properties": {
               "Path": "/plus/{x}/{y}",
-              "Method": "ANY"
+              "Method": "GET"
             }
           }
         }
@@ -232,9 +232,9 @@ The source generator will have 2 responsibilities. The first is the code generat
     } 
 ```
 
-The Handler field is set to the generated method from the source generator. Runtime is specified based on the target framework. The Events section contains the route that was defined by the **ApiRoute** attribute. The other fields are set to the default values. Developers can choose to either modify the values in the template or set the values as parameters on the **LambdaFunction** attribute.
+The Handler field is set to the generated method from the source generator. Runtime is specified based on the target framework. The Events section contains the route that was defined by the **RestApi** attribute. The other fields are set to the default values. Developers can choose to either modify the values in the template or set the values as parameters on the **LambdaFunction** attribute.
 
-The source generator will need to be configurable where it writes to the CloudFormation template. It will have default logic to handle our common use case of a .NET project with a **serverless.template** or **serverless.yml** file in the project. The behavior can be overridden by an Assembly level .NET attribute called **LambdaCloudFormationTemplate** that indicates where to write the CloudFormation information at. A common use case is to use a CloudFormation template at the solution level that points to several .NET projects. In this situation the .NET Lambda project’s **LambdaCloudFormationTemplate** attribute can point to the solution level template and modify the Lambda resources defined in the .NET project into the shared CloudFormation template.
+The source generator will need to be configurable where it writes to the CloudFormation template. By default the source generator will look for write to the `serverless.template` in the project directory. This can be overriden by either setting the `template` property in the `aws-lambda-tools-defaults.json` file or by setting the `LambdaCloudFormationTemplate` property in the `csproj` file.
 
 ## Full example
 
@@ -244,7 +244,7 @@ Using the simple calculator example lets expand it to show how a consumer of the
 
 To keep the logic of our Lambda functions simple we will abstract the actual math operations into its own `ICalculatorService` type. The implementation will be registered into the dependency injection.
 
-Like ASP.NET Core we will register a “startup” class. This is a class that has methods for configuring the services and the request pipeline. To keep the experience similar the user can write a “startup” class and indicated it is the startup class by adding the **LambdaStartup** attribute. Here is an example of a “startup” class for our calculator project.
+Like ASP .NET Core we will register a `startup` class. This is a class that has methods for configuring the services and the request pipeline. To keep the experience similar the user can write a `startup` class and indicated it is the startup class by adding the **LambdaStartup** attribute. Here is an example of a `startup` class for our calculator project.
 
 
 ```csharp
@@ -299,7 +299,7 @@ The `Configure` is similar to ASP.NET Core Configure method. It is used to regis
 
 In this case the Lambda functions are defined in a class called LambdaFunctions. The individual functions could also be defined in separate classes throughout the project.
 
-The source generator will generate code that wraps each of the Lambda functions. It will have executed the “startup” class and the constructor of LambdaFunctions during the Lambda functions initialization stage. The constructors parameters for LambdaFunctions will be supplied by services registered by the dependency injection framework. This is very similar to how API controllers are created in an ASP.NET Core project.
+The source generator will generate code that wraps each of the Lambda functions. It will have executed the `startup` class and the constructor of LambdaFunctions during the Lambda functions initialization stage. The constructors parameters for LambdaFunctions will be supplied by services registered by the dependency injection framework. This is very similar to how API controllers are created in an ASP.NET Core project.
 
 
 ```csharp
@@ -341,18 +341,30 @@ Here is a preliminary list of .NET attributes that will tell the source generato
     * Placed on a method. Indicates this method should be exposed as a Lambda function.
 * LambdaStartup
     * Placed on a class. Indicates this type should be used as the startup class and is used to configure the dependency injection and middleware. There can only be one class in a Lambda project with this attribute.
-* LambdaCloudFormationTemplate 
-    * Assembly level attribute that configures where the CloudFormation data is written.
-* ApiGatewayHttpApi & ApiGatewayRestAPI
-    * An assembly level attribute. Defines the API Gateway API resource that should be created. All methods with the ApiRoute attribute will be assigned to this API. API Gateway supports either the old REST API style or the newer HTTP API style. If neither of them are defined a default HTTP API will be used.
-* ApiRoute
-    * Placed on a method. Indicates the resource path in the API Gateway API for this method to be called.
-* S3Event
-    * Placed on a method. Indicates this function should be called for an S3 event.
-* SQSEvent
-    * Placed on a method. Indicates this function should be called for an SQS event.
-* DynamoDbEvent
-    * Placed on a method. Indicates this function should be called for an DynamoDB event.
-* ScheduleEvent
-    * Placed on a method. Indicates this function should be called on a schedule.
 
+### Event Attributes    
+* RestApi
+    * Configures the Lambda function to be called from an API Gateway REST API. The HTTP method and resource path are required to be set on the attribute.
+* HttpApi
+    * Configures the Lambda function to be called from an API Gateway HTTP API. The HTTP method, HTTP API payload version and resource path are required to be set on the attribute.
+* S3Event
+    * Configures S3 as the event source.
+* SQSEvent
+    * Configures SQS as the event source.
+* DynamoDbEvent
+    * Configures DynamoDB as the event source.
+* ScheduleEvent
+    * Configures the Lambda function to be called on a schedule.
+
+### Parameter Attributes
+
+* FromHeader
+    * Map method parameter to HTTP header value
+* FromQuery
+    * Map method parameter to query string pareamter
+* FromRoute
+    * Map method parameter to resource path segement
+* FromBody
+    * Map method parameter to HTTP request body. If parameter is a complex type then request body will be assumed to be JSON and deserialized into the type.
+* FromServices
+    * Map method parameter to registered service in IServiceProvider
