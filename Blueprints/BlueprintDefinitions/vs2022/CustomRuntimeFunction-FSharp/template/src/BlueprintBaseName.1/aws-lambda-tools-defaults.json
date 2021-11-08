@@ -11,7 +11,7 @@
   "function-runtime": "provided.al2",
   "function-memory-size": 256,
   "function-timeout": 30,
-  "function-handler": "bootstrap::BlueprintBaseName._1.Function::functionHandler",
+  "function-handler": "bootstrap",
   "function-name": "BlueprintBaseName.1",
   "msbuild-parameters": "--self-contained true"
 }

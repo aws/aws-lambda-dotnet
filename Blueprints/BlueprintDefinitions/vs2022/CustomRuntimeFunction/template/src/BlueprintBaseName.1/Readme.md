@@ -44,11 +44,14 @@ Deploy function to AWS Lambda
 
 ## Improve Cold Start
 
-.NET Core 3.1 and newer has a feature called ReadyToRun. When you compile your .NET Core application you can enable ReadyToRun 
-to prejit the .NET assemblies. This saves the .NET Core runtime from doing a lot of work during startup converting the 
-assemblies to a native format. ReadyToRun must be used on the same platform as the platform that will run the .NET application. In Lambda's case
-that means you have to build the Lambda package bundle in a Linux environment. To enable ReadyToRun edit the aws-lambda-tools-defaults.json
-file to add /p:PublishReadyToRun=true to the msbuild-parameters parameter.
+In the csproj file the PublishTrimmed and PublishReadyToRun properties have been enable to optimize the package bundle to improve cold start performance.
+
+PublishTrimmed tells the compiler to remove code from the assemblies that is not being used to reduce the deployment bundle size. This requires additional
+testing to make sure the .NET compiler does not remove any code that is actually used. For further information about trimming
+check out the .NET documentation: https://docs.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options
+
+PublishReadyToRun tells the compiler to compile the .NET assemblies for a specific runtime environment. For Lambda's case that means Linux x64 or arm64.
+This reduces the work the JIT compiler does at runtime to compile for the specific runtime environment and helps reduce cold start time.
 
 
 ## Using AWS .NET Mock Lambda Test Tool

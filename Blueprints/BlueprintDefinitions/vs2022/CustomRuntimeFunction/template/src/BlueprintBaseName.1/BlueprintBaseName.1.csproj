@@ -1,12 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <AWSProjectType>Lambda</AWSProjectType>
     <AssemblyName>bootstrap</AssemblyName>
     <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+    <!-- Enable trimming to reduce package size of self contained publish -->
+    <PublishTrimmed>true</PublishTrimmed>
+
+    <!-- Generate ready to run images during publishing to improvement cold starts. -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.4.0" />

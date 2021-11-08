@@ -41,6 +41,17 @@ Deploy function to AWS Lambda
     dotnet lambda deploy-function
 ```
 
+## Improve Cold Start
+
+In the csproj file the PublishTrimmed and PublishReadyToRun properties have been enable to optimize the package bundle to improve cold start performance.
+
+PublishTrimmed tells the compiler to remove code from the assemblies that is not being used to reduce the deployment bundle size. This requires additional
+testing to make sure the .NET compiler does not remove any code that is actually used. For further information about trimming
+check out the .NET documentation: https://docs.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options
+
+PublishReadyToRun tells the compiler to compile the .NET assemblies for a specific runtime environment. For Lambda's case that means Linux x64 or arm64.
+This reduces the work the JIT compiler does at runtime to compile for the specific runtime environment and helps reduce cold start time.
+
 ## Using AWS .NET Mock Lambda Test Tool
 
 The AWS .NET Mock Lambda Test Tool can be used with .NET Lambda custom runtimes. When the test tool is used for custom runtime the project
