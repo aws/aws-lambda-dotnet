@@ -7,9 +7,9 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.1.15" />
-    <PackageReference Include="AWSSDK.Rekognition" Version="3.7.1.20" />
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.0.0" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.4.0" />
+    <PackageReference Include="AWSSDK.Rekognition" Version="3.7.5.4" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="2.0.0" />
     <PackageReference Include="Amazon.Lambda.S3Events" Version="2.0.1" />
   </ItemGroup>
