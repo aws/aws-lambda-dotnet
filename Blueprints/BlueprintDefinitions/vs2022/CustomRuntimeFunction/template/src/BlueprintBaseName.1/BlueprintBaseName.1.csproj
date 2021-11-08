@@ -15,6 +15,16 @@
     <PublishReadyToRun>true</PublishReadyToRun>
 
   </PropertyGroup>
+  
+  <!-- 
+  When publishing Lambda functions for ARM64 to the provided.al2 runtime a newer version of libicu needs to be included
+  in the deployment bundle because .NET requires a newer version of libicu then is preinstalled with Amazon Linux 2.
+  -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-arm64'">
+    <RuntimeHostConfigurationOption Include="System.Globalization.AppLocalIcu" Value="68.2.0.9" />
+    <PackageReference Include="Microsoft.ICU.ICU4C.Runtime" Version="68.2.0.9" />
+  </ItemGroup>  
+  
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.4.0" />
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
