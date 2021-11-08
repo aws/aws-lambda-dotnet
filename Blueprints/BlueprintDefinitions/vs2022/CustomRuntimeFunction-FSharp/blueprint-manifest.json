@@ -1,0 +1,13 @@
+{
+  "display-name": "Custom Runtime Function",
+  "system-name": "CustomRuntimeFunction",
+  "description": "Use Lambda Custom Runtime feature to build Lambda functions using .NET 5.",
+  "sort-order": 101,
+  "hidden-tags": [
+    "F#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "Custom"
+  ]
+}

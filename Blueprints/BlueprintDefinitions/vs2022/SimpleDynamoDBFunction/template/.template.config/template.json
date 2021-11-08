@@ -1,0 +1,48 @@
+{
+  "author": "AWS",
+  "classifications": [
+    "AWS",
+    "Lambda",
+    "Function"
+  ],
+  "name": "Lambda Simple DynamoDB Function",
+  "identity": "AWS.Lambda.Simple.DynamoDB.CSharp",
+  "groupIdentity": "AWS.Lambda.Simple.DynamoDB",
+  "shortName": "lambda.DynamoDB",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "BlueprintBaseName.1",
+  "preferNameDirectory": true,
+  "symbols": {
+    "profile": {
+      "type": "parameter",
+      "description": "The AWS credentials profile set in aws-lambda-tools-defaults.json and used as the default profile when interacting with AWS.",
+      "datatype": "string",
+      "replaces": "DefaultProfile",
+      "defaultValue": ""
+    },
+    "region": {
+      "type": "parameter",
+      "description": "The AWS region set in aws-lambda-tools-defaults.json and used as the default region when interacting with AWS.",
+      "datatype": "string",
+      "replaces": "DefaultRegion",
+      "defaultValue": ""
+    },
+    "safe-sourcename": {
+      "type": "generated",
+      "generator": "coalesce",
+      "parameters": {
+        "sourceVariableName": "safe_namespace",
+        "fallbackVariableName": "safe_name"
+      },
+      "replaces": "BlueprintBaseName._1"
+    }
+  },
+  "primaryOutputs": [
+    {
+      "path": "./src/BlueprintBaseName.1/BlueprintBaseName.1.csproj"
+    }
+  ]
+}

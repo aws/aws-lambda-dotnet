@@ -11,7 +11,7 @@ namespace Packager
             ProcessArgs(args, out var updateVersions);
 
             var outputDirectory = GetFullPath(@"../../Deployment/Blueprints");
-            var blueprintPaths = new (string Source, string Output)[] { (Source: GetFullPath(@"../BlueprintDefinitions/vs2017"), Output: "vs2017"), (Source: GetFullPath(@"../BlueprintDefinitions/vs2019"), Output: "vs2019")};
+            var blueprintPaths = new (string Source, string Output)[] { (Source: GetFullPath(@"../BlueprintDefinitions/vs2022"), Output: "vs2022"), (Source: GetFullPath(@"../BlueprintDefinitions/vs2017"), Output: "vs2017"), (Source: GetFullPath(@"../BlueprintDefinitions/vs2019"), Output: "vs2019") };
             try
             {
                 Init(outputDirectory);

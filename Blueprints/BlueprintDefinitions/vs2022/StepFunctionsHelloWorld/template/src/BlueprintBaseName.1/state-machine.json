@@ -1,0 +1,21 @@
+{
+  "Comment": "State Machine",
+  "StartAt": "Greeting",
+  "States": {
+    "Greeting": {
+      "Type": "Task",
+      "Resource": "${GreetingTask.Arn}",
+      "Next": "WaitToActivate"
+    },
+    "WaitToActivate": {
+      "Type": "Wait",
+      "SecondsPath": "$.WaitInSeconds",
+      "Next": "Salutations"
+    },
+    "Salutations": {
+      "Type": "Task",
+      "Resource": "${SalutationsTask.Arn}",
+      "End": true
+    }
+  }
+}

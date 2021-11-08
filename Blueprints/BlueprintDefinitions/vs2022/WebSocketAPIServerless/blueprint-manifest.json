@@ -1,0 +1,14 @@
+{
+  "display-name": "WebSocket API",
+  "system-name": "EmptyServerless",
+  "description": "Build a serverless WebSocket API using API Gateway.",
+  "sort-order": 200,
+  "hidden-tags": [
+    "C#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "WebSocket",
+    "API Gateway"
+  ]
+}

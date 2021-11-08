@@ -1,0 +1,13 @@
+{
+  "display-name": ".NET 5 (Container Image)",
+  "system-name": "EmptyImageFunction",
+  "description": "A .NET 5 Lambda function packaged as a container image.",
+  "sort-order": 101,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "Container"
+  ]
+}
