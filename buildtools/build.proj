@@ -38,9 +38,9 @@
         <Exec Command="dotnet restore BlueprintPackager.sln" WorkingDirectory="..\Blueprints\BlueprintPackager"/>
     </Target>
     <Target Name="package-blueprints" DependsOnTargets="init;run-blueprint-packager">
-        <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/netcore2.1"/>
+        <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2017"/>
 		
-		<Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/netcore3.1"/>
+		<Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2019"/>
     </Target>
     <Target Name="run-blueprint-packager">
         <Exec Command="dotnet run -c $(Configuration) $(BlueprintPackagerArguments)" WorkingDirectory="..\Blueprints\BlueprintPackager"/>
@@ -56,7 +56,7 @@
         <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew/netcore31"/>
         <Copy SourceFiles="@(DeploymentNuGetConfig)" DestinationFolder="../Deployment" />
 				
-        <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\netcore2.1" WorkingDirectory="..\"/>
+        <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\vs2017" WorkingDirectory="..\"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SimpleApplicationLoadBalancerFunction;ProjectName=SimpleApplicationLoadBalancerFunctionC;Lang=C#;Version=netcore21"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabelsC;Lang=C#;Version=netcore21"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.DetectImageLabels;ProjectName=DetectImageLabelsF;Lang=F#;Version=netcore21"/>
@@ -88,7 +88,7 @@
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldC;Lang=C#;Version=netcore21"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldF;Lang=F#;Version=netcore21"/>
 		
-        <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\netcore3.1" WorkingDirectory="..\"/>
+        <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\vs2019" WorkingDirectory="..\"/>
 		
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.image.EmptyFunction;ProjectName=ImageEmptyFunctionC;Lang=C#;Version=netcore31"/>
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.image.EmptyFunction;ProjectName=ImageEmptyFunctionF;Lang=F#;Version=netcore31"/>
