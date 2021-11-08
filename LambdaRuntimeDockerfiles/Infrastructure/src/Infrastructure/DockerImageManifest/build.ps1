@@ -8,10 +8,10 @@ param (
     [Parameter(HelpMessage = "Final image tag to push.")]
     [string] $MultiArchImageTag,
 
-    [Parameter(HelpMessage = "Image archtectures")]
+    [Parameter(HelpMessage = "Image architectures")]
     [string] $Arm64ImageTag,
 
-    [Parameter(HelpMessage = "Image archtectures")]
+    [Parameter(HelpMessage = "Image architectures")]
     [string] $Amd64ImageTag,
 
     [Parameter(HelpMessage = "Indicates whether to include an Arm64 image in the manifest")]
