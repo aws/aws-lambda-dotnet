@@ -1,5 +1,5 @@
 param (
-    [Parameter(HelpMessage = "Soruce ECR containing source docker image.")]
+    [Parameter(HelpMessage = "Source ECR containing source docker image.")]
     [string] $SourceEcr,
 
     [Parameter(HelpMessage = "Tag of the source image.")]
@@ -8,7 +8,7 @@ param (
     [Parameter(HelpMessage = "Tag of the source image.")]
     [string]  $Arm64ImageTag,
 
-    [Parameter(HelpMessage = "Semicolon seperated list of destincation ECR to push source image.")]
+    [Parameter(HelpMessage = "Semicolon separated list of destincation ECR to push source image.")]
     [string] $DestinationEcrs,
 
     [Parameter(HelpMessage = "Tag of the destination image.")]

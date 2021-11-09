@@ -11,10 +11,10 @@ param (
     [Parameter(Mandatory = $false, HelpMessage = "ECR URI to store Stage images.")]
     [string] $StageEcr,
 
-    [Parameter(Mandatory = $false, HelpMessage = "Semicolon seperated ECR URIs to store Beta images.")]
+    [Parameter(Mandatory = $false, HelpMessage = "Semicolon separated ECR URIs to store Beta images.")]
     [string] $BetaEcrs,
 
-    [Parameter(Mandatory = $false, HelpMessage = "Semicolon seperated ECR URIs to store Prod images.")]
+    [Parameter(Mandatory = $false, HelpMessage = "Semicolon separated ECR URIs to store Prod images.")]
     [string] $ProdEcrs,
 
     [Parameter(Mandatory = $true, HelpMessage = "ECR repository name for Stage, Beta and Prod images.")]

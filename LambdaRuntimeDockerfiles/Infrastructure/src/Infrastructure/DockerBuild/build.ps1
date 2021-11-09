@@ -8,7 +8,7 @@ param (
     [Parameter(HelpMessage = "Final image tag to push.")]
     [string] $ImageTag,
 
-    [Parameter(HelpMessage = "Image archtecture")]
+    [Parameter(HelpMessage = "Image architecture")]
     [string] $Architecture,
                           
     [Parameter(HelpMessage = ".NET version")]

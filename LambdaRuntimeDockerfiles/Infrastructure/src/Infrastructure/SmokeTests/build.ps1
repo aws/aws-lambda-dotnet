@@ -1,5 +1,5 @@
 param (
-    [Parameter(HelpMessage = "Soruce ECR containing source docker image.")]
+    [Parameter(HelpMessage = "Source ECR containing source docker image.")]
     [string] $SourceEcr,
 
     [Parameter(HelpMessage = "Tag of the source image.")]
