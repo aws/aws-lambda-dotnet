@@ -65,7 +65,7 @@ namespace TestServerlessApp
 
             var c1 = new Complex(firstComponent[0], firstComponent[1]);
             var c2 = new Complex(secondComponent[0], secondComponent[1]);
-            var result = c1 + c2;
+            var result = c1 - c2;
             return new Tuple<double, double>(result.Real, result.Imaginary);
         }
     }
