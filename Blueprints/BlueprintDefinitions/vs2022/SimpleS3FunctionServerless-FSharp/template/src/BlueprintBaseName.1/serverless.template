@@ -1,0 +1,77 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "Template that creates a S3 bucket and a Lambda function that will be invoked when new objects are upload to the bucket.",
+  "Parameters": {
+    "BucketName": {
+      "Type": "String",
+      "Description": "Name of S3 bucket to be created. The Lambda function will be invoked when new objects are upload to the bucket. If left blank a name will be generated.",
+      "MinLength": "0"
+    }
+  },
+  "Conditions": {
+    "BucketNameGenerated": {
+      "Fn::Equals": [
+        {
+          "Ref": "BucketName"
+        },
+        ""
+      ]
+    }
+  },
+  "Resources": {
+    "Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::If": [
+            "BucketNameGenerated",
+            {
+              "Ref": "AWS::NoValue"
+            },
+            {
+              "Ref": "BucketName"
+            }
+          ]
+        }
+      }
+    },
+    "S3Function": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Function::FunctionHandler",
+        "Runtime": "dotnetcore3.1",
+        "CodeUri": "",
+        "Description": "Default function",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambda_FullAccess",
+          "AmazonS3ReadOnlyAccess"
+        ],
+        "Events": {
+          "NewImagesBucket": {
+            "Type": "S3",
+            "Properties": {
+              "Bucket": {
+                "Ref": "Bucket"
+              },
+              "Events": [
+                "s3:ObjectCreated:*"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "Bucket": {
+      "Value": {
+        "Ref": "Bucket"
+      },
+      "Description": "Bucket that will invoke the lambda function when new objects are created."
+    }
+  }
+}
