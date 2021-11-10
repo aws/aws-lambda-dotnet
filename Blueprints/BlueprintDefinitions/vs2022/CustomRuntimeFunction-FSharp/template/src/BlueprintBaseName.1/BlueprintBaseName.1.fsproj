@@ -7,8 +7,13 @@
     <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
-    <!-- Enable trimming to reduce package size of self contained publish -->
-    <PublishTrimmed>true</PublishTrimmed>
+    <!-- 
+		Enable trimming to reduce package size of self contained publish which can reduce cold starts. Trimming alters
+		the .NET assemblies put in the deployment package. Additional runtime testing is required to make sure trimming
+		does not have any unattended consequences.
+    
+	<PublishTrimmed>true</PublishTrimmed>
+	-->
 
     <!-- Generate ready to run images during publishing to improvement cold starts. -->
     <PublishReadyToRun>true</PublishReadyToRun>
