@@ -282,10 +282,16 @@
     }
   },
   "Outputs": {
-    "ApiURL": {
-      "Description": "API endpoint URL for Prod environment",
+    "RestApiURL": {
+      "Description": "Rest API endpoint URL for Prod environment",
       "Value": {
-        "Fn::Sub": "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+        "Fn::Sub": "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+      }
+    },
+    "HttpApiURL": {
+      "Description": "HTTP API endpoint URL for Prod environment",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       }
     }
   }

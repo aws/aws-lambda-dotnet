@@ -13,6 +13,6 @@
     "s3-prefix"     : "TestServerlessApp/",
     "template"      : "serverless.template",
     "template-parameters" : "",
-    "s3-bucket"           : "jangirg-test-serverless-app",
+    "s3-bucket"           : "devex-test-serverless-app",
     "stack-name"          : "test-serverless-app"
 }
