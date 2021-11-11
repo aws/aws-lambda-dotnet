@@ -59,10 +59,7 @@ ENV \
 
 COPY --from=publish /app/publish /var/runtime
 
-COPY --from=publish /app/publish/bootstrap.sh /
-RUN rm -f /var/runtime/bootstrap.sh && \
-    chmod +x /bootstrap.sh && \
-	# Keep the legacy name lambda-entrypoint.sh for the bootstrap script for existing CloudFormation templates referencing it
-	cp /bootstrap.sh /lambda-entrypoint.sh
+COPY --from=publish /app/publish/bootstrap.sh /var/runtime/bootstrap
+RUN chmod +x /var/runtime/bootstrap
 
-ENTRYPOINT ["/bootstrap.sh"]
+# Entrypoint is inherited from public.ecr.aws/lambda/provided
