@@ -27,6 +27,8 @@ namespace Infrastructure
         public const string ProjectName = "aws-lambda-container-images";
         public readonly string[] DockerARM64Images = new string[] { "net6" };
         public readonly Dictionary<string, string> DockerBuildImages = new Dictionary<string, string> { {"net5", "5.0-buster-slim"}, {"net6", "6.0-bullseye-slim"} };
+        public readonly Dictionary<string, string> BaseImageAMD64Tags = new Dictionary<string, string> { { "net5", "base-image-amd64" }, { "net6", "base-image-x86_64" } };
+        public readonly Dictionary<string, string> BaseImageARM64Tags = new Dictionary<string, string> { { "net5", "base-image-arm64" }, { "net6", "base-image-arm64" } };
         public readonly string[] Frameworks = Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION")?.Split(";");
         public readonly string[] Channels = Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL")?.Split(";");
     }

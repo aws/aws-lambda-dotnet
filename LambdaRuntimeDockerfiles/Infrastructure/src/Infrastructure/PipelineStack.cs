@@ -31,8 +31,6 @@ namespace Infrastructure
         private const string PowershellArm64 = "7.1.3 powershell-7.1.3-linux-arm64.tar.gz";
         private const string PowershellAmd64 = "7.1.3 powershell-7.1.3-linux-x64.tar.gz";
         private const string BaseImageMultiArch = "base-image-multi-arch";
-        private const string BaseImageAmd64 = "base-image-amd64";
-        private const string BaseImageArm64 = "base-image-arm64";
 
         internal PipelineStack(
             Construct scope, 
@@ -130,7 +128,7 @@ namespace Infrastructure
                     {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
                     {"AWS_LAMBDA_ARCHITECTURE", new BuildEnvironmentVariable {Value = "amd64"}},
                     {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellAmd64}},
-                    {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageAmd64}},
+                    {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAMD64Tags[framework]}},
                     {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
                     {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}}
                 }
@@ -167,7 +165,7 @@ namespace Infrastructure
                         {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
                         {"AWS_LAMBDA_ARCHITECTURE", new BuildEnvironmentVariable {Value = "arm64"}},
                         {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellArm64}},
-                        {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageArm64}},
+                        {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageARM64Tags[framework]}},
                         {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
                         {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}}
                     }
@@ -202,8 +200,8 @@ namespace Infrastructure
                     {"AWS_LAMBDA_STAGE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
                     {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
                     {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
-                    {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageAmd64}},
-                    {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageArm64}},
+                    {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAMD64Tags[framework]}},
+                    {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageARM64Tags[framework]}},
                     {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerARM64Images.Contains(framework).ToString()}},
                 }
             });
@@ -330,8 +328,8 @@ namespace Infrastructure
                         {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
                         {"AWS_LAMBDA_DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Beta}},
                         {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
-                        {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageAmd64}},
-                        {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageArm64}},
+                        {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAMD64Tags[framework]}},
+                        {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageARM64Tags[framework]}},
                         {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerARM64Images.Contains(framework).ToString()}},
                     }
                 });
@@ -379,8 +377,8 @@ namespace Infrastructure
                         {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
                         {"AWS_LAMBDA_DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Prod}},
                         {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
-                        {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageAmd64}},
-                        {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageArm64}},
+                        {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAMD64Tags[framework]}},
+                        {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageARM64Tags[framework]}},
                         {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerARM64Images.Contains(framework).ToString()}},
                     }
                 });
