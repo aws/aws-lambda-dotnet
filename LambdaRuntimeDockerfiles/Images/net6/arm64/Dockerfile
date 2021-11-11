@@ -96,4 +96,4 @@ COPY --from=publish /app/publish /var/runtime
 RUN mv /var/runtime/bootstrap.sh /var/runtime/bootstrap && \
     chmod +x /var/runtime/bootstrap
 
-ENTRYPOINT ["/var/runtime/bootstrap"]
+# Entrypoint is inherited from public.ecr.aws/lambda/provided
