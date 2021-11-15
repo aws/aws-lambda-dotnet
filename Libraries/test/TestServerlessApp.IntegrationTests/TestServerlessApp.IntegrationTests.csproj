@@ -14,7 +14,7 @@
     </ItemGroup>
 
     <Target Name="DeployTestServerlessApp" BeforeTargets="BeforeBuild">
-        <Exec Command="pwsh .\DeploymentScript.ps1" IgnoreExitCode="true" />
+        <Exec Command="pwsh DeploymentScript.ps1" IgnoreExitCode="true" />
     </Target>
 
 </Project>
