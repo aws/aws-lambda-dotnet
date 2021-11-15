@@ -3,7 +3,7 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <Description>Amazon Lambda .NET Core support - KinesisEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.KinesisEvents</AssemblyTitle>
     <VersionPrefix>2.0.0</VersionPrefix>
