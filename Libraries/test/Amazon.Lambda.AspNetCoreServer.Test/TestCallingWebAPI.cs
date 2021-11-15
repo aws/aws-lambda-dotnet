@@ -430,11 +430,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             var lambdaFunction = new ApiGatewayLambdaFunction();
             var requestStream = new MemoryStream(System.Text.UTF8Encoding.UTF8.GetBytes(requestContent));
-#if NETCOREAPP_2_1
-            var request = new Amazon.Lambda.Serialization.Json.JsonSerializer().Deserialize<APIGatewayProxyRequest>(requestStream);
-#else
             var request = new Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer().Deserialize<APIGatewayProxyRequest>(requestStream);
-#endif
+
             return await lambdaFunction.FunctionHandlerAsync(request, context);
         }
 
