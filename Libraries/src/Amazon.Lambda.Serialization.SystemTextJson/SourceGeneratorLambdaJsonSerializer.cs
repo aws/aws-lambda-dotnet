@@ -15,7 +15,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
     /// 
     /// [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyRequest))]
     /// [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyResponse))]
-    /// internal partial class APIGatewaySerializerContext : JsonSerializerContext
+    /// public partial class APIGatewaySerializerContext : JsonSerializerContext
     /// {
     /// }
     /// 
