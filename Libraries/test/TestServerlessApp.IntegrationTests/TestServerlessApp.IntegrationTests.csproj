@@ -5,16 +5,20 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="AWSSDK.CloudFormation" Version="3.7.5.38" />
-      <PackageReference Include="AWSSDK.CloudWatchLogs" Version="3.7.1.70" />
-      <PackageReference Include="AWSSDK.Lambda" Version="3.7.4.21" />
-      <PackageReference Include="AWSSDK.S3" Version="3.7.4.1" />
-      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
-      <PackageReference Include="xunit" Version="2.4.1" />
+        <PackageReference Include="AWSSDK.CloudFormation" Version="3.7.5.38"/>
+        <PackageReference Include="AWSSDK.CloudWatchLogs" Version="3.7.1.70"/>
+        <PackageReference Include="AWSSDK.Lambda" Version="3.7.4.21"/>
+        <PackageReference Include="AWSSDK.S3" Version="3.7.4.1"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0"/>
+        <PackageReference Include="xunit" Version="2.4.1"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
 
     <Target Name="DeployTestServerlessApp" BeforeTargets="BeforeBuild">
-        <Exec Command="pwsh DeploymentScript.ps1" IgnoreExitCode="true" />
+        <Exec Command="pwsh DeploymentScript.ps1" IgnoreExitCode="true"/>
     </Target>
 
 </Project>
