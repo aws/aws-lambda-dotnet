@@ -63,7 +63,7 @@
             "fileSystemId": "fs-XXXXXXXXX",
             "rootDirectory": "/",
             "transitEncryption": "ENABLED",
-            "TransitEncryptionPort": 12345,
+            "transitEncryptionPort": 12345,
             "authorizationConfig": {
               "accessPointId": "fsap-XXXXXXXXXXXXXXXXX",
               "iam": "ENABLED"
@@ -185,7 +185,7 @@
                   "fileSystemId": "fs-XXXXXXXXX",
                   "rootDirectory": "/",
                   "transitEncryption": "ENABLED",
-                  "TransitEncryptionPort": 12345,
+                  "transitEncryptionPort": 12345,
                   "authorizationConfig": {
                     "accessPointId": "fsap-XXXXXXXXXXXXXXXXX",
                     "iam": "ENABLED"

@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting;
 using System.IO;
 
-#if !NETCOREAPP2_1
 namespace Microsoft.Extensions.Hosting
 {
     /// <summary>
@@ -62,4 +61,3 @@ namespace Microsoft.Extensions.Hosting
         }
     }
 }
-#endif
