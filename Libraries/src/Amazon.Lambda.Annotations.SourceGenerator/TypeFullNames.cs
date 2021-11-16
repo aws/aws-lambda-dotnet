@@ -29,5 +29,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             APIGatewayProxyRequest,
             APIGatewayHttpApiV2ProxyRequest
         };
+
+        public static HashSet<string> Events = new HashSet<string>
+        {
+            RestApiAttribute,
+            HttpApiAttribute
+        };
     }
 }

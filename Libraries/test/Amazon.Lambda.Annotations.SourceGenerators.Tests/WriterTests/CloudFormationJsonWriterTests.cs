@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
+using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using JsonWriter = Amazon.Lambda.Annotations.SourceGenerator.Writers.JsonWriter;
@@ -11,6 +13,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
     public class CloudFormationJsonWriterTests
     {
+        private readonly IJsonWriter _jsonWriter = new JsonWriter();
+        private readonly IDiagnosticReporter _diagnosticReporter = new Mock<IDiagnosticReporter>().Object;
         private const string ServerlessTemplateFilePath = "path/to/serverless.template";
 
         [Fact]
@@ -20,7 +24,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, null, null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
 
             // ACT
@@ -48,7 +52,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         {
             // ARRANGE
             var mockFileManager = GetMockFileManager(string.Empty);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
 
             //ACT - USE POLICY
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
@@ -93,7 +97,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, null, "Policy1, @Policy2, Policy3");
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -115,7 +119,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, "@Basic", null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -133,7 +137,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "OldName", 45, 512, "@Basic", null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -199,7 +203,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(originalContent);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "NewMethod", 45, 512, null, null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -239,7 +243,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(originalContent);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "MethodNotCreatedFromAnnotationsPackage", 45, 512, null, "Policy1, Policy2, Policy3");
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new() {lambdaFunctionModel});
 
             // ACT
@@ -270,12 +274,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 Data = new HttpApiAttribute(HttpMethod.Get, HttpApiVersion.V1, "/Calculator/Add")
             };
             lambdaFunctionModel.Attributes = new List<AttributeModel>() {httpAttributeModel};
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, new JsonWriter());
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
-            
+
             // ACT
             cloudFormationJsonWriter.ApplyReport(report);
-            
+
             // ASSERT
             var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             var getToken = rootToken["Resources"]["TestMethod"]["Properties"]["Events"]["RootGet"];
@@ -285,17 +289,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal("/Calculator/Add", getToken["Properties"]["Path"]);
             Assert.Equal("GET", getToken["Properties"]["Method"]);
             Assert.Equal("1.0", getToken["Properties"]["PayloadFormatVersion"]);
-            
+
             // ARRANGE - CHANGE TO A HTTP POST METHOD
             httpAttributeModel = new AttributeModel<HttpApiAttribute>()
             {
                 Data = new HttpApiAttribute(HttpMethod.Post, HttpApiVersion.V2, "/Calculator/Add")
             };
             lambdaFunctionModel.Attributes = new List<AttributeModel>() {httpAttributeModel};
-            
+
             // ACT
             cloudFormationJsonWriter.ApplyReport(report);
-            
+
             // ASSERT
             rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             getToken = rootToken["Resources"]["TestMethod"]["Properties"]["Events"]["RootGet"];

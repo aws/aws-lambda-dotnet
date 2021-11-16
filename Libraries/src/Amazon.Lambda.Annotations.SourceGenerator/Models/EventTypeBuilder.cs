@@ -15,10 +15,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             GeneratorExecutionContext context)
         {
             var events = new List<EventType>();
-            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute)
-                || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute))
+            foreach (var attribute in lambdaMethodSymbol.GetAttributes())
             {
-                events.Add(EventType.API);
+                if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.RestApiAttribute
+                    || attribute.AttributeClass.ToDisplayString() == TypeFullNames.HttpApiAttribute)
+                {
+                    events.Add(EventType.API);
+                }
             }
 
             return events;

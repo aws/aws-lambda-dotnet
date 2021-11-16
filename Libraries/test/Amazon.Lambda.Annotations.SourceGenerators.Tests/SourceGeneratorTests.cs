@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
@@ -14,6 +15,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task Greeter()
         {
+            var expectedTemplateContent = NormalizeNewLines(File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template")));
+
             await new VerifyCS.Test
             {
                 TestState =
@@ -36,18 +39,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             "Greeter_SayHelloAsync_Generated.g.cs",
                             SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "Greeter_SayHelloAsync_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Greeter_SayHello_Generated.g.cs", File.ReadAllText(Path.Combine("Snapshots", "Greeter_SayHello_Generated.g.cs"))),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Greeter_SayHelloAsync_Generated.g.cs", File.ReadAllText(Path.Combine("Snapshots", "Greeter_SayHelloAsync_Generated.g.cs"))),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     }
                 }
             }.RunAsync();
 
-            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template"));
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
-            VerifyServerlessTemplateSnapshot(expectedTemplateContent, actualTemplateContent);
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
 
         [Fact]
         public async Task SimpleCalculator()
         {
+            var expectedTemplateContent = NormalizeNewLines(File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "simpleCalculator.template")));
+
             await new VerifyCS.Test
             {
                 TestState =
@@ -99,18 +109,30 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             "SimpleCalculator_Randoms_Generated.g.cs",
                             SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Randoms_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_Add_Generated.g.cs", File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Add_Generated.g.cs"))),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_Subtract_Generated.g.cs", File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Subtract_Generated.g.cs"))),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_Multiply_Generated.g.cs", File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Multiply_Generated.g.cs"))),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_DivideAsync_Generated.g.cs", File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_DivideAsync_Generated.g.cs"))),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_Pi_Generated.g.cs", File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Pi_Generated.g.cs"))),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_Random_Generated.g.cs", File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Random_Generated.g.cs"))),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_Randoms_Generated.g.cs", File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Randoms_Generated.g.cs"))),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     }
                 }
             }.RunAsync();
 
-            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "simpleCalculator.template"));
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
-            VerifyServerlessTemplateSnapshot(expectedTemplateContent, actualTemplateContent);
+            Assert.Equal(NormalizeNewLines(expectedTemplateContent), actualTemplateContent);
         }
 
         [Fact]
         public async Task ComplexCalculator()
         {
+            var expectedTemplateContent = NormalizeNewLines(File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "complexCalculator.template")));
+
             await new VerifyCS.Test
             {
                 TestState =
@@ -134,21 +156,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             "ComplexCalculator_Subtract_Generated.g.cs",
                             SourceText.From(File.ReadAllText(Path.Combine("Snapshots", "ComplexCalculator_Subtract_Generated.g.cs")), Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ComplexCalculator_Add_Generated.g.cs", File.ReadAllText(Path.Combine("Snapshots", "ComplexCalculator_Add_Generated.g.cs"))),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ComplexCalculator_Subtract_Generated.g.cs", File.ReadAllText(Path.Combine("Snapshots", "ComplexCalculator_Subtract_Generated.g.cs"))),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     }
                 }
             }.RunAsync();
 
-            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "complexCalculator.template"));
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
-            VerifyServerlessTemplateSnapshot(expectedTemplateContent, actualTemplateContent);
+            Assert.Equal(NormalizeNewLines(expectedTemplateContent), actualTemplateContent);
         }
 
-        private void VerifyServerlessTemplateSnapshot(string expectedTemplateContent, string actualTemplateContent)
+        private string NormalizeNewLines(string expectedTemplateContent)
         {
-            expectedTemplateContent = expectedTemplateContent.Replace("\r\n", Environment.NewLine).
+            return expectedTemplateContent.Replace("\r\n", Environment.NewLine).
                 Replace("\n", Environment.NewLine).
                 Replace("\r\r\n", Environment.NewLine);
-            Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
     }
 }

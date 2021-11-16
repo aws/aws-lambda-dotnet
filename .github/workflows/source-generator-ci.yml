@@ -78,7 +78,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore Libraries/test/TestServerlessApp/TestServerlessApp.csproj
     - name: Build
-      run: dotnet build Libraries/test/TestServerlessApp/TestServerlessApp.csproj --no-restore --configuration Release
+      run: dotnet build Libraries/test/TestServerlessApp/TestServerlessApp.csproj --no-restore --configuration Release --verbosity detailed
     - name: Upload built assemblies
       uses: actions/upload-artifact@v2
       with:
