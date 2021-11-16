@@ -10,7 +10,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
     {
         public List<MethodDeclarationSyntax> LambdaMethods { get; } = new List<MethodDeclarationSyntax>();
 
-        public ClassDeclarationSyntax StartupClass { get; private set; }
+        public List<ClassDeclarationSyntax> StartupClasses { get; private set; } = new List<ClassDeclarationSyntax>();
 
         public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
         {
@@ -32,13 +32,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var methodSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
                 if (methodSymbol.GetAttributes().Any(attr => attr.AttributeClass.Name == nameof(LambdaStartupAttribute)))
                 {
-                    if (StartupClass != null)
-                    {
-                        throw new NotSupportedException(
-                            "Multiple LambdaStartup classes are not allowed in a Lambda project.");
-                    }
-
-                    StartupClass = classDeclarationSyntax;
+                    StartupClasses.Add(classDeclarationSyntax);
                 }
             }
         }

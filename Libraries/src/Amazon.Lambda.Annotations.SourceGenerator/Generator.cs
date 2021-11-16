@@ -1,17 +1,29 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
 using System.Text;
+using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
+using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Templates;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
     [Generator]
     public class Generator : ISourceGenerator
     {
+        private readonly IFileManager _fileManager = new FileManager();
+        private readonly IDirectoryManager _directoryManager = new DirectoryManager();
+        private readonly IJsonWriter _jsonWriter = new JsonWriter();
+
         public Generator()
         {
 #if DEBUG
@@ -24,36 +36,76 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
         public void Execute(GeneratorExecutionContext context)
         {
-            // retrieve the populated receiver
-            if (!(context.SyntaxContextReceiver is SyntaxReceiver receiver))
+            var diagnosticReporter = new DiagnosticReporter(context);
+
+            try
             {
-                return;
+                // retrieve the populated receiver
+                if (!(context.SyntaxContextReceiver is SyntaxReceiver receiver))
+                {
+                    return;
+                }
+
+                var semanticModelProvider = new SemanticModelProvider(context);
+                if (receiver.StartupClasses.Count > 1)
+                {
+                    foreach (var startup in receiver.StartupClasses)
+                    {
+                        // If there are more than one startup class, report them as errors
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MultipleStartupNotAllowed,
+                            Location.Create(startup.SyntaxTree, startup.Span),
+                            startup.SyntaxTree.FilePath));
+                    }
+                }
+
+                var configureMethodModel = semanticModelProvider.GetConfigureMethodModel(receiver.StartupClasses.FirstOrDefault());
+
+                var annotationReport = new AnnotationReport();
+
+                var templateFinder = new CloudFormationTemplateFinder(_fileManager, _directoryManager);
+                var projectRootDirectory = string.Empty;
+
+                foreach (var lambdaMethod in receiver.LambdaMethods)
+                {
+                    var lambdaMethodModel = semanticModelProvider.GetMethodSemanticModel(lambdaMethod);
+                    var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context);
+
+                    // If there are more than one event, report them as errors
+                    if (model.LambdaMethod.Events.Count > 1)
+                    {
+                        foreach (var attribute in lambdaMethodModel.GetAttributes().Where(attribute => TypeFullNames.Events.Contains(attribute.AttributeClass.ToDisplayString())))
+                        {
+                            diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MultipleEventsNotSupported,
+                                Location.Create(attribute.ApplicationSyntaxReference.SyntaxTree, attribute.ApplicationSyntaxReference.Span),
+                                DiagnosticSeverity.Error));
+                        }
+
+                        // Skip multi-event lambda method from processing and check remaining lambda methods for diagnostics
+                        continue;
+                    }
+
+                    var template = new LambdaFunctionTemplate(model);
+                    var sourceText = template.TransformText();
+                    context.AddSource($"{model.GeneratedMethod.ContainingType.Name}.g.cs", SourceText.From(sourceText, Encoding.UTF8, SourceHashAlgorithm.Sha256));
+
+                    // report every generated file to build output
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.CodeGeneration, Location.None, $"{model.GeneratedMethod.ContainingType.Name}.g.cs", sourceText));
+
+                    annotationReport.LambdaFunctions.Add(model);
+
+                    if (string.IsNullOrEmpty(projectRootDirectory))
+                        projectRootDirectory = templateFinder.DetermineProjectRootDirectory(lambdaMethod.SyntaxTree.FilePath);
+                }
+
+                annotationReport.CloudFormationTemplatePath = templateFinder.FindCloudFormationTemplate(projectRootDirectory);
+                var cloudFormationJsonWriter = new CloudFormationJsonWriter(_fileManager, _jsonWriter, diagnosticReporter);
+                cloudFormationJsonWriter.ApplyReport(annotationReport);
             }
-
-            var semanticModelProvider = new SemanticModelProvider(context);
-            var configureMethodModel = semanticModelProvider.GetConfigureMethodModel(receiver.StartupClass);
-
-            var annotationReport = new AnnotationReport();
-            var templateFinder = new CloudFormationTemplateFinder(new FileManager(), new DirectoryManager());
-            var projectRootDirectory = string.Empty;
-
-            foreach (var lambdaMethod in receiver.LambdaMethods)
+            catch (Exception e)
             {
-                var lambdaMethodModel = semanticModelProvider.GetMethodSemanticModel(lambdaMethod);
-                var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context);
-                var template = new LambdaFunctionTemplate(model);
-                var sourceText = template.TransformText();
-                context.AddSource($"{model.GeneratedMethod.ContainingType.Name}.g.cs", SourceText.From(sourceText, Encoding.UTF8, SourceHashAlgorithm.Sha256));
-
-                annotationReport.LambdaFunctions.Add(model);
-
-                if (string.IsNullOrEmpty(projectRootDirectory))
-                    projectRootDirectory = templateFinder.DetermineProjectRootDirectory(lambdaMethod.SyntaxTree.FilePath);
+                // this is a generator failure, report this as error
+                diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.UnhandledException, Location.None, e.PrettyPrint()));
             }
-
-            annotationReport.CloudFormationTemplatePath = templateFinder.FindCloudFormationTemplate(projectRootDirectory);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(new FileManager(), new JsonWriter());
-            cloudFormationJsonWriter.ApplyReport(annotationReport);
         }
 
         public void Initialize(GeneratorInitializationContext context)
