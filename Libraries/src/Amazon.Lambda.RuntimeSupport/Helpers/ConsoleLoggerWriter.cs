@@ -131,7 +131,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
         /// <summary>
         /// Set a special callback on Amazon.Lambda.Core.LambdaLogger to redirect its logging to FormattedWriteLine.
-        /// This allows outputting logging with time and account id but not have LogLevel. This is important for
+        /// This allows outputting logging with time and request id but not have LogLevel. This is important for
         /// Amazon.Lambda.Logging.AspNetCore which already provides a string with a log level.
         /// </summary>
         private void ConfigureLoggingActionField()
@@ -176,7 +176,13 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             private string _defaultLogLevel;
 
             const string LOG_LEVEL_ENVIRONMENT_VARAIBLE = "AWS_LAMBDA_HANDLER_LOG_LEVEL";
+            const string LOG_FORMAT_ENVIRONMENT_VARAIBLE = "AWS_LAMBDA_HANDLER_LOG_FORMAT";
+
             private LogLevel _minmumLogLevel = LogLevel.Information;
+
+            enum LogFormatType { Default, Unformatted }
+
+            private LogFormatType _logFormatType = LogFormatType.Default;
 
             public string CurrentAwsRequestId { get; set; } = string.Empty;
 
@@ -185,12 +191,21 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 _innerWriter = innerWriter;
                 _defaultLogLevel = defaultLogLevel;
 
-                var envLogLevel = Environment.GetEnvironmentVariable(LOG_LEVEL_ENVIRONMENT_VARAIBLE); ;
+                var envLogLevel = Environment.GetEnvironmentVariable(LOG_LEVEL_ENVIRONMENT_VARAIBLE);
                 if (!string.IsNullOrEmpty(envLogLevel))
                 {
                     if (Enum.TryParse<LogLevel>(envLogLevel, true, out var result))
                     {
                         _minmumLogLevel = result;
+                    }
+                }
+
+                var envLogFormat = Environment.GetEnvironmentVariable(LOG_FORMAT_ENVIRONMENT_VARAIBLE);
+                if (!string.IsNullOrEmpty(envLogFormat))
+                {
+                    if (Enum.TryParse<LogFormatType>(envLogFormat, true, out var result))
+                    {
+                        _logFormatType = result;
                     }
                 }
             }
@@ -202,25 +217,32 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             internal void FormattedWriteLine(string level, string message)
             {
-                string line;
-                if(!string.IsNullOrEmpty(level))
+                var displayLevel = level;
+                if (Enum.TryParse<LogLevel>(level, true, out var levelEnum))
                 {
-                    var displayLevel = level;
-                    if (Enum.TryParse<LogLevel>(level, true, out var levelEnum))
-                    {
-                        if (levelEnum < _minmumLogLevel)
-                            return;
+                    if (levelEnum < _minmumLogLevel)
+                        return;
 
-                        displayLevel = ConvertLogLevelToLabel(levelEnum);
-                    }
+                    displayLevel = ConvertLogLevelToLabel(levelEnum);
+                }
 
-                    line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{displayLevel}\t{message ?? string.Empty}";
+                if (_logFormatType == LogFormatType.Unformatted)
+                {
+                    _innerWriter.WriteLine(message);
                 }
                 else
                 {
-                    line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{message ?? string.Empty}";
+                    string line;
+                    if (!string.IsNullOrEmpty(displayLevel))
+                    {
+                        line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{displayLevel}\t{message ?? string.Empty}";
+                    }
+                    else
+                    {
+                        line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{message ?? string.Empty}";
+                    }
+                    _innerWriter.WriteLine(line);
                 }
-                _innerWriter.WriteLine(line);
             }
 
             private Task FormattedWriteLineAsync(string message)
