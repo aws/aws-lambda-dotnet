@@ -19,6 +19,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.LexEvents;
     using Amazon.Lambda.KinesisFirehoseEvents;
     using Amazon.Lambda.KinesisAnalyticsEvents;
+    using Amazon.Lambda.KafkaEvents;
 
     using Amazon.Lambda.CloudWatchLogsEvents;
 
@@ -1833,6 +1834,53 @@ namespace Amazon.Lambda.Tests
         private void Handle(ECSTaskStateChangeEvent ecsEvent)
         {
             Console.WriteLine($"[{ecsEvent.Source} {ecsEvent.Time}] {ecsEvent.DetailType}");
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void KafkaEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kafka-event.json"))
+            {
+                var kafkaEvent = serializer.Deserialize<KafkaEvent>(fileStream);
+                Assert.NotNull(kafkaEvent);
+                Assert.Equal(kafkaEvent.EventSource, "aws:kafka");
+                Assert.Equal(kafkaEvent.EventSourceArn, "arn:aws:kafka:us-east-1:123456789012:cluster/vpc-3432434/4834-3547-3455-9872-7929");
+                Assert.Equal(kafkaEvent.BootstrapServers, "b-2.demo-cluster-1.a1bcde.c1.kafka.us-east-1.amazonaws.com:9092,b-1.demo-cluster-1.a1bcde.c1.kafka.us-east-1.amazonaws.com:9092");
+
+                Assert.NotNull(kafkaEvent.Records);
+                Assert.Equal(kafkaEvent.Records.Count, 1);
+
+                var record = kafkaEvent.Records.FirstOrDefault();
+                Assert.NotNull(record);
+                Assert.Equal(record.Key, "mytopic-0");
+
+                Assert.Equal(record.Value.Count, 1);
+                var eventRecord = record.Value.FirstOrDefault();
+                Assert.Equal(eventRecord.Topic, "mytopic");
+                Assert.Equal(eventRecord.Partition, 0);
+                Assert.Equal(eventRecord.Offset, 15);
+                Assert.Equal(eventRecord.Timestamp, 1545084650987);
+                Assert.Equal(eventRecord.TimestampType, "CREATE_TIME");
+
+                Assert.NotEmpty(eventRecord.Value);
+                var dataBytes = Convert.FromBase64String(eventRecord.Value);
+                Assert.Equal(Encoding.UTF8.GetString(dataBytes), "Hello, this is a test.");
+
+                Assert.Equal(eventRecord.Headers.Count, 1);
+                var eventRecordHeader = eventRecord.Headers.FirstOrDefault();
+                Assert.NotNull(eventRecordHeader);
+                Assert.Equal(eventRecordHeader.Count, 1);
+                var eventRecordHeaderValue = eventRecordHeader.FirstOrDefault();
+                Assert.NotNull(eventRecordHeaderValue);
+                Assert.Equal(eventRecordHeaderValue.Key, "headerKey");
+                Assert.Equal(Encoding.UTF8.GetString(eventRecordHeaderValue.Value), "headerValue");
+            }
         }
 
         [Fact]
