@@ -20,6 +20,11 @@
         public string EventSourceARN { get; set; }
 
         /// <summary>
+        /// Initial list of brokers as a CSV list of broker host or host:port.
+        /// </summary>
+        public string BootstrapServers { get; set; }
+
+        /// <summary>
         /// List of Kafka event records.
         /// </summary>
         public IDictionary<string, IList<KafkaEventRecord>> Records { get; set; }
@@ -67,7 +72,7 @@
             /// <summary>
             /// The Kafka event record headers.
             /// </summary>
-            public List<Dictionary<string, byte[]>> Headers { get; set; }
+            public IList<IDictionary<string, byte[]>> Headers { get; set; }
         }
     }
 }
