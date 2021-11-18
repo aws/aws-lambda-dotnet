@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net5.0</TargetFramework>
+        <OutputType>Library</OutputType>
     </PropertyGroup>
 
     <ItemGroup>
@@ -16,9 +17,5 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>
     </ItemGroup>
-
-    <Target Name="DeployTestServerlessApp" BeforeTargets="BeforeBuild">
-        <Exec Command="pwsh DeploymentScript.ps1" IgnoreExitCode="true" />
-    </Target>
 
 </Project>

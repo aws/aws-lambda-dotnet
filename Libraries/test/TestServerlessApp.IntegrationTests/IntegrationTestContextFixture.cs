@@ -30,6 +30,9 @@ namespace TestServerlessApp.IntegrationTests
 
         public IntegrationTestContextFixture()
         {
+            var scriptPath = Path.Combine("..", "..", "..", "DeploymentScript.ps1");
+            CommandLineWrapper.Run($"pwsh {scriptPath}").GetAwaiter().GetResult();
+
             _stackName = GetStackName();
             _bucketName = GetBucketName();
             Assert.False(string.IsNullOrEmpty(_stackName));
