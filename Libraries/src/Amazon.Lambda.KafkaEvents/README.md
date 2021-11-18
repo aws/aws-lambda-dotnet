@@ -22,17 +22,17 @@ The following is a sample class and Lambda function that receives Apache Kafka e
 ```csharp
 public class Function
 {
-	public string Handler(KafkaEvent kafkaEvent)
-	{
-		foreach (var record in kafkaEvent.Records)
-		{
-			foreach (var eventRecord in record.Value)
-			{
-				var dataBytes = Convert.FromBase64String(eventRecord.Value);
-				var dataText = Encoding.UTF8.GetString(dataBytes);
-				Console.WriteLine($"[{record.Key}] Data = '{dataText}'.");
-			}
-		}
-	}
+    public string Handler(KafkaEvent kafkaEvent)
+    {
+        foreach (var record in kafkaEvent.Records)
+        {
+            foreach (var eventRecord in record.Value)
+            {
+                var dataBytes = Convert.FromBase64String(eventRecord.Value);
+                var dataText = Encoding.UTF8.GetString(dataBytes);
+                Console.WriteLine($"[{record.Key}] Data = '{dataText}'.");
+            }
+        }
+    }
 }
 ```
