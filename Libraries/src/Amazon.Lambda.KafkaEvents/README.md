@@ -6,7 +6,7 @@ This package contains classes that can be used as input types for Lambda functio
 
 If you are using this package with Amazon Lambda but are not also using `Amazon.Lambda.Serialization.Json`, be aware that one property requires custom serialization.
 
-This property is `Value` on the type `Amazon.Lambda.KafkaEvents.KafkaEvent+KafkaEventRecord`. This is a `MemoryStream` object that should be populated by converting the JSON string from base64 to an array of bytes, then constructing a `MemoryStream` object from these bytes. Here is a code sample showing this deserialization logic.
+This is a `MemoryStream` object that should be populated by converting the JSON string from base64 to an array of bytes, then constructing a `MemoryStream` object from these bytes. Here is a code sample showing this deserialization logic.
 ```csharp
 string dataBase64 = GetJsonString();
 byte[] dataBytes = Convert.FromBase64String(dataBase64);
