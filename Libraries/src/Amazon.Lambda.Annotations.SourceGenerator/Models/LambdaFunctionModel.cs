@@ -52,5 +52,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 
         /// <inheritdoc />
         public IList<AttributeModel> Attributes => LambdaMethod.Attributes ?? new List<AttributeModel>();
+
+        /// <inheritdoc />
+        public string SourceGeneratorVersion { get; set; }
     }
 }

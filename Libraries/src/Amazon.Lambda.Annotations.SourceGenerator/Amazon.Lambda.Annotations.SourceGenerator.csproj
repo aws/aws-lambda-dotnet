@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
 
     <!-- This is required to allow copying all the dependnceis to bin directory which can be copied after to nuget package based on nuspec -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
@@ -14,6 +15,7 @@ namespace TestServerlessApp
 
         public SimpleCalculator_DivideAsync_Generated()
         {
+            SetExecutionEnvironment();
             var services = new ServiceCollection();
 
             // By default, Lambda function class is added to the service container using the singleton lifetime
@@ -57,6 +59,23 @@ namespace TestServerlessApp
                 },
                 StatusCode = 200
             };
+        }
+
+        private static void SetExecutionEnvironment()
+        {
+            const string envName = "AWS_EXECUTION_ENV";
+
+            var envValue = new StringBuilder();
+
+            // If there is an existing execution environment variable add the annotations package as a suffix.
+            if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envName)))
+            {
+                envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
+            }
+
+            envValue.Append("amazon-lambda-annotations_0.1.0.0");
+
+            Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }
     }
 }

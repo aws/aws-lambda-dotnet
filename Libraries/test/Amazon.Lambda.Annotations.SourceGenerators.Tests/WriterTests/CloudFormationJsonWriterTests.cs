@@ -356,6 +356,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public string Role { get; set; }
             public string Policies { get; set; }
             public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
+            public string SourceGeneratorVersion { get; set; }
         }
     }
 }

@@ -35,7 +35,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             {
                 "System",
                 "System.Linq",
-                "System.Collections.Generic"
+                "System.Collections.Generic",
+                "System.Text"
             };
 
             if (lambdaMethodSymbol.IsAsync)
