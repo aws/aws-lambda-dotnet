@@ -45,5 +45,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// There always exists <see cref="Annotations.LambdaFunctionAttribute"/> in the list.
         /// </summary>
         IList<AttributeModel> Attributes { get; }
+
+        /// <summary>
+        /// The assembly version of the Amazon.Lambda.Annotations.SourceGenerator package.
+        /// </summary>
+        string SourceGeneratorVersion { get; set; }
     }
 }

@@ -38,6 +38,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 
         public <#= _model.GeneratedMethod.ContainingType.Name #>()
         {
+            SetExecutionEnvironment();
 <#
     if (_model.LambdaMethod.UsingDependencyInjection)
     {
@@ -387,6 +388,23 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
         }
     }
 #>
+        }
+
+        private static void SetExecutionEnvironment()
+        {
+            const string envName = "AWS_EXECUTION_ENV";
+
+            var envValue = new StringBuilder();
+
+            // If there is an existing execution environment variable add the annotations package as a suffix.
+            if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envName)))
+            {
+                envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
+            }
+
+            envValue.Append("amazon-lambda-annotations_<#= _model.SourceGeneratorVersion #>");
+
+            Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }
     }
 }
