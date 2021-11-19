@@ -23,8 +23,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
     public class TestWhichBuilderIsUsed
     {
-#if !NETCOREAPP_2_1
-
         [Theory]
         [InlineData(typeof(HostBuilderUsingGenericClass), true)]
         [InlineData(typeof(HostBuilderOverridingInit), true)]
@@ -54,7 +52,5 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal(200, response.StatusCode);
             return lambdaFunction as IMethodsCalled;
         }
-
-#endif
     }
 }

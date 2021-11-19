@@ -3,7 +3,7 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.1;netcoreapp3.1</TargetFrameworks>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <Description>AWS Lambda PowerShell Host.</Description>
     <AssemblyTitle>Amazon.Lambda.PowerShellHost</AssemblyTitle>
     <VersionPrefix>2.2.0</VersionPrefix>

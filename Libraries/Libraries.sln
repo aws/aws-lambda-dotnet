@@ -47,8 +47,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestWebApp", "test\TestWebA
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Logging.AspNetCore.Tests", "test\Amazon.Lambda.Logging.AspNetCore.Tests\Amazon.Lambda.Logging.AspNetCore.Tests.csproj", "{A612EC01-6595-4EA6-B0EF-FF00E4FB331D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventsTests.NETCore21", "test\EventsTests.NETCore21\EventsTests.NETCore21.csproj", "{D96E1572-C079-413A-BFA0-235000700DDB}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestFunction", "test\TestFunction\TestFunction.csproj", "{11A53C8D-A49B-4477-BFD9-E00C77D1291C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.SimpleEmailEvents", "src\Amazon.Lambda.SimpleEmailEvents\Amazon.Lambda.SimpleEmailEvents.csproj", "{A6348510-7948-46B1-A2C4-396B8C55440C}"
@@ -103,15 +101,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HandlerTest", "test\Handler
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HandlerTestNoSerializer", "test\HandlerTestNoSerializer\HandlerTestNoSerializer.csproj", "{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.AspNetCoreServer.Hosting", "src\Amazon.Lambda.AspNetCoreServer.Hosting\Amazon.Lambda.AspNetCoreServer.Hosting.csproj", "{02908C6F-FBDF-4949-B039-0F4632265B90}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.AspNetCoreServer.Hosting", "src\Amazon.Lambda.AspNetCoreServer.Hosting\Amazon.Lambda.AspNetCoreServer.Hosting.csproj", "{02908C6F-FBDF-4949-B039-0F4632265B90}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomRuntimeAspNetCoreMinimalApiTest", "test\Amazon.Lambda.RuntimeSupport.Tests\CustomRuntimeAspNetCoreMinimalApiTest\CustomRuntimeAspNetCoreMinimalApiTest.csproj", "{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventsTests.NET6", "test\EventsTests.NET6\EventsTests.NET6.csproj", "{C1BB30D2-3237-4CFC-BA93-627471148EC2}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		test\EventsTests.Shared\EventsTests.Shared.projitems*{44e9d925-b61d-4234-97b7-61424c963ba6}*SharedItemsImports = 5
 		test\EventsTests.Shared\EventsTests.Shared.projitems*{a2cb78bb-e54f-48ca-bbfb-9553d27ef23d}*SharedItemsImports = 13
-		test\EventsTests.Shared\EventsTests.Shared.projitems*{d96e1572-c079-413a-bfa0-235000700ddb}*SharedItemsImports = 5
+		test\EventsTests.Shared\EventsTests.Shared.projitems*{c1bb30d2-3237-4cfc-ba93-627471148ec2}*SharedItemsImports = 5
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -186,10 +186,6 @@ Global
 		{A612EC01-6595-4EA6-B0EF-FF00E4FB331D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A612EC01-6595-4EA6-B0EF-FF00E4FB331D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A612EC01-6595-4EA6-B0EF-FF00E4FB331D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D96E1572-C079-413A-BFA0-235000700DDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D96E1572-C079-413A-BFA0-235000700DDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D96E1572-C079-413A-BFA0-235000700DDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D96E1572-C079-413A-BFA0-235000700DDB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{11A53C8D-A49B-4477-BFD9-E00C77D1291C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{11A53C8D-A49B-4477-BFD9-E00C77D1291C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11A53C8D-A49B-4477-BFD9-E00C77D1291C}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -290,6 +286,10 @@ Global
 		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -312,7 +312,6 @@ Global
 		{5B48AEA8-5702-45A8-9D89-CEB986E6DBC1} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{101ABE51-390D-41DF-A70B-2BD3B08B2CC7} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{A612EC01-6595-4EA6-B0EF-FF00E4FB331D} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
-		{D96E1572-C079-413A-BFA0-235000700DDB} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{11A53C8D-A49B-4477-BFD9-E00C77D1291C} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{A6348510-7948-46B1-A2C4-396B8C55440C} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{F93EFEFF-FD1F-48F1-A0F1-BBE87205129E} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
@@ -342,6 +341,7 @@ Global
 		{9736E38B-B67F-42BD-882E-CE9C8AEE1BC4} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{02908C6F-FBDF-4949-B039-0F4632265B90} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB} = {B5BD0336-7D08-492C-8489-42C987E29B39}
+		{C1BB30D2-3237-4CFC-BA93-627471148EC2} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}
