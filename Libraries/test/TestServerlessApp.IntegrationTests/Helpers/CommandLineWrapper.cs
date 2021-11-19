@@ -9,7 +9,7 @@ namespace TestServerlessApp.IntegrationTests.Helpers
 {
     public static class CommandLineWrapper
     {
-        public static async Task Run(string command, string workingDirectory = "", bool redirectIo = true, CancellationToken cancelToken = default)
+        public static async Task RunAsync(string command, string workingDirectory = "", bool redirectIo = true, CancellationToken cancelToken = default)
         {
             var processStartInfo = new ProcessStartInfo
             {
@@ -37,7 +37,7 @@ namespace TestServerlessApp.IntegrationTests.Helpers
                 process.BeginErrorReadLine();
             }
 
-            await process.WaitForExitAsync(cancelToken).ConfigureAwait(false);
+            await process.WaitForExitAsync(cancelToken);
         }
 
         private static string GetSystemShell()
