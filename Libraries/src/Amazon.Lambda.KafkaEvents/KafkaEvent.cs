@@ -1,6 +1,7 @@
 ﻿namespace Amazon.Lambda.KafkaEvents
 {
     using System.Collections.Generic;
+    using System.IO;
 
     /// <summary>
     /// Apache Kafka event
@@ -67,7 +68,7 @@
             /// <summary>
             /// The Kafka event record Value.
             /// </summary>
-            public string Value { get; set; }
+            public MemoryStream Value { get; set; }
 
             /// <summary>
             /// The Kafka event record headers.

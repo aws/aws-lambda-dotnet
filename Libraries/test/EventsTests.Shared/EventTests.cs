@@ -1868,9 +1868,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(eventRecord.Timestamp, 1545084650987);
                 Assert.Equal(eventRecord.TimestampType, "CREATE_TIME");
 
-                Assert.NotEmpty(eventRecord.Value);
-                var dataBytes = Convert.FromBase64String(eventRecord.Value);
-                Assert.Equal(Encoding.UTF8.GetString(dataBytes), "Hello, this is a test.");
+                Assert.Equal(new StreamReader(eventRecord.Value).ReadToEnd(), "Hello, this is a test.");
 
                 Assert.Equal(eventRecord.Headers.Count, 1);
                 var eventRecordHeader = eventRecord.Headers.FirstOrDefault();
