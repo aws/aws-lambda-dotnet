@@ -56,6 +56,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", null);
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", "debug");
+                    await RunUnformattedLoggingTestAsync(lambdaClient, "LoggingTest");
 
                     await RunTestSuccessAsync(lambdaClient, "ToUpperAsync", "message", "ToUpperAsync-MESSAGE");
                     await RunTestSuccessAsync(lambdaClient, "PingAsync", "ping", "PingAsync-pong");
@@ -136,7 +137,29 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             {
                 Assert.Contains($"a {logLevel} log".ToLower(), log.ToLower());
             }
+        }
 
+        private async Task RunUnformattedLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler)
+        {
+            var environmentVariables = new Dictionary<string, string>();
+            environmentVariables["AWS_LAMBDA_HANDLER_LOG_FORMAT"] = "Unformatted";
+            await UpdateHandlerAsync(lambdaClient, handler, environmentVariables);
+
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.True(invokeResponse.FunctionError == null);
+
+            var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+
+            Assert.DoesNotContain("info\t", log);
+            Assert.DoesNotContain("warn\t", log);
+            Assert.DoesNotContain("fail\t", log);
+            Assert.DoesNotContain("crit\t", log);
+
+            Assert.Contains("A information log", log);
+            Assert.Contains("A warning log", log);
+            Assert.Contains("A error log", log);
+            Assert.Contains("A critical log", log);
         }
 
 
