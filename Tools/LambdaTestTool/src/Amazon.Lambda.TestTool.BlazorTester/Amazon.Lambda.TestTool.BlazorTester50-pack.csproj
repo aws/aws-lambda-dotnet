@@ -15,7 +15,9 @@
     <PackAsTool>true</PackAsTool>
     <PackageId>Amazon.Lambda.TestTool-5.0</PackageId>
 	<AssemblyName>Amazon.Lambda.TestTool.BlazorTester</AssemblyName>
-	<RootNamespace>Amazon.Lambda.TestTool.BlazorTester</RootNamespace>	
+	<RootNamespace>Amazon.Lambda.TestTool.BlazorTester</RootNamespace>
+	<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>	
+	<StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
   </PropertyGroup>
 
   <ItemGroup>
