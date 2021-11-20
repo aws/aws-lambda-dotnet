@@ -24,15 +24,15 @@ public class Function
 {
     public string Handler(KafkaEvent kafkaEvent)
     {
-		foreach (var record in kafkaEvent.Records)
-		{
-			foreach (var eventRecord in record.Value)
-			{
-				var valueBytes = eventRecord.Value.ToArray();
-				var valueText = Encoding.UTF8.GetString(valueBytes);
-				Console.WriteLine($"[{record.Key}] Value = '{valueText}'.");
-			}
-		}
+        foreach (var record in kafkaEvent.Records)
+        {
+            foreach (var eventRecord in record.Value)
+	    {
+	        var valueBytes = eventRecord.Value.ToArray();
+                var valueText = Encoding.UTF8.GetString(valueBytes);
+                Console.WriteLine($"[{record.Key}] Value = '{valueText}'.");
+            }
+        }
     }
 }
 ```
