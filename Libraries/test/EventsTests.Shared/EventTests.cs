@@ -1878,6 +1878,21 @@ namespace Amazon.Lambda.Tests
                 Assert.NotNull(eventRecordHeaderValue);
                 Assert.Equal(eventRecordHeaderValue.Key, "headerKey");
                 Assert.Equal(Encoding.UTF8.GetString(eventRecordHeaderValue.Value), "headerValue");
+
+                Handle(kafkaEvent);
+            }
+        }
+
+        private void Handle(KafkaEvent kafkaEvent)
+        {
+            foreach (var record in kafkaEvent.Records)
+            {
+                foreach (var eventRecord in record.Value)
+                {
+                    var valueBytes = eventRecord.Value.ToArray();
+                    var valueText = Encoding.UTF8.GetString(valueBytes);
+                    Console.WriteLine($"[{record.Key}] Value = '{valueText}'.");
+                }
             }
         }
 
