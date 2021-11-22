@@ -1,3 +1,14 @@
+### Release 2021-11-22
+* **Amazon.Lambda.AspNetCoreServer (7.0.0)**
+  * [Breaking Change] Removed support for .NET Core 2.1
+* **Amazon.Lambda.RuntimeSupport (1.5.0)**
+  * Added new environment variable `AWS_LAMBDA_HANDLER_LOG_FORMAT` to configure logging format. Supported values are `Default` and `Unformatted`.
+* **Amazon.Lambda.Templates (5.6.0)**
+  * Updated custom runtime templates to use .NET 6.
+* **Amazon.Lambda.TestTool-6.0 (0.11.3)**
+  * Added .NET 6 support for test tool support to help with custom runtime .NET 6 functions.
+
+  
 ### Release 2021-11-05
 * **Amazon.Lambda.AspNetCoreServer.Hosting (1.0.0)**
   * New package to make easy to configure ASP.NET Core project using minimal api style as Lambda functions.
