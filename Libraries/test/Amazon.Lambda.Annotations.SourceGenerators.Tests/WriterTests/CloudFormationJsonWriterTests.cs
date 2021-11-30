@@ -13,9 +13,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
     public class CloudFormationJsonWriterTests
     {
+        private readonly IDirectoryManager _mockDirectoryManager = new InMemoryDirectoryManager();
         private readonly IJsonWriter _jsonWriter = new JsonWriter();
         private readonly IDiagnosticReporter _diagnosticReporter = new Mock<IDiagnosticReporter>().Object;
-        private const string ServerlessTemplateFilePath = "path/to/serverless.template";
+        private const string ProjectRootDirectory = "C:/CodeBase/MyProject";
+        private const string ServerlessTemplateFilePath = "C:/CodeBase/MyProject/serverless.template";
 
         [Fact]
         public void AddSingletonFunctionToEmptyTemplate()
@@ -24,7 +26,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, null, null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
 
             // ACT
@@ -45,6 +47,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal(512, propertiesToken["MemorySize"]);
             Assert.Equal(45, propertiesToken["Timeout"]);
             Assert.Equal(new List<string> {"AWSLambdaBasicExecutionRole"}, propertiesToken["Policies"].ToObject<List<string>>());
+            Assert.Equal("Zip", propertiesToken["PackageType"]);
+            Assert.Equal(".", propertiesToken["CodeUri"]);
+            Assert.Null(propertiesToken["ImageUri"]);
+            Assert.Null(propertiesToken["ImageConfig"]);
         }
 
         [Fact]
@@ -52,7 +58,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         {
             // ARRANGE
             var mockFileManager = GetMockFileManager(string.Empty);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
 
             //ACT - USE POLICY
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
@@ -97,7 +103,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, null, "Policy1, @Policy2, Policy3");
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -119,7 +125,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, "@Basic", null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -137,7 +143,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "OldName", 45, 512, "@Basic", null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -203,7 +209,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(originalContent);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "NewMethod", 45, 512, null, null);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -243,7 +249,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(originalContent);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "MethodNotCreatedFromAnnotationsPackage", 45, 512, null, "Policy1, Policy2, Policy3");
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new() {lambdaFunctionModel});
 
             // ACT
@@ -274,7 +280,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 Data = new HttpApiAttribute(HttpMethod.Get, HttpApiVersion.V1, "/Calculator/Add")
             };
             lambdaFunctionModel.Attributes = new List<AttributeModel>() {httpAttributeModel};
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _jsonWriter, _diagnosticReporter);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
 
             // ACT
@@ -313,6 +319,60 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal("2.0", postToken["Properties"]["PayloadFormatVersion"]);
         }
 
+        [Fact]
+        public void PackageTypePropertyTest()
+        {
+            // ARRANGE - Set PackageType to Zip
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "TestMethod", 45, 512, null, null);
+            lambdaFunctionModel.PackageType = PackageTypeEnum.Zip;
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
+
+            // ACT
+            cloudFormationJsonWriter.ApplyReport(report);
+
+            // ASSERT
+            var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            var propertiesToken = rootToken["Resources"]["TestMethod"]["Properties"];
+            Assert.Equal("Zip", propertiesToken["PackageType"]);
+            Assert.Equal(".", propertiesToken["CodeUri"]);
+            Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", propertiesToken["Handler"]);
+
+            // ARRANGE - Change PackageType to Image
+            lambdaFunctionModel.PackageType = PackageTypeEnum.Image;
+            report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
+
+            // ACT
+            cloudFormationJsonWriter.ApplyReport(report);
+
+            // ASSERT
+            rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            propertiesToken = rootToken["Resources"]["TestMethod"]["Properties"];
+            Assert.Equal("Image", propertiesToken["PackageType"]);
+            Assert.Equal(".", propertiesToken["ImageUri"]);
+            Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", propertiesToken["ImageConfig"]["Command"]);
+            Assert.Null(propertiesToken["CodeUri"]);
+            Assert.Null(propertiesToken["Handler"]);
+
+            // ARRANGE - Change PackageType back to Zip
+            lambdaFunctionModel.PackageType = PackageTypeEnum.Zip;
+            report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
+
+            // ACT
+            cloudFormationJsonWriter.ApplyReport(report);
+
+            // ASSERT
+            rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            propertiesToken = rootToken["Resources"]["TestMethod"]["Properties"];
+            Assert.Equal("Zip", propertiesToken["PackageType"]);
+            Assert.Equal(".", propertiesToken["CodeUri"]);
+            Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", propertiesToken["Handler"]);
+            Assert.Null(propertiesToken["ImageUri"]);
+            Assert.Null(propertiesToken["ImageConfig"]);
+        }
+
         private IFileManager GetMockFileManager(string originalContent)
         {
             var mockFileManager = new InMemoryFileManager();
@@ -337,7 +397,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         {
             var annotationReport = new AnnotationReport
             {
-                CloudFormationTemplatePath = ServerlessTemplateFilePath
+                CloudFormationTemplatePath = ServerlessTemplateFilePath,
+                ProjectRootDirectory = ProjectRootDirectory
             };
             foreach (var model in lambdaFunctionModels)
             {
@@ -357,6 +418,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public string Policies { get; set; }
             public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
             public string SourceGeneratorVersion { get; set; }
+            public PackageTypeEnum PackageType { get; set; } = PackageTypeEnum.Zip;
         }
     }
 }

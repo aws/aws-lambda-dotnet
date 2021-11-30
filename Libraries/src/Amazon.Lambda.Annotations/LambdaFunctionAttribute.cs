@@ -31,5 +31,11 @@ namespace Amazon.Lambda.Annotations
         /// Resource based policies that grants permissions to access other AWS resources.
         /// </summary>
         public string Policies { get; set; }
+
+        /// <summary>
+        /// The deployment package type of the Lambda function. The supported values are Zip or Image. The default value is Zip.
+        /// For more information, see <a href="https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-package.html">here</a>
+        /// </summary>
+        public PackageTypeEnum? PackageType {get; set;}
     }
 }

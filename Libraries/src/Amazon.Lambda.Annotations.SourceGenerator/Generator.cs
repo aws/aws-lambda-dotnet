@@ -98,7 +98,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 }
 
                 annotationReport.CloudFormationTemplatePath = templateFinder.FindCloudFormationTemplate(projectRootDirectory);
-                var cloudFormationJsonWriter = new CloudFormationJsonWriter(_fileManager, _jsonWriter, diagnosticReporter);
+                annotationReport.ProjectRootDirectory = projectRootDirectory;
+                var cloudFormationJsonWriter = new CloudFormationJsonWriter(_fileManager, _directoryManager,_jsonWriter, diagnosticReporter);
                 cloudFormationJsonWriter.ApplyReport(annotationReport);
             }
             catch (Exception e)

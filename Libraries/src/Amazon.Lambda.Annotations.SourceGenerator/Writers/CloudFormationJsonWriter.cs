@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
@@ -13,12 +14,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
     public class CloudFormationJsonWriter : IAnnotationReportWriter
     {
         private readonly IFileManager _fileManager;
+        private readonly IDirectoryManager _directoryManager;
         private readonly IJsonWriter _jsonWriter;
         private readonly IDiagnosticReporter _diagnosticReporter;
 
-        public CloudFormationJsonWriter(IFileManager fileManager, IJsonWriter jsonWriter, IDiagnosticReporter diagnosticReporter)
+        public CloudFormationJsonWriter(IFileManager fileManager, IDirectoryManager directoryManager, IJsonWriter jsonWriter, IDiagnosticReporter diagnosticReporter)
         {
             _fileManager = fileManager;
+            _directoryManager = directoryManager;
             _jsonWriter = jsonWriter;
             _diagnosticReporter = diagnosticReporter;
         }
@@ -26,6 +29,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         public void ApplyReport(AnnotationReport report)
         {
             var originalContent = _fileManager.ReadAllText(report.CloudFormationTemplatePath);
+            var templateDirectory = _directoryManager.GetDirectoryName(report.CloudFormationTemplatePath);
+            var relativeProjectUri = _directoryManager.GetRelativePath(templateDirectory, report.ProjectRootDirectory);
 
             if (string.IsNullOrEmpty(originalContent))
                 CreateNewTemplate();
@@ -38,7 +43,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             {
                 if (!ShouldProcessLambdaFunction(lambdaFunction))
                     continue;
-                ProcessLambdaFunction(lambdaFunction);
+                ProcessLambdaFunction(lambdaFunction, relativeProjectUri);
                 processedLambdaFunctions.Add(lambdaFunction.Name);
             }
 
@@ -60,7 +65,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             return string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal);
         }
 
-        private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction)
+        private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction, string relativeProjectUri)
         {
             var lambdaFunctionPath = $"Resources.{lambdaFunction.Name}";
             var propertiesPath = $"{lambdaFunctionPath}.Properties";
@@ -68,8 +73,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (!_jsonWriter.Exists(lambdaFunctionPath))
                 ApplyLambdaFunctionDefaults(lambdaFunctionPath, propertiesPath);
 
-            _jsonWriter.SetToken($"{propertiesPath}.Handler", lambdaFunction.Handler);
+            ProcessLambdaFunctionAttributes(lambdaFunction, propertiesPath, relativeProjectUri);
+            ProcessLambdaFunctionEventAttributes(lambdaFunction);
+        }
 
+        private void ProcessLambdaFunctionAttributes(ILambdaFunctionSerializable lambdaFunction, string propertiesPath, string relativeProjectUri)
+        {
             if (lambdaFunction.Timeout > 0)
                 _jsonWriter.SetToken($"{propertiesPath}.Timeout", lambdaFunction.Timeout);
 
@@ -84,22 +93,46 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             if (!string.IsNullOrEmpty(lambdaFunction.Policies))
             {
-                var policyArray = lambdaFunction.Policies.Split(',')
-                    .Select(x => GetValueOrRef(x.Trim()));
+                var policyArray = lambdaFunction.Policies.Split(',').Select(x => GetValueOrRef(x.Trim()));
                 _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray(policyArray));
                 _jsonWriter.RemoveToken($"{propertiesPath}.Role");
             }
 
-            ProcessLambdaFunctionEvents(lambdaFunction);
+            ProcessPackageTypeProperty(lambdaFunction, propertiesPath, relativeProjectUri);
         }
 
-        private void ProcessLambdaFunctionEvents(ILambdaFunctionSerializable lambdaFunction)
+        private void ProcessPackageTypeProperty(ILambdaFunctionSerializable lambdaFunction, string propertiesPath, string relativeProjectUri)
+        {
+            _jsonWriter.SetToken($"{propertiesPath}.PackageType", lambdaFunction.PackageType.ToString());
+
+            switch (lambdaFunction.PackageType)
+            {
+                case PackageTypeEnum.Zip:
+                    _jsonWriter.SetToken($"{propertiesPath}.CodeUri", relativeProjectUri);
+                    _jsonWriter.SetToken($"{propertiesPath}.Handler", lambdaFunction.Handler);
+                    _jsonWriter.RemoveToken($"{propertiesPath}.ImageUri");
+                    _jsonWriter.RemoveToken($"{propertiesPath}.ImageConfig");
+                    break;
+
+                case PackageTypeEnum.Image:
+                    _jsonWriter.SetToken($"{propertiesPath}.ImageUri", relativeProjectUri);
+                    _jsonWriter.SetToken($"{propertiesPath}.ImageConfig.Command", lambdaFunction.Handler);
+                    _jsonWriter.RemoveToken($"{propertiesPath}.Handler");
+                    _jsonWriter.RemoveToken($"{propertiesPath}.CodeUri");
+                    break;
+
+                default:
+                    throw new InvalidEnumArgumentException($"The {nameof(lambdaFunction.PackageType)} does not match any supported enums of type {nameof(PackageTypeEnum)}");
+            }
+        }
+
+        private void ProcessLambdaFunctionEventAttributes(ILambdaFunctionSerializable lambdaFunction)
         {
             var currentSyncedEvents = new List<string>();
-            string eventName;
 
             foreach (var attributeModel in lambdaFunction.Attributes)
             {
+                string eventName;
                 switch (attributeModel)
                 {
                     case AttributeModel<HttpApiAttribute> httpApiAttributeModel:

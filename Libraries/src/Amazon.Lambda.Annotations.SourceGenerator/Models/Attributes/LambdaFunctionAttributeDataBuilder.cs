@@ -37,6 +37,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                 {
                     data.MemorySize = memorySize;
                 }
+
+                if (pair.Key == nameof(data.PackageType) && pair.Value.Value is PackageTypeEnum packageType)
+                {
+                    data.PackageType = packageType;
+                }
             }
 
             return data;

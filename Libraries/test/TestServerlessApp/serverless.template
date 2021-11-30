@@ -14,7 +14,7 @@
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello",
         "Runtime": "dotnetcore3.1",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 1024,
         "Timeout": 30,
         "Role": null,
@@ -30,7 +30,8 @@
               "PayloadFormatVersion": "1.0"
             }
           }
-        }
+        },
+        "PackageType": "Zip"
       }
     },
     "GreeterSayHelloAsync": {
@@ -44,7 +45,7 @@
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync",
         "Runtime": "dotnetcore3.1",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 50,
         "Role": null,
@@ -60,7 +61,8 @@
               "PayloadFormatVersion": "1.0"
             }
           }
-        }
+        },
+        "PackageType": "Zip"
       }
     },
     "SimpleCalculatorAdd": {
@@ -74,7 +76,7 @@
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Add_Generated::Add",
         "Runtime": "dotnetcore3.1",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
@@ -89,7 +91,8 @@
               "Method": "GET"
             }
           }
-        }
+        },
+        "PackageType": "Zip"
       }
     },
     "SimpleCalculatorSubtract": {
@@ -103,7 +106,7 @@
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract",
         "Runtime": "dotnetcore3.1",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
@@ -118,7 +121,8 @@
               "Method": "GET"
             }
           }
-        }
+        },
+        "PackageType": "Zip"
       }
     },
     "SimpleCalculatorMultiply": {
@@ -132,7 +136,7 @@
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply",
         "Runtime": "dotnetcore3.1",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
@@ -147,7 +151,8 @@
               "Method": "GET"
             }
           }
-        }
+        },
+        "PackageType": "Zip"
       }
     },
     "SimpleCalculatorDivideAsync": {
@@ -161,7 +166,7 @@
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync",
         "Runtime": "dotnetcore3.1",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
@@ -176,7 +181,8 @@
               "Method": "GET"
             }
           }
-        }
+        },
+        "PackageType": "Zip"
       }
     },
     "TestServerlessAppComplexCalculatorAddGenerated": {
@@ -190,7 +196,7 @@
       "Properties": {
         "Handler": "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add",
         "Runtime": "dotnetcore3.1",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
@@ -206,14 +212,21 @@
               "PayloadFormatVersion": "2.0"
             }
           }
-        }
+        },
+        "PackageType": "Zip"
       }
     },
     "TestServerlessAppComplexCalculatorSubtractGenerated": {
       "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootPost"
+        ]
+      },
       "Properties": {
         "Runtime": "dotnetcore3.1",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Policies": [
@@ -229,7 +242,8 @@
               "PayloadFormatVersion": "2.0"
             }
           }
-        }
+        },
+        "PackageType": "Zip"
       }
     },
     "PI": {
@@ -239,13 +253,14 @@
       },
       "Properties": {
         "Runtime": "dotnetcore3.1",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Pi_Generated::Pi"
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Pi_Generated::Pi",
+        "PackageType": "Zip"
       }
     },
     "Random": {
@@ -255,13 +270,14 @@
       },
       "Properties": {
         "Runtime": "dotnetcore3.1",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Random_Generated::Random"
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Random_Generated::Random",
+        "PackageType": "Zip"
       }
     },
     "Randoms": {
@@ -271,13 +287,14 @@
       },
       "Properties": {
         "Runtime": "dotnetcore3.1",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Randoms_Generated::Randoms"
+        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Randoms_Generated::Randoms",
+        "PackageType": "Zip"
       }
     }
   },
