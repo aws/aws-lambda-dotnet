@@ -51,6 +51,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public string Policies => LambdaMethod.LambdaFunctionAttribute.Data.Policies;
 
         /// <inheritdoc />
+        /// The default value is set to Zip
+        public PackageTypeEnum PackageType  => LambdaMethod.LambdaFunctionAttribute.Data.PackageType ?? PackageTypeEnum.Zip;
+
+        /// <inheritdoc />
         public IList<AttributeModel> Attributes => LambdaMethod.Attributes ?? new List<AttributeModel>();
 
         /// <inheritdoc />

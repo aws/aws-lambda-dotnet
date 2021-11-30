@@ -1,12 +1,11 @@
-using System.IO;
+﻿using System.IO;
+using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 
-namespace Amazon.Lambda.Annotations.SourceGenerator.FileIO
+namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
-    public class DirectoryManager : IDirectoryManager
+    public class InMemoryDirectoryManager : IDirectoryManager
     {
         public string GetDirectoryName(string path) => Path.GetDirectoryName(path);
-
-        public bool Exists(string path) => Directory.Exists(path);
 
         public string GetRelativePath(string relativeTo, string path)
         {
@@ -16,7 +15,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.FileIO
 
         public string[] GetFiles(string path, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
-            return Directory.GetFiles(path, searchPattern, searchOption);
+            throw new System.NotImplementedException();
+        }
+
+        public bool Exists(string path)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }
