@@ -202,20 +202,6 @@ namespace Amazon.Lambda.AspNetCoreServer
             return response;
         }
 
-        private protected override void InternalCustomResponseExceptionHandling(ApplicationLoadBalancerResponse lambdaResponse, ILambdaContext lambdaContext, Exception ex)
-        {
-            var errorName = ex.GetType().Name;
-
-            if (this._multiHeaderValuesEnabled)
-            {
-                lambdaResponse.MultiValueHeaders.Add(new KeyValuePair<string, IList<string>>("ErrorType", new List<string> { errorName }));
-            }
-            else
-            {
-                lambdaResponse.Headers.Add(new KeyValuePair<string, string>("ErrorType", errorName));
-            }
-        }
-
         private string GetSingleHeaderValue(ApplicationLoadBalancerRequest request, string headerName)
         {
             if (this._multiHeaderValuesEnabled)

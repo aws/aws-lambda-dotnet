@@ -99,10 +99,6 @@ namespace Amazon.Lambda.AspNetCoreServer
             _hostServices = hostedServices;
         }
 
-        private protected override void InternalCustomResponseExceptionHandling(APIGatewayProxyResponse apiGatewayResponse, ILambdaContext lambdaContext, Exception ex)
-        {
-            apiGatewayResponse.MultiValueHeaders["ErrorType"] = new List<string> { ex.GetType().Name };
-        }
 
 
         /// <summary>

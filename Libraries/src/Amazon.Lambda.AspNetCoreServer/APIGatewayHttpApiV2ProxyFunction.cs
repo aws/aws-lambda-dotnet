@@ -51,10 +51,6 @@ namespace Amazon.Lambda.AspNetCoreServer
             _hostServices = hostedServices;
         }
 
-        private protected override void InternalCustomResponseExceptionHandling(APIGatewayHttpApiV2ProxyResponse apiGatewayResponse, ILambdaContext lambdaContext, Exception ex)
-        {
-            apiGatewayResponse.SetHeaderValues("ErrorType", ex.GetType().Name, false);
-        }
 
         /// <summary>
         /// Convert the JSON document received from API Gateway into the InvokeFeatures object.

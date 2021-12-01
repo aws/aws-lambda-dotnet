@@ -530,11 +530,6 @@ namespace Amazon.Lambda.AspNetCoreServer
                 }
                 var response = this.MarshallResponse(features, lambdaContext, defaultStatusCode);
 
-                if (ex != null)
-                {
-                    InternalCustomResponseExceptionHandling(response, lambdaContext, ex);
-                }
-
                 if (features.ResponseCompletedEvents != null)
                 {
                     await features.ResponseCompletedEvents.ExecuteAsync();
@@ -548,11 +543,6 @@ namespace Amazon.Lambda.AspNetCoreServer
             }
         }
 
-
-        private protected virtual void InternalCustomResponseExceptionHandling(TRESPONSE lambdaReponse, ILambdaContext lambdaContext, Exception ex)
-        {
-
-        }
 
         /// <summary>
         /// This method is called after the IWebHost is created from the IWebHostBuilder and the services have been configured. The
