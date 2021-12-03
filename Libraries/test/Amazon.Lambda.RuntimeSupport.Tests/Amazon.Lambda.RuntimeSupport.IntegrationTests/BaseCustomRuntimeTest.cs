@@ -143,6 +143,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     BucketName = bucketName
                 };
                 await s3Client.PutBucketAsync(putBucketRequest);
+                await Task.Delay(10000);
             }
 
             // write or overwrite deployment package
@@ -199,7 +200,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             };
             await lambdaClient.UpdateFunctionConfigurationAsync(updateFunctionConfigurationRequest);
             // Wait for eventual consistency of function change.
-            Thread.Sleep(3000);
+            await Task.Delay(3000);
         }
 
         protected async Task CreateFunctionAsync(IAmazonLambda lambdaClient, string bucketName)
@@ -243,6 +244,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     }
                 }
             }
+            await Task.Delay(5000);
 
             if (!created)
             {

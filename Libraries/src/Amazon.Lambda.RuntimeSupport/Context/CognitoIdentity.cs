@@ -31,10 +31,10 @@ namespace Amazon.Lambda.RuntimeSupport
             if (!string.IsNullOrWhiteSpace(json))
             {
                 var jsonData = JsonMapper.ToObject(json);
-                if (jsonData["identityId"] != null)
-                    result.IdentityId = jsonData["identityId"].ToString();
-                if (jsonData["identityPoolId"] != null)
-                    result.IdentityPoolId = jsonData["identityPoolId"].ToString();
+                if (jsonData["cognitoIdentityId"] != null)
+                    result.IdentityId = jsonData["cognitoIdentityId"].ToString();
+                if (jsonData["cognitoIdentityPoolId"] != null)
+                    result.IdentityPoolId = jsonData["cognitoIdentityPoolId"].ToString();
             }
 
             return result;
