@@ -11,22 +11,27 @@ if [ ! -d "${USER_LAMBDA_BINARIES_DIR}" ]; then
   exit 1
 fi
 
-DOTNET_BIN="/var/lang/bin/dotnet"
+# Get version of Lambda .NET runtime if available
+export "$(grep LAMBDA_RUNTIME_NAME /var/runtime/runtime-release 2>/dev/null || echo LAMBDA_RUNTIME_NAME=dotnet_custom)"
+export AWS_EXECUTION_ENV="AWS_Lambda_${LAMBDA_RUNTIME_NAME}"
+
+export DOTNET_ROOT="/var/lang/bin"
+DOTNET_BIN="${DOTNET_ROOT}/dotnet"
 DOTNET_EXEC="exec"
 DOTNET_ARGS=()
 
 LAMBDA_HANDLER=""
 # Command-line parameter has precedence over "_HANDLER" environment variable
-if [ ! -z "${1}" ]; then
+if [ -n "${1}" ]; then
   LAMBDA_HANDLER="${1}"
-elif [ ! -z "${_HANDLER}" ]; then
+elif [ -n "${_HANDLER}" ]; then
   LAMBDA_HANDLER="${_HANDLER}"
 else
   echo "Error: No Lambda Handler function was specified." 1>&2
   exit 1
 fi
 
-if [[ `expr index "${LAMBDA_HANDLER}" ":"` == 0 ]]; then
+if [[ $(expr index "${LAMBDA_HANDLER}" ":") == 0 ]]; then
   EXECUTABLE_ASSEMBLY="${USER_LAMBDA_BINARIES_DIR}"/"${LAMBDA_HANDLER}"
   if [[ "${EXECUTABLE_ASSEMBLY}" != *.dll ]]; then
     EXECUTABLE_ASSEMBLY="${EXECUTABLE_ASSEMBLY}.dll"
@@ -41,12 +46,12 @@ if [[ `expr index "${LAMBDA_HANDLER}" ":"` == 0 ]]; then
 else
   ASSEMBLY_NAME="${LAMBDA_DOTNET_MAIN_ASSEMBLY}"
   if [ -z "${ASSEMBLY_NAME}" ]; then
-    DEPS_FILE=`find "${USER_LAMBDA_BINARIES_DIR}" -name \*.deps.json -print`
+    DEPS_FILE=$(find "${USER_LAMBDA_BINARIES_DIR}" -name \*.deps.json -print)
     if [ -z "${DEPS_FILE}" ]; then
       echo "Error: .NET binaries for Lambda function are not correctly installed in the ${USER_LAMBDA_BINARIES_DIR} directory of the image when the image was built. The ${USER_LAMBDA_BINARIES_DIR} directory is missing the required .deps.json file." 1>&2
       exit 1
     fi
-    RUNTIMECONFIG_FILE=`find "${USER_LAMBDA_BINARIES_DIR}" -name \*.runtimeconfig.json -print`
+    RUNTIMECONFIG_FILE=$(find "${USER_LAMBDA_BINARIES_DIR}" -name \*.runtimeconfig.json -print)
     if [ -z "${RUNTIMECONFIG_FILE}" ]; then
       echo "Error: .NET binaries for Lambda function are not correctly installed in the ${USER_LAMBDA_BINARIES_DIR} directory of the image when the image was built. The ${USER_LAMBDA_BINARIES_DIR} directory is missing the required .runtimeconfig.json file." 1>&2
       exit 1
@@ -63,6 +68,7 @@ else
                 "--runtimeconfig" "${RUNTIMECONFIG_FILE}"
                 "/var/runtime/Amazon.Lambda.RuntimeSupport.dll" "${LAMBDA_HANDLER}")
 fi
+
 
 # To support runtime wrapper scripts
 # https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
