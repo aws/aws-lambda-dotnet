@@ -22,7 +22,7 @@ namespace Amazon.Lambda.RuntimeSupport
     {
         /// <summary>
         /// This method escapes a string for use as a JSON string value.
-        /// It was adapted from the PutString method in the ThirdParty.Json.LitJson.JsonWriter class.
+        /// It was adapted from the PutString method in the LitJson.JsonWriter class.
         ///
         /// TODO: rewrite the *JsonExceptionWriter classes to use a JSON library instead of building strings directly.
         /// </summary>
