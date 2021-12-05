@@ -18,6 +18,8 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -111,6 +113,15 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A Task that represents the operation.</returns>
         public async Task RunAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
+            if(UserCodeInit.IsCallPreJit())
+            {
+                InternalLogger.GetDefaultLogger().LogInformation("PreJit: CultureInfo");
+                UserCodeInit.LoadStringCultureInfo();
+
+                InternalLogger.GetDefaultLogger().LogInformation("PreJit: Amazon.Lambda.Core");
+                UserCodeInit.PreJitAssembly(typeof(Amazon.Lambda.Core.ILambdaContext).Assembly);
+            }
+
             bool doStartInvokeLoop = _initializer == null || await InitializeAsync();
 
             while (doStartInvokeLoop && !cancellationToken.IsCancellationRequested)
