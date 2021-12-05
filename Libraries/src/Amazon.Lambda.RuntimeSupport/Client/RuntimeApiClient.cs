@@ -134,7 +134,11 @@ namespace Amazon.Lambda.RuntimeSupport
                 throw new ArgumentNullException(nameof(exception));
 
             var exceptionInfo = ExceptionInfo.GetExceptionInfo(exception);
-            return _internalClient.Error2Async(awsRequestId, exceptionInfo.ErrorType, LambdaJsonExceptionWriter.WriteJson(exceptionInfo), cancellationToken);
+
+            var exceptionInfoJson = LambdaJsonExceptionWriter.WriteJson(exceptionInfo);
+            var exceptionInfoXRayJson = LambdaXRayExceptionWriter.WriteJson(exceptionInfo);
+
+            return _internalClient.ErrorWithXRayCauseAsync(awsRequestId, exceptionInfo.ErrorType, exceptionInfoJson, exceptionInfoXRayJson, cancellationToken);
         }
 
         /// <summary>
