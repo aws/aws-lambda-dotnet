@@ -13,8 +13,7 @@
  * permissions and limitations under the License.
  */
 using Amazon.Lambda.Core;
-using System;
-using ThirdParty.Json.LitJson;
+using System.Text.Json;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -30,23 +29,20 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public string InstallationId { get; internal set; }
 
-        internal static CognitoClientApplication FromJsonData(JsonData jsonData)
+        internal static CognitoClientApplication FromJsonData(JsonElement jsonData)
         {
             var result = new CognitoClientApplication();
 
-            if (jsonData != null)
-            {
-                if (jsonData["app_package_name"] != null)
-                    result.AppPackageName = jsonData["app_package_name"].ToString();
-                if (jsonData["app_title"] != null)
-                    result.AppTitle = jsonData["app_title"].ToString();
-                if (jsonData["app_version_code"] != null)
-                    result.AppVersionCode = jsonData["app_version_code"].ToString();
-                if (jsonData["app_version_name"] != null)
-                    result.AppVersionName = jsonData["app_version_name"].ToString();
-                if (jsonData["installation_id"] != null)
-                    result.InstallationId = jsonData["installation_id"].ToString();
-            }
+            if (jsonData.TryGetProperty("app_package_name", out var nameElement))
+                result.AppPackageName = nameElement.GetString();
+            if (jsonData.TryGetProperty("app_title", out var tileElement))
+                result.AppTitle = tileElement.GetString();
+            if (jsonData.TryGetProperty("app_version_code", out var codeElement))
+                result.AppVersionCode = codeElement.GetString();
+            if (jsonData.TryGetProperty("app_version_name", out var versionNameElement))
+                result.AppVersionName = versionNameElement.GetString();
+            if (jsonData.TryGetProperty("installation_id", out var installElement))
+                result.InstallationId = installElement.GetString();
 
             return result;
         }

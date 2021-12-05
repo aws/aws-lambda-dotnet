@@ -19,7 +19,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
     public class LambdaEnvironmentTests
     {
-        private const string LambdaExecutionEnvironment = "part-set-by-lambda";
+        private const string LambdaExecutionEnvironment = "AWS_Lambda_dotnet_custom";
         TestEnvironmentVariables _environmentVariables;
 
         public LambdaEnvironmentTests()

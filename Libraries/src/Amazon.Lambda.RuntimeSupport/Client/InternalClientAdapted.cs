@@ -16,10 +16,12 @@
  * This file was originally generated using NSwag.
  * The original generated file is InternalClientGenerated.txt.
  * This code has been adapted to:
- * 1. Use an internal copy of LitJson to avoid dependency collision with consumers.
+ * 1. Use System.Test.Json for serialization/deserialization.
  * 2. Allow streams to be sent directly as a response, instead of assuming the response is JSON.
  * 3. Customize based on AWS Lambda specific nuances. (See comments in runtime-api.yaml)
  */
+
+using System.Text.Json;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -149,7 +151,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(StatusResponse);
                                 try
                                 {
-                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<StatusResponse>(responseData_);
+                                    result_ = result_ = JsonSerializer.Deserialize<StatusResponse>(responseData_);
                                     return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, result_);
                                 }
                                 catch (System.Exception exception_)
@@ -164,7 +166,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                    result_ = result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
                                 }
                                 catch (System.Exception exception_)
                                 {
@@ -255,7 +257,7 @@ namespace Amazon.Lambda.RuntimeSupport
                             var result_ = default(ErrorResponse);
                             try
                             {
-                                result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                result_ = result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
                             }
                             catch (System.Exception exception_)
                             {
@@ -351,7 +353,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(StatusResponse);
                                 try
                                 {
-                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<StatusResponse>(responseData_);
+                                    result_ = result_ = JsonSerializer.Deserialize<StatusResponse>(responseData_);
                                     return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, result_);
                                 }
                                 catch (System.Exception exception_)
@@ -366,7 +368,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                    result_ = result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
                                 }
                                 catch (System.Exception exception_)
                                 {
@@ -381,7 +383,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                    result_ = result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
                                 }
                                 catch (System.Exception exception_)
                                 {
@@ -396,7 +398,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                    result_ = result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
                                 }
                                 catch (System.Exception exception_)
                                 {
@@ -495,7 +497,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(StatusResponse);
                                 try
                                 {
-                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<StatusResponse>(responseData_);
+                                    result_ = result_ = JsonSerializer.Deserialize<StatusResponse>(responseData_);
                                     return new SwaggerResponse<StatusResponse>((int)response_.StatusCode, headers_, result_);
                                 }
                                 catch (System.Exception exception_)
@@ -510,7 +512,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                    result_ = result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
                                 }
                                 catch (System.Exception exception_)
                                 {
@@ -525,7 +527,7 @@ namespace Amazon.Lambda.RuntimeSupport
                                 var result_ = default(ErrorResponse);
                                 try
                                 {
-                                    result_ = ThirdParty.Json.LitJson.JsonMapper.ToObject<ErrorResponse>(responseData_);
+                                    result_ = result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
                                 }
                                 catch (System.Exception exception_)
                                 {
