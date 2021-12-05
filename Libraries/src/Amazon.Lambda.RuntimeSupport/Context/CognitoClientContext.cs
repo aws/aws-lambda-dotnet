@@ -13,9 +13,9 @@
  * permissions and limitations under the License.
  */
 using Amazon.Lambda.Core;
-using System;
 using System.Collections.Generic;
-using ThirdParty.Json.LitJson;
+using System.Linq;
+using System.Text.Json;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -33,28 +33,24 @@ namespace Amazon.Lambda.RuntimeSupport
 
             if (!string.IsNullOrWhiteSpace(json))
             {
-                var jsonData = JsonMapper.ToObject(json);
+                var jsonData = JsonDocument.Parse(json).RootElement;
 
-                if (jsonData["client"] != null)
-                    result.Client = CognitoClientApplication.FromJsonData(jsonData["client"]);
-                if (jsonData["custom"] != null)
-                    result.Custom = GetDictionaryFromJsonData(jsonData["custom"]);
-                if (jsonData["env"] != null)
-                    result.Environment = GetDictionaryFromJsonData(jsonData["env"]);
+                if (jsonData.TryGetProperty("client", out var clientElement))
+                    result.Client = CognitoClientApplication.FromJsonData(clientElement);
+                if (jsonData.TryGetProperty("custom", out var customElement))
+                    result.Custom = GetDictionaryFromJsonData(customElement);
+                if (jsonData.TryGetProperty("env", out var envElement))
+                    result.Environment = GetDictionaryFromJsonData(envElement);
+
+                return result;
             }
+
             return result;
         }
 
-        private static IDictionary<string, string> GetDictionaryFromJsonData(JsonData jsonData)
+        private static IDictionary<string, string> GetDictionaryFromJsonData(JsonElement jsonData)
         {
-            var result = new Dictionary<string, string>();
-
-            foreach (var key in jsonData.PropertyNames)
-            {
-                result.Add(key, jsonData[key].ToString());
-            }
-
-            return result;
+            return jsonData.EnumerateObject().ToDictionary(properties => properties.Name, properties => properties.Value.ToString());
         }
     }
 }
