@@ -34,6 +34,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         private readonly InternalLogger _logger;
         private readonly HandlerInfo _handler;
         private readonly MethodInfo _customerMethodInfo;
+        private Type CustomerOutputType { get; set; }
 
         public InvokeDelegateBuilder(InternalLogger logger, HandlerInfo handler, MethodInfo customerMethodInfo)
         {
@@ -60,7 +61,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// <param name="customerObject">Wrapped customer object.</param>
         /// <param name="customerSerializerInstance">Instance of lambda input & output serializer.</param>
         /// <returns>Action delegate pointing to customer's handler.</returns>
-        public Action<Stream, ILambdaContext, Stream> ConstructInvokeDelegate(object customerObject, object customerSerializerInstance)
+        public Action<Stream, ILambdaContext, Stream> ConstructInvokeDelegate(object customerObject, object customerSerializerInstance, bool isPreJit)
         {
             var inStreamParameter = Expression.Parameter(Types.StreamType, "inStream");
             var outStreamParameter = Expression.Parameter(Types.StreamType, "outStream");
@@ -68,6 +69,11 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
 
             _logger.LogDebug($"UCL : Constructing input expression");
             var inputExpression = BuildInputExpressionOrNull(customerSerializerInstance, inStreamParameter, out var iLambdaContextType);
+            if (isPreJit)
+            {
+                _logger.LogInformation("PreJit: inputExpression");
+                UserCodeInit.InitDeserializationAssembly(inputExpression, inStreamParameter);
+            }
 
             _logger.LogDebug($"UCL : Constructing context expression");
             var contextExpression = BuildContextExpressionOrNull(iLambdaContextType, contextParameter);
@@ -77,6 +83,11 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
 
             _logger.LogDebug($"UCL : Constructing output expression");
             var outputExpression = CreateOutputExpression(customerSerializerInstance, outStreamParameter, handlerExpression);
+            if (isPreJit)
+            {
+                _logger.LogInformation("PreJit: outputExpression");
+                UserCodeInit.InitSerializationAssembly(outputExpression, outStreamParameter, CustomerOutputType);
+            }
 
             _logger.LogDebug($"UCL : Constructing final expression");
 
@@ -257,6 +268,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
                 return CreateSerializeExpression(customerSerializerInstance, outputType, handlerCallExpression, outStreamParameter);
             }
 
+            CustomerOutputType = outputType;
             return handlerCallExpression;
         }
 

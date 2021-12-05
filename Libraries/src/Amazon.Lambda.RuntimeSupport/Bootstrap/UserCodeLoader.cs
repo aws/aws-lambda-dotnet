@@ -124,8 +124,14 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             var customerSerializerInstance = GetSerializerObject(customerAssembly);
             _logger.LogDebug($"UCL : Constructing invoke delegate");
 
+            var isPreJit = UserCodeInit.IsCallPreJit();
             var builder = new InvokeDelegateBuilder(_logger, _handler, CustomerMethodInfo);
-            _invokeDelegate = builder.ConstructInvokeDelegate(customerObject, customerSerializerInstance);
+            _invokeDelegate = builder.ConstructInvokeDelegate(customerObject, customerSerializerInstance, isPreJit);
+            if (isPreJit)
+            {
+                _logger.LogInformation("PreJit: PrepareDelegate");
+                RuntimeHelpers.PrepareDelegate(_invokeDelegate);
+            }
         }
 
         /// <summary>
