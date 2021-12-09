@@ -41,6 +41,10 @@ Deploy function to AWS Lambda
     dotnet lambda deploy-function
 ```
 
+## Arm64
+
+If you want to run your Lambda on an Arm64 processor, all you need is to do is add `"function-architecture": "arm64"` to the `aws-lambda-tools-defaults.json` file. Then deploy as described above.
+
 ## Using AWS .NET Mock Lambda Test Tool
 
 The AWS .NET Mock Lambda Test Tool can be used with .NET Lambda custom runtimes. When the test tool is used for custom runtime the project
