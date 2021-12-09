@@ -19,12 +19,12 @@ has a **COPY** command which copies the value from the directory pointed to by `
 image.
 
 Alternatively the Docker file could be written to use [multi-stage](https://docs.docker.com/develop/develop-images/multistage-build/) builds and 
-have the .NET project built inside the container. Below is an example of building .NET 5 project inside the image.
+have the .NET project built inside the container. Below is an example of building the .NET project inside the image.
 
 ```dockerfile
-FROM public.ecr.aws/lambda/dotnet:5.0 AS base
+FROM public.ecr.aws/lambda/dotnet:6 AS base
 
-FROM mcr.microsoft.com/dotnet/sdk:5.0-buster-slim as build
+FROM mcr.microsoft.com/dotnet/sdk:6.0-bullseye-slim as build
 WORKDIR /src
 COPY ["BlueprintBaseName.1.fsproj", "BlueprintBaseName.1/"]
 RUN dotnet restore "BlueprintBaseName.1/BlueprintBaseName.1.fsproj"

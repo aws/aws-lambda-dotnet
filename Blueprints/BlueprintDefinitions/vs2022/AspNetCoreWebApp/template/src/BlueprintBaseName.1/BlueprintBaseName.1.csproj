@@ -7,7 +7,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="6.1.0" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="7.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\images\" />

@@ -55,7 +55,8 @@
         <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew/vs2022"/>
         <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew/vs2019"/>
         <Copy SourceFiles="@(DeploymentNuGetConfig)" DestinationFolder="../Deployment" />
-				
+		
+        <Exec Command="dotnet new -u Blueprints\BlueprintDefinitions\vs2022" WorkingDirectory="..\" IgnoreExitCode="true" />		
         <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\vs2022" WorkingDirectory="..\"/>
 		
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.image.EmptyFunction;ProjectName=ImageEmptyFunctionC;Lang=C#;Version=vs2022"/>
@@ -99,6 +100,7 @@
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldC;Lang=C#;Version=vs2022"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldF;Lang=F#;Version=vs2022"/>				
 		
+		<Exec Command="dotnet new -u Blueprints\BlueprintDefinitions\vs2019" WorkingDirectory="..\" IgnoreExitCode="true" />
         <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\vs2019" WorkingDirectory="..\"/>
 		
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.image.EmptyFunction;ProjectName=ImageEmptyFunctionC;Lang=C#;Version=vs2019"/>

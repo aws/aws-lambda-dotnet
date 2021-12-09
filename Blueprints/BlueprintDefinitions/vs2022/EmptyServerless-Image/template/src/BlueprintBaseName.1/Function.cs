@@ -29,7 +29,7 @@ namespace BlueprintBaseName._1
         /// <returns>The API Gateway response.</returns>
         public APIGatewayProxyResponse Get(APIGatewayProxyRequest request, ILambdaContext context)
         {
-            context.Logger.LogLine("Get Request\n");
+            context.Logger.LogInformation("Get Request\n");
 
             var response = new APIGatewayProxyResponse
             {
