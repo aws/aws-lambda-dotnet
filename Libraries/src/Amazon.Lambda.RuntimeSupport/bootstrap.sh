@@ -73,7 +73,7 @@ else
   
   RUNTIMECONFIG_FILE="${LAMBDA_TASK_ROOT}/${ASSEMBLY_NAME}.runtimeconfig.json"
   if ! [ -f "${RUNTIMECONFIG_FILE}" ]; then
-    RUNTIMECONFIG_FILES=("${LAMBDA_TASK_ROOT}"/*.deps.json)
+    RUNTIMECONFIG_FILES=("${LAMBDA_TASK_ROOT}"/*.runtimeconfig.json)
     if [ "${#RUNTIMECONFIG_FILES[@]}" -ne 1 ]; then
       echo "Error: .NET binaries for Lambda function are not correctly installed in the ${LAMBDA_TASK_ROOT} directory of the image when the image was built. The ${LAMBDA_TASK_ROOT} directory is missing the required .runtimeconfig.json file." 1>&2
       exit 106
