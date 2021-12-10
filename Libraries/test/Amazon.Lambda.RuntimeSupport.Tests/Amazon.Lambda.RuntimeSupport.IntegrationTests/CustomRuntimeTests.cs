@@ -102,6 +102,10 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 JObject exception = (JObject)JsonConvert.DeserializeObject(await sr.ReadToEndAsync());
                 Assert.Equal(expectedErrorType, exception["errorType"].ToString());
                 Assert.Equal(expectedErrorMessage, exception["errorMessage"].ToString());
+
+                var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+                var logExpectedException = expectedErrorType != "Function.ResponseSizeTooLarge" ? expectedErrorType : "RuntimeApiClientException";
+                Assert.Contains(logExpectedException, log);
             }
         }
 

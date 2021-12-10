@@ -145,6 +145,7 @@ namespace Amazon.Lambda.RuntimeSupport
             }
             catch (Exception exception)
             {
+                WriteUnhandledExceptionToLog(exception);
                 await Client.ReportInitializationErrorAsync(exception);
                 throw;
             }
@@ -164,6 +165,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 }
                 catch (Exception exception)
                 {
+                    WriteUnhandledExceptionToLog(exception);
                     await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception);
                 }
 
@@ -197,6 +199,13 @@ namespace Amazon.Lambda.RuntimeSupport
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", userAgentString);
             return client;
+        }
+
+        private void WriteUnhandledExceptionToLog(Exception exception)
+        {
+            // Console.Error.WriteLine are redirected to the IConsoleLoggerWriter which 
+            // will take care of writing to the function's log stream.
+            Console.Error.WriteLine(exception);
         }
 
         #region IDisposable Support
