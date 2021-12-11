@@ -54,6 +54,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 {
                     roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
 
+                    await RunTestSuccessAsync(lambdaClient, "LoggingStressTest", "not-used", "LoggingStressTest-success");
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", null);
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", "debug");
                     await RunUnformattedLoggingTestAsync(lambdaClient, "LoggingTest");
