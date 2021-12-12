@@ -208,6 +208,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 await Task.Delay(1000);
                 getConfigurationResponse = await lambdaClient.GetFunctionConfigurationAsync(getConfigurationRequest);
             } while (getConfigurationResponse.State == State.Pending);
+            await Task.Delay(1000);
         }
 
         protected async Task CreateFunctionAsync(IAmazonLambda lambdaClient, string bucketName)
