@@ -199,8 +199,15 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 }
             };
             await lambdaClient.UpdateFunctionConfigurationAsync(updateFunctionConfigurationRequest);
+
             // Wait for eventual consistency of function change.
-            await Task.Delay(3000);
+            var getConfigurationRequest = new GetFunctionConfigurationRequest { FunctionName = FunctionName };
+            GetFunctionConfigurationResponse getConfigurationResponse = null;
+            do
+            {
+                await Task.Delay(1000);
+                getConfigurationResponse = await lambdaClient.GetFunctionConfigurationAsync(getConfigurationRequest);
+            } while (getConfigurationResponse.State == State.Pending);
         }
 
         protected async Task CreateFunctionAsync(IAmazonLambda lambdaClient, string bucketName)
@@ -217,7 +224,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 },
                 Handler = "PingAsync",
                 MemorySize = 512,
-                Runtime = Runtime.Provided,
+                Timeout = 30,
+                Runtime = Runtime.ProvidedAl2,
                 Role = ExecutionRoleArn
             };
 
