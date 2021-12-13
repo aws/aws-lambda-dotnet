@@ -140,7 +140,7 @@ List of .NET attributes currently supported.
 * FromHeader
     * Map method parameter to HTTP header value
 * FromQuery
-    * Map method parameter to query string pareamter
+    * Map method parameter to query string parameter
 * FromRoute
     * Map method parameter to resource path segement
 * FromBody
