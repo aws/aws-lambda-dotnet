@@ -42,6 +42,7 @@ namespace Microsoft.Extensions.Hosting
                                 }
                                 else
                                 {
+                                    logging.ClearProviders();
                                     logging.AddLambdaLogger(hostingContext.Configuration, "Logging");
                                 }
                             })

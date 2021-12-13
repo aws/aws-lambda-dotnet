@@ -1,3 +1,20 @@
+### Release 2021-12-12
+* **Amazon.Lambda.AspNetCoreServer (7.0.1)**
+  * Fixed issue of duplicate log messages written to CloudWatch Logs
+* **Amazon.Lambda.RuntimeSupport (1.6.0)**
+  * Write unhandled exceptions from Lambda function to CloudWatch Logs
+  * Add exception information into X-Ray trace
+  * Port .NET Core 3.1 managed runtime functionality for AWS_LAMBDA_DOTNET_PREJIT environment variable
+  * Switch JSON parsing to System.Text.Json
+  * Fixed incorrect JSON parsing for Lambda context Cognito fields
+  * Fixed deadlock issue when using both Console.WriteX and ILambdaLogger with multiple threads
+* **Amazon.Lambda.TestTool-6.0 (0.11.4)**
+  * Update to latest version of Amazon.Lambda.Core (2.1.0)
+* **Amazon.Lambda.TestTool-5.0 (0.11.4)**
+  * Update to latest version of Amazon.Lambda.Core (2.1.0)
+* **Amazon.Lambda.TestTool-3.1 (0.11.4)**
+  * Update to latest version of Amazon.Lambda.Core (2.1.0)
+
 ### Release 2021-11-22
 * **Amazon.Lambda.AspNetCoreServer (7.0.0)**
   * [Breaking Change] Removed support for .NET Core 2.1
