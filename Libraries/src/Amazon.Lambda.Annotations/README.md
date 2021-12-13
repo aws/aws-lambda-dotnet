@@ -1,6 +1,6 @@
 # Amazon.Lambda.Annotations
 
-The Lambda Annotation is a programming model for writing .NET Lambda function. At a high level the programming model allows for 
+The Lambda Annotations is a programming model for writing .NET Lambda function. At a high level the programming model allows
 idiomatic .NET coding patterns and uses C# source generator technology to bridge the gap between the Lambda programming model 
 to the more idiomatic programming model.
 
