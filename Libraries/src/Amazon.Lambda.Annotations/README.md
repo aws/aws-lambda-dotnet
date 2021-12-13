@@ -1,7 +1,7 @@
 # Amazon.Lambda.Annotations
 
 The Lambda Annotations is a programming model for writing .NET Lambda function. At a high level the programming model allows
-idiomatic .NET coding patterns and uses C# source generator technology to bridge the gap between the Lambda programming model 
+idiomatic .NET coding patterns and uses [C# Source Generators](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview) to bridge the gap between the Lambda programming model 
 to the more idiomatic programming model.
 
 For example here is a simplistic example of a .NET Lambda function that acts like a calculator plus method using the normal 
