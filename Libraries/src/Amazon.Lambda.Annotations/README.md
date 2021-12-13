@@ -130,6 +130,10 @@ List of .NET attributes currently supported.
     * Placed on a class. Indicates this type should be used as the startup class and is used to configure the dependency injection and middleware. There can only be one class in a Lambda project with this attribute.
 
 ### Event Attributes    
+
+Event attributes configuring the source generator for the type of event to expect and setup the event source in the CloudFormation temlate. If an event attribute is not set the
+parameter to the `LambdaFunction` must be the event object and the event source must be configured outside of the code.
+
 * RestApi
     * Configures the Lambda function to be called from an API Gateway REST API. The HTTP method and resource path are required to be set on the attribute.
 * HttpApi

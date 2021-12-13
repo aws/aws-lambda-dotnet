@@ -12,7 +12,7 @@
             <group targetFramework=".NETStandard2.0"/>
         </dependencies>
 		<icon>images\icon.png</icon>
-		<readme>docs\readme.md</readme>
+		<readme>docs\README.md</readme>
     </metadata>
 
     <files>
