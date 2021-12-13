@@ -142,7 +142,7 @@ List of .NET attributes currently supported.
 * FromQuery
     * Map method parameter to query string parameter
 * FromRoute
-    * Map method parameter to resource path segement
+    * Map method parameter to resource path segment
 * FromBody
     * Map method parameter to HTTP request body. If parameter is a complex type then request body will be assumed to be JSON and deserialized into the type.
 * FromServices
