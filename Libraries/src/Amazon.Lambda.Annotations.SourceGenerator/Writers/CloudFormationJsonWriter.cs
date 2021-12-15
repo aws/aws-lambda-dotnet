@@ -107,22 +107,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             switch (lambdaFunction.PackageType)
             {
-                case PackageTypeEnum.Zip:
+                case LambdaPackageType.Zip:
                     _jsonWriter.SetToken($"{propertiesPath}.CodeUri", relativeProjectUri);
                     _jsonWriter.SetToken($"{propertiesPath}.Handler", lambdaFunction.Handler);
                     _jsonWriter.RemoveToken($"{propertiesPath}.ImageUri");
                     _jsonWriter.RemoveToken($"{propertiesPath}.ImageConfig");
                     break;
 
-                case PackageTypeEnum.Image:
+                case LambdaPackageType.Image:
                     _jsonWriter.SetToken($"{propertiesPath}.ImageUri", relativeProjectUri);
-                    _jsonWriter.SetToken($"{propertiesPath}.ImageConfig.Command", lambdaFunction.Handler);
+                    _jsonWriter.SetToken($"{propertiesPath}.ImageConfig.Command", new JArray(lambdaFunction.Handler));
                     _jsonWriter.RemoveToken($"{propertiesPath}.Handler");
                     _jsonWriter.RemoveToken($"{propertiesPath}.CodeUri");
+                    _jsonWriter.RemoveToken($"{propertiesPath}.Runtime");
                     break;
 
                 default:
-                    throw new InvalidEnumArgumentException($"The {nameof(lambdaFunction.PackageType)} does not match any supported enums of type {nameof(PackageTypeEnum)}");
+                    throw new InvalidEnumArgumentException($"The {nameof(lambdaFunction.PackageType)} does not match any supported enums of type {nameof(LambdaPackageType)}");
             }
         }
 

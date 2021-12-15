@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Amazon.CloudFormation;
@@ -57,6 +58,8 @@ namespace TestServerlessApp.IntegrationTests
             Assert.Equal(11, LambdaFunctions.Count);
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix));
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix));
+
+            await LambdaHelper.WaitTillNotPending(LambdaFunctions.Select(x => x.Name).ToList());
         }
 
         public async Task DisposeAsync()

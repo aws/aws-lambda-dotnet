@@ -12,9 +12,6 @@
         ]
       },
       "Properties": {
-        "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello",
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 1024,
         "Timeout": 30,
         "Role": null,
@@ -31,38 +28,13 @@
             }
           }
         },
-        "PackageType": "Zip"
-      }
-    },
-    "GreeterSayHelloAsync": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ]
-      },
-      "Properties": {
-        "Handler": "TestServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync",
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
-        "MemorySize": 256,
-        "Timeout": 50,
-        "Role": null,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "Events": {
-          "RootGet": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/Greeter/SayHelloAsync",
-              "Method": "GET",
-              "PayloadFormatVersion": "1.0"
-            }
-          }
-        },
-        "PackageType": "Zip"
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello"
+          ]
+        }
       }
     },
     "SimpleCalculatorAdd": {
@@ -74,9 +46,6 @@
         ]
       },
       "Properties": {
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Add_Generated::Add",
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
@@ -92,7 +61,13 @@
             }
           }
         },
-        "PackageType": "Zip"
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Add_Generated::Add"
+          ]
+        }
       }
     },
     "SimpleCalculatorSubtract": {
@@ -104,9 +79,6 @@
         ]
       },
       "Properties": {
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract",
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
@@ -122,7 +94,13 @@
             }
           }
         },
-        "PackageType": "Zip"
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract"
+          ]
+        }
       }
     },
     "SimpleCalculatorMultiply": {
@@ -134,9 +112,6 @@
         ]
       },
       "Properties": {
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply",
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
@@ -152,7 +127,13 @@
             }
           }
         },
-        "PackageType": "Zip"
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply"
+          ]
+        }
       }
     },
     "SimpleCalculatorDivideAsync": {
@@ -164,9 +145,6 @@
         ]
       },
       "Properties": {
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync",
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
@@ -182,7 +160,13 @@
             }
           }
         },
-        "PackageType": "Zip"
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync"
+          ]
+        }
       }
     },
     "TestServerlessAppComplexCalculatorAddGenerated": {
@@ -194,9 +178,6 @@
         ]
       },
       "Properties": {
-        "Handler": "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add",
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Role": null,
@@ -213,7 +194,13 @@
             }
           }
         },
-        "PackageType": "Zip"
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add"
+          ]
+        }
       }
     },
     "TestServerlessAppComplexCalculatorSubtractGenerated": {
@@ -225,14 +212,11 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "Handler": "TestServerlessApp::TestServerlessApp.ComplexCalculator_Subtract_Generated::Subtract",
         "Events": {
           "RootPost": {
             "Type": "HttpApi",
@@ -243,7 +227,13 @@
             }
           }
         },
-        "PackageType": "Zip"
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Subtract_Generated::Subtract"
+          ]
+        }
       }
     },
     "PI": {
@@ -252,15 +242,18 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Pi_Generated::Pi",
-        "PackageType": "Zip"
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Pi_Generated::Pi"
+          ]
+        }
       }
     },
     "Random": {
@@ -269,15 +262,18 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Random_Generated::Random",
-        "PackageType": "Zip"
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Random_Generated::Random"
+          ]
+        }
       }
     },
     "Randoms": {
@@ -286,15 +282,51 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "Handler": "TestServerlessApp::TestServerlessApp.SimpleCalculator_Randoms_Generated::Randoms",
-        "PackageType": "Zip"
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Randoms_Generated::Randoms"
+          ]
+        }
+      }
+    },
+    "GreeterSayHelloAsync": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
+      "Properties": {
+        "MemorySize": 256,
+        "Timeout": 50,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/Greeter/SayHelloAsync",
+              "Method": "GET",
+              "PayloadFormatVersion": "1.0"
+            }
+          }
+        },
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync"
+          ]
+        }
       }
     }
   },

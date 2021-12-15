@@ -10,8 +10,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.FileIO
 
         public string GetRelativePath(string relativeTo, string path)
         {
-            var relativePath = Path.GetRelativePath(relativeTo, path);
-            return relativePath.Replace(Path.DirectorySeparatorChar, '/');
+            return ".";
+            //var relativePath = Path.GetRelativePath(relativeTo, path);
+            //return relativePath.Replace(Path.DirectorySeparatorChar, '/');
         }
 
         public string[] GetFiles(string path, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)

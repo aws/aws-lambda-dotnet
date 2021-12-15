@@ -12,7 +12,7 @@ namespace TestServerlessApp
 {
     public class ComplexCalculator
     {
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [HttpApi(HttpMethod.Post, HttpApiVersion.V2, "/ComplexCalculator/Add")]
         public Tuple<double, double> Add([FromBody]string complexNumbers, ILambdaContext context, APIGatewayHttpApiV2ProxyRequest request)
         {
@@ -42,7 +42,7 @@ namespace TestServerlessApp
             return new Tuple<double, double>(result.Real, result.Imaginary);
         }
 
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [HttpApi(HttpMethod.Post, HttpApiVersion.V2, "/ComplexCalculator/Subtract")]
         public Tuple<double, double> Subtract([FromBody]IList<IList<int>> complexNumbers)
         {

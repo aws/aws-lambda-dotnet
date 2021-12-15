@@ -26,7 +26,7 @@ namespace TestServerlessApp.IntegrationTests.Helpers
             {
                 attemptCount += 1;
                 var recentLogEvents = await GetRecentLogEventsAsync(logGroupName, logGroupNamePrefix);
-                if (recentLogEvents.Any(x => string.Equals(x.Message.Trim(), message)))
+                if (recentLogEvents.Any(x => x.Message.Contains(message)))
                     return true;
                 await Task.Delay(StaticHelpers.GetWaitTime(attemptCount));
             }

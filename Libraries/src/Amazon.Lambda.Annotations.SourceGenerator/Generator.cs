@@ -27,10 +27,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public Generator()
         {
 #if DEBUG
-            // if (!Debugger.IsAttached)
-            // {
-            //     Debugger.Launch();
-            // }
+            //if (!Debugger.IsAttached)
+            //{
+            //    Debugger.Launch();
+            //}
 #endif
         }
 
