@@ -17,7 +17,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     /// Represents attribute used on a type.
     /// </summary>
     /// <typeparam name="T">
-    /// Type of attribute data, for example a FromPath attribute can optionally have Name
+    /// Type of attribute data, for example a FromRoute attribute can optionally have Name
     /// which can be modeled using attribute data.
     /// </typeparam>
     public class AttributeModel<T> : AttributeModel where T : Attribute

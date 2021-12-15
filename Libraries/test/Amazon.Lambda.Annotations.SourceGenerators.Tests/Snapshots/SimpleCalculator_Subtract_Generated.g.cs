@@ -33,19 +33,50 @@ namespace TestServerlessApp
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
 
+            var validationErrors = new List<string>();
+
             var x = default(int);
             if (request.Headers?.ContainsKey("x") == true)
             {
-                x = (int)Convert.ChangeType(request.Headers["x"], typeof(int));
+                try
+                {
+                    x = (int)Convert.ChangeType(request.Headers["x"], typeof(int));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {request.Headers["x"]} at 'x' failed to satisfy constraint: {e.Message}");
+                }
             }
 
             var y = default(int);
             if (request.Headers?.ContainsKey("y") == true)
             {
-                y = (int)Convert.ChangeType(request.Headers["y"], typeof(int));
+                try
+                {
+                    y = (int)Convert.ChangeType(request.Headers["y"], typeof(int));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {request.Headers["y"]} at 'y' failed to satisfy constraint: {e.Message}");
+                }
             }
 
             var simpleCalculatorService = scope.ServiceProvider.GetRequiredService<TestServerlessApp.Services.ISimpleCalculatorService>();
+            // return 400 Bad Request if there exists a validation error
+            if (validationErrors.Any())
+            {
+                return new APIGatewayProxyResponse
+                {
+                    Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "ValidationException"}
+                    },
+                    StatusCode = 200
+                };
+            }
+
             var response = simpleCalculator.Subtract(x, y, simpleCalculatorService);
             return response;
         }

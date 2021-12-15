@@ -114,6 +114,14 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             throw new InvalidOperationException($"Route template {template} is invalid. Missing {string.Join(",", missingRouteParams)} parameters in method definition.");
         }
 
+        if (_model.LambdaMethod.Parameters.HasConvertibleParameter())
+        {
+#>
+            var validationErrors = new List<string>();
+
+<#
+        }
+
         foreach (var parameter in _model.LambdaMethod.Parameters)
         {
             if (parameter.Type.FullName == TypeFullNames.ILambdaContext || TypeFullNames.Requests.Contains(parameter.Type.FullName))
@@ -164,11 +172,23 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 
                     // Generic types are mapped using Select statement to the target parameter type argument.
                     var typeArgument = parameter.Type.TypeArguments.First();
-                    var select = $".Select(q => ({typeArgument.FullName})Convert.ChangeType(q, typeof({typeArgument.FullName}))).ToList()";
 #>
             if (request.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
             {
-                <#= parameter.Name #> = request.<#= queryStringParameters #>["<#= parameterKey #>"]<#= commaSplit #><#= select #>;
+                <#= parameter.Name #> = request.<#= queryStringParameters #>["<#= parameterKey #>"]<#= commaSplit #>
+                    .Select(q =>
+                    {
+                        try
+                        {
+                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullName #>));
+                        }
+                        catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                        {
+                            validationErrors.Add($"Value {q} at '<#= parameterKey #>' failed to satisfy constraint: {e.Message}");
+                            return default;
+                        }
+                    })
+                    .ToList();
             }
 
 <#
@@ -179,7 +199,14 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 #>
             if (request.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
             {
-                <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullName #>));
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullName #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {request.<#= queryStringParameters #>["<#= parameterKey #>"]} at '<#= parameterKey #>' failed to satisfy constraint: {e.Message}");
+                }
             }
 
 <#
@@ -226,12 +253,23 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 
                     // Generic types are mapped using Select statement to the target parameter type argument.
                     var typeArgument = parameter.Type.TypeArguments.First();
-                    var select =
-                        $".Select(q => ({typeArgument.FullName})Convert.ChangeType(q, typeof({typeArgument.FullName}))).ToList()";
 #>
             if (request.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
             {
-                <#= parameter.Name #> = request.<#= headers #>["<#= headerKey #>"]<#= commaSplit #><#= select #>;
+                <#= parameter.Name #> = request.<#= headers #>["<#= headerKey #>"]<#= commaSplit #>
+                    .Select(q =>
+                    {
+                        try
+                        {
+                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullName #>));
+                        }
+                        catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                        {
+                        validationErrors.Add($"Value {q} at '<#= headerKey #>' failed to satisfy constraint: {e.Message}");
+                            return default;
+                        }
+                    })
+                    .ToList();
             }
 
 <#
@@ -242,7 +280,14 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 #>
             if (request.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
             {
-                <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.<#= headers #>["<#= headerKey #>"], typeof(<#= parameter.Type.FullName #>));
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.<#= headers #>["<#= headerKey #>"], typeof(<#= parameter.Type.FullName #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {request.<#= headers #>["<#= headerKey #>"]} at '<#= headerKey #>' failed to satisfy constraint: {e.Message}");
+                }
             }
 
 <#
@@ -261,7 +306,15 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                 else
                 {
  #>
-            var <#= parameter.Name #> = <#= _model.Serializer #>.Deserialize<<#= parameter.Type.FullName #>>(request.Body);
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            try
+            {
+                <#= parameter.Name #> = <#= _model.Serializer #>.Deserialize<<#= parameter.Type.FullName #>>(request.Body);
+            }
+            catch (Exception e)
+            {
+                validationErrors.Add($"Value {request.Body} at 'body' failed to satisfy constraint: {e.Message}");
+            }
 
 <#
                 }
@@ -276,7 +329,14 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
             if (request.PathParameters?.ContainsKey("<#= routeKey #>") == true)
             {
-                <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.PathParameters["<#= routeKey #>"], typeof(<#= parameter.Type.FullName #>));
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.PathParameters["<#= routeKey #>"], typeof(<#= parameter.Type.FullName #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {request.PathParameters["<#= routeKey #>"]} at '<#= routeKey #>' failed to satisfy constraint: {e.Message}");
+                }
             }
 
 <#
@@ -285,6 +345,27 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             {
                 throw new NotSupportedException($"{parameter.Name} parameter of type {parameter.Type.FullName} passing is not supported.");
             }
+        }
+
+        if (_model.LambdaMethod.Parameters.HasConvertibleParameter())
+        {
+#>
+            // return 400 Bad Request if there exists a validation error
+            if (validationErrors.Any())
+            {
+                return new <#= _model.GeneratedMethod.ReturnType.Name #>
+                {
+                    Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "ValidationException"}
+                    },
+                    StatusCode = 200
+                };
+            }
+
+<#
         }
 
         if (_model.LambdaMethod.ReturnsVoidOrTask)

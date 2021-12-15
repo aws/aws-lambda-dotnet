@@ -20,10 +20,40 @@ namespace TestServerlessApp
 
         public async Task<Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse> SayHelloAsync(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
         {
+            var validationErrors = new List<string>();
+
             var firstNames = default(System.Collections.Generic.IEnumerable<string>);
             if (request.MultiValueHeaders?.ContainsKey("names") == true)
             {
-                firstNames = request.MultiValueHeaders["names"].Select(q => (string)Convert.ChangeType(q, typeof(string))).ToList();
+                firstNames = request.MultiValueHeaders["names"]
+                    .Select(q =>
+                    {
+                        try
+                        {
+                            return (string)Convert.ChangeType(q, typeof(string));
+                        }
+                        catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                        {
+                        validationErrors.Add($"Value {q} at 'names' failed to satisfy constraint: {e.Message}");
+                            return default;
+                        }
+                    })
+                    .ToList();
+            }
+
+            // return 400 Bad Request if there exists a validation error
+            if (validationErrors.Any())
+            {
+                return new APIGatewayProxyResponse
+                {
+                    Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "ValidationException"}
+                    },
+                    StatusCode = 200
+                };
             }
 
             await greeter.SayHelloAsync(firstNames);

@@ -34,16 +34,47 @@ namespace TestServerlessApp
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
 
+            var validationErrors = new List<string>();
+
             var first = default(int);
             if (request.PathParameters?.ContainsKey("x") == true)
             {
-                first = (int)Convert.ChangeType(request.PathParameters["x"], typeof(int));
+                try
+                {
+                    first = (int)Convert.ChangeType(request.PathParameters["x"], typeof(int));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {request.PathParameters["x"]} at 'x' failed to satisfy constraint: {e.Message}");
+                }
             }
 
             var second = default(int);
             if (request.PathParameters?.ContainsKey("y") == true)
             {
-                second = (int)Convert.ChangeType(request.PathParameters["y"], typeof(int));
+                try
+                {
+                    second = (int)Convert.ChangeType(request.PathParameters["y"], typeof(int));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {request.PathParameters["y"]} at 'y' failed to satisfy constraint: {e.Message}");
+                }
+            }
+
+            // return 400 Bad Request if there exists a validation error
+            if (validationErrors.Any())
+            {
+                return new APIGatewayProxyResponse
+                {
+                    Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "ValidationException"}
+                    },
+                    StatusCode = 200
+                };
             }
 
             var response = await simpleCalculator.DivideAsync(first, second);

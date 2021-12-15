@@ -19,7 +19,32 @@ namespace TestServerlessApp
 
         public Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse Subtract(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
         {
-            var complexNumbers = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.IList<System.Collections.Generic.IList<int>>>(request.Body);
+            var validationErrors = new List<string>();
+
+            var complexNumbers = default(System.Collections.Generic.IList<System.Collections.Generic.IList<int>>);
+            try
+            {
+                complexNumbers = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.IList<System.Collections.Generic.IList<int>>>(request.Body);
+            }
+            catch (Exception e)
+            {
+                validationErrors.Add($"Value {request.Body} at 'body' failed to satisfy constraint: {e.Message}");
+            }
+
+            // return 400 Bad Request if there exists a validation error
+            if (validationErrors.Any())
+            {
+                return new APIGatewayHttpApiV2ProxyResponse
+                {
+                    Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "ValidationException"}
+                    },
+                    StatusCode = 200
+                };
+            }
 
             var response = complexCalculator.Subtract(complexNumbers);
 
