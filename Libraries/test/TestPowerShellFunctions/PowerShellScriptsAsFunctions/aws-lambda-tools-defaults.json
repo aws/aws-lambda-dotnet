@@ -11,8 +11,7 @@
   "profile":"default",
   "region" : "us-west-1",
   "configuration" : "Release",
-  "framework" : "netcoreapp2.1",
-  "function-runtime":"dotnetcore2.1",
+  "function-runtime":"dotnetcore3.1",
   "function-memory-size" : 256,
   "function-timeout" : 30,
   "function-handler" : "PowerShellToUpper::PowerShellToUpper.Function::FunctionHandler"

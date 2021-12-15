@@ -24,14 +24,15 @@ This tool is currently in preview and there are some known limitations. For ques
 
 ## Versions of the tool
 
-There are separate versions of this tool for each support .NET Core Lambda runtime. Currently there are too supported versions .NET Core 2.1
-and .NET Core 3.1. When using the AWS [AWS Toolkit for Visual Studio](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.AWSToolkitforVisualStudio2017)
-
+There are separate versions of this tool for each support .NET Core Lambda runtime. This is done to make sure that the version of .NET used is the same 
+that the Lambda function will be run in. Below is the list of published versions of the test tool.
 
 |.NET Core Version | Tool NuGet Package | Tool executable|
 |------------------|--------------------|----------------|
-| .NET Core 2.1 | Amazon.Lambda.TestTool-2.1 | dotnet-lambda-test-tool-2.1.exe |
+| .NET Core 2.1 (Deprecated) | Amazon.Lambda.TestTool-2.1 | dotnet-lambda-test-tool-2.1.exe |
 | .NET Core 3.1 | Amazon.Lambda.TestTool-3.1 | dotnet-lambda-test-tool-3.1.exe |
+| .NET Core 5.0 | Amazon.Lambda.TestTool-5.0 | dotnet-lambda-test-tool-5.0.exe |
+| .NET Core 6.0 | Amazon.Lambda.TestTool-6.0 | dotnet-lambda-test-tool-6.0.exe |
 
 ## AWS Credentials
 
@@ -181,17 +182,12 @@ To customize the launch behavior for the debugger, you can pass additional argum
 
 Before using JetBrains Rider you must follow the instructions above on installing the .NET Mock Lambda Test Tool.
 
-Configuring  Rider to use the .NET Mock Lambda Test Tool is a little different compared to Visual Studio. For Rider the executable target needs to be the entry assembly for the Test Tool and **not** the Global Tool executable. For .NET Core 3.1 the entry assembly is `Amazon.Lambda.TestTool.WebTester31.dll` and for .NET Core 2.1 the entry assembly is `Amazon.Lambda.TestTool.WebTester21.dll`.  
+Configuring  Rider to use the .NET Mock Lambda Test Tool is a little different compared to Visual Studio. For Rider the executable target needs to be the entry assembly for the Test Tool and **not** the Global Tool executable. For .NET Core 3.1 the entry assembly is `Amazon.Lambda.TestTool.WebTester31.dll`.  
 
 The path to the .NET Core 3.1 entry assembly is:
 
 ```
 <home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-3.1/<nuget-version>/amazon.lambda.testtool-3.1/<nuget-version>/tools/netcoreapp3.1/any/Amazon.Lambda.TestTool.WebTester31.dll
-```
-
-For .NET Core 2.1 the path is:
-```
-<home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-2.1/<nuget-version>/amazon.lambda.testtool-2.1/<nuget-version>/tools/netcoreapp2.1/any/Amazon.Lambda.TestTool.WebTester21.dll
 ```
 
 
@@ -214,17 +210,12 @@ After following these steps, any time you start the debugger in Rider, it will s
 
 Before using Visual Studio for Mac you must follow the instructions above on installing the .NET Mock Lambda Test Tool.
 
-Configuring Visual Studio for Mac to use the .NET Mock Lambda Test Tool is a little different compared to Visual Studio. For Visual Studio for Mac the executable target needs to be the entry assembly for the Test Tool and **not** the Global Tool executable. For .NET Core 3.1 the entry assembly is `Amazon.Lambda.TestTool.WebTester31.dll` and for .NET Core 2.1 the entry assembly is `Amazon.Lambda.TestTool.WebTester21.dll`.  
+Configuring Visual Studio for Mac to use the .NET Mock Lambda Test Tool is a little different compared to Visual Studio. For Visual Studio for Mac the executable target needs to be the entry assembly for the Test Tool and **not** the Global Tool executable. For .NET Core 3.1 the entry assembly is `Amazon.Lambda.TestTool.WebTester31.dll`.  
 
 The path to the .NET Core 3.1 entry assembly is:
 
 ```
 <home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-3.1/<nuget-version>/amazon.lambda.testtool-3.1/<nuget-version>/tools/netcoreapp3.1/any/Amazon.Lambda.TestTool.WebTester31.dll
-```
-
-For .NET Core 2.1 the path is:
-```
-<home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-2.1/<nuget-version>/amazon.lambda.testtool-2.1/<nuget-version>/tools/netcoreapp2.1/any/Amazon.Lambda.TestTool.WebTester21.dll
 ```
 
 Remember when you update your version of the .NET Mock Lambda Test Tool to update the nuget versions numbers in this path string for your IDE's configuration.

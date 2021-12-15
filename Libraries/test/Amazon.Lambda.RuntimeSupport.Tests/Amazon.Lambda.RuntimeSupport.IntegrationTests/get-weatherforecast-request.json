@@ -1,0 +1,41 @@
+﻿{
+  "version": "2.0",
+  "routeKey": "$default",
+  "rawPath": "/WeatherForecast",
+  "rawQueryString": "",
+  "cookies": [ ],
+  "headers": {
+  },
+  "queryStringParameters": {
+    "parameter1": "value1,value2",
+    "parameter2": "value"
+  },
+  "requestContext": {
+    "accountId": "123456789012",
+    "apiId": "api-id",
+    "authentication": {
+    },
+    "authorizer": {
+    },
+    "domainName": "id.execute-api.us-east-1.amazonaws.com",
+    "domainPrefix": "domain-id",
+    "http": {
+      "method": "GET",
+      "path": "/WeatherForecast",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "IP",
+      "userAgent": "agent"
+    },
+    "requestId": "request-id",
+    "routeId": "route-id",
+    "routeKey": "$default-route",
+    "stage": "$default-stage",
+    "time": "12/Mar/2020:19:03:58 +0000",
+    "timeEpoch": 1583348638390
+  },
+  "body": null,
+  "pathParameters": {  },
+  "isBase64Encoded": true,
+  "stageVariables": {
+  }
+}

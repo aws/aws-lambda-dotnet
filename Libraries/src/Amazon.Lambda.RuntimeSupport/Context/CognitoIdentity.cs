@@ -14,7 +14,7 @@
  */
 using Amazon.Lambda.Core;
 using System;
-using ThirdParty.Json.LitJson;
+using System.Text.Json;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -30,11 +30,12 @@ namespace Amazon.Lambda.RuntimeSupport
 
             if (!string.IsNullOrWhiteSpace(json))
             {
-                var jsonData = JsonMapper.ToObject(json);
-                if (jsonData["identityId"] != null)
-                    result.IdentityId = jsonData["identityId"].ToString();
-                if (jsonData["identityPoolId"] != null)
-                    result.IdentityPoolId = jsonData["identityPoolId"].ToString();
+                var jsonData = JsonDocument.Parse(json).RootElement;
+                
+                if(jsonData.TryGetProperty("cognitoIdentityId", out var cognitoIdentityId))
+                    result.IdentityId = cognitoIdentityId.GetString();
+                if(jsonData.TryGetProperty("cognitoIdentityPoolId", out var cognitoIdentityPoolId))
+                    result.IdentityPoolId = cognitoIdentityPoolId.GetString();
             }
 
             return result;

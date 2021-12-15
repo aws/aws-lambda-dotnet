@@ -124,8 +124,14 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             var customerSerializerInstance = GetSerializerObject(customerAssembly);
             _logger.LogDebug($"UCL : Constructing invoke delegate");
 
+            var isPreJit = UserCodeInit.IsCallPreJit();
             var builder = new InvokeDelegateBuilder(_logger, _handler, CustomerMethodInfo);
-            _invokeDelegate = builder.ConstructInvokeDelegate(customerObject, customerSerializerInstance);
+            _invokeDelegate = builder.ConstructInvokeDelegate(customerObject, customerSerializerInstance, isPreJit);
+            if (isPreJit)
+            {
+                _logger.LogInformation("PreJit: PrepareDelegate");
+                RuntimeHelpers.PrepareDelegate(_invokeDelegate);
+            }
         }
 
         /// <summary>
@@ -190,7 +196,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             _logger.LogDebug($"UCL : Searching for LambdaSerializerAttribute at method level");
             var customerSerializerAttribute = CustomerMethodInfo.GetCustomAttributes().SingleOrDefault(a => Types.IsLambdaSerializerAttribute(a.GetType()));
 
-            _logger.LogDebug($"UCL : LambdaSerializerAttribute at assembly level {(customerSerializerAttribute != null ? "found" : "not found")}");
+            _logger.LogDebug($"UCL : LambdaSerializerAttribute at method level {(customerSerializerAttribute != null ? "found" : "not found")}");
 
             // only check the assembly if the LambdaSerializerAttribute does not exist on the method
             if (customerSerializerAttribute == null)

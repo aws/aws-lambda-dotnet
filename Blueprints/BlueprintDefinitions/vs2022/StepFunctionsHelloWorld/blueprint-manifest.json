@@ -1,0 +1,13 @@
+{
+  "display-name": "Step Functions Hello World",
+  "system-name": "StepFunctionsHelloWorld",
+  "description": "A simple example of how to build a .NET Core Lambda Step Function project.",
+  "sort-order": 200,
+  "hidden-tags": [
+    "C#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "Custom"
+  ]
+}

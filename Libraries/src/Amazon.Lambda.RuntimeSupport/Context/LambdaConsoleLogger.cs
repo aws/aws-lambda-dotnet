@@ -13,12 +13,20 @@
  * permissions and limitations under the License.
  */
 using Amazon.Lambda.Core;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 using System;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
     internal class LambdaConsoleLogger : ILambdaLogger
     {
+        private IConsoleLoggerWriter _consoleLoggerRedirector;
+
+        public LambdaConsoleLogger(IConsoleLoggerWriter consoleLoggerRedirector)
+        {
+            _consoleLoggerRedirector = consoleLoggerRedirector;
+        }
+
         public void Log(string message)
         {
             Console.Write(message);
@@ -26,7 +34,16 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public void LogLine(string message)
         {
-            Console.WriteLine(message);
+            _consoleLoggerRedirector.FormattedWriteLine(message);
         }
+
+        public string CurrentAwsRequestId { get; set; }
+
+#if NET6_0_OR_GREATER
+        public void Log(string level, string message)
+        {
+            _consoleLoggerRedirector.FormattedWriteLine(level, message);
+        }
+#endif
     }
 }

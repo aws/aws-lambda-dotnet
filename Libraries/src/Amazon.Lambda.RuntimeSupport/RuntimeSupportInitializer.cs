@@ -16,7 +16,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly string _handler;
         private readonly InternalLogger _logger;
         private readonly RuntimeSupportDebugAttacher _debugAttacher;
-        private const string DebuggingEnvironmentVariable = "LAMBDA_RUNTIMESUPPORT_DEBUG";
+        
 
         /// <summary>
         /// Class constructor that takes a Function Handler and initializes the class.
@@ -28,15 +28,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 throw new ArgumentException("Cannot initialize RuntimeSupportInitializer with a null of empty Function Handler", nameof(handler));
             }
 
-
-            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(DebuggingEnvironmentVariable)))
-            {
-                _logger = InternalLogger.NoOpLogger;
-            }
-            else
-            {
-                _logger = InternalLogger.ConsoleLogger;
-            }
+            _logger = InternalLogger.GetDefaultLogger();
 
             _handler = handler;
             _debugAttacher = new RuntimeSupportDebugAttacher();

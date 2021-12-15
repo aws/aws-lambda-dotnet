@@ -33,6 +33,7 @@ namespace Amazon.Lambda.RuntimeSupport
         internal const string EnvVarServerHostAndPort = "AWS_LAMBDA_RUNTIME_API";
         internal const string EnvVarTraceId = "_X_AMZN_TRACE_ID";
         
+        internal const string AwsLambdaDotnetCustomRuntime = "AWS_Lambda_dotnet_custom";
         internal const string AmazonLambdaRuntimeSupportMarker = "amazonlambdaruntimesupport";
 
         private IEnvironmentVariables _environmentVariables;
@@ -58,7 +59,7 @@ namespace Amazon.Lambda.RuntimeSupport
         {
 
             var envValue = _environmentVariables.GetEnvironmentVariable(EnvVarExecutionEnvironment);
-            if (!string.IsNullOrEmpty(envValue) && !envValue.Contains(AmazonLambdaRuntimeSupportMarker))
+            if (!string.IsNullOrEmpty(envValue) && envValue.Equals(AwsLambdaDotnetCustomRuntime))
             {
                 var assemblyVersion = typeof(LambdaBootstrap).Assembly
                     .GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false)

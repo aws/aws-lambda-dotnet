@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
+﻿namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
 {
 
     /// <summary>
@@ -19,7 +15,7 @@ namespace Amazon.Lambda.CloudWatchEvents.BatchEvents
 
         /// <summary>
         /// The node index for the node. Node index numbering begins at zero. This index is also
-        /// available on the node with the <code>AWS_BATCH_JOB_NODE_INDEX</code> environment variable.
+        /// available on the node with the <c>AWS_BATCH_JOB_NODE_INDEX</c> environment variable.
         /// </summary>
         public int NodeIndex { get; set; }
     }

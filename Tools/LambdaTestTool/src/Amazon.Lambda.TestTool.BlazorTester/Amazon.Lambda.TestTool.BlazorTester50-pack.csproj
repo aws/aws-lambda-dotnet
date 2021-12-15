@@ -5,7 +5,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Description>A tool to help debug and test your .NET 5.0 AWS Lambda functions locally.</Description>
-    <VersionPrefix>0.11.3</VersionPrefix>
+    <VersionPrefix>0.11.4</VersionPrefix>
     <Product>AWS .NET Lambda Test Tool</Product>
     <Copyright>Apache 2</Copyright>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
@@ -15,7 +15,9 @@
     <PackAsTool>true</PackAsTool>
     <PackageId>Amazon.Lambda.TestTool-5.0</PackageId>
 	<AssemblyName>Amazon.Lambda.TestTool.BlazorTester</AssemblyName>
-	<RootNamespace>Amazon.Lambda.TestTool.BlazorTester</RootNamespace>	
+	<RootNamespace>Amazon.Lambda.TestTool.BlazorTester</RootNamespace>
+	<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>	
+	<StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
   </PropertyGroup>
 
   <ItemGroup>

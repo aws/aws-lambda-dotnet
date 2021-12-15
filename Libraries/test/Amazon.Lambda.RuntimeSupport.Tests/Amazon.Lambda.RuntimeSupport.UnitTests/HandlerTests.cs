@@ -152,7 +152,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             await TestHandlerFailAsync("HandlerTestNoSerializer::HandlerTestNoSerializer.CustomerType::PocoInPocoOut", "To use types other than System.IO.Stream as input/output parameters, the assembly or Lambda function should be annotated with Amazon.Lambda.LambdaSerializerAttribute.");
             await TestHandlerFailAsync("HandlerTestNoSerializer::HandlerTestNoSerializer.CustomerType::PocoInPocoOut", "To use types other than System.IO.Stream as input/output parameters, the assembly or Lambda function should be annotated with Amazon.Lambda.LambdaSerializerAttribute.");
 
-            var noZeroParamTypeEx = await TestHandlerFailAsync("HandlerTest::HandlerTest.NoZeroParamConstructorCustomerType::SimpleMethod", "No parameterless constructor defined for this object.");
+            var noZeroParamTypeEx = await TestHandlerFailAsync("HandlerTest::HandlerTest.NoZeroParamConstructorCustomerType::SimpleMethod", "No parameterless constructor defined");
             Assert.IsAssignableFrom<MissingMethodException>(noZeroParamTypeEx);
 
             var customerConstructorEx = TestHandlerFailAsync("HandlerTest::HandlerTest.ConstructorExceptionCustomerType::SimpleMethod", "An exception was thrown when the constructor for type");

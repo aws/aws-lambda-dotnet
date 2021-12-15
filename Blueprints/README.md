@@ -6,8 +6,8 @@ so that they can be exposed through Visual Studio or the **dotnet** CLI with the
 
 ## Definitions
 
-The blueprints are defined in sub directories under the BlueprintDefinitions/Msbuild directory for new msbuild project system. 
-The older project.json based blueprints are in sub directories under BlueprintDefinitions/ProjectJson.
+The blueprints are defined in sub directories under the BlueprintDefinitions directory. There is a separate sub folder for 
+each version of Visual Studio that contains Lambda blueprints. 
 
 For each blueprint there is a blueprint-manifest.json file containing the metadata for the blueprint and a src and test directory.
 It is required that each blueprint must contain a test project.
@@ -16,19 +16,6 @@ It is required that each blueprint must contain a test project.
 
 The .NET Core console application BlueprintPackager is used to package up the blueprints for both Visual Studio and Yeoman.
 The console application can be run by executing `dotnet run` in the project directory.
-
-## Visual Studio
-
-The BlueprintPackager will write the blueprints to the ../Deployment/Blueprints/VisualStudioBlueprintsMsbuild for VS 2017 
-and  ../Deployment/Blueprints/VisualStudioBlueprintsProjectJson for VS 2015.
-You can test how your blueprints work in Visual Studio by copying the 
-../Deployment/Blueprints/VisualStudioBlueprintsMsbuild to C:\Program Files (x86)\AWS Tools\HostedFiles\LambdaSampleFunctions\NETCore\msbuild-v1
-and 
-../Deployment/Blueprints/VisualStudioBlueprintsProjectJson to C:\Program Files (x86)\AWS Tools\HostedFiles\LambdaSampleFunctions\NETCore\v1.
-After copying the directories point AWS Toolkit for Visual Studio to C:\Program Files (x86)\AWS Tools\HostedFiles
-to get its metadata. To update the toolkit open Visual Studio's Options dialog from the Tools menu, select AWS Toolkit and select 
-"Use local file system location". Note: Currently the C:\Program Files (x86)\AWS Tools\HostedFiles is only created when you
-install the toolkit from the installer for Visual Studio 2015 Toolkit.
 
 ## Creating Projects from "dotnet new"
 
@@ -99,35 +86,4 @@ To create a project run the following command:
 
 ```
 dotnet new lambda.EmptyFunction --name ExampleFunction --profile default --region us-east-2
-```
-
-
-## Yeoman (Deprecated)
-
-When the blueprints were initially released they were also accessible through a [Yeoman](http://yeoman.io/). 
-When the .NET Core tools reached their GA status `dotnet new` had extensibility added to which made for a 
-better experience for creating the blueprints outside of Visual Studio. The Yeoman generator still exists and 
-can be used for users that are still developing with the older project.json formatted projects.
-
-
-To use the blueprints with Yeoman you must first install [npm](https://nodejs.org/en/) which is part of the Node.js 
-install. Once npm is installed you can install Yeoman by running the following command.
-
-```
-npm install -g yo
-```
-
-To install the current distributed version of the AWS Lambda .NET Core blueprints run the following command.
-
-```
-npm install -g generator-aws-lambda-dotnet
-```
-
-When the BlueprintPackager runs it will copy the Yeoman generator to ../Deployment/Blueprints/generator-aws-lambda-dotnet.
-To use these blueprints instead of the distributed version execute the command `npm link` in the directory. To switch 
-back to the distributed version execute the command `npm unlink`.
-
-To run the Yeoman generator which will allow you to pick a blueprint run the following command.
-```
-yo aws-lambda-dotnet
 ```

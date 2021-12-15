@@ -41,6 +41,16 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         }
 
+        /// <summary>
+        /// Constructor used by Amazon.Lambda.AspNetCoreServer.Hosting to support ASP.NET Core projects using the Minimal API style.
+        /// </summary>
+        /// <param name="hostedServices"></param>
+        protected APIGatewayHttpApiV2ProxyFunction(IServiceProvider hostedServices)
+            : base(hostedServices)
+        {
+            _hostServices = hostedServices;
+        }
+
         private protected override void InternalCustomResponseExceptionHandling(APIGatewayHttpApiV2ProxyResponse apiGatewayResponse, ILambdaContext lambdaContext, Exception ex)
         {
             apiGatewayResponse.SetHeaderValues("ErrorType", ex.GetType().Name, false);

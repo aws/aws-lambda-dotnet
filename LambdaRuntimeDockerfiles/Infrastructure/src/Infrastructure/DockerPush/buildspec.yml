@@ -1,0 +1,16 @@
+version: 0.2
+# Based on the Docker documentation, must include the DOCKER_CLI_EXPERIMENTAL environment variable
+# https://docs.docker.com/engine/reference/commandline/manifest/
+
+phases:
+  build:
+    commands:
+      - export DOCKER_CLI_EXPERIMENTAL=enabled
+      - pwsh LambdaRuntimeDockerfiles/Infrastructure/src/Infrastructure/DockerPush/build.ps1
+        -SourceEcr $AWS_LAMBDA_SOURCE_ECR
+        -EcrRepositoryName $AWS_LAMBDA_ECR_REPOSITORY_NAME
+        -Amd64ImageTag $AWS_LAMBDA_AMD64_IMAGE_TAG
+        -Arm64ImageTag $AWS_LAMBDA_ARM64_IMAGE_TAG
+        -MultiArchImageTag $AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG
+        -DestinationEcrs $AWS_LAMBDA_DESTINATION_ECRS
+        -IncludeArm64 $AWS_LAMBDA_INCLUDE_ARM64
