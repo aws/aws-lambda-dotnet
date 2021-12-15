@@ -3,23 +3,18 @@
   <Import Project="..\..\..\..\buildtools\common.props" />
   
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.1;netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net5.0;net6.0</TargetFrameworks>
     <Description>Common code for the AWS .NET Core Lambda Mock Test Tool.</Description>
     <NoWarn>1701;1702;1591;1587;3021;NU5100;CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="YamlDotNet.Signed" Version="5.2.1" />
 
     <PackageReference Include="AWSSDK.Core" Version="3.7.0" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.1.0" />
-    <PackageReference Include="System.Text.Json" Version="4.7.1" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
@@ -33,10 +28,18 @@
   <PropertyGroup Condition=" '$(Configuration)' == 'PackNET50' ">
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>    
+	
+  <PropertyGroup Condition=" '$(Configuration)' == 'PackNET60' ">
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>  	
 
     <ItemGroup Condition=" '$(TargetFramework)' == 'net5.0' ">
 	    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="5.0.0" />
     </ItemGroup>
+
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
+		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="6.0.0" />
+	</ItemGroup>
 
 
 	<ItemGroup>

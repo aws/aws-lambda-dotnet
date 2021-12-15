@@ -20,6 +20,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
+using static Amazon.Lambda.RuntimeSupport.Bootstrap.Constants;
+
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
     /// <summary>
@@ -211,6 +214,49 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             var runtimeLambdaSupportVersion = Version.Parse(versions[1]);
             Assert.True(Version.Parse("1.0.0") <= runtimeLambdaSupportVersion);
+        }
+
+        [Fact]
+        public void IsCallPreJitTest()
+        {
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "ProvisionedConcurrency");
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE,
+                AWS_LAMBDA_INITIALIZATION_TYPE_PC);
+
+            Assert.True(UserCodeInit.IsCallPreJit());
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "ProvisionedConcurrency");
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE,
+                AWS_LAMBDA_INITIALIZATION_TYPE_ON_DEMAND);
+
+            Assert.False(UserCodeInit.IsCallPreJit());
+
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "ProvisionedConcurrency");
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
+            Assert.False(UserCodeInit.IsCallPreJit());
+
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "Always");
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
+            Assert.True(UserCodeInit.IsCallPreJit());
+
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "Never");
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
+            Assert.False(UserCodeInit.IsCallPreJit());
+
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, null);
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
+            Assert.False(UserCodeInit.IsCallPreJit());
+
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, null);
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, AWS_LAMBDA_INITIALIZATION_TYPE_ON_DEMAND);
+            Assert.False(UserCodeInit.IsCallPreJit());
+
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, "Never");
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, null);
+            Assert.False(UserCodeInit.IsCallPreJit());
+
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, null);
+            Environment.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, AWS_LAMBDA_INITIALIZATION_TYPE_PC);
+            Assert.True(UserCodeInit.IsCallPreJit());
         }
     }
 }

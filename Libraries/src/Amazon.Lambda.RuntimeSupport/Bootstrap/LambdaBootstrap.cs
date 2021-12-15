@@ -18,6 +18,8 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -111,6 +113,15 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns>A Task that represents the operation.</returns>
         public async Task RunAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
+            if(UserCodeInit.IsCallPreJit())
+            {
+                InternalLogger.GetDefaultLogger().LogInformation("PreJit: CultureInfo");
+                UserCodeInit.LoadStringCultureInfo();
+
+                InternalLogger.GetDefaultLogger().LogInformation("PreJit: Amazon.Lambda.Core");
+                UserCodeInit.PreJitAssembly(typeof(Amazon.Lambda.Core.ILambdaContext).Assembly);
+            }
+
             bool doStartInvokeLoop = _initializer == null || await InitializeAsync();
 
             while (doStartInvokeLoop && !cancellationToken.IsCancellationRequested)
@@ -134,6 +145,7 @@ namespace Amazon.Lambda.RuntimeSupport
             }
             catch (Exception exception)
             {
+                WriteUnhandledExceptionToLog(exception);
                 await Client.ReportInitializationErrorAsync(exception);
                 throw;
             }
@@ -153,6 +165,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 }
                 catch (Exception exception)
                 {
+                    WriteUnhandledExceptionToLog(exception);
                     await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception);
                 }
 
@@ -186,6 +199,13 @@ namespace Amazon.Lambda.RuntimeSupport
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", userAgentString);
             return client;
+        }
+
+        private void WriteUnhandledExceptionToLog(Exception exception)
+        {
+            // Console.Error.WriteLine are redirected to the IConsoleLoggerWriter which 
+            // will take care of writing to the function's log stream.
+            Console.Error.WriteLine(exception);
         }
 
         #region IDisposable Support

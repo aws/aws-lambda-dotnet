@@ -1,0 +1,11 @@
+﻿{
+  "profile": "default",
+  "region": "us-west-2",
+  "configuration": "Release",
+  "msbuild-parameters": "--self-contained true",
+  "function-runtime": "provided.al2",
+  "function-memory-size": 256,
+  "function-timeout": 30,
+  "function-handler": "not-used",
+  "function-name": "CustomRuntimeAspNetCoreMinimalApiTest"
+}

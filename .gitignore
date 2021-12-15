@@ -37,3 +37,4 @@
 global.json
 
 **/cdk.out/**
+**/.DS_Store

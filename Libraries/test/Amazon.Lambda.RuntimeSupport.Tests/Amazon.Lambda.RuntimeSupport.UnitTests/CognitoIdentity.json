@@ -1,4 +1,4 @@
 ﻿{
-  "identityId": "Id1",
-  "identityPoolId": "Pool1"
+  "cognitoIdentityId": "Id1",
+  "cognitoIdentityPoolId": "Pool1"
 }

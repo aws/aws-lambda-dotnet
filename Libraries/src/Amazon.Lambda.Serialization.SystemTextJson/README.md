@@ -11,12 +11,12 @@ This serializer can be present on the assembly or on the handler method. If you 
 
 Here is an example of setting this attribute on the assembly.
 ```
-[assembly: Amazon.Lambda.Core.LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+[assembly: Amazon.Lambda.Core.LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 ```
 
 And this is how the method can be applied to the handler method.
 ```csharp
-[Amazon.Lambda.Core.LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+[Amazon.Lambda.Core.LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 public Response CustomSerializerMethod(Request input)
 {
     ...

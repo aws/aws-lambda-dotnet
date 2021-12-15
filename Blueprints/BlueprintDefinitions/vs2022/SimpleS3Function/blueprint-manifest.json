@@ -1,0 +1,14 @@
+{
+  "display-name": "Simple S3 Function",
+  "system-name": "SimpleS3Function",
+  "description": "A project for responding to S3 Event notifications",
+  "sort-order": 101,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "S3",
+    "Simple"
+  ]
+}

@@ -20,6 +20,7 @@ using Amazon.S3.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -28,34 +29,12 @@ using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
-    public class CustomRuntimeTests
+    public class CustomRuntimeTests : BaseCustomRuntimeTest
     {
-        private static readonly RegionEndpoint TestRegion = RegionEndpoint.USWest2;
-        private static readonly string LAMBDA_ASSUME_ROLE_POLICY =
-        @"
+        public CustomRuntimeTests() 
+            : base("CustomRuntimeFunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip")
         {
-          ""Version"": ""2012-10-17"",
-          ""Statement"": [
-            {
-              ""Sid"": """",
-              ""Effect"": ""Allow"",
-              ""Principal"": {
-                ""Service"": ""lambda.amazonaws.com""
-              },
-              ""Action"": ""sts:AssumeRole""
-            }
-          ]
         }
-        ".Trim();
-
-        private const string ExecutionRoleName = "runtimesupporttestingrole";
-        private const string TestBucketRoot = "runtimesupporttesting-";
-        private const string FunctionName = "CustomRuntimeFunctionTest";
-        private const string DeploymentZipKey = "CustomRuntimeFunctionTest.zip";
-        private const string DeploymentPackageZipRelativePath = @"CustomRuntimeFunctionTest\bin\Release\netcoreapp2.2\CustomRuntimeFunctionTest.zip";
-        private const string TestsProjectDirectoryName = "Amazon.Lambda.RuntimeSupport.Tests";
-
-        private static string ExecutionRoleArn { get; set; }
 
 #if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
         [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
@@ -74,6 +53,11 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 try
                 {
                     roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
+
+                    await RunTestSuccessAsync(lambdaClient, "LoggingStressTest", "not-used", "LoggingStressTest-success");
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", null);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", "debug");
+                    await RunUnformattedLoggingTestAsync(lambdaClient, "LoggingTest");
 
                     await RunTestSuccessAsync(lambdaClient, "ToUpperAsync", "message", "ToUpperAsync-MESSAGE");
                     await RunTestSuccessAsync(lambdaClient, "PingAsync", "ping", "PingAsync-pong");
@@ -119,8 +103,70 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 JObject exception = (JObject)JsonConvert.DeserializeObject(await sr.ReadToEndAsync());
                 Assert.Equal(expectedErrorType, exception["errorType"].ToString());
                 Assert.Equal(expectedErrorMessage, exception["errorMessage"].ToString());
+
+                var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+                var logExpectedException = expectedErrorType != "Function.ResponseSizeTooLarge" ? expectedErrorType : "RuntimeApiClientException";
+                Assert.Contains(logExpectedException, log);
             }
         }
+
+        private async Task RunLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler, string logLevel)
+        {
+            var environmentVariables = new Dictionary<string, string>();
+            if(!string.IsNullOrEmpty(logLevel))
+            {
+                environmentVariables["AWS_LAMBDA_HANDLER_LOG_LEVEL"] = logLevel;
+            }
+            await UpdateHandlerAsync(lambdaClient, handler, environmentVariables);
+
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.True(invokeResponse.FunctionError == null);
+
+            var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+
+            Assert.Contains("info\tA information log", log);
+            Assert.Contains("warn\tA warning log", log);
+            Assert.Contains("fail\tA error log", log);
+            Assert.Contains("crit\tA critical log", log);
+
+            Assert.Contains("info\tA stdout info message", log);
+
+            Assert.Contains("fail\tA stderror error message", log);
+
+            if (string.IsNullOrEmpty(logLevel))
+            {
+                Assert.DoesNotContain($"a {logLevel} log".ToLower(), log.ToLower());
+            }
+            else
+            {
+                Assert.Contains($"a {logLevel} log".ToLower(), log.ToLower());
+            }
+        }
+
+        private async Task RunUnformattedLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler)
+        {
+            var environmentVariables = new Dictionary<string, string>();
+            environmentVariables["AWS_LAMBDA_HANDLER_LOG_FORMAT"] = "Unformatted";
+            await UpdateHandlerAsync(lambdaClient, handler, environmentVariables);
+
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.True(invokeResponse.FunctionError == null);
+
+            var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+
+            Assert.DoesNotContain("info\t", log);
+            Assert.DoesNotContain("warn\t", log);
+            Assert.DoesNotContain("fail\t", log);
+            Assert.DoesNotContain("crit\t", log);
+
+            Assert.Contains("A information log", log);
+            Assert.Contains("A warning log", log);
+            Assert.Contains("A error log", log);
+            Assert.Contains("A critical log", log);
+        }
+
 
         private async Task RunTestSuccessAsync(AmazonLambdaClient lambdaClient, string handler, string input, string expectedResponse)
         {
@@ -137,278 +183,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             }
         }
 
-        /// <summary>
-        /// Clean up all test resources.
-        /// Also cleans up any resources that might be left from previous failed/interrupted tests.
-        /// </summary>
-        /// <param name="s3Client"></param>
-        /// <param name="lambdaClient"></param>
-        /// <returns></returns>
-        private async Task CleanUpTestResources(AmazonS3Client s3Client, AmazonLambdaClient lambdaClient,
-            AmazonIdentityManagementServiceClient iamClient, bool roleAlreadyExisted)
-        {
-            await DeleteFunctionIfExistsAsync(lambdaClient);
 
-            var listBucketsResponse = await s3Client.ListBucketsAsync();
-            foreach (var bucket in listBucketsResponse.Buckets)
-            {
-                if (bucket.BucketName.StartsWith(TestBucketRoot))
-                {
-                    await DeleteDeploymentZipAndBucketAsync(s3Client, bucket.BucketName);
-                }
-            }
-
-            if (!roleAlreadyExisted)
-            {
-                try
-                {
-                    var deleteRoleRequest = new DeleteRoleRequest
-                    {
-                        RoleName = ExecutionRoleName
-                    };
-                    await iamClient.DeleteRoleAsync(deleteRoleRequest);
-                }
-                catch (Exception)
-                {
-                    // no problem - it's best effort
-                }
-            }
-        }
-
-        private async Task<bool> PrepareTestResources(AmazonS3Client s3Client, AmazonLambdaClient lambdaClient,
-            AmazonIdentityManagementServiceClient iamClient)
-        {
-            var roleAlreadyExisted = await ValidateAndSetIamRoleArn(iamClient);
-
-            var testBucketName = TestBucketRoot + Guid.NewGuid().ToString();
-            await CreateBucketWithDeploymentZipAsync(s3Client, testBucketName);
-            await CreateFunctionAsync(lambdaClient, testBucketName);
-
-            return roleAlreadyExisted;
-        }
-
-        /// <summary>
-        /// Create the role if it's not there already.
-        /// Return true if it already existed.
-        /// </summary>
-        /// <returns></returns>
-        private static async Task<bool> ValidateAndSetIamRoleArn(AmazonIdentityManagementServiceClient iamClient)
-        {
-            var getRoleRequest = new GetRoleRequest
-            {
-                RoleName = ExecutionRoleName
-            };
-            try
-            {
-                ExecutionRoleArn = (await iamClient.GetRoleAsync(getRoleRequest)).Role.Arn;
-                return true;
-            }
-            catch (NoSuchEntityException)
-            {
-                // create the role
-                var createRoleRequest = new CreateRoleRequest
-                {
-                    RoleName = ExecutionRoleName,
-                    Description = "Test role for CustomRuntimeTests.",
-                    AssumeRolePolicyDocument = LAMBDA_ASSUME_ROLE_POLICY
-                };
-                ExecutionRoleArn = (await iamClient.CreateRoleAsync(createRoleRequest)).Role.Arn;
-
-                // Wait for role to propagate.
-                await Task.Delay(10000);
-                return false;
-            }
-        }
-
-        private async Task CreateBucketWithDeploymentZipAsync(AmazonS3Client s3Client, string bucketName)
-        {
-            // create bucket if it doesn't exist
-            var listBucketsResponse = await s3Client.ListBucketsAsync();
-            if (listBucketsResponse.Buckets.Find((bucket) => bucket.BucketName == bucketName) == null)
-            {
-                var putBucketRequest = new PutBucketRequest
-                {
-                    BucketName = bucketName
-                };
-                await s3Client.PutBucketAsync(putBucketRequest);
-            }
-
-            // write or overwrite deployment package
-            var putObjectRequest = new PutObjectRequest
-            {
-                BucketName = bucketName,
-                Key = DeploymentZipKey,
-                FilePath = GetDeploymentZipPath()
-            };
-            await s3Client.PutObjectAsync(putObjectRequest);
-
-            // Wait for bucket to propagate.
-            await Task.Delay(5000);
-        }
-
-        private async Task DeleteDeploymentZipAndBucketAsync(AmazonS3Client s3Client, string bucketName)
-        {
-            // Delete the deployment zip.
-            // This is idempotent - it works even if the object is not there.
-            var deleteObjectRequest = new DeleteObjectRequest
-            {
-                BucketName = bucketName,
-                Key = DeploymentZipKey
-            };
-            await s3Client.DeleteObjectAsync(deleteObjectRequest);
-
-            // Delete the bucket.
-            // Make idempotent by checking exception.
-            var deleteBucketRequest = new DeleteBucketRequest
-            {
-                BucketName = bucketName
-            };
-            try
-            {
-                await s3Client.DeleteBucketAsync(deleteBucketRequest);
-            }
-            catch (AmazonS3Exception e)
-            {
-                // If it's just telling us the bucket's not there then continue, otherwise throw.
-                if (!e.Message.Contains("The specified bucket does not exist"))
-                {
-                    throw;
-                }
-            }
-        }
-
-        private async Task<InvokeResponse> InvokeFunctionAsync(AmazonLambdaClient lambdaClient, string payload)
-        {
-            var request = new InvokeRequest
-            {
-                FunctionName = FunctionName,
-                Payload = payload
-            };
-            return await lambdaClient.InvokeAsync(request);
-        }
-
-        private static async Task UpdateHandlerAsync(AmazonLambdaClient lambdaClient, string handler)
-        {
-            var updateFunctionConfigurationRequest = new UpdateFunctionConfigurationRequest
-            {
-                FunctionName = FunctionName,
-                Handler = handler
-            };
-            await lambdaClient.UpdateFunctionConfigurationAsync(updateFunctionConfigurationRequest);
-        }
-
-        private static async Task CreateFunctionAsync(AmazonLambdaClient lambdaClient, string bucketName)
-        {
-            await DeleteFunctionIfExistsAsync(lambdaClient);
-
-            var createRequest = new CreateFunctionRequest
-            {
-                FunctionName = FunctionName,
-                Code = new FunctionCode
-                {
-                    S3Bucket = bucketName,
-                    S3Key = DeploymentZipKey
-                },
-                Handler = "PingAsync",
-                MemorySize = 512,
-                Runtime = Runtime.Provided,
-                Role = ExecutionRoleArn
-            };
-
-            var startTime = DateTime.Now;
-            var created = false;
-            while (DateTime.Now < startTime.AddSeconds(30))
-            {
-                try
-                {
-                    await lambdaClient.CreateFunctionAsync(createRequest);
-                    created = true;
-                    break;
-                }
-                catch (InvalidParameterValueException ipve)
-                {
-                    // Wait for the role to be fully propagated through AWS
-                    if (ipve.Message == "The role defined for the function cannot be assumed by Lambda.")
-                    {
-                        await Task.Delay(2000);
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-            }
-
-            if (!created)
-            {
-                throw new Exception($"Timed out trying to create Lambda function {FunctionName}");
-            }
-        }
-
-        private static async Task DeleteFunctionIfExistsAsync(AmazonLambdaClient lambdaClient)
-        {
-            var request = new DeleteFunctionRequest
-            {
-                FunctionName = FunctionName
-            };
-
-            try
-            {
-                var response = await lambdaClient.DeleteFunctionAsync(request);
-            }
-            catch (ResourceNotFoundException)
-            {
-                // no problem
-            }
-        }
-
-        /// <summary>
-        /// Get the path of the deployment package for testing the custom runtime.
-        /// This assumes that the 'dotnet lambda package -c Release' command was run as part of the pre-build of this csproj.
-        /// </summary>
-        /// <returns></returns>
-        private static string GetDeploymentZipPath()
-        {
-            var testsProjectDirectory = FindUp(System.Environment.CurrentDirectory, TestsProjectDirectoryName, true);
-            if(string.IsNullOrEmpty(testsProjectDirectory))
-            {
-                throw new NoDeploymentPackageFoundException();
-            }
-
-            var deploymentZipFile = Path.Combine(testsProjectDirectory, DeploymentPackageZipRelativePath);
-
-            if(!File.Exists(deploymentZipFile))
-            {
-                throw new NoDeploymentPackageFoundException();
-            }
-
-            return deploymentZipFile;
-        }
-
-        private static string FindUp(string path, string fileOrDirectoryName, bool combine)
-        {
-            var fullPath = Path.Combine(path, fileOrDirectoryName);
-            if (File.Exists(fullPath) || Directory.Exists(fullPath))
-            {
-                return combine ? fullPath : path;
-            }
-            else
-            {
-                var upDirectory = Path.GetDirectoryName(path);
-                if (string.IsNullOrEmpty(upDirectory))
-                {
-                    return null;
-                }
-                else
-                {
-                    return FindUp(upDirectory, fileOrDirectoryName, combine);
-                }
-            }
-        }
-
-        class NoDeploymentPackageFoundException : Exception
-        {
-
-        }
     }
 }

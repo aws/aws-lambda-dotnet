@@ -22,8 +22,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
     /// </summary>
     public static class Utilities
     {
+        public static void EnsureLambdaServerRegistered(IServiceCollection services)
+        {
+            EnsureLambdaServerRegistered(services, typeof(LambdaServer));
+        }
 
-        internal static void EnsureLambdaServerRegistered(IServiceCollection services)
+        public static void EnsureLambdaServerRegistered(IServiceCollection services, Type serverType)
         {
             IList<ServiceDescriptor> toRemove = new List<ServiceDescriptor>();
             var serviceDescriptions = services.Where(x => x.ServiceType == typeof(IServer));
@@ -33,7 +37,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             // This makes sure there is only one registered IServer using LambdaServer and removes any other registrations.
             foreach (var serviceDescription in serviceDescriptions)
             {
-                if (serviceDescription.ImplementationType == typeof(LambdaServer))
+                if (serviceDescription.ImplementationType == serverType)
                 {
                     lambdaServiceCount++;
                     // If more then one LambdaServer registration has occurred then remove the extra registrations.
@@ -57,7 +61,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
             if (lambdaServiceCount == 0)
             {
-                services.AddSingleton<IServer, LambdaServer>();
+                services.AddSingleton(typeof(IServer), serverType);
             }
         }
 

@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 using Amazon.Lambda.Core;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,7 +32,13 @@ namespace Amazon.Lambda.RuntimeSupport
     {
         private readonly HttpClient _httpClient;
         private readonly IInternalRuntimeApiClient _internalClient;
-        
+
+#if NET6_0_OR_GREATER
+        private readonly IConsoleLoggerWriter _consoleLoggerRedirector = new LogLevelLoggerWriter();
+#else
+        private readonly IConsoleLoggerWriter _consoleLoggerRedirector = new SimpleLoggerWriter();
+#endif
+
         internal Func<Exception, ExceptionInfo> ExceptionConverter { get;  set; }
         internal LambdaEnvironment LambdaEnvironment { get; set; }
 
@@ -100,7 +107,10 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             SwaggerResponse<Stream> response = await _internalClient.NextAsync(cancellationToken);
 
-            var lambdaContext = new LambdaContext(new RuntimeApiHeaders(response.Headers), LambdaEnvironment);
+            var headers = new RuntimeApiHeaders(response.Headers);
+            _consoleLoggerRedirector.SetCurrentAwsRequestId(headers.AwsRequestId);
+
+            var lambdaContext = new LambdaContext(headers, LambdaEnvironment, _consoleLoggerRedirector);
             return new InvocationRequest
             {
                 InputStream = response.Result,
@@ -124,7 +134,11 @@ namespace Amazon.Lambda.RuntimeSupport
                 throw new ArgumentNullException(nameof(exception));
 
             var exceptionInfo = ExceptionInfo.GetExceptionInfo(exception);
-            return _internalClient.Error2Async(awsRequestId, exceptionInfo.ErrorType, LambdaJsonExceptionWriter.WriteJson(exceptionInfo), cancellationToken);
+
+            var exceptionInfoJson = LambdaJsonExceptionWriter.WriteJson(exceptionInfo);
+            var exceptionInfoXRayJson = LambdaXRayExceptionWriter.WriteJson(exceptionInfo);
+
+            return _internalClient.ErrorWithXRayCauseAsync(awsRequestId, exceptionInfo.ErrorType, exceptionInfoJson, exceptionInfoXRayJson, cancellationToken);
         }
 
         /// <summary>

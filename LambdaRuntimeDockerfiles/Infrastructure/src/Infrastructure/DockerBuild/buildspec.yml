@@ -1,0 +1,18 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel $AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL
+      - export PATH="$PATH:$HOME/.dotnet"
+      - export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+      - rm -rf /usr/bin/pwsh
+      - curl -sSL https://raw.githubusercontent.com/PowerShell/PowerShell/master/docker/InstallTarballPackage.sh | bash /dev/stdin $AWS_LAMBDA_POWERSHELL_VERSION
+  build:
+    commands:
+      - pwsh LambdaRuntimeDockerfiles/Infrastructure/src/Infrastructure/DockerBuild/build.ps1
+        -StageEcr $AWS_LAMBDA_STAGE_ECR
+        -EcrRepositoryName $AWS_LAMBDA_ECR_REPOSITORY_NAME
+        -ImageTag $AWS_LAMBDA_IMAGE_TAG
+        -Architecture $AWS_LAMBDA_ARCHITECTURE
+        -Framework $AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION
+        -Channel $AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL

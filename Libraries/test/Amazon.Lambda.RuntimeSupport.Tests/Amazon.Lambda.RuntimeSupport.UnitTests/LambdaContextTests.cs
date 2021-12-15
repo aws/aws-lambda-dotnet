@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
@@ -30,7 +31,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var runtimeApiHeaders = new RuntimeApiHeaders(headers);
             var lambdaEnvironment = new LambdaEnvironment(_environmentVariables);
 
-            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment);
+            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment, new Helpers.SimpleLoggerWriter());
 
             Assert.True(context.RemainingTime >= TimeSpan.Zero, $"Remaining time is not a positive value: {context.RemainingTime}");
         }

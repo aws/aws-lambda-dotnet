@@ -19,6 +19,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 {
     internal class InternalLogger
     {
+        private const string DebuggingEnvironmentVariable = "LAMBDA_RUNTIMESUPPORT_DEBUG";
+
         public static readonly InternalLogger ConsoleLogger = new InternalLogger(Console.WriteLine);
         public static readonly InternalLogger NoOpLogger = new InternalLogger(message => { });
 
@@ -61,6 +63,20 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         public static InternalLogger GetCustomInternalLogger(Action<string> loggingAction)
         {
             return new InternalLogger(loggingAction);
+        }
+
+        /// <summary>
+        /// Gets the default logger for the environment based on the "LAMBDA_RUNTIMESUPPORT_DEBUG" environment variable
+        /// </summary>
+        /// <returns></returns>
+        public static InternalLogger GetDefaultLogger()
+        {
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(DebuggingEnvironmentVariable)))
+            {
+                return NoOpLogger;
+            }
+
+            return ConsoleLogger;
         }
     }
 }
