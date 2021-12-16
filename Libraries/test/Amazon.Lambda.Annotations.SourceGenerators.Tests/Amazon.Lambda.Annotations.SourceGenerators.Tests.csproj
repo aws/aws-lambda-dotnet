@@ -61,6 +61,10 @@
       <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations.SourceGenerator\Amazon.Lambda.Annotations.SourceGenerator.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
+      <!-- 
+	    We need to force using the .NET Standard 2.0 version because the source generator test framework will complain
+		about using newer versions of System.Runtime then it can handle. This is not an issue in a end user scenario.
+	  -->
       <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" AdditionalProperties="TargetFramework=netstandard2.0" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
     </ItemGroup>
