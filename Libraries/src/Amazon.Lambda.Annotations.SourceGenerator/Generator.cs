@@ -46,6 +46,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     return;
                 }
 
+                // If there are no Lambda methods, return early
+                if (!receiver.LambdaMethods.Any())
+                {
+                    return;
+                }
+
                 var semanticModelProvider = new SemanticModelProvider(context);
                 if (receiver.StartupClasses.Count > 1)
                 {
