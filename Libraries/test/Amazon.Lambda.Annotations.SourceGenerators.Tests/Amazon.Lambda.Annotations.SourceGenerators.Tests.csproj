@@ -21,8 +21,17 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="1.1.0" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeRefactoring.Testing.XUnit" Version="1.1.0" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="1.1.0" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
-    </ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+		<!--
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" ExcludeAssets="Compile"/>
+        <Reference Include="Microsoft.Extensions.DependencyInjection">
+            <HintPath>$(NuGetPackageRoot)microsoft.extensions.dependencyinjection\6.0.0\lib\netstandard2.0\Microsoft.Extensions.DependencyInjection.dll</HintPath>
+        </Reference>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" ExcludeAssets="Compile"/>
+		<Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+			<HintPath>$(NuGetPackageRoot)microsoft.extensions.dependencyinjection.abstractions\6.0.0\lib\netstandard2.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+		</Reference>-->
+	</ItemGroup>
 
     <ItemGroup>
         <Content Include="..\TestServerlessApp\**">

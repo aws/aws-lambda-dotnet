@@ -352,7 +352,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             propertiesToken = rootToken["Resources"]["TestMethod"]["Properties"];
             Assert.Equal("Image", propertiesToken["PackageType"]);
             Assert.Equal(".", propertiesToken["ImageUri"]);
-            Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", propertiesToken["ImageConfig"]["Command"]);
+            Assert.Equal(new JArray("MyAssembly::MyNamespace.MyType::Handler"), propertiesToken["ImageConfig"]["Command"]);
             Assert.Null(propertiesToken["CodeUri"]);
             Assert.Null(propertiesToken["Handler"]);
 
