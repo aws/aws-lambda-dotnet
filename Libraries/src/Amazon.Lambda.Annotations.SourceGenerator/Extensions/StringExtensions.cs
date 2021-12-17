@@ -26,4 +26,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
             return $"{e.Message}{e.StackTrace}{PrettyPrint(e.InnerException)}";
         }
     }
+
+    public static class EnvironmentExtensions
+    {
+        public static string ToEnvironmentLineEndings(this string str)
+        {
+            return str.Replace("\r\n", Environment.NewLine).
+                Replace("\n", Environment.NewLine).
+                Replace("\r\r\n", Environment.NewLine);
+        }
+    }
 }

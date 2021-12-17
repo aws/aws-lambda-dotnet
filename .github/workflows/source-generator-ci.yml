@@ -11,9 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Set git to use CRLF
-    # Without CRLF, source generator test add space at beginning
-      run: git config --global core.autocrlf true
 
     - uses: actions/checkout@v2
     - name: Setup .NET 3.1
