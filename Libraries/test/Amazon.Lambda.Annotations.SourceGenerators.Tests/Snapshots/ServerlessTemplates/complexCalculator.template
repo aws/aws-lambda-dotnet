@@ -1,4 +1,4 @@
-﻿{
+{
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
   "Resources": {
@@ -11,15 +11,18 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "PackageType": "Zip",
-        "Handler": "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add",
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add"
+          ]
+        },
         "Events": {
           "RootPost": {
             "Type": "HttpApi",
@@ -41,15 +44,18 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnetcore3.1",
-        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "PackageType": "Zip",
-        "Handler": "TestServerlessApp::TestServerlessApp.ComplexCalculator_Subtract_Generated::Subtract",
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Subtract_Generated::Subtract"
+          ]
+        },
         "Events": {
           "RootPost": {
             "Type": "HttpApi",

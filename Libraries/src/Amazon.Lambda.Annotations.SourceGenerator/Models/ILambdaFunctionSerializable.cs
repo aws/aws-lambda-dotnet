@@ -44,7 +44,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// The deployment package type of the Lambda function. The supported values are Zip and Image.
         /// For more information, see <a href="https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-package.html">here</a>
         /// </summary>
-        PackageTypeEnum PackageType { get; }
+        LambdaPackageType PackageType { get; }
 
         /// <summary>
         /// List of attributes applied to the Lambda method that are used to generate serverless.template.

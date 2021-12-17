@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,16 +29,24 @@ namespace TestServerlessApp.IntegrationTests.Helpers
             if (null == process)
                 throw new Exception("Process.Start failed to return a non-null process");
 
+            var sb = new StringBuilder();
+            DataReceivedEventHandler callback = (object sender, DataReceivedEventArgs e) =>
+            {
+                sb.AppendLine(e.Data);
+                Console.WriteLine(e.Data);
+            };
+
             if (redirectIo)
             {
-                process.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
-                process.ErrorDataReceived += (sender, e) => Console.WriteLine(e.Data);
+                process.OutputDataReceived += callback;
+                process.ErrorDataReceived += callback;
 
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
             }
 
             await process.WaitForExitAsync(cancelToken);
+            var log = sb.ToString();
         }
 
         private static string GetSystemShell()

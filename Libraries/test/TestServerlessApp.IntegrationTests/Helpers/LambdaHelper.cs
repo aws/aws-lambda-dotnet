@@ -45,6 +45,25 @@ namespace TestServerlessApp.IntegrationTests.Helpers
                 request.Payload = payload;
             return await _lambdaClient.InvokeAsync(request);
         }
+
+        public async Task WaitTillNotPending(List<string> functions)
+        {
+            foreach(var function in functions)
+            {
+                while(true)
+                {
+                    var response = await _lambdaClient.GetFunctionConfigurationAsync(new GetFunctionConfigurationRequest {FunctionName = function });
+                    if(response.State == State.Pending)
+                    {
+                        await Task.Delay(1000);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                } 
+            }
+        }
     }
 
     public class LambdaFunction

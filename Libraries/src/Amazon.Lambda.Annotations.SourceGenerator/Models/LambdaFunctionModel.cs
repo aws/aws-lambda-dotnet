@@ -52,7 +52,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 
         /// <inheritdoc />
         /// The default value is set to Zip
-        public PackageTypeEnum PackageType  => LambdaMethod.LambdaFunctionAttribute.Data.PackageType ?? PackageTypeEnum.Zip;
+        public LambdaPackageType PackageType  => LambdaMethod.LambdaFunctionAttribute.Data.PackageType;
 
         /// <inheritdoc />
         public IList<AttributeModel> Attributes => LambdaMethod.Attributes ?? new List<AttributeModel>();

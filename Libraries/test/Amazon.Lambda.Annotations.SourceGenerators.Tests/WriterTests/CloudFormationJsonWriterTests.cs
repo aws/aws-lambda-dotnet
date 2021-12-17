@@ -326,7 +326,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, null, null);
-            lambdaFunctionModel.PackageType = PackageTypeEnum.Zip;
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
             var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
 
@@ -341,7 +341,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", propertiesToken["Handler"]);
 
             // ARRANGE - Change PackageType to Image
-            lambdaFunctionModel.PackageType = PackageTypeEnum.Image;
+            lambdaFunctionModel.PackageType = LambdaPackageType.Image;
             report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
 
             // ACT
@@ -352,12 +352,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             propertiesToken = rootToken["Resources"]["TestMethod"]["Properties"];
             Assert.Equal("Image", propertiesToken["PackageType"]);
             Assert.Equal(".", propertiesToken["ImageUri"]);
-            Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", propertiesToken["ImageConfig"]["Command"]);
+            Assert.Equal(new JArray("MyAssembly::MyNamespace.MyType::Handler"), propertiesToken["ImageConfig"]["Command"]);
             Assert.Null(propertiesToken["CodeUri"]);
             Assert.Null(propertiesToken["Handler"]);
 
             // ARRANGE - Change PackageType back to Zip
-            lambdaFunctionModel.PackageType = PackageTypeEnum.Zip;
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
             report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
 
             // ACT
@@ -418,7 +418,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public string Policies { get; set; }
             public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
             public string SourceGeneratorVersion { get; set; }
-            public PackageTypeEnum PackageType { get; set; } = PackageTypeEnum.Zip;
+            public LambdaPackageType PackageType { get; set; } = LambdaPackageType.Zip;
         }
     }
 }
