@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
@@ -15,7 +16,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task Greeter()
         {
-            var expectedTemplateContent = NormalizeNewLines(File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template")));
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template")).ToEnvironmentLineEndings();
 
             await new VerifyCS.Test
             {
@@ -50,13 +51,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             }.RunAsync();
 
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
-            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+            Assert.Equal(expectedTemplateContent.ToEnvironmentLineEndings(), actualTemplateContent);
         }
 
         [Fact]
         public async Task SimpleCalculator()
         {
-            var expectedTemplateContent = NormalizeNewLines(File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "simpleCalculator.template")));
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "simpleCalculator.template")).ToEnvironmentLineEndings();
 
             await new VerifyCS.Test
             {
@@ -125,13 +126,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             }.RunAsync();
 
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
-            Assert.Equal(NormalizeNewLines(expectedTemplateContent), actualTemplateContent);
+            Assert.Equal(expectedTemplateContent.ToEnvironmentLineEndings(), actualTemplateContent);
         }
 
         [Fact]
         public async Task ComplexCalculator()
         {
-            var expectedTemplateContent = NormalizeNewLines(File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "complexCalculator.template")));
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "complexCalculator.template")).ToEnvironmentLineEndings();
 
             await new VerifyCS.Test
             {
@@ -167,14 +168,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             }.RunAsync();
 
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
-            Assert.Equal(NormalizeNewLines(expectedTemplateContent), actualTemplateContent);
-        }
-
-        private string NormalizeNewLines(string expectedTemplateContent)
-        {
-            return expectedTemplateContent.Replace("\r\n", Environment.NewLine).
-                Replace("\n", Environment.NewLine).
-                Replace("\r\r\n", Environment.NewLine);
+            Assert.Equal(expectedTemplateContent.ToEnvironmentLineEndings(), actualTemplateContent);
         }
     }
 }
