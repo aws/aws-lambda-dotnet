@@ -112,6 +112,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             {
                 // this is a generator failure, report this as error
                 diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.UnhandledException, Location.None, e.PrettyPrint()));
+#if DEBUG
+                throw;
+#endif
             }
         }
 
