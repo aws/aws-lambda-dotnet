@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
@@ -7,16 +8,19 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     {
         public static HttpApiAttribute Build(AttributeData att)
         {
-            if (att.ConstructorArguments.Length != 3)
+            if (att.ConstructorArguments.Length != 2)
             {
-                throw new NotSupportedException($"{TypeFullNames.HttpApiAttribute} must have constructor with 3 arguments.");
+                throw new NotSupportedException($"{TypeFullNames.HttpApiAttribute} must have constructor with 2 arguments.");
             }
 
             var method = (HttpMethod)att.ConstructorArguments[0].Value;
-            var version = (HttpApiVersion)att.ConstructorArguments[1].Value;
-            var template = att.ConstructorArguments[2].Value as string;
+            var template = att.ConstructorArguments[1].Value as string;
+            var version = att.NamedArguments.FirstOrDefault(arg => arg.Key == "Version").Value.Value;
 
-            var data = new HttpApiAttribute(method, version, template);
+            var data = new HttpApiAttribute(method, template)
+            {
+                Version = version == null ? HttpApiVersion.V2 : (HttpApiVersion)version
+            };
             return data;
         }
     }

@@ -277,7 +277,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 "TestMethod", 45, 512, null, null);
             var httpAttributeModel = new AttributeModel<HttpApiAttribute>()
             {
-                Data = new HttpApiAttribute(HttpMethod.Get, HttpApiVersion.V1, "/Calculator/Add")
+                Data = new HttpApiAttribute(HttpMethod.Get, "/Calculator/Add")
+                {
+                    Version = HttpApiVersion.V1
+                }
             };
             lambdaFunctionModel.Attributes = new List<AttributeModel>() {httpAttributeModel};
             var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
@@ -299,7 +302,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             // ARRANGE - CHANGE TO A HTTP POST METHOD
             httpAttributeModel = new AttributeModel<HttpApiAttribute>()
             {
-                Data = new HttpApiAttribute(HttpMethod.Post, HttpApiVersion.V2, "/Calculator/Add")
+                Data = new HttpApiAttribute(HttpMethod.Post, "/Calculator/Add")
             };
             lambdaFunctionModel.Attributes = new List<AttributeModel>() {httpAttributeModel};
 

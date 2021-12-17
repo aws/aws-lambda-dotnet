@@ -99,10 +99,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 throw new InvalidOperationException($"{TypeFullNames.HttpApiAttribute} must have a constructor with parameter.");
             }
 
-            var versionArgument = httpApiAttribute.ConstructorArguments[1];
+            var versionArgument = httpApiAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "Version").Value;
             if (versionArgument.Type == null)
             {
-                throw new InvalidOperationException($"{versionArgument.Type} type cannot be null for {TypeFullNames.HttpApiAttribute}.");
+                return HttpApiVersion.V2;
             }
 
             if (!versionArgument.Type.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.HttpApiVersion), SymbolEqualityComparer.Default))

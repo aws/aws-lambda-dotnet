@@ -13,7 +13,7 @@ namespace TestServerlessApp
     public class ComplexCalculator
     {
         [LambdaFunction(PackageType = LambdaPackageType.Image)]
-        [HttpApi(HttpMethod.Post, HttpApiVersion.V2, "/ComplexCalculator/Add")]
+        [HttpApi(HttpMethod.Post, "/ComplexCalculator/Add")]
         public Tuple<double, double> Add([FromBody]string complexNumbers, ILambdaContext context, APIGatewayHttpApiV2ProxyRequest request)
         {
             context.Logger.Log($"Request {JsonSerializer.Serialize(request)}");
@@ -43,7 +43,7 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction(PackageType = LambdaPackageType.Image)]
-        [HttpApi(HttpMethod.Post, HttpApiVersion.V2, "/ComplexCalculator/Subtract")]
+        [HttpApi(HttpMethod.Post, "/ComplexCalculator/Subtract")]
         public Tuple<double, double> Subtract([FromBody]IList<IList<int>> complexNumbers)
         {
             if (complexNumbers.Count() != 2)
