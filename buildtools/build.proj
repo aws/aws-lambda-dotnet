@@ -195,9 +195,11 @@
     </Target>
     <Target Name="run-unit-tests">
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests"/>
+        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.Annotations.SourceGenerators.Tests"/>
     </Target>
     <Target Name="run-integ-tests">
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.IntegrationTests"/>
+        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\TestServerlessApp.IntegrationTests"/>
     </Target>
     <Target Name="create-nuget-packages-cicd" DependsOnTargets="build-project-packages">
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
