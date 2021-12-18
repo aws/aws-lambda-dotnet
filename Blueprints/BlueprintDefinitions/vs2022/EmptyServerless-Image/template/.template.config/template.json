@@ -5,7 +5,7 @@
     "Lambda",
     "Serverless"
   ],
-  "name": "Lambda Empty Serverless (.NET 5 Container Image)",
+  "name": "Lambda Empty Serverless (.NET 6 Container Image)",
   "identity": "AWS.Lambda.Serverless.Image.Empty.CSharp",
   "groupIdentity": "AWS.Lambda.Image.Serverless.Empty",
   "shortName": "serverless.image.EmptyServerless",

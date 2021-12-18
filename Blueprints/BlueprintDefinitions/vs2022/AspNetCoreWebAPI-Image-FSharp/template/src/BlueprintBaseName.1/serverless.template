@@ -9,9 +9,6 @@
       "Properties": {
         "PackageType": "Image",
         "ImageConfig": {
-          "EntryPoint": [
-            "/lambda-entrypoint.sh"
-          ],
           "Command": [
             "BlueprintBaseName.1::BlueprintBaseName._1.LambdaEntryPoint::FunctionHandlerAsync"
           ]
