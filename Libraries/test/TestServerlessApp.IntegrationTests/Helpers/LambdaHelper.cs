@@ -19,9 +19,9 @@ namespace TestServerlessApp.IntegrationTests.Helpers
             const string stackNameKey = "aws:cloudformation:stack-name";
             const string logicalIdKey = "aws:cloudformation:logical-id";
             var lambdaFunctions = new List<LambdaFunction>();
-            var response = await _lambdaClient.ListFunctionsAsync(new ListFunctionsRequest());
+            var paginator = _lambdaClient.Paginators.ListFunctions(new ListFunctionsRequest());
 
-            foreach (var function in response.Functions)
+            await foreach (var function in paginator.Functions)
             {
                 var tags = (await _lambdaClient.ListTagsAsync(new ListTagsRequest {Resource = function.FunctionArn})).Tags;
                 if (tags.ContainsKey(stackNameKey) && string.Equals(tags[stackNameKey], stackName))
@@ -61,7 +61,7 @@ namespace TestServerlessApp.IntegrationTests.Helpers
                     {
                         break;
                     }
-                } 
+                }
             }
         }
     }

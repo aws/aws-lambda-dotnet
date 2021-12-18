@@ -2,6 +2,25 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
   "Description": "An AWS Serverless Application.",
+  "Parameters": {
+    "ArchitectureTypeParameter": {
+      "Type": "String",
+      "Default": "x86_64",
+      "AllowedValues": [
+        "x86_64",
+        "arm64"
+      ]
+    }
+  },
+  "Globals": {
+    "Function": {
+      "Architectures": [
+        {
+          "Ref": "ArchitectureTypeParameter"
+        }
+      ]
+    }
+  },
   "Resources": {
     "GreeterSayHello": {
       "Type": "AWS::Serverless::Function",
