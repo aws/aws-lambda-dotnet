@@ -1,4 +1,9 @@
 ### Release 2021-12-12
+* **Amazon.Lambda.Templates (5.7.0)**
+  * Updated container image based templates to use .NET 6
+  * Updated PackageReferences to latest version for Amazon packages
+
+### Release 2021-12-12
 * **Amazon.Lambda.AspNetCoreServer (7.0.1)**
   * Fixed issue of duplicate log messages written to CloudWatch Logs
 * **Amazon.Lambda.RuntimeSupport (1.6.0)**
@@ -9,11 +14,11 @@
   * Fixed incorrect JSON parsing for Lambda context Cognito fields
   * Fixed deadlock issue when using both Console.WriteX and ILambdaLogger with multiple threads
 * **Amazon.Lambda.TestTool-6.0 (0.11.4)**
-  * Update to latest version of Amazon.Lambda.Core (2.1.0)
+  * Updated to latest version of Amazon.Lambda.Core (2.1.0)
 * **Amazon.Lambda.TestTool-5.0 (0.11.4)**
-  * Update to latest version of Amazon.Lambda.Core (2.1.0)
+  * Updated to latest version of Amazon.Lambda.Core (2.1.0)
 * **Amazon.Lambda.TestTool-3.1 (0.11.4)**
-  * Update to latest version of Amazon.Lambda.Core (2.1.0)
+  * Updated to latest version of Amazon.Lambda.Core (2.1.0)
 
 ### Release 2021-11-22
 * **Amazon.Lambda.AspNetCoreServer (7.0.0)**
