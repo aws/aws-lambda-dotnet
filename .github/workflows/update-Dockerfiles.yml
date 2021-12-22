@@ -11,7 +11,7 @@ on:
   # Allows to run this workflow on script updates
   pull_request:
     paths:
-      - 'LambdaRuntimeDockerfiles\update-dockerfile.ps1'
+      - 'LambdaRuntimeDockerfiles/update-dockerfile.ps1'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
