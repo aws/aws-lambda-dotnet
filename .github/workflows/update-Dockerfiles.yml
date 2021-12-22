@@ -1,0 +1,61 @@
+name: Update Dockerfiles
+
+on:
+  schedule:
+    # Allows to Run every day at 9:00 am
+    - cron:  '0 17 * * *'
+
+  # Allows to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+  # Allows to run this workflow on script updates
+  pull_request:
+    paths:
+      - 'LambdaRuntimeDockerfiles/update-dockerfile.ps1'
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      # Runs a single command using the runners shell
+      - name: Run a one-line script
+        run: echo Hello, world!
+
+      # Runs a set of commands using the runners shell
+      - name: Update dockerfiles
+        shell: pwsh
+        run: |
+          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile "LambdaRuntimeDockerfiles/Images/net5/amd64/Dockerfile"
+          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile "LambdaRuntimeDockerfiles/Images/net6/amd64/Dockerfile"
+          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile "LambdaRuntimeDockerfiles/Images/net6/arm64/Dockerfile"
+
+      - name: Commit and Push
+        id: commit-push
+        run: |
+          git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
+          git config --global user.name "aws-sdk-dotnet-automation"
+          branch=chore/update-Dockerfiles-$(date +'%Y-%m-%d')
+          git checkout -b $branch
+          git add "**/*Dockerfile"
+          git commit -m "chore: ASP.NET Core version update in Dockerfiles"
+          git push origin $branch
+          echo "::set-output name=BRANCH::$branch"
+
+      - name: Pull Request
+        id: pull-request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: ${{ steps.commit-push.outputs.BRANCH }}
+          destination_branch: "master"
+          pr_title: 'chore: ASP.NET Core version update in Dockerfiles'
+          pr_body: "This PR updates the Dockerfiles to use the latest ASP.NET Core version."
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pr_label: "auto-pr"
