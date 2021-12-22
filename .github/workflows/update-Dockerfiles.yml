@@ -1,0 +1,94 @@
+name: Update Dockerfiles
+
+on:
+  # Allows to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      NET_5_AMD64:
+        description: ".NET 5 AMD64"
+        type: boolean
+        required: true
+        default: "true"
+      NET_6_AMD64:
+        description: ".NET 6 AMD64"
+        type: boolean
+        required: true
+        default: "true"
+      NET_6_ARM64:
+        description: ".NET 6 ARM64"
+        type: boolean
+        required: true
+        default: "true"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      NET_5_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net5/amd64/Dockerfile"
+      NET_6_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net6/amd64/Dockerfile"
+      NET_6_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net6/arm64/Dockerfile"
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Update .NET 5 AMD64
+        id: update-net5-amd64
+        shell: pwsh
+        run: |
+          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile ${{ env.NET_5_AMD64_Dockerfile }}
+        if: ${{ github.event.inputs.NET_5_AMD64 == 'true' }}
+
+      - name: Update .NET 6 AMD64
+        id: update-net6-amd64
+        shell: pwsh
+        run: |
+          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile ${{ env.NET_6_AMD64_Dockerfile }}
+        if: ${{ github.event.inputs.NET_6_AMD64 == 'true' }}
+
+      - name: Update .NET 6 ARM64
+        id: update-net6-arm64
+        shell: pwsh
+        run: |
+          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile ${{ env.NET_6_ARM64_Dockerfile }}
+        if: ${{ github.event.inputs.NET_6_ARM64 == 'true' }}
+
+      # Update Dockerfiles if newer version of ASP.NET Core is available
+      - name: Commit and Push
+        id: commit-push
+        shell: pwsh
+        run: |
+          git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
+          git config --global user.name "aws-sdk-dotnet-automation"
+          $suffix=Get-Date -Format yyyy-mm-dd-HH-mm
+          $branch="chore/update-Dockerfiles-${suffix}"
+          git checkout -b $branch
+          git add "**/*Dockerfile"
+          git commit -m "chore: ASP.NET Core version update in Dockerfiles"
+          git push origin $branch
+          echo "::set-output name=BRANCH::$branch"
+
+      # Create a Pull Request from the pushed branch
+      - name: Pull Request
+        id: pull-request
+        if: ${{ steps.commit-push.outputs.BRANCH }}
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: ${{ steps.commit-push.outputs.BRANCH }}
+          destination_branch: "master"
+          pr_title: 'chore: ASP.NET Core version update in Dockerfiles'
+          pr_body: "This PR updates the Dockerfiles to use the latest ASP.NET Core version.
+            Verify listed Dockerfiles that they have correct version and matching SHA512 checksum for ASP.NET Core runtime.
+            \n\nAll .NET versions https://dotnet.microsoft.com/en-us/download/dotnet
+            \n\n*Description of changes:*
+            \n${{ format
+                (
+                  '{0}\n{1}\n{2}',
+                  join(steps.update-net5-amd64.outputs.*, '\n'),
+                  join(steps.update-net6-amd64.outputs.*, '\n'),
+                  join(steps.update-net6-arm64.outputs.*, '\n')
+                )
+            }}"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pr_label: "auto-pr"
