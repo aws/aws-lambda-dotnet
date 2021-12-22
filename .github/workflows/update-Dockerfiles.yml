@@ -1,14 +1,17 @@
-# This is a basic workflow to help you get started with Actions
-
 name: Update Dockerfiles
 
 on:
   schedule:
-    # Runs every day at 9:00 am
+    # Allows to Run every day at 9:00 am
     - cron:  '0 17 * * *'
 
-  # Allows you to run this workflow manually from the Actions tab
+  # Allows to run this workflow manually from the Actions tab
   workflow_dispatch:
+
+  # Allows to run this workflow on script updates
+  pull_request:
+    paths:
+      - 'LambdaRuntimeDockerfiles\update-dockerfile.ps1'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
