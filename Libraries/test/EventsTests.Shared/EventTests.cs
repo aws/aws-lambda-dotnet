@@ -23,7 +23,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.CloudWatchLogsEvents;
 
     using Amazon.Lambda.CloudWatchEvents.ECSEvents;
-	using Amazon.Lambda.CloudWatchEvents.BatchEvents;
+    using Amazon.Lambda.CloudWatchEvents.BatchEvents;
     using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
     using Newtonsoft.Json.Linq;
 
@@ -40,7 +40,7 @@ namespace Amazon.Lambda.Tests
 
     public class EventTest
     {
-        
+
         // This utility method takes care of removing the BOM that System.Text.Json doesn't like.
         public MemoryStream LoadJsonTestFile(string filename)
         {
@@ -65,7 +65,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("$default", request.RouteKey);
                 Assert.Equal("/my/path", request.RawPath);
                 Assert.Equal("parameter1=value1&parameter1=value2&parameter2=value", request.RawQueryString);
-                
+
                 Assert.Equal(2, request.Cookies.Length);
                 Assert.Equal("cookie1", request.Cookies[0]);
                 Assert.Equal("cookie2", request.Cookies[1]);
@@ -215,7 +215,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("arn:aws:sts::111122223333:assumed-role/Admin/example", s3Event.UserIdentity.Arn);
                 Assert.Equal("111122223333", s3Event.UserIdentity.AccountId);
                 Assert.Equal("accessKeyId", s3Event.UserIdentity.AccessKeyId);
-                
+
                 Assert.Equal("false", s3Event.UserIdentity.SessionContext.Attributes.MfaAuthenticated);
                 Assert.Equal("Wed Mar 10 23:41:52 UTC 2021", s3Event.UserIdentity.SessionContext.Attributes.CreationDate);
 
@@ -445,7 +445,7 @@ namespace Amazon.Lambda.Tests
 #endif
         public void ConfigTest(Type serializerType)
         {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("config-event.json"))
             {
                 var configEvent = serializer.Deserialize<ConfigEvent>(fileStream);
@@ -519,7 +519,7 @@ namespace Amazon.Lambda.Tests
 #endif
         public void SimpleEmailTest(Type serializerType)
         {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("simple-email-event-lambda.json"))
             {
                 var sesEvent = serializer.Deserialize<SimpleEmailEvent<SimpleEmailEvents.Actions.LambdaReceiptAction>>(fileStream);
@@ -575,7 +575,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.Ses.Receipt.VirusVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.DMARCVerdict.Status, "PASS");
                 Assert.Equal(record.Ses.Receipt.ProcessingTimeMillis, 574);
-                
+
                 Handle(sesEvent);
             }
         }
@@ -594,7 +594,7 @@ namespace Amazon.Lambda.Tests
 
                 Assert.Equal(sesEvent.Records.Count, 1);
                 var record = sesEvent.Records[0];
-                
+
                 Assert.Equal(record.Ses.Receipt.Action.Type, "Lambda");
                 Assert.Equal(record.Ses.Receipt.Action.InvocationType, "Event");
                 Assert.Equal(record.Ses.Receipt.Action.FunctionArn, "arn:aws:lambda:us-east-1:000000000000:function:my-ses-lambda-function");
@@ -760,9 +760,46 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
+        public void SQSBatchResponseTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("sqs-response.json"))
+            {
+                var sqsBatchResponse = serializer.Deserialize<SQSBatchResponse>(fileStream);
+
+                Assert.Equal(sqsBatchResponse.BatchItemFailures.Count, 2);
+                {
+                    var item1 = sqsBatchResponse.BatchItemFailures[0];
+                    Assert.NotNull(item1);
+                    Assert.Equal("MessageID_1", item1.ItemIdentifier);
+                }
+
+                var item2 = sqsBatchResponse.BatchItemFailures[1];
+                {
+                    Assert.NotNull(item2);
+                    Assert.Equal("MessageID_2", item2.ItemIdentifier);
+                }
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<SQSBatchResponse>(sqsBatchResponse, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("sqs-response.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
         public void APIGatewayProxyRequestTest(Type serializerType)
         {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("proxy-event.json"))
             {
                 var proxyEvent = serializer.Deserialize<APIGatewayProxyRequest>(fileStream);
@@ -846,7 +883,7 @@ namespace Amazon.Lambda.Tests
 #endif
         public void APIGatewayProxyResponseTest(Type serializerType)
         {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             var response = new APIGatewayProxyResponse
             {
                 StatusCode = 200,
@@ -881,7 +918,7 @@ namespace Amazon.Lambda.Tests
 #endif
         public void APIGatewayAuthorizerResponseTest(Type serializerType)
         {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             var context = new APIGatewayCustomAuthorizerContextOutput();
             context["field1"] = "value1";
             context["field2"] = "value2";
@@ -927,7 +964,7 @@ namespace Amazon.Lambda.Tests
             Assert.Equal("Allow", root["policyDocument"]["Statement"][0]["Effect"]);
             Assert.Equal("*", root["policyDocument"]["Statement"][0]["Resource"][0]);
         }
-        
+
         [Theory]
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP3_1_OR_GREATER        
@@ -936,7 +973,7 @@ namespace Amazon.Lambda.Tests
 #endif
         public void ApplicationLoadBalancerRequestSingleValueTest(Type serializerType)
         {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("alb-request-single-value.json"))
             {
                 var evnt = serializer.Deserialize<ApplicationLoadBalancerRequest>(fileStream);
@@ -945,11 +982,11 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(evnt.HttpMethod, "GET");
                 Assert.Equal(evnt.Body, "not really base64");
                 Assert.True(evnt.IsBase64Encoded);
-                
+
                 Assert.Equal(2, evnt.QueryStringParameters.Count);
                 Assert.Equal("value1", evnt.QueryStringParameters["query1"]);
                 Assert.Equal("value2", evnt.QueryStringParameters["query2"]);
-                
+
                 Assert.Equal("value1", evnt.Headers["head1"]);
                 Assert.Equal("value2", evnt.Headers["head2"]);
 
@@ -958,8 +995,8 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(requestContext.Elb.TargetGroupArn, "arn:aws:elasticloadbalancing:region:123456789012:targetgroup/my-target-group/6d0ecf831eec9f09");
             }
         }
-        
-        
+
+
         [Theory]
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP3_1_OR_GREATER        
@@ -968,7 +1005,7 @@ namespace Amazon.Lambda.Tests
 #endif
         public void ApplicationLoadBalancerRequestMultiValueTest(Type serializerType)
         {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("alb-request-multi-value.json"))
             {
                 var evnt = serializer.Deserialize<ApplicationLoadBalancerRequest>(fileStream);
@@ -977,7 +1014,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(evnt.HttpMethod, "GET");
                 Assert.Equal(evnt.Body, "not really base64");
                 Assert.True(evnt.IsBase64Encoded);
-                
+
                 Assert.Equal(2, evnt.MultiValueQueryStringParameters.Count);
                 Assert.Equal(2, evnt.MultiValueQueryStringParameters["query1"].Count);
                 Assert.Equal("q1-value1", evnt.MultiValueQueryStringParameters["query1"][0]);
@@ -985,7 +1022,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(2, evnt.MultiValueQueryStringParameters["query2"].Count);
                 Assert.Equal("q2-value1", evnt.MultiValueQueryStringParameters["query2"][0]);
                 Assert.Equal("q2-value2", evnt.MultiValueQueryStringParameters["query2"][1]);
-                
+
                 Assert.Equal(2, evnt.MultiValueHeaders["head1"].Count);
                 Assert.Equal(2, evnt.MultiValueHeaders["head1"].Count);
                 Assert.Equal("h1-value1", evnt.MultiValueHeaders["head1"][0]);
@@ -998,9 +1035,9 @@ namespace Amazon.Lambda.Tests
                 var requestContext = evnt.RequestContext;
                 Assert.Equal(requestContext.Elb.TargetGroupArn, "arn:aws:elasticloadbalancing:region:123456789012:targetgroup/my-target-group/6d0ecf831eec9f09");
             }
-        }    
-        
-        
+        }
+
+
         [Theory]
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP3_1_OR_GREATER        
@@ -1009,7 +1046,7 @@ namespace Amazon.Lambda.Tests
 #endif
         public void ApplicationLoadBalancerSingleHeaderResponseTest(Type serializerType)
         {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
 
             var response = new ApplicationLoadBalancerResponse()
             {
@@ -1034,10 +1071,10 @@ namespace Amazon.Lambda.Tests
             }
 
             JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
-            
+
             Assert.Equal("h1-value1", root["headers"]["Head1"]);
             Assert.Equal("h2-value1", root["headers"]["Head2"]);
-            
+
             Assert.True((bool)root["isBase64Encoded"]);
             Assert.Equal("not really base64", (string)root["body"]);
             Assert.Equal(200, (int)root["statusCode"]);
@@ -1208,7 +1245,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("Fulfilled", lexResponse.RecentIntentSummaryView[0].FulfillmentState);
                 Assert.Equal("NextSlot", lexResponse.RecentIntentSummaryView[0].SlotToElicit);
 
-                MemoryStream ms = new MemoryStream();                
+                MemoryStream ms = new MemoryStream();
                 serializer.Serialize<LexResponse>(lexResponse, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
@@ -1228,7 +1265,7 @@ namespace Amazon.Lambda.Tests
 #endif
         public void KinesisFirehoseEvent(Type serializerType)
         {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("kinesis-firehose-event.json"))
             {
                 var kinesisEvent = serializer.Deserialize<KinesisFirehoseEvent>(fileStream);
@@ -1459,7 +1496,7 @@ namespace Amazon.Lambda.Tests
         {
             var data = ms.ToArray();
             return Convert.ToBase64String(data);
-        }        
+        }
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
@@ -1469,7 +1506,7 @@ namespace Amazon.Lambda.Tests
 #endif
         public void BatchJobStateChangeEventTest(Type serializerType)
         {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("batch-job-state-change-event.json"))
             {
                 var jobStateChangeEvent = serializer.Deserialize<BatchJobStateChangeEvent>(fileStream);
@@ -1663,7 +1700,7 @@ namespace Amazon.Lambda.Tests
 #endif
         public void ScheduledEventTest(Type serializerType)
         {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;            
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("scheduled-event.json"))
             {
                 var scheduledEvent = serializer.Deserialize<ScheduledEvent>(fileStream);
