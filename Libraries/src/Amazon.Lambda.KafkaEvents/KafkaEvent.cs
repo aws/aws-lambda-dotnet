@@ -43,7 +43,7 @@
             /// <summary>
             /// The partition associated with the event record.
             /// </summary>
-            public int Partition { get; set; }
+            public string Partition { get; set; }
 
             /// <summary>
             /// The partition offset associated with the event record.
