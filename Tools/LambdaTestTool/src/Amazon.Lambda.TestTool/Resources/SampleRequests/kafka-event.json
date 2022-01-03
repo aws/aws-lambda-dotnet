@@ -6,7 +6,7 @@
     "mytopic-0": [
       {
         "topic": "mytopic",
-        "partition": 0,
+        "partition": "0",
         "offset": 15,
         "timestamp": 1545084650987,
         "timestampType": "CREATE_TIME",
