@@ -36,16 +36,16 @@ app {
     flex: 1;
 }
 
-    .main .top-row {
-        background-color: #f7f7f7;
-        border-bottom: 1px solid #d6d5d5;
-        justify-content: flex-end;
-    }
+.main .top-row {
+    background-color: #f7f7f7;
+    border-bottom: 1px solid #d6d5d5;
+    justify-content: flex-end;
+}
 
-        .main .top-row > a, .main .top-row .btn-link {
-            white-space: nowrap;
-            margin-left: 1.5rem;
-        }
+.main .top-row > a, .main .top-row .btn-link {
+    white-space: nowrap;
+    margin-left: 1.5rem;
+}
 
 .main .top-row a:first-child {
     overflow: hidden;
@@ -247,4 +247,34 @@ app {
 
 .faq-answer {
     
+}
+
+.event-list-item {
+    /* Add shadows to create the "card" effect */
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+    padding: 5px 16px;
+    margin-bottom: 10px;
+    font-size: 0.875em;
+}
+
+    /* On mouse-over, add a deeper shadow */
+    .event-list-item:hover {
+        box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+    }
+
+.event-label {
+    margin: 5px;
+    font-weight: bold
+}
+
+.event-value {
+    margin: 5px;
+}
+
+.event-list {
+    border-style: double;
+    padding: 2px;
+    overflow-y: scroll;
+    height: 400px;
 }

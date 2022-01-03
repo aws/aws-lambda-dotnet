@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 
 namespace Amazon.Lambda.TestTool
 {
@@ -176,6 +177,35 @@ namespace Amazon.Lambda.TestTool
             }
 
             Console.WriteLine(sb.ToString());
+        }
+
+        public static string PrettyPrintJson(string json)
+        {
+            try
+            {
+                var doc = JsonDocument.Parse(json);
+                var prettyPrintJson = System.Text.Json.JsonSerializer.Serialize(doc, new JsonSerializerOptions()
+                {
+                    WriteIndented = true
+                });
+                return prettyPrintJson;
+            }
+            catch (Exception)
+            {
+                return json;
+            }
+        }
+
+        public static bool IsExecutableAssembliesSupported
+        {
+            get
+            {
+#if NET6_0_OR_GREATER
+                return true;
+#else
+                return false;
+#endif
+            }
         }
     }
 }

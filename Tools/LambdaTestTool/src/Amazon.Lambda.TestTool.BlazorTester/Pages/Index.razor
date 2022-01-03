@@ -12,6 +12,10 @@
     Run .NET Lambda function code inside this tool. IDEs can attach their debuggers to this tool and step through 
     the Lambda code.
 </p>
+<p>
+    If you are developing .NET Lambda function using <b>custom runtimes</b> or C# <b>top level statements</b> that use the <b>Amazon.Lambda.RuntimeSupport</b> NuGet package the 
+    <a href="/runtime">Executable Assembly</a> page should be used to test the function.
+</p>
 
 <FunctionPickerComponent @ref="FunctionPicker" />
 
@@ -83,11 +87,9 @@
 
 @code {
 
-    const string ResponseSuccessStyle = "white-space: pre-wrap; height: min-content; font-size: 75%; color: black";
-    const string ResponseErrorStyle = "white-space: pre-wrap; height: min-content; font-size: 75%; color: red";
 
     string ResultsPanelStyle { get; set; } = "display: none;";
-    string FunctionResponseStyle { get; set; } = ResponseSuccessStyle;
+    string FunctionResponseStyle { get; set; } = Constants.ResponseSuccessStyle;
 
     FunctionPickerComponent FunctionPicker { get; set; }
 
@@ -177,12 +179,12 @@
         if (response.IsSuccess)
         {
             this.FunctionResponse = response.Response;
-            this.FunctionResponseStyle = ResponseSuccessStyle;
+            this.FunctionResponseStyle = Constants.ResponseSuccessStyle;
         }
         else
         {
             this.FunctionResponse = response.Error;
-            this.FunctionResponseStyle = ResponseErrorStyle;
+            this.FunctionResponseStyle = Constants.ResponseErrorStyle;
         }
 
 

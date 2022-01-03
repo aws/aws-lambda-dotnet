@@ -1,4 +1,6 @@
 @page "/documentation"
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor httpContextAccessor;
 
 <h1 style="padding: 15px">@Constants.PRODUCT_NAME</h1>
 <hr />
@@ -16,6 +18,44 @@
     The easiest way to use this tool is with Visual Studio and the <a href="@Constants.LINK_VS_TOOLKIT_MARKETPLACE" target="_blank">AWS Toolkit for Visual Studio</a>
     which will automatically configure this tool when a .NET Core Lambda project is opened in Visual Studio. For how to setup this tool for other IDE like Visual Studio for Code or Rider from JetBrains check
     click <a href="@Constants.LINK_GITHUB_TEST_TOOL_INSTALL_AND_RUN" target="_blank">here.</a>
+</p>
+
+<h2>Test Executable Assembly Functions</h2>
+<p>
+    .NET Lambda functions can be written as an executable assembly. This is done for Lambda functions using custom runtime or using .NET top level statements. These functions include the 
+    Lambda runtime client implemented in the Amazon.Lambda.RuntimeSupport NuGet package. In an executable assembly function the Lambda runtime client is initialized and connects to a 
+    local REST endpoint for Lambda events to process.
+</p>
+<p>
+    The <b>Executable Assembly</b> page in this tool hosts a local Lambda runtime API for the Lambda runtime client to connect to. On this page you can queue events for the Lambda 
+    function to process.
+</p>
+<h4>Connect Executable Assembly Functions</h4>
+<p>
+    To test Lambda function built as an executable assembly the environment variable <b>AWS_LAMBDA_RUNTIME_API</b> must be set to 
+    <b>localhost:@httpContextAccessor.HttpContext.Connection.LocalPort</b>. This will tell Amazon.Lambda.RuntimeSupport to connect to this instance of the test tool for Lambda
+    events to process. To configure AWS credentials and region for the function the environment variables <b>AWS_PROFILE</b> and <b>AWS_REGION</b> can be set. 
+</p>
+<p>
+    Here is an example of a .NET executable assembly Lambda function's <i>launchSettings.json</i> file used in Visual Studio for debugging that connects to the test tool and 
+    sets the profile and region.
+    <pre>
+{
+  "profiles": {
+    "Lambda Runtime API": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AWS_LAMBDA_RUNTIME_API": "localhost:5050"
+        "AWS_PROFILE": "test-profile"
+        "AWS_REGION": "us-west-2"
+      }
+    }
+  }
+}
+    </pre>
+<h4>Programmatically Queue Events</h4>
+To queue an event to be processed without using the UI send a <b>POST</b> request to <b>http://localhost:@httpContextAccessor.HttpContext.Connection.LocalPort/runtime/test-event</b> with the 
+JSON Lambda event document as the POST request's body.
 </p>
 
 <h2>Frequently Asked Questions</h2>
