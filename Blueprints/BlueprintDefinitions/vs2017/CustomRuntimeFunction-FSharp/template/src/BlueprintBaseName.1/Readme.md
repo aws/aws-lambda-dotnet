@@ -41,7 +41,3 @@ Deploy function to AWS Lambda
     cd "BlueprintBaseName.1/src/BlueprintBaseName.1"
     dotnet lambda deploy-function
 ```
-
-## Arm64
-
-If you want to run your Lambda on an Arm64 processor, all you need is to do is add `"function-architecture": "arm64"` to the `aws-lambda-tools-defaults.json` file. Then deploy as described above.
