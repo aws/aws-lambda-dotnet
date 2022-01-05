@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - SQSEvents package.</Description>
     <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.SQSEvents</AssemblyTitle>
-    <VersionPrefix>2.0.0</VersionPrefix>
+    <VersionPrefix>2.1.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.SQSEvents</AssemblyName>
     <PackageId>Amazon.Lambda.SQSEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
