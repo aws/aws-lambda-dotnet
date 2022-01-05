@@ -18,6 +18,3 @@ module FunctionTest =
 
         Assert.Equal(200, response.StatusCode)
         Assert.Equal("Hello AWS Serverless", response.Body)
-
-    [<EntryPoint>]
-    let main _ = 0

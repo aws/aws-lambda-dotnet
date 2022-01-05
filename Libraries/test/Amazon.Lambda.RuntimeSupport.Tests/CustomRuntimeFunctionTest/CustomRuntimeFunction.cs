@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CustomRuntimeFunctionTest
@@ -35,6 +36,9 @@ namespace CustomRuntimeFunctionTest
             {
                 switch (handler)
                 {
+                    case nameof(LoggingStressTest):
+                        bootstrap = new LambdaBootstrap(LoggingStressTest);
+                        break;
                     case nameof(LoggingTest):
                         bootstrap = new LambdaBootstrap(LoggingTest);
                         break;
@@ -95,6 +99,61 @@ namespace CustomRuntimeFunctionTest
                 handlerWrapper?.Dispose();
                 bootstrap?.Dispose();
             }
+        }
+
+        private static Task<InvocationResponse> LoggingStressTest(InvocationRequest invocation)
+        {
+            var source = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var token = source.Token;
+
+            Task UseWriteAsync()
+            {
+                return Task.Run(() =>
+                {
+                    int i = 0;
+                    while (!token.IsCancellationRequested)
+                    {
+                        Thread.Sleep(0);
+                        Console.Write($"|Write+{i++}|");
+                    }
+                });
+            }
+
+            Task UseWriteLineAsync()
+            {
+                return Task.Run(() =>
+                {
+                    int i = 0;
+                    while (!token.IsCancellationRequested)
+                    {
+                        Thread.Sleep(0);
+                        Console.WriteLine($"|WriteLine+{i++}|");
+                    }
+                });
+            }
+
+
+            Task UseLoggerAsync()
+            {
+                return Task.Run(() =>
+                {
+                    int i = 0;
+                    while (!token.IsCancellationRequested)
+                    {
+                        Thread.Sleep(0);
+                        invocation.LambdaContext.Logger.LogInformation($"|FormattedWriteLine+{i++}|");
+                    }
+                });
+            }
+
+
+            var task1 = UseWriteAsync();
+            var task2 = UseWriteLineAsync();
+            var task3 = UseLoggerAsync();
+
+            Task.WaitAll(task1, task2, task3);
+
+            return Task.FromResult(GetInvocationResponse(nameof(LoggingStressTest), "success"));
         }
 
         private static Task<InvocationResponse> LoggingTest(InvocationRequest invocation)

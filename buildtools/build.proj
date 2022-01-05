@@ -55,7 +55,8 @@
         <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew/vs2022"/>
         <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew/vs2019"/>
         <Copy SourceFiles="@(DeploymentNuGetConfig)" DestinationFolder="../Deployment" />
-				
+		
+        <Exec Command="dotnet new -u Blueprints\BlueprintDefinitions\vs2022" WorkingDirectory="..\" IgnoreExitCode="true" />		
         <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\vs2022" WorkingDirectory="..\"/>
 		
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.image.EmptyFunction;ProjectName=ImageEmptyFunctionC;Lang=C#;Version=vs2022"/>
@@ -99,6 +100,7 @@
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldC;Lang=C#;Version=vs2022"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldF;Lang=F#;Version=vs2022"/>				
 		
+		<Exec Command="dotnet new -u Blueprints\BlueprintDefinitions\vs2019" WorkingDirectory="..\" IgnoreExitCode="true" />
         <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\vs2019" WorkingDirectory="..\"/>
 		
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.image.EmptyFunction;ProjectName=ImageEmptyFunctionC;Lang=C#;Version=vs2019"/>
@@ -195,9 +197,11 @@
     </Target>
     <Target Name="run-unit-tests">
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests"/>
+        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.Annotations.SourceGenerators.Tests"/>
     </Target>
     <Target Name="run-integ-tests">
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.IntegrationTests"/>
+        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\TestServerlessApp.IntegrationTests"/>
     </Target>
     <Target Name="create-nuget-packages-cicd" DependsOnTargets="build-project-packages">
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>

@@ -54,6 +54,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 {
                     roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
 
+                    await RunTestSuccessAsync(lambdaClient, "LoggingStressTest", "not-used", "LoggingStressTest-success");
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", null);
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", "debug");
                     await RunUnformattedLoggingTestAsync(lambdaClient, "LoggingTest");
@@ -102,6 +103,10 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 JObject exception = (JObject)JsonConvert.DeserializeObject(await sr.ReadToEndAsync());
                 Assert.Equal(expectedErrorType, exception["errorType"].ToString());
                 Assert.Equal(expectedErrorMessage, exception["errorMessage"].ToString());
+
+                var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+                var logExpectedException = expectedErrorType != "Function.ResponseSizeTooLarge" ? expectedErrorType : "RuntimeApiClientException";
+                Assert.Contains(logExpectedException, log);
             }
         }
 

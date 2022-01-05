@@ -114,8 +114,13 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         public LogLevelLoggerWriter()
             : this(Console.Out, Console.Error)
         {
+            // SetOut will wrap our WrapperTextWriter with a synchronized TextWriter. Pass in the new synchronized
+            // TextWriter into our writer to make sure we obtain a lock on that instance before writing to the stdout.
             Console.SetOut(_wrappedStdOutWriter);
+            _wrappedStdOutWriter.LockObject = Console.Out;
+
             Console.SetError(_wrappedStdErrorWriter);
+            _wrappedStdErrorWriter.LockObject = Console.Error;
 
             ConfigureLoggingActionField();
         }
@@ -186,6 +191,14 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             public string CurrentAwsRequestId { get; set; } = string.Empty;
 
+            /// <summary>
+            /// This is typically set to either Console.Out or Console.Error to make sure we acquiring a lock
+            /// on that object whenever we are going through FormattedWriteLine. This is important for 
+            /// logging that goes through ILambdaLogger that skips going through Console.WriteX. Without
+            /// this ILambdaLogger only acquries one lock but Console.WriteX acquires 2 locks and we can get deadlocks.
+            /// </summary>
+            internal object LockObject { get; set; } = new object();
+
             public WrapperTextWriter(TextWriter innerWriter, string defaultLogLevel)
             {
                 _innerWriter = innerWriter;
@@ -217,31 +230,35 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             internal void FormattedWriteLine(string level, string message)
             {
-                var displayLevel = level;
-                if (Enum.TryParse<LogLevel>(level, true, out var levelEnum))
+                lock(LockObject)
                 {
-                    if (levelEnum < _minmumLogLevel)
-                        return;
-
-                    displayLevel = ConvertLogLevelToLabel(levelEnum);
-                }
-
-                if (_logFormatType == LogFormatType.Unformatted)
-                {
-                    _innerWriter.WriteLine(message);
-                }
-                else
-                {
-                    string line;
-                    if (!string.IsNullOrEmpty(displayLevel))
+                    var displayLevel = level;
+                    if (Enum.TryParse<LogLevel>(level, true, out var levelEnum))
                     {
-                        line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{displayLevel}\t{message ?? string.Empty}";
+                        if (levelEnum < _minmumLogLevel)
+                            return;
+
+                        displayLevel = ConvertLogLevelToLabel(levelEnum);
+                    }
+
+                    if (_logFormatType == LogFormatType.Unformatted)
+                    {
+                        _innerWriter.WriteLine(message);
                     }
                     else
                     {
-                        line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{message ?? string.Empty}";
+                        string line;
+                        if (!string.IsNullOrEmpty(displayLevel))
+                        {
+                            line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{displayLevel}\t{message ?? string.Empty}";
+                        }
+                        else
+                        {
+                            line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{message ?? string.Empty}";
+                        }
+
+                        _innerWriter.WriteLine(line);
                     }
-                    _innerWriter.WriteLine(line);
                 }
             }
 
@@ -258,7 +275,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             /// <returns></returns>
             private string ConvertLogLevelToLabel(LogLevel level)
             {
-                switch(level)
+                switch (level)
                 {
                     case LogLevel.Trace:
                         return "trce";

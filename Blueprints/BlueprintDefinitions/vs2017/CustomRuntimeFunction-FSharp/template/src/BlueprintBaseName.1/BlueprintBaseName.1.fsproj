@@ -15,7 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
-    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.4.0" />
+    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.6.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="2.0.0" />
   </ItemGroup>
   <ItemGroup>

@@ -1,7 +1,7 @@
 {
   "display-name": "ASP.NET Core Web API (Container Image)",
   "system-name": "AspNetCoreWebAPI",
-  "description": "Serverless ASP.NET Core 5 Web API packaged as a container image.",
+  "description": "Serverless ASP.NET Core 6 Web API packaged as a container image.",
   "sort-order": 150,
   "hidden-tags": [
     "F#",
