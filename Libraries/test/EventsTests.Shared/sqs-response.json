@@ -1,0 +1,10 @@
+﻿{
+  "batchItemFailures": [
+    {
+      "itemIdentifier": "MessageID_1"
+    },
+    {
+      "itemIdentifier": "MessageID_2"
+    }
+  ]
+}
