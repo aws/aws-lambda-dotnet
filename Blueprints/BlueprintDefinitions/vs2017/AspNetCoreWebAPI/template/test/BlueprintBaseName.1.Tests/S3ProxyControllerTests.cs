@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -10,7 +11,6 @@ using Amazon.Lambda.TestUtilities;
 using Amazon.Lambda.APIGatewayEvents;
 
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 
 using Amazon;
 using Amazon.S3;
@@ -54,7 +54,10 @@ namespace BlueprintBaseName._1.Tests
 
             // Use sample API Gateway request that uploads an object with object key "foo.txt" and content of "Hello World".
             var requestStr = File.ReadAllText("./SampleRequests/S3ProxyController-Put.json");
-            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
+            var request = JsonSerializer.Deserialize<APIGatewayProxyRequest>(requestStr, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
             var context = new TestLambdaContext();
             var response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
@@ -62,7 +65,10 @@ namespace BlueprintBaseName._1.Tests
 
             // Get with no object key in the resource path does an object list call
             requestStr = File.ReadAllText("./SampleRequests/S3ProxyController-Get.json");
-            request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
+            request = JsonSerializer.Deserialize<APIGatewayProxyRequest>(requestStr, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
@@ -72,7 +78,10 @@ namespace BlueprintBaseName._1.Tests
 
             // Return the content of the new s3 object foo.txt
             requestStr = File.ReadAllText("./SampleRequests/S3ProxyController-GetByKey.json");
-            request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
+            request = JsonSerializer.Deserialize<APIGatewayProxyRequest>(requestStr, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
@@ -82,7 +91,10 @@ namespace BlueprintBaseName._1.Tests
 
             // Delete the object
             requestStr = File.ReadAllText("./SampleRequests/S3ProxyController-Delete.json");
-            request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
+            request = JsonSerializer.Deserialize<APIGatewayProxyRequest>(requestStr, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
@@ -90,7 +102,10 @@ namespace BlueprintBaseName._1.Tests
 
             // Make sure the object was deleted
             requestStr = File.ReadAllText("./SampleRequests/S3ProxyController-GetByKey.json");
-            request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
+            request = JsonSerializer.Deserialize<APIGatewayProxyRequest>(requestStr, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
             context = new TestLambdaContext();
             response = await lambdaFunction.FunctionHandlerAsync(request, context);
 
