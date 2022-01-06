@@ -1,3 +1,13 @@
+### Release 2022-01-05
+* **Amazon.Lambda.SQSEvents (2.1.0)**
+  * Pull Request [#1039](https://github.com/aws/aws-lambda-dotnet/pull/1039) Add new `SQSBatchResponse` type to indicate which messages failed and need to be retried. Thanks [jon-armen](https://github.com/jon-armen)
+* **Amazon.Lambda.Templates (5.8.0)**
+  * Pull Request [#1041](https://github.com/aws/aws-lambda-dotnet/pull/1041) Updating README files explaining how to use ARM64. Thanks [Bryan J Hogan](https://github.com/bryanjhogan)
+  
+### Release 2021-12-21
+* **Amazon.Lambda.Annotations (0.4.2-preview)**
+  * First preview release of the [Lambda Annotation framework](https://github.com/aws/aws-lambda-dotnet/tree/master/Libraries/src/Amazon.Lambda.Annotations)
+
 ### Release 2021-12-12
 * **Amazon.Lambda.Templates (5.7.0)**
   * Updated container image based templates to use .NET 6
