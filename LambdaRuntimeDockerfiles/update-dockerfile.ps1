@@ -26,11 +26,11 @@ function Update-Dockerfile ([string]$DockerfilePath) {
 
     (Get-Content $DockerfilePath) -replace 'ARG ASPNET_VERSION=.*', "ARG ASPNET_VERSION=${nextVersion}" -replace 'ARG ASPNET_SHA512=.*', "ARG ASPNET_SHA512=${checksum}" | Out-File $DockerfilePath
 
-    Write-Host "Updated ${path} to ${nextVersion}."
+    Write-Host "Updated ${DockerfilePath} to ${nextVersion}."
 
     # This allows checksumring the $DockerfilePath variable between steps
     # which is needed to update the description of the PR
-    Write-Host "::set-output name=${path}::- Updated ${path} to ${nextVersion}<br> - Artifact: ${artifact}<br> - Checksum Source: ${checksumUri}"
+    Write-Host "::set-output name=${DockerfilePath}::- Updated ${DockerfilePath} to ${nextVersion}<br> - Artifact: ${artifact}<br> - Checksum Source: ${checksumUri}"
 }
 
 # Returns Checksum of given ASP.NET Core version from the give Checksum file
