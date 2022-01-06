@@ -5,7 +5,7 @@ idiomatic .NET coding patterns and uses [C# Source Generators](https://docs.micr
 to the more idiomatic programming model.
 
 For example here is a simplistic example of a .NET Lambda function that acts like a calculator plus method using the normal 
-Lambda programming model. It respondes to an API Gateway REST API, pulls the operands from the resource paths, does the 
+Lambda programming model. It responds to an API Gateway REST API, pulls the operands from the resource paths, does the 
 addition and returns back an API Gateway response.
 ```csharp
 public class Functions
@@ -131,7 +131,7 @@ List of .NET attributes currently supported.
 
 ### Event Attributes    
 
-Event attributes configuring the source generator for the type of event to expect and setup the event source in the CloudFormation temlate. If an event attribute is not set the
+Event attributes configuring the source generator for the type of event to expect and setup the event source in the CloudFormation template. If an event attribute is not set the
 parameter to the `LambdaFunction` must be the event object and the event source must be configured outside of the code.
 
 * RestApi
