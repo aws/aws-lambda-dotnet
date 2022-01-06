@@ -42,6 +42,10 @@ Deploy function to AWS Lambda
 ```
 
 
+## Arm64
+
+If you want to run your Lambda on an Arm64 processor, all you need is to do is add `"function-architecture": "arm64"` to the `aws-lambda-tools-defaults.json` file. Then deploy as described above.
+
 ## Improve Cold Start
 
 In the csproj file the PublishTrimmed and PublishReadyToRun properties have been enable to optimize the package bundle to improve cold start performance.

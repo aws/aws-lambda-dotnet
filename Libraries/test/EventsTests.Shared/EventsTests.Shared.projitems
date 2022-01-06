@@ -39,6 +39,7 @@
     <Content Include="$(MSBuildThisFileDirectory)simple-email-event-lambda.json" />
     <Content Include="$(MSBuildThisFileDirectory)simple-email-event-s3.json" />
     <Content Include="$(MSBuildThisFileDirectory)sns-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)sqs-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)sqs-event.json" />
   </ItemGroup>
   <ItemGroup>

@@ -42,7 +42,6 @@ Deploy function to AWS Lambda
     dotnet lambda deploy-function
 ```
 
-
 ## Improve Cold Start
 
 .NET Core 3.1 has a new feature called ReadyToRun. When you compile your .NET Core 3.1 application you can enable ReadyToRun 
