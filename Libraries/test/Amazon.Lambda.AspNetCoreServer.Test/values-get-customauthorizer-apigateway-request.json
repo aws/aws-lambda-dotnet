@@ -29,7 +29,10 @@
     "authorizer": {
       "stringKey": "Hey there I'm a string!",
       "numKey": 9,
-      "boolKey": true
+      "boolKey": true,
+      "claims": {
+        "sub": "test-id"
+      }
     },
     "resourcePath": "/{proxy+}",
     "httpMethod": "GET",

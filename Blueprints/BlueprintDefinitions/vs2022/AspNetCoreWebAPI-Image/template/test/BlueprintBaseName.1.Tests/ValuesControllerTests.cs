@@ -2,14 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 using Xunit;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestUtilities;
 using Amazon.Lambda.APIGatewayEvents;
-
-using Newtonsoft.Json;
 
 using BlueprintBaseName._1;
 
@@ -26,7 +25,10 @@ namespace BlueprintBaseName._1.Tests
             var lambdaFunction = new LambdaEntryPoint();
 
             var requestStr = File.ReadAllText("./SampleRequests/ValuesController-Get.json");
-            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
+            var request = JsonSerializer.Deserialize<APIGatewayProxyRequest>(requestStr, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
             var context = new TestLambdaContext();
             var response = await lambdaFunction.FunctionHandlerAsync(request, context);
 

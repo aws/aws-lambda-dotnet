@@ -6,13 +6,13 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
-
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 using TestWebApp;
 
@@ -103,7 +103,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         public async Task TestGetEncodingQueryStringGateway()
         {
             var response = await this.InvokeAPIGatewayRequest("values-get-querystring-apigateway-encoding-request.json");
-            var results = JsonConvert.DeserializeObject<TestWebApp.Controllers.RawQueryStringController.Results>(response.Body);
+            var results = JsonSerializer.Deserialize<TestWebApp.Controllers.RawQueryStringController.Results>(response.Body, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
             Assert.Equal("http://www.gooogle.com", results.Url);
             Assert.Equal(DateTimeOffset.Parse("2019-03-12T16:06:06.549817+00:00"), results.TestDateTimeOffset);
 
@@ -158,11 +161,16 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         public void TestGetCustomAuthorizerValue()
         {
             var requestStr = File.ReadAllText("values-get-customauthorizer-apigateway-request.json");
-            var request = JsonConvert.DeserializeObject<APIGatewayProxyRequest>(requestStr);
-            Assert.NotNull(request.RequestContext.Authorizer);
+            var request = JsonSerializer.Deserialize<APIGatewayProxyRequest>(requestStr, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            Assert.NotNull(request?.RequestContext.Authorizer);
             Assert.NotNull(request.RequestContext.Authorizer.StringKey);
             Assert.Equal(9, request.RequestContext.Authorizer.NumKey);
             Assert.True(request.RequestContext.Authorizer.BoolKey);
+            Assert.NotEmpty(request.RequestContext.Authorizer.Claims);
+            Assert.Equal("test-id", request.RequestContext.Authorizer.Claims["sub"]);
         }
 
         [Fact]
@@ -192,7 +200,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 }
             };
 
-            var json = JsonConvert.SerializeObject(response);
+            var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
             Assert.NotNull(json);
             var expected = "{\"principalId\":\"com.amazon.someuser\",\"policyDocument\":{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"execute-api:Invoke\"],\"Resource\":[\"arn:aws:execute-api:us-west-2:1234567890:apit123d45/Prod/GET/*\"]}]},\"context\":{\"stringKey\":\"Hey I'm a string\",\"boolKey\":true,\"numKey\":9},\"usageIdentifierKey\":null}";
             Assert.Equal(expected, json);
@@ -228,8 +239,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(200, response.StatusCode);
 
-            var root = JObject.Parse(response.Body);
-            Assert.Equal("/foo+bar", root["Path"]?.ToString());
+            var root = JsonSerializer.Deserialize<IDictionary<string, object>>(response.Body);
+            Assert.Equal("/foo+bar", root?["Path"]?.ToString());
         }
 
         [Fact]
@@ -265,10 +276,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(200, response.StatusCode);
 
-            var root = JObject.Parse(response.Body);
-            Assert.Equal("/foo%20bar", root["Path"]?.ToString());
+            var root = JsonSerializer.Deserialize<JsonObject>(response.Body);
+            Assert.Equal("/foo%20bar", root?["Path"]?.ToString());
 
-            var query = root["QueryVariables"]["greeting"] as JArray;
+            var query = root["QueryVariables"]["greeting"] as JsonArray;
             Assert.Equal("hello world", query[0].ToString());
         }
 
@@ -279,9 +290,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(200, response.StatusCode);
 
-            var root = JObject.Parse(response.Body);
-            Assert.Equal("/Prod", root["PathBase"]?.ToString());
-            Assert.Equal("/foo/", root["Path"]?.ToString());
+            var root = JsonSerializer.Deserialize<JsonObject>(response.Body);
+            Assert.Equal("/Prod", root?["PathBase"]?.ToString());
+            Assert.Equal("/foo/", root?["Path"]?.ToString());
         }
 
         [Fact]
