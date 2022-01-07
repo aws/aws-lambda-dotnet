@@ -66,7 +66,7 @@ You can make the following requests to invoke other Lambda functions perform cal
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
-        /// <returns>x minus y</returns>
+        /// <returns>x substract y</returns>
         [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [HttpApi(Amazon.Lambda.Annotations.HttpMethod.Get, "/substract/{x}/{y}")]
         public int Substract(int x, int y, ILambdaContext context)
@@ -84,7 +84,7 @@ You can make the following requests to invoke other Lambda functions perform cal
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
-        /// <returns>x minus y</returns>
+        /// <returns>x multiply y</returns>
         [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [HttpApi(Amazon.Lambda.Annotations.HttpMethod.Get, "/multiply/{x}/{y}")]
         public int Multiply(int x, int y, ILambdaContext context)
@@ -102,7 +102,7 @@ You can make the following requests to invoke other Lambda functions perform cal
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
-        /// <returns>x minus y</returns>
+        /// <returns>x divide y</returns>
         [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [HttpApi(Amazon.Lambda.Annotations.HttpMethod.Get, "/divide/{x}/{y}")]
         public int Divide(int x, int y, ILambdaContext context)

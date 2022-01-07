@@ -5,7 +5,7 @@ The Lambda Annotations framework is currently in **preview**. Development for th
 Lambda Annotations is a programming model for writing .NET Lambda function. At a high level the programming model allows
 idiomatic .NET coding patterns and uses [C# Source Generators](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview) to bridge the gap between the Lambda programming model to the more .NET idiomatic programming model.
 
-For example here is a simplistic example of a .NET Lambda function that acts like a calculator plus method using the normal 
+Here is a simplistic example of a .NET Lambda function that acts like a calculator plus method using the normal 
 Lambda programming model. It responds to an API Gateway REST API, pulls the operands from the resource paths, does the 
 addition and returns back an API Gateway response.
 ```csharp
@@ -143,12 +143,12 @@ parameter to the `LambdaFunction` must be the event object and the event source 
 ### Parameter Attributes
 
 * FromHeader
-    * Map method parameter to HTTP header value
+    * Map method parameter to HTTP header value.
 * FromQuery
-    * Map method parameter to query string parameter
+    * Map method parameter to query string parameter.
 * FromRoute
-    * Map method parameter to resource path segment
+    * Map method parameter to resource path segment.
 * FromBody
     * Map method parameter to HTTP request body. If parameter is a complex type then request body will be assumed to be JSON and deserialized into the type.
 * FromServices
-    * Map method parameter to registered service in IServiceProvider
+    * Map method parameter to registered service in IServiceProvider.
