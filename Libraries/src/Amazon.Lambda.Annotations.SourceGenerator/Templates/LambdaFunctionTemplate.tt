@@ -361,7 +361,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                         {"Content-Type", "application/json"},
                         {"x-amzn-ErrorType", "ValidationException"}
                     },
-                    StatusCode = 200
+                    StatusCode = 400
                 };
             }
 
