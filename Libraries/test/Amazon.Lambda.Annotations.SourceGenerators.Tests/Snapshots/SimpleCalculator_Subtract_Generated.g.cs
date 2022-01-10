@@ -73,7 +73,7 @@ namespace TestServerlessApp
                         {"Content-Type", "application/json"},
                         {"x-amzn-ErrorType", "ValidationException"}
                     },
-                    StatusCode = 200
+                    StatusCode = 400
                 };
             }
 
