@@ -26,6 +26,7 @@
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-outputdelivery-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-outputdelivery-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-streamsinputpreprocessing-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kafka-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-firehose-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-firehose-response.json" />
