@@ -45,6 +45,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
             _options.Converters.Add(new DateTimeConverter());
             _options.Converters.Add(new MemoryStreamConverter());
             _options.Converters.Add(new ConstantClassConverter());
+            _options.Converters.Add(new ByteArrayConverter());
 
             WriterOptions = new JsonWriterOptions()
             {

@@ -195,6 +195,10 @@
     <name>SQS</name>
     <filename>sqs.json</filename>
   </request>
+  <request category="AWS">
+    <name>Kafka Event</name>
+    <filename>kafka-event.json</filename>
+  </request>
   <request category="Common">
     <name>Hello World</name>
     <filename>hello-world.json</filename>

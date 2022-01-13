@@ -136,6 +136,16 @@ namespace Amazon.Lambda.Serialization.Json
                     }
                 }
             }
+            else if (type.FullName.Equals("Amazon.Lambda.KafkaEvents.KafkaEvent+KafkaEventRecord", StringComparison.Ordinal))
+            {
+                foreach (JsonProperty property in properties)
+                {
+                    if (property.PropertyName.Equals("Value", StringComparison.Ordinal))
+                    {
+                        property.MemberConverter = StreamDataConverter;
+                    }
+                }
+            }
 
             return properties;
         }

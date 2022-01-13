@@ -120,6 +120,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomRuntimeAspNetCoreMini
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventsTests.NET6", "test\EventsTests.NET6\EventsTests.NET6.csproj", "{C1BB30D2-3237-4CFC-BA93-627471148EC2}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.KafkaEvents", "src\Amazon.Lambda.KafkaEvents\Amazon.Lambda.KafkaEvents.csproj", "{982A26C7-A5D1-4783-A7F8-F2B28AA2459E}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		test\EventsTests.Shared\EventsTests.Shared.projitems*{44e9d925-b61d-4234-97b7-61424c963ba6}*SharedItemsImports = 5
@@ -323,6 +325,10 @@ Global
 		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1BB30D2-3237-4CFC-BA93-627471148EC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{982A26C7-A5D1-4783-A7F8-F2B28AA2459E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{982A26C7-A5D1-4783-A7F8-F2B28AA2459E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{982A26C7-A5D1-4783-A7F8-F2B28AA2459E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{982A26C7-A5D1-4783-A7F8-F2B28AA2459E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -380,6 +386,7 @@ Global
 		{02908C6F-FBDF-4949-B039-0F4632265B90} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{2FFBE745-B7D5-4E44-B76D-88A0C2402FEB} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{C1BB30D2-3237-4CFC-BA93-627471148EC2} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{982A26C7-A5D1-4783-A7F8-F2B28AA2459E} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}

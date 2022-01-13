@@ -62,7 +62,8 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
                 {
                     new DateTimeConverter(),
                     new MemoryStreamConverter(),
-                    new ConstantClassConverter()
+                    new ConstantClassConverter(),
+                    new ByteArrayConverter()
                 }
             };
 
