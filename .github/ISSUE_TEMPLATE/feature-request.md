@@ -26,7 +26,7 @@ labels: feature-request, needs-triage
 <!--- If feature is environment-specific (targeting specific version, Windows only, etc.) please indicate requirements here -->
 
 * [ ] :wave: I may be able to implement this feature request
-* [ ] :warning: This feature might incur a breaking change <!-- NOTE: Please do not submit a PR before recieving feedback. In order to maintain stability, breaking changes are only added in major versions, so this change may not be merged --> 
+* [ ] :warning: This feature might incur a breaking change <!-- NOTE: Please do not submit a PR before receiving feedback. In order to maintain stability, breaking changes are only added in major versions, so this change may not be merged --> 
 
 ---
 
