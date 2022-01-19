@@ -25,14 +25,14 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction(Name = "SimpleCalculatorAdd", PackageType = LambdaPackageType.Image)]
-        [RestApi(HttpMethod.Get, "/SimpleCalculator/Add")]
+        [RestApi(LambdaHttpMethod.Get, "/SimpleCalculator/Add")]
         public int Add([FromQuery]int x, [FromQuery]int y)
         {
             return _simpleCalculatorService.Add(x, y);
         }
 
         [LambdaFunction(Name = "SimpleCalculatorSubtract", PackageType = LambdaPackageType.Image)]
-        [RestApi(HttpMethod.Get, "/SimpleCalculator/Subtract")]
+        [RestApi(LambdaHttpMethod.Get, "/SimpleCalculator/Subtract")]
         public APIGatewayProxyResponse Subtract([FromHeader]int x, [FromHeader]int y, [FromServices]ISimpleCalculatorService simpleCalculatorService)
         {
             return new APIGatewayProxyResponse
@@ -43,14 +43,14 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction(Name = "SimpleCalculatorMultiply", PackageType = LambdaPackageType.Image)]
-        [RestApi(HttpMethod.Get, "/SimpleCalculator/Multiply/{x}/{y}")]
+        [RestApi(LambdaHttpMethod.Get, "/SimpleCalculator/Multiply/{x}/{y}")]
         public string Multiply(int x, int y)
         {
             return _simpleCalculatorService.Multiply(x, y).ToString();
         }
 
         [LambdaFunction(Name = "SimpleCalculatorDivideAsync", PackageType = LambdaPackageType.Image)]
-        [RestApi(template: "/SimpleCalculator/DivideAsync/{x}/{y}", method: HttpMethod.Get)]
+        [RestApi(template: "/SimpleCalculator/DivideAsync/{x}/{y}", method: LambdaHttpMethod.Get)]
         public async Task<int> DivideAsync([FromRoute(Name = "x")]int first, [FromRoute(Name = "y")]int second)
         {
             return await Task.FromResult(_simpleCalculatorService.Divide(first, second));

@@ -1,6 +1,6 @@
 namespace Amazon.Lambda.Annotations
 {
-    public enum HttpMethod
+    public enum LambdaHttpMethod
     {
         Any,
         Get,

@@ -277,7 +277,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 "TestMethod", 45, 512, null, null);
             var httpAttributeModel = new AttributeModel<HttpApiAttribute>()
             {
-                Data = new HttpApiAttribute(HttpMethod.Get, "/Calculator/Add")
+                Data = new HttpApiAttribute(LambdaHttpMethod.Get, "/Calculator/Add")
                 {
                     Version = HttpApiVersion.V1
                 }
@@ -302,7 +302,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             // ARRANGE - CHANGE TO A HTTP POST METHOD
             httpAttributeModel = new AttributeModel<HttpApiAttribute>()
             {
-                Data = new HttpApiAttribute(HttpMethod.Post, "/Calculator/Add")
+                Data = new HttpApiAttribute(LambdaHttpMethod.Post, "/Calculator/Add")
             };
             lambdaFunctionModel.Attributes = new List<AttributeModel>() {httpAttributeModel};
 
