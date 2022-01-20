@@ -7,9 +7,9 @@ namespace Amazon.Lambda.Annotations
     {
         public HttpApiVersion Version { get; set; } = HttpApiVersion.V2;
         public string Template { get; set;  }
-        public HttpMethod Method { get; set; }
+        public LambdaHttpMethod Method { get; set; }
 
-        public HttpApiAttribute(HttpMethod method, string template)
+        public HttpApiAttribute(LambdaHttpMethod method, string template)
         {
             Template = template;
             Method = method;

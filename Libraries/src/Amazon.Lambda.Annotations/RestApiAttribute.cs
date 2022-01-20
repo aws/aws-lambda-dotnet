@@ -6,9 +6,9 @@ namespace Amazon.Lambda.Annotations
     public class RestApiAttribute : Attribute
     {
         public string Template { get; set;  }
-        public HttpMethod Method { get; set; }
+        public LambdaHttpMethod Method { get; set; }
 
-        public RestApiAttribute(HttpMethod method, string template)
+        public RestApiAttribute(LambdaHttpMethod method, string template)
         {
             Template = template;
             Method = method;
