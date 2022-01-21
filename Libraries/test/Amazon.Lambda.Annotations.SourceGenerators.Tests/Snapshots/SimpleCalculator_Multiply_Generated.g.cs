@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.APIGatewayEvents;
 
 namespace TestServerlessApp
 {
@@ -64,7 +63,7 @@ namespace TestServerlessApp
             // return 400 Bad Request if there exists a validation error
             if (validationErrors.Any())
             {
-                return new APIGatewayProxyResponse
+                return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
                 {
                     Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
                     Headers = new Dictionary<string, string>
@@ -72,13 +71,13 @@ namespace TestServerlessApp
                         {"Content-Type", "application/json"},
                         {"x-amzn-ErrorType", "ValidationException"}
                     },
-                    StatusCode = 200
+                    StatusCode = 400
                 };
             }
 
             var response = simpleCalculator.Multiply(x, y);
 
-            return new APIGatewayProxyResponse
+            return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
             {
                 Body = response,
                 Headers = new Dictionary<string, string>
@@ -101,7 +100,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_0.4.2.0");
+            envValue.Append("amazon-lambda-annotations_0.4.3.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

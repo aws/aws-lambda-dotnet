@@ -3,7 +3,6 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.APIGatewayEvents;
 
 namespace TestServerlessApp
 {
@@ -25,7 +24,7 @@ namespace TestServerlessApp
 
             var body = System.Text.Json.JsonSerializer.Serialize(response);
 
-            return new APIGatewayHttpApiV2ProxyResponse
+            return new Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse
             {
                 Body = body,
                 Headers = new Dictionary<string, string>
@@ -48,7 +47,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_0.4.2.0");
+            envValue.Append("amazon-lambda-annotations_0.4.3.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

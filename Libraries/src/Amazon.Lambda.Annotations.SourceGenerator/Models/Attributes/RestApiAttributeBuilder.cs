@@ -15,7 +15,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                 throw new NotSupportedException($"{TypeFullNames.RestApiAttribute} must have constructor with 2 arguments.");
             }
 
-            var method = (HttpMethod)att.ConstructorArguments[0].Value;
+            var method = (LambdaHttpMethod)att.ConstructorArguments[0].Value;
             var template = att.ConstructorArguments[1].Value as string;
 
             var data = new RestApiAttribute(method, template);
