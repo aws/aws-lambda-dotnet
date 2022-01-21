@@ -63,10 +63,11 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction(Name = "Random", PackageType = LambdaPackageType.Image)]
-        public int Random(int maxValue, ILambdaContext context)
+        public async Task<int> Random(int maxValue, ILambdaContext context)
         {
             context.Logger.Log($"Max value: {maxValue}");
-            return new Random().Next(maxValue);
+            var value = new Random().Next(maxValue);
+            return await Task.FromResult(value);
         }
 
         [LambdaFunction(Name = "Randoms", PackageType = LambdaPackageType.Image)]

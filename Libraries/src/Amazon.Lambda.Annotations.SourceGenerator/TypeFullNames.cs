@@ -23,6 +23,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string FromServiceAttribute = "Amazon.Lambda.Annotations.FromServicesAttribute";
         public const string ILambdaContext = "Amazon.Lambda.Core.ILambdaContext";
         public const string IEnumerable = "System.Collections.IEnumerable";
+        public const string Task1 = "System.Threading.Tasks.Task`1";
+        public const string Task = "System.Threading.Tasks.Task";
 
         public static HashSet<string> Requests = new HashSet<string>
         {

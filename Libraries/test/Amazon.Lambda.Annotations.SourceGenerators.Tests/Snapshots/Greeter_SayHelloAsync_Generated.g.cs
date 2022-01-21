@@ -2,9 +2,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.APIGatewayEvents;
 
 namespace TestServerlessApp
 {
@@ -18,7 +16,7 @@ namespace TestServerlessApp
             greeter = new Greeter();
         }
 
-        public async Task<Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse> SayHelloAsync(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
+        public async System.Threading.Tasks.Task<Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse> SayHelloAsync(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
         {
             var validationErrors = new List<string>();
 
@@ -44,7 +42,7 @@ namespace TestServerlessApp
             // return 400 Bad Request if there exists a validation error
             if (validationErrors.Any())
             {
-                return new APIGatewayProxyResponse
+                return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
                 {
                     Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
                     Headers = new Dictionary<string, string>
@@ -58,7 +56,7 @@ namespace TestServerlessApp
 
             await greeter.SayHelloAsync(firstNames);
 
-            return new APIGatewayProxyResponse
+            return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
             {
                 StatusCode = 200
             };

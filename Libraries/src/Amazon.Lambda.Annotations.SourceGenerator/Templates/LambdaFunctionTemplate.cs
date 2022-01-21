@@ -189,19 +189,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("        }\r\n\r\n        public ");
             
             #line 66 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.IsAsync ? "async Task<" : ""));
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.IsAsync ? "async " : ""));
             
             #line default
             #line hidden
             
             #line 66 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ReturnType.FullName));
-            
-            #line default
-            #line hidden
-            
-            #line 66 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.IsAsync ? ">" : ""));
             
             #line default
             #line hidden
@@ -951,7 +945,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "     if (validationErrors.Any())\r\n            {\r\n                return new ");
             
             #line 356 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ReturnType.Name));
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.IsAsync ? _model.GeneratedMethod.ReturnType.TaskTypeArgument : _model.GeneratedMethod.ReturnType.FullName));
             
             #line default
             #line hidden
@@ -1106,7 +1100,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\r\n            return new ");
             
             #line 415 "C:\Users\jangirg\source\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ReturnType.Name));
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.IsAsync ? _model.GeneratedMethod.ReturnType.TaskTypeArgument : _model.GeneratedMethod.ReturnType.FullName));
             
             #line default
             #line hidden

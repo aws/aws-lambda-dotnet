@@ -3,7 +3,6 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.APIGatewayEvents;
 
 namespace TestServerlessApp
 {
@@ -34,7 +33,7 @@ namespace TestServerlessApp
             // return 400 Bad Request if there exists a validation error
             if (validationErrors.Any())
             {
-                return new APIGatewayHttpApiV2ProxyResponse
+                return new Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse
                 {
                     Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
                     Headers = new Dictionary<string, string>
@@ -50,7 +49,7 @@ namespace TestServerlessApp
 
             var body = System.Text.Json.JsonSerializer.Serialize(response);
 
-            return new APIGatewayHttpApiV2ProxyResponse
+            return new Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse
             {
                 Body = body,
                 Headers = new Dictionary<string, string>

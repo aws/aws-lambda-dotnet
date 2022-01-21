@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
@@ -33,6 +34,29 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// Returns empty when there are not type arguments
         /// </summary>
         public IList<TypeModel> TypeArguments { get; set; }
+
+
+        /// <summary>
+        /// Gets type argument of the <see cref="Task{TResult}"/> type.
+        /// If the type is not a generic or <see cref="Task{TResult}"/> type, returns null.
+        /// </summary>
+        public string TaskTypeArgument
+        {
+            get
+            {
+                if (!IsGenericType)
+                {
+                    return null;
+                }
+
+                if (!FullName.StartsWith($"{TypeFullNames.Task}<"))
+                {
+                    return null;
+                }
+
+                return TypeArguments[0].FullName;
+            }
+        }
 
         /// <summary>
         /// True, if the type implements IEnumerable interface.

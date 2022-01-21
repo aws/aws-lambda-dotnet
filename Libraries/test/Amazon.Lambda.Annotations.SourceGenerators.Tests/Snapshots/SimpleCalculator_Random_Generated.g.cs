@@ -25,14 +25,14 @@ namespace TestServerlessApp
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public int Random(int maxValue, Amazon.Lambda.Core.ILambdaContext context)
+        public async System.Threading.Tasks.Task<int> Random(int maxValue, Amazon.Lambda.Core.ILambdaContext context)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
 
-            return simpleCalculator.Random(maxValue, context);
+            return await simpleCalculator.Random(maxValue, context);
         }
 
         private static void SetExecutionEnvironment()

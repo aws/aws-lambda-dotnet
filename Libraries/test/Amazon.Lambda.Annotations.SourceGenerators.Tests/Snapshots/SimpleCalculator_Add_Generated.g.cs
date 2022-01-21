@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.APIGatewayEvents;
 
 namespace TestServerlessApp
 {
@@ -64,7 +63,7 @@ namespace TestServerlessApp
             // return 400 Bad Request if there exists a validation error
             if (validationErrors.Any())
             {
-                return new APIGatewayProxyResponse
+                return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
                 {
                     Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
                     Headers = new Dictionary<string, string>
@@ -80,7 +79,7 @@ namespace TestServerlessApp
 
             var body = response.ToString();
 
-            return new APIGatewayProxyResponse
+            return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
             {
                 Body = body,
                 Headers = new Dictionary<string, string>
