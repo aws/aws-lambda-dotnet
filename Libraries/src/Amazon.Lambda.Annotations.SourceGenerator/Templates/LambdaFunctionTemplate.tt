@@ -63,7 +63,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 #>
         }
 
-        public <#= _model.LambdaMethod.IsAsync ? "async Task<" : "" #><#= _model.GeneratedMethod.ReturnType.FullName #><#= _model.LambdaMethod.IsAsync ? ">" : "" #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
+        public <#= _model.LambdaMethod.IsAsync ? "async " : "" #><#= _model.GeneratedMethod.ReturnType.FullName #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
         {
 <#
     if (_model.LambdaMethod.UsingDependencyInjection)
@@ -353,7 +353,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             // return 400 Bad Request if there exists a validation error
             if (validationErrors.Any())
             {
-                return new <#= _model.GeneratedMethod.ReturnType.Name #>
+                return new <#= _model.LambdaMethod.IsAsync ? _model.GeneratedMethod.ReturnType.TaskTypeArgument : _model.GeneratedMethod.ReturnType.FullName #>
                 {
                     Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
                     Headers = new Dictionary<string, string>
@@ -412,7 +412,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             }
 #>
 
-            return new <#= _model.GeneratedMethod.ReturnType.Name #>
+            return new <#= _model.LambdaMethod.IsAsync ? _model.GeneratedMethod.ReturnType.TaskTypeArgument : _model.GeneratedMethod.ReturnType.FullName #>
             {
 <#
             if (!_model.LambdaMethod.ReturnsVoidOrTask)

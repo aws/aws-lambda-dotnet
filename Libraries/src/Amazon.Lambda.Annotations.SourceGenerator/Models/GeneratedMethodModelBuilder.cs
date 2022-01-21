@@ -39,11 +39,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 "System.Text"
             };
 
-            if (lambdaMethodSymbol.IsAsync)
-            {
-                namespaces.Add("System.Threading.Tasks");
-            }
-
             if (configureMethodSymbol != null)
             {
                 namespaces.Add("Microsoft.Extensions.DependencyInjection");
@@ -51,19 +46,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 
             namespaces.Add("Amazon.Lambda.Core");
 
-            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute) || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute))
-            {
-                namespaces.Add("Amazon.Lambda.APIGatewayEvents");
-            }
             return namespaces;
         }
 
         private static TypeModel BuildResponseType(IMethodSymbol lambdaMethodSymbol,
             LambdaMethodModel lambdaMethodModel, GeneratorExecutionContext context)
         {
+            var task = context.Compilation.GetTypeByMetadataName(TypeFullNames.Task1);
             if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute))
             {
-                var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse);
+                var symbol = lambdaMethodModel.IsAsync ?
+                    task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse)):
+                    context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse);
                 return TypeModelBuilder.Build(symbol, context);
             }
             else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute))
@@ -73,12 +67,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 {
                     case HttpApiVersion.V1:
                     {
-                        var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse);
+                        var symbol = lambdaMethodModel.IsAsync ?
+                            task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse)):
+                            context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse);
                         return TypeModelBuilder.Build(symbol, context);;
                     }
                     case HttpApiVersion.V2:
                     {
-                        var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse);
+                        var symbol = lambdaMethodModel.IsAsync ?
+                            task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse)):
+                            context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse);
                         return TypeModelBuilder.Build(symbol, context);;
                     }
                     default:
