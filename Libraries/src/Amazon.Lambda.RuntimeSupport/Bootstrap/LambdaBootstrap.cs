@@ -41,6 +41,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private LambdaBootstrapInitializer _initializer;
         private LambdaBootstrapHandler _handler;
         private bool _ownsHttpClient;
+        private InternalLogger _logger = InternalLogger.GetDefaultLogger();
 
         private HttpClient _httpClient;
         internal IRuntimeApiClient Client { get; set; }
@@ -115,12 +116,17 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             if(UserCodeInit.IsCallPreJit())
             {
-                InternalLogger.GetDefaultLogger().LogInformation("PreJit: CultureInfo");
+                this._logger.LogInformation("PreJit: CultureInfo");
                 UserCodeInit.LoadStringCultureInfo();
 
-                InternalLogger.GetDefaultLogger().LogInformation("PreJit: Amazon.Lambda.Core");
+                this._logger.LogInformation("PreJit: Amazon.Lambda.Core");
                 UserCodeInit.PreJitAssembly(typeof(Amazon.Lambda.Core.ILambdaContext).Assembly);
             }
+
+            // For local debugging purposes this environment variable can be set to run a Lambda executable assembly and process one event
+            // and then shut down cleanly. Useful for profiling or running local tests with the .NET Lambda Test Tool. This environment
+            // variable should never be set when function is deployed to Lambda.
+            var runOnce = string.Equals(Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIANLE_AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE), "true", StringComparison.OrdinalIgnoreCase);
 
             bool doStartInvokeLoop = _initializer == null || await InitializeAsync();
 
@@ -129,6 +135,11 @@ namespace Amazon.Lambda.RuntimeSupport
                 try
                 {
                     await InvokeOnceAsync(cancellationToken);
+                    if(runOnce)
+                    {
+                        _logger.LogInformation("Exiting Lambda processing loop because the run once environment variable was set.");
+                        return;
+                    }    
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -153,6 +164,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         internal async Task InvokeOnceAsync(CancellationToken cancellationToken = default)
         {
+            this._logger.LogInformation($"Starting InvokeOnceAsync");
             using (var invocation = await Client.GetNextInvocationAsync(cancellationToken))
             {
                 InvocationResponse response = null;
@@ -160,6 +172,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
                 try
                 {
+                    this._logger.LogInformation($"Starting invoking handler");
                     response = await _handler(invocation);
                     invokeSucceeded = true;
                 }
@@ -168,9 +181,14 @@ namespace Amazon.Lambda.RuntimeSupport
                     WriteUnhandledExceptionToLog(exception);
                     await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception);
                 }
+                finally
+                {
+                    this._logger.LogInformation($"Finished invoking handler");
+                }
 
                 if (invokeSucceeded)
                 {
+                    this._logger.LogInformation($"Starting sending response");
                     try
                     {
                         await Client.SendResponseAsync(invocation.LambdaContext.AwsRequestId, response?.OutputStream);
@@ -181,8 +199,11 @@ namespace Amazon.Lambda.RuntimeSupport
                         {
                             response.OutputStream?.Dispose();
                         }
+
+                        this._logger.LogInformation($"Finished sending response");
                     }
                 }
+                this._logger.LogInformation($"Finished InvokeOnceAsync");
             }
         }
 
@@ -196,7 +217,16 @@ namespace Amazon.Lambda.RuntimeSupport
             var amazonLambdaRuntimeSupport = typeof(LambdaBootstrap).Assembly.GetName().Version;
             var userAgentString = $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}";
 
+#if NET6_0_OR_GREATER
+            // Create the SocketsHttpHandler directly to avoid spending cold start time creating the wrapper HttpClientHandler
+            var handler = new SocketsHttpHandler
+            {
+
+            };
+            var client = new HttpClient(handler);
+#else
             var client = new HttpClient();
+#endif
             client.DefaultRequestHeaders.Add("User-Agent", userAgentString);
             return client;
         }

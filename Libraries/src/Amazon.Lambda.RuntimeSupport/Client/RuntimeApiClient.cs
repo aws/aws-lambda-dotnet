@@ -141,18 +141,6 @@ namespace Amazon.Lambda.RuntimeSupport
             return _internalClient.ErrorWithXRayCauseAsync(awsRequestId, exceptionInfo.ErrorType, exceptionInfoJson, exceptionInfoXRayJson, cancellationToken);
         }
 
-        /// <summary>
-        /// Send an initialization error with a type string but no other information as an asynchronous operation.
-        /// This can  be used to directly control flow in Step Functions without creating an Exception class and throwing it.
-        /// </summary>
-        /// <param name="awsRequestId">The ID of the function request that caused the error.</param>
-        /// <param name="errorType">The type of the error to report to Lambda.  This does not need to be a .NET type name.</param>
-        /// <param name="cancellationToken">The optional cancellation token to use.</param>
-        /// <returns>A Task representing the asynchronous operation.</returns>
-        public Task ReportInvocationErrorAsync(string awsRequestId, string errorType, CancellationToken cancellationToken = default)
-        {
-            return _internalClient.Error2Async(awsRequestId, errorType, null, cancellationToken);
-        }
 
         /// <summary>
         /// Send a response to a function invocation to the Runtime API as an asynchronous operation.

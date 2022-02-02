@@ -4,15 +4,15 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net5.0;net6.0</TargetFrameworks>
-    <VersionPrefix>1.6.0</VersionPrefix>
+    <VersionPrefix>1.7.0</VersionPrefix>
     <Description>Provides a bootstrap and Lambda Runtime API Client to help you to develop custom .NET Core Lambda Runtimes.</Description>
-    <VersionPrefix>1.6.0</VersionPrefix>
+    <VersionPrefix>1.7.0</VersionPrefix>
     <Description>Provides a bootstrap and Lambda Runtime API Client to help you  to develop custom .NET Core Lambda Runtimes.</Description>
     <AssemblyTitle>Amazon.Lambda.RuntimeSupport</AssemblyTitle>
     <AssemblyName>Amazon.Lambda.RuntimeSupport</AssemblyName>
     <PackageId>Amazon.Lambda.RuntimeSupport</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-	<PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
   </PropertyGroup>
@@ -22,18 +22,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
-	<ItemGroup>
-    <PackageReference Include="NSwag.MSBuild" Version="12.0.4" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
 
-	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-		<PackageReference Include="System.Text.Json" Version="6.0.0" />
-	</ItemGroup>	
-	
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" Version="6.0.0" />
+  </ItemGroup>	
+
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
   </ItemGroup>
@@ -42,9 +41,4 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <!--Regenerate InternalClientGenerated.txt by running: dotnet msbuild -t:GenerateClient Amazon.Lambda.RuntimeSupport.Client.csproj-->
-  <Target Name="GenerateClient">
-    <Error Condition="'$(OS)' != 'Windows_NT'" Text="The GenerateClient target is only available on Windows." />
-    <Exec Command="$(NSwagExe) swagger2csclient /input:Client\runtime-api.yaml /exceptionClass:RuntimeApiClientException /generateUpdateJsonSerializerSettingsMethod:false /generateClientInterfaces:true /generateJsonMethods:false /wrapResponses:true /clientClassAccessModifier:internal /typeAccessModifier:public /classname:InternalRuntimeApiClient /namespace:Amazon.Lambda.RuntimeSupport /output:Client\InternalClientGenerated.txt" />
-  </Target>
 </Project>
