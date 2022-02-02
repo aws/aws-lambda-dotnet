@@ -67,7 +67,7 @@ namespace TestWebApp
 }
 ```
 
-The function handler for the Lambda function will be **TestWebApp::TestWebApp.LambdaFunction::FunctionHandlerAsync**.
+The function handler for the Lambda function will be **TestWebApp::TestWebApp.LambdaEntryPoint::FunctionHandlerAsync**.
 
 ## Bootstrapping application (IWebHostBuilder vs IHostBuilder)
 
