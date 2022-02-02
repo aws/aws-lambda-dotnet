@@ -1,3 +1,7 @@
+### Release 2022-02-02
+* **Amazon.Lambda.RuntimeSupport (1.7.0)**
+  * Pull Request [#1063](https://github.com/aws/aws-lambda-dotnet/pull/1063) Minor performance improvements particular when targeting .NET 6.
+
 ### Release 2022-01-05
 * **Amazon.Lambda.SQSEvents (2.1.0)**
   * Pull Request [#1039](https://github.com/aws/aws-lambda-dotnet/pull/1039) Add new `SQSBatchResponse` type to indicate which messages failed and need to be retried. Thanks [jon-armen](https://github.com/jon-armen)
