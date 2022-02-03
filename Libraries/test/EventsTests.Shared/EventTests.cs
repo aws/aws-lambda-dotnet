@@ -49,6 +49,19 @@ namespace Amazon.Lambda.Tests
             return new MemoryStream(UTF8Encoding.UTF8.GetBytes(json));
         }
 
+        public string SerializeJson<T>(ILambdaSerializer serializer, T response)
+        {
+            string serializedJson;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                serializer.Serialize(response, stream);
+
+                stream.Position = 0;
+                serializedJson = Encoding.UTF8.GetString(stream.ToArray());
+            }
+            return serializedJson;
+        }
+
         [Theory]
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP3_1_OR_GREATER
@@ -427,7 +440,7 @@ namespace Amazon.Lambda.Tests
 
         private static void Handle(CognitoEvent cognitoEvent)
         {
-            foreach(var datasetKVP in cognitoEvent.DatasetRecords)
+            foreach (var datasetKVP in cognitoEvent.DatasetRecords)
             {
                 var datasetName = datasetKVP.Key;
                 var datasetRecord = datasetKVP.Value;
@@ -704,7 +717,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("MessageID", record.MessageId);
                 Assert.Equal("MessageReceiptHandle", record.ReceiptHandle);
                 Assert.Equal("Message Body", record.Body);
-                Assert.Equal("fce0ea8dd236ccb3ed9b37dae260836f", record.Md5OfBody );
+                Assert.Equal("fce0ea8dd236ccb3ed9b37dae260836f", record.Md5OfBody);
                 Assert.Equal("582c92c5c5b6ac403040a4f3ab3115c9", record.Md5OfMessageAttributes);
                 Assert.Equal("arn:aws:sqs:us-west-2:123456789012:SQSQueue", record.EventSourceArn);
                 Assert.Equal("aws:sqs", record.EventSource);
@@ -1900,7 +1913,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.Value.Count, 1);
                 var eventRecord = record.Value.FirstOrDefault();
                 Assert.Equal(eventRecord.Topic, "mytopic");
-                Assert.Equal(eventRecord.Partition, 0);
+                Assert.Equal(eventRecord.Partition, "0");
                 Assert.Equal(eventRecord.Offset, 15);
                 Assert.Equal(eventRecord.Timestamp, 1545084650987);
                 Assert.Equal(eventRecord.TimestampType, "CREATE_TIME");
@@ -1933,6 +1946,140 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void APIGatewayCustomAuthorizerV2Request(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("custom-authorizer-v2-request.json"))
+            {
+                var request = serializer.Deserialize<APIGatewayCustomAuthorizerV2Request>(fileStream);
+
+                Assert.Equal("REQUEST", request.Type);
+                Assert.Equal("arn:aws:execute-api:us-east-1:123456789012:abcdef123/test/GET/request", request.RouteArn);
+                Assert.Equal(new[] { "user1", "123" }, request.IdentitySource);
+                Assert.Equal("$default", request.RouteKey);
+                Assert.Equal("/my/path", request.RawPath);
+                Assert.Equal("parameter1=value1&parameter1=value2&parameter2=value", request.RawQueryString);
+                Assert.Equal(new[] { "cookie1", "cookie2" }, request.Cookies);
+
+                Assert.Equal(new Dictionary<string, string>
+                {
+                    ["Header1"] = "value1",
+                    ["Header2"] = "value2"
+                }, request.Headers);
+
+                Assert.Equal(new Dictionary<string, string>
+                {
+                    ["parameter1"] = "value1,value2",
+                    ["parameter2"] = "value"
+                }, request.QueryStringParameters);
+
+                var requestContext = request.RequestContext;
+                Assert.Equal("123456789012", requestContext.AccountId);
+                Assert.Equal("api-id", requestContext.ApiId);
+
+                var clientCert = requestContext.Authentication.ClientCert;
+                Assert.Equal("CERT_CONTENT", clientCert.ClientCertPem);
+                Assert.Equal("www.example.com", clientCert.SubjectDN);
+                Assert.Equal("Example issuer", clientCert.IssuerDN);
+                Assert.Equal("a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1", clientCert.SerialNumber);
+                Assert.Equal("May 28 12:30:02 2019 GMT", clientCert.Validity.NotBefore);
+                Assert.Equal("Aug  5 09:36:04 2021 GMT", clientCert.Validity.NotAfter);
+
+                Assert.Equal("id.execute-api.us-east-1.amazonaws.com", requestContext.DomainName);
+                Assert.Equal("id", requestContext.DomainPrefix);
+
+                Assert.Equal("POST", requestContext.Http.Method);
+                Assert.Equal("HTTP/1.1", requestContext.Http.Protocol);
+                Assert.Equal("IP", requestContext.Http.SourceIp);
+                Assert.Equal("agent", requestContext.Http.UserAgent);
+
+                Assert.Equal("id", requestContext.RequestId);
+                Assert.Equal("$default", requestContext.RouteKey);
+                Assert.Equal("$default", requestContext.Stage);
+                Assert.Equal("12/Mar/2020:19:03:58 +0000", requestContext.Time);
+                Assert.Equal(1583348638390, requestContext.TimeEpoch);
+
+                Assert.Equal(new Dictionary<string, string>
+                {
+                    ["parameter1"] = "value1"
+                }, request.PathParameters);
+
+                Assert.Equal(new Dictionary<string, string>
+                {
+                    ["stageVariable1"] = "value1",
+                    ["stageVariable2"] = "value2"
+                }, request.StageVariables);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void APIGatewayCustomAuthorizerV2SimpleResponse(Type serializerType)
+        {
+            var response = new APIGatewayCustomAuthorizerV2SimpleResponse
+            {
+                IsAuthorized = true,
+                Context = new Dictionary<string, object>()
+                {
+                    ["exampleKey"] = "exampleValue"
+                }
+            };
+
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            var json = SerializeJson(serializer, response);
+            var actualObject = JObject.Parse(json);
+            var expectedJObject = JObject.Parse(File.ReadAllText("custom-authorizer-v2-simple-response.json"));
+
+            Assert.True(JToken.DeepEquals(actualObject, expectedJObject));
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void APIGatewayCustomAuthorizerV2IamResponse(Type serializerType)
+        {
+            var response = new APIGatewayCustomAuthorizerV2IamResponse
+            {
+                PrincipalID = "abcdef",
+                PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+                {
+                    Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
+                    {
+                        new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                        {
+                            Action = new HashSet<string> { "execute-api:Invoke" },
+                            Effect = "Allow",
+                            Resource = new HashSet<string>{ "arn:aws:execute-api:{regionId}:{accountId}:{apiId}/{stage}/{httpVerb}/[{resource}/[{child-resources}]]" }
+                        }
+                    }
+                },
+                Context = new Dictionary<string, object>()
+                {
+                    ["exampleKey"] = "exampleValue"
+                }
+            };
+
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            var json = SerializeJson(serializer, response);
+            var actualObject = JObject.Parse(json);
+            var expectedJObject = JObject.Parse(File.ReadAllText("custom-authorizer-v2-iam-response.json"));
+
+            Assert.True(JToken.DeepEquals(actualObject, expectedJObject));
+        }
+
         [Fact]
         public void SerializeCanUseNamingStrategy()
         {
@@ -1961,10 +2108,10 @@ namespace Amazon.Lambda.Tests
             var namingStrategy = new CamelCaseNamingStrategy();
             var serializer = new JsonSerializer(_ => { }, namingStrategy);
 
-            var camelCaseString  = @"{""someValue"":12,""someOtherValue"":""abcd""}";
+            var camelCaseString = @"{""someValue"":12,""someOtherValue"":""abcd""}";
             var pascalCaseString = @"{""SomeValue"":12,""SomeOtherValue"":""abcd""}";
 
-            var camelCaseObject  = serializer.Deserialize<ClassUsingPascalCase>(new MemoryStream(Encoding.ASCII.GetBytes(camelCaseString)));
+            var camelCaseObject = serializer.Deserialize<ClassUsingPascalCase>(new MemoryStream(Encoding.ASCII.GetBytes(camelCaseString)));
             var pascalCaseObject = serializer.Deserialize<ClassUsingPascalCase>(new MemoryStream(Encoding.ASCII.GetBytes(pascalCaseString)));
 
             Assert.Equal(12, camelCaseObject.SomeValue);

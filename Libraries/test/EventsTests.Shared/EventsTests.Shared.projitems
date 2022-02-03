@@ -18,6 +18,11 @@
     <Content Include="$(MSBuildThisFileDirectory)dynamodb-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)ecs-container-state-change-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)ecs-task-state-change-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)custom-authorizer-v2-iam-response.json" />
+    <Content Include="$(MSBuildThisFileDirectory)custom-authorizer-v2-simple-response.json" />
+    <Content Include="$(MSBuildThisFileDirectory)custom-authorizer-v2-request.json" />
+    <Content Include="$(MSBuildThisFileDirectory)http-api-v2-request-iam-authorizer.json" />
+    <Content Include="$(MSBuildThisFileDirectory)http-api-v2-request-lambda-authorizer.json" />
     <Content Include="$(MSBuildThisFileDirectory)http-api-v2-request.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-firehoseinputpreprocessing-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-inputpreprocessing-event.json" />
