@@ -34,7 +34,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
         {
             Console.Error.WriteLine("Init Error Type: " + errorType);
             Console.Error.WriteLine(error);
-            Console.Error.WriteLine("-----------------------------------");
+            Console.Error.WriteLine(HEADER_BREAK);
             return Accepted(new StatusResponse{Status = "success"});
         }
         

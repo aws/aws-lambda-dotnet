@@ -179,11 +179,16 @@ namespace Amazon.Lambda.TestTool
             Console.WriteLine(sb.ToString());
         }
 
-        public static string PrettyPrintJson(string json)
+        /// <summary>
+        /// Attempt to pretty print the input string. If pretty print fails return back the input string in its original form.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static string TryPrettyPrintJson(string data)
         {
             try
             {
-                var doc = JsonDocument.Parse(json);
+                var doc = JsonDocument.Parse(data);
                 var prettyPrintJson = System.Text.Json.JsonSerializer.Serialize(doc, new JsonSerializerOptions()
                 {
                     WriteIndented = true
@@ -192,7 +197,7 @@ namespace Amazon.Lambda.TestTool
             }
             catch (Exception)
             {
-                return json;
+                return data;
             }
         }
 
