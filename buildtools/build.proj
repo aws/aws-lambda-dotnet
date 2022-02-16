@@ -91,7 +91,6 @@
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SQS;ProjectName=SQSFunctionC;Lang=C#;Version=vs2022"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPIC;Lang=C#;Version=vs2022"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebAPI;ProjectName=AspNetCoreWebAPIF;Lang=F#;Version=vs2022"/>
-        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.DynamoDBBlogAPI;ProjectName=DynamoDBBlogAPIC;Lang=C#;Version=vs2022"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.EmptyServerless;ProjectName=EmptyServerlessC;Lang=C#;Version=vs2022"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.EmptyServerless;ProjectName=EmptyServerlessF;Lang=F#;Version=vs2022"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.Giraffe;ProjectName=GiraffeF;Lang=F#;Version=vs2022"/>
@@ -99,7 +98,7 @@
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.OrderFlowersChatbot;ProjectName=OrderFlowersChatbotC;Lang=C#;Version=vs2022"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldC;Lang=C#;Version=vs2022"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.StepFunctionsHelloWorld;ProjectName=StepFunctionsHelloWorldF;Lang=F#;Version=vs2022"/>				
-		
+
 		<Exec Command="dotnet new -u Blueprints\BlueprintDefinitions\vs2019" WorkingDirectory="..\" IgnoreExitCode="true" />
         <Exec Command="dotnet new -i Blueprints\BlueprintDefinitions\vs2019" WorkingDirectory="..\"/>
 		
@@ -155,7 +154,7 @@
         <Exec Command="dotnet new $(TemplateName) -lang $(Lang) -n $(ProjectName) --profile default --region us-east-1" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)"/>
         <Exec Command="dotnet restore" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/src/$(ProjectName)"/>
         <Exec Command="dotnet restore" Condition="Exists('../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests')" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests"/>
-        <Exec Command="dotnet build -c $(Configuration)" Condition="Exists('../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests')" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests"/>
+        <Exec Command="dotnet build -c $(Configuration)" Condition="Exists('../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests')" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests" ContinueOnError="WarnAndContinue"/>
     </Target>
     <Target Name="run-tests" DependsOnTargets="build-nuget-packages">
         <PropertyGroup>
