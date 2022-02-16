@@ -12,7 +12,7 @@
           enabling feature to ensure the .NET compilier does not remove required code.
     <PublishTrimmed>true</PublishTrimmed> -->
 
-    <!-- Generate ready to run images during publishing to improvement cold starts. -->
+    <!-- Generate ready to run images during publishing to improve cold start time. -->
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
   <ItemGroup>

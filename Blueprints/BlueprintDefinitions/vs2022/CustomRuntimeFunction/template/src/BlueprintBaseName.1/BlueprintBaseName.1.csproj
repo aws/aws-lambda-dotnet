@@ -15,7 +15,7 @@
     
 	<PublishTrimmed>true</PublishTrimmed>
 	-->
-    <!-- Generate ready to run images during publishing to improvement cold starts. -->
+    <!-- Generate ready to run images during publishing to improve cold start time. -->
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
   <!-- 
