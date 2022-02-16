@@ -22,14 +22,14 @@ type Function() =
     /// <returns></returns>
     member __.FunctionHandler (dynamoEvent: DynamoDBEvent) (context: ILambdaContext) =
         sprintf "Beginning to process %i records..." dynamoEvent.Records.Count
-        |> context.Logger.LogLine
+        |> context.Logger.LogInformation
 
         let processRecord (record: DynamoDBEvent.DynamodbStreamRecord) =
-            context.Logger.LogLine(sprintf "Event ID: %s" record.EventID)
-            context.Logger.LogLine(sprintf "Event Name: %s" record.EventName.Value)
+            context.Logger.LogInformation(sprintf "Event ID: %s" record.EventID)
+            context.Logger.LogInformation(sprintf "Event Name: %s" record.EventName.Value)
             // TODO: Add business logic processing the record.Dynamodb object.
 
         dynamoEvent.Records
         |> Seq.iter processRecord
 
-        context.Logger.LogLine("Stream processing complete.")
+        context.Logger.LogInformation("Stream processing complete.")

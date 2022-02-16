@@ -17,10 +17,9 @@ open System.Collections.Generic
 
 open BlueprintBaseName._1
 
-
 module FunctionTest =
     [<Fact>]
-    let ``Test Detecting Images with Sample Pic``() = async {
+    let ``Test Detecting Images with Sample Pic``() = task {
         let fileName = "sample-pic.jpg"
         let bucketName = sprintf "lambda-blueprint-basename-%i" DateTime.Now.Ticks
         use s3Client = new AmazonS3Client(RegionEndpoint.USWest2)
@@ -48,7 +47,9 @@ module FunctionTest =
             let s3Event = S3Event(Records = List(eventRecords))
             let lambdaContext = TestLambdaContext()
             let lambdaFunction = Function(s3Client, rekognitionClient, 70.0f)
-            lambdaFunction.FunctionHandler s3Event lambdaContext
+            lambdaFunction.FunctionHandler s3Event lambdaContext 
+                |> Async.AwaitTask
+                |> ignore
 
             let! getTagsResponse =
                 GetObjectTaggingRequest(BucketName = bucketName, Key = fileName)

@@ -24,7 +24,7 @@ module StepFunctionTasks =
             else "Hello"
 
         sprintf "Process Greeting message to be: \"%s\"" state.Message
-        |> context.Logger.LogLine
+        |> context.Logger.LogInformation
 
         state.WaitInSeconds <- 5
         state
@@ -36,6 +36,6 @@ module StepFunctionTasks =
             else sprintf "%s, Goodbye" state.Message
 
         sprintf "Process Salutations message to be: \"%s\"" state.Message
-        |> context.Logger.LogLine
+        |> context.Logger.LogInformation
 
         state

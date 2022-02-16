@@ -15,8 +15,8 @@
   "currentIntent": {
     "name": "BookCar",
     "slots": {
-      "PickUpDate": "2020-04-26",
-      "ReturnDate": "2020-04-28",
+      "PickUpDate": "2024-04-26",
+      "ReturnDate": "2024-04-28",
       "DriverAge": "12",
       "CarType": null,
       "PickUpCity": "seattle"
