@@ -1,0 +1,15 @@
+{
+  "display-name": "Annotations Framework",
+  "system-name": "Annotations",
+  "description": "(Preview) Use the .NET Lambda Annotations framework to write Lambda Functions.",
+  "sort-order": 120,
+  "hidden-tags": [
+    "C#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "Container",
+    "Annotations",
+    "Preview"
+  ]
+}
