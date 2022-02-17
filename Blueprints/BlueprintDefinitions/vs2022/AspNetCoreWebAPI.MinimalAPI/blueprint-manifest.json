@@ -2,7 +2,7 @@
   "display-name": "ASP.NET Core Minimal API",
   "system-name": "AspNetCoreMinimalAPI",
   "description": "Serverless ASP.NET Core Minimal API",
-  "sort-order": 150,
+  "sort-order": 115,
   "hidden-tags": [
     "C#",
     "ServerlessProject"

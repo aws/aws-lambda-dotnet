@@ -2,7 +2,7 @@
   "display-name": ".NET 6 (Container Image)",
   "system-name": "EmptyImageFunction",
   "description": "A .NET 6 Lambda function packaged as a container image.",
-  "sort-order": 101,
+  "sort-order": 225,
   "hidden-tags": [
     "C#",
     "LambdaProject"
