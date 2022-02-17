@@ -15,5 +15,5 @@
   "docker-host-build-output-dir": "./bin/Release/lambda-publish",
   "s3-bucket": "test-serverless-app",
   "stack-name": "test-serverless-app",
-  "function-architecture" : "x86_64"
+  "function-architecture": "x86_64"
 }

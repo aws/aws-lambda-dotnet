@@ -1,7 +1,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>Amazon.Lambda.Annotations</id>
-        <version>0.4.3-preview</version>
+        <version>0.5.0-preview</version>
         <authors>Amazon Web Services</authors>
         <tags>AWS Amazon Lambda</tags>
         <description>Annotations that can be added to Lambda projects to generate C# code and CloudFormation templates.</description>
