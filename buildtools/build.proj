@@ -154,7 +154,7 @@
         <Exec Command="dotnet new $(TemplateName) -lang $(Lang) -n $(ProjectName) --profile default --region us-east-1" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)"/>
         <Exec Command="dotnet restore" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/src/$(ProjectName)"/>
         <Exec Command="dotnet restore" Condition="Exists('../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests')" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests"/>
-        <Exec Command="dotnet build -c $(Configuration)" Condition="Exists('../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests')" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests" ContinueOnError="WarnAndContinue"/>
+        <Exec Command="dotnet build -c $(Configuration)" Condition="Exists('../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests')" WorkingDirectory="../Deployment/BlueprintGenerationTests/DotnetNew/$(Version)/$(ProjectName)/Test/$(ProjectName).Tests"/>
     </Target>
     <Target Name="run-tests" DependsOnTargets="build-nuget-packages">
         <PropertyGroup>
