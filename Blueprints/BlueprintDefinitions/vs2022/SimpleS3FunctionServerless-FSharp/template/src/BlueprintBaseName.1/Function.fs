@@ -23,20 +23,19 @@ type Function(s3Client: IAmazonS3) =
     /// <param name="event"></param>
     /// <param name="context"></param>
     /// <returns></returns>
-    member __.FunctionHandler (event: S3Event) (context: ILambdaContext) =
-        let fetchContentType (s3Event: S3EventNotification.S3Entity) = async {
-            sprintf "Processing object %s from bucket %s" s3Event.Object.Key s3Event.Bucket.Name
-            |> context.Logger.LogLine
+    member __.FunctionHandler (event: S3Event) (context: ILambdaContext) = task {
 
-            let! response =
-                s3Client.GetObjectMetadataAsync(s3Event.Bucket.Name, s3Event.Object.Key)
-                |> Async.AwaitTask
+        let s3Event = event.Records.Item(0).S3
 
-            sprintf "Content Type %s" response.Headers.ContentType
-            |> context.Logger.LogLine
+        sprintf "Processing object %s from bucket %s" s3Event.Object.Key s3Event.Bucket.Name
+        |> context.Logger.LogInformation
 
-            return response.Headers.ContentType
-        }
+        let! response =
+            s3Client.GetObjectMetadataAsync(s3Event.Bucket.Name, s3Event.Object.Key)
+            |> Async.AwaitTask
 
-        fetchContentType (event.Records.Item(0).S3)
-        |> Async.RunSynchronously
+        sprintf "Content Type %s" response.Headers.ContentType
+        |> context.Logger.LogInformation
+
+        return response.Headers.ContentType
+    }

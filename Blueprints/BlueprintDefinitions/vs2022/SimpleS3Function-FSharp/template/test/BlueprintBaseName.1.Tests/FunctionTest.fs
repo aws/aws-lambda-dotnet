@@ -18,7 +18,7 @@ open BlueprintBaseName._1
 
 module FunctionTest =
     [<Fact>]
-    let ``Test getting content type for an event``() = async {
+    let ``Test getting content type for an event``() = task {
         use s3Client = new AmazonS3Client(RegionEndpoint.USWest2)
         let bucketName = sprintf "lambda-blueprint-basename-%i" DateTime.Now.Ticks
         let key = "text.txt"
@@ -49,14 +49,13 @@ module FunctionTest =
             let s3Event = S3Event(Records = List(eventRecords))
             let lambdaContext = TestLambdaContext()
             let lambdaFunction = Function(s3Client)
-            let contentType = lambdaFunction.FunctionHandler s3Event lambdaContext
+            let! contentType = lambdaFunction.FunctionHandler s3Event lambdaContext |> Async.AwaitTask
 
             Assert.Equal("text/plain", contentType)
 
         finally
-        AmazonS3Util.DeleteS3BucketWithObjectsAsync(s3Client, bucketName)
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
+             AmazonS3Util.DeleteS3BucketWithObjectsAsync(s3Client, bucketName)
+                |> Async.AwaitTask |> Async.RunSynchronously
     }
 
     [<EntryPoint>]
