@@ -5,9 +5,6 @@
     <AWSProjectType>Lambda</AWSProjectType>
     <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <!-- By enabling trimming the deployment bundle size can be reduced and improve Lambda cold start time. Extra testing is required
-          enabling feature to ensure the .NET compilier does not remove required code.
-    <PublishTrimmed>true</PublishTrimmed> -->
     <!-- Generate ready to run images during publishing to improve cold start time. -->
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
