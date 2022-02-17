@@ -10,7 +10,7 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.2.0" />
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.4.0" />
-    <PackageReference Include="AWSSDK.ApiGatewayManagementApi" Version="3.7.0.106" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.2.1" />
+    <PackageReference Include="AWSSDK.ApiGatewayManagementApi" Version="3.7.0.124" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.2.19" />
   </ItemGroup>
 </Project>
