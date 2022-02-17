@@ -1900,7 +1900,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.Value.Count, 1);
                 var eventRecord = record.Value.FirstOrDefault();
                 Assert.Equal(eventRecord.Topic, "mytopic");
-                Assert.Equal(eventRecord.Partition, 0);
+                Assert.Equal(eventRecord.Partition, "0");
                 Assert.Equal(eventRecord.Offset, 15);
                 Assert.Equal(eventRecord.Timestamp, 1545084650987);
                 Assert.Equal(eventRecord.TimestampType, "CREATE_TIME");
