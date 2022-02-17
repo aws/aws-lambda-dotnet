@@ -1,14 +1,15 @@
 {
+  "$schema": "http://json.schemastore.org/template",
   "author": "AWS",
   "classifications": [
     "AWS",
     "Lambda",
     "Serverless"
   ],
-  "name": "Lambda DynamoDB Blog API",
-  "identity": "AWS.Lambda.Serverless.DynamoDBBlogAPI.CSharp",
-  "groupIdentity": "AWS.Lambda.Serverless.DynamoDBBlogAPI",
-  "shortName": "serverless.DynamoDBBlogAPI",
+  "name": "Lambda ASP.NET Core Minimal API",
+  "identity": "AWS.Lambda.Serverless.AspNetCoreMinimalAPI.CSharp",
+  "groupIdentity": "AWS.Lambda.Serverless.AspNetCoreMinimalAPI",
+  "shortName": "serverless.AspNetCoreMinimalAPI",
   "tags": {
     "language": "C#",
     "type": "project"
