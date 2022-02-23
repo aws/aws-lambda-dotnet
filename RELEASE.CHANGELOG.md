@@ -1,3 +1,7 @@
+### Release 2022-02-23
+* **Amazon.Lambda.Templates (6.0.0)**
+  * Update Lambda templates to target .NET 6.
+
 ### Release 2022-02-02
 * **Amazon.Lambda.RuntimeSupport (1.7.0)**
   * Pull Request [#1063](https://github.com/aws/aws-lambda-dotnet/pull/1063) Minor performance improvements particular when targeting .NET 6.
