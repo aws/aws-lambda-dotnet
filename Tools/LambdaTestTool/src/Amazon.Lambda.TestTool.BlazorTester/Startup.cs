@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
@@ -11,7 +12,7 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Hosting;
+using Amazon.Lambda.TestTool.BlazorTester.Services;
 
 using Blazored.Modal;
 
@@ -20,6 +21,12 @@ namespace Amazon.Lambda.TestTool.BlazorTester
     public class Startup
     {
         public static void LaunchWebTester(LocalLambdaOptions lambdaOptions, bool openWindow)
+        {
+            var host = StartWebTesterAsync(lambdaOptions, openWindow).GetAwaiter().GetResult();
+            host.WaitForShutdown();
+        }
+
+        public static async Task<IWebHost> StartWebTesterAsync(LocalLambdaOptions lambdaOptions, bool openWindow, CancellationToken token = default(CancellationToken))
         {
             var port = lambdaOptions.Port ?? Constants.DEFAULT_PORT;
             
@@ -36,7 +43,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester
 
             var host = builder.Build();
 
-            host.Start();
+            await host.StartAsync(token);
             Console.WriteLine($"Environment running at {url}");
 
             if (openWindow)
@@ -56,7 +63,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester
                 }
             }
 
-            host.WaitForShutdown();
+            return host;
         }
         
         public Startup(IConfiguration configuration)
@@ -70,8 +77,11 @@ namespace Amazon.Lambda.TestTool.BlazorTester
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<IRuntimeApiDataStore, RuntimeApiDataStore>();
+            services.AddControllers();
             services.AddRazorPages();
             services.AddServerSideBlazor();
+            services.AddHttpContextAccessor();
 
             services.AddBlazoredModal();
 
@@ -96,6 +106,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapControllers();
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
             });
