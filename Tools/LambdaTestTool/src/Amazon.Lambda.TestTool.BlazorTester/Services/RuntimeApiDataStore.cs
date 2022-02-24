@@ -43,15 +43,9 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
         public EventContainer QueueEvent(string eventBody)
         {
             var evnt = new EventContainer(this, _eventCounter++, eventBody);
-            Monitor.Enter(_lock);
-            try
+            lock (_lock)
             {
                 _queuedEvents.Add(evnt);
-                Monitor.PulseAll(_lock);
-            }
-            finally
-            {
-                Monitor.Exit(_lock);
             }
             
             RaiseStateChanged();
@@ -61,8 +55,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
         public bool TryActivateEvent(out IEventContainer activeEvent)
         {
             activeEvent = null;
-            Monitor.Enter(_lock);
-            try
+            lock(_lock)
             {
                 if (!_queuedEvents.Any())
                 {
@@ -79,12 +72,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
                 ActiveEvent = evnt;
                 activeEvent = ActiveEvent;
                 RaiseStateChanged();
-                Monitor.PulseAll(_lock);
                 return true;
-            }
-            finally
-            {
-                Monitor.Exit(_lock);
             }
         }
         
@@ -94,14 +82,9 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
         {
             get
             {
-                Monitor.Enter(_lock);
-                try
+                lock(_lock)
                 {
                     return new ReadOnlyCollection<EventContainer>(_queuedEvents.ToArray()); 
-                }
-                finally
-                {
-                    Monitor.Exit(_lock);
                 }
             }
         }
@@ -110,22 +93,16 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
         {
             get
             {
-                Monitor.Enter(_lock);
-                try
+                lock(_lock)
                 {
                     return new ReadOnlyCollection<EventContainer>(_executedEvents.ToArray());
-                }
-                finally
-                {
-                    Monitor.Exit(_lock);
                 }
             }
         }
 
         public void ReportSuccess(string awsRequestId, string response)
         {
-            Monitor.Enter(_lock);
-            try
+            lock(_lock)
             {
                 var evnt = FindEventContainer(awsRequestId);
                 if (evnt == null)
@@ -134,19 +111,13 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
                 }
                 
                 evnt.ReportSuccessResponse(response);
-                RaiseStateChanged();
-                Monitor.PulseAll(_lock);
             }
-            finally
-            {
-                Monitor.Exit(_lock);
-            }
+            RaiseStateChanged();
         }
-        
+
         public void ReportError(string awsRequestId, string errorType, string errorBody)
         {
-            Monitor.Enter(_lock);
-            try
+            lock(_lock)
             {
                 var evnt = FindEventContainer(awsRequestId);
                 if (evnt == null)
@@ -155,49 +126,31 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
                 }
                 
                 evnt.ReportErrorResponse(errorType, errorBody);
-                RaiseStateChanged();
-                Monitor.PulseAll(_lock);
             }
-            finally
-            {
-                Monitor.Exit(_lock);
-            }
+            RaiseStateChanged();
         }
 
         public void ClearQueued()
         {
-            Monitor.Enter(_lock);
-            try
+            lock(_lock)
             {
                 this._queuedEvents.Clear();
-                RaiseStateChanged();
-                Monitor.PulseAll(_lock);
             }
-            finally
-            {
-                Monitor.Exit(_lock);
-            }
+            RaiseStateChanged();
         }
 
         public void ClearExecuted()
         {
-            Monitor.Enter(_lock);
-            try
+            lock(_lock)
             {
                 this._executedEvents.Clear();
-                RaiseStateChanged();
-                Monitor.PulseAll(_lock);
             }
-            finally
-            {
-                Monitor.Exit(_lock);
-            }
+            RaiseStateChanged();
         }
 
         public void DeleteEvent(string awsRequestId)
         {
-            Monitor.Enter(_lock);
-            try
+            lock(_lock)
             {
                 var executedEvent = this._executedEvents.FirstOrDefault(x => string.Equals(x.AwsRequestId, awsRequestId));
                 if (executedEvent != null)
@@ -212,13 +165,8 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
                         this._queuedEvents.Remove(executedEvent);
                     }
                 }
-                RaiseStateChanged();
-                Monitor.PulseAll(_lock);
             }
-            finally
-            {
-                Monitor.Exit(_lock);
-            }
+            RaiseStateChanged();
         }
 
         private EventContainer FindEventContainer(string awsRequestId)
