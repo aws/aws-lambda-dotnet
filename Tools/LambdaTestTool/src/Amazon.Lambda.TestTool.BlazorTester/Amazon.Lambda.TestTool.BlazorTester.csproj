@@ -6,7 +6,7 @@
     <OutputType>Exe</OutputType>
     <Description>A tool to help debug and test your .NET Core AWS Lambda functions locally.</Description>
     <LangVersion>Latest</LangVersion>
-    <VersionPrefix>0.11.4</VersionPrefix>
+    <VersionPrefix>0.12.0</VersionPrefix>
     <Product>AWS .NET Lambda Test Tool</Product>
     <Copyright>Apache 2</Copyright>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
