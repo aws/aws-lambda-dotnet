@@ -9,7 +9,7 @@
 # To include PowerShell modules with your Lambda function, like the AWS.Tools.S3 module, add a "#Requires" statement
 # indicating the module and version. If using an AWS.Tools.* module the AWS.Tools.Common module is also required.
 
-#Requires -Modules @{ModuleName='AWS.Tools.Common';ModuleVersion='4.0.5.0'}
+#Requires -Modules @{ModuleName='AWS.Tools.Common';ModuleVersion='4.1.29.0'}
 
 # Uncomment to send the input event to CloudWatch Logs
 # Write-Host (ConvertTo-Json -InputObject $LambdaInput -Compress -Depth 5)
