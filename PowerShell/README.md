@@ -17,11 +17,11 @@ If you are using Visual Studio Code on Windows as your IDE, you need to ensure i
 configured for PowerShell Core. To learn how to configure Visual Studio Code for 
 PowerShell Core, see the following: https://docs.microsoft.com/en-us/powershell/scripting/core-powershell/vscode/using-vscode?view=powershell-6
 
-Next, we need to install the .NET Core 3.1 SDK. Because PowerShell Core is built on top of 
-.NET Core, the Lambda support for PowerShell uses the same .NET Core 3.1 Lambda runtime for 
-both .NET Core and PowerShell based Lambda functions. The .NET Core 3.1 SDK is used by 
+Next, we need to install the .NET 6 SDK. Because PowerShell Core is built on top of 
+.NET Core, the Lambda support for PowerShell uses the same .NET 6 Lambda runtime for 
+both .NET Core and PowerShell based Lambda functions. The .NET 6 SDK is used by 
 the new PowerShell publishing cmdlets for Lambda to create the Lambda deployment 
-package. You can find the .NET Core 3.1 SDK [here]( https://www.microsoft.com/net/download). Be 
+package. You can find the .NET 6 SDK [here]( https://www.microsoft.com/net/download). Be 
 sure to install the SDK, not the runtime installation.
 
 The last component we need for the development environment is the 

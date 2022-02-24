@@ -598,10 +598,10 @@ function _validateDotnetInstall
     $application = Get-Command -Name dotnet
     if (!($application))
     {
-        throw '.NET Core 3.1 SDK was not found which is required to build the PowerShell Lambda package bundle. Download the .NET Core 3.1 SDK from https://www.microsoft.com/net/download'
+        throw '.NET 6 SDK was not found which is required to build the PowerShell Lambda package bundle. Download the .NET 6 SDK from https://www.microsoft.com/net/download'
     }
 
-    $minVersion = [System.Version]::Parse('3.1.100')
+    $minVersion = [System.Version]::Parse('6.0.100')
     $foundMin = $false
 
     $installedSDKs = & dotnet --list-sdks
