@@ -97,7 +97,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
                 Monitor.Enter(_lock);
                 try
                 {
-                    return new ReadOnlyCollection<EventContainer>(_queuedEvents); 
+                    return new ReadOnlyCollection<EventContainer>(_queuedEvents.ToArray()); 
                 }
                 finally
                 {
@@ -113,7 +113,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
                 Monitor.Enter(_lock);
                 try
                 {
-                    return new ReadOnlyCollection<EventContainer>(_executedEvents);
+                    return new ReadOnlyCollection<EventContainer>(_executedEvents.ToArray());
                 }
                 finally
                 {
