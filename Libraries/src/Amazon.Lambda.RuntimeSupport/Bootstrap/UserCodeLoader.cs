@@ -30,7 +30,6 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
     /// </summary>
     internal class UserCodeLoader
     {
-        private const string UserInvokeException = "An exception occurred while invoking customer handler.";
         private const string LambdaLoggingActionFieldName = "_loggingAction";
 
         internal const string LambdaCoreAssemblyName = "Amazon.Lambda.Core";
