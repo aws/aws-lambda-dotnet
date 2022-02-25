@@ -330,8 +330,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// </summary>
         /// <param name="serializerAttribute">Serializer attribute used to define the input/output serializer.</param>
         /// <returns></returns>
-        /// <exception cref="LambdaValidationException">Thrown when serializer doesn't satisfy serializer type requirements.</exception>
-        /// <exception cref="LambdaUserCodeException">Thrown when failed to instantiate serializer type.</exception>
+        /// <exception cref="LambdaValidationException">Thrown when serializer doesn't satisfy serializer type requirements or when failed to instantiate serializer type.</exception>
         private object ConstructCustomSerializer(Attribute serializerAttribute)
         {
             var attributeType = serializerAttribute.GetType();
@@ -383,7 +382,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// </summary>
         /// <param name="customerType">Type of the customer handler container.</param>
         /// <returns>Instance of customer handler container type</returns>
-        /// <exception cref="LambdaUserCodeException">Thrown when failed to instantiate customer type.</exception>
+        /// <exception cref="LambdaValidationException">Thrown when failed to instantiate customer type.</exception>
         private object GetCustomerObject(Type customerType)
         {
             _logger.LogDebug($"UCL : Validating type '{_handler.TypeName}'");
