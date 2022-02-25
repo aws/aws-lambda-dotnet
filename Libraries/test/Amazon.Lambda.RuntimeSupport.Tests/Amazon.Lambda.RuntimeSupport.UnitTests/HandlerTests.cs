@@ -396,14 +396,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
                 if (assertLoggedByInitialize != null)
                 {
-                    Assert.False(actionWriter.ToString().Contains($"^^[{assertLoggedByInitialize}]^^"));
+                    Assert.DoesNotContain($"^^[{assertLoggedByInitialize}]^^", actionWriter.ToString());
                 }
 
                 await bootstrap.InitializeAsync();
 
                 if (assertLoggedByInitialize != null)
                 {
-                    Assert.True(actionWriter.ToString().Contains($"^^[{assertLoggedByInitialize}]^^"));
+                    Assert.Contains($"^^[{assertLoggedByInitialize}]^^", actionWriter.ToString());
                 }
 
                 var dataOut = await InvokeAsync(bootstrap, dataIn, testRuntimeApiClient);
