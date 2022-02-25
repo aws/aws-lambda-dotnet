@@ -69,6 +69,7 @@ namespace Amazon.Lambda.RuntimeSupport.ExceptionHandling
             public const string ILambdaSerializerMismatch_SerializeMethodHasWrongFirstParam = "Serialize' method's first parameter is of type '{0}', expected 'T'.";
             public const string ILambdaSerializerMismatch_SerializeMethodHasWrongSecondParam = "Serialize' method's second parameter is of type '{0}', expected '{1}'.";
             public const string MethodHasOverloads = "The method '{0}' in type '{1}' appears to have a number of overloads. To call this method please specify a complete method signature. Possible candidates are:\n{2}.";
+            public const string HandlerInitializerFailed = "Failed to initialize handler of type '{0}'.";
         }
 
         internal static class HandlerInfo

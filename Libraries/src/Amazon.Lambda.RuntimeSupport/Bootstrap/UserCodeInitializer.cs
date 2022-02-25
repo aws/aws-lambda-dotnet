@@ -41,10 +41,10 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// Finds and initializes user code.
         /// </summary>
         /// <returns></returns>
-        public Task<bool> InitializeAsync()
+        public async Task<bool> InitializeAsync()
         {
-            _userCodeLoader.Init(_logger.LogInformation);
-            return Task.FromResult(true);
+            await _userCodeLoader.InitAsync(_logger.LogInformation);
+            return true;
         }
     }
 }

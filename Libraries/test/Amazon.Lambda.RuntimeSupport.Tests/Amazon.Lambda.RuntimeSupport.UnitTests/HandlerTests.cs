@@ -21,6 +21,7 @@ using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
 using Amazon.Lambda.RuntimeSupport.ExceptionHandling;
 using Amazon.Lambda.RuntimeSupport.Helpers;
@@ -134,7 +135,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public async Task NegativeBootstrapInitTestsAsync()
         {
             var ucl = new UserCodeLoader("NonExistentAssembly::HandlerTest.CustomerType::ZeroInZeroOut", _internalLogger);
-            var ex = Assert.Throws<LambdaValidationException>(() => ucl.Init(NoOpLoggingAction));
+            var ex = await Assert.ThrowsAsync<LambdaValidationException>(() => ucl.InitAsync(NoOpLoggingAction));
             Assert.Contains("Could not find the specified handler", ex.Message);
 
             await TestHandlerFailAsync($"HandlerTest2::Type::Method", "Could not find the specified handler assembly with the file name");
@@ -162,6 +163,37 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             await TestHandlerFailAsync("HandlerTest::HandlerTest.CustomerType::NoInterfaceCustomerTypeSerializerMethod", "it does not implement the 'ILambdaSerializer' interface.");
             await TestHandlerFailAsync("HandlerTest::HandlerTest.StaticCustomerTypeThrows::StaticCustomerMethodZeroOut", "StaticCustomerTypeThrows static constructor has thrown an exception.");
 
+            await TestHandlerFailAsync("Amazon.Lambda.RuntimeSupport.UnitTests::Amazon.Lambda.RuntimeSupport.UnitTests.HandlerTests+CustomerTypeWithInitializerThatReturnsFalse::Handler", "Failed to initialize handler of type 'Amazon.Lambda.RuntimeSupport.UnitTests.HandlerTests+CustomerTypeWithInitializerThatReturnsFalse'.");
+            await TestHandlerFailAsync("Amazon.Lambda.RuntimeSupport.UnitTests::Amazon.Lambda.RuntimeSupport.UnitTests.HandlerTests+CustomerTypeWithInitializerThatThrows::Handler", "Failed to initialize handler of type 'Amazon.Lambda.RuntimeSupport.UnitTests.HandlerTests+CustomerTypeWithInitializerThatThrows'.");
+        }
+
+        [Fact]
+        [Trait("Category", "UserCodeLoader")]
+        public async Task PositiveBootstrapInitWarmupTestsAsync()
+        {
+            string handler = "Amazon.Lambda.RuntimeSupport.UnitTests::Amazon.Lambda.RuntimeSupport.UnitTests.HandlerTests+CustomerTypeWithInitializer::Handler";
+
+            using (var actionWriter = new StringWriter())
+            {
+                var testRuntimeApiClient = new TestRuntimeApiClient(_environmentVariables, _headers);
+                var loggerAction = actionWriter.ToLoggingAction();
+                var assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName(UserCodeLoader.LambdaCoreAssemblyName));
+                UserCodeLoader.SetCustomerLoggerLogAction(assembly, loggerAction, _internalLogger);
+
+                var userCodeLoader = new UserCodeLoader(handler, _internalLogger);
+                var handlerWrapper = HandlerWrapper.GetHandlerWrapper(userCodeLoader.Invoke);
+                var initializer = new UserCodeInitializer(userCodeLoader, _internalLogger);
+                var bootstrap = new LambdaBootstrap(handlerWrapper, initializer.InitializeAsync)
+                {
+                    Client = testRuntimeApiClient
+                };
+
+                await InvokeAsync(bootstrap, null, testRuntimeApiClient);
+                var actionText = actionWriter.ToString();
+
+                Assert.Contains("CustomerTypeWithInitializer::Initialized", actionText);
+                Assert.Contains("CustomerTypeWithInitializer::Handler", actionText);
+            }
         }
 
         [Fact]
@@ -430,6 +462,44 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 LoggingActionText = loggingActionTest;
                 Exception = exception;
                 UserCodeLoader = userCodeLoader;
+            }
+        }
+
+        public class CustomerTypeWithInitializer : IHandlerInitializer
+        {
+            public Task<bool> InitializeAsync()
+            {
+                LambdaLogger.Log("CustomerTypeWithInitializer::Initialized");
+                return Task.FromResult(true);
+            }
+
+            public void Handler()
+            {
+                LambdaLogger.Log("CustomerTypeWithInitializer::Handler");
+            }
+        }
+
+        public class CustomerTypeWithInitializerThatReturnsFalse : IHandlerInitializer
+        {
+            public Task<bool> InitializeAsync()
+            {
+                return Task.FromResult(false);
+            }
+
+            public void Handler()
+            {
+            }
+        }
+
+        public class CustomerTypeWithInitializerThatThrows : IHandlerInitializer
+        {
+            public Task<bool> InitializeAsync()
+            {
+                throw new InvalidOperationException("Something went wrong.");
+            }
+
+            public void Handler()
+            {
             }
         }
     }
