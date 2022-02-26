@@ -135,29 +135,25 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
 
             if (customerObject != null)
             {
-                if (customerObject is IHandlerInitializer customerInitializer)
-                {
-                    _logger.LogDebug($"UCL : Initializing customer object of type '{_handler.TypeName}'");
+                var customerInitializer = GetCustomerInitializer(customerType);
 
-                    bool initialized;
+                if (customerInitializer != null)
+                {
+                    _logger.LogDebug($"UCL : Initializing customer object of type '{_handler.TypeName}' using method '{customerInitializer}'");
 
                     try
                     {
-                        initialized = await customerInitializer.InitializeAsync();
+                        var task = (Task)customerInitializer.Invoke(customerObject, Array.Empty<object>());
+                        await task;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, $"UCL : Failed to initialize customer object of type '{_handler.TypeName}'");
-                        throw LambdaExceptions.ValidationException(ex, Errors.UserCodeLoader.HandlerInitializerFailed, _handler.TypeName);
+                        // TODO Does TargetInvocationException need to be unwrapped?
+                        _logger.LogError(ex, $"UCL : Failed to initialize customer object of type '{_handler.TypeName}' using method '{customerInitializer}'");
+                        throw LambdaExceptions.ValidationException(ex, Errors.UserCodeLoader.HandlerInitializerFailed, _handler.TypeName, customerInitializer);
                     }
 
-                    if (!initialized)
-                    {
-                        _logger.LogDebug($"UCL : Failed to initialize customer object of type '{_handler.TypeName}'");
-                        throw LambdaExceptions.ValidationException(Errors.UserCodeLoader.HandlerInitializerFailed, _handler.TypeName);
-                    }
-
-                    _logger.LogDebug($"UCL : Customer object of type '{_handler.TypeName}' initialized");
+                    _logger.LogDebug($"UCL : Customer object of type '{_handler.TypeName}' initialized using method '{customerInitializer}'");
                 }
             }
         }
@@ -432,6 +428,36 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             _logger.LogDebug($"UCL : Instantiating type '{_handler.TypeName}'");
 
             return Activator.CreateInstance(customerType);
+        }
+
+        private MethodInfo GetCustomerInitializer(Type customerType)
+        {
+            // TODO Should the method require an environment variable to opt-in/out?
+            // TODO Should the method's name be specified by an environment variable?
+
+            // Look for a method with one of the following signatures:
+            // 1) public static Task InitializeAsync()
+            // 2) public Task InitializeAsync()
+            var customerInitializer = customerType.GetMethod(
+                "InitializeAsync",
+                BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance,
+                null,
+                Type.EmptyTypes,
+                null);
+
+            if (customerInitializer == null)
+            {
+                _logger.LogDebug($"UCL : No customer initializer for type '{_handler.TypeName}' was found with the correct signature");
+                return null;
+            }
+            else if (customerInitializer.ReturnType != Types.TaskType)
+            {
+                _logger.LogDebug($"UCL : Not using customer initializer for type '{_handler.TypeName}' with method '{customerInitializer}' as its return type is not '{Types.TaskType}'");
+                return null;
+            }
+
+            _logger.LogDebug($"UCL : Found customer initializer for type '{_handler.TypeName}' using method '{customerInitializer}'");
+            return customerInitializer;
         }
     }
 }

@@ -17,6 +17,7 @@ using Amazon.Lambda.Core;
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -413,5 +414,175 @@ namespace HandlerTest
         {
             Common.LogCommonData(nameof(StaticCustomerMethodZeroOut));
         }
+    }
+
+    public class CustomerTypeWithInitializer
+    {
+        public Task InitializeAsync()
+        {
+            Common.LogCommonData(nameof(InitializeAsync));
+            return Task.CompletedTask;
+        }
+
+        public void Handler()
+        {
+            Common.LogCommonData(nameof(Handler));
+        }
+    }
+
+    public class CustomerTypeWithAsyncInitializer
+    {
+        public async Task InitializeAsync()
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(1));
+            Common.LogCommonData(nameof(InitializeAsync));
+        }
+
+        public void Handler()
+        {
+            Common.LogCommonData(nameof(Handler));
+        }
+    }
+
+    public class CustomerTypeWithStaticInitializer
+    {
+        public static Task InitializeAsync()
+        {
+            Common.LogCommonData(nameof(InitializeAsync));
+            return Task.CompletedTask;
+        }
+
+        public void Handler()
+        {
+            Common.LogCommonData(nameof(Handler));
+        }
+    }
+
+    public class CustomerTypeWithInitializerThatThrows
+    {
+        public Task InitializeAsync()
+        {
+            throw new InvalidOperationException("Something went wrong.");
+        }
+
+        public void Handler()
+        {
+        }
+    }
+
+    public class CustomerTypeWithInitializerThatThrowsAsync
+    {
+        public async Task InitializeAsync()
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(1));
+            throw new InvalidOperationException("Something went wrong.");
+        }
+
+        public void Handler()
+        {
+        }
+    }
+
+    public class CustomerTypeWithInternalStaticInitializer
+    {
+        internal static Task InitializeAsync()
+        {
+            Common.LogCommonData(nameof(InitializeAsync));
+            return Task.CompletedTask;
+        }
+
+        public void Handler()
+        {
+            Common.LogCommonData(nameof(Handler));
+        }
+    }
+
+    public class CustomerTypeWithPrivateStaticInitializer
+    {
+        private static Task InitializeAsync()
+        {
+            Common.LogCommonData(nameof(InitializeAsync));
+            return Task.CompletedTask;
+        }
+
+        public void Handler()
+        {
+            Common.LogCommonData(nameof(Handler));
+        }
+    }
+
+    public class CustomerTypeWithProtectedStaticInitializer
+    {
+        protected static Task InitializeAsync()
+        {
+            Common.LogCommonData(nameof(InitializeAsync));
+            return Task.CompletedTask;
+        }
+
+        public void Handler()
+        {
+            Common.LogCommonData(nameof(Handler));
+        }
+    }
+
+    public class CustomerTypeWithInitializerWithParameters
+    {
+        private Task InitializeAsync(CancellationToken cancellationToken)
+        {
+            Common.LogCommonData(nameof(InitializeAsync));
+            return Task.CompletedTask;
+        }
+
+        public void Handler()
+        {
+            Common.LogCommonData(nameof(Handler));
+        }
+    }
+
+    public class CustomerTypeWithInitializerTaskOfT
+    {
+        public Task<bool> InitializeAsync()
+        {
+            Common.LogCommonData(nameof(InitializeAsync));
+            return Task.FromResult(true);
+        }
+
+        public void Handler()
+        {
+            Common.LogCommonData(nameof(Handler));
+        }
+    }
+
+    public class CustomerTypeWithInitializerOfAsyncVoid
+    {
+        public async void InitializeAsync()
+        {
+            Common.LogCommonData(nameof(InitializeAsync));
+            await Task.Yield();
+        }
+
+        public void Handler()
+        {
+            Common.LogCommonData(nameof(Handler));
+        }
+    }
+
+    public class CustomerTypeWithInitializerExplicitInterfaceImplementation : ICustomerInitializer
+    {
+        async Task ICustomerInitializer.InitializeAsync()
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(1));
+            Common.LogCommonData(nameof(ICustomerInitializer.InitializeAsync));
+        }
+
+        public void Handler()
+        {
+            Common.LogCommonData(nameof(Handler));
+        }
+    }
+
+    public interface ICustomerInitializer
+    {
+        Task InitializeAsync();
     }
 }
