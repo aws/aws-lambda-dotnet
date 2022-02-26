@@ -133,28 +133,27 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
                 RuntimeHelpers.PrepareDelegate(_invokeDelegate);
             }
 
-            if (customerObject != null)
+            var customerInitializer = GetCustomerInitializer(customerType);
+
+            if (customerInitializer != null)
             {
-                var customerInitializer = GetCustomerInitializer(customerType);
+                _logger.LogDebug($"UCL : Initializing customer object of type '{_handler.TypeName}' using method '{customerInitializer}'");
 
-                if (customerInitializer != null)
+                var obj = customerInitializer.IsStatic ? null : customerObject;
+
+                try
                 {
-                    _logger.LogDebug($"UCL : Initializing customer object of type '{_handler.TypeName}' using method '{customerInitializer}'");
-
-                    try
-                    {
-                        var task = (Task)customerInitializer.Invoke(customerObject, Array.Empty<object>());
-                        await task;
-                    }
-                    catch (Exception ex)
-                    {
-                        // TODO Does TargetInvocationException need to be unwrapped?
-                        _logger.LogError(ex, $"UCL : Failed to initialize customer object of type '{_handler.TypeName}' using method '{customerInitializer}'");
-                        throw LambdaExceptions.ValidationException(ex, Errors.UserCodeLoader.HandlerInitializerFailed, _handler.TypeName, customerInitializer);
-                    }
-
-                    _logger.LogDebug($"UCL : Customer object of type '{_handler.TypeName}' initialized using method '{customerInitializer}'");
+                    var task = (Task)customerInitializer.Invoke(obj, Array.Empty<object>());
+                    await task;
                 }
+                catch (Exception ex)
+                {
+                    // TODO Does TargetInvocationException need to be unwrapped?
+                    _logger.LogError(ex, $"UCL : Failed to initialize customer object of type '{_handler.TypeName}' using method '{customerInitializer}'");
+                    throw LambdaExceptions.ValidationException(ex, Errors.UserCodeLoader.HandlerInitializerFailed, _handler.TypeName, customerInitializer);
+                }
+
+                _logger.LogDebug($"UCL : Customer object of type '{_handler.TypeName}' initialized using method '{customerInitializer}'");
             }
         }
 

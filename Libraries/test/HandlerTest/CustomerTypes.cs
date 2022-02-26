@@ -458,6 +458,20 @@ namespace HandlerTest
         }
     }
 
+    public static class StaticCustomerTypeWithInitializer
+    {
+        public static Task InitializeAsync()
+        {
+            Common.LogCommonData(nameof(InitializeAsync));
+            return Task.CompletedTask;
+        }
+
+        public static void Handler()
+        {
+            Common.LogCommonData(nameof(Handler));
+        }
+    }
+
     public class CustomerTypeWithInitializerThatThrows
     {
         public Task InitializeAsync()

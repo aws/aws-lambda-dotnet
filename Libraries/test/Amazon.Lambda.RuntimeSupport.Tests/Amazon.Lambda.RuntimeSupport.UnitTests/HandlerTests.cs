@@ -173,6 +173,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             await AssertHandlerWithInitializer("HandlerTest::HandlerTest.CustomerTypeWithAsyncInitializer::Handler");
             await AssertHandlerWithInitializer("HandlerTest::HandlerTest.CustomerTypeWithInitializer::Handler");
             await AssertHandlerWithInitializer("HandlerTest::HandlerTest.CustomerTypeWithStaticInitializer::Handler");
+            await AssertHandlerWithInitializer("HandlerTest::HandlerTest.StaticCustomerTypeWithInitializer::Handler");
 
             async Task AssertHandlerWithInitializer(string handler)
             {
