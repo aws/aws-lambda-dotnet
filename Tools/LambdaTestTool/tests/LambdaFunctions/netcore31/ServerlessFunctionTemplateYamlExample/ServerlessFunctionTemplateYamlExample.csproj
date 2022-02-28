@@ -26,16 +26,5 @@
   <ItemGroup>
     <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.2.0" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <Content Remove="package-lock.json" />
-    <None Include="package-lock.json">
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <Content Remove="package.json" />
-    <None Include="package.json">
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-  </ItemGroup>
 
 </Project>
