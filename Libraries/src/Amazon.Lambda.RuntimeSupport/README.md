@@ -2,16 +2,16 @@
 
 The Amazon.Lambda.RuntimeSupport package is a .NET Lambda Runtime Interface Client (RIC) for the [Lambda Runtime API](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-api.html).
 The Lambda Runtime Interface Client allows your runtime to receive requests from and send requests to the Lambda service.
-It can be used for building .NET Lambda functions as either custom runtimes or container images. 
+It can be used for building .NET Lambda functions as either custom runtimes or container images. Starting with the .NET 6 this is also the Lambda rutime client used in managed runtimes.
 
 
 ## Container Image support
 
 AWS provides base images containing all the required components to run your functions packaged as container images on AWS Lambda. Starting with the AWS Lambda .NET 5 base image
 Amazon.Lambda.RuntimeSupport is used as the Lambda Runtime Client. The library targets .NET Standard 2.0 and can also be used in earlier versions of .NET Core that support 
-.NET Standard like .NET Core 2.1 and 3.1. 
+.NET Standard like 3.1. 
 
-In the AWS Lambda .NET 5 base image this library is preinstalled into `/var/runtime` directory. .NET Lambda
+In the AWS Lambda .NET base image this library is preinstalled into `/var/runtime` directory. .NET Lambda
 functions using the base image do not directly interact with this package. Instead they pass in an image command or a Dockerfile `CMD` that indicates the
 .NET code to run. The format of that parameter is `<assembly-name>::<full-type-name>::<function-name>`.
 
@@ -19,16 +19,16 @@ Custom base container images where Amazon.Lambda.RuntimeSupport is not preinstal
 To learn how to build a .NET Lambda function using Amazon.Lambda.RuntimeSupport as a class library checkout the **Using Amazon.Lambda.RuntimeSupport as a class library**
 section in this README.
 
-The Dockefile below shows how to build a Lambda function using a custom base image. In this case the base image is Microsoft's .NET 5 runtime image. 
+The Dockefile below shows how to build a Lambda function using a custom base image. In this case the base image is Microsoft's .NET 6 runtime image. 
 This Dockerfile copies the .NET Lambda function into the `/var/task` directory
 and then uses the dotnet CLI to execute the .NET Lambda project which will initialize the Amazon.Lambda.RuntimeSupport library and start responding to Lambda events.
 
 ```Dockerfile
-FROM mcr.microsoft.com/dotnet/runtime:5.0
+FROM mcr.microsoft.com/dotnet/runtime:6.0
 
 WORKDIR /var/task
 
-COPY "bin/Release/net5.0/linux-x64/publish"  .
+COPY "bin/Release/net6.0/linux-x64/publish"  .
 
 ENTRYPOINT ["/usr/bin/dotnet", "exec", "/var/task/LambdaContainerCustomBase.dll"]
 ```
