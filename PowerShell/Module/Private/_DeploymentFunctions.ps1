@@ -619,7 +619,7 @@ function _validateDotnetInstall
 
     if (!($foundMin))
     {
-        throw 'The installed .NET Core SDK does not meet the minimum requirement to build the PowerShell Lambda package bundle. Download the .NET Core 3.1 SDK from https://www.microsoft.com/net/download'
+        throw 'The installed .NET SDK does not meet the minimum requirement to build the PowerShell Lambda package bundle. Download the .NET 6 SDK from https://www.microsoft.com/net/download'
     }
 }
 
