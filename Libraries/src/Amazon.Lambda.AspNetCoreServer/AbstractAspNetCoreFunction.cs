@@ -489,7 +489,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 catch (AggregateException agex)
                 {
                     ex = agex;
-                    _logger.LogError($"Caught AggregateException: '{agex}'");
+                    _logger.LogError(agex, $"Caught AggregateException: '{agex}'");
                     var sb = new StringBuilder();
                     foreach (var newEx in agex.InnerExceptions)
                     {
@@ -502,7 +502,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 catch (ReflectionTypeLoadException rex)
                 {
                     ex = rex;
-                    _logger.LogError($"Caught ReflectionTypeLoadException: '{rex}'");
+                    _logger.LogError(rex, $"Caught ReflectionTypeLoadException: '{rex}'");
                     var sb = new StringBuilder();
                     foreach (var loaderException in rex.LoaderExceptions)
                     {
@@ -524,7 +524,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 {
                     ex = e;
                     if (rethrowUnhandledError) throw;
-                    _logger.LogError($"Unknown error responding to request: {this.ErrorReport(e)}");
+                    _logger.LogError(e, $"Unknown error responding to request: {this.ErrorReport(e)}");
                     ((IHttpResponseFeature)features).StatusCode = 500;
                 }
 
