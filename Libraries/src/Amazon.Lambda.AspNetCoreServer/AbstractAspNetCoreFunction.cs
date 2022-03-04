@@ -436,7 +436,11 @@ namespace Amazon.Lambda.AspNetCoreServer
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request, lambdaContext);
 
-            _logger.LogDebug($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
+            if (_logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug))
+            {
+                var httpRequestFeature = (IHttpRequestFeature)features;
+                _logger.LogDebug($"ASP.NET Core Request PathBase: {httpRequestFeature.PathBase}, Path: {httpRequestFeature.Path}");
+            }
 
             {
                 var itemFeatures = (IItemsFeature)features;
