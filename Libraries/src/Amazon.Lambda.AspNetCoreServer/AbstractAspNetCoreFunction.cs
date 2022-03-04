@@ -48,7 +48,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         // Defines a mapping from registered content types to the response encoding format
         // which dictates what transformations should be applied before returning response content
-        private Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentType = new Dictionary<string, ResponseContentEncoding>
+        private readonly Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentType = new Dictionary<string, ResponseContentEncoding>
         {
             // The complete list of registered MIME content-types can be found at:
             //    http://www.iana.org/assignments/media-types/media-types.xhtml
@@ -78,7 +78,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         // Defines a mapping from registered content encodings to the response encoding format
         // which dictates what transformations should be applied before returning response content
-        private Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentEncoding = new Dictionary<string, ResponseContentEncoding>
+        private readonly Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentEncoding = new Dictionary<string, ResponseContentEncoding>
         {
             ["gzip"] = ResponseContentEncoding.Base64,
             ["deflate"] = ResponseContentEncoding.Base64,
