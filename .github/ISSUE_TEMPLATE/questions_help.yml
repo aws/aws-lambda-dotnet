@@ -1,0 +1,62 @@
+name: "\U0001F4AC Questions/Help"
+description: Ask a question! If you don't know which type to choose, choose this one.
+title: "(short issue description)"
+labels: [guidance, needs-triage]
+body: 
+  - type: markdown 
+    attributes: 
+      value: |
+        ## Important Information
+        Please make sure you have gone through the <b>Existing Issues, Official Docs and AWS Forums</b> before filing a new issue! If your question was already asked, but the answer does not satisfy your curiosity, prefer re-opening the existing issue to ask for further clarification, instead of filing a new issue.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: The Question
+      description: Ask your question here. Include any details relevant. Make sure you are not falling prey to the [X/Y problem](http://xyproblem.info)!
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: |
+        Provide a self-contained, concise snippet of code that can be used to reproduce the issue.
+        For more complex issues provide a repo with the smallest reproducible example.
+        Avoid including business logic or unrelated code, it makes diagnosis more difficult.
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior
+      description: |
+        Tell us what happens instead of the expected behavior.
+        Include full errors, uncaught exceptions, stack traces, and relevant logs.
+    validations:
+      required: true
+
+  - type: input
+    id: dotnet-sdk-version
+    attributes:
+      label: AWS .NET SDK and Package version used
+      description: Information from Nuget Packages
+    validations:
+      required: true
+
+  - type: input
+    id: platform-used
+    attributes:
+      label: Targeted .NET Platform
+    validations:
+      required: true
+
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating System and version
+      description: "Example: Windows 10, OSX Mojave, Ubuntu, AmazonLinux, etc."
+    validations:
+      required: true

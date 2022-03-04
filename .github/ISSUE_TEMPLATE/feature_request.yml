@@ -1,0 +1,97 @@
+name: "\U0001F680 Feature Request"
+description: Suggest an idea for this project
+title: "(short issue description)"
+labels: [feature-request, needs-triage]
+body: 
+  - type: markdown 
+    attributes: 
+      value: |
+        ## Community Note
+        1. Please vote on this issue by adding a 👍 [reaction](https://blog.github.com/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) to the original issue to help the community and maintainers prioritize this request
+        2. Please do not leave "+1" or "me too" comments, they generate extra noise for issue followers and do not help prioritize the request
+        3. If you are interested in working on this issue, please leave a comment
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the feature
+      description: A clear and concise description of the feature you are proposing.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your Feature Request related to a problem?
+      description: |
+        A description of the issue, e.g. "It would be great if..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: |
+        Suggest how to implement the addition or change.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe alternative solutions or features you've considered
+      description: |
+        Any alternative solutions or features you've considered.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: |
+        How has this issue affected you? What are you trying to accomplish?
+        Providing context helps us come up with a solution that is most useful in the real world.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: acknowledgment
+    attributes:
+      label: Acknowledge
+      options:
+        - label: I may be able to implement this feature request
+          required: false
+
+  - type: checkboxes
+    id: warnings
+    attributes:
+      label: Warning
+      description: Please do not submit a PR before recieving feedback. In order to maintain stability, breaking changes are only added in major versions, so this change may not be merged.
+      options:
+        - label: This feature might incur a breaking change
+          required: false
+
+  - type: input
+    id: dotnet-sdk-version
+    attributes:
+      label: AWS .NET SDK and Package version used
+      description: Information from Nuget Packages
+    validations:
+      required: true
+
+  - type: input
+    id: platform-used
+    attributes:
+      label: Targeted .NET Platform
+    validations:
+      required: true
+
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating System and version
+      description: "Example: Windows 10, OSX Mojave, Ubuntu, AmazonLinux, etc."
+    validations:
+      required: true
