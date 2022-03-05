@@ -74,6 +74,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 foreach (var lambdaMethod in receiver.LambdaMethods)
                 {
                     var lambdaMethodModel = semanticModelProvider.GetMethodSemanticModel(lambdaMethod);
+                    
+                    // Check for necessary references
+                    if (lambdaMethodModel.HasAttribute(context, TypeFullNames.RestApiAttribute)
+                        || lambdaMethodModel.HasAttribute(context, TypeFullNames.HttpApiAttribute))
+                    {
+                        // Check for arbitrary type from "Amazon.Lambda.APIGatewayEvents"
+                        if (context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyRequest) == null)
+                        {
+                            diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies,
+                                lambdaMethod.GetLocation(),
+                                "Amazon.Lambda.APIGatewayEvents"));
+                        }
+                    }
+                    
                     var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context);
 
                     // If there are more than one event, report them as errors

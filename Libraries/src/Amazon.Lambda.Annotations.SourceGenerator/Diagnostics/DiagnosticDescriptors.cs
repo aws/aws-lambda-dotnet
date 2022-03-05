@@ -1,6 +1,4 @@
 using System;
-using System.Reflection.Metadata;
-using System.Runtime.InteropServices.ComTypes;
 using Microsoft.CodeAnalysis;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
@@ -10,7 +8,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         /// Generic errors
         public static readonly DiagnosticDescriptor UnhandledException = new DiagnosticDescriptor(id: "AWSLambda0001",
             title: "Unhandled exception",
-            messageFormat: $"This is a bug. Please run the build with detailed verbosity (dotnet build --verbosity detailed) and file a bug at https://github.com/aws/aws-lambda-dotnet with the build output and stack trace {{0}}.",
+            messageFormat: "This is a bug. Please run the build with detailed verbosity (dotnet build --verbosity detailed) and file a bug at https://github.com/aws/aws-lambda-dotnet with the build output and stack trace {0}.",
             category: "AWSLambda",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
@@ -38,5 +36,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Info,
             isEnabledByDefault: true);
+        
+        public static readonly DiagnosticDescriptor MissingDependencies = new DiagnosticDescriptor(id: "AWSLambda0104",
+            title: "Missing reference to a required dependency",
+            messageFormat: "Your project has a missing required package dependency. Please add a reference to the following package: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
     }
 }
