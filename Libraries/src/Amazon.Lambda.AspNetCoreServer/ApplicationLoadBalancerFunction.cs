@@ -130,7 +130,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 var remotePort = GetSingleHeaderValue(lambdaRequest, "x-forwarded-port");
                 if (!string.IsNullOrEmpty(remotePort))
                 {
-                    connectionFeatures.RemotePort = int.Parse(remotePort);
+                    connectionFeatures.RemotePort = int.Parse(remotePort, CultureInfo.InvariantCulture);
                 }
 
                 // Call consumers customize method in case they want to change how API Gateway's request

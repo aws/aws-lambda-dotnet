@@ -371,9 +371,9 @@ namespace Amazon.Lambda.AspNetCoreServer
             // ASP.NET Core will typically return content type with encoding like this "application/json; charset=utf-8"
             // To find the content type in the dictionary we need to strip the encoding off.
             var contentTypeWithoutEncoding = contentType.Split(';')[0].Trim();
-            if (_responseContentEncodingForContentType.ContainsKey(contentTypeWithoutEncoding))
+            if (_responseContentEncodingForContentType.TryGetValue(contentTypeWithoutEncoding, out var encoding))
             {
-                return _responseContentEncodingForContentType[contentTypeWithoutEncoding];
+                return encoding;
             }
 
             return DefaultResponseContentEncoding;
@@ -391,9 +391,9 @@ namespace Amazon.Lambda.AspNetCoreServer
                 return DefaultResponseContentEncoding;
             }
 
-            if (_responseContentEncodingForContentEncoding.ContainsKey(contentEncoding))
+            if (_responseContentEncodingForContentEncoding.TryGetValue(contentEncoding, out var encoding))
             {
-                return _responseContentEncodingForContentEncoding[contentEncoding];
+                return encoding;
             }
 
             return DefaultResponseContentEncoding;

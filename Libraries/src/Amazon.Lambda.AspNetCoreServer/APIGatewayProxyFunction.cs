@@ -154,10 +154,10 @@ namespace Amazon.Lambda.AspNetCoreServer
                 requestFeatures.Method = apiGatewayRequest.HttpMethod;
 
                 string path = null;
-                if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.ContainsKey("proxy") &&
+                if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.TryGetValue("proxy", out var proxy) &&
                     !string.IsNullOrEmpty(apiGatewayRequest.Resource))
                 {
-                    var proxyPath = apiGatewayRequest.PathParameters["proxy"];
+                    var proxyPath = proxy;
                     path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);
                 }
 
@@ -242,9 +242,9 @@ namespace Amazon.Lambda.AspNetCoreServer
                     connectionFeatures.RemoteIpAddress = remoteIpAddress;
                 }
 
-                if (apiGatewayRequest?.Headers?.ContainsKey("X-Forwarded-Port") == true)
+                if (apiGatewayRequest?.Headers?.TryGetValue("X-Forwarded-Port", out var forwardedPort) == true)
                 {
-                    connectionFeatures.RemotePort = int.Parse(apiGatewayRequest.Headers["X-Forwarded-Port"]);
+                    connectionFeatures.RemotePort = int.Parse(forwardedPort, CultureInfo.InvariantCulture);
                 }
 
                 // Call consumers customize method in case they want to change how API Gateway's request
