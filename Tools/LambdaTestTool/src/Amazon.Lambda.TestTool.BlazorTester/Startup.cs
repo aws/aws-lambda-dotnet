@@ -80,7 +80,8 @@ namespace Amazon.Lambda.TestTool.BlazorTester
             services.AddSingleton<IRuntimeApiDataStore, RuntimeApiDataStore>();
             services.AddControllers();
             services.AddRazorPages();
-            services.AddServerSideBlazor();
+            services.AddServerSideBlazor()
+                    .AddHubOptions(options => options.MaximumReceiveMessageSize = null);
             services.AddHttpContextAccessor();
 
             services.AddBlazoredModal();
@@ -107,7 +108,11 @@ namespace Amazon.Lambda.TestTool.BlazorTester
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapBlazorHub();
+                endpoints.MapBlazorHub(o =>
+                {
+                    o.ApplicationMaxBufferSize = 6 * (1024 * 1024);
+                    o.TransportMaxBufferSize = 6 * (1024 * 1024);
+                });
                 endpoints.MapFallbackToPage("/_Host");
             });
         }
