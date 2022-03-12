@@ -48,7 +48,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         // Defines a mapping from registered content types to the response encoding format
         // which dictates what transformations should be applied before returning response content
-        private Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentType = new Dictionary<string, ResponseContentEncoding>
+        private readonly Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentType = new Dictionary<string, ResponseContentEncoding>
         {
             // The complete list of registered MIME content-types can be found at:
             //    http://www.iana.org/assignments/media-types/media-types.xhtml
@@ -79,7 +79,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         // Defines a mapping from registered content encodings to the response encoding format
         // which dictates what transformations should be applied before returning response content
-        private Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentEncoding = new Dictionary<string, ResponseContentEncoding>
+        private readonly Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentEncoding = new Dictionary<string, ResponseContentEncoding>
         {
             ["gzip"] = ResponseContentEncoding.Base64,
             ["deflate"] = ResponseContentEncoding.Base64,
@@ -437,7 +437,11 @@ namespace Amazon.Lambda.AspNetCoreServer
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request, lambdaContext);
 
-            _logger.LogDebug($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
+            if (_logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug))
+            {
+                var httpRequestFeature = (IHttpRequestFeature)features;
+                _logger.LogDebug($"ASP.NET Core Request PathBase: {httpRequestFeature.PathBase}, Path: {httpRequestFeature.Path}");
+            }
 
             {
                 var itemFeatures = (IItemsFeature)features;
@@ -486,7 +490,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 catch (AggregateException agex)
                 {
                     ex = agex;
-                    _logger.LogError($"Caught AggregateException: '{agex}'");
+                    _logger.LogError(agex, $"Caught AggregateException: '{agex}'");
                     var sb = new StringBuilder();
                     foreach (var newEx in agex.InnerExceptions)
                     {
@@ -499,7 +503,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 catch (ReflectionTypeLoadException rex)
                 {
                     ex = rex;
-                    _logger.LogError($"Caught ReflectionTypeLoadException: '{rex}'");
+                    _logger.LogError(rex, $"Caught ReflectionTypeLoadException: '{rex}'");
                     var sb = new StringBuilder();
                     foreach (var loaderException in rex.LoaderExceptions)
                     {
@@ -521,7 +525,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 {
                     ex = e;
                     if (rethrowUnhandledError) throw;
-                    _logger.LogError($"Unknown error responding to request: {this.ErrorReport(e)}");
+                    _logger.LogError(e, $"Unknown error responding to request: {this.ErrorReport(e)}");
                     ((IHttpResponseFeature)features).StatusCode = 500;
                 }
 
