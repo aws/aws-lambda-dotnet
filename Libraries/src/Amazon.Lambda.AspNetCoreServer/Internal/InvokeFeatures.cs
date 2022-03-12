@@ -28,6 +28,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                              ITlsConnectionFeature
 
                              ,IHttpResponseBodyFeature
+
+#if NET6_0_OR_GREATER
+                            ,IHttpRequestBodyDetectionFeature
+#endif
     /*
     ,
                          IHttpUpgradeFeature,
@@ -46,6 +50,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             this[typeof(IServiceProvidersFeature)] = this;
             this[typeof(ITlsConnectionFeature)] = this;
             this[typeof(IHttpResponseBodyFeature)] = this;
+
+#if NET6_0_OR_GREATER
+            this[typeof(IHttpRequestBodyDetectionFeature)] = this;
+#endif
         }
 
         #region IFeatureCollection
@@ -345,5 +353,16 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         public X509Certificate2 ClientCertificate { get; set; }
 
         #endregion
+
+#if NET6_0_OR_GREATER
+        bool IHttpRequestBodyDetectionFeature.CanHaveBody
+        {
+            get
+            {
+                var requestFeature = (IHttpRequestFeature)this;
+                return requestFeature.Body != null;
+            }
+        }
+#endif
     }
 }
