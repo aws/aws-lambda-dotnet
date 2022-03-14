@@ -1,6 +1,7 @@
 name: Source Generator CI
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - feature/annotations
