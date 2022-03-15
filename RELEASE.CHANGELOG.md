@@ -8,13 +8,13 @@
   * Updated dependency on Amazon.Lambda.AspNetCoreServer to 
 * **Amazon.Lambda.TestTool-3.1 (0.12.1)**
   * Fix issue with sending large function input events being truncated.
-  * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)
+  * Pull Request [#1098](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)
 * **Amazon.Lambda.TestTool-5.0 (0.12.1)**
   * Fix issue with sending large function input events being truncated.
-  * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)  
+  * Pull Request [#1098](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)  
 * **Amazon.Lambda.TestTool-6.0 (0.12.1)**
   * Fix issue with sending large function input events being truncated.
-  * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)  
+  * Pull Request [#1098](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)  
   
   
 ### Release 2022-02-24  
