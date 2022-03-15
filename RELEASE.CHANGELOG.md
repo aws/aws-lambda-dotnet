@@ -1,3 +1,30 @@
+### Release 2022-03-14
+* **Amazon.Lambda.AspNetCoreServer (7.1.0)**
+  * Fix issue with ASP.NET Core Minimal API not binding HTTP request body to complex types
+  * Pull Request [#1099](https://github.com/aws/aws-lambda-dotnet/pull/1099) Logging improvements. Thanks [Martin Costello](https://github.com/martincostello)
+  * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1103) Support image/x-icon as base64. Thanks [Martin Costello](https://github.com/martincostello)  
+  * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1102) Switch to TryGetValue for minor perf improvement. Thanks [Martin Costello](https://github.com/martincostello)    
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.1.0)**
+  * Updated dependency on Amazon.Lambda.AspNetCoreServer to 
+* **Amazon.Lambda.TestTool-3.1 (0.12.1)**
+  * Fix issue with sending large function input events being truncated.
+  * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)
+* **Amazon.Lambda.TestTool-5.0 (0.12.1)**
+  * Fix issue with sending large function input events being truncated.
+  * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)  
+* **Amazon.Lambda.TestTool-6.0 (0.12.1)**
+  * Fix issue with sending large function input events being truncated.
+  * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)  
+  
+  
+### Release 2022-02-24  
+* **Amazon.Lambda.TestTool-3.1 (0.12.0)**
+  * Add new page for testing executable assemblies. Useful for testing Lambda functions using top-level statements or function deployed as a custom runtime.
+* **Amazon.Lambda.TestTool-5.0 (0.12.0)**
+  * Add new page for testing executable assemblies. Useful for testing Lambda functions using top-level statements or function deployed as a custom runtime.
+* **Amazon.Lambda.TestTool-6.0 (0.12.0)**
+  * Add new page for testing executable assemblies. Useful for testing Lambda functions using top-level statements or function deployed as a custom runtime.
+
 ### Release 2022-02-23
 * **Amazon.Lambda.Templates (6.0.0)**
   * Update Lambda templates to target .NET 6.
