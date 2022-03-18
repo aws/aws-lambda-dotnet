@@ -44,7 +44,9 @@ Deploy function to AWS Lambda
 
 ## Arm64
 
-If you want to run your Lambda on an Arm64 processor, all you need is to do is add `"function-architecture": "arm64"` to the `aws-lambda-tools-defaults.json` file. Then deploy as described above.
+Graviton2 processors offer the best performance and price for running Lambda functions.
+
+If you want to run your Lambda on an Arm64 processor, all you need to do is replace `x86_64` with `arm64` under `"function-architecture": ` in the `aws-lambda-tools-defaults.json` file. Then deploy as described above
 
 ## Improve Cold Start
 
