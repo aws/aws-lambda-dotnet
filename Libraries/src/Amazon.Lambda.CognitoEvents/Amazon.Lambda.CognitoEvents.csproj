@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - CognitoEvents package.</Description>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.CognitoEvents</AssemblyTitle>
     <VersionPrefix>2.0.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.CognitoEvents</AssemblyName>

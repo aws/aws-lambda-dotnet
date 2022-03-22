@@ -1,0 +1,28 @@
+﻿{
+  "version": "1",
+  "region": "us-east-1",
+  "userPoolId": "us-east-1_id",
+  "userName": "username_uuid",
+  "callerContext": {
+    "awsSdkVersion": "version",
+    "clientId": "client_id"
+  },
+  "triggerSource": "trigger_source",
+  "request": {
+    "userAttributes": {
+      "attribute_1": "attribute_value_1",
+      "attribute_2": "attribute_value_2"
+    },
+    "clientMetadata": {
+      "client_1": "client_value_1",
+      "client_2": "client_value_2"
+    },
+    "validationData": {
+      "validation_1": "validation_value_1",
+      "validation_2": "validation_value_2"
+    },
+    "newDeviceUsed": true
+  },
+  "response": {
+  }
+}
