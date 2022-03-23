@@ -82,7 +82,7 @@ namespace Packager
                 xdoc.Load(projectfile);
 
                 var packageId = xdoc.SelectSingleNode("//PropertyGroup/PackageId")?.InnerText;
-                var versionPrefix = xdoc.SelectSingleNode("//PropertyGroup/VersionPrefix")?.InnerText;
+                var versionPrefix = xdoc.SelectSingleNode("//PropertyGroup/VersionPrefix")?.InnerText ?? xdoc.SelectSingleNode("//PropertyGroup/Version")?.InnerText;
 
                 if(!string.IsNullOrEmpty(packageId) && !string.IsNullOrEmpty(versionPrefix))
                 {
