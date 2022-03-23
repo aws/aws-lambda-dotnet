@@ -53,19 +53,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         public DefaultLambdaJsonSerializer(Action<JsonSerializerOptions> customizer, Action<JsonWriterOptions> jsonWriterCustomizer)
             : base(jsonWriterCustomizer)
         {
-            SerializerOptions = new JsonSerializerOptions()
-            {
-                IgnoreNullValues = true,
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = new AwsNamingPolicy(),
-                Converters =
-                {
-                    new DateTimeConverter(),
-                    new MemoryStreamConverter(),
-                    new ConstantClassConverter(),
-                    new ByteArrayConverter()
-                }
-            };
+            SerializerOptions = CreateDefaultJsonSerializationOptions();
 
             customizer?.Invoke(this.SerializerOptions);
             jsonWriterCustomizer?.Invoke(this.WriterOptions);
