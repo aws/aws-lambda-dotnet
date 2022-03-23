@@ -1,4 +1,9 @@
 ### Release 2022-03-14
+* **Amazon.Lambda.Serialization.SystemTextJson (2.3.0)**
+  * Change SourceGeneratorLambdaJsonSerializer to use the same JsonSerializerOptions as DefaultLambdaJsonSerializer
+  * Allow SourceGeneratorLambdaJsonSerializer to be extended with a custom Action<JsonSerializerOptions> to customize the JsonSerializerOptions
+
+### Release 2022-03-14
 * **Amazon.Lambda.AspNetCoreServer (7.1.0)**
   * Fix issue with ASP.NET Core Minimal API not binding HTTP request body to complex types
   * Pull Request [#1099](https://github.com/aws/aws-lambda-dotnet/pull/1099) Logging improvements. Thanks [Martin Costello](https://github.com/martincostello)
