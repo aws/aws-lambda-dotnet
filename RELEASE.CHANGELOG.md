@@ -1,4 +1,8 @@
-### Release 2022-03-14
+### Release 2022-03-25
+* **Amazon.Lambda.Templates (6.1.0)**
+  * Updated PackageReferences of AWS packages referenced in the templates.
+
+### Release 2022-03-24
 * **Amazon.Lambda.Serialization.SystemTextJson (2.3.0)**
   * Change SourceGeneratorLambdaJsonSerializer to use the same JsonSerializerOptions as DefaultLambdaJsonSerializer
   * Allow SourceGeneratorLambdaJsonSerializer to be extended with a custom Action<JsonSerializerOptions> to customize the JsonSerializerOptions
