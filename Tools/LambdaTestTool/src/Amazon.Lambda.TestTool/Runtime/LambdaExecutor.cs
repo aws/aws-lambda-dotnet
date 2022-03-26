@@ -151,7 +151,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                         else
                         {
                             lambdaReturnStream = new MemoryStream();
-                            request.Function.Serializer.Serialize(taskResult, lambdaReturnStream);
+                            InvokeSerializer(request, taskResult, taskResult.GetType(), lambdaReturnStream);
                         }
                     }
                 }
@@ -159,7 +159,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             else
             {
                 lambdaReturnStream = new MemoryStream();
-                request.Function.Serializer.Serialize(lambdaReturnObject, lambdaReturnStream);
+                InvokeSerializer(request, lambdaReturnObject, request.Function.LambdaMethod.ReturnType, lambdaReturnStream);
             }
 
             if (lambdaReturnStream == null)
@@ -171,6 +171,12 @@ namespace Amazon.Lambda.TestTool.Runtime
                 return reader.ReadToEnd();
             }
 
+            static void InvokeSerializer(ExecutionRequest request, object lambdaReturnObject, Type returnType, Stream lambdaReturnStream)
+            {
+                var genericSerialize = typeof(ILambdaSerializer).GetMethod("Serialize");
+                var specializationSerialize = genericSerialize.MakeGenericMethod(returnType);
+                specializationSerialize.Invoke(request.Function.Serializer, new[] { lambdaReturnObject, lambdaReturnStream });
+            }
         }
 
         /// <summary>
