@@ -80,7 +80,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         || lambdaMethodModel.HasAttribute(context, TypeFullNames.HttpApiAttribute))
                     {
                         // Check for arbitrary type from "Amazon.Lambda.APIGatewayEvents"
-                        if (context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyRequest) == null)
+                        if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.APIGatewayEvents"))
                         {
                             diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies,
                                 lambdaMethod.GetLocation(),
