@@ -1,6 +1,6 @@
 ### Release 2022-03-29
 * **AWSLambdaPSCore PowerShell Module (3.0.1)**
-  * Pull Request [#1096](https://github.com/aws/aws-lambda-dotnet/pull/1096) Fix error message when .NET SDK found that is below .NET 6 requirement
+  * Pull Request [#1096](https://github.com/aws/aws-lambda-dotnet/pull/1096) Fix error message when .NET SDK found that is below .NET 6 requirement. Thanks [Lachlan Blake](https://github.com/Otimie)
 
 ### Release 2022-03-25
 * **Amazon.Lambda.Templates (6.1.0)**
