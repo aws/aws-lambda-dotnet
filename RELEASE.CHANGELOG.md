@@ -1,3 +1,7 @@
+### Release 2022-03-29
+* **AWSLambdaPSCore PowerShell Module (3.0.1)**
+  * Pull Request [#1096](https://github.com/aws/aws-lambda-dotnet/pull/1096) Fix error message when .NET SDK found that is below .NET 6 requirement
+
 ### Release 2022-03-25
 * **Amazon.Lambda.Templates (6.1.0)**
   * Updated PackageReferences of AWS packages referenced in the templates.
@@ -35,6 +39,8 @@
   * Add new page for testing executable assemblies. Useful for testing Lambda functions using top-level statements or function deployed as a custom runtime.
 
 ### Release 2022-02-23
+* **AWSLambdaPSCore PowerShell Module (3.0.0)**
+  * Switch publishing to target the .NET 6 Lambda runtime
 * **Amazon.Lambda.Templates (6.0.0)**
   * Update Lambda templates to target .NET 6.
 
