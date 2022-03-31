@@ -33,7 +33,9 @@
     <Content Include="$(MSBuildThisFileDirectory)kinesis-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-firehose-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-firehose-response.json" />
+    <Content Include="$(MSBuildThisFileDirectory)lexv2-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)lex-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)lexv2-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)lex-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)logs-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)proxy-event.json" />

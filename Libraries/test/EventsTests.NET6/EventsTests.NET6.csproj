@@ -37,6 +37,7 @@
     <ProjectReference Include="..\..\src\Amazon.Lambda.KinesisAnalyticsEvents\Amazon.Lambda.KinesisAnalyticsEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.KinesisFirehoseEvents\Amazon.Lambda.KinesisFirehoseEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.LexEvents\Amazon.Lambda.LexEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.LexV2Events\Amazon.Lambda.LexV2Events.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.CognitoEvents\Amazon.Lambda.CognitoEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.ConfigEvents\Amazon.Lambda.ConfigEvents.csproj" />

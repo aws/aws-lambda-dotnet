@@ -17,6 +17,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.APIGatewayEvents;
     using Amazon.Lambda.ApplicationLoadBalancerEvents;
     using Amazon.Lambda.LexEvents;
+    using Amazon.Lambda.LexV2Events;
     using Amazon.Lambda.KinesisFirehoseEvents;
     using Amazon.Lambda.KinesisAnalyticsEvents;
     using Amazon.Lambda.KafkaEvents;
@@ -1325,6 +1326,199 @@ namespace Amazon.Lambda.Tests
                 var serialized = JObject.Parse(json);
                 Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
 
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void LexV2Event(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("lexv2-event.json"))
+            {
+                var lexV2Event = serializer.Deserialize<LexV2Event>(fileStream);
+                Assert.Equal("1.0", lexV2Event.MessageVersion);
+                Assert.Equal("DialogCodeHook", lexV2Event.InvocationSource);
+                Assert.Equal("DTMF", lexV2Event.InputMode);
+                Assert.Equal("ImageResponseCard", lexV2Event.ResponseContentType);
+                Assert.Equal("test_session", lexV2Event.SessionId);
+                Assert.Equal("test_input_transcript", lexV2Event.InputTranscript);
+                Assert.Equal("UFIDGBA6DE", lexV2Event.Bot.Id);
+                Assert.Equal("testbot", lexV2Event.Bot.Name);
+                Assert.Equal("TSTALIASID", lexV2Event.Bot.AliasId);
+                Assert.Equal("en_US", lexV2Event.Bot.LocaleId);
+                Assert.Equal("1.0", lexV2Event.Bot.Version);
+
+                Assert.Equal(2, lexV2Event.Interpretations.Count);
+                Assert.Equal("TestAction", lexV2Event.Interpretations[0].Intent.Name);
+                Assert.Equal(3, lexV2Event.Interpretations[0].Intent.Slots.Count);
+                Assert.Equal("List", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Shape);
+                Assert.Equal("Action Value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Value.OriginalValue);
+                Assert.Equal("Action Value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Value.InterpretedValue);
+                Assert.Equal(1, lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Value.ResolvedValues.Count);
+                Assert.Equal("action value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Value.ResolvedValues[0]);
+                Assert.Equal(1, lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values.Count);
+                Assert.Equal("Scalar", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Shape);
+                Assert.Equal("Action Value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Value.OriginalValue);
+                Assert.Equal("Action Value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Value.InterpretedValue);
+                Assert.Equal(1, lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Value.ResolvedValues.Count);
+                Assert.Equal("action value", lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Value.ResolvedValues[0]);
+                Assert.Null(lexV2Event.Interpretations[0].Intent.Slots["ActionType"].Values[0].Values);
+                Assert.Null(lexV2Event.Interpretations[0].Intent.Slots["ActionDate"]);
+                Assert.Null(lexV2Event.Interpretations[0].Intent.Slots["ActionTime"]);
+                Assert.Equal("InProgress", lexV2Event.Interpretations[0].Intent.State);
+                Assert.Equal("None", lexV2Event.Interpretations[0].Intent.ConfirmationState);
+                Assert.Equal(1.0, lexV2Event.Interpretations[0].NluConfidence.Score);
+                Assert.Equal("testsentiment", lexV2Event.Interpretations[0].SentimentResponse.Sentiment);
+                Assert.Equal(0.1, lexV2Event.Interpretations[0].SentimentResponse.SentimentScore.Mixed);
+                Assert.Equal(0.1, lexV2Event.Interpretations[0].SentimentResponse.SentimentScore.Negative);
+                Assert.Equal(0.5, lexV2Event.Interpretations[0].SentimentResponse.SentimentScore.Neutral);
+                Assert.Equal(0.9, lexV2Event.Interpretations[0].SentimentResponse.SentimentScore.Positive);
+                Assert.Equal("FallbackIntent", lexV2Event.Interpretations[1].Intent.Name);
+                Assert.Equal(0, lexV2Event.Interpretations[1].Intent.Slots.Count);
+
+                Assert.Equal("ActionDate", lexV2Event.ProposedNextState.DialogAction.SlotToElicit);
+                Assert.Equal("ConfirmIntent", lexV2Event.ProposedNextState.DialogAction.Type);
+                Assert.Equal("NextIntent", lexV2Event.ProposedNextState.Intent.Name);
+                Assert.Equal("None", lexV2Event.ProposedNextState.Intent.ConfirmationState);
+                Assert.Equal(0, lexV2Event.ProposedNextState.Intent.Slots.Count);
+                Assert.Equal("Waiting", lexV2Event.ProposedNextState.Intent.State);
+
+                Assert.Equal(2, lexV2Event.RequestAttributes.Count);
+                Assert.Equal("value1", lexV2Event.RequestAttributes["key1"]);
+                Assert.Equal("value2", lexV2Event.RequestAttributes["key2"]);
+
+                Assert.Equal(1, lexV2Event.SessionState.ActiveContexts.Count);
+                Assert.Equal(2, lexV2Event.SessionState.ActiveContexts[0].ContextAttributes.Count);
+                Assert.Equal("contextattributevalue1", lexV2Event.SessionState.ActiveContexts[0].ContextAttributes["contextattribute1"]);
+                Assert.Equal("contextattributevalue2", lexV2Event.SessionState.ActiveContexts[0].ContextAttributes["contextattribute2"]);
+                Assert.Equal("testcontext", lexV2Event.SessionState.ActiveContexts[0].Name);
+                Assert.Equal(12, lexV2Event.SessionState.ActiveContexts[0].TimeToLive.TimeToLiveInSeconds);
+                Assert.Equal(20, lexV2Event.SessionState.ActiveContexts[0].TimeToLive.TurnsToLive);
+                Assert.Equal("ElicitSlot", lexV2Event.SessionState.DialogAction.Type);
+                Assert.Equal("Date", lexV2Event.SessionState.DialogAction.SlotToElicit);
+                Assert.Equal("TestAction", lexV2Event.SessionState.Intent.Name);
+                Assert.Equal(3, lexV2Event.SessionState.Intent.Slots.Count);
+                Assert.Equal("List", lexV2Event.SessionState.Intent.Slots["ActionType"].Shape);
+                Assert.Equal("Action Value", lexV2Event.SessionState.Intent.Slots["ActionType"].Value.OriginalValue);
+                Assert.Equal("Action Value", lexV2Event.SessionState.Intent.Slots["ActionType"].Value.InterpretedValue);
+                Assert.Equal(1, lexV2Event.SessionState.Intent.Slots["ActionType"].Value.ResolvedValues.Count);
+                Assert.Equal("action value", lexV2Event.SessionState.Intent.Slots["ActionType"].Value.ResolvedValues[0]);
+                Assert.Equal(1, lexV2Event.SessionState.Intent.Slots["ActionType"].Values.Count);
+                Assert.Equal("Scalar", lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Shape);
+                Assert.Equal("Action Value", lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Value.OriginalValue);
+                Assert.Equal("Action Value", lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Value.InterpretedValue);
+                Assert.Equal(1, lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Value.ResolvedValues.Count);
+                Assert.Equal("action value", lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Value.ResolvedValues[0]);
+                Assert.Null(lexV2Event.SessionState.Intent.Slots["ActionType"].Values[0].Values);
+                Assert.Null(lexV2Event.SessionState.Intent.Slots["ActionDate"]);
+                Assert.Null(lexV2Event.SessionState.Intent.Slots["ActionTime"]);
+                Assert.Equal("InProgress", lexV2Event.SessionState.Intent.State);
+                Assert.Equal("None", lexV2Event.SessionState.Intent.ConfirmationState);
+                Assert.Equal("85f22c97-b5d3-4a74-9e3d-95446768ecaa", lexV2Event.SessionState.OriginatingRequestId);
+                Assert.Equal(1, lexV2Event.SessionState.RuntimeHints.SlotHints.Count);
+                Assert.Equal(1, lexV2Event.SessionState.RuntimeHints.SlotHints["hint1"].Count);
+                Assert.Equal(2, lexV2Event.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues.Count);
+                Assert.Equal("hintvalue1_1", lexV2Event.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues[0].Phrase);
+                Assert.Equal("hintvalue1_2", lexV2Event.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues[1].Phrase);
+                Assert.Equal(2, lexV2Event.SessionState.SessionAttributes.Count);
+                Assert.Equal("sessionvalue1", lexV2Event.SessionState.SessionAttributes["sessionattribute1"]);
+                Assert.Equal("sessionvalue2", lexV2Event.SessionState.SessionAttributes["sessionattribute2"]);
+
+                Assert.Equal(1, lexV2Event.Transcriptions.Count);
+                Assert.Equal("testtranscription", lexV2Event.Transcriptions[0].Transcription);
+                Assert.Equal(0.8, lexV2Event.Transcriptions[0].TranscriptionConfidence);
+                Assert.Equal("TestAction", lexV2Event.Transcriptions[0].ResolvedContext.Intent);
+                Assert.Equal(1, lexV2Event.Transcriptions[0].ResolvedSlots.Count);
+                Assert.Equal("List", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Shape);
+                Assert.Equal("Action Value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Value.OriginalValue);
+                Assert.Equal("Action Value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Value.InterpretedValue);
+                Assert.Equal(1, lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Value.ResolvedValues.Count);
+                Assert.Equal("action value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Value.ResolvedValues[0]);
+                Assert.Equal(1, lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values.Count);
+                Assert.Equal("Scalar", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Shape);
+                Assert.Equal("Action Value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Value.OriginalValue);
+                Assert.Equal("Action Value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Value.InterpretedValue);
+                Assert.Equal(1, lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Value.ResolvedValues.Count);
+                Assert.Equal("action value", lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Value.ResolvedValues[0]);
+                Assert.Null(lexV2Event.Transcriptions[0].ResolvedSlots["ActionType"].Values[0].Values);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void LexV2Response(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("lexv2-response.json"))
+            {
+                var lexV2Response = serializer.Deserialize<LexV2Response>(fileStream);
+
+                Assert.Equal(1, lexV2Response.Messages.Count);
+                Assert.Equal("Test Content", lexV2Response.Messages[0].Content);
+                Assert.Equal("ImageResponseCard", lexV2Response.Messages[0].ContentType);
+                Assert.Equal(1, lexV2Response.Messages[0].ImageResponseCard.Buttons.Count);
+                Assert.Equal("Take Action", lexV2Response.Messages[0].ImageResponseCard.Buttons[0].Text);
+                Assert.Equal("takeaction", lexV2Response.Messages[0].ImageResponseCard.Buttons[0].Value);
+                Assert.Equal("http://somedomain.com/testimage.png", lexV2Response.Messages[0].ImageResponseCard.ImageUrl);
+                Assert.Equal("Click button to take action", lexV2Response.Messages[0].ImageResponseCard.Subtitle);
+                Assert.Equal("Take Action", lexV2Response.Messages[0].ImageResponseCard.Title);
+                Assert.Equal(1, lexV2Response.SessionState.ActiveContexts.Count);
+                Assert.Equal(2, lexV2Response.SessionState.ActiveContexts[0].ContextAttributes.Count);
+                Assert.Equal("contextattributevalue1", lexV2Response.SessionState.ActiveContexts[0].ContextAttributes["contextattribute1"]);
+                Assert.Equal("contextattributevalue2", lexV2Response.SessionState.ActiveContexts[0].ContextAttributes["contextattribute2"]);
+                Assert.Equal("testcontext", lexV2Response.SessionState.ActiveContexts[0].Name);
+                Assert.Equal(12, lexV2Response.SessionState.ActiveContexts[0].TimeToLive.TimeToLiveInSeconds);
+                Assert.Equal(20, lexV2Response.SessionState.ActiveContexts[0].TimeToLive.TurnsToLive);
+                Assert.Equal("ElicitSlot", lexV2Response.SessionState.DialogAction.Type);
+                Assert.Equal("Date", lexV2Response.SessionState.DialogAction.SlotToElicit);
+                Assert.Equal("TestAction", lexV2Response.SessionState.Intent.Name);
+                Assert.Equal(3, lexV2Response.SessionState.Intent.Slots.Count);
+                Assert.Equal("List", lexV2Response.SessionState.Intent.Slots["ActionType"].Shape);
+                Assert.Equal("Action Value", lexV2Response.SessionState.Intent.Slots["ActionType"].Value.OriginalValue);
+                Assert.Equal("Action Value", lexV2Response.SessionState.Intent.Slots["ActionType"].Value.InterpretedValue);
+                Assert.Equal(1, lexV2Response.SessionState.Intent.Slots["ActionType"].Value.ResolvedValues.Count);
+                Assert.Equal("action value", lexV2Response.SessionState.Intent.Slots["ActionType"].Value.ResolvedValues[0]);
+                Assert.Equal(1, lexV2Response.SessionState.Intent.Slots["ActionType"].Values.Count);
+                Assert.Equal("Scalar", lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Shape);
+                Assert.Equal("Action Value", lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Value.OriginalValue);
+                Assert.Equal("Action Value", lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Value.InterpretedValue);
+                Assert.Equal(1, lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Value.ResolvedValues.Count);
+                Assert.Equal("action value", lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Value.ResolvedValues[0]);
+                Assert.Null(lexV2Response.SessionState.Intent.Slots["ActionType"].Values[0].Values);
+                Assert.Null(lexV2Response.SessionState.Intent.Slots["ActionDate"]);
+                Assert.Null(lexV2Response.SessionState.Intent.Slots["ActionTime"]);
+                Assert.Equal("InProgress", lexV2Response.SessionState.Intent.State);
+                Assert.Equal("None", lexV2Response.SessionState.Intent.ConfirmationState);
+                Assert.Equal("85f22c97-b5d3-4a74-9e3d-95446768ecaa", lexV2Response.SessionState.OriginatingRequestId);
+                Assert.Equal(1, lexV2Response.SessionState.RuntimeHints.SlotHints.Count);
+                Assert.Equal(1, lexV2Response.SessionState.RuntimeHints.SlotHints["hint1"].Count);
+                Assert.Equal(2, lexV2Response.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues.Count);
+                Assert.Equal("hintvalue1_1", lexV2Response.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues[0].Phrase);
+                Assert.Equal("hintvalue1_2", lexV2Response.SessionState.RuntimeHints.SlotHints["hint1"]["detail1"].RuntimeHintValues[1].Phrase);
+                Assert.Equal(2, lexV2Response.SessionState.SessionAttributes.Count);
+                Assert.Equal("sessionvalue1", lexV2Response.SessionState.SessionAttributes["sessionattribute1"]);
+                Assert.Equal("sessionvalue2", lexV2Response.SessionState.SessionAttributes["sessionattribute2"]);
+                Assert.Equal(2, lexV2Response.RequestAttributes.Count);
+                Assert.Equal("value1", lexV2Response.RequestAttributes["key1"]);
+                Assert.Equal("value2", lexV2Response.RequestAttributes["key2"]);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<LexV2Response>(lexV2Response, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("lexv2-response.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
             }
         }
 
