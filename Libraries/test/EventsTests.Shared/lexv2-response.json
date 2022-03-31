@@ -1,0 +1,90 @@
+﻿{
+  "messages": [
+    {
+      "content": "Test Content",
+      "contentType": "ImageResponseCard",
+      "imageResponseCard": {
+        "buttons": [
+          {
+            "text": "Take Action",
+            "value": "takeaction"
+          }
+        ],
+        "imageUrl": "http://somedomain.com/testimage.png",
+        "subtitle": "Click button to take action",
+        "title": "Take Action"
+      }
+    }
+  ],
+  "sessionState": {
+    "activeContexts": [
+      {
+        "contextAttributes": {
+          "contextattribute1": "contextattributevalue1",
+          "contextattribute2": "contextattributevalue2"
+        },
+        "name": "testcontext",
+        "timeToLive": {
+          "timeToLiveInSeconds": 12,
+          "turnsToLive": 20
+        }
+      }
+    ],
+    "dialogAction": {
+      "type": "ElicitSlot",
+      "slotToElicit": "Date"
+    },
+    "intent": {
+      "name": "TestAction",
+      "slots": {
+        "ActionType": {
+          "shape": "List",
+          "value": {
+            "originalValue": "Action Value",
+            "interpretedValue": "Action Value",
+            "resolvedValues": [
+              "action value"
+            ]
+          },
+          "values": [
+            {
+              "shape": "Scalar",
+              "value": {
+                "originalValue": "Action Value",
+                "interpretedValue": "Action Value",
+                "resolvedValues": [
+                  "action value"
+                ]
+              }
+            }
+          ]
+        },
+        "ActionDate": null,
+        "ActionTime": null
+      },
+      "state": "InProgress",
+      "confirmationState": "None"
+    },
+    "originatingRequestId": "85f22c97-b5d3-4a74-9e3d-95446768ecaa",
+    "runtimeHints": {
+      "slotHints": {
+        "hint1": {
+          "detail1": {
+            "runtimeHintValues": [
+              { "phrase": "hintvalue1_1" },
+              { "phrase": "hintvalue1_2" }
+            ]
+          }
+        }
+      }
+    },
+    "sessionAttributes": {
+      "sessionattribute1": "sessionvalue1",
+      "sessionattribute2": "sessionvalue2"
+    }
+  },
+  "requestAttributes": {
+    "key1": "value1",
+    "key2": "value2"
+  }
+}

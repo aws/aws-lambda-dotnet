@@ -1,0 +1,184 @@
+﻿{
+  "messageVersion": "1.0",
+  "invocationSource": "DialogCodeHook",
+  "inputMode": "DTMF",
+  "responseContentType": "ImageResponseCard",
+  "sessionId": "test_session",
+  "inputTranscript": "test_input_transcript",
+  "bot": {
+    "id": "UFIDGBA6DE",
+    "name": "testbot",
+    "aliasId": "TSTALIASID",
+    "localeId": "en_US",
+    "version": "1.0"
+  },
+  "interpretations": [
+    {
+      "intent": {
+        "name": "TestAction",
+        "slots": {
+          "ActionType": {
+            "shape": "List",
+            "value": {
+              "originalValue": "Action Value",
+              "interpretedValue": "Action Value",
+              "resolvedValues": [
+                "action value"
+              ]
+            },
+            "values": [
+              {
+                "shape": "Scalar",
+                "value": {
+                  "originalValue": "Action Value",
+                  "interpretedValue": "Action Value",
+                  "resolvedValues": [
+                    "action value"
+                  ]
+                }
+              }
+            ]
+          },
+          "ActionDate": null,
+          "ActionTime": null
+        },
+        "state": "InProgress",
+        "confirmationState": "None"
+      },
+      "nluConfidence": {
+        "score": 1.0
+      },
+      "sentimentResponse": {
+        "sentiment": "testsentiment",
+        "sentimentScore": {
+          "mixed": 0.1,
+          "negative": 0.1,
+          "neutral": 0.5,
+          "positive": 0.9
+        }
+      }
+    },
+    {
+      "intent": {
+        "name": "FallbackIntent",
+        "slots": {}
+      }
+    }
+  ],
+  "proposedNextState": {
+    "dialogAction": {
+      "slotToElicit": "ActionDate",
+      "type": "ConfirmIntent"
+    },
+    "intent": {
+      "name": "NextIntent",
+      "confirmationState": "None",
+      "slots": {},
+      "state": "Waiting"
+    }
+  },
+  "requestAttributes": {
+    "key1": "value1",
+    "key2": "value2"
+  },
+  "sessionState": {
+    "activeContexts": [
+      {
+        "contextAttributes": {
+          "contextattribute1": "contextattributevalue1",
+          "contextattribute2": "contextattributevalue2"
+        },
+        "name": "testcontext",
+        "timeToLive": {
+          "timeToLiveInSeconds": 12,
+          "turnsToLive": 20
+        }
+      }
+    ],
+    "dialogAction": {
+      "type": "ElicitSlot",
+      "slotToElicit": "Date"
+    },
+    "intent": {
+      "name": "TestAction",
+      "slots": {
+        "ActionType": {
+          "shape": "List",
+          "value": {
+            "originalValue": "Action Value",
+            "interpretedValue": "Action Value",
+            "resolvedValues": [
+              "action value"
+            ]
+          },
+          "values": [
+            {
+              "shape": "Scalar",
+              "value": {
+                "originalValue": "Action Value",
+                "interpretedValue": "Action Value",
+                "resolvedValues": [
+                  "action value"
+                ]
+              }
+            }
+          ]
+        },
+        "ActionDate": null,
+        "ActionTime": null
+      },
+      "state": "InProgress",
+      "confirmationState": "None"
+    },
+    "originatingRequestId": "85f22c97-b5d3-4a74-9e3d-95446768ecaa",
+    "runtimeHints": {
+      "slotHints": {
+        "hint1": {
+          "detail1": {
+            "runtimeHintValues": [
+              { "phrase": "hintvalue1_1" },
+              { "phrase": "hintvalue1_2" }
+            ]
+          }
+        }
+      }
+    },
+    "sessionAttributes": {
+      "sessionattribute1": "sessionvalue1",
+      "sessionattribute2": "sessionvalue2"
+    }
+  },
+  "transcriptions": [
+    {
+      "transcription": "testtranscription",
+      "transcriptionConfidence": 0.8,
+      "resolvedContext": {
+        "intent": "TestAction"
+      },
+      "resolvedSlots": {
+        "ActionType": {
+          "shape": "List",
+          "value": {
+            "originalValue": "Action Value",
+            "interpretedValue": "Action Value",
+            "resolvedValues": [
+              "action value"
+            ]
+          },
+          "values": [
+            {
+              "shape": "Scalar",
+              "value": {
+                "originalValue": "Action Value",
+                "interpretedValue": "Action Value",
+                "resolvedValues": [
+                  "action value"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

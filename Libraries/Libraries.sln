@@ -126,6 +126,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestMinimalAPIApp", "test\T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.MQEvents", "src\Amazon.Lambda.MQEvents\Amazon.Lambda.MQEvents.csproj", "{BF85932E-2DFF-41CD-8090-A672468B8FBB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.LexV2Events", "src\Amazon.Lambda.LexV2Events\Amazon.Lambda.LexV2Events.csproj", "{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		test\EventsTests.Shared\EventsTests.Shared.projitems*{44e9d925-b61d-4234-97b7-61424c963ba6}*SharedItemsImports = 5
@@ -341,6 +343,10 @@ Global
 		{BF85932E-2DFF-41CD-8090-A672468B8FBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF85932E-2DFF-41CD-8090-A672468B8FBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BF85932E-2DFF-41CD-8090-A672468B8FBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -401,6 +407,7 @@ Global
 		{982A26C7-A5D1-4783-A7F8-F2B28AA2459E} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{8AB1CBD7-2D08-492F-9C09-3E754364046C} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{BF85932E-2DFF-41CD-8090-A672468B8FBB} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}
