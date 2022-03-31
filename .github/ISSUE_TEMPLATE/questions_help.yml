@@ -13,7 +13,8 @@ body:
     id: question
     attributes:
       label: The Question
-      description: Ask your question here. Include any details relevant. Make sure you are not falling prey to the [X/Y problem](http://xyproblem.info)!
+      description: Ask your question here. Include any relevant details. Make sure you are not falling prey to the [X/Y problem](http://xyproblem.info)!
+      placeholder: Question
     validations:
       required: true
 
@@ -25,6 +26,7 @@ body:
         Provide a self-contained, concise snippet of code that can be used to reproduce the issue.
         For more complex issues provide a repo with the smallest reproducible example.
         Avoid including business logic or unrelated code, it makes diagnosis more difficult.
+      placeholder: Reproduction Steps
     validations:
       required: true
 
@@ -35,14 +37,16 @@ body:
       description: |
         Tell us what happens instead of the expected behavior.
         Include full errors, uncaught exceptions, stack traces, and relevant logs.
+      placeholder: Current behavior
     validations:
       required: true
 
-  - type: input
+  - type: textarea
     id: dotnet-sdk-version
     attributes:
-      label: AWS .NET SDK and Package version used
-      description: Information from Nuget Packages
+      label: AWS .NET SDK and/or Package version used
+      description: NuGet Packages used
+      placeholder: AWSSDK.S3 3.7.8.13
     validations:
       required: true
 
@@ -50,6 +54,8 @@ body:
     id: platform-used
     attributes:
       label: Targeted .NET Platform
+      description: "Example: .NET Framework 4.7, .NET Core 3.1, .NET 6, etc."
+      placeholder: .NET Framework 4.7, .NET Core 3.1, .NET 6, etc.
     validations:
       required: true
 
@@ -58,5 +64,6 @@ body:
     attributes:
       label: Operating System and version
       description: "Example: Windows 10, OSX Mojave, Ubuntu, AmazonLinux, etc."
+      placeholder: Windows 10, OSX Mojave, Ubuntu, AmazonLinux, etc.
     validations:
       required: true
