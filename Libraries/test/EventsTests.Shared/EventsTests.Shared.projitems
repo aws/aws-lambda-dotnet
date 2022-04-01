@@ -11,6 +11,7 @@
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)alb-request-multi-value.json" />
     <Content Include="$(MSBuildThisFileDirectory)alb-request-single-value.json" />
+    <Content Include="$(MSBuildThisFileDirectory)amazonmq-rabbitmq.json" />
     <Content Include="$(MSBuildThisFileDirectory)batch-job-state-change-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)config-event.json" />
@@ -19,6 +20,7 @@
     <Content Include="$(MSBuildThisFileDirectory)ecs-container-state-change-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)ecs-task-state-change-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)http-api-v2-request.json" />
+    <Content Include="$(MSBuildThisFileDirectory)amazonmq-activemq.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-firehoseinputpreprocessing-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-inputpreprocessing-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-inputpreprocessing-response.json" />
