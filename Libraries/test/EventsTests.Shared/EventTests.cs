@@ -20,7 +20,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.KinesisFirehoseEvents;
     using Amazon.Lambda.KinesisAnalyticsEvents;
     using Amazon.Lambda.KafkaEvents;
-
+    using Amazon.Lambda.MQEvents;
     using Amazon.Lambda.CloudWatchLogsEvents;
 
     using Amazon.Lambda.CloudWatchEvents.ECSEvents;
@@ -1930,6 +1930,87 @@ namespace Amazon.Lambda.Tests
                     var valueText = Encoding.UTF8.GetString(valueBytes);
                     Console.WriteLine($"[{record.Key}] Value = '{valueText}'.");
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void ActiveMQEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("amazonmq-activemq.json"))
+            {
+                var activemqEvent = serializer.Deserialize<ActiveMQEvent>(fileStream);
+                Assert.NotNull(activemqEvent);
+                Assert.Equal("aws:amq", activemqEvent.EventSource);
+                Assert.Equal("arn:aws:mq:us-west-2:112556298976:broker:test:b-9bcfa592-423a-4942-879d-eb284b418fc8", activemqEvent.EventSourceArn);
+                
+                Assert.Equal(2, activemqEvent.Messages.Count);
+                Assert.Equal("ID:b-9bcfa592-423a-4942-879d-eb284b418fc8-1.mq.us-west-2.amazonaws.com-37557-1234520418293-4:1:1:1:1", activemqEvent.Messages[0].MessageId);
+                Assert.Equal("jms/text-message", activemqEvent.Messages[0].MessageType);
+                Assert.Equal("ABC:AAAA", Encoding.UTF8.GetString(Convert.FromBase64String(activemqEvent.Messages[0].Data)));
+                Assert.Equal("myJMSCoID", activemqEvent.Messages[0].ConnectionId);
+                Assert.False(activemqEvent.Messages[0].Redelivered);
+                Assert.Null(activemqEvent.Messages[0].Persistent);
+                Assert.Equal("testQueue", activemqEvent.Messages[0].Destination.PhysicalName);
+                Assert.NotNull(activemqEvent.Messages[0].Timestamp);
+                Assert.NotNull(activemqEvent.Messages[0].BrokerInTime);
+                Assert.NotNull(activemqEvent.Messages[0].BrokerOutTime);
+
+                Assert.Equal("ID:b-9bcfa592-423a-4942-879d-eb284b418fc8-1.mq.us-west-2.amazonaws.com-37557-1234520418293-4:1:1:1:1", activemqEvent.Messages[1].MessageId);
+                Assert.Equal("jms/bytes-message", activemqEvent.Messages[1].MessageType);
+                Assert.NotNull(Convert.FromBase64String(activemqEvent.Messages[1].Data));
+                Assert.Equal("myJMSCoID1", activemqEvent.Messages[1].ConnectionId);
+                Assert.Null(activemqEvent.Messages[1].Redelivered);
+                Assert.False(activemqEvent.Messages[1].Persistent);
+                Assert.Equal("testQueue", activemqEvent.Messages[1].Destination.PhysicalName);
+                Assert.NotNull(activemqEvent.Messages[1].Timestamp);
+                Assert.NotNull(activemqEvent.Messages[1].BrokerInTime);
+                Assert.NotNull(activemqEvent.Messages[1].BrokerOutTime);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void RabbitMQEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("amazonmq-rabbitmq.json"))
+            {
+                var rabbitmqEvent = serializer.Deserialize<RabbitMQEvent>(fileStream);
+                Assert.NotNull(rabbitmqEvent);
+                Assert.Equal("aws:rmq", rabbitmqEvent.EventSource);
+                Assert.Equal("arn:aws:mq:us-west-2:112556298976:broker:pizzaBroker:b-9bcfa592-423a-4942-879d-eb284b418fc8", rabbitmqEvent.EventSourceArn);
+
+                Assert.Equal(1, rabbitmqEvent.RmqMessagesByQueue.Count);
+                Assert.Equal(1, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"].Count);
+                Assert.NotNull(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties);
+                Assert.Equal("text/plain", rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ContentType);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ContentEncoding);
+                Assert.Equal(3, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Headers.Count);
+                Assert.Equal(1, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.DeliveryMode);
+                Assert.Equal(34, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Priority);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.CorrelationId);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ReplyTo);
+                Assert.Equal("60000", rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Expiration);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.MessageId);
+                Assert.NotNull(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Timestamp);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Type);
+                Assert.Equal("AIDACKCEVSQ6C2EXAMPLE", rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.UserId);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.AppId);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ClusterId);
+                Assert.Equal(80, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.BodySize);
+
+                Assert.False(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].Redelivered);
+                Assert.Equal("{\"timeout\":0,\"data\":\"CZrmf0Gw8Ov4bqLQxD4E\"}", Encoding.UTF8.GetString(Convert.FromBase64String(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].Data)));
             }
         }
 

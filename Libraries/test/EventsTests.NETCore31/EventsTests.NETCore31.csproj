@@ -33,6 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Amazon.Lambda.MQEvents\Amazon.Lambda.MQEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.CloudWatchEvents\Amazon.Lambda.CloudWatchEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.CloudWatchLogsEvents\Amazon.Lambda.CloudWatchLogsEvents.csproj" />
