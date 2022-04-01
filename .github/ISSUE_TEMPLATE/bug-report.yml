@@ -59,15 +59,30 @@ body:
         Anything else that might be relevant for troubleshooting this bug. Providing context helps us come up with a solution that is most useful in the real world.
     validations:
       required: false
-  - type: input
-    id: sdk-version
+
+  - type: textarea
+    id: dotnet-sdk-version
     attributes:
-      label: SDK version used
+      label: AWS .NET SDK and/or Package version used
+      description: NuGet Packages used
+      placeholder: AWSSDK.S3 3.7.8.13
     validations:
       required: true
+
   - type: input
-    id: environment
+    id: platform-used
     attributes:
-      label: Environment details (OS name and version, etc.)
+      label: Targeted .NET Platform
+      description: "Example: .NET Framework 4.7, .NET Core 3.1, .NET 6, etc."
+      placeholder: .NET Framework 4.7, .NET Core 3.1, .NET 6, etc.
     validations:
-        required: true
+      required: true
+
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating System and version
+      description: "Example: Windows 10, OSX Mojave, Ubuntu, AmazonLinux, etc."
+      placeholder: Windows 10, OSX Mojave, Ubuntu, AmazonLinux, etc.
+    validations:
+      required: true
