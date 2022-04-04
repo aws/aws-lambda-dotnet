@@ -48,6 +48,10 @@
     <filename>http-api-v2-request.json</filename>
   </request>
   <request category="AWS">
+    <name>Application Load Balancer</name>
+    <filename>alb.json</filename>
+  </request>
+  <request category="AWS">
     <name>AWS Batch Get Job Request</name>
     <filename>batch-get-job.json</filename>
   </request>
