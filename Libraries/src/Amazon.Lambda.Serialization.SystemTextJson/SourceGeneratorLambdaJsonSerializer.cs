@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Amazon.Lambda.Core;
-
+using Amazon.Lambda.Serialization.SystemTextJson.Converters;
 
 namespace Amazon.Lambda.Serialization.SystemTextJson
 {
@@ -32,10 +32,26 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         TSGContext _jsonSerializerContext;
 
         /// <summary>
+        /// The options used to serialize JSON object.
+        /// </summary>
+        protected JsonSerializerOptions SerializerOptions { get; }
+
+        /// <summary>
         /// Constructs instance of serializer.
         /// </summary>
         public SourceGeneratorLambdaJsonSerializer()
-            : this(null)
+            : this(null, null)
+        {
+
+        }
+
+        /// <summary>
+        /// Constructs instance of serializer with the option to customize the JsonSerializerOptions after the 
+        /// Amazon.Lambda.Serialization.SystemTextJson's default settings have been applied.
+        /// </summary>
+        /// <param name="customizer"></param>
+        public SourceGeneratorLambdaJsonSerializer(Action<JsonSerializerOptions> customizer)
+            : this(customizer, null)
         {
 
         }
@@ -46,10 +62,29 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         /// </summary>
         /// <param name="jsonWriterCustomizer"></param>
         public SourceGeneratorLambdaJsonSerializer(Action<JsonWriterOptions> jsonWriterCustomizer)
+            : this(null, jsonWriterCustomizer)
+        {
+        }
+
+        /// <summary>
+        /// Constructs instance of serializer with the option to customize the JsonWriterOptions after the 
+        /// Amazon.Lambda.Serialization.SystemTextJson's default settings have been applied.
+        /// </summary>
+        /// <param name="customizer"></param>
+        /// <param name="jsonWriterCustomizer"></param>
+        public SourceGeneratorLambdaJsonSerializer(Action<JsonSerializerOptions> customizer, Action<JsonWriterOptions> jsonWriterCustomizer)
             : base(jsonWriterCustomizer)
         {
-           var defaultProperty = typeof(TSGContext).GetProperty("Default");
-            _jsonSerializerContext = defaultProperty.GetGetMethod().Invoke(null, null) as TSGContext;
+            SerializerOptions = CreateDefaultJsonSerializationOptions();
+            customizer?.Invoke(this.SerializerOptions);
+
+            var constructor = typeof(TSGContext).GetConstructor(new Type[] { typeof(JsonSerializerOptions) });
+            if(constructor == null)
+            {
+                throw new ApplicationException($"The serializer {typeof(TSGContext).FullName} is missing a constructor that takes in JsonSerializerOptions object");
+            }
+
+            _jsonSerializerContext = constructor.Invoke(new object[] { this.SerializerOptions }) as TSGContext;
         }
 
 

@@ -1,3 +1,16 @@
+### Release 2022-03-29
+* **AWSLambdaPSCore PowerShell Module (3.0.1)**
+  * Pull Request [#1096](https://github.com/aws/aws-lambda-dotnet/pull/1096) Fix error message when .NET SDK found that is below .NET 6 requirement. Thanks [Lachlan Blake](https://github.com/Otimie)
+
+### Release 2022-03-25
+* **Amazon.Lambda.Templates (6.1.0)**
+  * Updated PackageReferences of AWS packages referenced in the templates.
+
+### Release 2022-03-24
+* **Amazon.Lambda.Serialization.SystemTextJson (2.3.0)**
+  * Change SourceGeneratorLambdaJsonSerializer to use the same JsonSerializerOptions as DefaultLambdaJsonSerializer
+  * Allow SourceGeneratorLambdaJsonSerializer to be extended with a custom Action<JsonSerializerOptions> to customize the JsonSerializerOptions
+
 ### Release 2022-03-14
 * **Amazon.Lambda.AspNetCoreServer (7.1.0)**
   * Fix issue with ASP.NET Core Minimal API not binding HTTP request body to complex types
@@ -26,6 +39,8 @@
   * Add new page for testing executable assemblies. Useful for testing Lambda functions using top-level statements or function deployed as a custom runtime.
 
 ### Release 2022-02-23
+* **AWSLambdaPSCore PowerShell Module (3.0.0)**
+  * Switch publishing to target the .NET 6 Lambda runtime
 * **Amazon.Lambda.Templates (6.0.0)**
   * Update Lambda templates to target .NET 6.
 

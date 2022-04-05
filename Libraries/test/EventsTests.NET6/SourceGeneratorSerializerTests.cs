@@ -14,7 +14,6 @@ using Amazon.Lambda.CloudWatchEvents.BatchEvents;
 
 namespace EventsTests.NET6
 {
-    [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
     [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyRequest))]
     [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyResponse))]
     internal partial class HttpApiJsonSerializationContext : JsonSerializerContext
@@ -22,14 +21,12 @@ namespace EventsTests.NET6
 
     }
 
-    [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
     [JsonSerializable(typeof(S3ObjectLambdaEvent))]
     internal partial class S3ObjectLambdaSerializationContext : JsonSerializerContext
     {
 
     }
 
-    [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
     [JsonSerializable(typeof(BatchJobStateChangeEvent))]
     internal partial class BatchJobStateChangeEventSerializationContext : JsonSerializerContext
     {

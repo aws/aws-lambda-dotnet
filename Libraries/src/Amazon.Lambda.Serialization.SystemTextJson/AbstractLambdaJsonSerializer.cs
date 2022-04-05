@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Amazon.Lambda.Serialization.SystemTextJson.Converters;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Amazon.Lambda.Serialization.SystemTextJson
 {
@@ -118,6 +120,33 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
             {
                 throw new JsonSerializerException($"Error converting the Lambda event JSON payload to type {typeof(T).FullName}: {e.Message}", e);
             }
+        }
+
+        /// <summary>
+        /// Create the default instance of JsonSerializerOptions used in serializer
+        /// </summary>
+        /// <returns></returns>
+        protected virtual JsonSerializerOptions CreateDefaultJsonSerializationOptions()
+        {
+            var serializer = new JsonSerializerOptions()
+            {
+#if NET6_0_OR_GREATER
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+#else
+                IgnoreNullValues = true,
+#endif
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = new AwsNamingPolicy(),
+                Converters =
+                {
+                    new DateTimeConverter(),
+                    new MemoryStreamConverter(),
+                    new ConstantClassConverter(),
+                    new ByteArrayConverter()
+                }
+            };
+
+            return serializer;
         }
 
         /// <summary>

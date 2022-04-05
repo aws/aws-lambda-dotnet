@@ -9,10 +9,10 @@
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.7.21" />
-    <PackageReference Include="AWSSDK.Rekognition" Version="3.7.7.13" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.8.10" />
+    <PackageReference Include="AWSSDK.Rekognition" Version="3.7.7.28" />
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.2.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.0" />
     <PackageReference Include="Amazon.Lambda.S3Events" Version="2.0.1" />
   </ItemGroup>
   <ItemGroup>
