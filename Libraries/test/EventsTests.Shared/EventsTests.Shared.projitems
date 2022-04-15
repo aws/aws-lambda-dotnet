@@ -19,6 +19,7 @@
     <Content Include="$(MSBuildThisFileDirectory)dynamodb-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)ecs-container-state-change-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)ecs-task-state-change-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)websocket-api-connect-request.json" />
     <Content Include="$(MSBuildThisFileDirectory)http-api-v2-request.json" />
     <Content Include="$(MSBuildThisFileDirectory)amazonmq-activemq.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-analytics-firehoseinputpreprocessing-event.json" />

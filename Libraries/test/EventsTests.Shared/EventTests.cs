@@ -968,6 +968,76 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void WebSocketApiConnectTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("websocket-api-connect-request.json"))
+            {
+                var proxyEvent = serializer.Deserialize<APIGatewayProxyRequest>(fileStream);
+
+                Assert.Null(proxyEvent.Resource);
+                Assert.Null(proxyEvent.Path);
+                Assert.Null(proxyEvent.HttpMethod);
+                Assert.Null(proxyEvent.Body);
+
+                var headers = proxyEvent.Headers;
+                Assert.Equal(headers["HeaderAuth1"], "headerValue1");
+                Assert.Equal(headers["Host"], "lg10ltpf4f.execute-api.us-east-2.amazonaws.com");
+                Assert.Equal(headers["Sec-WebSocket-Extensions"], "permessage-deflate; client_max_window_bits");
+                Assert.Equal(headers["Sec-WebSocket-Key"], "BvlrrFKoKAPDYOlwBcGKWw==");
+                Assert.Equal(headers["Sec-WebSocket-Version"], "13");
+                Assert.Equal(headers["X-Amzn-Trace-Id"], "Root=1-625d9ad1-37a5d33a61dd9be33ae3a247");
+                Assert.Equal(headers["X-Forwarded-For"], "52.95.4.0");
+                Assert.Equal(headers["X-Forwarded-Port"], "443");
+                Assert.Equal(headers["X-Forwarded-Proto"], "https");
+
+                var multiValueHeaders = proxyEvent.MultiValueHeaders;
+                Assert.Equal(multiValueHeaders["HeaderAuth1"].Count, 1);
+                Assert.Equal(multiValueHeaders["HeaderAuth1"][0], "headerValue1");
+                Assert.Equal(multiValueHeaders["Host"].Count, 1);
+                Assert.Equal(multiValueHeaders["Host"][0], "lg10ltpf4f.execute-api.us-east-2.amazonaws.com");
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Extensions"].Count, 1);
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Extensions"][0], "permessage-deflate; client_max_window_bits");
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Key"].Count, 1);
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Key"][0], "BvlrrFKoKAPDYOlwBcGKWw==");
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Version"].Count, 1);
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Version"][0], "13");
+                Assert.Equal(multiValueHeaders["X-Amzn-Trace-Id"].Count, 1);
+                Assert.Equal(multiValueHeaders["X-Amzn-Trace-Id"][0], "Root=1-625d9ad1-37a5d33a61dd9be33ae3a247");
+                Assert.Equal(multiValueHeaders["X-Forwarded-For"].Count, 1);
+                Assert.Equal(multiValueHeaders["X-Forwarded-For"][0], "52.95.4.0");
+                Assert.Equal(multiValueHeaders["X-Forwarded-Port"].Count, 1);
+                Assert.Equal(multiValueHeaders["X-Forwarded-Port"][0], "443");
+                Assert.Equal(multiValueHeaders["X-Forwarded-Proto"].Count, 1);
+                Assert.Equal(multiValueHeaders["X-Forwarded-Proto"][0], "https");
+
+                var requestContext = proxyEvent.RequestContext;
+                Assert.Equal(requestContext.RouteKey, "$connect");
+                Assert.Equal(requestContext.EventType, "CONNECT");
+                Assert.Equal(requestContext.ExtendedRequestId, "QyUg1HJgCYcFvbw=");
+                Assert.Equal(requestContext.RequestTime, "18/Apr/2022:17:07:29 +0000");
+                Assert.Equal(requestContext.MessageDirection, "IN");
+                Assert.Equal(requestContext.Stage, "production");
+                Assert.Equal(requestContext.ConnectedAt, 1650301649973);
+                Assert.Equal(requestContext.RequestTimeEpoch, 1650301649973);
+                Assert.Equal(requestContext.RequestId, "QyUg1HJgCYcFvbw=");
+                Assert.Equal(requestContext.DomainName, "lg10ltpf4f.execute-api.us-east-2.amazonaws.com");
+                Assert.Equal(requestContext.ConnectionId, "QyUg1czHCYcCHXw=");
+                Assert.Equal(requestContext.ApiId, "lg10ltpf4f");
+
+                Assert.False(proxyEvent.IsBase64Encoded);
+
+                var identity = requestContext.Identity;
+                Assert.Equal(identity.SourceIp, "52.95.4.0");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
