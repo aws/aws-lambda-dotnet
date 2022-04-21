@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<AssemblyVersion>0.5.0.0</AssemblyVersion>
+		<TargetFramework>netstandard2.0</TargetFramework>
+
+		<!-- This is required to allow copying all the dependencies to bin directory which can be copied after to nuget package based on nuspec -->
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<LangVersion>10</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Amazon.Lambda.TestUtilities" Version="2.0.0" />
+		<PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.4.0" />
+		<PackageReference Include="System.Text.Json" Version="6.0.0" />
+	</ItemGroup>
+
+</Project>
