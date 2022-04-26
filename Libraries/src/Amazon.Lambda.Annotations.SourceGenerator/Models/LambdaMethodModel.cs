@@ -50,6 +50,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public string ContainingNamespace { get; set; }
 
         /// <summary>
+        /// Gets or sets the name of the assemblying containing the Lambda function.
+        /// </summary>
+        public string ContainingAssembly { get; set; }
+
+        /// <summary>
         /// Gets or sets type of Lambda event
         /// </summary>
         public List<EventType> Events { get; set; }
