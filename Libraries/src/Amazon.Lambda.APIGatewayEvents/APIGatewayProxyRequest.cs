@@ -185,7 +185,7 @@
             /// This field is only set for WebSocket API requests.
             /// </para>
             /// </summary>
-            public long ConnectionAt { get; set; }
+            public long ConnectedAt { get; set; }
 
             /// <summary>
             /// A domain name for the WebSocket API. This can be used to make a callback to the client (instead of a hard-coded value).
