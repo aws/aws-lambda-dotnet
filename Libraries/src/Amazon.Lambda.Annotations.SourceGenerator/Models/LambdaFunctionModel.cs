@@ -32,7 +32,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public string Serializer { get; set; }
 
         /// <inheritdoc />
-        public string Handler => $"{LambdaMethod.ContainingNamespace}::{GeneratedMethod.ContainingType.FullName}::{LambdaMethod.Name}";
+        public string Handler => $"{LambdaMethod.ContainingAssembly}::{GeneratedMethod.ContainingType.FullName}::{LambdaMethod.Name}";
 
         /// <inheritdoc />
         public string Name => LambdaMethod.LambdaFunctionAttribute.Data.Name ??
