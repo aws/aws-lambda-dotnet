@@ -51,6 +51,10 @@
       <Content Include="Snapshots\**" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
+    </ItemGroup>
+
   <ItemGroup>
     <Content Update="Snapshots\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
