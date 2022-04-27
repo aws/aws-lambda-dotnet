@@ -16,14 +16,14 @@ namespace TestServerlessApp
             greeter = new Greeter();
         }
 
-        public Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse SayHello(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
+        public Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse SayHello(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             var validationErrors = new List<string>();
 
             var firstNames = default(System.Collections.Generic.IEnumerable<string>);
-            if (request.MultiValueQueryStringParameters?.ContainsKey("names") == true)
+            if (__request__.MultiValueQueryStringParameters?.ContainsKey("names") == true)
             {
-                firstNames = request.MultiValueQueryStringParameters["names"]
+                firstNames = __request__.MultiValueQueryStringParameters["names"]
                     .Select(q =>
                     {
                         try
@@ -54,7 +54,7 @@ namespace TestServerlessApp
                 };
             }
 
-            greeter.SayHello(firstNames, request, context);
+            greeter.SayHello(firstNames, __request__, __context__);
 
             return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
             {

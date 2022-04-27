@@ -86,13 +86,13 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                 // Pass the same context parameter for ILambdaContext that comes from the generated method.
                 if (p.Type.FullName == TypeFullNames.ILambdaContext)
                 {
-                    return "context";
+                    return "__context__";
                 }
 
                 // Pass the same request parameter for Request Type that comes from the generated method.
                 if (TypeFullNames.Requests.Contains(p.Type.FullName))
                 {
-                    return "request";
+                    return "__request__";
                 }
 
                 return p.Name;
@@ -173,9 +173,9 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                     // Generic types are mapped using Select statement to the target parameter type argument.
                     var typeArgument = parameter.Type.TypeArguments.First();
 #>
-            if (request.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
+            if (__request__.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
             {
-                <#= parameter.Name #> = request.<#= queryStringParameters #>["<#= parameterKey #>"]<#= commaSplit #>
+                <#= parameter.Name #> = __request__.<#= queryStringParameters #>["<#= parameterKey #>"]<#= commaSplit #>
                     .Select(q =>
                     {
                         try
@@ -197,15 +197,15 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                 {
                     // Non-generic types are mapped directly to the target parameter.
 #>
-            if (request.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
+            if (__request__.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
             {
                 try
                 {
-                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullName #>));
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullName #>));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    validationErrors.Add($"Value {request.<#= queryStringParameters #>["<#= parameterKey #>"]} at '<#= parameterKey #>' failed to satisfy constraint: {e.Message}");
+                    validationErrors.Add($"Value {__request__.<#= queryStringParameters #>["<#= parameterKey #>"]} at '<#= parameterKey #>' failed to satisfy constraint: {e.Message}");
                 }
             }
 
@@ -254,9 +254,9 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                     // Generic types are mapped using Select statement to the target parameter type argument.
                     var typeArgument = parameter.Type.TypeArguments.First();
 #>
-            if (request.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
+            if (__request__.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
             {
-                <#= parameter.Name #> = request.<#= headers #>["<#= headerKey #>"]<#= commaSplit #>
+                <#= parameter.Name #> = __request__.<#= headers #>["<#= headerKey #>"]<#= commaSplit #>
                     .Select(q =>
                     {
                         try
@@ -278,15 +278,15 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                 {
                     // Non-generic types are mapped directly to the target parameter.
 #>
-            if (request.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
+            if (__request__.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
             {
                 try
                 {
-                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.<#= headers #>["<#= headerKey #>"], typeof(<#= parameter.Type.FullName #>));
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.<#= headers #>["<#= headerKey #>"], typeof(<#= parameter.Type.FullName #>));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    validationErrors.Add($"Value {request.<#= headers #>["<#= headerKey #>"]} at '<#= headerKey #>' failed to satisfy constraint: {e.Message}");
+                    validationErrors.Add($"Value {__request__.<#= headers #>["<#= headerKey #>"]} at '<#= headerKey #>' failed to satisfy constraint: {e.Message}");
                 }
             }
 
@@ -299,7 +299,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                 if (parameter.Type.IsString())
                 {
  #>
-            var <#= parameter.Name #> = request.Body;
+            var <#= parameter.Name #> = __request__.Body;
 
 <#
                 }
@@ -309,11 +309,11 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
             try
             {
-                <#= parameter.Name #> = <#= _model.Serializer #>.Deserialize<<#= parameter.Type.FullName #>>(request.Body);
+                <#= parameter.Name #> = <#= _model.Serializer #>.Deserialize<<#= parameter.Type.FullName #>>(__request__.Body);
             }
             catch (Exception e)
             {
-                validationErrors.Add($"Value {request.Body} at 'body' failed to satisfy constraint: {e.Message}");
+                validationErrors.Add($"Value {__request__.Body} at 'body' failed to satisfy constraint: {e.Message}");
             }
 
 <#
@@ -327,15 +327,15 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                 var routeKey = fromRouteAttribute?.Data?.Name ?? parameter.Name;
 #>
             var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
-            if (request.PathParameters?.ContainsKey("<#= routeKey #>") == true)
+            if (__request__.PathParameters?.ContainsKey("<#= routeKey #>") == true)
             {
                 try
                 {
-                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(request.PathParameters["<#= routeKey #>"], typeof(<#= parameter.Type.FullName #>));
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.PathParameters["<#= routeKey #>"], typeof(<#= parameter.Type.FullName #>));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    validationErrors.Add($"Value {request.PathParameters["<#= routeKey #>"]} at '<#= routeKey #>' failed to satisfy constraint: {e.Message}");
+                    validationErrors.Add($"Value {__request__.PathParameters["<#= routeKey #>"]} at '<#= routeKey #>' failed to satisfy constraint: {e.Message}");
                 }
             }
 
@@ -439,7 +439,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                 // Pass the same context parameter for ILambdaContext that comes from the generated method.
                 if (p.Type.FullName == TypeFullNames.ILambdaContext)
                 {
-                    return "context";
+                    return "__context__";
                 }
 
                 return p.Name;

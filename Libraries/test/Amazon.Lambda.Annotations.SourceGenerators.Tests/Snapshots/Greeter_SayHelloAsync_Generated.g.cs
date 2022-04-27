@@ -16,14 +16,14 @@ namespace TestServerlessApp
             greeter = new Greeter();
         }
 
-        public async System.Threading.Tasks.Task<Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse> SayHelloAsync(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
+        public async System.Threading.Tasks.Task<Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse> SayHelloAsync(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             var validationErrors = new List<string>();
 
             var firstNames = default(System.Collections.Generic.IEnumerable<string>);
-            if (request.MultiValueHeaders?.ContainsKey("names") == true)
+            if (__request__.MultiValueHeaders?.ContainsKey("names") == true)
             {
-                firstNames = request.MultiValueHeaders["names"]
+                firstNames = __request__.MultiValueHeaders["names"]
                     .Select(q =>
                     {
                         try

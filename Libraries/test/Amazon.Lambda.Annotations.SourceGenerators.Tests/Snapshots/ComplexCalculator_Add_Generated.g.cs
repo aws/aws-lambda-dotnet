@@ -16,11 +16,11 @@ namespace TestServerlessApp
             complexCalculator = new ComplexCalculator();
         }
 
-        public Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse Add(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
+        public Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse Add(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
-            var complexNumbers = request.Body;
+            var complexNumbers = __request__.Body;
 
-            var response = complexCalculator.Add(complexNumbers, context, request);
+            var response = complexCalculator.Add(complexNumbers, __context__, __request__);
 
             var body = System.Text.Json.JsonSerializer.Serialize(response);
 
