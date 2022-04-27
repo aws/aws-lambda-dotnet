@@ -25,7 +25,7 @@ namespace TestServerlessApp
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse Subtract(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
+        public Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse Subtract(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
@@ -35,28 +35,28 @@ namespace TestServerlessApp
             var validationErrors = new List<string>();
 
             var x = default(int);
-            if (request.Headers?.ContainsKey("x") == true)
+            if (__request__.Headers?.ContainsKey("x") == true)
             {
                 try
                 {
-                    x = (int)Convert.ChangeType(request.Headers["x"], typeof(int));
+                    x = (int)Convert.ChangeType(__request__.Headers["x"], typeof(int));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    validationErrors.Add($"Value {request.Headers["x"]} at 'x' failed to satisfy constraint: {e.Message}");
+                    validationErrors.Add($"Value {__request__.Headers["x"]} at 'x' failed to satisfy constraint: {e.Message}");
                 }
             }
 
             var y = default(int);
-            if (request.Headers?.ContainsKey("y") == true)
+            if (__request__.Headers?.ContainsKey("y") == true)
             {
                 try
                 {
-                    y = (int)Convert.ChangeType(request.Headers["y"], typeof(int));
+                    y = (int)Convert.ChangeType(__request__.Headers["y"], typeof(int));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    validationErrors.Add($"Value {request.Headers["y"]} at 'y' failed to satisfy constraint: {e.Message}");
+                    validationErrors.Add($"Value {__request__.Headers["y"]} at 'y' failed to satisfy constraint: {e.Message}");
                 }
             }
 

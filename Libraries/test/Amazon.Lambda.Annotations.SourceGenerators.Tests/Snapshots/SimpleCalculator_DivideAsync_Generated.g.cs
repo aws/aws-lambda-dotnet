@@ -25,7 +25,7 @@ namespace TestServerlessApp
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public async System.Threading.Tasks.Task<Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse> DivideAsync(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
+        public async System.Threading.Tasks.Task<Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse> DivideAsync(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
@@ -35,28 +35,28 @@ namespace TestServerlessApp
             var validationErrors = new List<string>();
 
             var first = default(int);
-            if (request.PathParameters?.ContainsKey("x") == true)
+            if (__request__.PathParameters?.ContainsKey("x") == true)
             {
                 try
                 {
-                    first = (int)Convert.ChangeType(request.PathParameters["x"], typeof(int));
+                    first = (int)Convert.ChangeType(__request__.PathParameters["x"], typeof(int));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    validationErrors.Add($"Value {request.PathParameters["x"]} at 'x' failed to satisfy constraint: {e.Message}");
+                    validationErrors.Add($"Value {__request__.PathParameters["x"]} at 'x' failed to satisfy constraint: {e.Message}");
                 }
             }
 
             var second = default(int);
-            if (request.PathParameters?.ContainsKey("y") == true)
+            if (__request__.PathParameters?.ContainsKey("y") == true)
             {
                 try
                 {
-                    second = (int)Convert.ChangeType(request.PathParameters["y"], typeof(int));
+                    second = (int)Convert.ChangeType(__request__.PathParameters["y"], typeof(int));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    validationErrors.Add($"Value {request.PathParameters["y"]} at 'y' failed to satisfy constraint: {e.Message}");
+                    validationErrors.Add($"Value {__request__.PathParameters["y"]} at 'y' failed to satisfy constraint: {e.Message}");
                 }
             }
 
