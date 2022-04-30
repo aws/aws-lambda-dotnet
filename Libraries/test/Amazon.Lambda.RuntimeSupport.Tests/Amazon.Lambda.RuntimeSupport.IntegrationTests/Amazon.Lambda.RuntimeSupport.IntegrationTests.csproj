@@ -6,10 +6,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="get-loggertest-request.json" />
     <None Remove="get-weatherforecast-request.json" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="get-loggertest-request.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="get-weatherforecast-request.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

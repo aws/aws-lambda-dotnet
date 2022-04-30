@@ -38,19 +38,45 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
     /// </summary>
     public class SimpleLoggerWriter : IConsoleLoggerWriter
     {
+        TextWriter _writer;
+
+        public SimpleLoggerWriter()
+        {
+            // Look to see if Lambda's telemetry log file descriptor is available. If so use that for logging.
+            // This will make sure multiline log messages use a single CloudWatch Logs record.
+            var fileDescriptorLogId = Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_TELEMETRY_LOG_FD);
+            if (fileDescriptorLogId != null)
+            {
+                try
+                {
+                    _writer = FileDescriptorLogFactory.GetWriter(fileDescriptorLogId);
+                    InternalLogger.GetDefaultLogger().LogInformation("Using file descriptor stream writer for logging");
+                }
+                catch (Exception ex)
+                {
+                    _writer = Console.Out;
+                    InternalLogger.GetDefaultLogger().LogError(ex, "Error creating file descriptor log stream writer. Fallback to stdout.");
+                }
+            }
+            else
+            {
+                _writer = Console.Out;
+                InternalLogger.GetDefaultLogger().LogInformation("Using stdout for logging");
+            }
+        }
+
         public void SetCurrentAwsRequestId(string awsRequestId)
         {
-
         }
 
         public void FormattedWriteLine(string message)
         {
-            Console.WriteLine(message);
+            _writer.WriteLine(message);
         }
 
         public void FormattedWriteLine(string level, string message)
         {
-            Console.WriteLine(message);
+            _writer.WriteLine(message);
         }
     }
 
@@ -98,9 +124,6 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             Critical = 5
         }
 
-        TextWriter _consoleStdOutWriter;
-        TextWriter _consoleErrorWriter;
-
         WrapperTextWriter _wrappedStdOutWriter;
         WrapperTextWriter _wrappedStdErrorWriter;
 
@@ -112,8 +135,31 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// Stderror will default log messages to be Error
         /// </summary>
         public LogLevelLoggerWriter()
-            : this(Console.Out, Console.Error)
         {
+            // Look to see if Lambda's telemetry log file descriptor is available. If so use that for logging.
+            // This will make sure multiline log messages use a single CloudWatch Logs record.
+            var fileDescriptorLogId = Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_TELEMETRY_LOG_FD);
+            if (fileDescriptorLogId != null)
+            {
+                try
+                {
+                    var stdOutWriter = FileDescriptorLogFactory.GetWriter(fileDescriptorLogId);
+                    var stdErrorWriter = FileDescriptorLogFactory.GetWriter(fileDescriptorLogId);
+                    Initialize(stdOutWriter, stdErrorWriter);
+                    InternalLogger.GetDefaultLogger().LogInformation("Using file descriptor stream writer for logging.");
+                }
+                catch(Exception ex)
+                {
+                    InternalLogger.GetDefaultLogger().LogError(ex, "Error creating file descriptor log stream writer. Fallback to stdout and stderr.");
+                    Initialize(Console.Out, Console.Error);
+                }
+            }
+            else
+            {
+                Initialize(Console.Out, Console.Error);
+                InternalLogger.GetDefaultLogger().LogInformation("Using stdout and stderr for logging.");
+            }
+
             // SetOut will wrap our WrapperTextWriter with a synchronized TextWriter. Pass in the new synchronized
             // TextWriter into our writer to make sure we obtain a lock on that instance before writing to the stdout.
             Console.SetOut(_wrappedStdOutWriter);
@@ -127,11 +173,13 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
         public LogLevelLoggerWriter(TextWriter stdOutWriter, TextWriter stdErrorWriter)
         {
-            _consoleStdOutWriter = stdOutWriter;
-            _wrappedStdOutWriter = new WrapperTextWriter(_consoleStdOutWriter, LogLevel.Information.ToString());
+            Initialize(stdOutWriter, stdErrorWriter);
+        }
 
-            _consoleErrorWriter = stdErrorWriter;
-            _wrappedStdErrorWriter = new WrapperTextWriter(_consoleErrorWriter, LogLevel.Error.ToString());
+        private void Initialize(TextWriter stdOutWriter, TextWriter stdErrorWriter)
+        {
+            _wrappedStdOutWriter = new WrapperTextWriter(stdOutWriter, LogLevel.Information.ToString());
+            _wrappedStdErrorWriter = new WrapperTextWriter(stdErrorWriter, LogLevel.Error.ToString());
         }
 
         /// <summary>
