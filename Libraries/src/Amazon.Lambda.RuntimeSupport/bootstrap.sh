@@ -63,22 +63,28 @@ else
 
   DEPS_FILE="${LAMBDA_TASK_ROOT}/${ASSEMBLY_NAME}.deps.json"
   if ! [ -f "${DEPS_FILE}" ]; then
-    DEPS_FILES=("${LAMBDA_TASK_ROOT}"/*.deps.json)
-    if [ "${#DEPS_FILES[@]}" -ne 1 ]; then
+    DEPS_FILES=( "${LAMBDA_TASK_ROOT}"/*.deps.json )
+
+    # Check if there were any matches to the *.deps.json glob, and that the glob was resolved
+    # This makes the matching independent from the global `nullopt` shopt's value (https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html)
+    if [ "${#DEPS_FILES[@]}" -ne 1 ] || echo "${DEPS_FILES[0]}" | grep -q -F '*'; then
       echo "Error: .NET binaries for Lambda function are not correctly installed in the ${LAMBDA_TASK_ROOT} directory of the image when the image was built. The ${LAMBDA_TASK_ROOT} directory is missing the required .deps.json file." 1>&2
       exit 105
     fi
-    DEPS_FILE="${DEPS_FILES[1]}"
+    DEPS_FILE="${DEPS_FILES[0]}"
   fi
-  
+
   RUNTIMECONFIG_FILE="${LAMBDA_TASK_ROOT}/${ASSEMBLY_NAME}.runtimeconfig.json"
   if ! [ -f "${RUNTIMECONFIG_FILE}" ]; then
-    RUNTIMECONFIG_FILES=("${LAMBDA_TASK_ROOT}"/*.runtimeconfig.json)
-    if [ "${#RUNTIMECONFIG_FILES[@]}" -ne 1 ]; then
+    RUNTIMECONFIG_FILES=( "${LAMBDA_TASK_ROOT}"/*.runtimeconfig.json )
+
+    # Check if there were any matches to the *.runtimeconfig.json glob, and that the glob was resolved
+    # This makes the matching independent from the global `nullopt` shopt's value (https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html)
+    if [ "${#RUNTIMECONFIG_FILES[@]}" -ne 1 ] || echo "${RUNTIMECONFIG_FILES[0]}" | grep -q -F '*'; then
       echo "Error: .NET binaries for Lambda function are not correctly installed in the ${LAMBDA_TASK_ROOT} directory of the image when the image was built. The ${LAMBDA_TASK_ROOT} directory is missing the required .runtimeconfig.json file." 1>&2
       exit 106
     fi
-    RUNTIMECONFIG_FILE="${RUNTIMECONFIG_FILES[1]}"
+    RUNTIMECONFIG_FILE="${RUNTIMECONFIG_FILES[0]}"
   fi
 
   DOTNET_ARGS+=("--depsfile" "${DEPS_FILE}"

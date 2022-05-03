@@ -2,7 +2,7 @@
   "display-name": "Lex Book Trip Sample",
   "system-name": "LexBookTripSample",
   "description": "Amazon Lex getting started Book Trip sample",
-  "sort-order": 101,
+  "sort-order": 300,
   "hidden-tags": [
     "C#",
     "LambdaProject"

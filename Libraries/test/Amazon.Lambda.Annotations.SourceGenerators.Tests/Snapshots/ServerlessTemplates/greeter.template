@@ -20,7 +20,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello"
+            "TestProject::TestServerlessApp.Greeter_SayHello_Generated::SayHello"
           ]
         },
         "Events": {
@@ -53,7 +53,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync"
+            "TestProject::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync"
           ]
         },
         "Events": {

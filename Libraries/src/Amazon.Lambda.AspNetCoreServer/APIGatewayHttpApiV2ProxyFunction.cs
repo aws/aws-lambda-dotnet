@@ -177,9 +177,9 @@ namespace Amazon.Lambda.AspNetCoreServer
                     connectionFeatures.RemoteIpAddress = remoteIpAddress;
                 }
 
-                if (apiGatewayRequest?.Headers?.ContainsKey("X-Forwarded-Port") == true)
+                if (apiGatewayRequest?.Headers?.TryGetValue("X-Forwarded-Port", out var port) == true)
                 {
-                    connectionFeatures.RemotePort = int.Parse(apiGatewayRequest.Headers["X-Forwarded-Port"]);
+                    connectionFeatures.RemotePort = int.Parse(port, CultureInfo.InvariantCulture);
                 }
 
                 // Call consumers customize method in case they want to change how API Gateway's request

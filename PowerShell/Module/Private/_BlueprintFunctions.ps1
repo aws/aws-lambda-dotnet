@@ -1,4 +1,4 @@
-$_blueprintsOnlinePath = '/LambdaSampleFunctions/powershell/v2/'
+$_blueprintsOnlinePath = '/LambdaSampleFunctions/powershell/v3/'
 $_modulePath = Split-Path -Path $PSScriptRoot -Parent
 $_blueprintsModulePath = Join-Path -Path $_modulePath -ChildPath 'Templates' -AdditionalChildPath 'Blueprints'
 $_manifestFilename = 'ps-lambda-blueprint-manifest.json'
@@ -101,15 +101,15 @@ function _getBlueprintsContent
 
     if ($Online)
     {
-        $_content = _getHostedBlueprintsContent -Contentpath $ContentPath
+        $private:_content = _getHostedBlueprintsContent -Contentpath $ContentPath
     }
 
-    if (!($_content))
+    if (!($private:_content))
     {
-        $_content = _getLocalBlueprintsContent -ContentPath $ContentPath
+        $private:_content = _getLocalBlueprintsContent -ContentPath $ContentPath
     }
 
-    return $_content
+    return $private:_content
 }
 
 <#

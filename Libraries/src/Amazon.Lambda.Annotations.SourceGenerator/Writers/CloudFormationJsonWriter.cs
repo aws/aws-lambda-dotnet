@@ -198,7 +198,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             _jsonWriter.SetToken($"{lambdaFunctionPath}.Type", "AWS::Serverless::Function");
             _jsonWriter.SetToken($"{lambdaFunctionPath}.Metadata.Tool", "Amazon.Lambda.Annotations");
 
-            _jsonWriter.SetToken($"{propertiesPath}.Runtime", "dotnetcore3.1");
+            _jsonWriter.SetToken($"{propertiesPath}.Runtime", "dotnet6");
             _jsonWriter.SetToken($"{propertiesPath}.CodeUri", "");
             _jsonWriter.SetToken($"{propertiesPath}.MemorySize", 256);
             _jsonWriter.SetToken($"{propertiesPath}.Timeout", 30);

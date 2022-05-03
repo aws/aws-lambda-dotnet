@@ -20,7 +20,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Add_Generated::Add"
+            "TestProject::TestServerlessApp.SimpleCalculator_Add_Generated::Add"
           ]
         },
         "Events": {
@@ -52,7 +52,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract"
+            "TestProject::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract"
           ]
         },
         "Events": {
@@ -84,7 +84,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply"
+            "TestProject::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply"
           ]
         },
         "Events": {
@@ -116,7 +116,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync"
+            "TestProject::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync"
           ]
         },
         "Events": {
@@ -145,7 +145,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Pi_Generated::Pi"
+            "TestProject::TestServerlessApp.SimpleCalculator_Pi_Generated::Pi"
           ]
         }
       }
@@ -165,7 +165,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Random_Generated::Random"
+            "TestProject::TestServerlessApp.SimpleCalculator_Random_Generated::Random"
           ]
         }
       }
@@ -185,7 +185,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Randoms_Generated::Randoms"
+            "TestProject::TestServerlessApp.SimpleCalculator_Randoms_Generated::Randoms"
           ]
         }
       }

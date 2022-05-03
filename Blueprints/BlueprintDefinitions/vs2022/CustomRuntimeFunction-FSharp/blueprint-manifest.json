@@ -2,7 +2,7 @@
   "display-name": "Custom Runtime Function",
   "system-name": "CustomRuntimeFunction",
   "description": "Use Lambda Custom Runtime feature to build Lambda functions using .NET 6.",
-  "sort-order": 101,
+  "sort-order": 400,
   "hidden-tags": [
     "F#",
     "LambdaProject"

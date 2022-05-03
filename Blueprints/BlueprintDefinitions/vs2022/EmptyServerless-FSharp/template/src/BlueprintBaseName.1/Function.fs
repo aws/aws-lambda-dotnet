@@ -21,7 +21,7 @@ type Functions() =
     /// <returns></returns>
     member __.Get (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         sprintf "Request: %s" request.Path
-        |> context.Logger.LogLine
+        |> context.Logger.LogInformation
 
         APIGatewayProxyResponse(
             StatusCode = int HttpStatusCode.OK,

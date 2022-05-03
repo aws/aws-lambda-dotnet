@@ -1,3 +1,77 @@
+### Release 2022-05-02
+* **Amazon.Lambda.KafkaEvents (1.0.1)**
+  * Corrected the return type of Partition property in KafkaEventRecord.
+* **Amazon.Lambda.TestTool-3.1 (0.12.2)**
+  * Corrected the return type of partition property for Kafka event.
+  * Added test request for Application Load Balancer.
+* **Amazon.Lambda.TestTool-5.0 (0.12.2)**
+  * Corrected the return type of partition property for Kafka event.
+  * Added test request for Application Load Balancer.
+* **Amazon.Lambda.TestTool-6.0 (0.12.2)**
+  * Corrected the return type of partition property for Kafka event.
+  * Added test request for Application Load Balancer.
+* **Amazon.Lambda.Annotations (0.5.1-preview)**
+  * Pull Request [#1101](https://github.com/aws/aws-lambda-dotnet/pull/1101) Error message for missing Amazon.Lambda.APIGatewayEvents package.
+  * Fixed bug with Amazon.Lambda.Annotations not correctly using assembly name for computing function handler string.
+  * Fix issue with naming collisions for request and context with Amazon.Lambda.Annotations.
+* **Amazon.Lambda.MQEvents (1.0.0)**
+  * New package that contains classes that can be used as input types for Lambda functions that process Amazon ActiveMQ and RabbitMQ events.
+* **Amazon.Lambda.APIGatewayEvents (2.4.1)**
+  * [Breaking Change] Corrected property name ConnectionAt to ConnectedAt in APIGatewayProxyRequest.ProxyRequestContext class.
+* **Amazon.Lambda.DynamoDBEvents (2.1.1)**
+  * Update AWSSDK.DynamoDBv2 reference to version 3.7.3.24.
+  * Update blueprint definitions to reference new Amazon.Lambda.DynamoDBEvents version 2.1.1 and AWSSDK.DynamoDBv2 version 3.7.3.24.
+
+### Release 2022-03-29
+* **AWSLambdaPSCore PowerShell Module (3.0.1)**
+  * Pull Request [#1096](https://github.com/aws/aws-lambda-dotnet/pull/1096) Fix error message when .NET SDK found that is below .NET 6 requirement. Thanks [Lachlan Blake](https://github.com/Otimie)
+
+### Release 2022-03-25
+* **Amazon.Lambda.Templates (6.1.0)**
+  * Updated PackageReferences of AWS packages referenced in the templates.
+
+### Release 2022-03-24
+* **Amazon.Lambda.Serialization.SystemTextJson (2.3.0)**
+  * Change SourceGeneratorLambdaJsonSerializer to use the same JsonSerializerOptions as DefaultLambdaJsonSerializer
+  * Allow SourceGeneratorLambdaJsonSerializer to be extended with a custom Action<JsonSerializerOptions> to customize the JsonSerializerOptions
+
+### Release 2022-03-14
+* **Amazon.Lambda.AspNetCoreServer (7.1.0)**
+  * Fix issue with ASP.NET Core Minimal API not binding HTTP request body to complex types
+  * Pull Request [#1099](https://github.com/aws/aws-lambda-dotnet/pull/1099) Logging improvements. Thanks [Martin Costello](https://github.com/martincostello)
+  * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1103) Support image/x-icon as base64. Thanks [Martin Costello](https://github.com/martincostello)  
+  * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1102) Switch to TryGetValue for minor perf improvement. Thanks [Martin Costello](https://github.com/martincostello)    
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.1.0)**
+  * Updated dependency on Amazon.Lambda.AspNetCoreServer to 
+* **Amazon.Lambda.TestTool-3.1 (0.12.1)**
+  * Fix issue with sending large function input events being truncated.
+  * Pull Request [#1098](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)
+* **Amazon.Lambda.TestTool-5.0 (0.12.1)**
+  * Fix issue with sending large function input events being truncated.
+  * Pull Request [#1098](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)  
+* **Amazon.Lambda.TestTool-6.0 (0.12.1)**
+  * Fix issue with sending large function input events being truncated.
+  * Pull Request [#1098](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)  
+  
+  
+### Release 2022-02-24  
+* **Amazon.Lambda.TestTool-3.1 (0.12.0)**
+  * Add new page for testing executable assemblies. Useful for testing Lambda functions using top-level statements or function deployed as a custom runtime.
+* **Amazon.Lambda.TestTool-5.0 (0.12.0)**
+  * Add new page for testing executable assemblies. Useful for testing Lambda functions using top-level statements or function deployed as a custom runtime.
+* **Amazon.Lambda.TestTool-6.0 (0.12.0)**
+  * Add new page for testing executable assemblies. Useful for testing Lambda functions using top-level statements or function deployed as a custom runtime.
+
+### Release 2022-02-23
+* **AWSLambdaPSCore PowerShell Module (3.0.0)**
+  * Switch publishing to target the .NET 6 Lambda runtime
+* **Amazon.Lambda.Templates (6.0.0)**
+  * Update Lambda templates to target .NET 6.
+
+### Release 2022-02-02
+* **Amazon.Lambda.RuntimeSupport (1.7.0)**
+  * Pull Request [#1063](https://github.com/aws/aws-lambda-dotnet/pull/1063) Minor performance improvements particular when targeting .NET 6.
+
 ### Release 2022-01-05
 * **Amazon.Lambda.SQSEvents (2.1.0)**
   * Pull Request [#1039](https://github.com/aws/aws-lambda-dotnet/pull/1039) Add new `SQSBatchResponse` type to indicate which messages failed and need to be retried. Thanks [jon-armen](https://github.com/jon-armen)

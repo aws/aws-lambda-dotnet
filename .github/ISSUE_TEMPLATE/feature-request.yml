@@ -1,0 +1,74 @@
+---
+name: 🚀 Feature Request
+description: Suggest an idea for this project
+title: "(short issue description)"
+labels: [feature-request, needs-triage]
+assignees: []
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the feature
+      description: A clear and concise description of the feature you are proposing.
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: |
+        Why do you need this feature? For example: "I'm always frustrated when..."
+    validations:
+        required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: |
+        Suggest how to implement the addition or change. Please include prototype/workaround/sketch/reference implementation.
+    validations:
+      required: false
+  - type: textarea
+    id: other
+    attributes:
+      label: Other Information
+      description: |
+        Any alternative solutions or features you considered, a more detailed explanation, stack traces, related issues, links for context, etc.
+    validations:
+      required: false
+  - type: checkboxes
+    id: ack
+    attributes:
+      label: Acknowledgements
+      options:
+        - label: I may be able to implement this feature request
+          required: false
+        - label: This feature might incur a breaking change
+          required: false
+
+  - type: textarea
+    id: dotnet-sdk-version
+    attributes:
+      label: AWS .NET SDK and/or Package version used
+      description: NuGet Packages used
+      placeholder: AWSSDK.S3 3.7.8.13
+    validations:
+      required: true
+
+  - type: input
+    id: platform-used
+    attributes:
+      label: Targeted .NET Platform
+      description: "Example: .NET Framework 4.7, .NET Core 3.1, .NET 6, etc."
+      placeholder: .NET Framework 4.7, .NET Core 3.1, .NET 6, etc.
+    validations:
+      required: true
+
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating System and version
+      description: "Example: Windows 10, OSX Mojave, Ubuntu, AmazonLinux, etc."
+      placeholder: Windows 10, OSX Mojave, Ubuntu, AmazonLinux, etc.
+    validations:
+      required: true

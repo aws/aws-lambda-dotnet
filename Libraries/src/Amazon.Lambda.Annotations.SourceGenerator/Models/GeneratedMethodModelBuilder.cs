@@ -123,7 +123,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 
             var contextParameter = new ParameterModel
             {
-                Name = "context",
+                Name = "__context__",
                 Type = new TypeModel
                 {
                     FullName = TypeFullNames.ILambdaContext
@@ -136,7 +136,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 var type = TypeModelBuilder.Build(symbol, context);
                 var requestParameter = new ParameterModel
                 {
-                    Name = "request",
+                    Name = "__request__",
                     Type = type
                 };
                 parameters.Add(requestParameter);
@@ -166,7 +166,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 
                 var requestParameter = new ParameterModel
                 {
-                    Name = "request",
+                    Name = "__request__",
                     Type = type
                 };
                 parameters.Add(requestParameter);
@@ -181,6 +181,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                     if (param.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromServiceAttribute))
                     {
                         continue;
+                    }
+                    // If the Lambda function is taking in the ILambdaContext object make sure in the generated wrapper code we
+                    // use the same system name for the ILambdaContext variable as all of the other places use.
+                    else if(param.Type.FullName == TypeFullNames.ILambdaContext)
+                    {
+                        param.Name = "__context__";
                     }
 
                     parameters.Add(param);

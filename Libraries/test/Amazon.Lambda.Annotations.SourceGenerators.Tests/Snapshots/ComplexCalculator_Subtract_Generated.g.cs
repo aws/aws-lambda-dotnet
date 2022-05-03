@@ -16,18 +16,18 @@ namespace TestServerlessApp
             complexCalculator = new ComplexCalculator();
         }
 
-        public Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse Subtract(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
+        public Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse Subtract(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             var validationErrors = new List<string>();
 
             var complexNumbers = default(System.Collections.Generic.IList<System.Collections.Generic.IList<int>>);
             try
             {
-                complexNumbers = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.IList<System.Collections.Generic.IList<int>>>(request.Body);
+                complexNumbers = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.IList<System.Collections.Generic.IList<int>>>(__request__.Body);
             }
             catch (Exception e)
             {
-                validationErrors.Add($"Value {request.Body} at 'body' failed to satisfy constraint: {e.Message}");
+                validationErrors.Add($"Value {__request__.Body} at 'body' failed to satisfy constraint: {e.Message}");
             }
 
             // return 400 Bad Request if there exists a validation error
@@ -72,7 +72,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_0.4.3.0");
+            envValue.Append("amazon-lambda-annotations_0.5.1.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

@@ -1,42 +1,36 @@
-using Amazon.Lambda.Core;
-
 #pragma warning disable 618
 namespace Amazon.Lambda.Tests
 {
-    using Amazon.Lambda;
-    using Amazon.Lambda.Serialization.Json;
-    using Amazon.Lambda.S3Events;
-    using Amazon.Lambda.KinesisEvents;
-    using Amazon.Lambda.DynamoDBEvents;
+    using Amazon.Lambda.APIGatewayEvents;
+    using Amazon.Lambda.ApplicationLoadBalancerEvents;
+    using Amazon.Lambda.CloudWatchEvents.BatchEvents;
+    using Amazon.Lambda.CloudWatchEvents.ECSEvents;
+    using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
+    using Amazon.Lambda.CloudWatchLogsEvents;
     using Amazon.Lambda.CognitoEvents;
     using Amazon.Lambda.ConfigEvents;
     using Amazon.Lambda.ConnectEvents;
+    using Amazon.Lambda.Core;
+    using Amazon.Lambda.DynamoDBEvents;
+    using Amazon.Lambda.KafkaEvents;
+    using Amazon.Lambda.KinesisAnalyticsEvents;
+    using Amazon.Lambda.KinesisEvents;
+    using Amazon.Lambda.KinesisFirehoseEvents;
+    using Amazon.Lambda.LexEvents;
+    using Amazon.Lambda.MQEvents;
+    using Amazon.Lambda.S3Events;
     using Amazon.Lambda.SimpleEmailEvents;
     using Amazon.Lambda.SNSEvents;
     using Amazon.Lambda.SQSEvents;
-    using Amazon.Lambda.APIGatewayEvents;
-    using Amazon.Lambda.ApplicationLoadBalancerEvents;
-    using Amazon.Lambda.LexEvents;
-    using Amazon.Lambda.KinesisFirehoseEvents;
-    using Amazon.Lambda.KinesisAnalyticsEvents;
-    using Amazon.Lambda.KafkaEvents;
-
-    using Amazon.Lambda.CloudWatchLogsEvents;
-
-    using Amazon.Lambda.CloudWatchEvents.ECSEvents;
-    using Amazon.Lambda.CloudWatchEvents.BatchEvents;
-    using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-
+    using Newtonsoft.Json.Serialization;
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using Xunit;
-    using System.Linq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
-
     using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
 
     public class EventTest
@@ -981,6 +975,76 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void WebSocketApiConnectTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("websocket-api-connect-request.json"))
+            {
+                var proxyEvent = serializer.Deserialize<APIGatewayProxyRequest>(fileStream);
+
+                Assert.Null(proxyEvent.Resource);
+                Assert.Null(proxyEvent.Path);
+                Assert.Null(proxyEvent.HttpMethod);
+                Assert.Null(proxyEvent.Body);
+
+                var headers = proxyEvent.Headers;
+                Assert.Equal(headers["HeaderAuth1"], "headerValue1");
+                Assert.Equal(headers["Host"], "lg10ltpf4f.execute-api.us-east-2.amazonaws.com");
+                Assert.Equal(headers["Sec-WebSocket-Extensions"], "permessage-deflate; client_max_window_bits");
+                Assert.Equal(headers["Sec-WebSocket-Key"], "BvlrrFKoKAPDYOlwBcGKWw==");
+                Assert.Equal(headers["Sec-WebSocket-Version"], "13");
+                Assert.Equal(headers["X-Amzn-Trace-Id"], "Root=1-625d9ad1-37a5d33a61dd9be33ae3a247");
+                Assert.Equal(headers["X-Forwarded-For"], "52.95.4.0");
+                Assert.Equal(headers["X-Forwarded-Port"], "443");
+                Assert.Equal(headers["X-Forwarded-Proto"], "https");
+
+                var multiValueHeaders = proxyEvent.MultiValueHeaders;
+                Assert.Equal(multiValueHeaders["HeaderAuth1"].Count, 1);
+                Assert.Equal(multiValueHeaders["HeaderAuth1"][0], "headerValue1");
+                Assert.Equal(multiValueHeaders["Host"].Count, 1);
+                Assert.Equal(multiValueHeaders["Host"][0], "lg10ltpf4f.execute-api.us-east-2.amazonaws.com");
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Extensions"].Count, 1);
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Extensions"][0], "permessage-deflate; client_max_window_bits");
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Key"].Count, 1);
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Key"][0], "BvlrrFKoKAPDYOlwBcGKWw==");
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Version"].Count, 1);
+                Assert.Equal(multiValueHeaders["Sec-WebSocket-Version"][0], "13");
+                Assert.Equal(multiValueHeaders["X-Amzn-Trace-Id"].Count, 1);
+                Assert.Equal(multiValueHeaders["X-Amzn-Trace-Id"][0], "Root=1-625d9ad1-37a5d33a61dd9be33ae3a247");
+                Assert.Equal(multiValueHeaders["X-Forwarded-For"].Count, 1);
+                Assert.Equal(multiValueHeaders["X-Forwarded-For"][0], "52.95.4.0");
+                Assert.Equal(multiValueHeaders["X-Forwarded-Port"].Count, 1);
+                Assert.Equal(multiValueHeaders["X-Forwarded-Port"][0], "443");
+                Assert.Equal(multiValueHeaders["X-Forwarded-Proto"].Count, 1);
+                Assert.Equal(multiValueHeaders["X-Forwarded-Proto"][0], "https");
+
+                var requestContext = proxyEvent.RequestContext;
+                Assert.Equal(requestContext.RouteKey, "$connect");
+                Assert.Equal(requestContext.EventType, "CONNECT");
+                Assert.Equal(requestContext.ExtendedRequestId, "QyUg1HJgCYcFvbw=");
+                Assert.Equal(requestContext.RequestTime, "18/Apr/2022:17:07:29 +0000");
+                Assert.Equal(requestContext.MessageDirection, "IN");
+                Assert.Equal(requestContext.Stage, "production");
+                Assert.Equal(requestContext.ConnectedAt, 1650301649973);
+                Assert.Equal(requestContext.RequestTimeEpoch, 1650301649973);
+                Assert.Equal(requestContext.RequestId, "QyUg1HJgCYcFvbw=");
+                Assert.Equal(requestContext.DomainName, "lg10ltpf4f.execute-api.us-east-2.amazonaws.com");
+                Assert.Equal(requestContext.ConnectionId, "QyUg1czHCYcCHXw=");
+                Assert.Equal(requestContext.ApiId, "lg10ltpf4f");
+
+                Assert.False(proxyEvent.IsBase64Encoded);
+
+                var identity = requestContext.Identity;
+                Assert.Equal(identity.SourceIp, "52.95.4.0");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -1913,7 +1977,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.Value.Count, 1);
                 var eventRecord = record.Value.FirstOrDefault();
                 Assert.Equal(eventRecord.Topic, "mytopic");
-                Assert.Equal(eventRecord.Partition, "0");
+                Assert.Equal(eventRecord.Partition, 12);
                 Assert.Equal(eventRecord.Offset, 15);
                 Assert.Equal(eventRecord.Timestamp, 1545084650987);
                 Assert.Equal(eventRecord.TimestampType, "CREATE_TIME");
@@ -1943,6 +2007,87 @@ namespace Amazon.Lambda.Tests
                     var valueText = Encoding.UTF8.GetString(valueBytes);
                     Console.WriteLine($"[{record.Key}] Value = '{valueText}'.");
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void ActiveMQEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("amazonmq-activemq.json"))
+            {
+                var activemqEvent = serializer.Deserialize<ActiveMQEvent>(fileStream);
+                Assert.NotNull(activemqEvent);
+                Assert.Equal("aws:amq", activemqEvent.EventSource);
+                Assert.Equal("arn:aws:mq:us-west-2:112556298976:broker:test:b-9bcfa592-423a-4942-879d-eb284b418fc8", activemqEvent.EventSourceArn);
+
+                Assert.Equal(2, activemqEvent.Messages.Count);
+                Assert.Equal("ID:b-9bcfa592-423a-4942-879d-eb284b418fc8-1.mq.us-west-2.amazonaws.com-37557-1234520418293-4:1:1:1:1", activemqEvent.Messages[0].MessageId);
+                Assert.Equal("jms/text-message", activemqEvent.Messages[0].MessageType);
+                Assert.Equal("ABC:AAAA", Encoding.UTF8.GetString(Convert.FromBase64String(activemqEvent.Messages[0].Data)));
+                Assert.Equal("myJMSCoID", activemqEvent.Messages[0].ConnectionId);
+                Assert.False(activemqEvent.Messages[0].Redelivered);
+                Assert.Null(activemqEvent.Messages[0].Persistent);
+                Assert.Equal("testQueue", activemqEvent.Messages[0].Destination.PhysicalName);
+                Assert.NotNull(activemqEvent.Messages[0].Timestamp);
+                Assert.NotNull(activemqEvent.Messages[0].BrokerInTime);
+                Assert.NotNull(activemqEvent.Messages[0].BrokerOutTime);
+
+                Assert.Equal("ID:b-9bcfa592-423a-4942-879d-eb284b418fc8-1.mq.us-west-2.amazonaws.com-37557-1234520418293-4:1:1:1:1", activemqEvent.Messages[1].MessageId);
+                Assert.Equal("jms/bytes-message", activemqEvent.Messages[1].MessageType);
+                Assert.NotNull(Convert.FromBase64String(activemqEvent.Messages[1].Data));
+                Assert.Equal("myJMSCoID1", activemqEvent.Messages[1].ConnectionId);
+                Assert.Null(activemqEvent.Messages[1].Redelivered);
+                Assert.False(activemqEvent.Messages[1].Persistent);
+                Assert.Equal("testQueue", activemqEvent.Messages[1].Destination.PhysicalName);
+                Assert.NotNull(activemqEvent.Messages[1].Timestamp);
+                Assert.NotNull(activemqEvent.Messages[1].BrokerInTime);
+                Assert.NotNull(activemqEvent.Messages[1].BrokerOutTime);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void RabbitMQEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("amazonmq-rabbitmq.json"))
+            {
+                var rabbitmqEvent = serializer.Deserialize<RabbitMQEvent>(fileStream);
+                Assert.NotNull(rabbitmqEvent);
+                Assert.Equal("aws:rmq", rabbitmqEvent.EventSource);
+                Assert.Equal("arn:aws:mq:us-west-2:112556298976:broker:pizzaBroker:b-9bcfa592-423a-4942-879d-eb284b418fc8", rabbitmqEvent.EventSourceArn);
+
+                Assert.Equal(1, rabbitmqEvent.RmqMessagesByQueue.Count);
+                Assert.Equal(1, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"].Count);
+                Assert.NotNull(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties);
+                Assert.Equal("text/plain", rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ContentType);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ContentEncoding);
+                Assert.Equal(3, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Headers.Count);
+                Assert.Equal(1, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.DeliveryMode);
+                Assert.Equal(34, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Priority);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.CorrelationId);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ReplyTo);
+                Assert.Equal("60000", rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Expiration);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.MessageId);
+                Assert.NotNull(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Timestamp);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Type);
+                Assert.Equal("AIDACKCEVSQ6C2EXAMPLE", rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.UserId);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.AppId);
+                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ClusterId);
+                Assert.Equal(80, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.BodySize);
+
+                Assert.False(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].Redelivered);
+                Assert.Equal("{\"timeout\":0,\"data\":\"CZrmf0Gw8Ov4bqLQxD4E\"}", Encoding.UTF8.GetString(Convert.FromBase64String(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].Data)));
             }
         }
 

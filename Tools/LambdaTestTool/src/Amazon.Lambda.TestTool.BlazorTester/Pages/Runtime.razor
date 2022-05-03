@@ -1,0 +1,297 @@
+@page "/runtime"
+
+@using Amazon.Lambda.TestTool.BlazorTester.Services
+@using Amazon.Lambda.TestTool.SampleRequests;
+@using Microsoft.AspNetCore.Http;
+
+@inject IHttpContextAccessor httpContextAccessor;
+@inject LocalLambdaOptions LambdaOptions
+@inject IRuntimeApiDataStore RuntimeApiModel
+@inject IModalService Modal
+
+<h2>Test Executable Assembly</h2>
+
+<p>
+    For Lambda functions written as executable assemblies, i.e. custom runtimes functions and top level statement functions, this page can be used for testing the functions locally. 
+    Set the <b>AWS_LAMBDA_RUNTIME_API</b> environment variable to <b>localhost:@httpContextAccessor.HttpContext.Connection.LocalPort</b> while debugging executable assembly 
+    Lambda function. More information can be found in the <a href="/documentation">documentation</a>.
+</p>
+
+<div class="row">
+    <div class="col-sm-6">
+        <h3>Queue Event:</h3>
+        <label class="" for="sample-requests">Example Requests:</label>
+        <select class="control" id="sample-requests" @bind="SelectedSampleRequestName">
+            <option id="@NO_SAMPLE_SELECTED_ID"> -- select a request -- </option>
+            @if (@SampleRequests.ContainsKey(SampleRequestManager.SAVED_REQUEST_GROUP))
+            {
+                <optgroup id="saved-select-request-group" label="@SampleRequestManager.SAVED_REQUEST_GROUP">
+                    @foreach (var request in SampleRequests[SampleRequestManager.SAVED_REQUEST_GROUP])
+                    {
+                        <option value="@request.Filename">@request.Name</option>
+                    }
+                </optgroup>
+            }
+            @foreach (var group in SampleRequests.Keys)
+            {
+                @if (!string.Equals(group, SampleRequestManager.SAVED_REQUEST_GROUP))
+                {
+                    <optgroup label="@group">
+                        @foreach (var request in SampleRequests[group])
+                        {
+                            <option value="@request.Filename">@request.Name</option>
+                        }
+                    </optgroup>
+                }
+            }
+        </select>
+        <label class="col-xs-3 control-label" for="function-payload">Function Input:</label>
+        <textarea class="form-control" style="margin: 5px" rows="20" @bind="FunctionInput" placeholder="JSON document as input to Lambda Function. Plain strings must be wrapped in quotes."></textarea>
+        <div class="col-sm form-group">
+            <button class="btn btn-primary btn-sm" @onclick="OnAddEventClick">Queue Event</button>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h3>Active Event:</h3>
+        @if (RuntimeApiModel.ActiveEvent == null)
+        {
+            <h2>No active event</h2>
+        }
+        else
+        {
+                  <div>
+                      <div style="cursor: pointer" @onclick="() => OnRequeue(RuntimeApiModel.ActiveEvent.AwsRequestId)">
+                            @((MarkupString)REBOOT_ICON)
+                      </div>
+                      <p><b>Request ID:</b> @RuntimeApiModel.ActiveEvent.AwsRequestId</p>
+                      <p><b>Status:</b> <span style="@GetStatusStyle(RuntimeApiModel.ActiveEvent.EventStatus)">@RuntimeApiModel.ActiveEvent.EventStatus</span></p>
+                      <p><b>Last Updated:</b> @RuntimeApiModel.ActiveEvent.LastUpdated</p>
+                      <p><b>Event JSON:</b><span class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(RuntimeApiModel.ActiveEvent)">@CreateSnippet(RuntimeApiModel.ActiveEvent.EventJson)</span></span></p>
+                      @if (RuntimeApiModel.ActiveEvent.EventStatus == IEventContainer.Status.Failure)
+                      {
+                          <p><b>Error Type:</b> @RuntimeApiModel.ActiveEvent.ErrorType</p>
+                          <p>
+                              <b>Error Response:</b>
+                              <pre class="form-control" style="@Constants.ResponseErrorStyleSizeConstraint" >@RuntimeApiModel.ActiveEvent.ErrorResponse</pre>
+                          </p>
+                      }
+                      else
+                      {
+                          <p>
+                              <b>Response:</b>
+                              <pre class="form-control" style="@Constants.ResponseSuccessStyleSizeConstraint">@Amazon.Lambda.TestTool.Utils.TryPrettyPrintJson(RuntimeApiModel.ActiveEvent.Response)</pre>
+                          </p>
+                      }
+                  </div>
+        }
+    </div>
+</div>
+
+
+<div class="row">
+    <div class="col-sm-6">
+        <h3>Queued Events: <button class="btn btn-secondary btn-sm" @onclick="OnClearQueued">Clear</button></h3>
+        <div class="col-xs-5 event-list">
+            @foreach (var evnt in @RuntimeApiModel.QueuedEvents)
+            {
+                <div class="event-list-item">
+                    <div class="row" style="padding: 2px">
+                        <div class="col-sm-11 row">
+                            <div class="event-label">Request ID:</div><div class="event-value"> @evnt.AwsRequestId</div>
+                            <div class="event-label">Last Updated:</div><div class="event-value">@evnt.LastUpdated</div>
+                        </div>
+                        <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
+                            @((MarkupString)CLOSE_ICON)
+                        </div>
+                    </div>
+                    <div class="row" style="padding: 2px">
+                        <div class="event-label">Event JSON:</div><div class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <h3>Executed Events: <button class="btn btn-secondary btn-sm" @onclick="OnClearExecuted">Clear</button></h3>
+        <div class="col-xs-5 event-list">
+            @foreach (var evnt in @RuntimeApiModel.ExecutedEvents.OrderByDescending(x => x.LastUpdated))
+            {
+                <div class="event-list-item">
+                    <div class="row" style="padding: 2px">
+                        <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnRequeue(evnt.AwsRequestId)">
+                            @((MarkupString)REBOOT_ICON)
+                        </div>
+                        <div class="col-sm-10 row">
+                            <div class="event-label">Request ID:</div><div class="event-value"> @evnt.AwsRequestId</div>
+                            <div class="event-label">Status:</div><div class="event-value" style="@GetStatusStyle(evnt.EventStatus)">@evnt.EventStatus</div>
+                            <div class="event-label">Last Updated:</div><div class="event-value">@evnt.LastUpdated</div>
+                        </div>
+                        <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
+                            @((MarkupString)CLOSE_ICON)
+                        </div>
+                    </div>
+                    <div class="row" style="padding: 2px">
+                        <div class="event-label">Event JSON:</div><div class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></div>
+                    </div>
+                    @if(evnt.EventStatus == IEventContainer.Status.Success)
+                    {
+                    <div class="row" style="padding: 2px">
+                        <div class="event-label">Response: </div><div class="event-value"><span class="fake-link" @onclick="() => ShowResponse(evnt)">@CreateSnippet(evnt.Response)</span></div>
+                    </div>
+                    }
+                    else if(evnt.EventStatus == IEventContainer.Status.Failure)
+                    {
+                    <div class="row" style="padding: 2px">
+                        <div class="event-label">Error Type:</div><div class="event-value">@evnt.ErrorType</div>
+                    </div>
+                    <div class="row" style="padding: 2px">
+                        <div class="event-label">Error Response: </div><div class="event-value"><span class="fake-link" @onclick="() => ShowError(evnt)">@CreateSnippet(evnt.ErrorResponse)</span></div>
+                    </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+
+
+@code {
+    private const string REBOOT_ICON = @"
+<svg xmlns=""http://www.w3.org/2000/svg"" width=""16"" height=""16"" fill=""currentColor"" class=""bi bi-bootstrap-reboot"" viewBox=""0 0 16 16"">
+    <path d=""M1.161 8a6.84 6.84 0 1 0 6.842-6.84.58.58 0 1 1 0-1.16 8 8 0 1 1-6.556 3.412l-.663-.577a.58.58 0 0 1 .227-.997l2.52-.69a.58.58 0 0 1 .728.633l-.332 2.592a.58.58 0 0 1-.956.364l-.643-.56A6.812 6.812 0 0 0 1.16 8z""/>
+</svg>
+";
+
+    private const string CLOSE_ICON = @"
+<svg xmlns=""http://www.w3.org/2000/svg"" width=""16"" height=""16"" fill=""currentColor"" class=""bi bi-x"" viewBox=""0 0 16 16"">
+  <path d=""M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z""/>
+</svg>
+";
+
+    private const string NO_SAMPLE_SELECTED_ID = "void-select-request";
+
+    private string FunctionInput { get; set; }
+
+    private IDictionary<string, IList<LambdaRequest>> SampleRequests { get; set; }
+
+    string _selectedSampleRequestName;
+    string SelectedSampleRequestName
+    {
+        get => this._selectedSampleRequestName;
+        set
+        {
+            this._selectedSampleRequestName = value;
+            if(!string.Equals(value, NO_SAMPLE_SELECTED_ID))
+            {
+                this.FunctionInput = SampleRequestManager.GetRequest(this._selectedSampleRequestName);
+            }
+            this.StateHasChanged();
+        }
+    }
+
+    SampleRequestManager SampleRequestManager { get; set; }
+
+    protected override void OnInitialized()
+    {
+        RuntimeApiModel.StateChange += RuntimeApiModelOnStateChange;
+        this.SampleRequestManager = new SampleRequestManager(LambdaOptions.GetPreferenceDirectory(false));
+        this.SampleRequests = SampleRequestManager.GetSampleRequests();
+    }
+
+    private void RuntimeApiModelOnStateChange(object sender, EventArgs e)
+    {
+        this.InvokeAsync(this.StateHasChanged);
+    }
+
+    void OnAddEventClick()
+    {
+        RuntimeApiModel.QueueEvent(this.FunctionInput);
+        this.FunctionInput = "";
+        this.SelectedSampleRequestName = NO_SAMPLE_SELECTED_ID;
+        this.StateHasChanged();
+    }
+
+    void OnClearQueued()
+    {
+        this.RuntimeApiModel.ClearQueued();
+        this.StateHasChanged();
+    }
+
+    void OnClearExecuted()
+    {
+        this.RuntimeApiModel.ClearExecuted();
+        this.StateHasChanged();
+    }
+
+    void OnRequeue(string awsRequestId)
+    {
+        IEventContainer evnt = null;
+        if(string.Equals(this.RuntimeApiModel.ActiveEvent?.AwsRequestId, awsRequestId))
+        {
+            evnt = this.RuntimeApiModel.ActiveEvent;
+        }
+        else
+        {
+            evnt = this.RuntimeApiModel.ExecutedEvents.FirstOrDefault(x => string.Equals(x.AwsRequestId, awsRequestId));
+        }
+
+        if (evnt == null)
+            return;
+
+        this.RuntimeApiModel.QueueEvent(evnt.EventJson);
+        this.StateHasChanged();
+    }
+
+    void OnDeleteEvent(string awsRequestId)
+    {
+        this.RuntimeApiModel.DeleteEvent(awsRequestId);
+        this.StateHasChanged();
+    }
+
+    string GetStatusStyle(IEventContainer.Status status) => status switch
+    {
+        IEventContainer.Status.Success => "color:green",
+        IEventContainer.Status.Failure => "color:red",
+        _ => "color:black"
+    };
+
+    string CreateSnippet(string fullString)
+    {
+        const int maxLength = 50;
+        string trim;
+        if (fullString?.Length < maxLength)
+        {
+            trim = fullString;
+        }
+        else
+        {
+            trim = fullString.Substring(0, maxLength);
+        }
+
+        return trim;
+    }
+
+    void ShowEventJson(IEventContainer evnt)
+    {
+        ShowExpandedText("Event JSON", evnt.EventJson);
+    }
+
+    void ShowResponse(IEventContainer evnt)
+    {
+        ShowExpandedText("Response", evnt.Response);
+    }
+
+    void ShowError(IEventContainer evnt)
+    {
+        ShowExpandedText("Error Response", evnt.ErrorResponse);
+    }
+
+    void ShowExpandedText(string title, string text)
+    {
+        var parameters = new ModalParameters();
+        parameters.Add(ExpandedTextDialog.PARAMETER_NAME_FULL_TEXT, text);
+        Modal.Show<ExpandedTextDialog>(title, parameters);
+    }
+}

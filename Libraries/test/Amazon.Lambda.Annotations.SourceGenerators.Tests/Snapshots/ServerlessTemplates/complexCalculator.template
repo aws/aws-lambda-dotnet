@@ -20,7 +20,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add"
+            "TestProject::TestServerlessApp.ComplexCalculator_Add_Generated::Add"
           ]
         },
         "Events": {
@@ -53,7 +53,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Subtract_Generated::Subtract"
+            "TestProject::TestServerlessApp.ComplexCalculator_Subtract_Generated::Subtract"
           ]
         },
         "Events": {

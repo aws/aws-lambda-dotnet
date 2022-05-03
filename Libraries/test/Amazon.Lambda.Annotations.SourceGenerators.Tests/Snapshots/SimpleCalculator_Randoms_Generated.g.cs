@@ -25,14 +25,14 @@ namespace TestServerlessApp
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public System.Collections.Generic.IList<int> Randoms(TestServerlessApp.SimpleCalculator.RandomsInput input, Amazon.Lambda.Core.ILambdaContext context)
+        public System.Collections.Generic.IList<int> Randoms(TestServerlessApp.SimpleCalculator.RandomsInput input, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
 
-            return simpleCalculator.Randoms(input, context);
+            return simpleCalculator.Randoms(input, __context__);
         }
 
         private static void SetExecutionEnvironment()
@@ -47,7 +47,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_0.4.3.0");
+            envValue.Append("amazon-lambda-annotations_0.5.1.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

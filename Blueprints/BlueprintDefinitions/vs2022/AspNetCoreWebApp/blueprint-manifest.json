@@ -2,7 +2,7 @@
   "display-name": "ASP.NET Core Web App",
   "system-name": "AspNetCoreWebApp",
   "description": "Serverless ASP.NET Core Web Application with Razor Pages",
-  "sort-order": 150,
+  "sort-order": 120,
   "hidden-tags": [
     "C#",
     "ServerlessProject"

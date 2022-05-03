@@ -48,7 +48,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
         // Defines a mapping from registered content types to the response encoding format
         // which dictates what transformations should be applied before returning response content
-        private Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentType = new Dictionary<string, ResponseContentEncoding>
+        private readonly Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentType = new Dictionary<string, ResponseContentEncoding>
         {
             // The complete list of registered MIME content-types can be found at:
             //    http://www.iana.org/assignments/media-types/media-types.xhtml
@@ -72,13 +72,14 @@ namespace Amazon.Lambda.AspNetCoreServer
             ["image/gif"] = ResponseContentEncoding.Base64,
             ["image/jpeg"] = ResponseContentEncoding.Base64,
             ["image/jpg"] = ResponseContentEncoding.Base64,
+            ["image/x-icon"] = ResponseContentEncoding.Base64,
             ["application/zip"] = ResponseContentEncoding.Base64,
             ["application/pdf"] = ResponseContentEncoding.Base64,
         };
 
         // Defines a mapping from registered content encodings to the response encoding format
         // which dictates what transformations should be applied before returning response content
-        private Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentEncoding = new Dictionary<string, ResponseContentEncoding>
+        private readonly Dictionary<string, ResponseContentEncoding> _responseContentEncodingForContentEncoding = new Dictionary<string, ResponseContentEncoding>
         {
             ["gzip"] = ResponseContentEncoding.Base64,
             ["deflate"] = ResponseContentEncoding.Base64,
@@ -371,9 +372,9 @@ namespace Amazon.Lambda.AspNetCoreServer
             // ASP.NET Core will typically return content type with encoding like this "application/json; charset=utf-8"
             // To find the content type in the dictionary we need to strip the encoding off.
             var contentTypeWithoutEncoding = contentType.Split(';')[0].Trim();
-            if (_responseContentEncodingForContentType.ContainsKey(contentTypeWithoutEncoding))
+            if (_responseContentEncodingForContentType.TryGetValue(contentTypeWithoutEncoding, out var encoding))
             {
-                return _responseContentEncodingForContentType[contentTypeWithoutEncoding];
+                return encoding;
             }
 
             return DefaultResponseContentEncoding;
@@ -391,9 +392,9 @@ namespace Amazon.Lambda.AspNetCoreServer
                 return DefaultResponseContentEncoding;
             }
 
-            if (_responseContentEncodingForContentEncoding.ContainsKey(contentEncoding))
+            if (_responseContentEncodingForContentEncoding.TryGetValue(contentEncoding, out var encoding))
             {
-                return _responseContentEncodingForContentEncoding[contentEncoding];
+                return encoding;
             }
 
             return DefaultResponseContentEncoding;
@@ -436,7 +437,11 @@ namespace Amazon.Lambda.AspNetCoreServer
             InvokeFeatures features = new InvokeFeatures();
             MarshallRequest(features, request, lambdaContext);
 
-            _logger.LogDebug($"ASP.NET Core Request PathBase: {((IHttpRequestFeature)features).PathBase}, Path: {((IHttpRequestFeature)features).Path}");
+            if (_logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug))
+            {
+                var httpRequestFeature = (IHttpRequestFeature)features;
+                _logger.LogDebug($"ASP.NET Core Request PathBase: {httpRequestFeature.PathBase}, Path: {httpRequestFeature.Path}");
+            }
 
             {
                 var itemFeatures = (IItemsFeature)features;
@@ -485,7 +490,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 catch (AggregateException agex)
                 {
                     ex = agex;
-                    _logger.LogError($"Caught AggregateException: '{agex}'");
+                    _logger.LogError(agex, $"Caught AggregateException: '{agex}'");
                     var sb = new StringBuilder();
                     foreach (var newEx in agex.InnerExceptions)
                     {
@@ -498,7 +503,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 catch (ReflectionTypeLoadException rex)
                 {
                     ex = rex;
-                    _logger.LogError($"Caught ReflectionTypeLoadException: '{rex}'");
+                    _logger.LogError(rex, $"Caught ReflectionTypeLoadException: '{rex}'");
                     var sb = new StringBuilder();
                     foreach (var loaderException in rex.LoaderExceptions)
                     {
@@ -520,7 +525,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 {
                     ex = e;
                     if (rethrowUnhandledError) throw;
-                    _logger.LogError($"Unknown error responding to request: {this.ErrorReport(e)}");
+                    _logger.LogError(e, $"Unknown error responding to request: {this.ErrorReport(e)}");
                     ((IHttpResponseFeature)features).StatusCode = 500;
                 }
 
