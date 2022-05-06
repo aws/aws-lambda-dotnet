@@ -1,3 +1,7 @@
+### Release 2022-05-06
+* **Amazon.Lambda.RuntimeSupport (1.8.0)**
+  * Logging messages with newlines will now be a single CloudWatch Log record instead of a record for each line. Note, container based Lambda functions will continue to have a separate record per line.
+
 ### Release 2022-05-02
 * **Amazon.Lambda.KafkaEvents (1.0.1)**
   * Corrected the return type of Partition property in KafkaEventRecord.
