@@ -76,7 +76,7 @@ namespace Amazon.Lambda.TestTool
                     lambdaAssemblyDirectory = Path.Combine(lambdaAssemblyDirectory, $"bin/Debug/{targetFramework}");
                 }
 
-                localLambdaOptions.LambdaRuntime = LocalLambdaRuntime.Initialize(lambdaAssemblyDirectory);
+                localLambdaOptions.LambdaRuntime = LocalLambdaRuntime.Initialize(lambdaAssemblyDirectory, commandOptions.LambdasFile);
                 runConfiguration.OutputWriter.WriteLine($"Loaded local Lambda runtime from project output {lambdaAssemblyDirectory}");
 
                 if (commandOptions.NoUI)

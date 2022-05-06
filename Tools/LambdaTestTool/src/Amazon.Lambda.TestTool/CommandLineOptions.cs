@@ -22,6 +22,8 @@ namespace Amazon.Lambda.TestTool
         public string AWSProfile { get; set; }
         
         public string AWSRegion { get; set; }
+
+        public string LambdasFile { get; set; }
         
         public bool ShowHelp { get; set; }
 
@@ -83,6 +85,10 @@ namespace Amazon.Lambda.TestTool
                         break;
                     case "--payload":
                         options.Payload = GetNextStringValue(i);
+                        i++;
+                        break;
+                    case "--lambdas-file":
+                        options.LambdasFile = GetNextStringValue(i);
                         i++;
                         break;
                     case "--pause-exit":

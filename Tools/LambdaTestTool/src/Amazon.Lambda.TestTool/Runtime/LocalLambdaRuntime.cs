@@ -41,25 +41,20 @@ namespace Amazon.Lambda.TestTool.Runtime
             this.AWSService = awsService;
         }
 
-        public static ILocalLambdaRuntime Initialize(string directory)
+        public static ILocalLambdaRuntime Initialize(string directory, string lambdasDllFile = null)
         {
-            return Initialize(directory, new AWSServiceImpl());
+            return Initialize(directory, lambdasDllFile, new AWSServiceImpl());
         }
 
-        public static ILocalLambdaRuntime Initialize(string directory, IAWSService awsService)
+        public static ILocalLambdaRuntime Initialize(string directory, string lambdasDllFile, IAWSService awsService)
         {
             if (!Directory.Exists(directory))
             {
                 throw new DirectoryNotFoundException($"Directory containing built Lambda project does not exist {directory}");
             }
 
-            var depsFile = Directory.GetFiles(directory, "*.deps.json").FirstOrDefault();
-            if (depsFile == null)
-            {
-                throw new Exception($"Failed to find a deps.json file in the specified directory ({directory})");
-            }
+            var fileName = getDepsFilename(directory, lambdasDllFile);
 
-            var fileName = depsFile.Substring(0, depsFile.Length - ".deps.json".Length) + ".dll";
             if (!File.Exists(fileName))
             {
                 throw new Exception($"Failed to find Lambda project entry assembly in the specified directory ({directory})");
@@ -70,6 +65,21 @@ namespace Amazon.Lambda.TestTool.Runtime
 
             var runtime = new LocalLambdaRuntime(resolver, directory, awsService);
             return runtime;
+        }
+
+        private static string getDepsFilename(string directory, string lambdasDllFile)
+        {
+            if (!string.IsNullOrWhiteSpace(lambdasDllFile))
+                return Path.Join(directory, lambdasDllFile);
+
+            var depsFile = Directory.GetFiles(directory, "*.deps.json").FirstOrDefault();
+
+            if (depsFile == null)
+            {
+                throw new Exception($"Failed to find a deps.json file in the specified directory ({directory})");
+            }
+
+            return depsFile.Substring(0, depsFile.Length - ".deps.json".Length) + ".dll";
         }
 
         public IList<LambdaFunction> LoadLambdaFunctions(IList<LambdaFunctionInfo> configInfos)
