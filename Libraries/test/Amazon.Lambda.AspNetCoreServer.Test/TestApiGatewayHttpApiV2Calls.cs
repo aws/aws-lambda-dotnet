@@ -235,6 +235,29 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("TestValue3", response.Body);
         }
 
+        [Fact]
+        public async Task TestTraceIdSetFromLambdaContext()
+        {
+            try
+            {
+                Environment.SetEnvironmentVariable("_X_AMZN_TRACE_ID", "MyTraceId-1");
+                var response = await this.InvokeAPIGatewayRequest("traceid-get-httpapi-v2-request.json");
+                Assert.Equal("MyTraceId-1", response.Body);
+
+                Environment.SetEnvironmentVariable("_X_AMZN_TRACE_ID", "MyTraceId-2");
+                response = await this.InvokeAPIGatewayRequest("traceid-get-httpapi-v2-request.json");
+                Assert.Equal("MyTraceId-2", response.Body);
+
+                Environment.SetEnvironmentVariable("_X_AMZN_TRACE_ID", null);
+                response = await this.InvokeAPIGatewayRequest("traceid-get-httpapi-v2-request.json");
+                Assert.True(!string.IsNullOrEmpty(response.Body) && !string.Equals(response.Body, "MyTraceId-2"));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("_X_AMZN_TRACE_ID", null);
+            }
+        }
+
         private async Task<APIGatewayHttpApiV2ProxyResponse> InvokeAPIGatewayRequest(string fileName)
         {
             return await InvokeAPIGatewayRequestWithContent(new TestLambdaContext(), GetRequestContent(fileName));
