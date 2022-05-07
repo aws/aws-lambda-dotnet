@@ -12,8 +12,9 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.TestUtilities;
-
+using Microsoft.AspNetCore.Http.Features;
 using TestWebApp;
 
 using Xunit;
@@ -425,6 +426,20 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
             Assert.Equal(200, response.StatusCode);
             Assert.Equal("Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope", response.Body);
+        }
+
+        /// <summary>
+        /// This test is ensuring when we don't use the Lambda trace id and fallback to ASP.NET Core trace id generator
+        /// logic we keep returning the same value each time. This was addressing a PR comment for the trace id PR.
+        /// </summary>
+        [Fact]
+        public void EnsureTraceIdStaysTheSame()
+        {
+            var features = new InvokeFeatures() as IHttpRequestIdentifierFeature;
+
+            var traceId1 = features.TraceIdentifier;
+            var traceId2 = features.TraceIdentifier;
+            Assert.Equal(traceId1, traceId2);
         }
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
