@@ -1,7 +1,9 @@
 ### Release 2022-05-06
 * **Amazon.Lambda.RuntimeSupport (1.8.0)**
   * Logging messages with newlines will now be a single CloudWatch Log record instead of a record for each line. Note, container based Lambda functions will continue to have a separate record per line.
-
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.2.0)**
+  * Updated dependency on Amazon.Lambda.RuntimeSupport to version 1.8.0
+  
 ### Release 2022-05-02
 * **Amazon.Lambda.KafkaEvents (1.0.1)**
   * Corrected the return type of Partition property in KafkaEventRecord.
@@ -46,7 +48,7 @@
   * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1103) Support image/x-icon as base64. Thanks [Martin Costello](https://github.com/martincostello)  
   * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1102) Switch to TryGetValue for minor perf improvement. Thanks [Martin Costello](https://github.com/martincostello)    
 * **Amazon.Lambda.AspNetCoreServer.Hosting (1.1.0)**
-  * Updated dependency on Amazon.Lambda.AspNetCoreServer to 
+  * Updated dependency on Amazon.Lambda.AspNetCoreServer to 7.1.0
 * **Amazon.Lambda.TestTool-3.1 (0.12.1)**
   * Fix issue with sending large function input events being truncated.
   * Pull Request [#1098](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)
