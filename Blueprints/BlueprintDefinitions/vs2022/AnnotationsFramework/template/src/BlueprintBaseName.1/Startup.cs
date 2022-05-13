@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace LambdaCalculator
+namespace BlueprintBaseName._1
 {
     [Amazon.Lambda.Annotations.LambdaStartup]
     public class Startup

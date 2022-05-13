@@ -1,3 +1,33 @@
+### Release 2022-05-06
+* **Amazon.Lambda.RuntimeSupport (1.8.0)**
+  * Logging messages with newlines will now be a single CloudWatch Log record instead of a record for each line. Note, container based Lambda functions will continue to have a separate record per line.
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.2.0)**
+  * Updated dependency on Amazon.Lambda.RuntimeSupport to version 1.8.0
+  
+### Release 2022-05-02
+* **Amazon.Lambda.KafkaEvents (1.0.1)**
+  * Corrected the return type of Partition property in KafkaEventRecord.
+* **Amazon.Lambda.TestTool-3.1 (0.12.2)**
+  * Corrected the return type of partition property for Kafka event.
+  * Added test request for Application Load Balancer.
+* **Amazon.Lambda.TestTool-5.0 (0.12.2)**
+  * Corrected the return type of partition property for Kafka event.
+  * Added test request for Application Load Balancer.
+* **Amazon.Lambda.TestTool-6.0 (0.12.2)**
+  * Corrected the return type of partition property for Kafka event.
+  * Added test request for Application Load Balancer.
+* **Amazon.Lambda.Annotations (0.5.1-preview)**
+  * Pull Request [#1101](https://github.com/aws/aws-lambda-dotnet/pull/1101) Error message for missing Amazon.Lambda.APIGatewayEvents package.
+  * Fixed bug with Amazon.Lambda.Annotations not correctly using assembly name for computing function handler string.
+  * Fix issue with naming collisions for request and context with Amazon.Lambda.Annotations.
+* **Amazon.Lambda.MQEvents (1.0.0)**
+  * New package that contains classes that can be used as input types for Lambda functions that process Amazon ActiveMQ and RabbitMQ events.
+* **Amazon.Lambda.APIGatewayEvents (2.4.1)**
+  * [Breaking Change] Corrected property name ConnectionAt to ConnectedAt in APIGatewayProxyRequest.ProxyRequestContext class.
+* **Amazon.Lambda.DynamoDBEvents (2.1.1)**
+  * Update AWSSDK.DynamoDBv2 reference to version 3.7.3.24.
+  * Update blueprint definitions to reference new Amazon.Lambda.DynamoDBEvents version 2.1.1 and AWSSDK.DynamoDBv2 version 3.7.3.24.
+
 ### Release 2022-03-29
 * **AWSLambdaPSCore PowerShell Module (3.0.1)**
   * Pull Request [#1096](https://github.com/aws/aws-lambda-dotnet/pull/1096) Fix error message when .NET SDK found that is below .NET 6 requirement. Thanks [Lachlan Blake](https://github.com/Otimie)
@@ -18,7 +48,7 @@
   * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1103) Support image/x-icon as base64. Thanks [Martin Costello](https://github.com/martincostello)  
   * Pull Request [#1103](https://github.com/aws/aws-lambda-dotnet/pull/1102) Switch to TryGetValue for minor perf improvement. Thanks [Martin Costello](https://github.com/martincostello)    
 * **Amazon.Lambda.AspNetCoreServer.Hosting (1.1.0)**
-  * Updated dependency on Amazon.Lambda.AspNetCoreServer to 
+  * Updated dependency on Amazon.Lambda.AspNetCoreServer to 7.1.0
 * **Amazon.Lambda.TestTool-3.1 (0.12.1)**
   * Fix issue with sending large function input events being truncated.
   * Pull Request [#1098](https://github.com/aws/aws-lambda-dotnet/pull/1098) Add HTTP API sample request. Thanks [Martin Costello](https://github.com/martincostello)

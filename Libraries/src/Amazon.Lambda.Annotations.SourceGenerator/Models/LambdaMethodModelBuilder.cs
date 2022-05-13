@@ -21,6 +21,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 ReturnsVoidOrTask = lambdaMethodSymbol.ReturnsVoid || lambdaMethodSymbol.ReturnType.Equals(context.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task"), SymbolEqualityComparer.Default),
                 Parameters = ParameterModelBuilder.Build(lambdaMethodSymbol, context),
                 Name = lambdaMethodSymbol.Name,
+                ContainingAssembly = lambdaMethodSymbol.ContainingAssembly.Name,
                 ContainingNamespace = lambdaMethodSymbol.ContainingNamespace.ToDisplayString(),
                 Events = EventTypeBuilder.Build(lambdaMethodSymbol, context),
                 ContainingType = TypeModelBuilder.Build(lambdaMethodSymbol.ContainingType, context),

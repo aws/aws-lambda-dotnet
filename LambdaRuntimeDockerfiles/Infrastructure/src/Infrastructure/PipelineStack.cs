@@ -30,7 +30,7 @@ namespace Infrastructure
     {
         private const string PowershellArm64 = "7.1.3 powershell-7.1.3-linux-arm64.tar.gz";
         private const string PowershellAmd64 = "7.1.3 powershell-7.1.3-linux-x64.tar.gz";
-        private const string BaseImageMultiArch = "base-image-multi-arch";
+        private const string BaseImageMultiArch = "contributed-base-image-multi-arch";
 
         internal PipelineStack(
             Construct scope, 
