@@ -14,27 +14,21 @@ namespace Amazon.Lambda.LexV2Events
         /// The text of the message.
         /// </summary>
         [DataMember(Name = "content", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("content")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("content")]
         public string Content { get; set; }
 
         /// <summary>
         /// Indicates the type of response. Could be one of <c>CustomPayload</c>, <c>ImageResponseCard</c>, <c>PlainText</c> or <c>SSML</c>.
         /// </summary>
         [DataMember(Name = "contentType", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("contentType")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("contentType")]
         public string ContentType { get; set; }
 
         /// <summary>
         /// A card that is shown to the user by a messaging platform. You define the contents of the card, the card is displayed by the platform.
         /// </summary>
         [DataMember(Name = "imageResponseCard", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("imageResponseCard")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("imageResponseCard")]
         public LexV2ImageResponseCard ImageResponseCard { get; set; }
     }
 
@@ -49,36 +43,28 @@ namespace Amazon.Lambda.LexV2Events
         /// A list of buttons that should be displayed on the response card. The arrangement of the buttons is determined by the platform that displays the button.
         /// </summary>
         [DataMember(Name = "buttons", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("buttons")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("buttons")]
         public IList<LexV2Button> Buttons { get; set; }
 
         /// <summary>
         /// TheThe URL of an image to display on the response card. The image URL must be publicly available so that the platform displaying the response card has access to the image.
         /// </summary>
         [DataMember(Name = "imageUrl", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("imageUrl")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("imageUrl")]
         public string ImageUrl { get; set; }
 
         /// <summary>
         /// The subtitle to display on the response card. The format of the subtitle is determined by the platform displaying the response card.
         /// </summary>
         [DataMember(Name = "subtitle", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("subtitle")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("subtitle")]
         public string Subtitle { get; set; }
 
         /// <summary>
         /// The title to display on the response card. The format of the title is determined by the platform displaying the response card.
         /// </summary>
         [DataMember(Name = "title", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("title")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("title")]
         public string Title { get; set; }
     }
 
@@ -93,18 +79,14 @@ namespace Amazon.Lambda.LexV2Events
         /// The text that is displayed on the button.
         /// </summary>
         [DataMember(Name = "text", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("text")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("text")]
         public string Text { get; set; }
 
         /// <summary>
         /// The value returned to Amazon Lex V2 when a user chooses the button.
         /// </summary>
         [DataMember(Name = "value", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("value")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("value")]
         public string Value { get; set; }
     }
 }

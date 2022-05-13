@@ -15,9 +15,7 @@ namespace Amazon.Lambda.LexV2Events
         /// The current state of the conversation with the user. The actual contents of the structure depends on the type of dialog action.
         /// </summary>
         [DataMember(Name = "sessionState", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("sessionState")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("sessionState")]
         public LexV2SessionState SessionState { get; set; }
 
         /// <summary>
@@ -25,18 +23,14 @@ namespace Amazon.Lambda.LexV2Events
         /// If you don't supply messages, Amazon Lex V2 uses the appropriate message defined when the bot was created.
         /// </summary>
         [DataMember(Name = "messages", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("messages")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("messages")]
         public IList<LexV2Message> Messages { get; set; }
 
         /// <summary>
         /// Request-specific attributes that the client sends in the request.
         /// </summary>
         [DataMember(Name = "requestAttributes", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("requestAttributes")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("requestAttributes")]
         public IDictionary<string, string> RequestAttributes { get; set; }
     }
 }
