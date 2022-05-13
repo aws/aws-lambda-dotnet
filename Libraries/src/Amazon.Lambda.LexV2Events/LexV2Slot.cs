@@ -15,27 +15,21 @@ namespace Amazon.Lambda.LexV2Events
         /// When the value is Scalar, it indicates that the value field contains a single value.
         /// </summary>
         [DataMember(Name = "shape", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("shape")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("shape")]
         public string Shape { get; set; }
 
         /// <summary>
         /// The current value of the slot.
         /// </summary>
         [DataMember(Name = "value", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("value")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("value")]
         public LexV2SlotValue Value { get; set; }
 
         /// <summary>
         /// The resolutions array contains a list of additional values recognized for the slot.
         /// </summary> 
         [DataMember(Name = "values", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("values")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("values")]
         public IList<LexV2Slot> Values { get; set; }
     }
 
@@ -50,27 +44,21 @@ namespace Amazon.Lambda.LexV2Events
         /// The value that Amazon Lex V2 determines for the slot. The actual value depends on the setting of the value selection strategy for the bot.
         /// </summary>
         [DataMember(Name = "interpretedValue", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("interpretedValue")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("interpretedValue")]
         public string InterpretedValue { get; set; }
 
         /// <summary>
         /// The text of the utterance from the user that was entered for the slot.
         /// </summary>
         [DataMember(Name = "originalValue", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("originalValue")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("originalValue")]
         public string OriginalValue { get; set; }
 
         /// <summary>
         /// A list of additional values that have been recognized for the slot.
         /// </summary>
         [DataMember(Name = "resolvedValues", EmitDefaultValue = false)]
-        #if NETCOREAPP3_1
-            [System.Text.Json.Serialization.JsonPropertyName("resolvedValues")]
-        #endif
+        [System.Text.Json.Serialization.JsonPropertyName("resolvedValues")]
         public IList<string> ResolvedValues { get; set; }
     }
 }
