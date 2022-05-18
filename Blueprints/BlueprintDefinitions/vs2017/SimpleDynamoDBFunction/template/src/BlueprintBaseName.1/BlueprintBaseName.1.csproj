@@ -10,6 +10,6 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="2.0.0" />
     <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="2.1.1" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.3.24" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.3.35" />
   </ItemGroup>
 </Project>
