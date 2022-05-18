@@ -1,3 +1,10 @@
+### Release 2022-05-18
+* **Amazon.Lambda.AspNetCoreServer (7.2.0)**
+  * Set the HttpContext.TraceIdentifier to the trace id for the Lambda invocation
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.3.0)**
+  * Updated dependency on Amazon.Lambda.AspNetCoreServer to version 7.2.0
+  
+  
 ### Release 2022-05-06
 * **Amazon.Lambda.RuntimeSupport (1.8.0)**
   * Logging messages with newlines will now be a single CloudWatch Log record instead of a record for each line. Note, container based Lambda functions will continue to have a separate record per line.
