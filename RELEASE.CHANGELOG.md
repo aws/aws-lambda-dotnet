@@ -1,3 +1,7 @@
+### Release 2022-05-25
+* **Amazon.Lambda.LexV2Events (1.0.0)**
+  * New package that contains classes that can be used as input and response types for Lambda functions that process Amazon Lex V2 event.
+
 ### Release 2022-05-18
 * **Amazon.Lambda.AspNetCoreServer (7.2.0)**
   * Set the HttpContext.TraceIdentifier to the trace id for the Lambda invocation
