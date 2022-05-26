@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Buffers;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Concurrent;
 
@@ -22,7 +23,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         public static StreamWriter GetWriter(string fileDescriptorId)
         {
             // AutoFlush must be turned out otherwise the StreamWriter might not send the data to the stream before the Lambda function completes.
-            var writer = _writers.GetOrAdd(fileDescriptorId, (x) => new StreamWriter(new FileDescriptorLogStream(fileDescriptorId)) { AutoFlush = true });
+            // Set the buffer size to the same max size as CloudWatch Logs records.
+            var writer = _writers.GetOrAdd(fileDescriptorId, (x) => new StreamWriter(new FileDescriptorLogStream(fileDescriptorId), Encoding.UTF8, 256 * 1024) { AutoFlush = true });
             return writer;
         }
 
