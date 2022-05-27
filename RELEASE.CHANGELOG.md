@@ -1,3 +1,9 @@
+### Release 2022-05-26
+* **Amazon.Lambda.RuntimeSupport (1.8.1)**
+  * Fixed issue when log messages were larger then 1K they would be broken up over multiple CloudWatch Log records.
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.3.1)**
+  * Updated dependency on Amazon.Lambda.RuntimeSupport to version 1.8.1
+
 ### Release 2022-05-25
 * **Amazon.Lambda.LexV2Events (1.0.0)**
   * New package that contains classes that can be used as input and response types for Lambda functions that process Amazon Lex V2 event.
