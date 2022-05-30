@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Amazon.Lambda.CloudWatchEvents.S3Events
 {
     /// <summary>
@@ -25,7 +23,9 @@ namespace Amazon.Lambda.CloudWatchEvents.S3Events
         /// <summary>
         /// The ID of the API request.
         /// </summary>
-        [JsonPropertyName("request-id")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("request-id")]
+#endif
         public string RequestId { get; set; }
 
         /// <summary>
@@ -36,7 +36,9 @@ namespace Amazon.Lambda.CloudWatchEvents.S3Events
         /// <summary>
         /// The source IP of the API request.
         /// </summary>
-        [JsonPropertyName("source-ip-address")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("source-ip-address")]
+#endif
         public string SourceIpAddress { get; set; }
 
         /// <summary>

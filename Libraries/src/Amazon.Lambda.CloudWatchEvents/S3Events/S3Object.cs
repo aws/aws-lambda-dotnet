@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Amazon.Lambda.CloudWatchEvents.S3Events
 {
     /// <summary>
@@ -25,7 +23,9 @@ namespace Amazon.Lambda.CloudWatchEvents.S3Events
         /// <summary>
         /// The version ID of the object.
         /// </summary>
-        [JsonPropertyName("version-id")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("version-id")]
+#endif
         public string VersionId { get; set; }
 
         /// <summary>
