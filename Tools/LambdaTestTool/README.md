@@ -108,7 +108,7 @@ These options are valid in the no web interface mode.
 </pre>
 
 For command line arguments not set the defaults and config file will be used to determine the .NET Lambda code to run. For example if you just use the <b>--no-ui</b> argument then the
-<b>aws-lambda-tools-defaults.json</b> will be searched for and used if found. The tool when then use the function handler, profile and region specified in the configuration file to run
+<b>aws-lambda-tools-defaults.json</b> will be searched for and used if found. The tool will then use the function handler, profile and region specified in the configuration file to run
 .NET Lambda code.
 
 Here is an example of a <b>launchSettings.json</b> file configured to use this tool without the web interface. Only <b>--no-ui</b> and <b>--payload</b> are set turning off the web interface
