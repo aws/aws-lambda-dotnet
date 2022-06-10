@@ -189,6 +189,23 @@
           ]
         }
       }
+    },
+    "TestServerlessAppSimpleCalculatorSqsMessageEventHandlerGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestProject::TestServerlessApp.SimpleCalculator_SqsMessageEventHandler_Generated::SqsMessageEventHandler"
+      }
     }
   }
 }

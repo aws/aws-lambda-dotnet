@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Annotations;
+using Amazon.Lambda.SQSEvents;
 using TestServerlessApp.Services;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
@@ -84,6 +85,13 @@ namespace TestServerlessApp
             }
 
             return nums;
+        }
+
+        [LambdaFunction]
+        [SqsQueue]
+        public Task SqsMessageEventHandler(SQSEvent.SQSMessage sqsMessage, ILambdaContext lambdaContext)
+        {
+            return Task.CompletedTask;
         }
 
         public class RandomsInput
