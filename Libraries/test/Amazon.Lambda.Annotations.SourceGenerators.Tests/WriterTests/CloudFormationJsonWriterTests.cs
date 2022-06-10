@@ -250,7 +250,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "MethodNotCreatedFromAnnotationsPackage", 45, 512, null, "Policy1, Policy2, Policy3");
             var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
-            var report = GetAnnotationReport(new() {lambdaFunctionModel});
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
             cloudFormationJsonWriter.ApplyReport(report);
@@ -376,6 +376,40 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Null(propertiesToken["ImageConfig"]);
         }
 
+        [Fact]
+        public void AddQueueToEmptyTemplate()
+        {
+            const string queueLogicalId = "MyQueue";
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var queueModel = GetQueueModel(queueLogicalId);
+            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
+            var report = GetAnnotationReport(new List<IQueueSerializable>() { queueModel });
+
+            // ACT
+            cloudFormationJsonWriter.ApplyReport(report);
+
+            // ASSERT
+            var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            var queueToken = rootToken["Resources"][queueLogicalId];
+            var propertiesToken = queueToken["Properties"];
+
+            Assert.Equal("2010-09-09", rootToken["AWSTemplateFormatVersion"]);
+            Assert.Equal("AWS::Serverless-2016-10-31", rootToken["Transform"]);
+
+            Assert.Equal("AWS::SQS::Queue", queueToken["Type"]);
+            Assert.Equal("Amazon.Lambda.Annotations", queueToken["Metadata"]["Tool"]);
+
+            //Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", propertiesToken["Handler"]);
+            //Assert.Equal(512, propertiesToken["MemorySize"]);
+            //Assert.Equal(45, propertiesToken["Timeout"]);
+            //Assert.Equal(new List<string> { "AWSLambdaBasicExecutionRole" }, propertiesToken["Policies"].ToObject<List<string>>());
+            //Assert.Equal("Zip", propertiesToken["PackageType"]);
+            //Assert.Equal(".", propertiesToken["CodeUri"]);
+            //Assert.Null(propertiesToken["ImageUri"]);
+            //Assert.Null(propertiesToken["ImageConfig"]);
+        }
+
         private IFileManager GetMockFileManager(string originalContent)
         {
             var mockFileManager = new InMemoryFileManager();
@@ -395,6 +429,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 Role = role
             };
         }
+        private QueueTest GetQueueModel(string queueLogicalId)
+        {
+            return new QueueTest() { LogicalId = queueLogicalId, QueueName = "QueueName"};
+        }
 
         private AnnotationReport GetAnnotationReport(List<ILambdaFunctionSerializable> lambdaFunctionModels)
         {
@@ -406,6 +444,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             foreach (var model in lambdaFunctionModels)
             {
                 annotationReport.LambdaFunctions.Add(model);
+            }
+
+            return annotationReport;
+        }
+        private AnnotationReport GetAnnotationReport(List<IQueueSerializable> queueModels)
+        {
+            var annotationReport = new AnnotationReport
+            {
+                CloudFormationTemplatePath = ServerlessTemplateFilePath,
+                ProjectRootDirectory = ProjectRootDirectory
+            };
+            foreach (var model in queueModels)
+            {
+                annotationReport.Queues.Add(model);
             }
 
             return annotationReport;
@@ -422,6 +474,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
             public string SourceGeneratorVersion { get; set; }
             public LambdaPackageType PackageType { get; set; } = LambdaPackageType.Zip;
+        }
+
+        public class QueueTest : IQueueSerializable
+        {
+            public string LogicalId { get; set; }
+            public string QueueName { get; set; }
+            public string SourceGeneratorVersion { get; set; }
         }
     }
 }
