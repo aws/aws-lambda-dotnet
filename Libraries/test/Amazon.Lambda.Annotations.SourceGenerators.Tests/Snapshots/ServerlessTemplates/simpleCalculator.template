@@ -206,6 +206,15 @@
         "PackageType": "Zip",
         "Handler": "TestProject::TestServerlessApp.SimpleCalculator_SqsMessageEventHandler_Generated::SqsMessageEventHandler"
       }
+    },
+    "SqsMessageEventHandlerQueueLogicalId": {
+      "Type": "AWS::SQS::Queue",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "QueueName": "SqsMessageEventHandlerQueueName"
+      }
     }
   }
 }

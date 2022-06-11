@@ -480,6 +480,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         {
             public string LogicalId { get; set; }
             public string QueueName { get; set; }
+            public string SourceGeneratorVersion { get; set; }
         }
     }
 }

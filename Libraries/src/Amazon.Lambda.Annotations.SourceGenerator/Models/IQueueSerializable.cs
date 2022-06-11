@@ -8,5 +8,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     {
         string LogicalId { get; set; }
         string QueueName { get; set; }
+        string SourceGeneratorVersion { get; set; }
     }
 }

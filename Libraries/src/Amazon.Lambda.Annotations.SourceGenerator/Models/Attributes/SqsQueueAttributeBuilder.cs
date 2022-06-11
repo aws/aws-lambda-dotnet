@@ -9,10 +9,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     {
         public static SqsMessageAttribute Build(AttributeData att)
         {
-            if (att.ConstructorArguments.Length != 2)
-            {
-                throw new NotSupportedException($"{TypeFullNames.RestApiAttribute} must have constructor with 2 arguments.");
-            }
+            //if (att.ConstructorArguments.Length != 2)
+            //{
+            //    throw new NotSupportedException($"{TypeFullNames.RestApiAttribute} must have constructor with 2 arguments.");
+            //}
 
             //var method = (LambdaHttpMethod)att.ConstructorArguments[0].Value;
             //var template = att.ConstructorArguments[1].Value as string;

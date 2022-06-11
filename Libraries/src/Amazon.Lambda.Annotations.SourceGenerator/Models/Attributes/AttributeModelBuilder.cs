@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
@@ -10,6 +11,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     {
         public static AttributeModel Build(AttributeData att, GeneratorExecutionContext context)
         {
+            Debug.WriteLine("Build:"+att.AttributeClass.Name);
             if (att.AttributeClass == null)
             {
                 throw new NotSupportedException($"An attribute must have an attribute class. Attribute class is not found for {att}");
@@ -70,7 +72,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
                 };
             }
-            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.SQSEventSQSMessage), SymbolEqualityComparer.Default))
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.SqsMessageAttribute), SymbolEqualityComparer.Default))
             {
                 var data = SqsQueueAttributeBuilder.Build(att);
                 model = new AttributeModel<SqsMessageAttribute>
