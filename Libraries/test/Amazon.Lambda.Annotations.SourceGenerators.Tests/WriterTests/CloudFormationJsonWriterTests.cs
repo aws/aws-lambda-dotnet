@@ -379,9 +379,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         [Fact]
         public void AddQueueToEmptyTemplate()
         {
+            const string queueLogicalId = "MyQueue";
             // ARRANGE
             var mockFileManager = GetMockFileManager(string.Empty);
-            var queueModel = GetQueueModel();
+            var queueModel = GetQueueModel(queueLogicalId);
             var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new List<IQueueSerializable>() { queueModel });
 
@@ -390,7 +391,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 
             // ASSERT
             var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
-            var queueToken = rootToken["Resources"]["TestQueue"];
+            var queueToken = rootToken["Resources"][queueLogicalId];
             var propertiesToken = queueToken["Properties"];
 
             Assert.Equal("2010-09-09", rootToken["AWSTemplateFormatVersion"]);
@@ -428,9 +429,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 Role = role
             };
         }
-        private QueueTest GetQueueModel()
+        private QueueTest GetQueueModel(string queueLogicalId)
         {
-            return new QueueTest() { Name = "TestQueue", QueueName = "QueueName"};
+            return new QueueTest() { LogicalId = queueLogicalId, QueueName = "QueueName"};
         }
 
         private AnnotationReport GetAnnotationReport(List<ILambdaFunctionSerializable> lambdaFunctionModels)
@@ -477,7 +478,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 
         public class QueueTest : IQueueSerializable
         {
-            public string Name { get; set; }
+            public string LogicalId { get; set; }
             public string QueueName { get; set; }
         }
     }

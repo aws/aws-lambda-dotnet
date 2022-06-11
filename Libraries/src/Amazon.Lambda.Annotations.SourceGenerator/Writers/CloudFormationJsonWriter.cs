@@ -54,7 +54,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 if (!ShouldProcessQueue(queueModelSerializable))
                     continue;
                 ProcessQueue(queueModelSerializable, relativeProjectUri);
-                processedQueues.Add(queueModelSerializable.Name);
+                processedQueues.Add(queueModelSerializable.LogicalId);
 
             }
 
@@ -81,7 +81,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         }
         private bool ShouldProcessQueue(IQueueSerializable queue)
         {
-            var queuePath = $"Resources.{queue.Name}";
+            var queuePath = $"Resources.{queue.LogicalId}";
 
             if (!_jsonWriter.Exists(queuePath))
                 return true;
@@ -103,7 +103,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         }
         private void ProcessQueue(IQueueSerializable queue, string relativeProjectUri)
         {
-            var queuePath = $"Resources.{queue.Name}";
+            var queuePath = $"Resources.{queue.LogicalId}";
             var propertiesPath = $"{queuePath}.Properties";
 
             if (!_jsonWriter.Exists(queuePath))
