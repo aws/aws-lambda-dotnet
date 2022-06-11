@@ -52,6 +52,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Remove="Snapshots\ServerlessTemplates\messaging.template" />
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
     </ItemGroup>
 

@@ -1,0 +1,82 @@
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Text;
+using Amazon.Lambda.Core;
+
+namespace TestServerlessApp
+{
+    public class Messaging_SayHello_Generated
+    {
+        private readonly Messaging messaging;
+
+        public Messaging_SayHello_Generated()
+        {
+            SetExecutionEnvironment();
+            messaging = new Messaging();
+        }
+
+        public Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse SayHello(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
+        {
+            var validationErrors = new List<string>();
+
+            var firstNames = default(System.Collections.Generic.IEnumerable<string>);
+            if (__request__.MultiValueQueryStringParameters?.ContainsKey("names") == true)
+            {
+                firstNames = __request__.MultiValueQueryStringParameters["names"]
+                    .Select(q =>
+                    {
+                        try
+                        {
+                            return (string)Convert.ChangeType(q, typeof(string));
+                        }
+                        catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                        {
+                            validationErrors.Add($"Value {q} at 'names' failed to satisfy constraint: {e.Message}");
+                            return default;
+                        }
+                    })
+                    .ToList();
+            }
+
+            // return 400 Bad Request if there exists a validation error
+            if (validationErrors.Any())
+            {
+                return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
+                {
+                    Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "ValidationException"}
+                    },
+                    StatusCode = 400
+                };
+            }
+
+            messaging.SayHello(firstNames, __request__, __context__);
+
+            return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
+            {
+                StatusCode = 200
+            };
+        }
+
+        private static void SetExecutionEnvironment()
+        {
+            const string envName = "AWS_EXECUTION_ENV";
+
+            var envValue = new StringBuilder();
+
+            // If there is an existing execution environment variable add the annotations package as a suffix.
+            if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envName)))
+            {
+                envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
+            }
+
+            envValue.Append("amazon-lambda-annotations_0.5.1.0");
+
+            Environment.SetEnvironmentVariable(envName, envValue.ToString());
+        }
+    }
+}

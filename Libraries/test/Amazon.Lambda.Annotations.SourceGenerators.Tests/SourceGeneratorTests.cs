@@ -11,7 +11,7 @@ using VerifyCS = Amazon.Lambda.Annotations.SourceGenerators.Tests.CSharpSourceGe
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 {
-    public class SourceGeneratorTests
+    public partial class SourceGeneratorTests
     {
         [Fact]
         public async Task Greeter()

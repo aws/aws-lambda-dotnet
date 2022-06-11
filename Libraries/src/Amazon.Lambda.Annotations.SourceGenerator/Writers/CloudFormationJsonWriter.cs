@@ -316,7 +316,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         }
         private void RemoveOrphanedQueues(HashSet<string> processedQueues)
         {
-            return;
             var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
             if (resourceToken == null)
                 return;
@@ -328,7 +327,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 var type = _jsonWriter.GetToken($"{resourcePath}.Type", string.Empty);
                 var creationTool = _jsonWriter.GetToken($"{resourcePath}.Metadata.Tool", string.Empty);
 
-                if (string.Equals(type.ToObject<string>(), "AWS::Serverless::Function", StringComparison.Ordinal)
+                if (string.Equals(type.ToObject<string>(), "AWS::SQS::Queue", StringComparison.Ordinal)
                     && string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal)
                     && !processedQueues.Contains(resource.Name))
                 {
