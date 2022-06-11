@@ -7,7 +7,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
 {
     internal class SqsQueueAttributeBuilder
     {
-        public static SqsQueueAttribute Build(AttributeData att)
+        public static SqsMessageAttribute Build(AttributeData att)
         {
             if (att.ConstructorArguments.Length != 2)
             {
@@ -17,7 +17,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             //var method = (LambdaHttpMethod)att.ConstructorArguments[0].Value;
             //var template = att.ConstructorArguments[1].Value as string;
 
-            var data = new SqsQueueAttribute();
+            var data = new SqsMessageAttribute();
 
             return data;
         }

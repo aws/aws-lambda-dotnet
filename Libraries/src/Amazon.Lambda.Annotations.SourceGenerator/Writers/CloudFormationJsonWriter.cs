@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
@@ -205,6 +206,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     case AttributeModel<RestApiAttribute> restApiAttributeModel:
                         eventName = ProcessRestApiAttribute(lambdaFunction, restApiAttributeModel.Data);
                         currentSyncedEvents.Add(eventName);
+                        break;
+                    case AttributeModel<SqsMessageAttribute> sqsAttributeModel:
+                        Debugger.Break();
                         break;
                 }
             }

@@ -16,6 +16,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string MemoryStream = "System.IO.MemoryStream";
         public const string HttpApiVersion = "Amazon.Lambda.Annotations.HttpApiVersion";
         public const string LambdaFunctionAttribute = "Amazon.Lambda.Annotations.LambdaFunctionAttribute";
+        public const string SQSEventSQSMessage = "Amazon.Lambda.SQSEvents.SQSMessage";
         public const string FromQueryAttribute = "Amazon.Lambda.Annotations.FromQueryAttribute";
         public const string FromHeaderAttribute = "Amazon.Lambda.Annotations.FromHeaderAttribute";
         public const string FromBodyAttribute = "Amazon.Lambda.Annotations.FromBodyAttribute";

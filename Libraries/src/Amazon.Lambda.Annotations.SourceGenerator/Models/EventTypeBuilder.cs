@@ -22,6 +22,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 {
                     events.Add(EventType.API);
                 }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.SQSEventSQSMessage)
+                {
+                    events.Add(EventType.SQS);
+                }
             }
 
             return events;

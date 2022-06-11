@@ -104,6 +104,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         continue;
                     }
 
+
+                    foreach (var lambdaMethodParameter in model.LambdaMethod.Parameters)
+                    {
+                        Debug.WriteLine(lambdaMethodParameter.Type.FullName);
+                    }
+
                     var template = new LambdaFunctionTemplate(model);
                     var sourceText = template.TransformText().ToEnvironmentLineEndings();
                     context.AddSource($"{model.GeneratedMethod.ContainingType.Name}.g.cs", SourceText.From(sourceText, Encoding.UTF8, SourceHashAlgorithm.Sha256));
