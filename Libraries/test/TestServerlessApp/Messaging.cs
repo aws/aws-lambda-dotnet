@@ -45,7 +45,7 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction]
-        public Task MessageHandler([SqsMessage] SQSEvent.SQSMessage message, ILambdaContext context)
+        public Task MessageHandler([SqsMessage(QueueName = "MyMessageQueue")] SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;
         }

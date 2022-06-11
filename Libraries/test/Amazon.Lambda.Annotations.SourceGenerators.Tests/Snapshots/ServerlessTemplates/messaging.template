@@ -85,13 +85,13 @@
         "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandler_Generated::MessageHandler"
       }
     },
-    "MessageHandlerQueueLogicalId": {
+    "QueueForMessageHandler": {
       "Type": "AWS::SQS::Queue",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "QueueName": "MessageHandlerQueueName"
+        "QueueName": "MyMessageQueue"
       }
     }
   }

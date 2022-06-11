@@ -12,10 +12,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public static SqsMessageModel Build(IMethodSymbol lambdaMethodSymbol, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context, AttributeModel sqsMessageAttribute)
         {
             var lambdaMethod = LambdaMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, context);
+            AttributeModel<SqsMessageAttribute> sqsAttributeModel = sqsMessageAttribute as AttributeModel<SqsMessageAttribute>;
             var model = new SqsMessageModel()
             {
-                QueueName = lambdaMethodSymbol.Name + "QueueName",
-                LogicalId = lambdaMethodSymbol.Name + "QueueLogicalId",
+                QueueName = sqsAttributeModel?.Data?.QueueName,
+                LogicalId = sqsAttributeModel?.Data?.LogicalId ?? "QueueFor" + lambdaMethodSymbol.Name,
                 SourceGeneratorVersion = context.Compilation
                     .ReferencedAssemblyNames.FirstOrDefault(x => string.Equals(x.Name, "Amazon.Lambda.Annotations"))
                     ?.Version.ToString()

@@ -18,6 +18,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             //var template = att.ConstructorArguments[1].Value as string;
 
             var data = new SqsMessageAttribute();
+            foreach (var attNamedArgument in att.NamedArguments)
+            {
+                switch (attNamedArgument.Key)
+                {
+                    case nameof(ISqsMessage.QueueName):
+                        data.QueueName = attNamedArgument.Value.Value.ToString();
+                        break;
+                }
+            }
 
             return data;
         }
