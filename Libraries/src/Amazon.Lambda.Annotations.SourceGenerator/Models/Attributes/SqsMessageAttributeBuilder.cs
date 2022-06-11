@@ -25,6 +25,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.QueueName):
                         data.QueueName = attNamedArgument.Value.Value.ToString();
                         break;
+                    case nameof(ISqsMessage.LogicalId):
+                        data.LogicalId = attNamedArgument.Value.Value.ToString();
+                        break;
                 }
             }
 
