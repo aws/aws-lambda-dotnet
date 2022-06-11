@@ -67,7 +67,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var expectedPiGenerated = File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Pi_Generated.g.cs")).ToEnvironmentLineEndings();
             var expectedRandomGenerated = File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Random_Generated.g.cs")).ToEnvironmentLineEndings();
             var expectedRandomsGenerated = File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_Randoms_Generated.g.cs")).ToEnvironmentLineEndings();
-            var expectedQueueGenerated = File.ReadAllText(Path.Combine("Snapshots", "SimpleCalculator_SqsMessageEventHandler_Generated.g.cs")).ToEnvironmentLineEndings();
 
             await new VerifyCS.Test
             {
@@ -119,13 +118,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             typeof(SourceGenerator.Generator),
                             "SimpleCalculator_Randoms_Generated.g.cs",
                             SourceText.From(expectedRandomsGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
-                        ),
-                        (
-                            typeof(SourceGenerator.Generator),
-                            "SimpleCalculator_SqsMessageEventHandler_Generated.g.cs",
-                            SourceText.From(expectedQueueGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
-                        ),
-                        
+                        )
                     },
                     ExpectedDiagnostics =
                     {
@@ -136,8 +129,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_Pi_Generated.g.cs", expectedPiGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_Random_Generated.g.cs", expectedRandomGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_Randoms_Generated.g.cs", expectedRandomsGenerated),
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_SqsMessageEventHandler_Generated.g.cs", expectedQueueGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     }
                 }
             }.RunAsync();

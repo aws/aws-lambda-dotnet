@@ -87,13 +87,6 @@ namespace TestServerlessApp
             return nums;
         }
 
-        [LambdaFunction]
-        
-        public Task SqsMessageEventHandler([SqsMessage] SQSEvent.SQSMessage sqsMessage, ILambdaContext lambdaContext)
-        {
-            return Task.CompletedTask;
-        }
-
         public class RandomsInput
         {
             public int Count { get; set; }
