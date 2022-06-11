@@ -28,15 +28,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public Generator()
         {
 #if DEBUG
-            //if (!Debugger.IsAttached)
-            //{
-            //    Debugger.Launch();
-            //}
+            if (!Debugger.IsAttached)
+            {
+                Debugger.Launch();
+            }
 #endif
         }
 
         public void Execute(GeneratorExecutionContext context)
         {
+#if DEBUG
+            if (!Debugger.IsAttached)
+            {
+                Debugger.Launch();
+            }
+#endif
             var diagnosticReporter = new DiagnosticReporter(context);
 
             try
@@ -148,6 +154,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
         public void Initialize(GeneratorInitializationContext context)
         {
+#if DEBUG
+            if (!Debugger.IsAttached)
+            {
+                Debugger.Launch();
+            }
+#endif
             // Register a syntax receiver that will be created for each generation pass
             context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
         }
