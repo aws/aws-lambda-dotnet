@@ -8,7 +8,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// <summary>
     /// Represents container class for the Lambda function.
     /// </summary>
-    public class SqsSqsMessageModel : ISqsMessageSerializable
+    public class SqsMessageModel : ISqsMessageSerializable
     {
         public string LogicalId { get; set; }
         public string QueueName { get; set; }
