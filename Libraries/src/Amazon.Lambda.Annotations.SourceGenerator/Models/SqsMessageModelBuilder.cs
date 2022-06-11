@@ -5,14 +5,14 @@ using Microsoft.CodeAnalysis;
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
     /// <summary>
-    /// <see cref="SqsQueueModel"/> builder.
+    /// <see cref="SqsSqsMessageModel"/> builder.
     /// </summary>
-    public static class SqsQueueModelBuilder
+    public static class SqsMessageModelBuilder
     {
-        public static SqsQueueModel Build(IMethodSymbol lambdaMethodSymbol, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context, AttributeModel sqsMessageAttribute)
+        public static SqsSqsMessageModel Build(IMethodSymbol lambdaMethodSymbol, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context, AttributeModel sqsMessageAttribute)
         {
             var lambdaMethod = LambdaMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, context);
-            var model = new SqsQueueModel()
+            var model = new SqsSqsMessageModel()
             {
                 QueueName = lambdaMethodSymbol.Name + "QueueName",
                 LogicalId = lambdaMethodSymbol.Name + "QueueLogicalId",

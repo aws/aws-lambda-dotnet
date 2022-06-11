@@ -80,9 +80,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var creationTool = _jsonWriter.GetToken($"{lambdaFunctionPath}.Metadata.Tool", string.Empty);
             return string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal);
         }
-        private bool ShouldProcessQueue(IQueueSerializable queue)
+        private bool ShouldProcessQueue(ISqsMessageSerializable sqsMessage)
         {
-            var queuePath = $"Resources.{queue.LogicalId}";
+            var queuePath = $"Resources.{sqsMessage.LogicalId}";
 
             if (!_jsonWriter.Exists(queuePath))
                 return true;
@@ -102,15 +102,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             ProcessLambdaFunctionAttributes(lambdaFunction, propertiesPath, relativeProjectUri);
             ProcessLambdaFunctionEventAttributes(lambdaFunction);
         }
-        private void ProcessQueue(IQueueSerializable queue, string relativeProjectUri)
+        private void ProcessQueue(ISqsMessageSerializable sqsMessage, string relativeProjectUri)
         {
-            var queuePath = $"Resources.{queue.LogicalId}";
+            var queuePath = $"Resources.{sqsMessage.LogicalId}";
             var propertiesPath = $"{queuePath}.Properties";
 
             if (!_jsonWriter.Exists(queuePath))
                 ApplyQueueDefaults(queuePath, propertiesPath);
 
-            ProcessQueueAttributes(queue, propertiesPath, relativeProjectUri);
+            ProcessQueueAttributes(sqsMessage, propertiesPath, relativeProjectUri);
             //ProcessQueueEventAttributes(queue);
         }
 
@@ -137,10 +137,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             ProcessPackageTypeProperty(lambdaFunction, propertiesPath, relativeProjectUri);
         }
-        private void ProcessQueueAttributes(IQueueSerializable queue, string propertiesPath, string relativeProjectUri)
+        private void ProcessQueueAttributes(ISqsMessageSerializable sqsMessage, string propertiesPath, string relativeProjectUri)
         {
-            if (!string.IsNullOrEmpty(queue.QueueName))
-                _jsonWriter.SetToken($"{propertiesPath}.QueueName", queue.QueueName);
+            if (!string.IsNullOrEmpty(sqsMessage.QueueName))
+                _jsonWriter.SetToken($"{propertiesPath}.QueueName", sqsMessage.QueueName);
 
             //if (queue.Timeout > 0)
             //    _jsonWriter.SetToken($"{propertiesPath}.Timeout", queue.Timeout);

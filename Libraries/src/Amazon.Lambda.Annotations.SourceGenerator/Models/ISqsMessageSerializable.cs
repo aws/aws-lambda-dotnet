@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
-    public interface IQueueSerializable
+    public interface ISqsMessageSerializable
     {
         string LogicalId { get; set; }
         string QueueName { get; set; }

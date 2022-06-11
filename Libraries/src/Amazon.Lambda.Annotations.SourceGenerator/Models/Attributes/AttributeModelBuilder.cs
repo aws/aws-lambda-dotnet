@@ -74,7 +74,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             }
             else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.SqsMessageAttribute), SymbolEqualityComparer.Default))
             {
-                var data = SqsQueueAttributeBuilder.Build(att);
+                var data = SqsMessageAttributeBuilder.Build(att);
                 model = new AttributeModel<SqsMessageAttribute>
                 {
                     Data = data,

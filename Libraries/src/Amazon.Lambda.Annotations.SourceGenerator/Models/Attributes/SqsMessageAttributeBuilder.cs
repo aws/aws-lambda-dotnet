@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
 {
-    internal class SqsQueueAttributeBuilder
+    internal class SqsMessageAttributeBuilder
     {
         public static SqsMessageAttribute Build(AttributeData att)
         {

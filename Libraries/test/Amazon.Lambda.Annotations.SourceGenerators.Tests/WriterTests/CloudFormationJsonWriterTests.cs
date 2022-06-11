@@ -384,7 +384,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var queueModel = GetQueueModel(queueLogicalId);
             var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
-            var report = GetAnnotationReport(new List<IQueueSerializable>() { queueModel });
+            var report = GetAnnotationReport(new List<ISqsMessageSerializable>() { queueModel });
 
             // ACT
             cloudFormationJsonWriter.ApplyReport(report);
@@ -429,9 +429,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 Role = role
             };
         }
-        private QueueTest GetQueueModel(string queueLogicalId)
+        private SqsMessageTest GetQueueModel(string queueLogicalId)
         {
-            return new QueueTest() { LogicalId = queueLogicalId, QueueName = "QueueName"};
+            return new SqsMessageTest() { LogicalId = queueLogicalId, QueueName = "QueueName"};
         }
 
         private AnnotationReport GetAnnotationReport(List<ILambdaFunctionSerializable> lambdaFunctionModels)
@@ -448,7 +448,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 
             return annotationReport;
         }
-        private AnnotationReport GetAnnotationReport(List<IQueueSerializable> queueModels)
+        private AnnotationReport GetAnnotationReport(List<ISqsMessageSerializable> queueModels)
         {
             var annotationReport = new AnnotationReport
             {
@@ -476,7 +476,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public LambdaPackageType PackageType { get; set; } = LambdaPackageType.Zip;
         }
 
-        public class QueueTest : IQueueSerializable
+        public class SqsMessageTest : ISqsMessageSerializable
         {
             public string LogicalId { get; set; }
             public string QueueName { get; set; }

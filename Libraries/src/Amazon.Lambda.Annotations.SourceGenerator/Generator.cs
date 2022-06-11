@@ -123,7 +123,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         var sqsMessageAttribute = lambdaMethodParameter.Attributes.SingleOrDefault(_ => _ is AttributeModel<SqsMessageAttribute>);
                         if (sqsMessageAttribute!=null)
                         {
-                            var queueModel = SqsQueueModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, sqsMessageAttribute);
+                            var queueModel = SqsMessageModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, sqsMessageAttribute);
                             annotationReport.Queues.Add(queueModel);
 
                         }
