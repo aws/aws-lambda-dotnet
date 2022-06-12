@@ -387,7 +387,7 @@
         "PackageType": "Zip",
         "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandler_Generated::MessageHandler",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerGeneratedSqs": {
+          "TestServerlessAppMessagingMessageHandlerGeneratedMyMessageQueue": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 10,
