@@ -371,7 +371,10 @@
     "TestServerlessAppMessagingMessageHandlerGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootTestServerlessAppMessagingMessageHandlerGeneratedMyMessageQueue"
+        ]
       },
       "Properties": {
         "Runtime": "dotnet6",
@@ -382,7 +385,16 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandler_Generated::MessageHandler"
+        "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandler_Generated::MessageHandler",
+        "Events": {
+          "RootTestServerlessAppMessagingMessageHandlerGeneratedSqs": {
+            "Type": "SQS",
+            "Properties": {
+              "BatchSize": 10,
+              "Queue": "MyMessageQueue"
+            }
+          }
+        }
       }
     }
   },
