@@ -35,6 +35,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.ContentBasedDeduplication = bool.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
+                    case nameof(ISqsMessage.DeduplicationScope):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.DeduplicationScope = attNamedArgument.Value.Value.ToString();
+                        }
+                        break;
                     default:
                         throw new NotSupportedException(attNamedArgument.Key);
                 }

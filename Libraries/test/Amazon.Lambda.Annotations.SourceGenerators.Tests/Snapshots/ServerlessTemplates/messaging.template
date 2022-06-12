@@ -72,7 +72,8 @@
       },
       "Properties": {
         "VisibilityTimeout": 100,
-        "ContentBasedDeduplication": true
+        "ContentBasedDeduplication": true,
+        "DeduplicationScope": "queue"
       }
     }
   }

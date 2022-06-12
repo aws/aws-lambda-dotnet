@@ -210,14 +210,35 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         private void ProcessQueueAttributes(SqsMessageAttribute sqsMessageAttribute, string propertiesPath)
         {
+            var visibilityTimeoutPath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.VisibilityTimeout)}";
             if (sqsMessageAttribute.VisibilityTimeout != SqsMessageAttribute.VisibilityTimeoutDefault)
             {
-                _jsonWriter.SetToken($"{propertiesPath}.{nameof(ISqsMessageSerializable.VisibilityTimeout)}", sqsMessageAttribute.VisibilityTimeout);
+                _jsonWriter.SetToken(visibilityTimeoutPath, sqsMessageAttribute.VisibilityTimeout);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(visibilityTimeoutPath);
             }
 
+
+            var contentBasedDeduplicationPath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.ContentBasedDeduplication)}";
             if (sqsMessageAttribute.ContentBasedDeduplication != SqsMessageAttribute.ContentBasedDeduplicationDefault)
             {
-                _jsonWriter.SetToken($"{propertiesPath}.{nameof(ISqsMessageSerializable.ContentBasedDeduplication)}", sqsMessageAttribute.ContentBasedDeduplication);
+                _jsonWriter.SetToken(contentBasedDeduplicationPath, sqsMessageAttribute.ContentBasedDeduplication);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(contentBasedDeduplicationPath);
+            }
+
+            var deduplicationScopePath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.DeduplicationScope)}";
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.DeduplicationScope))
+            {
+                _jsonWriter.SetToken(deduplicationScopePath, sqsMessageAttribute.DeduplicationScope);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(deduplicationScopePath);
             }
         }
 
