@@ -6,19 +6,19 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
-    public class Messaging_MessageHandler_Generated
+    public class Messaging_MessageHandlerForNewQueue_Generated
     {
         private readonly Messaging messaging;
 
-        public Messaging_MessageHandler_Generated()
+        public Messaging_MessageHandlerForNewQueue_Generated()
         {
             SetExecutionEnvironment();
             messaging = new Messaging();
         }
 
-        public System.Threading.Tasks.Task MessageHandler(Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage message, Amazon.Lambda.Core.ILambdaContext __context__)
+        public System.Threading.Tasks.Task MessageHandlerForNewQueue(Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage message, Amazon.Lambda.Core.ILambdaContext __context__)
         {
-            return messaging.MessageHandler(message, __context__);
+            return messaging.MessageHandlerForNewQueue(message, __context__);
         }
 
         private static void SetExecutionEnvironment()

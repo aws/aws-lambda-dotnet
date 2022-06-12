@@ -12,8 +12,32 @@ namespace TestServerlessApp
     public class Messaging
     {
         [LambdaFunction]
-        [SqsMessage(QueueName = "MyMessageQueue", BatchSize = 10, QueueLogicalId = "MyQueueLogicalId")]
-        public Task MessageHandler(SQSEvent.SQSMessage message, ILambdaContext context)
+        [SqsMessage(Queue = "arn:aws:sqs:us-east-1:768033286672:app-deploy-blue-LAVETRYB3JKX-SomeQueueName", BatchSize = 11)]
+        public Task MessageHandlerForPreExistingQueue(SQSEvent.SQSMessage message, ILambdaContext context)
+        {
+            return Task.CompletedTask;
+        }
+
+        [LambdaFunction]
+        [SqsMessage(
+            BatchSize = 12, 
+            QueueLogicalId = "QueueForMessageHandlerForNewQueue", 
+            VisibilityTimeout = 100, 
+            ContentBasedDeduplication = true, 
+            DeduplicationScope = "queue", 
+            DelaySeconds = 5, 
+            FifoQueue = true,
+            FifoThroughputLimit = "perQueue",
+            KmsDataKeyReusePeriodSeconds = 299,
+            KmsMasterKeyId = "alias/aws/sqs",
+            MaximumMessageSize = 1024,
+            MessageRetentionPeriod = 60,
+            QueueName = "thisismyqueuename.fifo",
+            ReceiveMessageWaitTimeSeconds =5,
+            RedriveAllowPolicy = "{ 'redrivePermission' : 'denyAll' }",
+            RedrivePolicy = "{ 'deadLetterTargetArn': 'arn:somewhere', 'maxReceiveCount': 5 }",
+            Tags = new string[]{ "keyname1=value1", "keyname2=value2" })]
+        public Task MessageHandlerForNewQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;
         }

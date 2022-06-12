@@ -49,7 +49,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             RemoveOrphanedLambdaFunctions(processedLambdaFunctions);
-
+            RemoveOrphanedQueues();
 
             var json = _jsonWriter.GetPrettyJson();
             _fileManager.WriteAllText(report.CloudFormationTemplatePath, json);
@@ -151,7 +151,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     case AttributeModel<SqsMessageAttribute> sqsAttributeModel:
                         eventName = ProcessSqsMessageAttribute(lambdaFunction, sqsAttributeModel.Data);
                         currentSyncedEvents.Add(eventName);
-                        //currentSyncedResources.Add(sqsAttributeModel.Data.QueueLogicalId);
+                        if (ShouldProcessQueue(lambdaFunction, sqsAttributeModel.Data))
+                        {
+                            string queueLogicalId = ProcessQueue(lambdaFunction, sqsAttributeModel.Data);
+                            currentSyncedResources.Add(queueLogicalId);
+                            _processedQueues.Add(queueLogicalId);
+                        }
                         break;
                 }
             }
@@ -190,16 +195,243 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(syncedResourcesMetadataPath);
         }
 
+        private string ProcessQueue(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute data)
+        {
+            var sqsQueueTemplateInfo = GetSqsQueueLogicalIdAndPath(data);
+            var propertiesPath = $"{sqsQueueTemplateInfo.Item2}.Properties";
+
+            if (!_jsonWriter.Exists(sqsQueueTemplateInfo.Item2))
+                ApplyQueueDefaults(sqsQueueTemplateInfo.Item2, propertiesPath);
+
+            ProcessQueueAttributes(data, propertiesPath);
+
+            return sqsQueueTemplateInfo.Item1;
+        }
+
+        private void ProcessQueueAttributes(SqsMessageAttribute sqsMessageAttribute, string propertiesPath)
+        {
+            var visibilityTimeoutPath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.VisibilityTimeout)}";
+            if (sqsMessageAttribute.VisibilityTimeout != SqsMessageAttribute.VisibilityTimeoutDefault)
+            {
+                _jsonWriter.SetToken(visibilityTimeoutPath, sqsMessageAttribute.VisibilityTimeout);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(visibilityTimeoutPath);
+            }
+
+
+            var contentBasedDeduplicationPath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.ContentBasedDeduplication)}";
+            if (sqsMessageAttribute.ContentBasedDeduplication != SqsMessageAttribute.ContentBasedDeduplicationDefault)
+            {
+                _jsonWriter.SetToken(contentBasedDeduplicationPath, sqsMessageAttribute.ContentBasedDeduplication);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(contentBasedDeduplicationPath);
+            }
+
+            var deduplicationScopePath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.DeduplicationScope)}";
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.DeduplicationScope))
+            {
+                _jsonWriter.SetToken(deduplicationScopePath, sqsMessageAttribute.DeduplicationScope);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(deduplicationScopePath);
+            }
+
+            var delayPropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.DelaySeconds)}";
+            WriteOrRemove(delayPropertyPath, sqsMessageAttribute.DelaySeconds, SqsMessageAttribute.DelaySecondsDefault);
+
+            var fifoQueuePropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoQueue)}";
+
+            if (sqsMessageAttribute.FifoQueue != SqsMessageAttribute.FifoQueueDefault)
+            {
+                _jsonWriter.SetToken(fifoQueuePropertyPath, sqsMessageAttribute.FifoQueue);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(fifoQueuePropertyPath);
+            }
+
+            var fifoThroughputLimitPropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoThroughputLimit)}";
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.FifoThroughputLimit))
+            {
+                _jsonWriter.SetToken(fifoThroughputLimitPropertyPath, sqsMessageAttribute.FifoThroughputLimit);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(fifoThroughputLimitPropertyPath);
+            }
+
+            var kmsDataKeyReusePeriodSeconds = $"{propertiesPath}.{nameof(ISqsMessage.KmsDataKeyReusePeriodSeconds)}";
+            WriteOrRemove(kmsDataKeyReusePeriodSeconds, sqsMessageAttribute.KmsDataKeyReusePeriodSeconds, SqsMessageAttribute.KmsDataKeyReusePeriodSecondsDefault);
+
+            var kmsMasterKeyIdPath = $"{propertiesPath}.{nameof(ISqsMessage.KmsMasterKeyId)}";
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.KmsMasterKeyId))
+            {
+                _jsonWriter.SetToken(kmsMasterKeyIdPath, sqsMessageAttribute.KmsMasterKeyId);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(kmsMasterKeyIdPath);
+            }
+
+            var maximumMessageSizeDefaultPath = $"{propertiesPath}.{nameof(ISqsMessage.MaximumMessageSize)}";
+            WriteOrRemove(maximumMessageSizeDefaultPath, sqsMessageAttribute.MaximumMessageSize, SqsMessageAttribute.MaximumMessageSizeDefault);
+
+            // MessageRetentionPeriod
+            WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.MessageRetentionPeriod)}", sqsMessageAttribute.MessageRetentionPeriod, SqsMessageAttribute.MessageRetentionPeriodDefault);
+
+            // QueueName
+            WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.QueueName)}", sqsMessageAttribute.QueueName, string.Empty);
+
+            //ReceiveMessageWaitTimeSeconds
+            WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.ReceiveMessageWaitTimeSeconds)}", sqsMessageAttribute.ReceiveMessageWaitTimeSeconds, SqsMessageAttribute.ReceiveMessageWaitTimeSecondsDefault);
+
+            //RedriveAllowPolicy
+            WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedriveAllowPolicy)}", sqsMessageAttribute.RedriveAllowPolicy);
+
+            //RedrivePolicy
+            WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedrivePolicy)}", sqsMessageAttribute.RedrivePolicy);
+
+            // Tags
+            List<string> writtenTags = new List<string>();
+            //                _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray(policyArray));
+            var tagArray = new JArray();
+            foreach (var tag in sqsMessageAttribute.Tags)
+            {
+                var tagParts = tag.Split('=');
+                var key = tagParts.FirstOrDefault();
+                var value = tagParts.LastOrDefault();
+                if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
+                {
+                    var tagObject = new JObject();
+                    tagObject.Add(new JProperty("Key", key));
+                    tagObject.Add(new JProperty("Value", value));
+                    tagArray.Add(tagObject);
+                    writtenTags.Add(key);
+                }
+            }
+
+            if (tagArray.Any())
+            {
+                _jsonWriter.SetToken($"{propertiesPath}.{nameof(ISqsMessage.Tags)}", tagArray);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken($"{propertiesPath}.{nameof(ISqsMessage.Tags)}");
+            }
+
+        }
+
+        private void WriteOrRemoveAsJson(string path, string value)
+        {
+            
+            if (!string.IsNullOrEmpty(value))
+            {
+                _jsonWriter.SetToken(path, JObject.Parse(value));
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(path);
+            }
+        }
+
+        private void WriteOrRemove(string path, string value, string defaultValue)
+        {
+            if (value != defaultValue)
+            {
+                _jsonWriter.SetToken(path, value);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(path);
+            }
+        }
+
+        private void WriteOrRemove(string path, int value, int defaultValue)
+        {
+            if (value != defaultValue)
+            {
+                _jsonWriter.SetToken(path, value);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(path);
+            }
+        }
+
+        private void ApplyQueueDefaults(string sqsQueuePath, string propertiesPath)
+        {
+            _jsonWriter.SetToken($"{sqsQueuePath}.Type", "AWS::SQS::Queue");
+            _jsonWriter.SetToken($"{sqsQueuePath}.Metadata.Tool", "Amazon.Lambda.Annotations");
+
+        }
+
+        private bool ShouldProcessQueue(ILambdaFunctionSerializable lambdaFunctionSerializable, SqsMessageAttribute data)
+        {
+            if (string.IsNullOrEmpty(data.QueueLogicalId)) return false;
+            var sqsInfo = GetSqsQueueLogicalIdAndPath(data);
+            var sqsQueuePath = sqsInfo.Item2;
+
+
+            if (!_jsonWriter.Exists(sqsQueuePath))
+                return true;
+
+            var creationTool = _jsonWriter.GetToken($"{sqsQueuePath}.Metadata.Tool", string.Empty);
+            return string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal);
+        }
+
+        private static (string,string) GetSqsQueueLogicalIdAndPath(SqsMessageAttribute data)
+        {
+            return (data.QueueLogicalId, $"Resources.{data.QueueLogicalId}");
+        }
+
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
         {
-            var eventName = $"{lambdaFunction.Name}{sqsMessageAttribute.QueueName}";
+            string queueHandle;
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.Queue))
+            {
+                queueHandle = sqsMessageAttribute.Queue.Split(':').LastOrDefault().Replace("-",string.Empty);
+            }
+            else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
+            {
+                queueHandle = sqsMessageAttribute.QueueLogicalId;
+            }
+            else
+            {
+                throw new InvalidOperationException($"You must specify either {nameof(ISqsMessage.Queue)} or {nameof(ISqsMessage.QueueLogicalId)}");
+            }
+
+            var eventName = $"{lambdaFunction.Name}{queueHandle}";
             var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
             var methodName = lambdaFunction.Name + "Sqs";
             var methodPath = $"{eventPath}.{eventName}";
 
             _jsonWriter.SetToken($"{methodPath}.Type", "SQS");
-            _jsonWriter.SetToken($"{methodPath}.Properties.BatchSize", sqsMessageAttribute.BatchSize);
-            _jsonWriter.SetToken($"{methodPath}.Properties.Queue", sqsMessageAttribute.QueueName);
+
+            var batchSizePropertyPath = $"{methodPath}.Properties.{nameof(ISqsMessage.BatchSize)}";
+
+            if (sqsMessageAttribute.BatchSize != SqsMessageAttribute.BatchSizeDefault)
+            {
+                _jsonWriter.SetToken(batchSizePropertyPath, sqsMessageAttribute.BatchSize);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(batchSizePropertyPath);
+            }
+
+            var queueNamePath = $"{methodPath}.Properties.Queue";
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.Queue))
+            {
+                _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.Queue);
+            }
+            else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
+            {
+                _jsonWriter.SetToken(queueNamePath, new JObject(new JProperty("Ref",sqsMessageAttribute.QueueLogicalId)));
+            }
 
             return eventName;
         }
@@ -242,18 +474,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             _jsonWriter.SetToken($"{propertiesPath}.Timeout", 30);
             _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray("AWSLambdaBasicExecutionRole"));
         }
-        private void ApplyQueueDefaults(string queuePath, string propertiesPath)
-        {
-            _jsonWriter.SetToken($"{queuePath}.Type", "AWS::SQS::Queue");
-            _jsonWriter.SetToken($"{queuePath}.Metadata.Tool", "Amazon.Lambda.Annotations");
-
-            //_jsonWriter.SetToken($"{propertiesPath}.Runtime", "dotnet6");
-            //_jsonWriter.SetToken($"{propertiesPath}.CodeUri", "");
-            //_jsonWriter.SetToken($"{propertiesPath}.MemorySize", 256);
-            //_jsonWriter.SetToken($"{propertiesPath}.Timeout", 30);
-            //_jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray("AWSLambdaBasicExecutionRole"));
-        }
-
         private void CreateNewTemplate()
         {
             var content = @"{'AWSTemplateFormatVersion' : '2010-09-09', 'Transform' : 'AWS::Serverless-2016-10-31'}";
@@ -287,6 +507,35 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
         }
 
+        // I don't like this being a member field, but given
+        // the previous patterns, I can't find a better method
+        private readonly HashSet<string> _processedQueues = new HashSet<string>();
+        private void RemoveOrphanedQueues()
+        {
+            var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
+            if (resourceToken == null)
+                return;
+
+            var toRemove = new List<string>();
+            foreach (var resource in resourceToken.Properties())
+            {
+                var resourcePath = $"Resources.{resource.Name}";
+                var type = _jsonWriter.GetToken($"{resourcePath}.Type", string.Empty);
+                var creationTool = _jsonWriter.GetToken($"{resourcePath}.Metadata.Tool", string.Empty);
+
+                if (string.Equals(type.ToObject<string>(), "AWS::SQS::Queue", StringComparison.Ordinal)
+                    && string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal)
+                    && !_processedQueues.Contains(resource.Name))
+                {
+                    toRemove.Add(resource.Name);
+                }
+            }
+
+            foreach (var resourceName in toRemove)
+            {
+                _jsonWriter.RemoveToken($"Resources.{resourceName}");
+            }
+        }
         private JToken GetValueOrRef(string value)
         {
             if (!value.StartsWith("@"))
