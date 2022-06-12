@@ -397,6 +397,12 @@
         }
       }
     },
+    "QueueForMessageHandlerForNewQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      }
+    },
     "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -424,12 +430,6 @@
             }
           }
         }
-      }
-    },
-    "QueueForMessageHandlerForNewQueue": {
-      "Type": "AWS::SQS::Queue",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
       }
     }
   },

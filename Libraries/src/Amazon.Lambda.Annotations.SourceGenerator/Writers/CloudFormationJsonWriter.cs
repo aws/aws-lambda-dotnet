@@ -49,7 +49,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             RemoveOrphanedLambdaFunctions(processedLambdaFunctions);
-
+            RemoveOrphanedQueues();
 
             var json = _jsonWriter.GetPrettyJson();
             _fileManager.WriteAllText(report.CloudFormationTemplatePath, json);
@@ -155,6 +155,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         {
                             string queueLogicalId = ProcessQueue(lambdaFunction, sqsAttributeModel.Data);
                             currentSyncedResources.Add(queueLogicalId);
+                            processedQueues.Add(queueLogicalId);
                         }
                         break;
                 }
@@ -322,6 +323,33 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
         }
 
+        private HashSet<string> processedQueues = new HashSet<string>();
+        private void RemoveOrphanedQueues()
+        {
+            var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
+            if (resourceToken == null)
+                return;
+
+            var toRemove = new List<string>();
+            foreach (var resource in resourceToken.Properties())
+            {
+                var resourcePath = $"Resources.{resource.Name}";
+                var type = _jsonWriter.GetToken($"{resourcePath}.Type", string.Empty);
+                var creationTool = _jsonWriter.GetToken($"{resourcePath}.Metadata.Tool", string.Empty);
+
+                if (string.Equals(type.ToObject<string>(), "AWS::SQS::Queue", StringComparison.Ordinal)
+                    && string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal)
+                    && !processedQueues.Contains(resource.Name))
+                {
+                    toRemove.Add(resource.Name);
+                }
+            }
+
+            foreach (var resourceName in toRemove)
+            {
+                _jsonWriter.RemoveToken($"Resources.{resourceName}");
+            }
+        }
         private JToken GetValueOrRef(string value)
         {
             if (!value.StartsWith("@"))
