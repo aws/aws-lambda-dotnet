@@ -29,6 +29,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.VisibilityTimeout):
                         data.VisibilityTimeout = int.Parse(attNamedArgument.Value.Value.ToString());
                         break;
+                    case nameof(ISqsMessage.ContentBasedDeduplication):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value.ToString()))
+                        {
+                            data.ContentBasedDeduplication = bool.Parse(attNamedArgument.Value.Value.ToString());
+                        }
+                        break;
                     default:
                         throw new NotSupportedException(attNamedArgument.Key);
                 }

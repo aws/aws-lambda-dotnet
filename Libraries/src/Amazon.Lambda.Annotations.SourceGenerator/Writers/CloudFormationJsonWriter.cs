@@ -214,6 +214,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             {
                 _jsonWriter.SetToken($"{propertiesPath}.{nameof(ISqsMessageSerializable.VisibilityTimeout)}", sqsMessageAttribute.VisibilityTimeout);
             }
+
+            if (sqsMessageAttribute.ContentBasedDeduplication != SqsMessageAttribute.ContentBasedDeduplicationDefault)
+            {
+                _jsonWriter.SetToken($"{propertiesPath}.{nameof(ISqsMessageSerializable.ContentBasedDeduplication)}", sqsMessageAttribute.ContentBasedDeduplication);
+            }
         }
 
         private void ApplyQueueDefaults(string sqsQueuePath, string propertiesPath)
