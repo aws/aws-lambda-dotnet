@@ -16,7 +16,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
     public partial class SourceGeneratorTests
     {
         [Fact(DisplayName = "MessagingTest")]
-        public async Task Messaging()
+        public async Task MessageHandlerForPreExisingQueue()
         {
             var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "messaging.template")).ToEnvironmentLineEndings();
             var expectedMessageHandlerAsyncGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandlerForPreExisingQueue_Generated.g.cs")).ToEnvironmentLineEndings();
