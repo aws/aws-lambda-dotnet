@@ -30,6 +30,35 @@
           }
         }
       }
+    },
+    "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForNewQueue_Generated::MessageHandlerForNewQueue",
+        "Events": {
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
+            "Type": "SQS",
+            "Properties": {
+              "BatchSize": 10,
+              "Queue": null
+            }
+          }
+        }
+      }
     }
   }
 }

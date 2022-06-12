@@ -17,5 +17,12 @@ namespace TestServerlessApp
         {
             return Task.CompletedTask;
         }
+
+        [LambdaFunction]
+        [SqsMessage(BatchSize = 10, QueueLogicalId = "QueueForMessageHandlerForNewQueue")]
+        public Task MessageHandlerForNewQueue(SQSEvent.SQSMessage message, ILambdaContext context)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

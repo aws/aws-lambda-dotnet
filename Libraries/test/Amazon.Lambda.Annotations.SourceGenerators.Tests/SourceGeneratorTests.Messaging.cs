@@ -15,11 +15,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 {
     public partial class SourceGeneratorTests
     {
-        [Fact(DisplayName = "MessagingTest")]
+        [Fact(DisplayName = nameof(MessageHandlerForPreExisingQueue))]
         public async Task MessageHandlerForPreExisingQueue()
         {
             var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "messaging.template")).ToEnvironmentLineEndings();
-            var expectedMessageHandlerAsyncGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandlerForPreExisingQueue_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedMessageHandlerForPreExisingQueueGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandlerForPreExisingQueue_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedMessageHandlerForNewQueueGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandlerForNewQueue_Generated.g.cs")).ToEnvironmentLineEndings();
 
             await new VerifyCS.Test
             {
@@ -36,12 +37,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (
                             typeof(SourceGenerator.Generator),
                             "Messaging_MessageHandlerForPreExisingQueue_Generated.g.cs",
-                            SourceText.From(expectedMessageHandlerAsyncGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            SourceText.From(expectedMessageHandlerForPreExisingQueueGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "Messaging_MessageHandlerForNewQueue_Generated.g.cs",
+                            SourceText.From(expectedMessageHandlerForNewQueueGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
                     },
                     ExpectedDiagnostics =
                     {
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_MessageHandlerForPreExisingQueue_Generated.g.cs", expectedMessageHandlerAsyncGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_MessageHandlerForPreExisingQueue_Generated.g.cs", expectedMessageHandlerForPreExisingQueueGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_MessageHandlerForNewQueue_Generated.g.cs", expectedMessageHandlerForNewQueueGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     }
                 }
@@ -50,6 +57,42 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
             Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
+
+        //[Fact(DisplayName = nameof(MessageHandlerForNewQueue))]
+        //public async Task MessageHandlerForNewQueue()
+        //{
+        //    var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "messaging.template")).ToEnvironmentLineEndings();
+        //    var expectedMessageHandlerAsyncGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandlerForNewQueue_Generated.g.cs")).ToEnvironmentLineEndings();
+
+        //    await new VerifyCS.Test
+        //    {
+        //        TestState =
+        //        {
+        //            Sources =
+        //            {
+        //                (Path.Combine("TestServerlessApp", "Messaging.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "Messaging.cs"))),
+        //                (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+        //                (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+        //            },
+        //            GeneratedSources =
+        //            {
+        //                (
+        //                    typeof(SourceGenerator.Generator),
+        //                    "Messaging_MessageHandlerForNewQueue_Generated.g.cs",
+        //                    SourceText.From(expectedMessageHandlerAsyncGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+        //                ),
+        //            },
+        //            ExpectedDiagnostics =
+        //            {
+        //                new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_MessageHandlerForNewQueue_Generated.g.cs", expectedMessageHandlerAsyncGenerated),
+        //                new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+        //            }
+        //        }
+        //    }.RunAsync();
+
+        //    var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+        //    Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        //}
 
     }
 }
