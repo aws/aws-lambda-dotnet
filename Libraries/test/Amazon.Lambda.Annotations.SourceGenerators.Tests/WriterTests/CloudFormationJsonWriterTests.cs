@@ -376,40 +376,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Null(propertiesToken["ImageConfig"]);
         }
 
-        [Fact]
-        public void AddQueueToEmptyTemplate()
-        {
-            const string queueLogicalId = "MyQueue";
-            // ARRANGE
-            var mockFileManager = GetMockFileManager(string.Empty);
-            var queueModel = GetQueueModel(queueLogicalId);
-            var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
-            var report = GetAnnotationReport(new List<ISqsMessageSerializable>() { queueModel });
-
-            // ACT
-            cloudFormationJsonWriter.ApplyReport(report);
-
-            // ASSERT
-            var rootToken = JObject.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
-            var queueToken = rootToken["Resources"][queueLogicalId];
-            var propertiesToken = queueToken["Properties"];
-
-            Assert.Equal("2010-09-09", rootToken["AWSTemplateFormatVersion"]);
-            Assert.Equal("AWS::Serverless-2016-10-31", rootToken["Transform"]);
-
-            Assert.Equal("AWS::SQS::Queue", queueToken["Type"]);
-            Assert.Equal("Amazon.Lambda.Annotations", queueToken["Metadata"]["Tool"]);
-
-            //Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", propertiesToken["Handler"]);
-            //Assert.Equal(512, propertiesToken["MemorySize"]);
-            //Assert.Equal(45, propertiesToken["Timeout"]);
-            //Assert.Equal(new List<string> { "AWSLambdaBasicExecutionRole" }, propertiesToken["Policies"].ToObject<List<string>>());
-            //Assert.Equal("Zip", propertiesToken["PackageType"]);
-            //Assert.Equal(".", propertiesToken["CodeUri"]);
-            //Assert.Null(propertiesToken["ImageUri"]);
-            //Assert.Null(propertiesToken["ImageConfig"]);
-        }
-
         private IFileManager GetMockFileManager(string originalContent)
         {
             var mockFileManager = new InMemoryFileManager();
@@ -480,6 +446,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         {
             public string LogicalId { get; set; }
             public string QueueName { get; set; }
+            public int BatchSize { get; set; }
             public string SourceGeneratorVersion { get; set; }
         }
     }

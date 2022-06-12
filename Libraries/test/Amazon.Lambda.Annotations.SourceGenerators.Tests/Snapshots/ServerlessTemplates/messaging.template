@@ -2,76 +2,13 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
   "Resources": {
-    "MessagingSayHello": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ]
-      },
-      "Properties": {
-        "MemorySize": 1024,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestProject::TestServerlessApp.Messaging_SayHello_Generated::SayHello"
-          ]
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/Messaging/SayHello",
-              "Method": "GET",
-              "PayloadFormatVersion": "1.0"
-            }
-          }
-        }
-      }
-    },
-    "MessagingSayHelloAsync": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ]
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 50,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestProject::TestServerlessApp.Messaging_SayHelloAsync_Generated::SayHelloAsync"
-          ]
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/Messaging/SayHelloAsync",
-              "Method": "GET",
-              "PayloadFormatVersion": "1.0"
-            }
-          }
-        }
-      }
-    },
     "TestServerlessAppMessagingMessageHandlerGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootTestServerlessAppMessagingMessageHandlerGeneratedMyMessageQueue"
+        ]
       },
       "Properties": {
         "Runtime": "dotnet6",
@@ -82,16 +19,16 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandler_Generated::MessageHandler"
-      }
-    },
-    "QueueForMessageHandler": {
-      "Type": "AWS::SQS::Queue",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "QueueName": "MyMessageQueue"
+        "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandler_Generated::MessageHandler",
+        "Events": {
+          "RootTestServerlessAppMessagingMessageHandlerGeneratedSqs": {
+            "Type": "SQS",
+            "Properties": {
+              "BatchSize": 10,
+              "Queue": "MyMessageQueue"
+            }
+          }
+        }
       }
     }
   }

@@ -28,6 +28,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.LogicalId):
                         data.LogicalId = attNamedArgument.Value.Value.ToString();
                         break;
+                    case nameof(ISqsMessage.BatchSize):
+                        data.BatchSize = int.Parse(attNamedArgument.Value.Value.ToString());
+                        break;
                 }
             }
 

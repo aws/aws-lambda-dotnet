@@ -9,13 +9,15 @@ namespace Amazon.Lambda.Annotations
     {
         string LogicalId { get; set; }
         string QueueName { get; set; }
+        int BatchSize { get; set; }
     }
 
-    [AttributeUsage(AttributeTargets.Parameter)]
+    [AttributeUsage(AttributeTargets.Method)]
     public class SqsMessageAttribute : Attribute, ISqsMessage
     {
         public string LogicalId { get; set; }
         public string QueueName { get; set; }
+        public int BatchSize { get; set; }
 
         public SqsMessageAttribute()
         {

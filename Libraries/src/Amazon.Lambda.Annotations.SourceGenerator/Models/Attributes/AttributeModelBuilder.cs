@@ -11,7 +11,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     {
         public static AttributeModel Build(AttributeData att, GeneratorExecutionContext context)
         {
-            Debug.WriteLine("Build:"+att.AttributeClass.Name);
             if (att.AttributeClass == null)
             {
                 throw new NotSupportedException($"An attribute must have an attribute class. Attribute class is not found for {att}");

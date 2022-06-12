@@ -18,8 +18,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public async Task Messaging()
         {
             var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "messaging.template")).ToEnvironmentLineEndings();
-            var expectedSayHelloGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_SayHello_Generated.g.cs")).ToEnvironmentLineEndings();
-            var expectedSayHelloAsyncGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_SayHelloAsync_Generated.g.cs")).ToEnvironmentLineEndings();
             var expectedMessageHandlerAsyncGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandler_Generated.g.cs")).ToEnvironmentLineEndings();
 
             await new VerifyCS.Test
@@ -36,24 +34,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (
                             typeof(SourceGenerator.Generator),
-                            "Messaging_SayHello_Generated.g.cs",
-                            SourceText.From(expectedSayHelloGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
-                        ),
-                        (
-                            typeof(SourceGenerator.Generator),
-                            "Messaging_SayHelloAsync_Generated.g.cs",
-                            SourceText.From(expectedSayHelloAsyncGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
-                        ),
-                        (
-                            typeof(SourceGenerator.Generator),
                             "Messaging_MessageHandler_Generated.g.cs",
                             SourceText.From(expectedMessageHandlerAsyncGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
                     },
                     ExpectedDiagnostics =
                     {
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_SayHello_Generated.g.cs", expectedSayHelloGenerated),
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_SayHelloAsync_Generated.g.cs", expectedSayHelloAsyncGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_MessageHandler_Generated.g.cs", expectedMessageHandlerAsyncGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     }

@@ -118,16 +118,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     if (string.IsNullOrEmpty(projectRootDirectory))
                         projectRootDirectory = templateFinder.DetermineProjectRootDirectory(lambdaMethod.SyntaxTree.FilePath);
 
-                    foreach (var lambdaMethodParameter in model.LambdaMethod.Parameters)
-                    {
-                        var sqsMessageAttribute = lambdaMethodParameter.Attributes.SingleOrDefault(_ => _ is AttributeModel<SqsMessageAttribute>);
-                        if (sqsMessageAttribute!=null)
-                        {
-                            var queueModel = SqsMessageModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, sqsMessageAttribute);
-                            annotationReport.Queues.Add(queueModel);
+                    //foreach (var lambdaMethodParameter in model.LambdaMethod.Parameters)
+                    //{
+                    //    var sqsMessageAttribute = lambdaMethodParameter.Attributes.SingleOrDefault(_ => _ is AttributeModel<SqsMessageAttribute>);
+                    //    if (sqsMessageAttribute!=null)
+                    //    {
+                    //        var queueModel = SqsMessageModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, sqsMessageAttribute);
+                    //        annotationReport.Queues.Add(queueModel);
 
-                        }
-                    }
+                    //    }
+                    //}
 
                 }
 
