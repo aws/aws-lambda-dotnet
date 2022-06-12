@@ -368,12 +368,12 @@
         }
       }
     },
-    "TestServerlessAppMessagingMessageHandlerGenerated": {
+    "TestServerlessAppMessagingMessageHandlerForPreExisingQueueGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerGeneratedMyMessageQueue"
+          "TestServerlessAppMessagingMessageHandlerForPreExisingQueueGeneratedMyMessageQueue"
         ]
       },
       "Properties": {
@@ -385,9 +385,9 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandler_Generated::MessageHandler",
+        "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForPreExisingQueue_Generated::MessageHandlerForPreExisingQueue",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerGeneratedMyMessageQueue": {
+          "TestServerlessAppMessagingMessageHandlerForPreExisingQueueGeneratedMyMessageQueue": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 10,
