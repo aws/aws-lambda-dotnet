@@ -37,6 +37,9 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated"
+        ],
+        "SyncedResources": [
+          "QueueForMessageHandlerForNewQueue"
         ]
       },
       "Properties": {
@@ -58,6 +61,12 @@
             }
           }
         }
+      }
+    },
+    "QueueForMessageHandlerForNewQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
       }
     }
   }

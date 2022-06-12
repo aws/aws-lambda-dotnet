@@ -151,7 +151,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     case AttributeModel<SqsMessageAttribute> sqsAttributeModel:
                         eventName = ProcessSqsMessageAttribute(lambdaFunction, sqsAttributeModel.Data);
                         currentSyncedEvents.Add(eventName);
-                        //currentSyncedResources.Add(sqsAttributeModel.Data.QueueLogicalId);
+                        if (ShouldProcessQueue(lambdaFunction, sqsAttributeModel.Data))
+                        {
+                            string queueLogicalId = ProcessQueue(lambdaFunction, sqsAttributeModel.Data);
+                            currentSyncedResources.Add(queueLogicalId);
+                        }
                         break;
                 }
             }
@@ -188,6 +192,49 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.SetToken(syncedResourcesMetadataPath, new JArray(currentSyncedResources));
             else
                 _jsonWriter.RemoveToken(syncedResourcesMetadataPath);
+        }
+
+        private string ProcessQueue(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute data)
+        {
+            var sqsQueueTemplateInfo = GetSqsQueueLogicalIdAndPath(data);
+            var propertiesPath = $"{sqsQueueTemplateInfo.Item2}.Properties";
+
+            if (!_jsonWriter.Exists(sqsQueueTemplateInfo.Item2))
+                ApplyQueueDefaults(sqsQueueTemplateInfo.Item2, propertiesPath);
+
+            ProcessQueueAttributes(lambdaFunction, propertiesPath);
+
+            return sqsQueueTemplateInfo.Item1;
+        }
+
+        private void ProcessQueueAttributes(ILambdaFunctionSerializable lambdaFunction, string propertiesPath)
+        {
+        }
+
+        private void ApplyQueueDefaults(string sqsQueuePath, string propertiesPath)
+        {
+            _jsonWriter.SetToken($"{sqsQueuePath}.Type", "AWS::SQS::Queue");
+            _jsonWriter.SetToken($"{sqsQueuePath}.Metadata.Tool", "Amazon.Lambda.Annotations");
+
+        }
+
+        private bool ShouldProcessQueue(ILambdaFunctionSerializable lambdaFunctionSerializable, SqsMessageAttribute data)
+        {
+            if (string.IsNullOrEmpty(data.QueueLogicalId)) return false;
+            var sqsInfo = GetSqsQueueLogicalIdAndPath(data);
+            var sqsQueuePath = sqsInfo.Item2;
+
+
+            if (!_jsonWriter.Exists(sqsQueuePath))
+                return true;
+
+            var creationTool = _jsonWriter.GetToken($"{sqsQueuePath}.Metadata.Tool", string.Empty);
+            return string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal);
+        }
+
+        private static (string,string) GetSqsQueueLogicalIdAndPath(SqsMessageAttribute data)
+        {
+            return (data.QueueLogicalId, $"Resources.{data.QueueLogicalId}");
         }
 
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
@@ -242,18 +289,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             _jsonWriter.SetToken($"{propertiesPath}.Timeout", 30);
             _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray("AWSLambdaBasicExecutionRole"));
         }
-        private void ApplyQueueDefaults(string queuePath, string propertiesPath)
-        {
-            _jsonWriter.SetToken($"{queuePath}.Type", "AWS::SQS::Queue");
-            _jsonWriter.SetToken($"{queuePath}.Metadata.Tool", "Amazon.Lambda.Annotations");
-
-            //_jsonWriter.SetToken($"{propertiesPath}.Runtime", "dotnet6");
-            //_jsonWriter.SetToken($"{propertiesPath}.CodeUri", "");
-            //_jsonWriter.SetToken($"{propertiesPath}.MemorySize", 256);
-            //_jsonWriter.SetToken($"{propertiesPath}.Timeout", 30);
-            //_jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray("AWSLambdaBasicExecutionRole"));
-        }
-
         private void CreateNewTemplate()
         {
             var content = @"{'AWSTemplateFormatVersion' : '2010-09-09', 'Transform' : 'AWS::Serverless-2016-10-31'}";
