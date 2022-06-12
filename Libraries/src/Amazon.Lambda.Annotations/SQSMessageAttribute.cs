@@ -18,6 +18,17 @@ namespace Amazon.Lambda.Annotations
         /// Update requires: No interruption
         /// </summary>
         bool ContentBasedDeduplication { get; set; }
+
+        /// <summary>
+        /// For high throughput for FIFO queues, specifies whether message deduplication occurs at the message group or queue level. Valid values are messageGroup and queue.
+        /// To enable high throughput for a FIFO queue, set this attribute to messageGroup and set the FifoThroughputLimit attribute to perMessageGroupId. If you set these attributes to anything other than these values, normal throughput is in effect and deduplication occurs as specified.For more information, see High throughput for FIFO queues and Quotas related to messages in the Amazon SQS Developer Guide.
+        /// 
+        /// Required: No
+        /// 
+        /// Type: String
+        /// Update requires: No interruption
+        /// </summary>
+        string DeduplicationScope { get; set; }
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -32,5 +43,6 @@ namespace Amazon.Lambda.Annotations
         public string QueueLogicalId { get; set; }
         public int VisibilityTimeout { get; set; } = VisibilityTimeoutDefault;
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
+        public string DeduplicationScope { get; set; }
     }
 }
