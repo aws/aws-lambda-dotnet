@@ -19,7 +19,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandler_Generated::MessageHandler",
+        "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandler_Generated::MessageHandler",
         "Events": {
           "TestServerlessAppMessagingMessageHandlerGeneratedMyMessageQueue": {
             "Type": "SQS",
@@ -30,6 +30,6 @@
           }
         }
       }
-    }
+   }
   }
 }

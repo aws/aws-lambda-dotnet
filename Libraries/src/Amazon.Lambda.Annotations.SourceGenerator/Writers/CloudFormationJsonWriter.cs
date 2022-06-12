@@ -67,16 +67,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var creationTool = _jsonWriter.GetToken($"{lambdaFunctionPath}.Metadata.Tool", string.Empty);
             return string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal);
         }
-        private bool ShouldProcessQueue(ISqsMessageSerializable sqsMessage)
-        {
-            var queuePath = $"Resources.{sqsMessage.LogicalId}";
-
-            if (!_jsonWriter.Exists(queuePath))
-                return true;
-
-            var creationTool = _jsonWriter.GetToken($"{queuePath}.Metadata.Tool", string.Empty);
-            return string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal);
-        }
 
         private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction, string relativeProjectUri)
         {
@@ -143,6 +133,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         private void ProcessLambdaFunctionEventAttributes(ILambdaFunctionSerializable lambdaFunction)
         {
             var currentSyncedEvents = new List<string>();
+            var currentSyncedResources = new List<string>();
 
             foreach (var attributeModel in lambdaFunction.Attributes)
             {
@@ -160,12 +151,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     case AttributeModel<SqsMessageAttribute> sqsAttributeModel:
                         eventName = ProcessSqsMessageAttribute(lambdaFunction, sqsAttributeModel.Data);
                         currentSyncedEvents.Add(eventName);
+                        //currentSyncedResources.Add(sqsAttributeModel.Data.QueueLogicalId);
                         break;
                 }
             }
 
             var eventsPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
-            var syncedEventsMetadataPath = $"Resources.{lambdaFunction.Name}.Metadata.SyncedEvents";
+            var metadataPath = $"Resources.{lambdaFunction.Name}.Metadata";
+            var syncedEventsMetadataPath = $"{metadataPath}.SyncedEvents";
+            var syncedResourcesMetadataPath = $"{metadataPath}.SyncedResources";
 
             if (_jsonWriter.GetToken(syncedEventsMetadataPath, new JArray()) is JArray previousSyncedEvents)
             {
@@ -176,10 +170,24 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 }
             }
 
+            if (_jsonWriter.GetToken(syncedResourcesMetadataPath, new JArray()) is JArray previousSyncedResources)
+            {
+                foreach (var previousSyncedResource in previousSyncedResources.Select(x => x.ToObject<string>()))
+                {
+                    if (!currentSyncedResources.Contains(previousSyncedResource))
+                        _jsonWriter.RemoveToken($"{eventsPath}.{previousSyncedResources}");
+                }
+            }
+
             if (currentSyncedEvents.Any())
                 _jsonWriter.SetToken(syncedEventsMetadataPath, new JArray(currentSyncedEvents));
             else
                 _jsonWriter.RemoveToken(syncedEventsMetadataPath);
+
+            if (currentSyncedResources.Any())
+                _jsonWriter.SetToken(syncedResourcesMetadataPath, new JArray(currentSyncedResources));
+            else
+                _jsonWriter.RemoveToken(syncedResourcesMetadataPath);
         }
 
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)

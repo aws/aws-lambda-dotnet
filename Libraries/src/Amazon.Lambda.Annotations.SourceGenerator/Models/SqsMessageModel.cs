@@ -39,9 +39,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             }
         }
 
-        public string LogicalId { get; set; }
         public string QueueName { get; set; }
         public int BatchSize { get; set; }
+        public string QueueLogicalId { get; set; }
         public string SourceGeneratorVersion { get; set; }
     }
 }

@@ -395,10 +395,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 Role = role
             };
         }
-        private SqsMessageTest GetQueueModel(string queueLogicalId)
-        {
-            return new SqsMessageTest() { LogicalId = queueLogicalId, QueueName = "QueueName"};
-        }
 
         private AnnotationReport GetAnnotationReport(List<ILambdaFunctionSerializable> lambdaFunctionModels)
         {
@@ -440,14 +436,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
             public string SourceGeneratorVersion { get; set; }
             public LambdaPackageType PackageType { get; set; } = LambdaPackageType.Zip;
-        }
-
-        public class SqsMessageTest : ISqsMessageSerializable
-        {
-            public string LogicalId { get; set; }
-            public string QueueName { get; set; }
-            public int BatchSize { get; set; }
-            public string SourceGeneratorVersion { get; set; }
         }
     }
 }
