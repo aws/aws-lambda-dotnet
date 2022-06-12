@@ -69,6 +69,9 @@
       "Type": "AWS::SQS::Queue",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "VisibilityTimeout": 100
       }
     }
   }

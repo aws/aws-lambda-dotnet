@@ -203,13 +203,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (!_jsonWriter.Exists(sqsQueueTemplateInfo.Item2))
                 ApplyQueueDefaults(sqsQueueTemplateInfo.Item2, propertiesPath);
 
-            ProcessQueueAttributes(lambdaFunction, propertiesPath);
+            ProcessQueueAttributes(data, propertiesPath);
 
             return sqsQueueTemplateInfo.Item1;
         }
 
-        private void ProcessQueueAttributes(ILambdaFunctionSerializable lambdaFunction, string propertiesPath)
+        private void ProcessQueueAttributes(SqsMessageAttribute sqsMessageAttribute, string propertiesPath)
         {
+            if (sqsMessageAttribute.VisibilityTimeout != SqsMessageAttribute.VisibilityTimeoutDefault)
+            {
+                _jsonWriter.SetToken($"{propertiesPath}.{nameof(ISqsMessageSerializable.VisibilityTimeout)}", sqsMessageAttribute.VisibilityTimeout);
+            }
         }
 
         private void ApplyQueueDefaults(string sqsQueuePath, string propertiesPath)
