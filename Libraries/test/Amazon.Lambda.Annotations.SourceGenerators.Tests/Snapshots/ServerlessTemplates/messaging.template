@@ -57,7 +57,9 @@
             "Type": "SQS",
             "Properties": {
               "BatchSize": 10,
-              "Queue": null
+              "Queue": {
+                "Ref": "QueueForMessageHandlerForNewQueue"
+              }
             }
           }
         }

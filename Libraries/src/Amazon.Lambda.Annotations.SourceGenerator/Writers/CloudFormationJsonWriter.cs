@@ -155,7 +155,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         {
                             string queueLogicalId = ProcessQueue(lambdaFunction, sqsAttributeModel.Data);
                             currentSyncedResources.Add(queueLogicalId);
-                            processedQueues.Add(queueLogicalId);
+                            _processedQueues.Add(queueLogicalId);
                         }
                         break;
                 }
@@ -247,7 +247,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             _jsonWriter.SetToken($"{methodPath}.Type", "SQS");
             _jsonWriter.SetToken($"{methodPath}.Properties.BatchSize", sqsMessageAttribute.BatchSize);
-            _jsonWriter.SetToken($"{methodPath}.Properties.Queue", sqsMessageAttribute.QueueName);
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueName))
+            {
+                _jsonWriter.SetToken($"{methodPath}.Properties.Queue", sqsMessageAttribute.QueueName);
+            }
+            else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
+            {
+                _jsonWriter.SetToken($"{methodPath}.Properties.Queue", new JObject(new JProperty("Ref",sqsMessageAttribute.QueueLogicalId)));
+            }
 
             return eventName;
         }
@@ -323,7 +330,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
         }
 
-        private HashSet<string> processedQueues = new HashSet<string>();
+        // I don't like this being a member field, but given
+        // the previous patterns, I can't find a better method
+        private readonly HashSet<string> _processedQueues = new HashSet<string>();
         private void RemoveOrphanedQueues()
         {
             var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
@@ -339,7 +348,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
                 if (string.Equals(type.ToObject<string>(), "AWS::SQS::Queue", StringComparison.Ordinal)
                     && string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal)
-                    && !processedQueues.Contains(resource.Name))
+                    && !_processedQueues.Contains(resource.Name))
                 {
                     toRemove.Add(resource.Name);
                 }
