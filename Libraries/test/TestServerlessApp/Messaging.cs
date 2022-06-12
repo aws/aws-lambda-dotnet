@@ -13,7 +13,7 @@ namespace TestServerlessApp
     {
         [LambdaFunction]
         [SqsMessage(QueueName = "MyMessageQueue", BatchSize = 10)]
-        public Task MessageHandlerForPreExisingQueue(SQSEvent.SQSMessage message, ILambdaContext context)
+        public Task MessageHandlerForPreExistingQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;
         }

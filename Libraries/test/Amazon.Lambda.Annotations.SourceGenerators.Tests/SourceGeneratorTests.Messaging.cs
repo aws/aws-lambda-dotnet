@@ -15,11 +15,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 {
     public partial class SourceGeneratorTests
     {
-        [Fact(DisplayName = nameof(MessageHandlerForPreExisingQueue))]
-        public async Task MessageHandlerForPreExisingQueue()
+        [Fact(DisplayName = nameof(MessageHandlerForPreExistingQueue))]
+        public async Task MessageHandlerForPreExistingQueue()
         {
             var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "messaging.template")).ToEnvironmentLineEndings();
-            var expectedMessageHandlerForPreExisingQueueGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandlerForPreExisingQueue_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedMessageHandlerForPreExistingQueueGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandlerForPreExistingQueue_Generated.g.cs")).ToEnvironmentLineEndings();
             var expectedMessageHandlerForNewQueueGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandlerForNewQueue_Generated.g.cs")).ToEnvironmentLineEndings();
 
             await new VerifyCS.Test
@@ -36,8 +36,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (
                             typeof(SourceGenerator.Generator),
-                            "Messaging_MessageHandlerForPreExisingQueue_Generated.g.cs",
-                            SourceText.From(expectedMessageHandlerForPreExisingQueueGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            "Messaging_MessageHandlerForPreExistingQueue_Generated.g.cs",
+                            SourceText.From(expectedMessageHandlerForPreExistingQueueGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         ),
                         (
                             typeof(SourceGenerator.Generator),
@@ -47,7 +47,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     },
                     ExpectedDiagnostics =
                     {
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_MessageHandlerForPreExisingQueue_Generated.g.cs", expectedMessageHandlerForPreExisingQueueGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_MessageHandlerForPreExistingQueue_Generated.g.cs", expectedMessageHandlerForPreExistingQueueGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_MessageHandlerForNewQueue_Generated.g.cs", expectedMessageHandlerForNewQueueGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     }

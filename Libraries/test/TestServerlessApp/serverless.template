@@ -368,35 +368,6 @@
         }
       }
     },
-    "TestServerlessAppMessagingMessageHandlerForPreExisingQueueGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForPreExisingQueueGeneratedMyMessageQueue"
-        ]
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForPreExisingQueue_Generated::MessageHandlerForPreExisingQueue",
-        "Events": {
-          "TestServerlessAppMessagingMessageHandlerForPreExisingQueueGeneratedMyMessageQueue": {
-            "Type": "SQS",
-            "Properties": {
-              "BatchSize": 10,
-              "Queue": "MyMessageQueue"
-            }
-          }
-        }
-      }
-    },
     "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -421,6 +392,35 @@
             "Properties": {
               "BatchSize": 10,
               "Queue": null
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedMyMessageQueue"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForPreExistingQueue_Generated::MessageHandlerForPreExistingQueue",
+        "Events": {
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedMyMessageQueue": {
+            "Type": "SQS",
+            "Properties": {
+              "BatchSize": 10,
+              "Queue": "MyMessageQueue"
             }
           }
         }

@@ -2,12 +2,12 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
   "Resources": {
-    "TestServerlessAppMessagingMessageHandlerForPreExisingQueueGenerated": {
+    "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForPreExisingQueueGeneratedMyMessageQueue"
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedMyMessageQueue"
         ]
       },
       "Properties": {
@@ -19,9 +19,9 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForPreExisingQueue_Generated::MessageHandlerForPreExisingQueue",
+        "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForPreExistingQueue_Generated::MessageHandlerForPreExistingQueue",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForPreExisingQueueGeneratedMyMessageQueue": {
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedMyMessageQueue": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 10,
