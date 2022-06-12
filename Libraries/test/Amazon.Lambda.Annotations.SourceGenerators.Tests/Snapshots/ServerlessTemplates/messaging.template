@@ -6,6 +6,9 @@
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
+        "SyncedResources": [
+          "MyQueueLogicalId"
+        ],
         "SyncedEvents": [
           "RootTestServerlessAppMessagingMessageHandlerGeneratedMyMessageQueue"
         ]

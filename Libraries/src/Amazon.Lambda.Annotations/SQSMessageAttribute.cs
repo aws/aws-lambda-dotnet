@@ -7,27 +7,17 @@ namespace Amazon.Lambda.Annotations
 
     public interface ISqsMessage
     {
-        string LogicalId { get; set; }
         string QueueName { get; set; }
         int BatchSize { get; set; }
+        string QueueLogicalId { get; set; }
     }
 
     [AttributeUsage(AttributeTargets.Method)]
     public class SqsMessageAttribute : Attribute, ISqsMessage
     {
-        public string LogicalId { get; set; }
         public string QueueName { get; set; }
         public int BatchSize { get; set; }
 
-        public SqsMessageAttribute()
-        {
-            
-        }
-
-        public SqsMessageAttribute(string logicalId = null, string queueName = null)
-        {
-            LogicalId = logicalId;
-            QueueName = queueName;
-        }
+        public string QueueLogicalId { get; set; }
     }
 }

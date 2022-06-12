@@ -9,14 +9,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     {
         public static SqsMessageAttribute Build(AttributeData att)
         {
-            //if (att.ConstructorArguments.Length != 2)
-            //{
-            //    throw new NotSupportedException($"{TypeFullNames.RestApiAttribute} must have constructor with 2 arguments.");
-            //}
-
-            //var method = (LambdaHttpMethod)att.ConstructorArguments[0].Value;
-            //var template = att.ConstructorArguments[1].Value as string;
-
             var data = new SqsMessageAttribute();
             foreach (var attNamedArgument in att.NamedArguments)
             {
@@ -25,11 +17,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.QueueName):
                         data.QueueName = attNamedArgument.Value.Value.ToString();
                         break;
-                    case nameof(ISqsMessage.LogicalId):
-                        data.LogicalId = attNamedArgument.Value.Value.ToString();
-                        break;
                     case nameof(ISqsMessage.BatchSize):
-                        data.BatchSize = int.Parse(attNamedArgument.Value.Value.ToString());
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.BatchSize = int.Parse(attNamedArgument.Value.Value.ToString());
+                        }
+                        break;
+                    case nameof(ISqsMessage.QueueLogicalId):
+                        data.QueueLogicalId = attNamedArgument.Value.Value?.ToString();
                         break;
                 }
             }

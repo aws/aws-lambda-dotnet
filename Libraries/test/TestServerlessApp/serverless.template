@@ -371,10 +371,7 @@
     "TestServerlessAppMessagingMessageHandlerGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootTestServerlessAppMessagingMessageHandlerGeneratedMyMessageQueue"
-        ]
+        "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
         "Runtime": "dotnet6",
