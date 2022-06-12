@@ -7,7 +7,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "RootTestServerlessAppMessagingMessageHandlerGeneratedMyMessageQueue"
+          "TestServerlessAppMessagingMessageHandlerGeneratedMyMessageQueue"
         ]
       },
       "Properties": {
@@ -21,7 +21,7 @@
         "PackageType": "Zip",
         "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandler_Generated::MessageHandler",
         "Events": {
-          "RootTestServerlessAppMessagingMessageHandlerGeneratedSqs": {
+          "TestServerlessAppMessagingMessageHandlerGeneratedMyMessageQueue": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 10,

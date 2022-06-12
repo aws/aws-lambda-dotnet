@@ -184,16 +184,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
         {
-
+            var eventName = $"{lambdaFunction.Name}{sqsMessageAttribute.QueueName}";
             var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
             var methodName = lambdaFunction.Name + "Sqs";
-            var methodPath = $"{eventPath}.Root{methodName}";
+            var methodPath = $"{eventPath}.{eventName}";
 
             _jsonWriter.SetToken($"{methodPath}.Type", "SQS");
             _jsonWriter.SetToken($"{methodPath}.Properties.BatchSize", sqsMessageAttribute.BatchSize);
             _jsonWriter.SetToken($"{methodPath}.Properties.Queue", sqsMessageAttribute.QueueName);
 
-            return $"Root{lambdaFunction.Name}{sqsMessageAttribute.QueueName}";
+            return eventName;
         }
         private string ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute)
         {
