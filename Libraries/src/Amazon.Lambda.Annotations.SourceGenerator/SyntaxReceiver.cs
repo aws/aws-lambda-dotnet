@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -24,13 +23,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 {
                     LambdaMethods.Add(methodDeclarationSyntax);
                 }
-                //foreach (ParameterSyntax parameterListParameter in methodDeclarationSyntax.ParameterList.Parameters)
-                //{
-                //    if (parameterListParameter.AttributeLists.Any())
-                //    {
-                //        Debugger.Break();
-                //    }
-                //}
             }
 
             // any class with at least one attribute is a candidate of Startup class

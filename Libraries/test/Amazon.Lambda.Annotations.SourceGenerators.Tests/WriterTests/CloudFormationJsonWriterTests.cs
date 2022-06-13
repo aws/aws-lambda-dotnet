@@ -27,7 +27,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, null, null);
             var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
-            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
+            var report = GetAnnotationReport(new() { lambdaFunctionModel });
 
             // ACT
             cloudFormationJsonWriter.ApplyReport(report);
@@ -406,20 +406,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             foreach (var model in lambdaFunctionModels)
             {
                 annotationReport.LambdaFunctions.Add(model);
-            }
-
-            return annotationReport;
-        }
-        private AnnotationReport GetAnnotationReport(List<ISqsMessageSerializable> queueModels)
-        {
-            var annotationReport = new AnnotationReport
-            {
-                CloudFormationTemplatePath = ServerlessTemplateFilePath,
-                ProjectRootDirectory = ProjectRootDirectory
-            };
-            foreach (var model in queueModels)
-            {
-                annotationReport.Queues.Add(model);
             }
 
             return annotationReport;

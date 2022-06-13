@@ -220,7 +220,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             return $"Root{methodName}";
         }
-        
         private void ApplyLambdaFunctionDefaults(string lambdaFunctionPath, string propertiesPath)
         {
             _jsonWriter.SetToken($"{lambdaFunctionPath}.Type", "AWS::Serverless::Function");
@@ -232,13 +231,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             _jsonWriter.SetToken($"{propertiesPath}.Timeout", 30);
             _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray("AWSLambdaBasicExecutionRole"));
         }
-        
         private void CreateNewTemplate()
         {
             var content = @"{'AWSTemplateFormatVersion' : '2010-09-09', 'Transform' : 'AWS::Serverless-2016-10-31'}";
             _jsonWriter.Parse(content);
         }
-        
         private void RemoveOrphanedLambdaFunctions(HashSet<string> processedLambdaFunctions)
         {
             var resourceToken = _jsonWriter.GetToken("Resources") as JObject;

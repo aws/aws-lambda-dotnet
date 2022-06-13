@@ -64,42 +64,5 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 Assert.Equal(expectedTemplateContent, actualTemplateContent);
             }
         }
-
-        //[Fact(DisplayName = nameof(MessageHandlerForNewQueue))]
-        //public async Task MessageHandlerForNewQueue()
-        //{
-        //    var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "messaging.template")).ToEnvironmentLineEndings();
-        //    var expectedMessageHandlerAsyncGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandlerForNewQueue_Generated.g.cs")).ToEnvironmentLineEndings();
-
-        //    await new VerifyCS.Test
-        //    {
-        //        TestState =
-        //        {
-        //            Sources =
-        //            {
-        //                (Path.Combine("TestServerlessApp", "Messaging.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "Messaging.cs"))),
-        //                (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
-        //                (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
-        //            },
-        //            GeneratedSources =
-        //            {
-        //                (
-        //                    typeof(SourceGenerator.Generator),
-        //                    "Messaging_MessageHandlerForNewQueue_Generated.g.cs",
-        //                    SourceText.From(expectedMessageHandlerAsyncGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
-        //                ),
-        //            },
-        //            ExpectedDiagnostics =
-        //            {
-        //                new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_MessageHandlerForNewQueue_Generated.g.cs", expectedMessageHandlerAsyncGenerated),
-        //                new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
-        //            }
-        //        }
-        //    }.RunAsync();
-
-        //    var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
-        //    Assert.Equal(expectedTemplateContent, actualTemplateContent);
-        //}
-
     }
 }
