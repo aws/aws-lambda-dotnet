@@ -192,6 +192,7 @@ namespace Amazon.Lambda.Annotations
     {
         private string _queueName;
         private string _queueLogicalId;
+        private string _queue;
         public const bool ContentBasedDeduplicationDefault = false;
         public const int VisibilityTimeoutDefault = 30;
         public const int BatchSizeDefault = 10;
@@ -204,7 +205,17 @@ namespace Amazon.Lambda.Annotations
 
 
         // event handler values
-        public string Queue { get; set; }
+        public string Queue
+        {
+            get => _queue;
+            set
+            {
+                if(_queue==value) return;
+                _queue = value;
+                OnPropertyChanged();
+            }
+        }
+
         public int BatchSize { get; set; } = BatchSizeDefault;
 
         public string QueueLogicalId
@@ -253,7 +264,7 @@ namespace Amazon.Lambda.Annotations
             switch (propertyName)
             {
                 case nameof(QueueLogicalId):
-                case nameof(QueueName):
+                case nameof(Queue):
                     if ((!string.IsNullOrEmpty(QueueLogicalId) || !string.IsNullOrEmpty(Queue)) && string.IsNullOrEmpty(QueueLogicalId) == string.IsNullOrEmpty(Queue))
                     {
                         throw new InvalidOperationException($"You can only specify one of: {nameof(QueueLogicalId)} or {nameof(Queue)}");
