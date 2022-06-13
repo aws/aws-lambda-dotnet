@@ -7,7 +7,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedqueue"
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedappdeployblueLAVETRYB3JKXSomeQueueName"
         ]
       },
       "Properties": {
@@ -21,7 +21,7 @@
         "PackageType": "Zip",
         "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForPreExistingQueue_Generated::MessageHandlerForPreExistingQueue",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedqueue": {
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedappdeployblueLAVETRYB3JKXSomeQueueName": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 11,
@@ -36,7 +36,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedqueue"
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueueForMessageHandlerForNewQueue"
         ],
         "SyncedResources": [
           "QueueForMessageHandlerForNewQueue"
@@ -53,7 +53,7 @@
         "PackageType": "Zip",
         "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForNewQueue_Generated::MessageHandlerForNewQueue",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedqueue": {
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueueForMessageHandlerForNewQueue": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 12,

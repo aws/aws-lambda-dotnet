@@ -391,7 +391,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
         {
-            var queueHandle = "queue";
+            string queueHandle;
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.Queue))
+            {
+                queueHandle = sqsMessageAttribute.Queue.Split(':').LastOrDefault().Replace("-",string.Empty);
+            }
+            else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
+            {
+                queueHandle = sqsMessageAttribute.QueueLogicalId;
+            }
+            else
+            {
+                throw new InvalidOperationException($"You must specify either {nameof(ISqsMessage.Queue)} or {nameof(ISqsMessage.QueueLogicalId)}");
+            }
+
             var eventName = $"{lambdaFunction.Name}{queueHandle}";
             var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
             var methodName = lambdaFunction.Name + "Sqs";
