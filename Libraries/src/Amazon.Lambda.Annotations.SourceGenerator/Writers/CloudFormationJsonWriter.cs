@@ -605,11 +605,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             _jsonWriter.SetToken($"{methodPath}.Type", "SQS");
 
-            var batchSizePropertyPath = $"{methodPath}.Properties.{nameof(ISqsMessage.BatchSize)}";
+            var batchSizePropertyPath = $"{methodPath}.Properties.BatchSize";
 
-            if (sqsMessageAttribute.BatchSize != SqsMessageAttribute.BatchSizeDefault)
+            if (sqsMessageAttribute.EventBatchSize != SqsMessageAttribute.BatchSizeDefault)
             {
-                _jsonWriter.SetToken(batchSizePropertyPath, sqsMessageAttribute.BatchSize);
+                _jsonWriter.SetToken(batchSizePropertyPath, sqsMessageAttribute.EventBatchSize);
             }
             else
             {

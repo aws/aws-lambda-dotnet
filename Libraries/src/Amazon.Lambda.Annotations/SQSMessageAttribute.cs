@@ -23,7 +23,7 @@ namespace Amazon.Lambda.Annotations
         /// Minimum: 1
         /// Maximum: 10000
         /// </summary>
-        int BatchSize { get; set; }
+        int EventBatchSize { get; set; }
 
         /// <summary>
         /// For Events: The ARN of the queue.
@@ -216,7 +216,7 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
-        public int BatchSize { get; set; } = BatchSizeDefault;
+        public int EventBatchSize { get; set; } = BatchSizeDefault;
 
         public string QueueLogicalId
         {

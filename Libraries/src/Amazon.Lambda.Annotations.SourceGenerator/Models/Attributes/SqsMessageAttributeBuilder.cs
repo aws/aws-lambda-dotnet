@@ -20,10 +20,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.EventQueueARN):
                         data.EventQueueARN = attNamedArgument.Value.Value.ToString();
                         break;
-                    case nameof(ISqsMessage.BatchSize):
+                    case nameof(ISqsMessage.EventBatchSize):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.BatchSize = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.EventBatchSize = int.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     case nameof(ISqsMessage.QueueLogicalId):
