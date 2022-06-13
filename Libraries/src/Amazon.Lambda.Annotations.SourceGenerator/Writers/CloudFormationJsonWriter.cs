@@ -280,6 +280,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             var maximumMessageSizeDefaultPath = $"{propertiesPath}.{nameof(ISqsMessage.MaximumMessageSize)}";
             WriteOrRemove(maximumMessageSizeDefaultPath, sqsMessageAttribute.MaximumMessageSize, SqsMessageAttribute.MaximumMessageSizeDefault);
+
+            var messageRetentionPeriodPath = $"{propertiesPath}.{nameof(ISqsMessage.MessageRetentionPeriod)}";
+            WriteOrRemove(messageRetentionPeriodPath, sqsMessageAttribute.MessageRetentionPeriod, SqsMessageAttribute.MessageRetentionPeriodDefault);
         }
 
         private void WriteOrRemove(string path, int value, int defaultValue)

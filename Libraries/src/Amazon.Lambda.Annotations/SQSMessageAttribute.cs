@@ -10,7 +10,8 @@ namespace Amazon.Lambda.Annotations
         string QueueName { get; set; }
         int BatchSize { get; set; }
         string QueueLogicalId { get; set; }
-        int VisibilityTimeout { get; set; }
+        
+
         /// <summary>
         /// For first-in-first-out (FIFO) queues, specifies whether to enable content-based deduplication. During the deduplication interval, Amazon SQS treats messages that are sent with identical content as duplicates and delivers only one copy of the message. For more information, see the ContentBasedDeduplication attribute for the CreateQueue action in the Amazon SQS API Reference.
         /// Required: No
@@ -84,7 +85,23 @@ namespace Amazon.Lambda.Annotations
         /// </summary>
         int MaximumMessageSize { get; set; }
 
+        /// <summary>
+        /// The number of seconds that Amazon SQS retains a message. You can specify an integer value from 60 seconds (1 minute) to 1,209,600 seconds (14 days). The default value is 345,600 seconds (4 days).
+        /// Required: No
+        /// Type: Integer
+        /// Update requires: No interruption
+        /// </summary>
+        int MessageRetentionPeriod { get; set; }
 
+        /// <summary>
+        /// The length of time during which a message will be unavailable after a message is delivered from the queue. This blocks other components from receiving the same message and gives the initial component time to process and delete the message from the queue.
+        /// Values must be from 0 to 43,200 seconds (12 hours). If you don't specify a value, AWS CloudFormation uses the default value of 30 seconds.
+        /// For more information about Amazon SQS queue visibility timeouts, see Visibility timeout in the Amazon SQS Developer Guide.
+        /// Required: No
+        /// Type: Integer
+        /// Update requires: No interruption
+        /// </summary>
+        int VisibilityTimeout { get; set; }
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -97,6 +114,7 @@ namespace Amazon.Lambda.Annotations
         public const bool FifoQueueDefault = false;
         public const int KmsDataKeyReusePeriodSecondsDefault = 300;
         public const int MaximumMessageSizeDefault = 262144;
+        public const int MessageRetentionPeriodDefault = 345600;
 
         public string QueueName { get; set; }
         public int BatchSize { get; set; } = BatchSizeDefault;
@@ -111,5 +129,6 @@ namespace Amazon.Lambda.Annotations
         public int KmsDataKeyReusePeriodSeconds { get; set; } = KmsDataKeyReusePeriodSecondsDefault;
         public string KmsMasterKeyId { get; set; }
         public int MaximumMessageSize { get; set; } = MaximumMessageSizeDefault;
+        public int MessageRetentionPeriod { get; set; } = MessageRetentionPeriodDefault;
     }
 }

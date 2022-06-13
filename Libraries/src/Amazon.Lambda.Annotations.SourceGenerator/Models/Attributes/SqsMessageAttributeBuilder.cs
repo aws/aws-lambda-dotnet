@@ -78,6 +78,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.MaximumMessageSize = int.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
+                    //MessageRetentionPeriod
+                    case nameof(ISqsMessage.MessageRetentionPeriod):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.MessageRetentionPeriod = int.Parse(attNamedArgument.Value.Value.ToString());
+                        }
+                        break;
 
 
 
