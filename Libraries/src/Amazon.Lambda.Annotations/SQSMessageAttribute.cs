@@ -100,7 +100,7 @@ namespace Amazon.Lambda.Annotations
         /// Type: String
         /// Update requires: Replacement
         /// </summary>
-        string EventQueueName { get; set; }
+        string QueueName { get; set; }
 
 
         /// <summary>
@@ -177,7 +177,7 @@ namespace Amazon.Lambda.Annotations
         public const int ReceiveMessageWaitTimeSecondsDefault = 0;
 
 
-        public string EventQueueName { get; set; }
+        public string QueueName { get; set; }
         public int BatchSize { get; set; } = BatchSizeDefault;
 
         public string QueueLogicalId { get; set; }

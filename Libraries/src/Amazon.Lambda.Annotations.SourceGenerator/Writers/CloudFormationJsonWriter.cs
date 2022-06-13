@@ -388,7 +388,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
         {
-            var eventName = $"{lambdaFunction.Name}{sqsMessageAttribute.EventQueueName}";
+            var eventName = $"{lambdaFunction.Name}{sqsMessageAttribute.QueueName}";
             var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
             var methodName = lambdaFunction.Name + "Sqs";
             var methodPath = $"{eventPath}.{eventName}";
@@ -406,14 +406,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(batchSizePropertyPath);
             }
 
-            var EventQueueNamePath = $"{methodPath}.Properties.Queue";
-            if (!string.IsNullOrEmpty(sqsMessageAttribute.EventQueueName))
+            var queueNamePath = $"{methodPath}.Properties.Queue";
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueName))
             {
-                _jsonWriter.SetToken(EventQueueNamePath, sqsMessageAttribute.EventQueueName);
+                _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.QueueName);
             }
             else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
             {
-                _jsonWriter.SetToken(EventQueueNamePath, new JObject(new JProperty("Ref",sqsMessageAttribute.QueueLogicalId)));
+                _jsonWriter.SetToken(queueNamePath, new JObject(new JProperty("Ref",sqsMessageAttribute.QueueLogicalId)));
             }
 
             return eventName;
