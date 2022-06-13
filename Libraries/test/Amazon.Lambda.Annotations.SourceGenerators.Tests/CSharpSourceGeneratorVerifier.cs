@@ -30,8 +30,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
                         .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
                         .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
-                        .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(SQSEvent.SQSMessage).Assembly.Location))
-                        ;
+                        .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(SQSEvent.SQSMessage).Assembly.Location));
                 });
             }
 

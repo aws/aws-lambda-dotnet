@@ -347,6 +347,126 @@
           ]
         }
       }
+    },
+    "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedappdeployblueLAVETRYB3JKXSomeQueueName"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForPreExistingQueue_Generated::MessageHandlerForPreExistingQueue",
+        "Events": {
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedappdeployblueLAVETRYB3JKXSomeQueueName": {
+            "Type": "SQS",
+            "Properties": {
+              "BatchSize": 11,
+              "Queue": "arn:aws:sqs:us-east-1:968993296699:app-deploy-blue-LAVETRYB3JKX-SomeQueueName"
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueueForMessageHandlerForNewQueue"
+        ],
+        "SyncedResources": [
+          "QueueForMessageHandlerForNewQueue"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForNewQueue_Generated::MessageHandlerForNewQueue",
+        "Events": {
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueueForMessageHandlerForNewQueue": {
+            "Type": "SQS",
+            "Properties": {
+              "BatchSize": 12,
+              "Queue": {
+                "Ref": "QueueForMessageHandlerForNewQueue"
+              }
+            }
+          }
+        }
+      }
+    },
+    "QueueForMessageHandlerForNewQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "ContentBasedDeduplication": true,
+        "DeduplicationScope": "queue",
+        "DelaySeconds": 5,
+        "FifoQueue": true,
+        "FifoThroughputLimit": "perQueue",
+        "KmsDataKeyReusePeriodSeconds": 299,
+        "KmsMasterKeyId": "alias/aws/sqs",
+        "MaximumMessageSize": 1024,
+        "MessageRetentionPeriod": 60,
+        "QueueName": "thisismyqueuename.fifo",
+        "ReceiveMessageWaitTimeSeconds": 5,
+        "RedriveAllowPolicy": {
+          "redrivePermission": "denyAll"
+        },
+        "RedrivePolicy": {
+          "deadLetterTargetArn": "arn:somewhere",
+          "maxReceiveCount": 5
+        },
+        "Tags": [
+          {
+            "Key": "keyname1",
+            "Value": "value1"
+          },
+          {
+            "Key": "keyname2",
+            "Value": "value2"
+          }
+        ],
+        "VisibilityTimeout": 100
+      }
+    },
+    "ToUpper": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.Sub1.Functions_ToUpper_Generated::ToUpper"
+          ]
+        }
+      }
     }
   },
   "Outputs": {
