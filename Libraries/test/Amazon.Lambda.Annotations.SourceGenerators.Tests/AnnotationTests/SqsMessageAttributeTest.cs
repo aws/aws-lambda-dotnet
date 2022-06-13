@@ -34,5 +34,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             target.DeduplicationScope = "queue";
             Assert.Throws<ArgumentOutOfRangeException>(() => target.DeduplicationScope = "notValid");
         }
+
+        [Fact]
+        public void DelaySecondsValidation()
+        {
+            var target = new SqsMessageAttribute();
+            target.DelaySeconds = SqsMessageAttribute.DelaySecondsMinimum;
+            target.DelaySeconds = SqsMessageAttribute.DelaySecondsMaximum;
+            Assert.Throws<ArgumentOutOfRangeException>(() => target.DelaySeconds = -1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => target.DelaySeconds = SqsMessageAttribute.DelaySecondsMaximum + 1);
+
+        }
     }
 }

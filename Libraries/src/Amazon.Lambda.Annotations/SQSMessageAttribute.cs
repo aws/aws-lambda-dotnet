@@ -194,6 +194,7 @@ namespace Amazon.Lambda.Annotations
         private string _queueLogicalId;
         private string _eventQueueArn;
         private string _deduplicationScope;
+        private int _delaySeconds = DelaySecondsDefault;
         public const bool ContentBasedDeduplicationDefault = false;
         public const int VisibilityTimeoutDefault = 30;
         public const int BatchSizeDefault = 10;
@@ -203,6 +204,8 @@ namespace Amazon.Lambda.Annotations
         public const int MaximumMessageSizeDefault = 262144;
         public const int MessageRetentionPeriodDefault = 345600;
         public const int ReceiveMessageWaitTimeSecondsDefault = 0;
+        public const int DelaySecondsMinimum = 0;
+        public const int DelaySecondsMaximum = 900;
 
 
         // event handler values
@@ -256,7 +259,21 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
-        public int DelaySeconds { get; set; } = DelaySecondsDefault;
+        public int DelaySeconds
+        {
+            get => _delaySeconds;
+            set
+            {
+                if (_delaySeconds==value) return;
+                if (value < DelaySecondsMinimum || value > DelaySecondsMaximum)
+                {
+                    throw new ArgumentOutOfRangeException();
+                }
+                _delaySeconds = value;
+                OnPropertyChanged();
+            }
+        }
+
         public bool FifoQueue { get; set; }
         public string FifoThroughputLimit { get; set; }
         public int KmsDataKeyReusePeriodSeconds { get; set; } = KmsDataKeyReusePeriodSecondsDefault;
