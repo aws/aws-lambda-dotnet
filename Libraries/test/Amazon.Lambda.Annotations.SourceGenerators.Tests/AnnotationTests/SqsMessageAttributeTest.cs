@@ -155,6 +155,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
                 Assert.Equal(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.ReceiveMessageWaitTimeSeconds)}')", error.Message);
 
             }
+        }
+
+        [Theory]
+        [InlineData("{ 'deadLetterTargetArn': 'arn:somewhere', 'maxReceiveCount': 5 }")]
+        public void RedriveAllowPolicyValidation(string value, Type exceptionType = null, string exceptionMessage = null)
+        {
+            var target = new SqsMessageAttribute();
+            if (exceptionType == null)
+            {
+                target.RedrivePolicy = value;
+            }
+            else
+            {
+                var error = Assert.Throws(exceptionType, () => target.RedrivePolicy = value) as ArgumentException;
+                Assert.Equal(nameof(SqsMessageAttribute.RedrivePolicy), error.ParamName);
+                Assert.Equal(exceptionMessage, error.Message);
+            }
 
         }
     }

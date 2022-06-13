@@ -5,11 +5,14 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Newtonsoft.Json.Linq;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
 {
     internal class SqsMessageAttributeBuilder
     {
+        private const string RedriveAllPolicyNotValidJsonExceptionMessage = "RedriveAllPolicy must be valid Json";
+
         public static SqsMessageAttribute Build(AttributeData att)
         {
             var data = new SqsMessageAttribute();
@@ -106,7 +109,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.RedriveAllowPolicy):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.RedriveAllowPolicy = attNamedArgument.Value.Value.ToString();
+                            var json = attNamedArgument.Value.Value.ToString();
+                            try
+                            {
+                                JObject.Parse(json);
+                            }
+                            catch (Exception e)
+                            {
+
+                                throw new ArgumentOutOfRangeException(nameof(ISqsMessage.RedriveAllowPolicy), SqsMessageAttributeBuilder.RedriveAllPolicyNotValidJsonExceptionMessage);
+                            }
+                            data.RedriveAllowPolicy = json;
                         }
                         break;
                     // RedrivePolicy

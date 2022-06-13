@@ -53,6 +53,7 @@ namespace Amazon.Lambda.Annotations
         internal const int ReceiveMessageWaitTimeSecondsMaximum = 20;
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
         internal const string ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage = "ReceiveMessageWaitTimeSeconds must be => 0 && <= 20";
+        internal const string RedriveAllowPolicyValidationNotValidJsonException = "Not valid JSON";
 
         private string _queueName;
         private string _queueLogicalId;
@@ -66,6 +67,7 @@ namespace Amazon.Lambda.Annotations
         private int _eventBatchSize = EventBatchSizeDefault;
         private int _visibilityTimeout = VisibilityTimeoutDefault;
         private int _receiveMessageWaitTimeSeconds = ReceiveMessageWaitTimeSecondsDefault;
+        private string _redrivePolicy;
 
 
         // event handler values
@@ -251,7 +253,17 @@ namespace Amazon.Lambda.Annotations
         }
 
         public string RedriveAllowPolicy { get; set; }
-        public string RedrivePolicy { get; set; }
+
+        public string RedrivePolicy
+        {
+            get => _redrivePolicy;
+            set
+            {
+                if (_redrivePolicy == value) return;
+                _redrivePolicy = value;
+                OnPropertyChanged();
+            }
+        }
 
         public string QueueName 
         {
