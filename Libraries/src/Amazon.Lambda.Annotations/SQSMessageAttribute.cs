@@ -7,9 +7,37 @@ namespace Amazon.Lambda.Annotations
 
     public interface ISqsMessage
     {
-        int BatchSize { get; set; }
+        /// <summary>
+        /// If queue auto-creation (in .template) feature, specify the Logical Id of the queue in the template.
+        /// </summary>
         string QueueLogicalId { get; set; }
+
+        /// <summary>
+        /// For Events:  The maximum number of items to retrieve in a single batch.
+        /// Type: Integer
+        /// Required: No
+        /// Default: 10
+        /// AWS CloudFormation compatibility: This property is passed directly to the BatchSize property of an AWS::Lambda::EventSourceMapping resource.
+        /// Minimum: 1
+        /// Maximum: 10000
+        /// </summary>
+        int BatchSize { get; set; }
+
+        /// <summary>
+        /// For Events: The ARN of the queue.
+        /// Type: String
+        /// Required: Yes (If not using the auto-create feature via QueueLogicalId
+        /// AWS CloudFormation compatibility: This property is passed directly to the EventSourceArn property of an AWS::Lambda::EventSourceMapping resource.
+        /// <seealso cref="QueueLogicalId"/>
+        /// </summary>
         string Queue { get; set; }
+
+        /// <summary>
+        /// For first-in-first-out (FIFO) queues, specifies whether to enable content-based deduplication. During the deduplication interval, Amazon SQS treats messages that are sent with identical content as duplicates and delivers only one copy of the message. For more information, see the ContentBasedDeduplication attribute for the CreateQueue action in the Amazon SQS API Reference.
+        /// Required: No
+        /// Type: Boolean
+        /// Update requires: No interruption
+        /// </summary>
 
         bool ContentBasedDeduplication { get; set; }
 
