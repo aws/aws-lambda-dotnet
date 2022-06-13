@@ -15,7 +15,6 @@ namespace Amazon.Lambda.Annotations
         public const int DelaySecondsDefault = 0;
         public const bool FifoQueueDefault = false;
         public const int KmsDataKeyReusePeriodSecondsDefault = 300;
-        public const int MessageRetentionPeriodDefault = 345600;
         public const int ReceiveMessageWaitTimeSecondsDefault = 0;
         public const int DelaySecondsMinimum = 0;
         public const int DelaySecondsMaximum = 900;
@@ -24,11 +23,17 @@ namespace Amazon.Lambda.Annotations
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
         internal const string KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage = "KmsDataKeyReusePeriodSeconds must be => 60 & <= 86400";
 
-        public const int MaximumMessageSizeMinimum = 1024;
-        public const int MaximumMessageSizeMaximum = 262144;
+        internal const int MaximumMessageSizeMinimum = 1024;
+        internal const int MaximumMessageSizeMaximum = 262144;
         public const int MaximumMessageSizeDefault = 262144;
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
         internal const string MaximumMessageSizeArgumentOutOfRangeExceptionMessage = "MaximumMessageSize must be => 1024 & <= 262144";
+
+        internal const int MessageRetentionPeriodMinimum = 60;
+        internal const int MessageRetentionPeriodMaximum = 345600;
+        public const int MessageRetentionPeriodDefault = 345600;
+        // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
+        internal const string MessageRetentionPeriodArgumentOutOfRangeExceptionMessage = "MessageRetentionPeriod must be => 60 & <= 345600";
 
         private string _queueName;
         private string _queueLogicalId;
@@ -38,6 +43,7 @@ namespace Amazon.Lambda.Annotations
         private string _fifoThroughputLimit;
         private int _kmsDataKeyReusePeriodSeconds = KmsDataKeyReusePeriodSecondsDefault;
         private int _maximumMessageSize = MaximumMessageSizeDefault;
+        private int _messageRetentionPeriod = MessageRetentionPeriodDefault;
 
 
         // event handler values
@@ -165,7 +171,21 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
-        public int MessageRetentionPeriod { get; set; } = MessageRetentionPeriodDefault;
+        public int MessageRetentionPeriod
+        {
+            get => _messageRetentionPeriod;
+            set
+            {
+                if (_messageRetentionPeriod==value) return;
+                if (value < MessageRetentionPeriodMinimum || value > MessageRetentionPeriodMaximum)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(MessageRetentionPeriod), MessageRetentionPeriodArgumentOutOfRangeExceptionMessage);
+                }
+                _messageRetentionPeriod = value;
+                OnPropertyChanged();
+            }
+        }
+
         public string RedriveAllowPolicy { get; set; }
         public string RedrivePolicy { get; set; }
 
@@ -180,6 +200,7 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
+        
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)

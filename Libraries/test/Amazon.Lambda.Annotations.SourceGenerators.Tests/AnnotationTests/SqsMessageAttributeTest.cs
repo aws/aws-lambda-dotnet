@@ -79,6 +79,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.MaximumMessageSize = SqsMessageAttribute.MaximumMessageSizeMinimum - 1);
             Assert.Equal(nameof(SqsMessageAttribute.MaximumMessageSize), error.ParamName);
             Assert.Equal(SqsMessageAttribute.MaximumMessageSizeArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.MaximumMessageSize)}')", error.Message);
+        }
+
+        [Fact]
+        public void MessageRetentionPeriodValidation()
+        {
+            var target = new SqsMessageAttribute();
+            target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMinimum;
+            target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMaximum;
+            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMinimum - 1);
+            Assert.Equal(nameof(SqsMessageAttribute.MessageRetentionPeriod), error.ParamName);
+            Assert.Equal(SqsMessageAttribute.MessageRetentionPeriodArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.MessageRetentionPeriod)}')", error.Message);
+            error = Assert.Throws<ArgumentOutOfRangeException>(() => target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMaximum + 1);
+            Assert.Equal(nameof(SqsMessageAttribute.MessageRetentionPeriod), error.ParamName);
+            Assert.Equal(SqsMessageAttribute.MessageRetentionPeriodArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.MessageRetentionPeriod)}')", error.Message);
 
 
         }
