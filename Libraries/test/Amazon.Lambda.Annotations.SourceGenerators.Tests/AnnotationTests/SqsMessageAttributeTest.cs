@@ -46,5 +46,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             Assert.Throws<ArgumentOutOfRangeException>(() => target.DelaySeconds = -1);
             Assert.Throws<ArgumentOutOfRangeException>(() => target.DelaySeconds = SqsMessageAttribute.DelaySecondsMaximum + 1);
         }
+
+        [Fact]
+        public void FifoThroughputLimit()
+        {
+            var target = new SqsMessageAttribute();
+            target.FifoThroughputLimit = "perQueue";
+            target.FifoThroughputLimit = "perMessageGroupId";
+            Assert.Throws<ArgumentOutOfRangeException>(() => target.FifoThroughputLimit = "notValid");
+
+        }
     }
 }
