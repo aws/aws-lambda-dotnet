@@ -455,6 +455,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         private void WriteOrRemove(string path, string value, string defaultValue)
         {
+            if (value == null)
+            {
+                value = string.Empty;
+            }
+
+            if (defaultValue == null)
+            {
+                defaultValue = string.Empty;
+            }
             if (value != defaultValue)
             {
                 _jsonWriter.SetToken(path, value);

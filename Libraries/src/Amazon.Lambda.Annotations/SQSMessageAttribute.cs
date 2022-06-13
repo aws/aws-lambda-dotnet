@@ -178,10 +178,13 @@ namespace Amazon.Lambda.Annotations
         public const int ReceiveMessageWaitTimeSecondsDefault = 0;
 
 
+        // event handler values
         public string Queue { get; set; }
         public int BatchSize { get; set; } = BatchSizeDefault;
-
         public string QueueLogicalId { get; set; }
+
+        // sqs queue values
+
         public string[] Tags { get; set; } = new string[] {};
         public int VisibilityTimeout { get; set; } = VisibilityTimeoutDefault;
         public int ReceiveMessageWaitTimeSeconds { get; set; } = ReceiveMessageWaitTimeSecondsDefault;
