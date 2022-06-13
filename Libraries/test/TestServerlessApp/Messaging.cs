@@ -12,14 +12,14 @@ namespace TestServerlessApp
     public class Messaging
     {
         [LambdaFunction]
-        [SqsMessage(QueueName = "MyMessageQueue", BatchSize = 10)]
+        [SqsMessage(QueueName = "MyMessageQueue", BatchSize = 11)]
         public Task MessageHandlerForPreExistingQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;
         }
 
         [LambdaFunction]
-        [SqsMessage(BatchSize = 10, QueueLogicalId = "QueueForMessageHandlerForNewQueue", VisibilityTimeout = 100, ContentBasedDeduplication = true, DeduplicationScope = "queue")]
+        [SqsMessage(BatchSize = 12, QueueLogicalId = "QueueForMessageHandlerForNewQueue", VisibilityTimeout = 100, ContentBasedDeduplication = true, DeduplicationScope = "queue", DelaySeconds = 5)]
         public Task MessageHandlerForNewQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;

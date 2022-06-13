@@ -240,6 +240,19 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             {
                 _jsonWriter.RemoveToken(deduplicationScopePath);
             }
+
+            var delayPropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.DelaySeconds)}";
+
+            if (sqsMessageAttribute.DelaySeconds != SqsMessageAttribute.DelaySecondsDefault)
+            {
+                _jsonWriter.SetToken(delayPropertyPath, sqsMessageAttribute.DelaySeconds);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(delayPropertyPath);
+            }
+
+
         }
 
         private void ApplyQueueDefaults(string sqsQueuePath, string propertiesPath)
@@ -276,14 +289,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var methodPath = $"{eventPath}.{eventName}";
 
             _jsonWriter.SetToken($"{methodPath}.Type", "SQS");
-            _jsonWriter.SetToken($"{methodPath}.Properties.BatchSize", sqsMessageAttribute.BatchSize);
+
+            var batchSizePropertyPath = $"{methodPath}.Properties.{nameof(ISqsMessage.BatchSize)}";
+
+            if (sqsMessageAttribute.BatchSize != SqsMessageAttribute.BatchSizeDefault)
+            {
+                _jsonWriter.SetToken(batchSizePropertyPath, sqsMessageAttribute.BatchSize);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(batchSizePropertyPath);
+            }
+
+            var queueNamePath = $"{methodPath}.Properties.Queue";
             if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueName))
             {
-                _jsonWriter.SetToken($"{methodPath}.Properties.Queue", sqsMessageAttribute.QueueName);
+                _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.QueueName);
             }
             else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
             {
-                _jsonWriter.SetToken($"{methodPath}.Properties.Queue", new JObject(new JProperty("Ref",sqsMessageAttribute.QueueLogicalId)));
+                _jsonWriter.SetToken(queueNamePath, new JObject(new JProperty("Ref",sqsMessageAttribute.QueueLogicalId)));
             }
 
             return eventName;

@@ -41,6 +41,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.DeduplicationScope = attNamedArgument.Value.Value.ToString();
                         }
                         break;
+                    case nameof(ISqsMessage.DelaySeconds):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.DelaySeconds = int.Parse(attNamedArgument.Value.Value.ToString());
+                        }
+                        break;
                     default:
                         throw new NotSupportedException(attNamedArgument.Key);
                 }

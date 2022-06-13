@@ -24,7 +24,7 @@
           "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedMyMessageQueue": {
             "Type": "SQS",
             "Properties": {
-              "BatchSize": 10,
+              "BatchSize": 11,
               "Queue": "MyMessageQueue"
             }
           }
@@ -56,7 +56,7 @@
           "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
             "Type": "SQS",
             "Properties": {
-              "BatchSize": 10,
+              "BatchSize": 12,
               "Queue": {
                 "Ref": "QueueForMessageHandlerForNewQueue"
               }
@@ -73,7 +73,8 @@
       "Properties": {
         "VisibilityTimeout": 100,
         "ContentBasedDeduplication": true,
-        "DeduplicationScope": "queue"
+        "DeduplicationScope": "queue",
+        "DelaySeconds": 5
       }
     }
   }

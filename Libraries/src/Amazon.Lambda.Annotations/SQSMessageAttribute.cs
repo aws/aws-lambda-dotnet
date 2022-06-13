@@ -29,6 +29,14 @@ namespace Amazon.Lambda.Annotations
         /// Update requires: No interruption
         /// </summary>
         string DeduplicationScope { get; set; }
+
+        /// <summary>
+        /// If set to true, creates a FIFO queue. If you don't specify this property, Amazon SQS creates a standard queue. For more information, see FIFO queues in the Amazon SQS Developer Guide.
+        /// Required: No
+        /// Type: Boolean
+        /// Update requires: Replacement
+        /// </summary>
+        int DelaySeconds { get; set; }
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -36,13 +44,16 @@ namespace Amazon.Lambda.Annotations
     {
         public const bool ContentBasedDeduplicationDefault = false;
         public const int VisibilityTimeoutDefault = 30;
+        public const int BatchSizeDefault = 10;
+        public const int DelaySecondsDefault = 0;
 
         public string QueueName { get; set; }
-        public int BatchSize { get; set; }
+        public int BatchSize { get; set; } = BatchSizeDefault;
 
         public string QueueLogicalId { get; set; }
         public int VisibilityTimeout { get; set; } = VisibilityTimeoutDefault;
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
         public string DeduplicationScope { get; set; }
+        public int DelaySeconds { get; set; } = DelaySecondsDefault;
     }
 }
