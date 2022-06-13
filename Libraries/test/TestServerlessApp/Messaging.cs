@@ -29,7 +29,8 @@ namespace TestServerlessApp
             FifoQueue = true,
             FifoThroughputLimit = "perQueue",
             KmsDataKeyReusePeriodSeconds = 299,
-            KmsMasterKeyId = "alias/aws/sqs" )]
+            KmsMasterKeyId = "alias/aws/sqs",
+            MaximumMessageSize = 1024)]
         public Task MessageHandlerForNewQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;

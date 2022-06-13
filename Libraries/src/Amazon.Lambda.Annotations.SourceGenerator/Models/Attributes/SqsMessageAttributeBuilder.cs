@@ -71,7 +71,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.KmsMasterKeyId = attNamedArgument.Value.Value.ToString();
                         }
                         break;
-                        
+                    // MaximumMessageSize
+                    case nameof(ISqsMessage.MaximumMessageSize):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.MaximumMessageSize = int.Parse(attNamedArgument.Value.Value.ToString());
+                        }
+                        break;
+
 
 
                     default:

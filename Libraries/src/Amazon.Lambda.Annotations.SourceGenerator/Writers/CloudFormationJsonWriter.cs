@@ -278,9 +278,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(kmsMasterKeyIdPath);
             }
 
-
-
-
+            var maximumMessageSizeDefaultPath = $"{propertiesPath}.{nameof(ISqsMessage.MaximumMessageSize)}";
+            WriteOrRemove(maximumMessageSizeDefaultPath, sqsMessageAttribute.MaximumMessageSize, SqsMessageAttribute.MaximumMessageSizeDefault);
         }
 
         private void WriteOrRemove(string path, int value, int defaultValue)

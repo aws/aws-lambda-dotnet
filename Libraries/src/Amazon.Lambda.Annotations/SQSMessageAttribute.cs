@@ -76,6 +76,13 @@ namespace Amazon.Lambda.Annotations
         /// </summary>
         string KmsMasterKeyId { get; set; }
 
+        /// <summary>
+        /// The limit of how many bytes that a message can contain before Amazon SQS rejects it. You can specify an integer value from 1,024 bytes (1 KiB) to 262,144 bytes (256 KiB). The default value is 262,144 (256 KiB).
+        /// Required: No
+        /// Type: Integer
+        /// Update requires: No interruption
+        /// </summary>
+        int MaximumMessageSize { get; set; }
 
 
     }
@@ -89,6 +96,7 @@ namespace Amazon.Lambda.Annotations
         public const int DelaySecondsDefault = 0;
         public const bool FifoQueueDefault = false;
         public const int KmsDataKeyReusePeriodSecondsDefault = 300;
+        public const int MaximumMessageSizeDefault = 262144;
 
         public string QueueName { get; set; }
         public int BatchSize { get; set; } = BatchSizeDefault;
@@ -102,5 +110,6 @@ namespace Amazon.Lambda.Annotations
         public string FifoThroughputLimit { get; set; }
         public int KmsDataKeyReusePeriodSeconds { get; set; } = KmsDataKeyReusePeriodSecondsDefault;
         public string KmsMasterKeyId { get; set; }
+        public int MaximumMessageSize { get; set; } = MaximumMessageSizeDefault;
     }
 }
