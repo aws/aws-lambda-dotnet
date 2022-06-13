@@ -88,7 +88,17 @@
         "RedrivePolicy": {
           "deadLetterTargetArn": "arn:somewhere",
           "maxReceiveCount": 5
-        }
+        },
+        "Tags": [
+          {
+            "Key": "keyname1",
+            "Value": "value1"
+          },
+          {
+            "Key": "keyname2",
+            "Value": "value2"
+          }
+        ]
       }
     }
   }

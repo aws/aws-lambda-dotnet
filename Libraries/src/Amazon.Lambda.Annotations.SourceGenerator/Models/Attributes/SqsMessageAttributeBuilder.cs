@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -104,6 +107,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
                             data.RedrivePolicy = attNamedArgument.Value.Value.ToString();
+                        }
+                        break;
+                    // Tags
+                    case nameof(ISqsMessage.Tags):
+                        if (attNamedArgument.Value.Values.Any())
+                        {
+                            var final = new List<string>();
+
+                            foreach (var pair in attNamedArgument.Value.Values)
+                            {
+                                final.Add(pair.Value.ToString());
+                            }
+
+                            data.Tags = final.ToArray();
                         }
                         break;
 

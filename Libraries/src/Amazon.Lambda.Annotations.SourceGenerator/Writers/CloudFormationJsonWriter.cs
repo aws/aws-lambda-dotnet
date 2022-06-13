@@ -292,6 +292,35 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             //RedrivePolicy
             WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedrivePolicy)}", sqsMessageAttribute.RedrivePolicy, string.Empty);
+
+            // Tags
+            List<string> writtenTags = new List<string>();
+            //                _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray(policyArray));
+            var tagArray = new JArray();
+            foreach (var tag in sqsMessageAttribute.Tags)
+            {
+                var tagParts = tag.Split('=');
+                var key = tagParts.FirstOrDefault();
+                var value = tagParts.LastOrDefault();
+                if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
+                {
+                    var tagObject = new JObject();
+                    tagObject.Add(new JProperty("Key", key));
+                    tagObject.Add(new JProperty("Value", value));
+                    tagArray.Add(tagObject);
+                    writtenTags.Add(key);
+                }
+            }
+
+            if (tagArray.Any())
+            {
+                _jsonWriter.SetToken($"{propertiesPath}.{nameof(ISqsMessage.Tags)}", tagArray);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken($"{propertiesPath}.{nameof(ISqsMessage.Tags)}");
+            }
+
         }
 
         private void WriteOrRemoveAsJson(string path, string value, string defaultValue)

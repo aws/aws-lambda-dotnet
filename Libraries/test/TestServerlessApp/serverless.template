@@ -377,9 +377,6 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated"
-        ],
-        "SyncedResources": [
-          "QueueForMessageHandlerForNewQueue"
         ]
       },
       "Properties": {
@@ -394,40 +391,8 @@
         "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForNewQueue_Generated::MessageHandlerForNewQueue",
         "Events": {
           "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
-            "Type": "SQS",
-            "Properties": {
-              "BatchSize": 12,
-              "Queue": {
-                "Ref": "QueueForMessageHandlerForNewQueue"
-              }
-            }
+            "Type": "SQS"
           }
-        }
-      }
-    },
-    "QueueForMessageHandlerForNewQueue": {
-      "Type": "AWS::SQS::Queue",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "VisibilityTimeout": 100,
-        "ContentBasedDeduplication": true,
-        "DeduplicationScope": "queue",
-        "DelaySeconds": 5,
-        "FifoQueue": true,
-        "FifoThroughputLimit": "perQueue",
-        "KmsDataKeyReusePeriodSeconds": 299,
-        "KmsMasterKeyId": "alias/aws/sqs",
-        "MaximumMessageSize": 1024,
-        "MessageRetentionPeriod": 60,
-        "ReceiveMessageWaitTimeSeconds": 5,
-        "RedriveAllowPolicy": {
-          "redrivePermission": "denyAll"
-        },
-        "RedrivePolicy": {
-          "deadLetterTargetArn": "arn:somewhere",
-          "maxReceiveCount": 5
         }
       }
     }

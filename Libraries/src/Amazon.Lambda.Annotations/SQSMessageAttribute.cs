@@ -138,7 +138,17 @@ namespace Amazon.Lambda.Annotations
         /// </summary>
         string RedrivePolicy { get; set; }
 
-
+        /// <summary>
+        /// Key value pairs of tags
+        /// The tags that you attach to this queue. For more information, see Resource tag in the AWS CloudFormation User Guide.
+        /// Required: No
+        /// Type: List of Tag
+        /// Update requires: No interruption
+        /// <example>
+        /// Tags = new string[] {"Tag1=Value1", "Tag2=Value"}
+        /// </example>
+        /// </summary>
+        string[] Tags { get; set; }
 
         /// <summary>
         /// The length of time during which a message will be unavailable after a message is delivered from the queue. This blocks other components from receiving the same message and gives the initial component time to process and delete the message from the queue.
@@ -166,10 +176,12 @@ namespace Amazon.Lambda.Annotations
         public const int MessageRetentionPeriodDefault = 345600;
         public const int ReceiveMessageWaitTimeSecondsDefault = 0;
 
+
         public string QueueName { get; set; }
         public int BatchSize { get; set; } = BatchSizeDefault;
 
         public string QueueLogicalId { get; set; }
+        public string[] Tags { get; set; }
         public int VisibilityTimeout { get; set; } = VisibilityTimeoutDefault;
         public int ReceiveMessageWaitTimeSeconds { get; set; } = ReceiveMessageWaitTimeSecondsDefault;
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
@@ -183,5 +195,6 @@ namespace Amazon.Lambda.Annotations
         public int MessageRetentionPeriod { get; set; } = MessageRetentionPeriodDefault;
         public string RedriveAllowPolicy { get; set; }
         public string RedrivePolicy { get; set; }
+        public string TagsCommaDelimited { get; set; }
     }
 }
