@@ -55,6 +55,17 @@ namespace Amazon.Lambda.Annotations
         /// </summary>
         string FifoThroughputLimit { get; set; }
 
+
+        /// <summary>
+        /// The length of time in seconds for which Amazon SQS can reuse a data key to encrypt or decrypt messages before calling AWS KMS again. The value must be an integer between 60 (1 minute) and 86,400 (24 hours). The default is 300 (5 minutes).
+        /// Note: A shorter time period provides better security, but results in more calls to AWS KMS, which might incur charges after Free Tier. For more information, see Encryption at rest in the Amazon SQS Developer Guide.
+        /// Required: No
+        /// Type: Integer
+        /// Update requires: No interruption
+        /// </summary>
+        int KmsDataKeyReusePeriodSeconds { get; set; }
+
+
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -65,6 +76,7 @@ namespace Amazon.Lambda.Annotations
         public const int BatchSizeDefault = 10;
         public const int DelaySecondsDefault = 0;
         public const bool FifoQueueDefault = false;
+        public const int KmsDataKeyReusePeriodSecondsDefault = 300;
 
         public string QueueName { get; set; }
         public int BatchSize { get; set; } = BatchSizeDefault;
@@ -76,5 +88,6 @@ namespace Amazon.Lambda.Annotations
         public int DelaySeconds { get; set; } = DelaySecondsDefault;
         public bool FifoQueue { get; set; }
         public string FifoThroughputLimit { get; set; }
+        public int KmsDataKeyReusePeriodSeconds { get; set; } = KmsDataKeyReusePeriodSecondsDefault;
     }
 }

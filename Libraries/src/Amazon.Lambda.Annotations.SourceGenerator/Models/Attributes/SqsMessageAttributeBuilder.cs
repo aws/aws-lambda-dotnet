@@ -59,6 +59,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.FifoThroughputLimit = attNamedArgument.Value.Value.ToString();
                         }
                         break;
+                    case nameof(ISqsMessage.KmsDataKeyReusePeriodSeconds):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.KmsDataKeyReusePeriodSeconds = int.Parse(attNamedArgument.Value.Value.ToString());
+                        }
+                        break;
+                        
                     default:
                         throw new NotSupportedException(attNamedArgument.Key);
                 }

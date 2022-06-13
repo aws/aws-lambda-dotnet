@@ -27,7 +27,8 @@ namespace TestServerlessApp
             DeduplicationScope = "queue", 
             DelaySeconds = 5, 
             FifoQueue = true,
-            FifoThroughputLimit = "perQueue")]
+            FifoThroughputLimit = "perQueue",
+            KmsDataKeyReusePeriodSeconds = 299)]
         public Task MessageHandlerForNewQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;

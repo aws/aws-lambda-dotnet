@@ -242,15 +242,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             var delayPropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.DelaySeconds)}";
-
-            if (sqsMessageAttribute.DelaySeconds != SqsMessageAttribute.DelaySecondsDefault)
-            {
-                _jsonWriter.SetToken(delayPropertyPath, sqsMessageAttribute.DelaySeconds);
-            }
-            else
-            {
-                _jsonWriter.RemoveToken(delayPropertyPath);
-            }
+            WriteOrRemove(delayPropertyPath, sqsMessageAttribute.DelaySeconds, SqsMessageAttribute.DelaySecondsDefault);
 
             var fifoQueuePropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoQueue)}";
 
@@ -274,7 +266,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(fifoThroughputLimitPropertyPath);
             }
 
+            var kmsDataKeyReusePeriodSeconds = $"{propertiesPath}.{nameof(ISqsMessage.KmsDataKeyReusePeriodSeconds)}";
+            WriteOrRemove(kmsDataKeyReusePeriodSeconds, sqsMessageAttribute.KmsDataKeyReusePeriodSeconds, SqsMessageAttribute.KmsDataKeyReusePeriodSecondsDefault);
 
+
+
+        }
+
+        private void WriteOrRemove(string path, int value, int defaultValue)
+        {
+            if (value != defaultValue)
+            {
+                _jsonWriter.SetToken(path, value);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(path);
+            }
         }
 
         private void ApplyQueueDefaults(string sqsQueuePath, string propertiesPath)

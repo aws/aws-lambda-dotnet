@@ -76,7 +76,8 @@
         "DeduplicationScope": "queue",
         "DelaySeconds": 5,
         "FifoQueue": true,
-        "FifoThroughputLimit": "perQueue"
+        "FifoThroughputLimit": "perQueue",
+        "KmsDataKeyReusePeriodSeconds": 299
       }
     }
   }
