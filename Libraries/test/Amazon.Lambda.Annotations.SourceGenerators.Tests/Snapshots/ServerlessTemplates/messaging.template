@@ -78,6 +78,7 @@
         "FifoQueue": true,
         "FifoThroughputLimit": "perQueue",
         "KmsDataKeyReusePeriodSeconds": 299,
+        "KmsMasterKeyId": "alias/aws/sqs",
         "MaximumMessageSize": 1024,
         "MessageRetentionPeriod": 60,
         "QueueName": "thisismyqueuename.fifo",
@@ -98,8 +99,7 @@
             "Key": "keyname2",
             "Value": "value2"
           }
-        ],
-        "KmsMasterKeyId": "alias/aws/sqs"
+        ]
       }
     }
   }
