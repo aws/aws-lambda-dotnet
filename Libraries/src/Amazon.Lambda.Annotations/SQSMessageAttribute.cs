@@ -250,6 +250,8 @@ namespace Amazon.Lambda.Annotations
                 {
                     case "messageGroup":
                     case "queue":
+                    case "":
+                    case null:
                         _deduplicationScope = value;
                         OnPropertyChanged();
                         break;

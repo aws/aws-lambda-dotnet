@@ -32,6 +32,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             var target = new SqsMessageAttribute();
             target.DeduplicationScope = "messageGroup";
             target.DeduplicationScope = "queue";
+            target.DeduplicationScope = string.Empty;
+            target.DeduplicationScope = null;
             Assert.Throws<ArgumentOutOfRangeException>(() => target.DeduplicationScope = "notValid");
         }
 
@@ -43,7 +45,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             target.DelaySeconds = SqsMessageAttribute.DelaySecondsMaximum;
             Assert.Throws<ArgumentOutOfRangeException>(() => target.DelaySeconds = -1);
             Assert.Throws<ArgumentOutOfRangeException>(() => target.DelaySeconds = SqsMessageAttribute.DelaySecondsMaximum + 1);
-
         }
     }
 }
