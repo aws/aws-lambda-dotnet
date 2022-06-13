@@ -597,7 +597,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             var eventName = $"{lambdaFunction.Name}{queueHandle}";
             var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
-            var methodName = lambdaFunction.Name + "Sqs";
             var methodPath = $"{eventPath}.{eventName}";
 
             _jsonWriter.SetToken($"{methodPath}.Type", "SQS");
@@ -622,6 +621,44 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             {
                 _jsonWriter.SetToken(queueNamePath, new JObject(new JProperty("Ref", sqsMessageAttribute.QueueLogicalId)));
             }
+
+            try
+            {
+                var filterCriteriaPropertiesPath = $"{methodPath}.Properties.FilterCriteria";
+                if (sqsMessageAttribute.EventFilterCriteria.Any())
+                {
+                    var filterCriteriaPayload = new JObject();
+                    var filtersArray = new JArray();
+
+                    foreach (var eventFilterCriterion in sqsMessageAttribute.EventFilterCriteria)
+                    {
+                        var jObject = new JObject();
+                        jObject.Add("Pattern", eventFilterCriterion);
+                        filtersArray.Add(jObject);
+                    }
+
+                    filterCriteriaPayload.Add("Filters", filtersArray);
+
+                    if (filtersArray.Any())
+                    {
+                        _jsonWriter.SetToken(filterCriteriaPropertiesPath, filterCriteriaPayload);
+                    }
+                    else
+                    {
+                        _jsonWriter.RemoveToken(filterCriteriaPropertiesPath);
+                    }
+                }
+                else
+                {
+                        _jsonWriter.RemoveToken(filterCriteriaPropertiesPath);
+                }
+
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.Tags)}", e);
+            }
+
 
             return eventName;
         }

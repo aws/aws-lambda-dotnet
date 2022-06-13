@@ -66,6 +66,8 @@ namespace Amazon.Lambda.Annotations
 
 
         // event handler values
+        public string[] EventFilterCriteria { get; set; } = new string[] { };
+
         public string EventQueueARN
         {
             get => _eventQueueArn;

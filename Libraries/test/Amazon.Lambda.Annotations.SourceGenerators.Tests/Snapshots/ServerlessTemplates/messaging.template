@@ -59,6 +59,16 @@
               "BatchSize": 12,
               "Queue": {
                 "Ref": "QueueForMessageHandlerForNewQueue"
+              },
+              "FilterCriteria": {
+                "Filters": [
+                  {
+                    "Pattern": "Filter1"
+                  },
+                  {
+                    "Pattern": "Filter2"
+                  }
+                ]
               }
             }
           }

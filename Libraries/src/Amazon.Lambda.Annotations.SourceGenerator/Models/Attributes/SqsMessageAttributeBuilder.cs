@@ -143,6 +143,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.Tags = final.ToArray();
                         }
                         break;
+                    case nameof(ISqsMessage.EventFilterCriteria):
+                        if (attNamedArgument.Value.Values.Any())
+                        {
+                            var final = new List<string>();
+
+                            foreach (var pair in attNamedArgument.Value.Values)
+                            {
+                                final.Add(pair.Value.ToString());
+                            }
+
+                            data.EventFilterCriteria = final.ToArray();
+                        }
+                        break;
+
                     default:
                         throw new NotSupportedException(attNamedArgument.Key);
                 }

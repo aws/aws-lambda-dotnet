@@ -19,6 +19,13 @@
         uint EventBatchSize { get; set; }
 
         /// <summary>
+        /// A object that defines the criteria to determine whether Lambda should process an event. For more information, see AWS Lambda event filtering in the AWS Lambda Developer Guide.
+        /// Type: FilterCriteria
+        /// Required: No
+        /// AWS CloudFormation compatibility: This property is passed directly to the FilterCriteria property of an AWS::Lambda::EventSourceMapping resource.
+        /// </summary>
+        string[] EventFilterCriteria { get; set; }
+        /// <summary>
         /// For Events: The ARN of the queue.
         /// Type: String
         /// Required: Yes (If not using the auto-create feature via QueueLogicalId
@@ -33,6 +40,7 @@
         /// Type: Boolean
         /// Update requires: No interruption
         /// </summary>
+
 
         bool ContentBasedDeduplication { get; set; }
 

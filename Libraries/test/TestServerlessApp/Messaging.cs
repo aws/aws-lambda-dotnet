@@ -36,7 +36,8 @@ namespace TestServerlessApp
             ReceiveMessageWaitTimeSeconds =5,
             RedriveAllowPolicy = "{ 'redrivePermission' : 'denyAll' }",
             RedrivePolicy = "{ 'deadLetterTargetArn': 'arn:somewhere', 'maxReceiveCount': 5 }",
-            Tags = new string[]{ "keyname1=value1", "keyname2=value2" })]
+            Tags = new string[]{ "keyname1=value1", "keyname2=value2" },
+            EventFilterCriteria = new string[] { "Filter1", "Filter2" } )]
         public Task MessageHandlerForNewQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;

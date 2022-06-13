@@ -445,7 +445,11 @@
             "Value": "value2"
           }
         ],
-        "VisibilityTimeout": 100
+        "VisibilityTimeout": 100,
+        "FilterCriteria": [
+          "Filter1",
+          "Filter2"
+        ]
       }
     },
     "ToUpper": {
