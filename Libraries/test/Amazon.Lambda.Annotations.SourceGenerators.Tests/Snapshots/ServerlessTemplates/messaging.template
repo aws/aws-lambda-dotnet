@@ -7,7 +7,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedMyMessageQueue"
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedqueue"
         ]
       },
       "Properties": {
@@ -21,11 +21,11 @@
         "PackageType": "Zip",
         "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForPreExistingQueue_Generated::MessageHandlerForPreExistingQueue",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedMyMessageQueue": {
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedqueue": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 11,
-              "Queue": "MyMessageQueue"
+              "Queue": "arn:aws:sqs:us-east-1:768033286672:app-deploy-blue-LAVETRYB3JKX-SomeQueueName"
             }
           }
         }
@@ -36,7 +36,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated"
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedqueue"
         ],
         "SyncedResources": [
           "QueueForMessageHandlerForNewQueue"
@@ -53,7 +53,7 @@
         "PackageType": "Zip",
         "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForNewQueue_Generated::MessageHandlerForNewQueue",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedqueue": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 12,
@@ -81,6 +81,7 @@
         "KmsMasterKeyId": "alias/aws/sqs",
         "MaximumMessageSize": 1024,
         "MessageRetentionPeriod": 60,
+        "QueueName": "thisismyqueuename.fifo",
         "ReceiveMessageWaitTimeSeconds": 5,
         "RedriveAllowPolicy": {
           "redrivePermission": "denyAll"
@@ -98,8 +99,7 @@
             "Key": "keyname2",
             "Value": "value2"
           }
-        ],
-        "QueueName": "thisismyqueuename.fifo"
+        ]
       }
     }
   }

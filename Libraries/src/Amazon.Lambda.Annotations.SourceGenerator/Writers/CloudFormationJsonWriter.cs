@@ -391,7 +391,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
         {
-            var eventName = $"{lambdaFunction.Name}{sqsMessageAttribute.Queue}";
+            var queueHandle = "queue";
+            var eventName = $"{lambdaFunction.Name}{queueHandle}";
             var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
             var methodName = lambdaFunction.Name + "Sqs";
             var methodPath = $"{eventPath}.{eventName}";
