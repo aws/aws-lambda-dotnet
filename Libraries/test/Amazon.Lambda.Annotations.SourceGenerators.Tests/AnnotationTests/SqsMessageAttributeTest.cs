@@ -119,5 +119,22 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             Assert.Equal(nameof(SqsMessageAttribute.EventBatchSize), error.ParamName);
             Assert.Equal(SqsMessageAttribute.EventBatchSizeArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.EventBatchSize)}')", error.Message);
         }
+
+        [Fact]
+        public void VisibilityTimeoutValidation()
+        {
+            var target = new SqsMessageAttribute();
+            target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMinimum;
+            target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMaximum;
+
+            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMinimum - 1);
+            Assert.Equal(nameof(SqsMessageAttribute.VisibilityTimeout), error.ParamName);
+            Assert.Equal(SqsMessageAttribute.VisibilityTimeoutArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.VisibilityTimeout)}')", error.Message);
+
+            error = Assert.Throws<ArgumentOutOfRangeException>(() => target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMaximum + 1);
+            Assert.Equal(nameof(SqsMessageAttribute.VisibilityTimeout), error.ParamName);
+            Assert.Equal(SqsMessageAttribute.VisibilityTimeoutArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.VisibilityTimeout)}')", error.Message);
+
+        }
     }
 }

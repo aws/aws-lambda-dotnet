@@ -12,7 +12,12 @@ namespace Amazon.Lambda.Annotations
     public class SqsMessageAttribute : Attribute, ISqsMessage, INotifyPropertyChanged
     {
         public const bool ContentBasedDeduplicationDefault = false;
+
         public const int VisibilityTimeoutDefault = 30;
+        internal const int VisibilityTimeoutMinimum = 0;
+        internal const int VisibilityTimeoutMaximum = 43200;
+        // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
+        internal const string VisibilityTimeoutArgumentOutOfRangeExceptionMessage = "VisibilityTimeoutMaximum must be => 0 && <= 43200";
 
         internal const int EventBatchSizeMinimum = 1;
         internal const int EventBatchSizeMaximum = 10000;
@@ -54,6 +59,7 @@ namespace Amazon.Lambda.Annotations
         private int _maximumMessageSize = MaximumMessageSizeDefault;
         private int _messageRetentionPeriod = MessageRetentionPeriodDefault;
         private int _eventBatchSize = EventBatchSizeDefault;
+        private int _visibilityTimeout = VisibilityTimeoutDefault;
 
 
         // event handler values
@@ -97,7 +103,21 @@ namespace Amazon.Lambda.Annotations
         // sqs queue values
 
         public string[] Tags { get; set; } = new string[] {};
-        public int VisibilityTimeout { get; set; } = VisibilityTimeoutDefault;
+
+        public int VisibilityTimeout
+        {
+            get => _visibilityTimeout;
+            set
+            {
+                if ( value == _visibilityTimeout) return;
+                if (value < VisibilityTimeoutMinimum || value > VisibilityTimeoutMaximum)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(VisibilityTimeout), VisibilityTimeoutArgumentOutOfRangeExceptionMessage);
+                }
+                _visibilityTimeout = value;
+            }
+        }
+
         public int ReceiveMessageWaitTimeSeconds { get; set; } = ReceiveMessageWaitTimeSecondsDefault;
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
 
