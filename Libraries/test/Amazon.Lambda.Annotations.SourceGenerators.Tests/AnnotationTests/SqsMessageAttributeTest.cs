@@ -85,7 +85,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
         public void MessageRetentionPeriodValidation()
         {
             var target = new SqsMessageAttribute();
-            target.MessageRetentionPeriod = Amazon.Lambda.Annotations.SqsMessageAttribute.MessageRetentionPeriodMinimum;
+            target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMinimum;
             target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMaximum;
             var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMinimum - 1);
             Assert.Equal(nameof(SqsMessageAttribute.MessageRetentionPeriod), error.ParamName);
@@ -101,8 +101,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             var target = new SqsMessageAttribute();
             target.QueueName = "MyQueueName";
             target.QueueName = "MyQueueName.fifo";
+            // no exception, no problem
+        }
 
+        [Fact]
+        public void EventBatchSizeValidation()
+        {
+            var target = new SqsMessageAttribute();
+            target.EventBatchSize = SqsMessageAttribute.EventBatchSizeMinimum;
+            target.EventBatchSize = SqsMessageAttribute.EventBatchSizeMaximum;
 
+            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.EventBatchSize = SqsMessageAttribute.EventBatchSizeMinimum - 1);
+            Assert.Equal(nameof(SqsMessageAttribute.EventBatchSize), error.ParamName);
+            Assert.Equal(SqsMessageAttribute.EventBatchSizeArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.EventBatchSize)}')", error.Message);
+
+            error = Assert.Throws<ArgumentOutOfRangeException>(() => target.EventBatchSize = SqsMessageAttribute.EventBatchSizeMaximum + 1);
+            Assert.Equal(nameof(SqsMessageAttribute.EventBatchSize), error.ParamName);
+            Assert.Equal(SqsMessageAttribute.EventBatchSizeArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.EventBatchSize)}')", error.Message);
         }
     }
 }

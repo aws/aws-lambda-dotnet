@@ -13,29 +13,36 @@ namespace Amazon.Lambda.Annotations
     {
         public const bool ContentBasedDeduplicationDefault = false;
         public const int VisibilityTimeoutDefault = 30;
-        public const int BatchSizeDefault = 10;
+
+        internal const int EventBatchSizeMinimum = 1;
+        internal const int EventBatchSizeMaximum = 10000;
+        public const int EventBatchSizeDefault = 10;
+        // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
+        internal const string EventBatchSizeArgumentOutOfRangeExceptionMessage = "EventBatchSize must be => 1 && <= 10000";
+
         public const int DelaySecondsDefault = 0;
         public const bool FifoQueueDefault = false;
-        public const int KmsDataKeyReusePeriodSecondsDefault = 300;
         public const int ReceiveMessageWaitTimeSecondsDefault = 0;
         public const int DelaySecondsMinimum = 0;
         public const int DelaySecondsMaximum = 900;
+
+        public const int KmsDataKeyReusePeriodSecondsDefault = 300;
         public const int KmsDataKeyReusePeriodSecondsMinimum = 60;
         public const int KmsDataKeyReusePeriodSecondsMaximum = 86400;
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
-        internal const string KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage = "KmsDataKeyReusePeriodSeconds must be => 60 & <= 86400";
+        internal const string KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage = "KmsDataKeyReusePeriodSeconds must be => 60 && <= 86400";
 
         internal const int MaximumMessageSizeMinimum = 1024;
         internal const int MaximumMessageSizeMaximum = 262144;
         public const int MaximumMessageSizeDefault = 262144;
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
-        internal const string MaximumMessageSizeArgumentOutOfRangeExceptionMessage = "MaximumMessageSize must be => 1024 & <= 262144";
+        internal const string MaximumMessageSizeArgumentOutOfRangeExceptionMessage = "MaximumMessageSize must be => 1024 && <= 262144";
 
         internal const int MessageRetentionPeriodMinimum = 60;
         internal const int MessageRetentionPeriodMaximum = 345600;
         public const int MessageRetentionPeriodDefault = 345600;
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
-        internal const string MessageRetentionPeriodArgumentOutOfRangeExceptionMessage = "MessageRetentionPeriod must be => 60 & <= 345600";
+        internal const string MessageRetentionPeriodArgumentOutOfRangeExceptionMessage = "MessageRetentionPeriod must be => 60 && <= 345600";
 
         private string _queueName;
         private string _queueLogicalId;
@@ -46,6 +53,7 @@ namespace Amazon.Lambda.Annotations
         private int _kmsDataKeyReusePeriodSeconds = KmsDataKeyReusePeriodSecondsDefault;
         private int _maximumMessageSize = MaximumMessageSizeDefault;
         private int _messageRetentionPeriod = MessageRetentionPeriodDefault;
+        private int _eventBatchSize = EventBatchSizeDefault;
 
 
         // event handler values
@@ -60,7 +68,20 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
-        public int EventBatchSize { get; set; } = BatchSizeDefault;
+        public int EventBatchSize
+        {
+            get => _eventBatchSize;
+            set
+            {
+                if (_eventBatchSize==value) return;
+                if (value < EventBatchSizeMinimum || value > EventBatchSizeMaximum)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(EventBatchSize), EventBatchSizeArgumentOutOfRangeExceptionMessage);
+                }
+                _eventBatchSize = value;
+                OnPropertyChanged();
+            }
+        }
 
         public string QueueLogicalId
         {

@@ -607,7 +607,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             var batchSizePropertyPath = $"{methodPath}.Properties.BatchSize";
 
-            if (sqsMessageAttribute.EventBatchSize != SqsMessageAttribute.BatchSizeDefault)
+            if (sqsMessageAttribute.EventBatchSize != SqsMessageAttribute.EventBatchSizeDefault)
             {
                 _jsonWriter.SetToken(batchSizePropertyPath, sqsMessageAttribute.EventBatchSize);
             }
