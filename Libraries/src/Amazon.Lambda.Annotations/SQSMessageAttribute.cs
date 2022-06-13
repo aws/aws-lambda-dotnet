@@ -65,6 +65,18 @@ namespace Amazon.Lambda.Annotations
         /// </summary>
         int KmsDataKeyReusePeriodSeconds { get; set; }
 
+        /// <summary>
+        /// The ID of an AWS managed customer master key (CMK) for Amazon SQS or a custom CMK. To use the AWS managed CMK for Amazon SQS, specify the (default) alias alias/aws/sqs. For more information, see the following:
+        /// 1. Encryption at rest in the Amazon SQS Developer Guide
+        /// 2. CreateQueue in the Amazon SQS API Reference
+        /// 3. The Customer Master Keys section of the AWS Key Management Service Best Practices whitepaper
+        /// Required: No
+        /// Type: String
+        /// Update requires: No interruption
+        /// </summary>
+        string KmsMasterKeyId { get; set; }
+
+
 
     }
 
@@ -89,5 +101,6 @@ namespace Amazon.Lambda.Annotations
         public bool FifoQueue { get; set; }
         public string FifoThroughputLimit { get; set; }
         public int KmsDataKeyReusePeriodSeconds { get; set; } = KmsDataKeyReusePeriodSecondsDefault;
+        public string KmsMasterKeyId { get; set; }
     }
 }

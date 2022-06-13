@@ -65,7 +65,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.KmsDataKeyReusePeriodSeconds = int.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
+                    case nameof(ISqsMessage.KmsMasterKeyId):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.KmsMasterKeyId = attNamedArgument.Value.Value.ToString();
+                        }
+                        break;
                         
+
+
                     default:
                         throw new NotSupportedException(attNamedArgument.Key);
                 }

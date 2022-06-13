@@ -256,7 +256,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             var fifoThroughputLimitPropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoThroughputLimit)}";
-
             if (!string.IsNullOrEmpty(sqsMessageAttribute.FifoThroughputLimit))
             {
                 _jsonWriter.SetToken(fifoThroughputLimitPropertyPath, sqsMessageAttribute.FifoThroughputLimit);
@@ -268,6 +267,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             var kmsDataKeyReusePeriodSeconds = $"{propertiesPath}.{nameof(ISqsMessage.KmsDataKeyReusePeriodSeconds)}";
             WriteOrRemove(kmsDataKeyReusePeriodSeconds, sqsMessageAttribute.KmsDataKeyReusePeriodSeconds, SqsMessageAttribute.KmsDataKeyReusePeriodSecondsDefault);
+
+            var kmsMasterKeyIdPath = $"{propertiesPath}.{nameof(ISqsMessage.KmsMasterKeyId)}";
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.KmsMasterKeyId))
+            {
+                _jsonWriter.SetToken(kmsMasterKeyIdPath, sqsMessageAttribute.KmsMasterKeyId);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(kmsMasterKeyIdPath);
+            }
+
 
 
 
