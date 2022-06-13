@@ -214,16 +214,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             {
                 try
                 {
-                    var visibilityTimeoutPath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.VisibilityTimeout)}";
-
-                    if (sqsMessageAttribute.VisibilityTimeout != SqsMessageAttribute.VisibilityTimeoutDefault)
-                    {
-                        _jsonWriter.SetToken(visibilityTimeoutPath, sqsMessageAttribute.VisibilityTimeout);
-                    }
-                    else
-                    {
-                        _jsonWriter.RemoveToken(visibilityTimeoutPath);
-                    }
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.VisibilityTimeout)}", sqsMessageAttribute.VisibilityTimeout, SqsMessageAttribute.VisibilityTimeoutDefault);
 
                 }
                 catch (Exception e)
@@ -233,15 +224,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
                 try
                 {
-                    var contentBasedDeduplicationPath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.ContentBasedDeduplication)}";
-                    if (sqsMessageAttribute.ContentBasedDeduplication != SqsMessageAttribute.ContentBasedDeduplicationDefault)
-                    {
-                        _jsonWriter.SetToken(contentBasedDeduplicationPath, sqsMessageAttribute.ContentBasedDeduplication);
-                    }
-                    else
-                    {
-                        _jsonWriter.RemoveToken(contentBasedDeduplicationPath);
-                    }
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.ContentBasedDeduplication)}", sqsMessageAttribute.ContentBasedDeduplication, SqsMessageAttribute.ContentBasedDeduplicationDefault);
 
                 }
                 catch (Exception e)
@@ -251,15 +234,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
                 try
                 {
-                    var deduplicationScopePath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.DeduplicationScope)}";
-                    if (!string.IsNullOrEmpty(sqsMessageAttribute.DeduplicationScope))
-                    {
-                        _jsonWriter.SetToken(deduplicationScopePath, sqsMessageAttribute.DeduplicationScope);
-                    }
-                    else
-                    {
-                        _jsonWriter.RemoveToken(deduplicationScopePath);
-                    }
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.DeduplicationScope)}", sqsMessageAttribute.DeduplicationScope, string.Empty);
 
                 }
                 catch (Exception e)
@@ -279,16 +254,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
                 try
                 {
-                    var fifoQueuePropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoQueue)}";
-
-                    if (sqsMessageAttribute.FifoQueue != SqsMessageAttribute.FifoQueueDefault)
-                    {
-                        _jsonWriter.SetToken(fifoQueuePropertyPath, sqsMessageAttribute.FifoQueue);
-                    }
-                    else
-                    {
-                        _jsonWriter.RemoveToken(fifoQueuePropertyPath);
-                    }
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.FifoQueue)}", sqsMessageAttribute.FifoQueue, SqsMessageAttribute.FifoQueueDefault);
 
                 }
                 catch (Exception e)
@@ -298,16 +264,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
                 try
                 {
-                    var fifoThroughputLimitPropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoThroughputLimit)}";
-                    if (!string.IsNullOrEmpty(sqsMessageAttribute.FifoThroughputLimit))
-                    {
-                        _jsonWriter.SetToken(fifoThroughputLimitPropertyPath, sqsMessageAttribute.FifoThroughputLimit);
-                    }
-                    else
-                    {
-                        _jsonWriter.RemoveToken(fifoThroughputLimitPropertyPath);
-                    }
-
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.FifoThroughputLimit)}", sqsMessageAttribute.FifoThroughputLimit, string.Empty);
                 }
                 catch (Exception e)
                 {
@@ -437,6 +394,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             catch (Exception e)
             {
                 throw new Exception($"Failed to write AWS::SQS::Queue: {e.Message} {e.InnerException?.Message}", e);
+            }
+        }
+
+        private void WriteOrRemove(string path, bool value, bool defaultValue)
+        {
+            if (value != defaultValue)
+            {
+                _jsonWriter.SetToken(path, value);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(path);
             }
         }
 
