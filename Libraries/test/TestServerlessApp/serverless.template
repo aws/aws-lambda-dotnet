@@ -97,40 +97,6 @@
         }
       }
     },
-    "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated"
-        ],
-        "SyncedResources": [
-          "QueueForMessageHandlerForNewQueue"
-        ]
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForNewQueue_Generated::MessageHandlerForNewQueue",
-        "Events": {
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
-            "Type": "SQS",
-            "Properties": {
-              "Queue": {
-                "Ref": "QueueForMessageHandlerForNewQueue"
-              },
-              "BatchSize": 12
-            }
-          }
-        }
-      }
-    },
     "TestServerlessAppComplexCalculatorAddGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -405,6 +371,40 @@
         }
       }
     },
+    "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated"
+        ],
+        "SyncedResources": [
+          "QueueForMessageHandlerForNewQueue"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForNewQueue_Generated::MessageHandlerForNewQueue",
+        "Events": {
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
+            "Type": "SQS",
+            "Properties": {
+              "BatchSize": 12,
+              "Queue": {
+                "Ref": "QueueForMessageHandlerForNewQueue"
+              }
+            }
+          }
+        }
+      }
+    },
     "QueueForMessageHandlerForNewQueue": {
       "Type": "AWS::SQS::Queue",
       "Metadata": {
@@ -421,7 +421,10 @@
         "KmsMasterKeyId": "alias/aws/sqs",
         "MaximumMessageSize": 1024,
         "MessageRetentionPeriod": 60,
-        "ReceiveMessageWaitTimeSeconds": 5
+        "ReceiveMessageWaitTimeSeconds": 5,
+        "RedriveAllowPolicy": {
+          "redrivePermission": "denyAll"
+        }
       }
     }
   }

@@ -32,7 +32,8 @@ namespace TestServerlessApp
             KmsMasterKeyId = "alias/aws/sqs",
             MaximumMessageSize = 1024,
             MessageRetentionPeriod = 60,
-            ReceiveMessageWaitTimeSeconds =5)]
+            ReceiveMessageWaitTimeSeconds =5,
+            RedriveAllowPolicy = "{ \"redrivePermission\" : \"denyAll\" }")]
         public Task MessageHandlerForNewQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;

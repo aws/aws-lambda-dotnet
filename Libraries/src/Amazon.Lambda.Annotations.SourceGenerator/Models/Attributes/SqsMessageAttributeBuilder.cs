@@ -92,6 +92,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.ReceiveMessageWaitTimeSeconds = int.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
+                    //RedriveAllowPolicy
+                    case nameof(ISqsMessage.RedriveAllowPolicy):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.RedriveAllowPolicy = attNamedArgument.Value.Value.ToString();
+                        }
+                        break;
 
 
 

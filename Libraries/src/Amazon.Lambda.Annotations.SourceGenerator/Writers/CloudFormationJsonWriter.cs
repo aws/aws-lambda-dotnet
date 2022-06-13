@@ -286,6 +286,34 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             //ReceiveMessageWaitTimeSeconds
             WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.ReceiveMessageWaitTimeSeconds)}", sqsMessageAttribute.ReceiveMessageWaitTimeSeconds, SqsMessageAttribute.ReceiveMessageWaitTimeSecondsDefault);
+
+            //RedriveAllowPolicy
+            WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedriveAllowPolicy)}", sqsMessageAttribute.RedriveAllowPolicy, string.Empty);
+        }
+
+        private void WriteOrRemoveAsJson(string path, string value, string defaultValue)
+        {
+            
+            if (value != defaultValue)
+            {
+                _jsonWriter.SetToken(path, JObject.Parse(value));
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(path);
+            }
+        }
+
+        private void WriteOrRemove(string path, string value, string defaultValue)
+        {
+            if (value != defaultValue)
+            {
+                _jsonWriter.SetToken(path, value);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(path);
+            }
         }
 
         private void WriteOrRemove(string path, int value, int defaultValue)

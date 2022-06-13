@@ -113,6 +113,20 @@ namespace Amazon.Lambda.Annotations
         int ReceiveMessageWaitTimeSeconds { get; set; }
 
         /// <summary>
+        /// The string that includes the parameters for the permissions for the dead-letter queue redrive permission and which source queues can specify dead-letter queues as a JSON object. The parameters are as follows:
+        /// redrivePermission: The permission type that defines which source queues can specify the current queue as the dead-letter queue. Valid values are:
+        /// allowAll: (Default) Any source queues in this AWS account in the same Region can specify this queue as the dead-letter queue.
+        /// denyAll: No source queues can specify this queue as the dead-letter queue.
+        /// byQueue: Only queues specified by the sourceQueueArns parameter can specify this queue as the dead-letter queue.
+        /// sourceQueueArns: The Amazon Resource Names (ARN)s of the source queues that can specify this queue as the dead-letter queue and redrive messages. You can specify this parameter only when the redrivePermission parameter is set to byQueue. You can specify up to 10 source queue ARNs. To allow more than 10 source queues to specify dead-letter queues, set the redrivePermission parameter to allowAll.
+        /// Required: No
+        /// Type: Json
+        /// Update requires: No interruption
+        /// </summary>
+        string RedriveAllowPolicy { get; set; }
+
+
+        /// <summary>
         /// The length of time during which a message will be unavailable after a message is delivered from the queue. This blocks other components from receiving the same message and gives the initial component time to process and delete the message from the queue.
         /// Values must be from 0 to 43,200 seconds (12 hours). If you don't specify a value, AWS CloudFormation uses the default value of 30 seconds.
         /// For more information about Amazon SQS queue visibility timeouts, see Visibility timeout in the Amazon SQS Developer Guide.
@@ -153,5 +167,6 @@ namespace Amazon.Lambda.Annotations
         public string KmsMasterKeyId { get; set; }
         public int MaximumMessageSize { get; set; } = MaximumMessageSizeDefault;
         public int MessageRetentionPeriod { get; set; } = MessageRetentionPeriodDefault;
+        public string RedriveAllowPolicy { get; set; }
     }
 }
