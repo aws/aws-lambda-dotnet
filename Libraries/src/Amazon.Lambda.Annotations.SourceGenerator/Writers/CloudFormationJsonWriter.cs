@@ -291,10 +291,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.ReceiveMessageWaitTimeSeconds)}", sqsMessageAttribute.ReceiveMessageWaitTimeSeconds, SqsMessageAttribute.ReceiveMessageWaitTimeSecondsDefault);
 
             //RedriveAllowPolicy
-            WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedriveAllowPolicy)}", sqsMessageAttribute.RedriveAllowPolicy, string.Empty);
+            WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedriveAllowPolicy)}", sqsMessageAttribute.RedriveAllowPolicy);
 
             //RedrivePolicy
-            WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedrivePolicy)}", sqsMessageAttribute.RedrivePolicy, string.Empty);
+            WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedrivePolicy)}", sqsMessageAttribute.RedrivePolicy);
 
             // Tags
             List<string> writtenTags = new List<string>();
@@ -326,10 +326,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         }
 
-        private void WriteOrRemoveAsJson(string path, string value, string defaultValue)
+        private void WriteOrRemoveAsJson(string path, string value)
         {
             
-            if (value != defaultValue)
+            if (!string.IsNullOrEmpty(value))
             {
                 _jsonWriter.SetToken(path, JObject.Parse(value));
             }
