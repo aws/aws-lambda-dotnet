@@ -5,11 +5,14 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Newtonsoft.Json.Linq;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
 {
     internal class SqsMessageAttributeBuilder
     {
+        private const string RedriveAllPolicyNotValidJsonExceptionMessage = "RedriveAllPolicy must be valid Json";
+
         public static SqsMessageAttribute Build(AttributeData att)
         {
             var data = new SqsMessageAttribute();
@@ -17,20 +20,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             {
                 switch (attNamedArgument.Key)
                 {
-                    case nameof(ISqsMessage.Queue):
-                        data.Queue = attNamedArgument.Value.Value.ToString();
+                    case nameof(ISqsMessage.EventQueueARN):
+                        data.EventQueueARN = attNamedArgument.Value.Value.ToString();
                         break;
-                    case nameof(ISqsMessage.BatchSize):
+                    case nameof(ISqsMessage.EventBatchSize):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.BatchSize = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.EventBatchSize = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     case nameof(ISqsMessage.QueueLogicalId):
                         data.QueueLogicalId = attNamedArgument.Value.Value?.ToString();
                         break;
                     case nameof(ISqsMessage.VisibilityTimeout):
-                        data.VisibilityTimeout = int.Parse(attNamedArgument.Value.Value.ToString());
+                        data.VisibilityTimeout = uint.Parse(attNamedArgument.Value.Value.ToString());
                         break;
                     case nameof(ISqsMessage.ContentBasedDeduplication):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value.ToString()))
@@ -47,7 +50,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.DelaySeconds):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.DelaySeconds = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.DelaySeconds = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     case nameof(ISqsMessage.FifoQueue):
@@ -65,7 +68,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.KmsDataKeyReusePeriodSeconds):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.KmsDataKeyReusePeriodSeconds = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.KmsDataKeyReusePeriodSeconds = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     case nameof(ISqsMessage.KmsMasterKeyId):
@@ -78,7 +81,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.MaximumMessageSize):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.MaximumMessageSize = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.MaximumMessageSize = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     // Queue
@@ -92,21 +95,31 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.MessageRetentionPeriod):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.MessageRetentionPeriod = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.MessageRetentionPeriod = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     //ReceiveMessageWaitTimeSeconds
                     case nameof(ISqsMessage.ReceiveMessageWaitTimeSeconds):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.ReceiveMessageWaitTimeSeconds = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.ReceiveMessageWaitTimeSeconds = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     //RedriveAllowPolicy
                     case nameof(ISqsMessage.RedriveAllowPolicy):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.RedriveAllowPolicy = attNamedArgument.Value.Value.ToString();
+                            var json = attNamedArgument.Value.Value.ToString();
+                            try
+                            {
+                                JObject.Parse(json);
+                            }
+                            catch (Exception e)
+                            {
+
+                                throw new ArgumentOutOfRangeException(nameof(ISqsMessage.RedriveAllowPolicy), SqsMessageAttributeBuilder.RedriveAllPolicyNotValidJsonExceptionMessage);
+                            }
+                            data.RedriveAllowPolicy = json;
                         }
                         break;
                     // RedrivePolicy
@@ -130,12 +143,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.Tags = final.ToArray();
                         }
                         break;
-
-
-
                     default:
                         throw new NotSupportedException(attNamedArgument.Key);
                 }
+            }
+
+            if (data.FifoQueue && !string.IsNullOrEmpty(data.QueueName) && !data.QueueName.EndsWith(".fifo"))
+            {
+                throw new ArgumentOutOfRangeException(nameof(SqsMessageAttribute.QueueName), $"If using {nameof(SqsMessageAttribute.FifoQueue)} = true, {nameof(SqsMessageAttribute.QueueName)} must end in '.fifo'");
             }
 
             return data;

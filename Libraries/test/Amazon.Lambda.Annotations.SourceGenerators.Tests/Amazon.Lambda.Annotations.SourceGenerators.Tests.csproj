@@ -40,7 +40,8 @@
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
         <Content Remove="..\..\src\Amazon.Lambda.Annotations\obj\**" />
-        <Content Remove="..\..\src\Amazon.Lambda.Annotations\bin\**" />
+		<Content Remove="..\..\src\Amazon.Lambda.Annotations\bin\**" />
+		<Content Remove="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -64,7 +65,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations.SourceGenerator\Amazon.Lambda.Annotations.SourceGenerator.csproj" />
-      <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
       <!-- 
 	    We need to force using the .NET Standard 2.0 version because the source generator test framework will complain
@@ -76,7 +76,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Models\" />
+      <Folder Include="Models\Attributes\" />
     </ItemGroup>
 
 

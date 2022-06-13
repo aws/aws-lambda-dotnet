@@ -91,7 +91,7 @@
             "Type": "SQS",
             "Properties": {
               "BatchSize": 11,
-              "Queue": "arn:aws:sqs:us-east-1:768033286672:app-deploy-blue-LAVETRYB3JKX-SomeQueueName"
+              "Queue": "arn:aws:sqs:us-east-1:968993296699:app-deploy-blue-LAVETRYB3JKX-SomeQueueName"
             }
           }
         }
@@ -411,25 +411,8 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "VisibilityTimeout": 100,
         "ContentBasedDeduplication": true,
-        "DeduplicationScope": "queue",
-        "DelaySeconds": 5,
-        "FifoQueue": true,
-        "FifoThroughputLimit": "perQueue",
-        "KmsDataKeyReusePeriodSeconds": 299,
-        "KmsMasterKeyId": "alias/aws/sqs",
-        "MaximumMessageSize": 1024,
-        "MessageRetentionPeriod": 60,
-        "QueueName": "thisismyqueuename.fifo",
         "ReceiveMessageWaitTimeSeconds": 5,
-        "RedriveAllowPolicy": {
-          "redrivePermission": "denyAll"
-        },
-        "RedrivePolicy": {
-          "deadLetterTargetArn": "arn:somewhere",
-          "maxReceiveCount": 5
-        },
         "Tags": [
           {
             "Key": "keyname1",
@@ -439,7 +422,24 @@
             "Key": "keyname2",
             "Value": "value2"
           }
-        ]
+        ],
+        "VisibilityTimeout": 100,
+        "DeduplicationScope": "queue",
+        "DelaySeconds": 5,
+        "FifoQueue": true,
+        "FifoThroughputLimit": "perQueue",
+        "KmsDataKeyReusePeriodSeconds": 299,
+        "KmsMasterKeyId": "alias/aws/sqs",
+        "MaximumMessageSize": 1024,
+        "MessageRetentionPeriod": 60,
+        "QueueName": "thisismyqueuename.fifo",
+        "RedriveAllowPolicy": {
+          "redrivePermission": "denyAll"
+        },
+        "RedrivePolicy": {
+          "deadLetterTargetArn": "arn:somewhere",
+          "maxReceiveCount": 5
+        }
       }
     }
   }

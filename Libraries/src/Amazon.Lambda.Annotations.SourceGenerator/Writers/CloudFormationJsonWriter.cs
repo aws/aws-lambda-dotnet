@@ -548,7 +548,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(path);
             }
         }
-        private void WriteOrRemove(string path, int value, int defaultValue)
+        private void WriteOrRemove(string path, uint value, uint defaultValue)
         {
             if (value != defaultValue)
             {
@@ -585,9 +585,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
         {
             string queueHandle;
-            if (!string.IsNullOrEmpty(sqsMessageAttribute.Queue))
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.EventQueueARN))
             {
-                queueHandle = sqsMessageAttribute.Queue.Split(':').LastOrDefault().Replace("-", string.Empty);
+                queueHandle = sqsMessageAttribute.EventQueueARN.Split(':').LastOrDefault().Replace("-", string.Empty);
             }
             else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
             {
@@ -595,7 +595,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
             else
             {
-                throw new InvalidOperationException($"You must specify either {nameof(ISqsMessage.Queue)} or {nameof(ISqsMessage.QueueLogicalId)}");
+                throw new InvalidOperationException($"You must specify either {nameof(ISqsMessage.EventQueueARN)} or {nameof(ISqsMessage.QueueLogicalId)}");
             }
 
             var eventName = $"{lambdaFunction.Name}{queueHandle}";
@@ -605,11 +605,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             _jsonWriter.SetToken($"{methodPath}.Type", "SQS");
 
-            var batchSizePropertyPath = $"{methodPath}.Properties.{nameof(ISqsMessage.BatchSize)}";
+            var batchSizePropertyPath = $"{methodPath}.Properties.BatchSize";
 
-            if (sqsMessageAttribute.BatchSize != SqsMessageAttribute.BatchSizeDefault)
+            if (sqsMessageAttribute.EventBatchSize != SqsMessageAttribute.EventBatchSizeDefault)
             {
-                _jsonWriter.SetToken(batchSizePropertyPath, sqsMessageAttribute.BatchSize);
+                _jsonWriter.SetToken(batchSizePropertyPath, sqsMessageAttribute.EventBatchSize);
             }
             else
             {
@@ -617,9 +617,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             var queueNamePath = $"{methodPath}.Properties.Queue";
-            if (!string.IsNullOrEmpty(sqsMessageAttribute.Queue))
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.EventQueueARN))
             {
-                _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.Queue);
+                _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.EventQueueARN);
             }
             else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
             {

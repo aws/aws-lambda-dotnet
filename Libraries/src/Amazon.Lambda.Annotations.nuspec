@@ -19,6 +19,8 @@
 		<file src="..\..\icon.png" target="images\" />
 		<file src="Amazon.Lambda.Annotations\README.md" target="docs\" />
 
+		<file src="Amazon.Lambda.Annotations\bin\Release\netstandard2.0\Amazon.Lambda.Annotations.xml" target="lib/net6.0" />
+
         <!-- Dependencies to make sure attributes are available in consuming csproj, this ensures packaged version of customer code have all the dependencies needed. -->
         <file src="Amazon.Lambda.Annotations\bin\Release\netstandard2.0\Amazon.Lambda.Annotations.dll" target="lib/net6.0" />
 
