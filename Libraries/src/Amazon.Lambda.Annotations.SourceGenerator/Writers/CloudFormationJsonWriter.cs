@@ -281,8 +281,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var maximumMessageSizeDefaultPath = $"{propertiesPath}.{nameof(ISqsMessage.MaximumMessageSize)}";
             WriteOrRemove(maximumMessageSizeDefaultPath, sqsMessageAttribute.MaximumMessageSize, SqsMessageAttribute.MaximumMessageSizeDefault);
 
-            var messageRetentionPeriodPath = $"{propertiesPath}.{nameof(ISqsMessage.MessageRetentionPeriod)}";
-            WriteOrRemove(messageRetentionPeriodPath, sqsMessageAttribute.MessageRetentionPeriod, SqsMessageAttribute.MessageRetentionPeriodDefault);
+            // MessageRetentionPeriod
+            WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.MessageRetentionPeriod)}", sqsMessageAttribute.MessageRetentionPeriod, SqsMessageAttribute.MessageRetentionPeriodDefault);
+
+            // QueueName
+            WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.QueueName)}", sqsMessageAttribute.QueueName, string.Empty);
 
             //ReceiveMessageWaitTimeSeconds
             WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.ReceiveMessageWaitTimeSeconds)}", sqsMessageAttribute.ReceiveMessageWaitTimeSeconds, SqsMessageAttribute.ReceiveMessageWaitTimeSecondsDefault);

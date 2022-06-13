@@ -32,6 +32,7 @@ namespace TestServerlessApp
             KmsMasterKeyId = "alias/aws/sqs",
             MaximumMessageSize = 1024,
             MessageRetentionPeriod = 60,
+            QueueName = "thisismyqueuename.fifo",
             ReceiveMessageWaitTimeSeconds =5,
             RedriveAllowPolicy = "{ 'redrivePermission' : 'denyAll' }",
             RedrivePolicy = "{ 'deadLetterTargetArn': 'arn:somewhere', 'maxReceiveCount': 5 }",

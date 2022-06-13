@@ -9,7 +9,8 @@ namespace Amazon.Lambda.Annotations
     {
         int BatchSize { get; set; }
         string QueueLogicalId { get; set; }
-        
+        string Queue { get; set; }
+
 
         /// <summary>
         /// For first-in-first-out (FIFO) queues, specifies whether to enable content-based deduplication. During the deduplication interval, Amazon SQS treats messages that are sent with identical content as duplicates and delivers only one copy of the message. For more information, see the ContentBasedDeduplication attribute for the CreateQueue action in the Amazon SQS API Reference.
@@ -100,7 +101,7 @@ namespace Amazon.Lambda.Annotations
         /// Type: String
         /// Update requires: Replacement
         /// </summary>
-        string Queue { get; set; }
+        string QueueName { get; set; }
 
 
         /// <summary>
@@ -196,5 +197,6 @@ namespace Amazon.Lambda.Annotations
         public string RedriveAllowPolicy { get; set; }
         public string RedrivePolicy { get; set; }
         public string TagsCommaDelimited { get; set; }
+        public string QueueName { get; set; }
     }
 }

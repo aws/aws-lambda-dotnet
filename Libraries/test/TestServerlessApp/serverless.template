@@ -438,7 +438,8 @@
             "Key": "keyname2",
             "Value": "value2"
           }
-        ]
+        ],
+        "QueueName": "thisismyqueuename.fifo"
       }
     }
   }
