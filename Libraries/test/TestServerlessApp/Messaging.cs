@@ -19,7 +19,15 @@ namespace TestServerlessApp
         }
 
         [LambdaFunction]
-        [SqsMessage(BatchSize = 12, QueueLogicalId = "QueueForMessageHandlerForNewQueue", VisibilityTimeout = 100, ContentBasedDeduplication = true, DeduplicationScope = "queue", DelaySeconds = 5, FifoQueue = true)]
+        [SqsMessage(
+            BatchSize = 12, 
+            QueueLogicalId = "QueueForMessageHandlerForNewQueue", 
+            VisibilityTimeout = 100, 
+            ContentBasedDeduplication = true, 
+            DeduplicationScope = "queue", 
+            DelaySeconds = 5, 
+            FifoQueue = true,
+            FifoThroughputLimit = "perQueue")]
         public Task MessageHandlerForNewQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;

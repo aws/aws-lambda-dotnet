@@ -53,6 +53,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.FifoQueue = bool.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
+                    case nameof(ISqsMessage.FifoThroughputLimit):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.FifoThroughputLimit = attNamedArgument.Value.Value.ToString();
+                        }
+                        break;
                     default:
                         throw new NotSupportedException(attNamedArgument.Key);
                 }

@@ -45,6 +45,16 @@ namespace Amazon.Lambda.Annotations
         /// Update requires: Replacement
         /// </summary>
         bool FifoQueue { get; set; }
+
+        /// <summary>
+        /// For high throughput for FIFO queues, specifies whether the FIFO queue throughput quota applies to the entire queue or per message group. Valid values are perQueue and perMessageGroupId.
+        /// To enable high throughput for a FIFO queue, set this attribute to perMessageGroupId and set the DeduplicationScope attribute to messageGroup. If you set these attributes to anything other than these values, normal throughput is in effect and deduplication occurs as specified. For more information, see High throughput for FIFO queues and Quotas related to messages in the Amazon SQS Developer Guide.
+        /// Required: No
+        /// Type: String
+        /// Update requires: No interruption
+        /// </summary>
+        string FifoThroughputLimit { get; set; }
+
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -65,5 +75,6 @@ namespace Amazon.Lambda.Annotations
         public string DeduplicationScope { get; set; }
         public int DelaySeconds { get; set; } = DelaySecondsDefault;
         public bool FifoQueue { get; set; }
+        public string FifoThroughputLimit { get; set; }
     }
 }

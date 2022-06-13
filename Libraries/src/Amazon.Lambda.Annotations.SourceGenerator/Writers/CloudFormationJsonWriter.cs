@@ -263,6 +263,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(fifoQueuePropertyPath);
             }
 
+            var fifoThroughputLimitPropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoThroughputLimit)}";
+
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.FifoThroughputLimit))
+            {
+                _jsonWriter.SetToken(fifoThroughputLimitPropertyPath, sqsMessageAttribute.FifoThroughputLimit);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(fifoThroughputLimitPropertyPath);
+            }
+
 
         }
 

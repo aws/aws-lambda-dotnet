@@ -75,7 +75,8 @@
         "ContentBasedDeduplication": true,
         "DeduplicationScope": "queue",
         "DelaySeconds": 5,
-        "FifoQueue": true
+        "FifoQueue": true,
+        "FifoThroughputLimit": "perQueue"
       }
     }
   }
