@@ -35,8 +35,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     StartupClasses.Add(classDeclarationSyntax);
                 }
             }
-
-            
         }
     }
 }
