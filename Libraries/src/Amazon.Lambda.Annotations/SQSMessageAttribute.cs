@@ -193,6 +193,7 @@ namespace Amazon.Lambda.Annotations
         private string _queueName;
         private string _queueLogicalId;
         private string _eventQueueArn;
+        private string _deduplicationScope;
         public const bool ContentBasedDeduplicationDefault = false;
         public const int VisibilityTimeoutDefault = 30;
         public const int BatchSizeDefault = 10;
@@ -235,7 +236,26 @@ namespace Amazon.Lambda.Annotations
         public int VisibilityTimeout { get; set; } = VisibilityTimeoutDefault;
         public int ReceiveMessageWaitTimeSeconds { get; set; } = ReceiveMessageWaitTimeSecondsDefault;
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
-        public string DeduplicationScope { get; set; }
+
+        public string DeduplicationScope
+        {
+            get => _deduplicationScope;
+            set
+            {
+                if(_deduplicationScope==value) return;
+                switch (value)
+                {
+                    case "messageGroup":
+                    case "queue":
+                        _deduplicationScope = value;
+                        OnPropertyChanged();
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(value);
+                }
+            }
+        }
+
         public int DelaySeconds { get; set; } = DelaySecondsDefault;
         public bool FifoQueue { get; set; }
         public string FifoThroughputLimit { get; set; }

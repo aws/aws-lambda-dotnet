@@ -24,7 +24,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
                 EventQueueARN = "arn:aws:sqs:us-east-1:968993296699:app-deploy-blue-LAVETRYB3JKX-SomeQueueName"
             };
             Assert.Throws<InvalidOperationException>(() => target.QueueLogicalId = "MyLogicalId");
+        }
 
+        [Fact]
+        public void DeduplicationScopeValidation()
+        {
+            var target = new SqsMessageAttribute();
+            target.DeduplicationScope = "messageGroup";
+            target.DeduplicationScope = "queue";
+            Assert.Throws<ArgumentOutOfRangeException>(() => target.DeduplicationScope = "notValid");
         }
     }
 }
