@@ -420,7 +420,8 @@
         "KmsDataKeyReusePeriodSeconds": 299,
         "KmsMasterKeyId": "alias/aws/sqs",
         "MaximumMessageSize": 1024,
-        "MessageRetentionPeriod": 60
+        "MessageRetentionPeriod": 60,
+        "ReceiveMessageWaitTimeSeconds": 5
       }
     }
   }

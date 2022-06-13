@@ -7,7 +7,6 @@ namespace Amazon.Lambda.Annotations
 
     public interface ISqsMessage
     {
-        string QueueName { get; set; }
         int BatchSize { get; set; }
         string QueueLogicalId { get; set; }
         
@@ -94,6 +93,26 @@ namespace Amazon.Lambda.Annotations
         int MessageRetentionPeriod { get; set; }
 
         /// <summary>
+        /// A name for the queue. To create a FIFO queue, the name of your FIFO queue must end with the .fifo suffix. For more information, see FIFO queues in the Amazon SQS Developer Guide.
+        /// If you don't specify a name, AWS CloudFormation generates a unique physical ID and uses that ID for the queue name. For more information, see Name type in the AWS CloudFormation User Guide.
+        /// Important: If you specify a name, you can't perform updates that require replacement of this resource. You can perform updates that require no or some interruption. If you must replace the resource, specify a new name.
+        /// Required: No
+        /// Type: String
+        /// Update requires: Replacement
+        /// </summary>
+        string QueueName { get; set; }
+
+
+        /// <summary>
+        /// Specifies the duration, in seconds, that the ReceiveMessage action call waits until a message is in the queue in order to include it in the response, rather than returning an empty response if a message isn't yet available. You can specify an integer from 1 to 20. Short polling is used as the default or when you specify 0 for this property. For more information, see Consuming messages using long polling in the Amazon SQS Developer Guide.
+        /// Required: No
+        /// Type: Integer
+        /// Update requires: No interruption
+
+        /// </summary>
+        int ReceiveMessageWaitTimeSeconds { get; set; }
+
+        /// <summary>
         /// The length of time during which a message will be unavailable after a message is delivered from the queue. This blocks other components from receiving the same message and gives the initial component time to process and delete the message from the queue.
         /// Values must be from 0 to 43,200 seconds (12 hours). If you don't specify a value, AWS CloudFormation uses the default value of 30 seconds.
         /// For more information about Amazon SQS queue visibility timeouts, see Visibility timeout in the Amazon SQS Developer Guide.
@@ -102,6 +121,8 @@ namespace Amazon.Lambda.Annotations
         /// Update requires: No interruption
         /// </summary>
         int VisibilityTimeout { get; set; }
+
+
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -115,12 +136,14 @@ namespace Amazon.Lambda.Annotations
         public const int KmsDataKeyReusePeriodSecondsDefault = 300;
         public const int MaximumMessageSizeDefault = 262144;
         public const int MessageRetentionPeriodDefault = 345600;
+        public const int ReceiveMessageWaitTimeSecondsDefault = 0;
 
         public string QueueName { get; set; }
         public int BatchSize { get; set; } = BatchSizeDefault;
 
         public string QueueLogicalId { get; set; }
         public int VisibilityTimeout { get; set; } = VisibilityTimeoutDefault;
+        public int ReceiveMessageWaitTimeSeconds { get; set; } = ReceiveMessageWaitTimeSecondsDefault;
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
         public string DeduplicationScope { get; set; }
         public int DelaySeconds { get; set; } = DelaySecondsDefault;

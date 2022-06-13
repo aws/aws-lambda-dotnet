@@ -31,7 +31,8 @@ namespace TestServerlessApp
             KmsDataKeyReusePeriodSeconds = 299,
             KmsMasterKeyId = "alias/aws/sqs",
             MaximumMessageSize = 1024,
-            MessageRetentionPeriod = 60)]
+            MessageRetentionPeriod = 60,
+            ReceiveMessageWaitTimeSeconds =5)]
         public Task MessageHandlerForNewQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;

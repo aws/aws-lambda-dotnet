@@ -85,6 +85,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.MessageRetentionPeriod = int.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
+                    //ReceiveMessageWaitTimeSeconds
+                    case nameof(ISqsMessage.ReceiveMessageWaitTimeSeconds):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.ReceiveMessageWaitTimeSeconds = int.Parse(attNamedArgument.Value.Value.ToString());
+                        }
+                        break;
 
 
 

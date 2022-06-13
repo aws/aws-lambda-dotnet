@@ -283,6 +283,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             var messageRetentionPeriodPath = $"{propertiesPath}.{nameof(ISqsMessage.MessageRetentionPeriod)}";
             WriteOrRemove(messageRetentionPeriodPath, sqsMessageAttribute.MessageRetentionPeriod, SqsMessageAttribute.MessageRetentionPeriodDefault);
+
+            //ReceiveMessageWaitTimeSeconds
+            WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.ReceiveMessageWaitTimeSeconds)}", sqsMessageAttribute.ReceiveMessageWaitTimeSeconds, SqsMessageAttribute.ReceiveMessageWaitTimeSecondsDefault);
         }
 
         private void WriteOrRemove(string path, int value, int defaultValue)
