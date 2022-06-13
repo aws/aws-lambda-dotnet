@@ -48,7 +48,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             RemoveOrphanedLambdaFunctions(processedLambdaFunctions);
-            RemoveOrphanedQueues();
+            RemoveOrphanedResources();
 
             var json = _jsonWriter.GetPrettyJson();
             _fileManager.WriteAllText(report.CloudFormationTemplatePath, json);
@@ -154,7 +154,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         {
                             string queueLogicalId = ProcessQueue(sqsAttributeModel.Data);
                             currentSyncedResources.Add(queueLogicalId);
-                            _processedQueues.Add(queueLogicalId);
+                            _processedResources.Add(queueLogicalId);
                         }
                         break;
                 }
@@ -273,9 +273,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             return refNode;
         }
 
-        // I don't like this being a member field, but given
+        // I don't like this being a field member, but given
         // the previous patterns, I can't find a better method
-        private readonly HashSet<string> _processedQueues = new HashSet<string>();
+        private readonly HashSet<string> _processedResources = new HashSet<string>();
         private string ProcessQueue(SqsMessageAttribute data)
         {
             var sqsQueueTemplateInfo = GetSqsQueueLogicalIdAndPath(data);
@@ -476,7 +476,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 throw new Exception($"Failed to write AWS::SQS::Queue: {e.Message} {e.InnerException?.Message}", e);
             }
         }
-        private void RemoveOrphanedQueues()
+        private void RemoveOrphanedResources()
         {
             var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
             if (resourceToken == null)
@@ -491,7 +491,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
                 if (string.Equals(type.ToObject<string>(), "AWS::SQS::Queue", StringComparison.Ordinal)
                     && string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal)
-                    && !_processedQueues.Contains(resource.Name))
+                    && !_processedResources.Contains(resource.Name))
                 {
                     toRemove.Add(resource.Name);
                 }
