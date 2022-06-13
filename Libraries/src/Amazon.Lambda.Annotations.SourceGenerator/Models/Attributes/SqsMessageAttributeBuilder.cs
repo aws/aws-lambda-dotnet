@@ -26,14 +26,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.EventBatchSize):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.EventBatchSize = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.EventBatchSize = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     case nameof(ISqsMessage.QueueLogicalId):
                         data.QueueLogicalId = attNamedArgument.Value.Value?.ToString();
                         break;
                     case nameof(ISqsMessage.VisibilityTimeout):
-                        data.VisibilityTimeout = int.Parse(attNamedArgument.Value.Value.ToString());
+                        data.VisibilityTimeout = uint.Parse(attNamedArgument.Value.Value.ToString());
                         break;
                     case nameof(ISqsMessage.ContentBasedDeduplication):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value.ToString()))
@@ -50,7 +50,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.DelaySeconds):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.DelaySeconds = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.DelaySeconds = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     case nameof(ISqsMessage.FifoQueue):
@@ -68,7 +68,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.KmsDataKeyReusePeriodSeconds):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.KmsDataKeyReusePeriodSeconds = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.KmsDataKeyReusePeriodSeconds = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     case nameof(ISqsMessage.KmsMasterKeyId):
@@ -81,7 +81,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.MaximumMessageSize):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.MaximumMessageSize = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.MaximumMessageSize = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     // Queue
@@ -95,14 +95,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(ISqsMessage.MessageRetentionPeriod):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.MessageRetentionPeriod = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.MessageRetentionPeriod = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     //ReceiveMessageWaitTimeSeconds
                     case nameof(ISqsMessage.ReceiveMessageWaitTimeSeconds):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
                         {
-                            data.ReceiveMessageWaitTimeSeconds = int.Parse(attNamedArgument.Value.Value.ToString());
+                            data.ReceiveMessageWaitTimeSeconds = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
                     //RedriveAllowPolicy

@@ -43,7 +43,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             var target = new SqsMessageAttribute();
             target.DelaySeconds = SqsMessageAttribute.DelaySecondsMinimum;
             target.DelaySeconds = SqsMessageAttribute.DelaySecondsMaximum;
-            Assert.Throws<ArgumentOutOfRangeException>(() => target.DelaySeconds = -1);
             Assert.Throws<ArgumentOutOfRangeException>(() => target.DelaySeconds = SqsMessageAttribute.DelaySecondsMaximum + 1);
         }
 
@@ -127,11 +126,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMinimum;
             target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMaximum;
 
-            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMinimum - 1);
-            Assert.Equal(nameof(SqsMessageAttribute.VisibilityTimeout), error.ParamName);
-            Assert.Equal(SqsMessageAttribute.VisibilityTimeoutArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.VisibilityTimeout)}')", error.Message);
-
-            error = Assert.Throws<ArgumentOutOfRangeException>(() => target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMaximum + 1);
+            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMaximum + 1);
             Assert.Equal(nameof(SqsMessageAttribute.VisibilityTimeout), error.ParamName);
             Assert.Equal(SqsMessageAttribute.VisibilityTimeoutArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.VisibilityTimeout)}')", error.Message);
 
@@ -139,9 +134,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
 
         [Theory]
         [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMinimum, false)]
-        [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMinimum - 1, true)]
         [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMaximum + 1, true)]
-        public void ReceiveMessageWaitTimeSecondsValidation(int value, bool throws)
+        public void ReceiveMessageWaitTimeSecondsValidation(uint value, bool throws)
         {
             var target = new SqsMessageAttribute();
             if (!throws)

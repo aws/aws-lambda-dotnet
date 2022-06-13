@@ -548,7 +548,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(path);
             }
         }
-        private void WriteOrRemove(string path, int value, int defaultValue)
+        private void WriteOrRemove(string path, uint value, uint defaultValue)
         {
             if (value != defaultValue)
             {

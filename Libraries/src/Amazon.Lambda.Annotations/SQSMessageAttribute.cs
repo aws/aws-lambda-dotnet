@@ -13,44 +13,44 @@ namespace Amazon.Lambda.Annotations
     {
         public const bool ContentBasedDeduplicationDefault = false;
 
-        public const int VisibilityTimeoutDefault = 30;
-        internal const int VisibilityTimeoutMinimum = 0;
-        internal const int VisibilityTimeoutMaximum = 43200;
+        public const uint VisibilityTimeoutDefault = 30;
+        internal const uint VisibilityTimeoutMinimum = 0;
+        internal const uint VisibilityTimeoutMaximum = 43200;
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
         internal const string VisibilityTimeoutArgumentOutOfRangeExceptionMessage = "VisibilityTimeoutMaximum must be => 0 && <= 43200";
 
-        internal const int EventBatchSizeMinimum = 1;
-        internal const int EventBatchSizeMaximum = 10000;
-        public const int EventBatchSizeDefault = 10;
+        internal const uint EventBatchSizeMinimum = 1;
+        internal const uint EventBatchSizeMaximum = 10000;
+        public const uint EventBatchSizeDefault = 10;
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
         internal const string EventBatchSizeArgumentOutOfRangeExceptionMessage = "EventBatchSize must be => 1 && <= 10000";
 
-        public const int DelaySecondsDefault = 0;
+        public const uint DelaySecondsDefault = 0;
         public const bool FifoQueueDefault = false;
-        public const int DelaySecondsMinimum = 0;
-        public const int DelaySecondsMaximum = 900;
+        public const uint DelaySecondsMinimum = 0;
+        public const uint DelaySecondsMaximum = 900;
 
-        public const int KmsDataKeyReusePeriodSecondsDefault = 300;
-        public const int KmsDataKeyReusePeriodSecondsMinimum = 60;
-        public const int KmsDataKeyReusePeriodSecondsMaximum = 86400;
+        public const uint KmsDataKeyReusePeriodSecondsDefault = 300;
+        public const uint KmsDataKeyReusePeriodSecondsMinimum = 60;
+        public const uint KmsDataKeyReusePeriodSecondsMaximum = 86400;
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
         internal const string KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage = "KmsDataKeyReusePeriodSeconds must be => 60 && <= 86400";
 
-        internal const int MaximumMessageSizeMinimum = 1024;
-        internal const int MaximumMessageSizeMaximum = 262144;
-        public const int MaximumMessageSizeDefault = 262144;
+        internal const uint MaximumMessageSizeMinimum = 1024;
+        internal const uint MaximumMessageSizeMaximum = 262144;
+        public const uint MaximumMessageSizeDefault = 262144;
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
         internal const string MaximumMessageSizeArgumentOutOfRangeExceptionMessage = "MaximumMessageSize must be => 1024 && <= 262144";
 
-        internal const int MessageRetentionPeriodMinimum = 60;
-        internal const int MessageRetentionPeriodMaximum = 345600;
-        public const int MessageRetentionPeriodDefault = 345600;
+        internal const uint MessageRetentionPeriodMinimum = 60;
+        internal const uint MessageRetentionPeriodMaximum = 345600;
+        public const uint MessageRetentionPeriodDefault = 345600;
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
         internal const string MessageRetentionPeriodArgumentOutOfRangeExceptionMessage = "MessageRetentionPeriod must be => 60 && <= 345600";
 
-        public const int ReceiveMessageWaitTimeSecondsDefault = 0;
-        internal const int ReceiveMessageWaitTimeSecondsMinimum = 0;
-        internal const int ReceiveMessageWaitTimeSecondsMaximum = 20;
+        public const uint ReceiveMessageWaitTimeSecondsDefault = 0;
+        internal const uint ReceiveMessageWaitTimeSecondsMinimum = 0;
+        internal const uint ReceiveMessageWaitTimeSecondsMaximum = 20;
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
         internal const string ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage = "ReceiveMessageWaitTimeSeconds must be => 0 && <= 20";
         internal const string RedriveAllowPolicyValidationNotValidJsonException = "Not valid JSON";
@@ -59,14 +59,14 @@ namespace Amazon.Lambda.Annotations
         private string _queueLogicalId;
         private string _eventQueueArn;
         private string _deduplicationScope;
-        private int _delaySeconds = DelaySecondsDefault;
+        private uint _delaySeconds = DelaySecondsDefault;
         private string _fifoThroughputLimit;
-        private int _kmsDataKeyReusePeriodSeconds = KmsDataKeyReusePeriodSecondsDefault;
-        private int _maximumMessageSize = MaximumMessageSizeDefault;
-        private int _messageRetentionPeriod = MessageRetentionPeriodDefault;
-        private int _eventBatchSize = EventBatchSizeDefault;
-        private int _visibilityTimeout = VisibilityTimeoutDefault;
-        private int _receiveMessageWaitTimeSeconds = ReceiveMessageWaitTimeSecondsDefault;
+        private uint _kmsDataKeyReusePeriodSeconds = KmsDataKeyReusePeriodSecondsDefault;
+        private uint _maximumMessageSize = MaximumMessageSizeDefault;
+        private uint _messageRetentionPeriod = MessageRetentionPeriodDefault;
+        private uint _eventBatchSize = EventBatchSizeDefault;
+        private uint _visibilityTimeout = VisibilityTimeoutDefault;
+        private uint _receiveMessageWaitTimeSeconds = ReceiveMessageWaitTimeSecondsDefault;
         private string _redrivePolicy;
 
 
@@ -82,7 +82,7 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
-        public int EventBatchSize
+        public uint EventBatchSize
         {
             get => _eventBatchSize;
             set
@@ -112,13 +112,13 @@ namespace Amazon.Lambda.Annotations
 
         public string[] Tags { get; set; } = new string[] {};
 
-        public int VisibilityTimeout
+        public uint VisibilityTimeout
         {
             get => _visibilityTimeout;
             set
             {
-                if ( value == _visibilityTimeout) return;
-                if (value < VisibilityTimeoutMinimum || value > VisibilityTimeoutMaximum)
+                if (value == _visibilityTimeout) return;
+                if (value > VisibilityTimeoutMaximum)
                 {
                     throw new ArgumentOutOfRangeException(nameof(VisibilityTimeout), VisibilityTimeoutArgumentOutOfRangeExceptionMessage);
                 }
@@ -127,13 +127,13 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
-        public int ReceiveMessageWaitTimeSeconds
+        public uint ReceiveMessageWaitTimeSeconds
         {
             get => _receiveMessageWaitTimeSeconds;
             set
             {
                 if ( value == _receiveMessageWaitTimeSeconds) return;
-                if (value < ReceiveMessageWaitTimeSecondsMinimum || value > ReceiveMessageWaitTimeSecondsMaximum)
+                if (value > ReceiveMessageWaitTimeSecondsMaximum)
                 {
                     throw new ArgumentOutOfRangeException(nameof(ReceiveMessageWaitTimeSeconds), ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage);
                 }
@@ -165,13 +165,13 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
-        public int DelaySeconds
+        public uint DelaySeconds
         {
             get => _delaySeconds;
             set
             {
                 if (_delaySeconds==value) return;
-                if (value < DelaySecondsMinimum || value > DelaySecondsMaximum)
+                if (value > DelaySecondsMaximum)
                 {
                     throw new ArgumentOutOfRangeException();
                 }
@@ -204,7 +204,7 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
-        public int KmsDataKeyReusePeriodSeconds
+        public uint KmsDataKeyReusePeriodSeconds
         {
             get => _kmsDataKeyReusePeriodSeconds;
             set
@@ -222,7 +222,7 @@ namespace Amazon.Lambda.Annotations
 
         public string KmsMasterKeyId { get; set; }
 
-        public int MaximumMessageSize
+        public uint MaximumMessageSize
         {
             get => _maximumMessageSize;
             set
@@ -237,7 +237,7 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
-        public int MessageRetentionPeriod
+        public uint MessageRetentionPeriod
         {
             get => _messageRetentionPeriod;
             set

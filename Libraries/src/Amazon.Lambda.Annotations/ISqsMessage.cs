@@ -16,7 +16,7 @@
         /// Minimum: 1
         /// Maximum: 10000
         /// </summary>
-        int EventBatchSize { get; set; }
+        uint EventBatchSize { get; set; }
 
         /// <summary>
         /// For Events: The ARN of the queue.
@@ -53,7 +53,7 @@
         /// Type: Boolean
         /// Update requires: Replacement
         /// </summary>
-        int DelaySeconds { get; set; }
+        uint DelaySeconds { get; set; }
 
         /// <summary>
         /// If set to true, creates a FIFO queue. If you don't specify this property, Amazon SQS creates a standard queue. For more information, see FIFO queues in the Amazon SQS Developer Guide.
@@ -80,7 +80,7 @@
         /// Type: Integer
         /// Update requires: No interruption
         /// </summary>
-        int KmsDataKeyReusePeriodSeconds { get; set; }
+        uint KmsDataKeyReusePeriodSeconds { get; set; }
 
         /// <summary>
         /// The ID of an AWS managed customer master key (CMK) for Amazon SQS or a custom CMK. To use the AWS managed CMK for Amazon SQS, specify the (default) alias alias/aws/sqs. For more information, see the following:
@@ -99,7 +99,7 @@
         /// Type: Integer
         /// Update requires: No interruption
         /// </summary>
-        int MaximumMessageSize { get; set; }
+        uint MaximumMessageSize { get; set; }
 
         /// <summary>
         /// The number of seconds that Amazon SQS retains a message. You can specify an integer value from 60 seconds (1 minute) to 1,209,600 seconds (14 days). The default value is 345,600 seconds (4 days).
@@ -107,7 +107,7 @@
         /// Type: Integer
         /// Update requires: No interruption
         /// </summary>
-        int MessageRetentionPeriod { get; set; }
+        uint MessageRetentionPeriod { get; set; }
 
         /// <summary>
         /// A name for the queue. To create a FIFO queue, the name of your FIFO queue must end with the .fifo suffix. For more information, see FIFO queues in the Amazon SQS Developer Guide.
@@ -127,7 +127,7 @@
         /// Update requires: No interruption
 
         /// </summary>
-        int ReceiveMessageWaitTimeSeconds { get; set; }
+        uint ReceiveMessageWaitTimeSeconds { get; set; }
 
         /// <summary>
         /// The string that includes the parameters for the permissions for the dead-letter queue redrive permission and which source queues can specify dead-letter queues as a JSON object. The parameters are as follows:
@@ -175,7 +175,7 @@
         /// Type: Integer
         /// Update requires: No interruption
         /// </summary>
-        int VisibilityTimeout { get; set; }
+        uint VisibilityTimeout { get; set; }
 
 
     }
