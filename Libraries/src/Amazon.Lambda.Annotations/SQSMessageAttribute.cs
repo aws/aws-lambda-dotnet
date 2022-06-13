@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Amazon.Lambda.Annotations
@@ -186,8 +188,10 @@ namespace Amazon.Lambda.Annotations
     }
 
     [AttributeUsage(AttributeTargets.Method)]
-    public class SqsMessageAttribute : Attribute, ISqsMessage
+    public class SqsMessageAttribute : Attribute, ISqsMessage, INotifyPropertyChanged
     {
+        private string _queueName;
+        private string _queueLogicalId;
         public const bool ContentBasedDeduplicationDefault = false;
         public const int VisibilityTimeoutDefault = 30;
         public const int BatchSizeDefault = 10;
@@ -202,7 +206,17 @@ namespace Amazon.Lambda.Annotations
         // event handler values
         public string Queue { get; set; }
         public int BatchSize { get; set; } = BatchSizeDefault;
-        public string QueueLogicalId { get; set; }
+
+        public string QueueLogicalId
+        {
+            get => _queueLogicalId;
+            set
+            {
+                if (_queueLogicalId == value) return;
+                _queueLogicalId = value;
+                OnPropertyChanged();
+            }
+        }
 
         // sqs queue values
 
@@ -220,6 +234,33 @@ namespace Amazon.Lambda.Annotations
         public int MessageRetentionPeriod { get; set; } = MessageRetentionPeriodDefault;
         public string RedriveAllowPolicy { get; set; }
         public string RedrivePolicy { get; set; }
-        public string QueueName { get; set; }
+
+        public string QueueName 
+        {
+            get => _queueName;
+            set
+            {
+                if (_queueName==value) return;
+                _queueName = value;
+                this.OnPropertyChanged();
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            switch (propertyName)
+            {
+                case nameof(QueueLogicalId):
+                case nameof(QueueName):
+                    if ((!string.IsNullOrEmpty(QueueLogicalId) || !string.IsNullOrEmpty(Queue)) && string.IsNullOrEmpty(QueueLogicalId) == string.IsNullOrEmpty(Queue))
+                    {
+                        throw new InvalidOperationException($"You can only specify one of: {nameof(QueueLogicalId)} or {nameof(Queue)}");
+                    }
+                    break;
+            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

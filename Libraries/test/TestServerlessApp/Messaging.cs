@@ -12,7 +12,7 @@ namespace TestServerlessApp
     public class Messaging
     {
         [LambdaFunction]
-        [SqsMessage(Queue = "arn:aws:sqs:us-east-1:768033286672:app-deploy-blue-LAVETRYB3JKX-SomeQueueName", BatchSize = 11)]
+        [SqsMessage(Queue = "arn:aws:sqs:us-east-1:968993296699:app-deploy-blue-LAVETRYB3JKX-SomeQueueName", BatchSize = 11)]
         public Task MessageHandlerForPreExistingQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;
