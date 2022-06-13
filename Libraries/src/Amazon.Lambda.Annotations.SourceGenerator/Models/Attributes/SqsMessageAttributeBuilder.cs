@@ -47,6 +47,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.DelaySeconds = int.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
+                    case nameof(ISqsMessage.FifoQueue):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.FifoQueue = bool.Parse(attNamedArgument.Value.Value.ToString());
+                        }
+                        break;
                     default:
                         throw new NotSupportedException(attNamedArgument.Key);
                 }

@@ -103,9 +103,6 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated"
-        ],
-        "SyncedResources": [
-          "QueueForMessageHandlerForNewQueue"
         ]
       },
       "Properties": {
@@ -122,25 +119,12 @@
           "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
             "Type": "SQS",
             "Properties": {
-              "BatchSize": 12,
               "Queue": {
                 "Ref": "QueueForMessageHandlerForNewQueue"
               }
             }
           }
         }
-      }
-    },
-    "QueueForMessageHandlerForNewQueue": {
-      "Type": "AWS::SQS::Queue",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "VisibilityTimeout": 100,
-        "ContentBasedDeduplication": true,
-        "DeduplicationScope": "queue",
-        "DelaySeconds": 5
       }
     },
     "TestServerlessAppComplexCalculatorAddGenerated": {

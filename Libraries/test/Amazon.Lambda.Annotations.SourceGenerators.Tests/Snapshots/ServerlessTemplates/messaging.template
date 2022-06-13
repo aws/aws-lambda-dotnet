@@ -74,7 +74,8 @@
         "VisibilityTimeout": 100,
         "ContentBasedDeduplication": true,
         "DeduplicationScope": "queue",
-        "DelaySeconds": 5
+        "DelaySeconds": 5,
+        "FifoQueue": true
       }
     }
   }

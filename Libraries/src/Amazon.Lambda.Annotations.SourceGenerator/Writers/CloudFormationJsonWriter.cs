@@ -252,6 +252,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(delayPropertyPath);
             }
 
+            var fifoQueuePropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoQueue)}";
+
+            if (sqsMessageAttribute.FifoQueue != SqsMessageAttribute.FifoQueueDefault)
+            {
+                _jsonWriter.SetToken(fifoQueuePropertyPath, sqsMessageAttribute.FifoQueue);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(fifoQueuePropertyPath);
+            }
+
 
         }
 
