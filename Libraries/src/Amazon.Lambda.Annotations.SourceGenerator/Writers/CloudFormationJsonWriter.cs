@@ -210,120 +210,231 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         private void ProcessQueueAttributes(SqsMessageAttribute sqsMessageAttribute, string propertiesPath)
         {
-            var visibilityTimeoutPath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.VisibilityTimeout)}";
-            if (sqsMessageAttribute.VisibilityTimeout != SqsMessageAttribute.VisibilityTimeoutDefault)
+            try
             {
-                _jsonWriter.SetToken(visibilityTimeoutPath, sqsMessageAttribute.VisibilityTimeout);
-            }
-            else
-            {
-                _jsonWriter.RemoveToken(visibilityTimeoutPath);
-            }
-
-
-            var contentBasedDeduplicationPath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.ContentBasedDeduplication)}";
-            if (sqsMessageAttribute.ContentBasedDeduplication != SqsMessageAttribute.ContentBasedDeduplicationDefault)
-            {
-                _jsonWriter.SetToken(contentBasedDeduplicationPath, sqsMessageAttribute.ContentBasedDeduplication);
-            }
-            else
-            {
-                _jsonWriter.RemoveToken(contentBasedDeduplicationPath);
-            }
-
-            var deduplicationScopePath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.DeduplicationScope)}";
-            if (!string.IsNullOrEmpty(sqsMessageAttribute.DeduplicationScope))
-            {
-                _jsonWriter.SetToken(deduplicationScopePath, sqsMessageAttribute.DeduplicationScope);
-            }
-            else
-            {
-                _jsonWriter.RemoveToken(deduplicationScopePath);
-            }
-
-            var delayPropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.DelaySeconds)}";
-            WriteOrRemove(delayPropertyPath, sqsMessageAttribute.DelaySeconds, SqsMessageAttribute.DelaySecondsDefault);
-
-            var fifoQueuePropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoQueue)}";
-
-            if (sqsMessageAttribute.FifoQueue != SqsMessageAttribute.FifoQueueDefault)
-            {
-                _jsonWriter.SetToken(fifoQueuePropertyPath, sqsMessageAttribute.FifoQueue);
-            }
-            else
-            {
-                _jsonWriter.RemoveToken(fifoQueuePropertyPath);
-            }
-
-            var fifoThroughputLimitPropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoThroughputLimit)}";
-            if (!string.IsNullOrEmpty(sqsMessageAttribute.FifoThroughputLimit))
-            {
-                _jsonWriter.SetToken(fifoThroughputLimitPropertyPath, sqsMessageAttribute.FifoThroughputLimit);
-            }
-            else
-            {
-                _jsonWriter.RemoveToken(fifoThroughputLimitPropertyPath);
-            }
-
-            var kmsDataKeyReusePeriodSeconds = $"{propertiesPath}.{nameof(ISqsMessage.KmsDataKeyReusePeriodSeconds)}";
-            WriteOrRemove(kmsDataKeyReusePeriodSeconds, sqsMessageAttribute.KmsDataKeyReusePeriodSeconds, SqsMessageAttribute.KmsDataKeyReusePeriodSecondsDefault);
-
-            var kmsMasterKeyIdPath = $"{propertiesPath}.{nameof(ISqsMessage.KmsMasterKeyId)}";
-            if (!string.IsNullOrEmpty(sqsMessageAttribute.KmsMasterKeyId))
-            {
-                _jsonWriter.SetToken(kmsMasterKeyIdPath, sqsMessageAttribute.KmsMasterKeyId);
-            }
-            else
-            {
-                _jsonWriter.RemoveToken(kmsMasterKeyIdPath);
-            }
-
-            var maximumMessageSizeDefaultPath = $"{propertiesPath}.{nameof(ISqsMessage.MaximumMessageSize)}";
-            WriteOrRemove(maximumMessageSizeDefaultPath, sqsMessageAttribute.MaximumMessageSize, SqsMessageAttribute.MaximumMessageSizeDefault);
-
-            // MessageRetentionPeriod
-            WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.MessageRetentionPeriod)}", sqsMessageAttribute.MessageRetentionPeriod, SqsMessageAttribute.MessageRetentionPeriodDefault);
-
-            // QueueName
-            WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.QueueName)}", sqsMessageAttribute.QueueName, string.Empty);
-
-            //ReceiveMessageWaitTimeSeconds
-            WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.ReceiveMessageWaitTimeSeconds)}", sqsMessageAttribute.ReceiveMessageWaitTimeSeconds, SqsMessageAttribute.ReceiveMessageWaitTimeSecondsDefault);
-
-            //RedriveAllowPolicy
-            WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedriveAllowPolicy)}", sqsMessageAttribute.RedriveAllowPolicy);
-
-            //RedrivePolicy
-            WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedrivePolicy)}", sqsMessageAttribute.RedrivePolicy);
-
-            // Tags
-            List<string> writtenTags = new List<string>();
-            //                _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray(policyArray));
-            var tagArray = new JArray();
-            foreach (var tag in sqsMessageAttribute.Tags)
-            {
-                var tagParts = tag.Split('=');
-                var key = tagParts.FirstOrDefault();
-                var value = tagParts.LastOrDefault();
-                if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
+                try
                 {
-                    var tagObject = new JObject();
-                    tagObject.Add(new JProperty("Key", key));
-                    tagObject.Add(new JProperty("Value", value));
-                    tagArray.Add(tagObject);
-                    writtenTags.Add(key);
+                    var visibilityTimeoutPath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.VisibilityTimeout)}";
+
+                    if (sqsMessageAttribute.VisibilityTimeout != SqsMessageAttribute.VisibilityTimeoutDefault)
+                    {
+                        _jsonWriter.SetToken(visibilityTimeoutPath, sqsMessageAttribute.VisibilityTimeout);
+                    }
+                    else
+                    {
+                        _jsonWriter.RemoveToken(visibilityTimeoutPath);
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.VisibilityTimeout)}", e);
+                }
+
+                try
+                {
+                    var contentBasedDeduplicationPath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.ContentBasedDeduplication)}";
+                    if (sqsMessageAttribute.ContentBasedDeduplication != SqsMessageAttribute.ContentBasedDeduplicationDefault)
+                    {
+                        _jsonWriter.SetToken(contentBasedDeduplicationPath, sqsMessageAttribute.ContentBasedDeduplication);
+                    }
+                    else
+                    {
+                        _jsonWriter.RemoveToken(contentBasedDeduplicationPath);
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.ContentBasedDeduplication)}", e);
+                }
+
+                try
+                {
+                    var deduplicationScopePath = $"{propertiesPath}.{nameof(ISqsMessageSerializable.DeduplicationScope)}";
+                    if (!string.IsNullOrEmpty(sqsMessageAttribute.DeduplicationScope))
+                    {
+                        _jsonWriter.SetToken(deduplicationScopePath, sqsMessageAttribute.DeduplicationScope);
+                    }
+                    else
+                    {
+                        _jsonWriter.RemoveToken(deduplicationScopePath);
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.DeduplicationScope)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.DelaySeconds)}", sqsMessageAttribute.DelaySeconds, SqsMessageAttribute.DelaySecondsDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.DelaySeconds)}", e);
+                }
+
+                try
+                {
+                    var fifoQueuePropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoQueue)}";
+
+                    if (sqsMessageAttribute.FifoQueue != SqsMessageAttribute.FifoQueueDefault)
+                    {
+                        _jsonWriter.SetToken(fifoQueuePropertyPath, sqsMessageAttribute.FifoQueue);
+                    }
+                    else
+                    {
+                        _jsonWriter.RemoveToken(fifoQueuePropertyPath);
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.FifoQueue)}", e);
+                }
+
+                try
+                {
+                    var fifoThroughputLimitPropertyPath = $"{propertiesPath}.{nameof(ISqsMessage.FifoThroughputLimit)}";
+                    if (!string.IsNullOrEmpty(sqsMessageAttribute.FifoThroughputLimit))
+                    {
+                        _jsonWriter.SetToken(fifoThroughputLimitPropertyPath, sqsMessageAttribute.FifoThroughputLimit);
+                    }
+                    else
+                    {
+                        _jsonWriter.RemoveToken(fifoThroughputLimitPropertyPath);
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.FifoThroughputLimit)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.KmsDataKeyReusePeriodSeconds)}", sqsMessageAttribute.KmsDataKeyReusePeriodSeconds, SqsMessageAttribute.KmsDataKeyReusePeriodSecondsDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.KmsDataKeyReusePeriodSeconds)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.KmsMasterKeyId)}", sqsMessageAttribute.KmsMasterKeyId, string.Empty);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.KmsDataKeyReusePeriodSeconds)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.MaximumMessageSize)}", sqsMessageAttribute.MaximumMessageSize, SqsMessageAttribute.MaximumMessageSizeDefault);
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.MaximumMessageSize)}", e);
+                }
+
+                // MessageRetentionPeriod
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.MessageRetentionPeriod)}", sqsMessageAttribute.MessageRetentionPeriod, SqsMessageAttribute.MessageRetentionPeriodDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.MessageRetentionPeriod)}", e);
+                }
+
+                // QueueName
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.QueueName)}", sqsMessageAttribute.QueueName, string.Empty);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.QueueName)}", e);
+                }
+
+                //ReceiveMessageWaitTimeSeconds
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.ReceiveMessageWaitTimeSeconds)}", sqsMessageAttribute.ReceiveMessageWaitTimeSeconds, SqsMessageAttribute.ReceiveMessageWaitTimeSecondsDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.ReceiveMessageWaitTimeSeconds)}", e);
+                }
+
+                //RedriveAllowPolicy
+                try
+                {
+                    WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedriveAllowPolicy)}", sqsMessageAttribute.RedriveAllowPolicy);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.RedriveAllowPolicy)}", e);
+                }
+
+                //RedrivePolicy
+                try
+                {
+                    WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedrivePolicy)}", sqsMessageAttribute.RedrivePolicy);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.RedrivePolicy)}", e);
+                }
+
+                // Tags
+                try
+                {
+                    var tagArray = new JArray();
+                    foreach (var tag in sqsMessageAttribute.Tags)
+                    {
+                        var tagParts = tag.Split('=');
+                        var key = tagParts.FirstOrDefault();
+                        var value = tagParts.LastOrDefault();
+                        if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
+                        {
+                            var tagObject = new JObject();
+                            tagObject.Add(new JProperty("Key", key));
+                            tagObject.Add(new JProperty("Value", value));
+                            tagArray.Add(tagObject);
+                        }
+                    }
+
+                    if (tagArray.Any())
+                    {
+                        _jsonWriter.SetToken($"{propertiesPath}.{nameof(ISqsMessage.Tags)}", tagArray);
+                    }
+                    else
+                    {
+                        _jsonWriter.RemoveToken($"{propertiesPath}.{nameof(ISqsMessage.Tags)}");
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.Tags)}", e);
                 }
             }
-
-            if (tagArray.Any())
+            catch (Exception e)
             {
-                _jsonWriter.SetToken($"{propertiesPath}.{nameof(ISqsMessage.Tags)}", tagArray);
+                throw new Exception("Failed to create AWS::SQS::Queue", e);
             }
-            else
-            {
-                _jsonWriter.RemoveToken($"{propertiesPath}.{nameof(ISqsMessage.Tags)}");
-            }
-
         }
 
         private void WriteOrRemoveAsJson(string path, string value)
