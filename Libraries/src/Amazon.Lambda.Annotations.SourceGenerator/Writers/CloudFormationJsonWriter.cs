@@ -388,7 +388,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
         {
-            var eventName = $"{lambdaFunction.Name}{sqsMessageAttribute.QueueName}";
+            var eventName = $"{lambdaFunction.Name}{sqsMessageAttribute.Queue}";
             var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
             var methodName = lambdaFunction.Name + "Sqs";
             var methodPath = $"{eventPath}.{eventName}";
@@ -407,9 +407,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             var queueNamePath = $"{methodPath}.Properties.Queue";
-            if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueName))
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.Queue))
             {
-                _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.QueueName);
+                _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.Queue);
             }
             else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
             {
