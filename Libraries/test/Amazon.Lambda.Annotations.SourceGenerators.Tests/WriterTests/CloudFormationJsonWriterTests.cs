@@ -251,6 +251,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 "MethodNotCreatedFromAnnotationsPackage", 45, 512, null, "Policy1, Policy2, Policy3");
             var cloudFormationJsonWriter = new CloudFormationJsonWriter(mockFileManager, _mockDirectoryManager, _jsonWriter, _diagnosticReporter);
             var report = GetAnnotationReport(new() {lambdaFunctionModel});
+
             // ACT
             cloudFormationJsonWriter.ApplyReport(report);
 

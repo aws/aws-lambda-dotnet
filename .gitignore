@@ -38,4 +38,3 @@ global.json
 
 **/cdk.out/**
 **/.DS_Store
-/Libraries/build/private/test
