@@ -26,15 +26,30 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             Assert.Throws<InvalidOperationException>(() => target.QueueLogicalId = "MyLogicalId");
         }
 
-        [Fact]
-        public void DeduplicationScopeValidation()
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        [InlineData(SqsMessageAttribute.DeduplicationScopeMessageGroup)]
+        [InlineData(SqsMessageAttribute.DeduplicationScopeMessageQueue)]
+        [InlineData("invalidValue", typeof(ArgumentOutOfRangeException), SqsMessageAttribute.DeduplicationScopeArgumentOutOfRangeExceptionMessage)]
+        public void DeduplicationScopeValidation(string value, Type expectedException = null, string messageFormat = null)
         {
             var target = new SqsMessageAttribute();
-            target.DeduplicationScope = "messageGroup";
-            target.DeduplicationScope = "queue";
-            target.DeduplicationScope = string.Empty;
-            target.DeduplicationScope = null;
-            Assert.Throws<ArgumentOutOfRangeException>(() => target.DeduplicationScope = "notValid");
+            if (expectedException == null)
+            {
+                target.DeduplicationScope = value;
+                // no exception, all good
+            }
+            else
+            {
+                var error = Assert.Throws(expectedException, () => target.DeduplicationScope = value) as ArgumentException;
+                Assert.Equal(nameof(SqsMessageAttribute.DeduplicationScope), error.ParamName);
+                Assert.Equal(string.Format(SqsMessageAttribute.DeduplicationScopeArgumentOutOfRangeExceptionMessage,
+                    nameof(SqsMessageAttribute.DeduplicationScope), 
+                    string.Join(',', SqsMessageAttribute.ValidDeduplicationScopes))
+                             + $" (Parameter '{nameof(SqsMessageAttribute.DeduplicationScope)}')", error.Message);
+
+            }
         }
 
         [Fact]
@@ -98,18 +113,24 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             }
         }
 
-        [Fact]
-        public void MessageRetentionPeriodValidation()
+        [Theory]
+        [InlineData(SqsMessageAttribute.MessageRetentionPeriodMinimum)]
+        [InlineData(SqsMessageAttribute.MessageRetentionPeriodMaximum)]
+        [InlineData(SqsMessageAttribute.MessageRetentionPeriodMinimum - 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.UintPropertyBetweenExceptionMessage)]
+        [InlineData(SqsMessageAttribute.MessageRetentionPeriodMaximum + 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.UintPropertyBetweenExceptionMessage)]
+        public void MessageRetentionPeriodValidation(uint value, Type expectedException = null, string expectedMessageFormat = null)
         {
             var target = new SqsMessageAttribute();
-            target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMinimum;
-            target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMaximum;
-            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMinimum - 1);
-            Assert.Equal(nameof(SqsMessageAttribute.MessageRetentionPeriod), error.ParamName);
-            Assert.Equal(SqsMessageAttribute.MessageRetentionPeriodArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.MessageRetentionPeriod)}')", error.Message);
-            error = Assert.Throws<ArgumentOutOfRangeException>(() => target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMaximum + 1);
-            Assert.Equal(nameof(SqsMessageAttribute.MessageRetentionPeriod), error.ParamName);
-            Assert.Equal(SqsMessageAttribute.MessageRetentionPeriodArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.MessageRetentionPeriod)}')", error.Message);
+            if (expectedException == null)
+            {
+                target.MessageRetentionPeriod = value;
+            }
+            else
+            {
+                var error = Assert.Throws(expectedException, () => target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMinimum - 1) as ArgumentException;
+                Assert.Equal(nameof(SqsMessageAttribute.MessageRetentionPeriod), error.ParamName);
+                Assert.Equal(string.Format(expectedMessageFormat, nameof(SqsMessageAttribute.MessageRetentionPeriod), SqsMessageAttribute.MessageRetentionPeriodMinimum, SqsMessageAttribute.MessageRetentionPeriodMaximum)  + $" (Parameter '{nameof(SqsMessageAttribute.MessageRetentionPeriod)}')", error.Message);
+            }
         }
 
         [Fact]
@@ -168,8 +189,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
 
         [Theory]
         [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMinimum)]
-        [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMaximum + 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.ReceiveMessageWaitTimeSeconds)}')")]
-        public void ReceiveMessageWaitTimeSecondsValidation(uint value, Type throws = null, string message = null)
+        [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMaximum + 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.UintPropertyBetweenExceptionMessage)]
+        public void ReceiveMessageWaitTimeSecondsValidation(uint value, Type throws = null, string messageFormat = null)
         {
             var target = new SqsMessageAttribute();
             if (throws == null)
@@ -180,7 +201,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             {
                 var error = Assert.Throws(throws, () => target.ReceiveMessageWaitTimeSeconds = value) as ArgumentException;
                 Assert.Equal(nameof(SqsMessageAttribute.ReceiveMessageWaitTimeSeconds), error.ParamName);
-                Assert.Equal(message, error.Message);
+                Assert.Equal(string.Format(messageFormat, nameof(SqsMessageAttribute.ReceiveMessageWaitTimeSeconds), SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMinimum, SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMaximum) + $" (Parameter '{nameof(SqsMessageAttribute.ReceiveMessageWaitTimeSeconds)}')", error.Message);
 
             }
         }

@@ -412,23 +412,7 @@
       },
       "Properties": {
         "ContentBasedDeduplication": true,
-        "DeduplicationScope": "queue",
-        "DelaySeconds": 5,
-        "FifoQueue": true,
-        "FifoThroughputLimit": "perQueue",
-        "KmsDataKeyReusePeriodSeconds": 299,
-        "KmsMasterKeyId": "alias/aws/sqs",
-        "MaximumMessageSize": 1024,
-        "MessageRetentionPeriod": 60,
-        "QueueName": "thisismyqueuename.fifo",
         "ReceiveMessageWaitTimeSeconds": 5,
-        "RedriveAllowPolicy": {
-          "redrivePermission": "denyAll"
-        },
-        "RedrivePolicy": {
-          "deadLetterTargetArn": "arn:somewhere",
-          "maxReceiveCount": 5
-        },
         "Tags": [
           {
             "Key": "keyname1",
@@ -439,7 +423,23 @@
             "Value": "value2"
           }
         ],
-        "VisibilityTimeout": 100
+        "VisibilityTimeout": 100,
+        "DeduplicationScope": "queue",
+        "DelaySeconds": 5,
+        "FifoQueue": true,
+        "FifoThroughputLimit": "perQueue",
+        "KmsDataKeyReusePeriodSeconds": 299,
+        "KmsMasterKeyId": "alias/aws/sqs",
+        "MaximumMessageSize": 1024,
+        "MessageRetentionPeriod": 60,
+        "QueueName": "thisismyqueuename.fifo",
+        "RedriveAllowPolicy": {
+          "redrivePermission": "denyAll"
+        },
+        "RedrivePolicy": {
+          "deadLetterTargetArn": "arn:somewhere",
+          "maxReceiveCount": 5
+        }
       }
     }
   }

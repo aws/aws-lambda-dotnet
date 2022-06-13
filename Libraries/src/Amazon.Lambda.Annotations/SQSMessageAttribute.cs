@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 
@@ -12,6 +13,10 @@ namespace Amazon.Lambda.Annotations
     public class SqsMessageAttribute : Attribute, ISqsMessage, INotifyPropertyChanged
     {
         public const bool ContentBasedDeduplicationDefault = false;
+
+        internal const string DeduplicationScopeMessageGroup = "messageGroup";
+        internal const string DeduplicationScopeMessageQueue = "queue";
+        internal const string DeduplicationScopeArgumentOutOfRangeExceptionMessage = "{0} must be one of {1}.";
 
         public const uint VisibilityTimeoutDefault = 30;
         internal const uint VisibilityTimeoutMinimum = 0;
@@ -40,15 +45,10 @@ namespace Amazon.Lambda.Annotations
         internal const uint MessageRetentionPeriodMinimum = 60;
         internal const uint MessageRetentionPeriodMaximum = 345600;
         public const uint MessageRetentionPeriodDefault = 345600;
-        // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
-        internal const string MessageRetentionPeriodArgumentOutOfRangeExceptionMessage = "MessageRetentionPeriod must be => 60 && <= 345600";
 
         public const uint ReceiveMessageWaitTimeSecondsDefault = 0;
         internal const uint ReceiveMessageWaitTimeSecondsMinimum = 0;
         internal const uint ReceiveMessageWaitTimeSecondsMaximum = 20;
-        // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
-        internal const string ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage = "ReceiveMessageWaitTimeSeconds must be => 0 && <= 20";
-        internal const string RedriveAllowPolicyValidationNotValidJsonException = "Not valid JSON";
 
         private string _queueName;
         private string _queueLogicalId;
@@ -132,7 +132,8 @@ namespace Amazon.Lambda.Annotations
                 if ( value == _receiveMessageWaitTimeSeconds) return;
                 if (value > ReceiveMessageWaitTimeSecondsMaximum)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(ReceiveMessageWaitTimeSeconds), ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage);
+                    throw new ArgumentOutOfRangeException(nameof(ReceiveMessageWaitTimeSeconds), 
+                        string.Format(UintPropertyBetweenExceptionMessage,nameof(ReceiveMessageWaitTimeSeconds), ReceiveMessageWaitTimeSecondsMinimum, ReceiveMessageWaitTimeSecondsMaximum));
                 }
                 _receiveMessageWaitTimeSeconds = value;
                 OnPropertyChanged();
@@ -141,24 +142,22 @@ namespace Amazon.Lambda.Annotations
 
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
 
+        internal static string[] ValidDeduplicationScopes = new string[] { DeduplicationScopeMessageGroup, DeduplicationScopeMessageQueue, null, string.Empty };
+
         public string DeduplicationScope
         {
             get => _deduplicationScope;
             set
             {
                 if(_deduplicationScope==value) return;
-                switch (value)
+                if (!ValidDeduplicationScopes.Contains(value))
                 {
-                    case "messageGroup":
-                    case "queue":
-                    case "":
-                    case null:
-                        _deduplicationScope = value;
-                        OnPropertyChanged();
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(value);
+                    throw new ArgumentOutOfRangeException(nameof(DeduplicationScope),
+                        string.Format(DeduplicationScopeArgumentOutOfRangeExceptionMessage, nameof(DeduplicationScope), string.Join(",", ValidDeduplicationScopes)));
                 }
+
+                _deduplicationScope = value;
+                OnPropertyChanged();
             }
         }
 
@@ -247,7 +246,8 @@ namespace Amazon.Lambda.Annotations
                 if (_messageRetentionPeriod==value) return;
                 if (value < MessageRetentionPeriodMinimum || value > MessageRetentionPeriodMaximum)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(MessageRetentionPeriod), MessageRetentionPeriodArgumentOutOfRangeExceptionMessage);
+                    throw new ArgumentOutOfRangeException(nameof(MessageRetentionPeriod), 
+                        string.Format(UintPropertyBetweenExceptionMessage, nameof(MessageRetentionPeriod), MessageRetentionPeriodMinimum, MessageRetentionPeriodMaximum));
                 }
                 _messageRetentionPeriod = value;
                 OnPropertyChanged();
