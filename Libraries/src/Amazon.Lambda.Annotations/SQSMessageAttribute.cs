@@ -149,7 +149,7 @@ namespace Amazon.Lambda.Annotations
         /// Tags = new string[] {"Tag1=Value1", "Tag2=Value"}
         /// </example>
         /// </summary>
-        string[] Tags { get; set; };
+        string[] Tags { get; set; }
 
         /// <summary>
         /// The length of time during which a message will be unavailable after a message is delivered from the queue. This blocks other components from receiving the same message and gives the initial component time to process and delete the message from the queue.
