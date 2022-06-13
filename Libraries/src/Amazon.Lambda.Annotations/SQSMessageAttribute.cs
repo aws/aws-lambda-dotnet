@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
+
+// TODO: I see that there is some linking strategy to avoid this, but I cannot get it to work. Need advise.
 [assembly: InternalsVisibleTo("Amazon.Lambda.Annotations.SourceGenerators.Tests")]
 
 namespace Amazon.Lambda.Annotations

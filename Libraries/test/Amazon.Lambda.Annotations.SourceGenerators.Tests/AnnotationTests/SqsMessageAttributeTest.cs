@@ -85,7 +85,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
         public void MessageRetentionPeriodValidation()
         {
             var target = new SqsMessageAttribute();
-            target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMinimum;
+            target.MessageRetentionPeriod = Amazon.Lambda.Annotations.SqsMessageAttribute.MessageRetentionPeriodMinimum;
             target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMaximum;
             var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMinimum - 1);
             Assert.Equal(nameof(SqsMessageAttribute.MessageRetentionPeriod), error.ParamName);
@@ -93,6 +93,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             error = Assert.Throws<ArgumentOutOfRangeException>(() => target.MessageRetentionPeriod = SqsMessageAttribute.MessageRetentionPeriodMaximum + 1);
             Assert.Equal(nameof(SqsMessageAttribute.MessageRetentionPeriod), error.ParamName);
             Assert.Equal(SqsMessageAttribute.MessageRetentionPeriodArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.MessageRetentionPeriod)}')", error.Message);
+        }
+
+        [Fact]
+        public void QueueNameValidation()
+        {
+            var target = new SqsMessageAttribute();
+            target.QueueName = "MyQueueName";
+            target.QueueName = "MyQueueName.fifo";
 
 
         }

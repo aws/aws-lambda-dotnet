@@ -130,12 +130,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.Tags = final.ToArray();
                         }
                         break;
-
-
-
                     default:
                         throw new NotSupportedException(attNamedArgument.Key);
                 }
+            }
+
+            if (data.FifoQueue && !string.IsNullOrEmpty(data.QueueName) && !data.QueueName.EndsWith(".fifo"))
+            {
+                throw new ArgumentOutOfRangeException(nameof(SqsMessageAttribute.QueueName), $"If using {nameof(SqsMessageAttribute.FifoQueue)} = true, {nameof(SqsMessageAttribute.QueueName)} must end in '.fifo'");
             }
 
             return data;
