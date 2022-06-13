@@ -99,6 +99,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.RedriveAllowPolicy = attNamedArgument.Value.Value.ToString();
                         }
                         break;
+                    // RedrivePolicy
+                    case nameof(ISqsMessage.RedrivePolicy):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.RedrivePolicy = attNamedArgument.Value.Value.ToString();
+                        }
+                        break;
 
 
 

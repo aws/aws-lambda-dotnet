@@ -125,6 +125,20 @@ namespace Amazon.Lambda.Annotations
         /// </summary>
         string RedriveAllowPolicy { get; set; }
 
+        /// <summary>
+        /// The string that includes the parameters for the dead-letter queue functionality of the source queue as a JSON object. The parameters are as follows:
+        /// deadLetterTargetArn: The Amazon Resource Name (ARN) of the dead-letter queue to which Amazon SQS moves messages after the value of maxReceiveCount is exceeded.
+        /// maxReceiveCount: The number of times a message is delivered to the source queue before being moved to the dead-letter queue. When the ReceiveCount for a message exceeds the maxReceiveCount for a queue, Amazon SQS moves the message to the dead-letter-queue.
+        /// Note: The dead-letter queue of a FIFO queue must also be a FIFO queue. Similarly, the dead-letter queue of a standard queue must also be a standard queue.
+        /// JSON: { "deadLetterTargetArn" : String, "maxReceiveCount" : Integer }
+        /// YAML: NOT SUPPORTED
+        /// Required: No
+        /// Type: Json
+        /// Update requires: No interruption
+        /// </summary>
+        string RedrivePolicy { get; set; }
+
+
 
         /// <summary>
         /// The length of time during which a message will be unavailable after a message is delivered from the queue. This blocks other components from receiving the same message and gives the initial component time to process and delete the message from the queue.
@@ -168,5 +182,6 @@ namespace Amazon.Lambda.Annotations
         public int MaximumMessageSize { get; set; } = MaximumMessageSizeDefault;
         public int MessageRetentionPeriod { get; set; } = MessageRetentionPeriodDefault;
         public string RedriveAllowPolicy { get; set; }
+        public string RedrivePolicy { get; set; }
     }
 }

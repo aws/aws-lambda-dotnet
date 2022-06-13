@@ -289,6 +289,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             //RedriveAllowPolicy
             WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedriveAllowPolicy)}", sqsMessageAttribute.RedriveAllowPolicy, string.Empty);
+
+            //RedrivePolicy
+            WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedrivePolicy)}", sqsMessageAttribute.RedrivePolicy, string.Empty);
         }
 
         private void WriteOrRemoveAsJson(string path, string value, string defaultValue)

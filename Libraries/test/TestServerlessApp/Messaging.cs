@@ -18,6 +18,10 @@ namespace TestServerlessApp
             return Task.CompletedTask;
         }
 
+        /*
+         * { 'deadLetterTargetArn': 'arn:somewhere', 'maxReceiveCount': 5 }
+
+         */
         [LambdaFunction]
         [SqsMessage(
             BatchSize = 12, 
@@ -33,7 +37,8 @@ namespace TestServerlessApp
             MaximumMessageSize = 1024,
             MessageRetentionPeriod = 60,
             ReceiveMessageWaitTimeSeconds =5,
-            RedriveAllowPolicy = "{ \"redrivePermission\" : \"denyAll\" }")]
+            RedriveAllowPolicy = "{ 'redrivePermission' : 'denyAll' }",
+            RedrivePolicy = "{ 'deadLetterTargetArn': 'arn:somewhere', 'maxReceiveCount': 5 }")]
         public Task MessageHandlerForNewQueue(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             return Task.CompletedTask;

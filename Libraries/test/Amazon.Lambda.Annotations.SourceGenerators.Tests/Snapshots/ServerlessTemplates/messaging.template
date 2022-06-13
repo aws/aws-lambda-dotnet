@@ -84,6 +84,10 @@
         "ReceiveMessageWaitTimeSeconds": 5,
         "RedriveAllowPolicy": {
           "redrivePermission": "denyAll"
+        },
+        "RedrivePolicy": {
+          "deadLetterTargetArn": "arn:somewhere",
+          "maxReceiveCount": 5
         }
       }
     }
