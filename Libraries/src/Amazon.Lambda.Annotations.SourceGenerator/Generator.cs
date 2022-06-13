@@ -8,7 +8,6 @@ using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
-using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.SourceGenerator.Templates;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Microsoft.CodeAnalysis;
@@ -27,12 +26,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
         public Generator()
         {
-            //#if DEBUG
+#if DEBUG
             //if (!Debugger.IsAttached)
             //{
             //    Debugger.Launch();
             //}
-            //#endif
+#endif
         }
 
         public void Execute(GeneratorExecutionContext context)
@@ -105,7 +104,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         continue;
                     }
 
-
                     var template = new LambdaFunctionTemplate(model);
                     var sourceText = template.TransformText().ToEnvironmentLineEndings();
                     context.AddSource($"{model.GeneratedMethod.ContainingType.Name}.g.cs", SourceText.From(sourceText, Encoding.UTF8, SourceHashAlgorithm.Sha256));
@@ -117,18 +115,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
                     if (string.IsNullOrEmpty(projectRootDirectory))
                         projectRootDirectory = templateFinder.DetermineProjectRootDirectory(lambdaMethod.SyntaxTree.FilePath);
-
-                    //foreach (var lambdaMethodParameter in model.LambdaMethod.Parameters)
-                    //{
-                    //    var sqsMessageAttribute = lambdaMethodParameter.Attributes.SingleOrDefault(_ => _ is AttributeModel<SqsMessageAttribute>);
-                    //    if (sqsMessageAttribute!=null)
-                    //    {
-                    //        var queueModel = SqsMessageModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, sqsMessageAttribute);
-                    //        annotationReport.Queues.Add(queueModel);
-
-                    //    }
-                    //}
-
                 }
 
                 annotationReport.CloudFormationTemplatePath = templateFinder.FindCloudFormationTemplate(projectRootDirectory);

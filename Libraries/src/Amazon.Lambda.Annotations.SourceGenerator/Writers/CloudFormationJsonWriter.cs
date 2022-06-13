@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Linq;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
@@ -153,7 +152,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         currentSyncedEvents.Add(eventName);
                         if (ShouldProcessQueue(lambdaFunction, sqsAttributeModel.Data))
                         {
-                            string queueLogicalId = ProcessQueue(lambdaFunction, sqsAttributeModel.Data);
+                            string queueLogicalId = ProcessQueue(sqsAttributeModel.Data);
                             currentSyncedResources.Add(queueLogicalId);
                             _processedQueues.Add(queueLogicalId);
                         }
@@ -194,8 +193,93 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             else
                 _jsonWriter.RemoveToken(syncedResourcesMetadataPath);
         }
+        private string ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute)
+        {
+            var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
+            var methodName = restApiAttribute.Method.ToString();
+            var methodPath = $"{eventPath}.Root{methodName}";
 
-        private string ProcessQueue(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute data)
+            _jsonWriter.SetToken($"{methodPath}.Type", "Api");
+            _jsonWriter.SetToken($"{methodPath}.Properties.Path", restApiAttribute.Template);
+            _jsonWriter.SetToken($"{methodPath}.Properties.Method", methodName.ToUpper());
+
+            return $"Root{methodName}";
+        }
+
+        private string ProcessHttpApiAttribute(ILambdaFunctionSerializable lambdaFunction, HttpApiAttribute httpApiAttribute)
+        {
+            var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
+            var methodName = httpApiAttribute.Method.ToString();
+            var methodPath = $"{eventPath}.Root{methodName}";
+            var version = httpApiAttribute.Version == HttpApiVersion.V1 ? "1.0" : "2.0";
+
+            _jsonWriter.SetToken($"{methodPath}.Type", "HttpApi");
+            _jsonWriter.SetToken($"{methodPath}.Properties.Path", httpApiAttribute.Template);
+            _jsonWriter.SetToken($"{methodPath}.Properties.Method", methodName.ToUpper());
+            _jsonWriter.SetToken($"{methodPath}.Properties.PayloadFormatVersion", version);
+
+            return $"Root{methodName}";
+        }
+        
+        private void ApplyLambdaFunctionDefaults(string lambdaFunctionPath, string propertiesPath)
+        {
+            _jsonWriter.SetToken($"{lambdaFunctionPath}.Type", "AWS::Serverless::Function");
+            _jsonWriter.SetToken($"{lambdaFunctionPath}.Metadata.Tool", "Amazon.Lambda.Annotations");
+
+            _jsonWriter.SetToken($"{propertiesPath}.Runtime", "dotnet6");
+            _jsonWriter.SetToken($"{propertiesPath}.CodeUri", "");
+            _jsonWriter.SetToken($"{propertiesPath}.MemorySize", 256);
+            _jsonWriter.SetToken($"{propertiesPath}.Timeout", 30);
+            _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray("AWSLambdaBasicExecutionRole"));
+        }
+        
+        private void CreateNewTemplate()
+        {
+            var content = @"{'AWSTemplateFormatVersion' : '2010-09-09', 'Transform' : 'AWS::Serverless-2016-10-31'}";
+            _jsonWriter.Parse(content);
+        }
+        
+        private void RemoveOrphanedLambdaFunctions(HashSet<string> processedLambdaFunctions)
+        {
+            var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
+            if (resourceToken == null)
+                return;
+
+            var toRemove = new List<string>();
+            foreach (var resource in resourceToken.Properties())
+            {
+                var resourcePath = $"Resources.{resource.Name}";
+                var type = _jsonWriter.GetToken($"{resourcePath}.Type", string.Empty);
+                var creationTool = _jsonWriter.GetToken($"{resourcePath}.Metadata.Tool", string.Empty);
+
+                if (string.Equals(type.ToObject<string>(), "AWS::Serverless::Function", StringComparison.Ordinal)
+                    && string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal)
+                    && !processedLambdaFunctions.Contains(resource.Name))
+                {
+                    toRemove.Add(resource.Name);
+                }
+            }
+
+            foreach (var resourceName in toRemove)
+            {
+                _jsonWriter.RemoveToken($"Resources.{resourceName}");
+            }
+        }
+
+        private JToken GetValueOrRef(string value)
+        {
+            if (!value.StartsWith("@"))
+                return value;
+
+            var refNode = new JObject();
+            refNode["Ref"] = value.Substring(1);
+            return refNode;
+        }
+
+        // I don't like this being a member field, but given
+        // the previous patterns, I can't find a better method
+        private readonly HashSet<string> _processedQueues = new HashSet<string>();
+        private string ProcessQueue(SqsMessageAttribute data)
         {
             var sqsQueueTemplateInfo = GetSqsQueueLogicalIdAndPath(data);
             var propertiesPath = $"{sqsQueueTemplateInfo.Item2}.Properties";
@@ -207,7 +291,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             return sqsQueueTemplateInfo.Item1;
         }
-
         private void ProcessQueueAttributes(SqsMessageAttribute sqsMessageAttribute, string propertiesPath)
         {
             try
@@ -396,7 +479,32 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 throw new Exception($"Failed to write AWS::SQS::Queue: {e.Message} {e.InnerException?.Message}", e);
             }
         }
+        private void RemoveOrphanedQueues()
+        {
+            var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
+            if (resourceToken == null)
+                return;
 
+            var toRemove = new List<string>();
+            foreach (var resource in resourceToken.Properties())
+            {
+                var resourcePath = $"Resources.{resource.Name}";
+                var type = _jsonWriter.GetToken($"{resourcePath}.Type", string.Empty);
+                var creationTool = _jsonWriter.GetToken($"{resourcePath}.Metadata.Tool", string.Empty);
+
+                if (string.Equals(type.ToObject<string>(), "AWS::SQS::Queue", StringComparison.Ordinal)
+                    && string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal)
+                    && !_processedQueues.Contains(resource.Name))
+                {
+                    toRemove.Add(resource.Name);
+                }
+            }
+
+            foreach (var resourceName in toRemove)
+            {
+                _jsonWriter.RemoveToken($"Resources.{resourceName}");
+            }
+        }
         private void WriteOrRemove(string path, bool value, bool defaultValue)
         {
             if (value != defaultValue)
@@ -408,10 +516,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(path);
             }
         }
-
         private void WriteOrRemoveAsJson(string path, string value)
         {
-            
+
             if (!string.IsNullOrEmpty(value))
             {
                 _jsonWriter.SetToken(path, JObject.Parse(value));
@@ -421,7 +528,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(path);
             }
         }
-
         private void WriteOrRemove(string path, string value, string defaultValue)
         {
             if (value == null)
@@ -442,7 +548,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(path);
             }
         }
-
         private void WriteOrRemove(string path, int value, int defaultValue)
         {
             if (value != defaultValue)
@@ -454,14 +559,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _jsonWriter.RemoveToken(path);
             }
         }
-
         private void ApplyQueueDefaults(string sqsQueuePath, string propertiesPath)
         {
             _jsonWriter.SetToken($"{sqsQueuePath}.Type", "AWS::SQS::Queue");
             _jsonWriter.SetToken($"{sqsQueuePath}.Metadata.Tool", "Amazon.Lambda.Annotations");
 
         }
-
         private bool ShouldProcessQueue(ILambdaFunctionSerializable lambdaFunctionSerializable, SqsMessageAttribute data)
         {
             if (string.IsNullOrEmpty(data.QueueLogicalId)) return false;
@@ -475,18 +578,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var creationTool = _jsonWriter.GetToken($"{sqsQueuePath}.Metadata.Tool", string.Empty);
             return string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal);
         }
-
-        private static (string,string) GetSqsQueueLogicalIdAndPath(SqsMessageAttribute data)
+        private static (string, string) GetSqsQueueLogicalIdAndPath(SqsMessageAttribute data)
         {
             return (data.QueueLogicalId, $"Resources.{data.QueueLogicalId}");
         }
-
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
         {
             string queueHandle;
             if (!string.IsNullOrEmpty(sqsMessageAttribute.Queue))
             {
-                queueHandle = sqsMessageAttribute.Queue.Split(':').LastOrDefault().Replace("-",string.Empty);
+                queueHandle = sqsMessageAttribute.Queue.Split(':').LastOrDefault().Replace("-", string.Empty);
             }
             else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
             {
@@ -522,120 +623,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
             else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
             {
-                _jsonWriter.SetToken(queueNamePath, new JObject(new JProperty("Ref",sqsMessageAttribute.QueueLogicalId)));
+                _jsonWriter.SetToken(queueNamePath, new JObject(new JProperty("Ref", sqsMessageAttribute.QueueLogicalId)));
             }
 
             return eventName;
-        }
-        private string ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute)
-        {
-            var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
-            var methodName = restApiAttribute.Method.ToString();
-            var methodPath = $"{eventPath}.Root{methodName}";
-
-            _jsonWriter.SetToken($"{methodPath}.Type", "Api");
-            _jsonWriter.SetToken($"{methodPath}.Properties.Path", restApiAttribute.Template);
-            _jsonWriter.SetToken($"{methodPath}.Properties.Method", methodName.ToUpper());
-
-            return $"Root{methodName}";
-        }
-
-        private string ProcessHttpApiAttribute(ILambdaFunctionSerializable lambdaFunction, HttpApiAttribute httpApiAttribute)
-        {
-            var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
-            var methodName = httpApiAttribute.Method.ToString();
-            var methodPath = $"{eventPath}.Root{methodName}";
-            var version = httpApiAttribute.Version == HttpApiVersion.V1 ? "1.0" : "2.0";
-
-            _jsonWriter.SetToken($"{methodPath}.Type", "HttpApi");
-            _jsonWriter.SetToken($"{methodPath}.Properties.Path", httpApiAttribute.Template);
-            _jsonWriter.SetToken($"{methodPath}.Properties.Method", methodName.ToUpper());
-            _jsonWriter.SetToken($"{methodPath}.Properties.PayloadFormatVersion", version);
-
-            return $"Root{methodName}";
-        }
-
-        private void ApplyLambdaFunctionDefaults(string lambdaFunctionPath, string propertiesPath)
-        {
-            _jsonWriter.SetToken($"{lambdaFunctionPath}.Type", "AWS::Serverless::Function");
-            _jsonWriter.SetToken($"{lambdaFunctionPath}.Metadata.Tool", "Amazon.Lambda.Annotations");
-
-            _jsonWriter.SetToken($"{propertiesPath}.Runtime", "dotnet6");
-            _jsonWriter.SetToken($"{propertiesPath}.CodeUri", "");
-            _jsonWriter.SetToken($"{propertiesPath}.MemorySize", 256);
-            _jsonWriter.SetToken($"{propertiesPath}.Timeout", 30);
-            _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray("AWSLambdaBasicExecutionRole"));
-        }
-        private void CreateNewTemplate()
-        {
-            var content = @"{'AWSTemplateFormatVersion' : '2010-09-09', 'Transform' : 'AWS::Serverless-2016-10-31'}";
-            _jsonWriter.Parse(content);
-        }
-
-        private void RemoveOrphanedLambdaFunctions(HashSet<string> processedLambdaFunctions)
-        {
-            var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
-            if (resourceToken == null)
-                return;
-
-            var toRemove = new List<string>();
-            foreach (var resource in resourceToken.Properties())
-            {
-                var resourcePath = $"Resources.{resource.Name}";
-                var type = _jsonWriter.GetToken($"{resourcePath}.Type", string.Empty);
-                var creationTool = _jsonWriter.GetToken($"{resourcePath}.Metadata.Tool", string.Empty);
-
-                if (string.Equals(type.ToObject<string>(), "AWS::Serverless::Function", StringComparison.Ordinal)
-                    && string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal)
-                    && !processedLambdaFunctions.Contains(resource.Name))
-                {
-                    toRemove.Add(resource.Name);
-                }
-            }
-
-            foreach (var resourceName in toRemove)
-            {
-                _jsonWriter.RemoveToken($"Resources.{resourceName}");
-            }
-        }
-
-        // I don't like this being a member field, but given
-        // the previous patterns, I can't find a better method
-        private readonly HashSet<string> _processedQueues = new HashSet<string>();
-        private void RemoveOrphanedQueues()
-        {
-            var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
-            if (resourceToken == null)
-                return;
-
-            var toRemove = new List<string>();
-            foreach (var resource in resourceToken.Properties())
-            {
-                var resourcePath = $"Resources.{resource.Name}";
-                var type = _jsonWriter.GetToken($"{resourcePath}.Type", string.Empty);
-                var creationTool = _jsonWriter.GetToken($"{resourcePath}.Metadata.Tool", string.Empty);
-
-                if (string.Equals(type.ToObject<string>(), "AWS::SQS::Queue", StringComparison.Ordinal)
-                    && string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal)
-                    && !_processedQueues.Contains(resource.Name))
-                {
-                    toRemove.Add(resource.Name);
-                }
-            }
-
-            foreach (var resourceName in toRemove)
-            {
-                _jsonWriter.RemoveToken($"Resources.{resourceName}");
-            }
-        }
-        private JToken GetValueOrRef(string value)
-        {
-            if (!value.StartsWith("@"))
-                return value;
-
-            var refNode = new JObject();
-            refNode["Ref"] = value.Substring(1);
-            return refNode;
         }
     }
 }
