@@ -16,12 +16,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             {
                 QueueLogicalId = "MyLogicalId"
             };
-            Assert.Throws<InvalidOperationException>(() => target.Queue = "MyQueueName");
+            Assert.Throws<InvalidOperationException>(() => target.EventQueueARN = "MyQueueName");
 
             // other way around
             target = new SqsMessageAttribute
             {
-                Queue = "arn:aws:sqs:us-east-1:968993296699:app-deploy-blue-LAVETRYB3JKX-SomeQueueName"
+                EventQueueARN = "arn:aws:sqs:us-east-1:968993296699:app-deploy-blue-LAVETRYB3JKX-SomeQueueName"
             };
             Assert.Throws<InvalidOperationException>(() => target.QueueLogicalId = "MyLogicalId");
 

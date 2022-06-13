@@ -32,7 +32,7 @@ namespace Amazon.Lambda.Annotations
         /// AWS CloudFormation compatibility: This property is passed directly to the EventSourceArn property of an AWS::Lambda::EventSourceMapping resource.
         /// <seealso cref="QueueLogicalId"/>
         /// </summary>
-        string Queue { get; set; }
+        string EventQueueARN { get; set; }
 
         /// <summary>
         /// For first-in-first-out (FIFO) queues, specifies whether to enable content-based deduplication. During the deduplication interval, Amazon SQS treats messages that are sent with identical content as duplicates and delivers only one copy of the message. For more information, see the ContentBasedDeduplication attribute for the CreateQueue action in the Amazon SQS API Reference.
@@ -192,7 +192,7 @@ namespace Amazon.Lambda.Annotations
     {
         private string _queueName;
         private string _queueLogicalId;
-        private string _queue;
+        private string _eventQueueArn;
         public const bool ContentBasedDeduplicationDefault = false;
         public const int VisibilityTimeoutDefault = 30;
         public const int BatchSizeDefault = 10;
@@ -205,13 +205,13 @@ namespace Amazon.Lambda.Annotations
 
 
         // event handler values
-        public string Queue
+        public string EventQueueARN
         {
-            get => _queue;
+            get => _eventQueueArn;
             set
             {
-                if(_queue==value) return;
-                _queue = value;
+                if(_eventQueueArn==value) return;
+                _eventQueueArn = value;
                 OnPropertyChanged();
             }
         }
@@ -264,10 +264,10 @@ namespace Amazon.Lambda.Annotations
             switch (propertyName)
             {
                 case nameof(QueueLogicalId):
-                case nameof(Queue):
-                    if ((!string.IsNullOrEmpty(QueueLogicalId) || !string.IsNullOrEmpty(Queue)) && string.IsNullOrEmpty(QueueLogicalId) == string.IsNullOrEmpty(Queue))
+                case nameof(EventQueueARN):
+                    if ((!string.IsNullOrEmpty(QueueLogicalId) || !string.IsNullOrEmpty(EventQueueARN)) && string.IsNullOrEmpty(QueueLogicalId) == string.IsNullOrEmpty(EventQueueARN))
                     {
-                        throw new InvalidOperationException($"You can only specify one of: {nameof(QueueLogicalId)} or {nameof(Queue)}");
+                        throw new InvalidOperationException($"You can only specify one of: {nameof(QueueLogicalId)} or {nameof(EventQueueARN)}");
                     }
                     break;
             }

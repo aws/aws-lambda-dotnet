@@ -17,8 +17,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             {
                 switch (attNamedArgument.Key)
                 {
-                    case nameof(ISqsMessage.Queue):
-                        data.Queue = attNamedArgument.Value.Value.ToString();
+                    case nameof(ISqsMessage.EventQueueARN):
+                        data.EventQueueARN = attNamedArgument.Value.Value.ToString();
                         break;
                     case nameof(ISqsMessage.BatchSize):
                         if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))

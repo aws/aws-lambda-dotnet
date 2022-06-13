@@ -585,9 +585,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
         {
             string queueHandle;
-            if (!string.IsNullOrEmpty(sqsMessageAttribute.Queue))
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.EventQueueARN))
             {
-                queueHandle = sqsMessageAttribute.Queue.Split(':').LastOrDefault().Replace("-", string.Empty);
+                queueHandle = sqsMessageAttribute.EventQueueARN.Split(':').LastOrDefault().Replace("-", string.Empty);
             }
             else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
             {
@@ -595,7 +595,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
             else
             {
-                throw new InvalidOperationException($"You must specify either {nameof(ISqsMessage.Queue)} or {nameof(ISqsMessage.QueueLogicalId)}");
+                throw new InvalidOperationException($"You must specify either {nameof(ISqsMessage.EventQueueARN)} or {nameof(ISqsMessage.QueueLogicalId)}");
             }
 
             var eventName = $"{lambdaFunction.Name}{queueHandle}";
@@ -617,9 +617,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             var queueNamePath = $"{methodPath}.Properties.Queue";
-            if (!string.IsNullOrEmpty(sqsMessageAttribute.Queue))
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.EventQueueARN))
             {
-                _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.Queue);
+                _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.EventQueueARN);
             }
             else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
             {
