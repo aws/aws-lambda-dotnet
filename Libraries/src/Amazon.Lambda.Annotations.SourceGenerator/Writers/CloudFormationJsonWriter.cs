@@ -433,7 +433,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
             catch (Exception e)
             {
-                throw new Exception($"Failed to create AWS::SQS::Queue: {e.Message}", e);
+                throw new Exception($"Failed to create AWS::SQS::Queue: {e.Message} {e.InnerException?.Message}", e);
             }
         }
 
