@@ -136,5 +136,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             Assert.Equal(SqsMessageAttribute.VisibilityTimeoutArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.VisibilityTimeout)}')", error.Message);
 
         }
+
+        [Theory]
+        [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMinimum, false)]
+        [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMinimum - 1, true)]
+        [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMaximum + 1, true)]
+        public void ReceiveMessageWaitTimeSecondsValidation(int value, bool throws)
+        {
+            var target = new SqsMessageAttribute();
+            if (!throws)
+            {
+                target.ReceiveMessageWaitTimeSeconds = value;
+            }
+            else
+            {
+                var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.ReceiveMessageWaitTimeSeconds = value);
+                Assert.Equal(nameof(SqsMessageAttribute.ReceiveMessageWaitTimeSeconds), error.ParamName);
+                Assert.Equal(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.ReceiveMessageWaitTimeSeconds)}')", error.Message);
+
+            }
+
+        }
     }
 }

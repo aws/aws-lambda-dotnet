@@ -27,7 +27,6 @@ namespace Amazon.Lambda.Annotations
 
         public const int DelaySecondsDefault = 0;
         public const bool FifoQueueDefault = false;
-        public const int ReceiveMessageWaitTimeSecondsDefault = 0;
         public const int DelaySecondsMinimum = 0;
         public const int DelaySecondsMaximum = 900;
 
@@ -49,6 +48,12 @@ namespace Amazon.Lambda.Annotations
         // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
         internal const string MessageRetentionPeriodArgumentOutOfRangeExceptionMessage = "MessageRetentionPeriod must be => 60 && <= 345600";
 
+        public const int ReceiveMessageWaitTimeSecondsDefault = 0;
+        internal const int ReceiveMessageWaitTimeSecondsMinimum = 0;
+        internal const int ReceiveMessageWaitTimeSecondsMaximum = 20;
+        // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
+        internal const string ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage = "ReceiveMessageWaitTimeSeconds must be => 0 && <= 20";
+
         private string _queueName;
         private string _queueLogicalId;
         private string _eventQueueArn;
@@ -60,6 +65,7 @@ namespace Amazon.Lambda.Annotations
         private int _messageRetentionPeriod = MessageRetentionPeriodDefault;
         private int _eventBatchSize = EventBatchSizeDefault;
         private int _visibilityTimeout = VisibilityTimeoutDefault;
+        private int _receiveMessageWaitTimeSeconds = ReceiveMessageWaitTimeSecondsDefault;
 
 
         // event handler values
@@ -115,10 +121,25 @@ namespace Amazon.Lambda.Annotations
                     throw new ArgumentOutOfRangeException(nameof(VisibilityTimeout), VisibilityTimeoutArgumentOutOfRangeExceptionMessage);
                 }
                 _visibilityTimeout = value;
+                OnPropertyChanged();
             }
         }
 
-        public int ReceiveMessageWaitTimeSeconds { get; set; } = ReceiveMessageWaitTimeSecondsDefault;
+        public int ReceiveMessageWaitTimeSeconds
+        {
+            get => _receiveMessageWaitTimeSeconds;
+            set
+            {
+                if ( value == _receiveMessageWaitTimeSeconds) return;
+                if (value < ReceiveMessageWaitTimeSecondsMinimum || value > ReceiveMessageWaitTimeSecondsMaximum)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(ReceiveMessageWaitTimeSeconds), ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage);
+                }
+                _receiveMessageWaitTimeSeconds = value;
+                OnPropertyChanged();
+            }
+        }
+
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
 
         public string DeduplicationScope
