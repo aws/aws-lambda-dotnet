@@ -178,11 +178,14 @@ namespace Amazon.Lambda.Annotations
         public const int ReceiveMessageWaitTimeSecondsDefault = 0;
 
 
+        // event handler values
         public string Queue { get; set; }
         public int BatchSize { get; set; } = BatchSizeDefault;
-
         public string QueueLogicalId { get; set; }
-        public string[] Tags { get; set; }
+
+        // sqs queue values
+
+        public string[] Tags { get; set; } = new string[] {};
         public int VisibilityTimeout { get; set; } = VisibilityTimeoutDefault;
         public int ReceiveMessageWaitTimeSeconds { get; set; } = ReceiveMessageWaitTimeSecondsDefault;
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
@@ -196,7 +199,6 @@ namespace Amazon.Lambda.Annotations
         public int MessageRetentionPeriod { get; set; } = MessageRetentionPeriodDefault;
         public string RedriveAllowPolicy { get; set; }
         public string RedrivePolicy { get; set; }
-        public string TagsCommaDelimited { get; set; }
         public string QueueName { get; set; }
     }
 }

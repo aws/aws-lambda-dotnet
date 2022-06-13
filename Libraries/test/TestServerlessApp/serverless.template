@@ -73,7 +73,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedqueue"
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedappdeployblueLAVETRYB3JKXSomeQueueName"
         ]
       },
       "Properties": {
@@ -87,7 +87,7 @@
         "PackageType": "Zip",
         "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForPreExistingQueue_Generated::MessageHandlerForPreExistingQueue",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedqueue": {
+          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedappdeployblueLAVETRYB3JKXSomeQueueName": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 11,
@@ -376,7 +376,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedqueue"
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueueForMessageHandlerForNewQueue"
         ],
         "SyncedResources": [
           "QueueForMessageHandlerForNewQueue"
@@ -393,7 +393,7 @@
         "PackageType": "Zip",
         "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForNewQueue_Generated::MessageHandlerForNewQueue",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedqueue": {
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueueForMessageHandlerForNewQueue": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 12,
@@ -421,6 +421,7 @@
         "KmsMasterKeyId": "alias/aws/sqs",
         "MaximumMessageSize": 1024,
         "MessageRetentionPeriod": 60,
+        "QueueName": "thisismyqueuename.fifo",
         "ReceiveMessageWaitTimeSeconds": 5,
         "RedriveAllowPolicy": {
           "redrivePermission": "denyAll"
@@ -438,8 +439,7 @@
             "Key": "keyname2",
             "Value": "value2"
           }
-        ],
-        "QueueName": "thisismyqueuename.fifo"
+        ]
       }
     }
   }
