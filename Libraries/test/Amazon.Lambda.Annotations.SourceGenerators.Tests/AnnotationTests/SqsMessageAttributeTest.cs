@@ -68,6 +68,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             error = Assert.Throws<ArgumentOutOfRangeException>(() => target.KmsDataKeyReusePeriodSeconds = SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMaximum + 1);
             Assert.Equal(nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds), error.ParamName);
             Assert.Equal(SqsMessageAttribute.KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds)}')", error.Message);
+        }
+
+        [Fact]
+        public void MaximumMessageSizeValidation()
+        {
+            var target = new SqsMessageAttribute();
+            target.MaximumMessageSize = SqsMessageAttribute.MaximumMessageSizeMinimum;
+            target.MaximumMessageSize = SqsMessageAttribute.MaximumMessageSizeMaximum;
+            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.MaximumMessageSize = SqsMessageAttribute.MaximumMessageSizeMinimum - 1);
+            Assert.Equal(nameof(SqsMessageAttribute.MaximumMessageSize), error.ParamName);
+            Assert.Equal(SqsMessageAttribute.MaximumMessageSizeArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.MaximumMessageSize)}')", error.Message);
+
 
         }
     }
