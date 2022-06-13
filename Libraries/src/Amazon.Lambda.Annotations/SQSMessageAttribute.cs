@@ -36,8 +36,6 @@ namespace Amazon.Lambda.Annotations
         internal const uint MaximumMessageSizeMinimum = 1024;
         internal const uint MaximumMessageSizeMaximum = 262144;
         public const uint MaximumMessageSizeDefault = 262144;
-        // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
-        internal const string MaximumMessageSizeArgumentOutOfRangeExceptionMessage = "MaximumMessageSize must be => 1024 && <= 262144";
 
         internal const uint MessageRetentionPeriodMinimum = 60;
         internal const uint MessageRetentionPeriodMaximum = 345600;
@@ -233,7 +231,8 @@ namespace Amazon.Lambda.Annotations
                 if (_maximumMessageSize == value) return;
                 if (value < MaximumMessageSizeMinimum || value > MaximumMessageSizeMaximum)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(MaximumMessageSize), MaximumMessageSizeArgumentOutOfRangeExceptionMessage);
+                    throw new ArgumentOutOfRangeException(nameof(MaximumMessageSize), 
+                        string.Format(UintPropertyBetweenExceptionMessage, nameof(MaximumMessageSize), MaximumMessageSizeMinimum, MaximumMessageSizeMaximum));
                 }
                 _maximumMessageSize = value;
                 OnPropertyChanged();

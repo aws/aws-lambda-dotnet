@@ -77,15 +77,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             }
         }
 
-        [Fact]
-        public void MaximumMessageSizeValidation()
+        [Theory]
+        [InlineData(SqsMessageAttribute.MaximumMessageSizeMinimum)]
+        [InlineData(SqsMessageAttribute.MaximumMessageSizeMaximum)]
+        [InlineData(SqsMessageAttribute.MaximumMessageSizeMinimum - 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.UintPropertyBetweenExceptionMessage)]
+        [InlineData(SqsMessageAttribute.MaximumMessageSizeMaximum + 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.UintPropertyBetweenExceptionMessage)]
+        public void MaximumMessageSizeValidation(uint value, Type expectedException = null, string expectedErrorFormat = null)
         {
             var target = new SqsMessageAttribute();
-            target.MaximumMessageSize = SqsMessageAttribute.MaximumMessageSizeMinimum;
-            target.MaximumMessageSize = SqsMessageAttribute.MaximumMessageSizeMaximum;
-            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.MaximumMessageSize = SqsMessageAttribute.MaximumMessageSizeMinimum - 1);
-            Assert.Equal(nameof(SqsMessageAttribute.MaximumMessageSize), error.ParamName);
-            Assert.Equal(SqsMessageAttribute.MaximumMessageSizeArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.MaximumMessageSize)}')", error.Message);
+            if (expectedException == null)
+            {
+                target.MaximumMessageSize = value;
+            }
+            else
+            {
+                var error = Assert.Throws(expectedException, () => target.MaximumMessageSize = value) as ArgumentException;
+                Assert.Equal(nameof(SqsMessageAttribute.MaximumMessageSize), error.ParamName);
+                Assert.Equal(string.Format(expectedErrorFormat, nameof(SqsMessageAttribute.MaximumMessageSize), SqsMessageAttribute.MaximumMessageSizeMinimum, SqsMessageAttribute.MaximumMessageSizeMaximum) + $" (Parameter '{nameof(SqsMessageAttribute.MaximumMessageSize)}')", error.Message);
+
+            }
         }
 
         [Fact]
