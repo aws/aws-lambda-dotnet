@@ -71,7 +71,6 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "VisibilityTimeout": 100,
         "ContentBasedDeduplication": true,
         "DeduplicationScope": "queue",
         "DelaySeconds": 5,
@@ -99,7 +98,8 @@
             "Key": "keyname2",
             "Value": "value2"
           }
-        ]
+        ],
+        "VisibilityTimeout": 100
       }
     }
   }

@@ -214,16 +214,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             {
                 try
                 {
-                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.VisibilityTimeout)}", sqsMessageAttribute.VisibilityTimeout, SqsMessageAttribute.VisibilityTimeoutDefault);
-
-                }
-                catch (Exception e)
-                {
-                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.VisibilityTimeout)}", e);
-                }
-
-                try
-                {
                     WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.ContentBasedDeduplication)}", sqsMessageAttribute.ContentBasedDeduplication, SqsMessageAttribute.ContentBasedDeduplicationDefault);
 
                 }
@@ -389,6 +379,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 catch (Exception e)
                 {
                     throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.Tags)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.VisibilityTimeout)}", sqsMessageAttribute.VisibilityTimeout, SqsMessageAttribute.VisibilityTimeoutDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.VisibilityTimeout)}", e);
                 }
             }
             catch (Exception e)
