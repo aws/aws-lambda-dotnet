@@ -149,7 +149,7 @@ namespace Amazon.Lambda.Annotations
         /// Tags = new string[] {"Tag1=Value1", "Tag2=Value"}
         /// </example>
         /// </summary>
-        string[] Tags { get; set; }
+        string[] Tags { get; set; };
 
         /// <summary>
         /// The length of time during which a message will be unavailable after a message is delivered from the queue. This blocks other components from receiving the same message and gives the initial component time to process and delete the message from the queue.
@@ -182,7 +182,7 @@ namespace Amazon.Lambda.Annotations
         public int BatchSize { get; set; } = BatchSizeDefault;
 
         public string QueueLogicalId { get; set; }
-        public string[] Tags { get; set; }
+        public string[] Tags { get; set; } = new string[] {};
         public int VisibilityTimeout { get; set; } = VisibilityTimeoutDefault;
         public int ReceiveMessageWaitTimeSeconds { get; set; } = ReceiveMessageWaitTimeSecondsDefault;
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
@@ -196,7 +196,6 @@ namespace Amazon.Lambda.Annotations
         public int MessageRetentionPeriod { get; set; } = MessageRetentionPeriodDefault;
         public string RedriveAllowPolicy { get; set; }
         public string RedrivePolicy { get; set; }
-        public string TagsCommaDelimited { get; set; }
         public string QueueName { get; set; }
     }
 }

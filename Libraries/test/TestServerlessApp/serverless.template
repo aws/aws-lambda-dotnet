@@ -71,10 +71,7 @@
     "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedqueue"
-        ]
+        "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
         "Runtime": "dotnet6",
@@ -86,15 +83,7 @@
         ],
         "PackageType": "Zip",
         "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForPreExistingQueue_Generated::MessageHandlerForPreExistingQueue",
-        "Events": {
-          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedqueue": {
-            "Type": "SQS",
-            "Properties": {
-              "BatchSize": 11,
-              "Queue": "arn:aws:sqs:us-east-1:768033286672:app-deploy-blue-LAVETRYB3JKX-SomeQueueName"
-            }
-          }
-        }
+        "Events": {}
       }
     },
     "TestServerlessAppComplexCalculatorAddGenerated": {
@@ -374,13 +363,7 @@
     "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedqueue"
-        ],
-        "SyncedResources": [
-          "QueueForMessageHandlerForNewQueue"
-        ]
+        "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
         "Runtime": "dotnet6",
@@ -392,54 +375,7 @@
         ],
         "PackageType": "Zip",
         "Handler": "TestServerlessApp::TestServerlessApp.Messaging_MessageHandlerForNewQueue_Generated::MessageHandlerForNewQueue",
-        "Events": {
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedqueue": {
-            "Type": "SQS",
-            "Properties": {
-              "BatchSize": 12,
-              "Queue": {
-                "Ref": "QueueForMessageHandlerForNewQueue"
-              }
-            }
-          }
-        }
-      }
-    },
-    "QueueForMessageHandlerForNewQueue": {
-      "Type": "AWS::SQS::Queue",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "VisibilityTimeout": 100,
-        "ContentBasedDeduplication": true,
-        "DeduplicationScope": "queue",
-        "DelaySeconds": 5,
-        "FifoQueue": true,
-        "FifoThroughputLimit": "perQueue",
-        "KmsDataKeyReusePeriodSeconds": 299,
-        "KmsMasterKeyId": "alias/aws/sqs",
-        "MaximumMessageSize": 1024,
-        "MessageRetentionPeriod": 60,
-        "ReceiveMessageWaitTimeSeconds": 5,
-        "RedriveAllowPolicy": {
-          "redrivePermission": "denyAll"
-        },
-        "RedrivePolicy": {
-          "deadLetterTargetArn": "arn:somewhere",
-          "maxReceiveCount": 5
-        },
-        "Tags": [
-          {
-            "Key": "keyname1",
-            "Value": "value1"
-          },
-          {
-            "Key": "keyname2",
-            "Value": "value2"
-          }
-        ],
-        "QueueName": "thisismyqueuename.fifo"
+        "Events": {}
       }
     }
   }

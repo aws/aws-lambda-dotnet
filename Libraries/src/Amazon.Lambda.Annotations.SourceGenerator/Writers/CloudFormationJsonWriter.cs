@@ -402,17 +402,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 try
                 {
                     var tagArray = new JArray();
-                    foreach (var tag in sqsMessageAttribute.Tags)
+                    if (sqsMessageAttribute.Tags != default)
                     {
-                        var tagParts = tag.Split('=');
-                        var key = tagParts.FirstOrDefault();
-                        var value = tagParts.LastOrDefault();
-                        if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
+                        foreach (var tag in sqsMessageAttribute.Tags)
                         {
-                            var tagObject = new JObject();
-                            tagObject.Add(new JProperty("Key", key));
-                            tagObject.Add(new JProperty("Value", value));
-                            tagArray.Add(tagObject);
+                            var tagParts = tag.Split('=');
+                            var key = tagParts.FirstOrDefault();
+                            var value = tagParts.LastOrDefault();
+                            if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
+                            {
+                                var tagObject = new JObject();
+                                tagObject.Add(new JProperty("Key", key));
+                                tagObject.Add(new JProperty("Value", value));
+                                tagArray.Add(tagObject);
+                            }
                         }
                     }
 
@@ -433,7 +436,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
             catch (Exception e)
             {
-                throw new Exception($"Failed to create AWS::SQS::Queue: {e.Message} {e.InnerException?.Message}", e);
+                throw new Exception($"Failed to write AWS::SQS::Queue: {e.Message} {e.InnerException?.Message}", e);
             }
         }
 
