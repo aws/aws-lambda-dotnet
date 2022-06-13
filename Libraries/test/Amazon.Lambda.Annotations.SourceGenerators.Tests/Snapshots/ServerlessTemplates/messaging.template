@@ -58,7 +58,10 @@
             "Properties": {
               "BatchSize": 12,
               "Queue": {
-                "Ref": "QueueForMessageHandlerForNewQueue"
+                "Fn::GetAtt": [
+                  "QueueForMessageHandlerForNewQueue",
+                  "Arn"
+                ]
               },
               "FilterCriteria": {
                 "Filters": [

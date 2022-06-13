@@ -619,7 +619,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
             else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
             {
-                _jsonWriter.SetToken(queueNamePath, new JObject(new JProperty("Ref", sqsMessageAttribute.QueueLogicalId)));
+                _jsonWriter.SetToken(queueNamePath, new JObject(new JProperty("Fn::GetAtt",
+                    new JArray(sqsMessageAttribute.QueueLogicalId, "Arn"))));
             }
 
             try
