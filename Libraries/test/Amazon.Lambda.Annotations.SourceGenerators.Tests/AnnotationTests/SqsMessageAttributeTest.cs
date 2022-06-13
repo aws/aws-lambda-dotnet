@@ -54,6 +54,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             target.FifoThroughputLimit = "perQueue";
             target.FifoThroughputLimit = "perMessageGroupId";
             Assert.Throws<ArgumentOutOfRangeException>(() => target.FifoThroughputLimit = "notValid");
+        }
+
+        [Fact]
+        public void KmsDataKeyReusePeriodSecondsValidation()
+        {
+            var target = new SqsMessageAttribute();
+            target.KmsDataKeyReusePeriodSeconds = SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMinimum;
+            target.KmsDataKeyReusePeriodSeconds = SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMaximum;
+            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.KmsDataKeyReusePeriodSeconds = SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMinimum - 1);
+            Assert.Equal(nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds), error.ParamName);
+            Assert.Equal(SqsMessageAttribute.KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds)}')", error.Message);
+            error = Assert.Throws<ArgumentOutOfRangeException>(() => target.KmsDataKeyReusePeriodSeconds = SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMaximum + 1);
+            Assert.Equal(nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds), error.ParamName);
+            Assert.Equal(SqsMessageAttribute.KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds)}')", error.Message);
 
         }
     }

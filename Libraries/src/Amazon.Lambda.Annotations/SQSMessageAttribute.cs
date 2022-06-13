@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Text;
+
+[assembly: InternalsVisibleTo("Amazon.Lambda.Annotations.SourceGenerators.Tests")]
 
 namespace Amazon.Lambda.Annotations
 {
@@ -196,6 +196,7 @@ namespace Amazon.Lambda.Annotations
         private string _deduplicationScope;
         private int _delaySeconds = DelaySecondsDefault;
         private string _fifoThroughputLimit;
+        private int _kmsDataKeyReusePeriodSeconds = KmsDataKeyReusePeriodSecondsDefault;
         public const bool ContentBasedDeduplicationDefault = false;
         public const int VisibilityTimeoutDefault = 30;
         public const int BatchSizeDefault = 10;
@@ -207,6 +208,8 @@ namespace Amazon.Lambda.Annotations
         public const int ReceiveMessageWaitTimeSecondsDefault = 0;
         public const int DelaySecondsMinimum = 0;
         public const int DelaySecondsMaximum = 900;
+        public const int KmsDataKeyReusePeriodSecondsMinimum = 60;
+        public const int KmsDataKeyReusePeriodSecondsMaximum = 86400;
 
 
         // event handler values
@@ -301,7 +304,24 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
-        public int KmsDataKeyReusePeriodSeconds { get; set; } = KmsDataKeyReusePeriodSecondsDefault;
+        public int KmsDataKeyReusePeriodSeconds
+        {
+            get => _kmsDataKeyReusePeriodSeconds;
+            set
+            {
+                if (_kmsDataKeyReusePeriodSeconds==value) return;
+                if (value < KmsDataKeyReusePeriodSecondsMinimum || value > KmsDataKeyReusePeriodSecondsMaximum)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(KmsDataKeyReusePeriodSeconds), KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage);
+                }
+                _kmsDataKeyReusePeriodSeconds = value;
+                OnPropertyChanged();
+            }
+        }
+
+        // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
+        internal const string KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage = "KmsDataKeyReusePeriodSeconds must be => 60 & <= 86400";
+
         public string KmsMasterKeyId { get; set; }
         public int MaximumMessageSize { get; set; } = MaximumMessageSizeDefault;
         public int MessageRetentionPeriod { get; set; } = MessageRetentionPeriodDefault;
