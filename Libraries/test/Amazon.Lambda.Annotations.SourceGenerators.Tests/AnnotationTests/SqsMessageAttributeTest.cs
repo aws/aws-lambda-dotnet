@@ -55,18 +55,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             Assert.Throws<ArgumentOutOfRangeException>(() => target.FifoThroughputLimit = "notValid");
         }
 
-        [Fact]
-        public void KmsDataKeyReusePeriodSecondsValidation()
+        [Theory]
+        [InlineData(SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMinimum)]
+        [InlineData(SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMaximum)]
+        [InlineData(SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMinimum - 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.UintPropertyBetweenExceptionMessage)]
+        [InlineData(SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMaximum + 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.UintPropertyBetweenExceptionMessage)]
+        public void KmsDataKeyReusePeriodSecondsValidation(uint value, Type throws = null, string messageFormat = null)
         {
             var target = new SqsMessageAttribute();
-            target.KmsDataKeyReusePeriodSeconds = SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMinimum;
-            target.KmsDataKeyReusePeriodSeconds = SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMaximum;
-            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.KmsDataKeyReusePeriodSeconds = SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMinimum - 1);
-            Assert.Equal(nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds), error.ParamName);
-            Assert.Equal(SqsMessageAttribute.KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds)}')", error.Message);
-            error = Assert.Throws<ArgumentOutOfRangeException>(() => target.KmsDataKeyReusePeriodSeconds = SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMaximum + 1);
-            Assert.Equal(nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds), error.ParamName);
-            Assert.Equal(SqsMessageAttribute.KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds)}')", error.Message);
+            if (throws == null)
+            {
+                target.KmsDataKeyReusePeriodSeconds = value;
+            }
+            else
+            {
+                var error = Assert.Throws(throws, () => target.KmsDataKeyReusePeriodSeconds = value) as ArgumentException;
+                Assert.Equal(nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds), error.ParamName);
+                Assert.Equal( string.Format(messageFormat, nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds), SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMinimum, SqsMessageAttribute.KmsDataKeyReusePeriodSecondsMaximum) + $" (Parameter '{nameof(SqsMessageAttribute.KmsDataKeyReusePeriodSeconds)}')", 
+                    error.Message);
+
+            }
         }
 
         [Fact]
@@ -103,50 +111,66 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             // no exception, no problem
         }
 
-        [Fact]
-        public void EventBatchSizeValidation()
+        [Theory]
+        [InlineData(SqsMessageAttribute.EventBatchSizeMinimum)]
+        [InlineData(SqsMessageAttribute.EventBatchSizeMaximum)]
+        [InlineData(SqsMessageAttribute.EventBatchSizeMinimum - 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.UintPropertyBetweenExceptionMessage)]
+        [InlineData(SqsMessageAttribute.EventBatchSizeMaximum + 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.UintPropertyBetweenExceptionMessage)]
+        public void EventBatchSizeValidation(uint value, Type throws = null, string messageFormat = null)
         {
             var target = new SqsMessageAttribute();
-            target.EventBatchSize = SqsMessageAttribute.EventBatchSizeMinimum;
-            target.EventBatchSize = SqsMessageAttribute.EventBatchSizeMaximum;
+            if (throws == null)
+            {
+                target.EventBatchSize = value;
+            }
+            else
+            {
+                var error = Assert.Throws(throws, () => target.EventBatchSize = value) as ArgumentException;
+                Assert.Equal(nameof(SqsMessageAttribute.EventBatchSize), error.ParamName);
+                Assert.Equal(string.Format(messageFormat, nameof(SqsMessageAttribute.EventBatchSize), SqsMessageAttribute.EventBatchSizeMinimum, SqsMessageAttribute.EventBatchSizeMaximum) + $" (Parameter '{nameof(SqsMessageAttribute.EventBatchSize)}')", error.Message);
 
-            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.EventBatchSize = SqsMessageAttribute.EventBatchSizeMinimum - 1);
-            Assert.Equal(nameof(SqsMessageAttribute.EventBatchSize), error.ParamName);
-            Assert.Equal(SqsMessageAttribute.EventBatchSizeArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.EventBatchSize)}')", error.Message);
-
-            error = Assert.Throws<ArgumentOutOfRangeException>(() => target.EventBatchSize = SqsMessageAttribute.EventBatchSizeMaximum + 1);
-            Assert.Equal(nameof(SqsMessageAttribute.EventBatchSize), error.ParamName);
-            Assert.Equal(SqsMessageAttribute.EventBatchSizeArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.EventBatchSize)}')", error.Message);
+            }
         }
 
-        [Fact]
-        public void VisibilityTimeoutValidation()
+        [Theory]
+        [InlineData(SqsMessageAttribute.VisibilityTimeoutMinimum)]
+        [InlineData(SqsMessageAttribute.VisibilityTimeoutMaximum)]
+        [InlineData(SqsMessageAttribute.VisibilityTimeoutMaximum+1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.UintPropertyBetweenExceptionMessage)]
+        public void VisibilityTimeoutValidation(uint value, Type throws = null, string message = null)
         {
             var target = new SqsMessageAttribute();
-            target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMinimum;
-            target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMaximum;
+            if (throws == null)
+            {
+                target.VisibilityTimeout = value;
+            }
+            else
+            {
+                var error = Assert.Throws(throws, () => target.VisibilityTimeout = value) as ArgumentException;
+                Assert.Equal(nameof(SqsMessageAttribute.VisibilityTimeout), error.ParamName);
+                Assert.Equal(
+                    string.Format(message, nameof(SqsMessageAttribute.VisibilityTimeout), SqsMessageAttribute.VisibilityTimeoutMinimum, SqsMessageAttribute.VisibilityTimeoutMaximum) + $" (Parameter '{nameof(SqsMessageAttribute.VisibilityTimeout)}')", 
+                    error.Message);
 
-            var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.VisibilityTimeout = SqsMessageAttribute.VisibilityTimeoutMaximum + 1);
-            Assert.Equal(nameof(SqsMessageAttribute.VisibilityTimeout), error.ParamName);
-            Assert.Equal(SqsMessageAttribute.VisibilityTimeoutArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.VisibilityTimeout)}')", error.Message);
+            }
+
 
         }
 
         [Theory]
-        [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMinimum, false)]
-        [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMaximum + 1, true)]
-        public void ReceiveMessageWaitTimeSecondsValidation(uint value, bool throws)
+        [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMinimum)]
+        [InlineData(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsMaximum + 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.ReceiveMessageWaitTimeSeconds)}')")]
+        public void ReceiveMessageWaitTimeSecondsValidation(uint value, Type throws = null, string message = null)
         {
             var target = new SqsMessageAttribute();
-            if (!throws)
+            if (throws == null)
             {
                 target.ReceiveMessageWaitTimeSeconds = value;
             }
             else
             {
-                var error = Assert.Throws<ArgumentOutOfRangeException>(() => target.ReceiveMessageWaitTimeSeconds = value);
+                var error = Assert.Throws(throws, () => target.ReceiveMessageWaitTimeSeconds = value) as ArgumentException;
                 Assert.Equal(nameof(SqsMessageAttribute.ReceiveMessageWaitTimeSeconds), error.ParamName);
-                Assert.Equal(SqsMessageAttribute.ReceiveMessageWaitTimeSecondsArgumentOutOfRangeExceptionMessage + $" (Parameter '{nameof(SqsMessageAttribute.ReceiveMessageWaitTimeSeconds)}')", error.Message);
+                Assert.Equal(message, error.Message);
 
             }
         }

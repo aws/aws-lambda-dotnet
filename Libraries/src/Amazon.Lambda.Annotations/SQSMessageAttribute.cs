@@ -16,14 +16,12 @@ namespace Amazon.Lambda.Annotations
         public const uint VisibilityTimeoutDefault = 30;
         internal const uint VisibilityTimeoutMinimum = 0;
         internal const uint VisibilityTimeoutMaximum = 43200;
-        // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
-        internal const string VisibilityTimeoutArgumentOutOfRangeExceptionMessage = "VisibilityTimeoutMaximum must be => 0 && <= 43200";
 
         internal const uint EventBatchSizeMinimum = 1;
         internal const uint EventBatchSizeMaximum = 10000;
         public const uint EventBatchSizeDefault = 10;
-        // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
-        internal const string EventBatchSizeArgumentOutOfRangeExceptionMessage = "EventBatchSize must be => 1 && <= 10000";
+
+        internal const string UintPropertyBetweenExceptionMessage = "{0} must be => {1} && <= {2}";
 
         public const uint DelaySecondsDefault = 0;
         public const bool FifoQueueDefault = false;
@@ -33,8 +31,7 @@ namespace Amazon.Lambda.Annotations
         public const uint KmsDataKeyReusePeriodSecondsDefault = 300;
         public const uint KmsDataKeyReusePeriodSecondsMinimum = 60;
         public const uint KmsDataKeyReusePeriodSecondsMaximum = 86400;
-        // TODO: Make interpolated string when language version supports.  Current version does not support and I didn't want to make that change in a PR.
-        internal const string KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage = "KmsDataKeyReusePeriodSeconds must be => 60 && <= 86400";
+
 
         internal const uint MaximumMessageSizeMinimum = 1024;
         internal const uint MaximumMessageSizeMaximum = 262144;
@@ -90,7 +87,7 @@ namespace Amazon.Lambda.Annotations
                 if (_eventBatchSize==value) return;
                 if (value < EventBatchSizeMinimum || value > EventBatchSizeMaximum)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(EventBatchSize), EventBatchSizeArgumentOutOfRangeExceptionMessage);
+                    throw new ArgumentOutOfRangeException(nameof(EventBatchSize), string.Format(UintPropertyBetweenExceptionMessage, nameof(EventBatchSize), EventBatchSizeMinimum, EventBatchSizeMaximum));
                 }
                 _eventBatchSize = value;
                 OnPropertyChanged();
@@ -120,7 +117,9 @@ namespace Amazon.Lambda.Annotations
                 if (value == _visibilityTimeout) return;
                 if (value > VisibilityTimeoutMaximum)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(VisibilityTimeout), VisibilityTimeoutArgumentOutOfRangeExceptionMessage);
+                    throw new ArgumentOutOfRangeException(
+                        nameof(VisibilityTimeout), 
+                        string.Format(UintPropertyBetweenExceptionMessage, nameof(VisibilityTimeout), VisibilityTimeoutMinimum, VisibilityTimeoutMaximum));
                 }
                 _visibilityTimeout = value;
                 OnPropertyChanged();
@@ -212,7 +211,11 @@ namespace Amazon.Lambda.Annotations
                 if (_kmsDataKeyReusePeriodSeconds==value) return;
                 if (value < KmsDataKeyReusePeriodSecondsMinimum || value > KmsDataKeyReusePeriodSecondsMaximum)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(KmsDataKeyReusePeriodSeconds), KmsDataKeyReusePeriodSecondsArgumentOutOfRangeExceptionMessage);
+                    throw new ArgumentOutOfRangeException(nameof(KmsDataKeyReusePeriodSeconds), 
+                        string.Format(UintPropertyBetweenExceptionMessage, 
+                            nameof(KmsDataKeyReusePeriodSeconds), 
+                            KmsDataKeyReusePeriodSecondsMinimum, 
+                            KmsDataKeyReusePeriodSecondsMaximum));
                 }
                 _kmsDataKeyReusePeriodSeconds = value;
                 OnPropertyChanged();
