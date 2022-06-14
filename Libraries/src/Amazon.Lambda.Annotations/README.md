@@ -104,7 +104,7 @@ public class Functions
 
 
     [LambdaFunction]
-    [HttpApi(HttpMethod.Put, HttpApiVersion.V2, "/process/{name}")]
+    [HttpApi(LambdaHttpMethod.Put, "/process/{name}", Version = HttpApiVersion.V2)]
     public async Task Process([FromServices] ITracker tracker, string name, [FromBody] string data)
     {
         tracker.Record();
