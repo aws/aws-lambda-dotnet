@@ -58,5 +58,16 @@ namespace TestServerlessApp
             LambdaLogger.Log($"Message Received: {message.MessageId}");
             return Task.CompletedTask;
         }
+
+        [LambdaFunction]
+        [SqsMessage(
+            FifoQueue = true,
+            QueueName = "thisismyqueuename.fifo")]
+        public Task MessageHandlerForNewFifoQueueUsingFnSubForQueueName(SQSEvent.SQSMessage message, ILambdaContext context)
+        {
+            LambdaLogger.Log($"Message Received: {message.MessageId}");
+            return Task.CompletedTask;
+        }
+
     }
 }

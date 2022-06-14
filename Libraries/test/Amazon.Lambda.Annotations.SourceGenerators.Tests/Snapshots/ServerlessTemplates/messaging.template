@@ -115,6 +115,52 @@
         ],
         "VisibilityTimeout": 100
       }
+    },
+    "TestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedTestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedQueue"
+        ],
+        "SyncedResources": [
+          "TestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedQueue"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForNewFifoQueueUsingFnSubForQueueName_Generated::MessageHandlerForNewFifoQueueUsingFnSubForQueueName",
+        "Events": {
+          "TestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedTestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedQueue": {
+            "Type": "SQS",
+            "Properties": {
+              "Queue": {
+                "Fn::GetAtt": [
+                  "TestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedQueue",
+                  "Arn"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "FifoQueue": true,
+        "QueueName": "thisismyqueuename.fifo"
+      }
     }
   }
 }
