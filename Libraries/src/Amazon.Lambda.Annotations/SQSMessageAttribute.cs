@@ -20,7 +20,7 @@ namespace Amazon.Lambda.Annotations
 
         public const uint MaximumBatchingWindowInSecondsDefault = 0;
         public const uint MaximumBatchingWindowInSecondsMinimum = 0;
-        public const uint MaximumBatchingWindowInSecondsMaximum = 30;
+        public const uint MaximumBatchingWindowInSecondsMaximum = 300;
 
 
         public const uint VisibilityTimeoutDefault = 30;
