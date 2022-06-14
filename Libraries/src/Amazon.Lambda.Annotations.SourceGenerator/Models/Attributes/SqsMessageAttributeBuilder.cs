@@ -29,9 +29,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.EventBatchSize = uint.Parse(attNamedArgument.Value.Value.ToString());
                         }
                         break;
-                    case nameof(ISqsMessage.QueueLogicalId):
-                        data.QueueLogicalId = attNamedArgument.Value.Value?.ToString();
-                        break;
                     case nameof(ISqsMessage.VisibilityTimeout):
                         data.VisibilityTimeout = uint.Parse(attNamedArgument.Value.Value.ToString());
                         break;

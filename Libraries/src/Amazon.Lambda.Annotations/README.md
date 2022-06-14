@@ -188,7 +188,6 @@ Below is sample class containing two functions.  One function will use an preexi
             EventBatchSize = 12,
             EventFilterCriteria = new string[] { "Filter1", "Filter2" },
             EventMaximumBatchingWindowInSeconds = 31,
-            QueueLogicalId = "QueueForMessageHandlerForNewQueue", 
             VisibilityTimeout = 100, 
             ContentBasedDeduplication = true, 
             DeduplicationScope = "queue", 

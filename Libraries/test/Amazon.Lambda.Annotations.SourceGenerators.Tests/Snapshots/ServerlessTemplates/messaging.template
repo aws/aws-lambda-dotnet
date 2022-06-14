@@ -36,10 +36,10 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueueForMessageHandlerForNewQueue"
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedTestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueue"
         ],
         "SyncedResources": [
-          "QueueForMessageHandlerForNewQueue"
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueue"
         ]
       },
       "Properties": {
@@ -53,13 +53,13 @@
         "PackageType": "Zip",
         "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForNewQueue_Generated::MessageHandlerForNewQueue",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueueForMessageHandlerForNewQueue": {
+          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedTestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueue": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 12,
               "Queue": {
                 "Fn::GetAtt": [
-                  "QueueForMessageHandlerForNewQueue",
+                  "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueue",
                   "Arn"
                 ]
               },
@@ -79,7 +79,7 @@
         }
       }
     },
-    "QueueForMessageHandlerForNewQueue": {
+    "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueue": {
       "Type": "AWS::SQS::Queue",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"

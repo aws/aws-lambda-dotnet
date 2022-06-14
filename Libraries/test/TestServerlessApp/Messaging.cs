@@ -38,7 +38,6 @@ namespace TestServerlessApp
             EventBatchSize = 12,
             EventFilterCriteria = new string[] { "Filter1", "Filter2" },
             EventMaximumBatchingWindowInSeconds = 31,
-            QueueLogicalId = "QueueForMessageHandlerForNewQueue", 
             VisibilityTimeout = 100, 
             ContentBasedDeduplication = true, 
             DeduplicationScope = "queue", 

@@ -3,11 +3,6 @@
     public interface ISqsMessage
     {
         /// <summary>
-        /// If queue auto-creation (in .template) feature, specify the Logical Id of the queue in the template.
-        /// </summary>
-        string QueueLogicalId { get; set; }
-
-        /// <summary>
         /// For Events:  The maximum number of items to retrieve in a single batch.
         /// Type: Integer
         /// Required: No

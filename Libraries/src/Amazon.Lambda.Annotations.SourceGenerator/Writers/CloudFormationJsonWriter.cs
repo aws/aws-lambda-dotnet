@@ -148,11 +148,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         currentSyncedEvents.Add(eventName);
                         break;
                     case AttributeModel<SqsMessageAttribute> sqsAttributeModel:
-                        eventName = ProcessSqsMessageAttribute(lambdaFunction, sqsAttributeModel.Data);
+                        ISqsQueueSerializable sqsQueue = SqsQueueModelBuilder.Build(lambdaFunction, sqsAttributeModel.Data);
+                        eventName = ProcessSqsMessageAttribute(lambdaFunction, sqsQueue);
                         currentSyncedEvents.Add(eventName);
-                        if (ShouldProcessQueue(lambdaFunction, sqsAttributeModel.Data))
+                        if (ShouldProcessQueue(lambdaFunction, sqsQueue))
                         {
-                            string queueLogicalId = ProcessQueue(sqsAttributeModel.Data);
+                            string queueLogicalId = ProcessQueue(sqsQueue);
                             currentSyncedResources.Add(queueLogicalId);
                             _processedResources.Add(queueLogicalId);
                         }
@@ -276,19 +277,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         // I don't like this being a field member, but given
         // the previous patterns, I can't find a better method
         private readonly HashSet<string> _processedResources = new HashSet<string>();
-        private string ProcessQueue(SqsMessageAttribute data)
+        private string ProcessQueue(ISqsQueueSerializable data)
         {
-            var sqsQueueTemplateInfo = GetSqsQueueLogicalIdAndPath(data);
-            var propertiesPath = $"{sqsQueueTemplateInfo.Item2}.Properties";
+            //var sqsQueueTemplateInfo = GetSqsQueueLogicalIdAndPath(data);
+            var queueResourcePath = $"Resources.{data.QueueLogicalId}";
+            var propertiesPath = $"{queueResourcePath}.Properties";
 
-            if (!_jsonWriter.Exists(sqsQueueTemplateInfo.Item2))
-                ApplyQueueDefaults(sqsQueueTemplateInfo.Item2, propertiesPath);
+            if (!_jsonWriter.Exists(queueResourcePath))
+                ApplyQueueDefaults(queueResourcePath, propertiesPath);
 
             ProcessQueueAttributes(data, propertiesPath);
 
-            return sqsQueueTemplateInfo.Item1;
+            return data.QueueLogicalId;
         }
-        private void ProcessQueueAttributes(SqsMessageAttribute sqsMessageAttribute, string propertiesPath)
+        private void ProcessQueueAttributes(ISqsQueueSerializable sqsMessageAttribute, string propertiesPath)
         {
             try
             {
@@ -562,9 +564,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             _jsonWriter.SetToken($"{sqsQueuePath}.Metadata.Tool", "Amazon.Lambda.Annotations");
 
         }
-        private bool ShouldProcessQueue(ILambdaFunctionSerializable lambdaFunctionSerializable, SqsMessageAttribute data)
+        private bool ShouldProcessQueue(ILambdaFunctionSerializable lambdaFunctionSerializable, ISqsQueueSerializable data)
         {
-            if (string.IsNullOrEmpty(data.QueueLogicalId)) return false;
+            if (!string.IsNullOrEmpty(data.EventQueueARN)) return false;
+
             var sqsInfo = GetSqsQueueLogicalIdAndPath(data);
             var sqsQueuePath = sqsInfo.Item2;
 
@@ -575,24 +578,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var creationTool = _jsonWriter.GetToken($"{sqsQueuePath}.Metadata.Tool", string.Empty);
             return string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal);
         }
-        private static (string, string) GetSqsQueueLogicalIdAndPath(SqsMessageAttribute data)
+
+        internal static (string, string) GetSqsQueueLogicalIdAndPath(ISqsQueueSerializable data)
         {
             return (data.QueueLogicalId, $"Resources.{data.QueueLogicalId}");
         }
-        private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
+        private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, ISqsQueueSerializable sqsQueueSerializable)
         {
             string queueHandle;
-            if (!string.IsNullOrEmpty(sqsMessageAttribute.EventQueueARN))
+            if (!string.IsNullOrEmpty(sqsQueueSerializable.EventQueueARN))
             {
-                queueHandle = sqsMessageAttribute.EventQueueARN.Split(':').LastOrDefault().Replace("-", string.Empty);
+                queueHandle = sqsQueueSerializable.EventQueueARN.Split(':').LastOrDefault().Replace("-", string.Empty);
             }
-            else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
+            else if (!string.IsNullOrEmpty(sqsQueueSerializable.QueueLogicalId))
             {
-                queueHandle = sqsMessageAttribute.QueueLogicalId;
+                queueHandle = sqsQueueSerializable.QueueLogicalId;
             }
             else
             {
-                throw new InvalidOperationException($"You must specify either {nameof(ISqsMessage.EventQueueARN)} or {nameof(ISqsMessage.QueueLogicalId)}");
+                throw new InvalidOperationException($"Unable to determine the Queue to add to Events.");
             }
 
             var eventName = $"{lambdaFunction.Name}{queueHandle}";
@@ -603,9 +607,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             var batchSizePropertyPath = $"{methodPath}.Properties.BatchSize";
 
-            if (sqsMessageAttribute.EventBatchSize != SqsMessageAttribute.EventBatchSizeDefault)
+            if (sqsQueueSerializable.EventBatchSize != SqsMessageAttribute.EventBatchSizeDefault)
             {
-                _jsonWriter.SetToken(batchSizePropertyPath, sqsMessageAttribute.EventBatchSize);
+                _jsonWriter.SetToken(batchSizePropertyPath, sqsQueueSerializable.EventBatchSize);
             }
             else
             {
@@ -613,25 +617,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             var queueNamePath = $"{methodPath}.Properties.Queue";
-            if (!string.IsNullOrEmpty(sqsMessageAttribute.EventQueueARN))
+            if (!string.IsNullOrEmpty(sqsQueueSerializable.EventQueueARN))
             {
-                _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.EventQueueARN);
+                _jsonWriter.SetToken(queueNamePath, sqsQueueSerializable.EventQueueARN);
             }
-            else if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueLogicalId))
+            else if (!string.IsNullOrEmpty(sqsQueueSerializable.QueueLogicalId))
             {
                 _jsonWriter.SetToken(queueNamePath, new JObject(new JProperty("Fn::GetAtt",
-                    new JArray(sqsMessageAttribute.QueueLogicalId, "Arn"))));
+                    new JArray(sqsQueueSerializable.QueueLogicalId, "Arn"))));
             }
 
             try
             {
                 var filterCriteriaPropertiesPath = $"{methodPath}.Properties.FilterCriteria";
-                if (sqsMessageAttribute.EventFilterCriteria.Any())
+                if (sqsQueueSerializable.EventFilterCriteria.Any())
                 {
                     var filterCriteriaPayload = new JObject();
                     var filtersArray = new JArray();
 
-                    foreach (var eventFilterCriterion in sqsMessageAttribute.EventFilterCriteria)
+                    foreach (var eventFilterCriterion in sqsQueueSerializable.EventFilterCriteria)
                     {
                         var jObject = new JObject();
                         jObject.Add("Pattern", eventFilterCriterion);
@@ -661,9 +665,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             var eventMaximumBatchingWindowInSecondsPropertyPath = $"{methodPath}.Properties.MaximumBatchingWindowInSeconds";
-            if (sqsMessageAttribute.EventMaximumBatchingWindowInSeconds != SqsMessageAttribute.MaximumBatchingWindowInSecondsDefault)
+            if (sqsQueueSerializable.EventMaximumBatchingWindowInSeconds != SqsMessageAttribute.MaximumBatchingWindowInSecondsDefault)
             {
-                _jsonWriter.SetToken(eventMaximumBatchingWindowInSecondsPropertyPath, sqsMessageAttribute.EventMaximumBatchingWindowInSeconds);
+                _jsonWriter.SetToken(eventMaximumBatchingWindowInSecondsPropertyPath, sqsQueueSerializable.EventMaximumBatchingWindowInSeconds);
             }
             else
             {

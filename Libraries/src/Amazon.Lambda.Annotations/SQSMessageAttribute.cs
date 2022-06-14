@@ -100,17 +100,6 @@ namespace Amazon.Lambda.Annotations
             }
         }
 
-        public string QueueLogicalId
-        {
-            get => _queueLogicalId;
-            set
-            {
-                if (_queueLogicalId == value) return;
-                _queueLogicalId = value;
-                OnPropertyChanged();
-            }
-        }
-
         // sqs queue values
 
         public string[] Tags { get; set; } = new string[] {};
@@ -308,16 +297,6 @@ namespace Amazon.Lambda.Annotations
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
-            switch (propertyName)
-            {
-                case nameof(QueueLogicalId):
-                case nameof(EventQueueARN):
-                    if ((!string.IsNullOrEmpty(QueueLogicalId) || !string.IsNullOrEmpty(EventQueueARN)) && string.IsNullOrEmpty(QueueLogicalId) == string.IsNullOrEmpty(EventQueueARN))
-                    {
-                        throw new InvalidOperationException($"You can only specify one of: {nameof(QueueLogicalId)} or {nameof(EventQueueARN)}");
-                    }
-                    break;
-            }
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
