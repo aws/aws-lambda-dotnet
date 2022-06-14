@@ -138,6 +138,8 @@ parameter to the `LambdaFunction` must be the event object and the event source 
     * Configures the Lambda function to be called from an API Gateway REST API. The HTTP method and resource path are required to be set on the attribute.
 * HttpApi
     * Configures the Lambda function to be called from an API Gateway HTTP API. The HTTP method, HTTP API payload version and resource path are required to be set on the attribute.
+* SqsMessage
+    * Configures the Lambda function to be an event handler for a Sqs message.  Optionally, allows the creation of an AWS::SQS::Queue in the template
 
 ### Parameter Attributes
 
@@ -151,3 +153,61 @@ parameter to the `LambdaFunction` must be the event object and the event source 
     * Map method parameter to HTTP request body. If parameter is a complex type then request body will be assumed to be JSON and deserialized into the type.
 * FromServices
     * Map method parameter to registered service in IServiceProvider
+
+### SqsMessage Attribute Example
+
+Below is sample class containing two functions.  One function will use an preexisting queue and the other adds the queue to the template.
+
+```
+    public class Messaging
+    {
+        /// <summary>
+        /// This function will use a preexisting queue, whether the queue is defined manually in the template or external to the template.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        [LambdaFunction]
+        [SqsMessage(EventQueueARN = "arn:aws:sqs:us-east-1:968993296699:app-deploy-blue-LAVETRYB3JKX-SomeQueueName", EventBatchSize = 11)]
+        public Task MessageHandlerForPreExistingQueue(SQSEvent.SQSMessage message, ILambdaContext context)
+        {
+            LambdaLogger.Log($"Message Received: {message.MessageId}");
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// This function will add the AWS::SQS::Queue to the template and use it for the function.
+        /// All Serverless Event attributes start with the word Event.
+        /// All others are the AWS::SQS::Queue properties.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        [LambdaFunction]
+        [SqsMessage(
+            EventBatchSize = 12,
+            EventFilterCriteria = new string[] { "Filter1", "Filter2" },
+            EventMaximumBatchingWindowInSeconds = 31,
+            QueueLogicalId = "QueueForMessageHandlerForNewQueue", 
+            VisibilityTimeout = 100, 
+            ContentBasedDeduplication = true, 
+            DeduplicationScope = "queue", 
+            DelaySeconds = 5, 
+            FifoQueue = true,
+            FifoThroughputLimit = "perQueue",
+            KmsDataKeyReusePeriodSeconds = 299,
+            KmsMasterKeyId = "alias/aws/sqs",
+            MaximumMessageSize = 1024,
+            MessageRetentionPeriod = 60,
+            QueueName = "thisismyqueuename.fifo",
+            ReceiveMessageWaitTimeSeconds =5,
+            RedriveAllowPolicy = "{ 'redrivePermission' : 'denyAll' }",
+            RedrivePolicy = "{ 'deadLetterTargetArn': 'arn:somewhere', 'maxReceiveCount': 5 }",
+            Tags = new string[]{ "keyname1=value1", "keyname2=value2" })]
+        public Task MessageHandlerForNewQueue(SQSEvent.SQSMessage message, ILambdaContext context)
+        {
+            LambdaLogger.Log($"Message Received: {message.MessageId}");
+            return Task.CompletedTask;
+        }
+    }
+}```

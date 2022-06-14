@@ -377,6 +377,26 @@
         }
       }
     },
+    "ToUpper": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.Sub1.Functions_ToUpper_Generated::ToUpper"
+          ]
+        }
+      }
+    },
     "TestServerlessAppMessagingMessageHandlerForNewQueueGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -404,8 +424,22 @@
             "Properties": {
               "BatchSize": 12,
               "Queue": {
-                "Ref": "QueueForMessageHandlerForNewQueue"
-              }
+                "Fn::GetAtt": [
+                  "QueueForMessageHandlerForNewQueue",
+                  "Arn"
+                ]
+              },
+              "FilterCriteria": {
+                "Filters": [
+                  {
+                    "Pattern": "Filter1"
+                  },
+                  {
+                    "Pattern": "Filter2"
+                  }
+                ]
+              },
+              "MaximumBatchingWindowInSeconds": 31
             }
           }
         }
@@ -445,31 +479,7 @@
             "Value": "value2"
           }
         ],
-        "VisibilityTimeout": 100,
-        "FilterCriteria": [
-          "Filter1",
-          "Filter2"
-        ]
-      }
-    },
-    "ToUpper": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.Sub1.Functions_ToUpper_Generated::ToUpper"
-          ]
-        }
+        "VisibilityTimeout": 100
       }
     }
   },
