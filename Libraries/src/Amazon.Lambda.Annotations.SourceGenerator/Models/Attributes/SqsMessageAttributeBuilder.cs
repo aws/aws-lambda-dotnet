@@ -156,6 +156,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                             data.EventFilterCriteria = final.ToArray();
                         }
                         break;
+                    /// MaximumBatchingWindowInSeconds
+                    case nameof(ISqsMessage.EventMaximumBatchingWindowInSeconds):
+                        if (!string.IsNullOrEmpty(attNamedArgument.Value.Value?.ToString()))
+                        {
+                            data.EventMaximumBatchingWindowInSeconds = uint.Parse(attNamedArgument.Value.Value.ToString());
+                        }
+                        break;
+
 
                     default:
                         throw new NotSupportedException(attNamedArgument.Key);

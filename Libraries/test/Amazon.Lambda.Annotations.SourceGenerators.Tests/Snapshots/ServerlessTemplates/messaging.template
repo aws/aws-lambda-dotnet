@@ -72,7 +72,8 @@
                     "Pattern": "Filter2"
                   }
                 ]
-              }
+              },
+              "MaximumBatchingWindowInSeconds": 31
             }
           }
         }

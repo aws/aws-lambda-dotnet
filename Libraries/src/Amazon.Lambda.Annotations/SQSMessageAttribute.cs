@@ -18,6 +18,11 @@ namespace Amazon.Lambda.Annotations
         internal const string DeduplicationScopeMessageQueue = "queue";
         internal const string DeduplicationScopeArgumentOutOfRangeExceptionMessage = "{0} must be one of {1}.";
 
+        public const uint MaximumBatchingWindowInSecondsDefault = 0;
+        public const uint MaximumBatchingWindowInSecondsMinimum = 0;
+        public const uint MaximumBatchingWindowInSecondsMaximum = 30;
+
+
         public const uint VisibilityTimeoutDefault = 30;
         internal const uint VisibilityTimeoutMinimum = 0;
         internal const uint VisibilityTimeoutMaximum = 43200;
@@ -143,6 +148,7 @@ namespace Amazon.Lambda.Annotations
         }
 
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
+        public uint EventMaximumBatchingWindowInSeconds { get; set; } = MaximumBatchingWindowInSecondsDefault;
 
         internal static string[] ValidDeduplicationScopes = new string[] { DeduplicationScopeMessageGroup, DeduplicationScopeMessageQueue, null, string.Empty };
 

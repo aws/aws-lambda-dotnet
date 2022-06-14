@@ -40,9 +40,17 @@
         /// Type: Boolean
         /// Update requires: No interruption
         /// </summary>
-
-
         bool ContentBasedDeduplication { get; set; }
+
+
+        /// <summary>
+        /// The maximum amount of time, in seconds, to gather records before invoking the function.
+        /// Type: Integer
+        /// Required: No
+        /// AWS CloudFormation compatibility: This property is passed directly to the MaximumBatchingWindowInSeconds property of an AWS::Lambda::EventSourceMapping resource.
+        /// </summary>
+        uint EventMaximumBatchingWindowInSeconds { get; set; }
+
 
         /// <summary>
         /// For high throughput for FIFO queues, specifies whether message deduplication occurs at the message group or queue level. Valid values are messageGroup and queue.

@@ -660,6 +660,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.Tags)}", e);
             }
 
+            var eventMaximumBatchingWindowInSecondsPropertyPath = $"{methodPath}.Properties.MaximumBatchingWindowInSeconds";
+            if (sqsMessageAttribute.EventMaximumBatchingWindowInSeconds != SqsMessageAttribute.MaximumBatchingWindowInSecondsDefault)
+            {
+                _jsonWriter.SetToken(eventMaximumBatchingWindowInSecondsPropertyPath, sqsMessageAttribute.EventMaximumBatchingWindowInSeconds);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(eventMaximumBatchingWindowInSecondsPropertyPath);
+            }
+
 
             return eventName;
         }
