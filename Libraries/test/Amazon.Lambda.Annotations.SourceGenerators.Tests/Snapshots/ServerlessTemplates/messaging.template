@@ -159,7 +159,7 @@
       },
       "Properties": {
         "FifoQueue": true,
-        "QueueName": "thisismyqueuename.fifo"
+        "QueueName": "${AWS::Stack}MyFifoQueueWithStackEmbedded.fifo"
       }
     }
   }
