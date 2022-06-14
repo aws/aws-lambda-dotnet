@@ -223,5 +223,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
             }
 
         }
+
+        [Theory]
+        [InlineData(SqsMessageAttribute.MaximumBatchingWindowInSecondsDefault)]
+        [InlineData(SqsMessageAttribute.MaximumBatchingWindowInSecondsMinimum)]
+        [InlineData(SqsMessageAttribute.MaximumBatchingWindowInSecondsMaximum)]
+        [InlineData(SqsMessageAttribute.MaximumBatchingWindowInSecondsMaximum + 1, typeof(ArgumentOutOfRangeException), SqsMessageAttribute.UintPropertyBetweenExceptionMessage)]
+        public void MaximumBatchingWindowInSecondsValidation(uint value, Type throws = null, string messageFormat = null)
+        {
+            var target = new SqsMessageAttribute();
+            if (throws == null)
+            {
+                target.EventMaximumBatchingWindowInSeconds = value;
+            }
+            else
+            {
+                var error = Assert.Throws(throws, () => target.EventMaximumBatchingWindowInSeconds = value) as ArgumentException;
+                Assert.Equal(nameof(SqsMessageAttribute.EventMaximumBatchingWindowInSeconds), error.ParamName);
+                Assert.Equal(string.Format(messageFormat, nameof(SqsMessageAttribute.EventMaximumBatchingWindowInSeconds), SqsMessageAttribute.MaximumBatchingWindowInSecondsMinimum, SqsMessageAttribute.MaximumBatchingWindowInSecondsMaximum) + $" (Parameter '{nameof(SqsMessageAttribute.EventMaximumBatchingWindowInSeconds)}')", error.Message);
+
+            }
+        }
+
+
     }
 }

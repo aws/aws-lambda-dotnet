@@ -68,6 +68,7 @@ namespace Amazon.Lambda.Annotations
         private uint _visibilityTimeout = VisibilityTimeoutDefault;
         private uint _receiveMessageWaitTimeSeconds = ReceiveMessageWaitTimeSecondsDefault;
         private string _redrivePolicy;
+        private uint _eventMaximumBatchingWindowInSeconds = MaximumBatchingWindowInSecondsDefault;
 
 
         // event handler values
@@ -148,7 +149,23 @@ namespace Amazon.Lambda.Annotations
         }
 
         public bool ContentBasedDeduplication { get; set; } = ContentBasedDeduplicationDefault;
-        public uint EventMaximumBatchingWindowInSeconds { get; set; } = MaximumBatchingWindowInSecondsDefault;
+
+        public uint EventMaximumBatchingWindowInSeconds
+        {
+            get => _eventMaximumBatchingWindowInSeconds;
+            set
+            {
+                if ( _eventMaximumBatchingWindowInSeconds == value ) return;
+                if (value < MaximumBatchingWindowInSecondsMinimum || value > MaximumBatchingWindowInSecondsMaximum)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(EventMaximumBatchingWindowInSeconds),
+                        string.Format(UintPropertyBetweenExceptionMessage, nameof(EventMaximumBatchingWindowInSeconds), MaximumBatchingWindowInSecondsMinimum, MaximumBatchingWindowInSecondsMaximum));
+
+                }
+                _eventMaximumBatchingWindowInSeconds = value;
+                OnPropertyChanged();
+            }
+        }
 
         internal static string[] ValidDeduplicationScopes = new string[] { DeduplicationScopeMessageGroup, DeduplicationScopeMessageQueue, null, string.Empty };
 
