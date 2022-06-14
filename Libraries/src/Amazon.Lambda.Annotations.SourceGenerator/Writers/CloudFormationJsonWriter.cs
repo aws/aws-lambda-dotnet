@@ -386,8 +386,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 // QueueName
                 try
                 {
-                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.QueueName)}", sqsMessageAttribute.QueueName, string.Empty);
-
+                    var queueNamePath = $"{propertiesPath}.{nameof(ISqsMessage.QueueName)}";
+                    if (sqsMessageAttribute.QueueName.Contains("$"))
+                    {
+                        var fnSub = new JObject();
+                        fnSub.Add("Fn::Sub", new JArray(sqsMessageAttribute.QueueName));
+                        _jsonWriter.SetToken(queueNamePath, fnSub);
+                    }
+                    else
+                    {
+                        WriteOrRemove(queueNamePath, sqsMessageAttribute.QueueName, string.Empty);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -478,6 +487,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 throw new Exception($"Failed to write AWS::SQS::Queue: {e.Message} {e.InnerException?.Message}", e);
             }
         }
+
         private void RemoveOrphanedResources()
         {
             var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
