@@ -77,9 +77,7 @@ namespace TestServerlessApp
         /// <param name="context"></param>
         /// <returns></returns>
         [LambdaFunction]
-        [SqsMessage(
-            FifoQueue = true,
-            QueueName = "${AWS::Stack}MyFifoQueueWithStackEmbedded.fifo")]
+        [SqsMessage(FifoQueue = true)]
         public Task MessageHandlerForNewFifoQueueWithoutAQueueName(SQSEvent.SQSMessage message, ILambdaContext context)
         {
             LambdaLogger.Log($"Message Received: {message.MessageId}");

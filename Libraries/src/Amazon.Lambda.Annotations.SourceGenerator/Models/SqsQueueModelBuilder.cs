@@ -10,7 +10,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         {
             return new SqsQueueModel()
             {
-                QueueName = sqsMessageAttribute.QueueName,
+                // set the QueueName to the requested QueueName if requested
+                // else if not a FifoQueue, leave it null
+                // else set it to the lambdaFunction name + "Queue.fifo"
+                QueueName = 
+                    !string.IsNullOrEmpty(sqsMessageAttribute.QueueName) ? sqsMessageAttribute.QueueName 
+                        : !sqsMessageAttribute.FifoQueue ? null: lambdaFunction.Name + "Queue.fifo" ,
                 DelaySeconds = sqsMessageAttribute.DelaySeconds,
                 DeduplicationScope = sqsMessageAttribute.DeduplicationScope,
                 KmsDataKeyReusePeriodSeconds = sqsMessageAttribute.KmsDataKeyReusePeriodSeconds,
