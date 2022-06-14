@@ -21,10 +21,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             const string generatedNewFifoQueueUsingFnSubForQueueName = "Messaging_MessageHandlerForNewFifoQueueUsingFnSubForQueueName_Generated.g.cs";
 
+            const string generatedNewFifoQueueWithoutAQueueName = "Messaging_MessageHandlerForNewFifoQueueWithoutAQueueName_Generated.g.cs";
+
             var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "messaging.template")).ToEnvironmentLineEndings();
             var expectedMessageHandlerForPreExistingQueueGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandlerForPreExistingQueue_Generated.g.cs")).ToEnvironmentLineEndings();
             var expectedMessageHandlerForNewQueueGenerated = File.ReadAllText(Path.Combine("Snapshots", "Messaging_MessageHandlerForNewQueue_Generated.g.cs")).ToEnvironmentLineEndings();
             var expectedMessageHandlerForNewFifoQueueUsingFnSubForQueueName = File.ReadAllText(Path.Combine("Snapshots", generatedNewFifoQueueUsingFnSubForQueueName)).ToEnvironmentLineEndings();
+
+            var expectedNewFifoQueueWithoutAQueueName = File.ReadAllText(Path.Combine("Snapshots", generatedNewFifoQueueWithoutAQueueName)).ToEnvironmentLineEndings();
 
             try
             {
@@ -54,6 +58,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                                 typeof(SourceGenerator.Generator),
                                 generatedNewFifoQueueUsingFnSubForQueueName,
                                 SourceText.From(expectedMessageHandlerForNewFifoQueueUsingFnSubForQueueName, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                            ),
+                            (
+                                typeof(SourceGenerator.Generator),
+                                generatedNewFifoQueueWithoutAQueueName,
+                                SourceText.From(expectedNewFifoQueueWithoutAQueueName, Encoding.UTF8, SourceHashAlgorithm.Sha256)
                             )
                         },
                         ExpectedDiagnostics =
@@ -61,6 +70,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_MessageHandlerForPreExistingQueue_Generated.g.cs", expectedMessageHandlerForPreExistingQueueGenerated),
                             new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Messaging_MessageHandlerForNewQueue_Generated.g.cs", expectedMessageHandlerForNewQueueGenerated),
                             new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments(generatedNewFifoQueueUsingFnSubForQueueName, expectedMessageHandlerForNewFifoQueueUsingFnSubForQueueName),
+                            new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments(generatedNewFifoQueueWithoutAQueueName, expectedNewFifoQueueWithoutAQueueName),
                             new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                         }
                     }

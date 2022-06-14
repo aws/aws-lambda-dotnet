@@ -69,5 +69,22 @@ namespace TestServerlessApp
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// This demonstrates (and tests) the ability to create
+        /// a Fifo queue without specifying a QueueName
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        [LambdaFunction]
+        [SqsMessage(
+            FifoQueue = true,
+            QueueName = "${AWS::Stack}MyFifoQueueWithStackEmbedded.fifo")]
+        public Task MessageHandlerForNewFifoQueueWithoutAQueueName(SQSEvent.SQSMessage message, ILambdaContext context)
+        {
+            LambdaLogger.Log($"Message Received: {message.MessageId}");
+            return Task.CompletedTask;
+        }
+
     }
 }
