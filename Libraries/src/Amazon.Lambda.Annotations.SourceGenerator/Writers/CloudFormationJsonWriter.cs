@@ -390,7 +390,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     if (sqsMessageAttribute.QueueName.Contains("$"))
                     {
                         var fnSub = new JObject();
-                        fnSub.Add("Fn::Sub", new JArray(sqsMessageAttribute.QueueName));
+                        fnSub.Add("Fn::Sub", sqsMessageAttribute.QueueName);
                         _jsonWriter.SetToken(queueNamePath, fnSub);
                     }
                     else
