@@ -595,23 +595,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         }
         private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, ISqsQueueSerializable sqsQueueSerializable)
         {
-            string queueHandle;
-            if (!string.IsNullOrEmpty(sqsQueueSerializable.EventQueueARN))
-            {
-                queueHandle = sqsQueueSerializable.EventQueueARN.Split(':').LastOrDefault().Replace("-", string.Empty);
-            }
-            else if (!string.IsNullOrEmpty(sqsQueueSerializable.QueueLogicalId))
-            {
-                queueHandle = sqsQueueSerializable.QueueLogicalId;
-            }
-            else
-            {
-                throw new InvalidOperationException($"Unable to determine the Queue to add to Events.");
-            }
+            string eventHandle = "Sqs";
 
-            var eventName = $"{lambdaFunction.Name}{queueHandle}";
             var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
-            var methodPath = $"{eventPath}.{eventName}";
+            var methodPath = $"{eventPath}.{eventHandle}";
 
             _jsonWriter.SetToken($"{methodPath}.Type", "SQS");
 
@@ -685,7 +672,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
 
-            return eventName;
+            return eventHandle;
         }
     }
 }

@@ -7,7 +7,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedappdeployblueLAVETRYB3JKXSomeQueueName"
+          "Sqs"
         ]
       },
       "Properties": {
@@ -21,7 +21,7 @@
         "PackageType": "Zip",
         "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForPreExistingQueue_Generated::MessageHandlerForPreExistingQueue",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForPreExistingQueueGeneratedappdeployblueLAVETRYB3JKXSomeQueueName": {
+          "Sqs": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 11,
@@ -36,7 +36,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedTestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueue"
+          "Sqs"
         ],
         "SyncedResources": [
           "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueue"
@@ -53,7 +53,7 @@
         "PackageType": "Zip",
         "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForNewQueue_Generated::MessageHandlerForNewQueue",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForNewQueueGeneratedTestServerlessAppMessagingMessageHandlerForNewQueueGeneratedQueue": {
+          "Sqs": {
             "Type": "SQS",
             "Properties": {
               "BatchSize": 12,
@@ -121,7 +121,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedTestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedQueue"
+          "Sqs"
         ],
         "SyncedResources": [
           "TestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedQueue"
@@ -138,7 +138,7 @@
         "PackageType": "Zip",
         "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForNewFifoQueueUsingFnSubForQueueName_Generated::MessageHandlerForNewFifoQueueUsingFnSubForQueueName",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedTestServerlessAppMessagingMessageHandlerForNewFifoQueueUsingFnSubForQueueNameGeneratedQueue": {
+          "Sqs": {
             "Type": "SQS",
             "Properties": {
               "Queue": {
@@ -169,7 +169,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestServerlessAppMessagingMessageHandlerForNewFifoQueueWithoutAQueueNameGeneratedTestServerlessAppMessagingMessageHandlerForNewFifoQueueWithoutAQueueNameGeneratedQueue"
+          "Sqs"
         ],
         "SyncedResources": [
           "TestServerlessAppMessagingMessageHandlerForNewFifoQueueWithoutAQueueNameGeneratedQueue"
@@ -186,7 +186,7 @@
         "PackageType": "Zip",
         "Handler": "TestProject::TestServerlessApp.Messaging_MessageHandlerForNewFifoQueueWithoutAQueueName_Generated::MessageHandlerForNewFifoQueueWithoutAQueueName",
         "Events": {
-          "TestServerlessAppMessagingMessageHandlerForNewFifoQueueWithoutAQueueNameGeneratedTestServerlessAppMessagingMessageHandlerForNewFifoQueueWithoutAQueueNameGeneratedQueue": {
+          "Sqs": {
             "Type": "SQS",
             "Properties": {
               "Queue": {
