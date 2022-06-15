@@ -387,15 +387,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 try
                 {
                     var queueNamePath = $"{propertiesPath}.{nameof(ISqsMessage.QueueName)}";
-                    if (sqsMessageAttribute.QueueName.Contains("$"))
+
+                    if (sqsMessageAttribute.QueueName!= null)
                     {
-                        var fnSub = new JObject();
-                        fnSub.Add("Fn::Sub", sqsMessageAttribute.QueueName);
-                        _jsonWriter.SetToken(queueNamePath, fnSub);
+                        _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.QueueName);
                     }
                     else
                     {
-                        WriteOrRemove(queueNamePath, sqsMessageAttribute.QueueName, string.Empty);
+                        _jsonWriter.RemoveToken(queueNamePath);
                     }
                 }
                 catch (Exception e)

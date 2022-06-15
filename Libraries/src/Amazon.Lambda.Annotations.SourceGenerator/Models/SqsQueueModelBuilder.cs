@@ -1,21 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
     public static class SqsQueueModelBuilder
     {
-        public static SqsQueueModel Build(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
+        public static ISqsQueueSerializable Build(ILambdaFunctionSerializable lambdaFunction, SqsMessageAttribute sqsMessageAttribute)
         {
-            return new SqsQueueModel()
+            ISqsQueueSerializable sqsQueueModel = new SqsQueueModel()
             {
-                // set the QueueName to the requested QueueName if requested
-                // else if not a FifoQueue, leave it null
-                // else set it to the lambdaFunction name + "Queue.fifo"
-                QueueName = 
-                    !string.IsNullOrEmpty(sqsMessageAttribute.QueueName) ? sqsMessageAttribute.QueueName 
-                        : !sqsMessageAttribute.FifoQueue ? null: lambdaFunction.Name + "Queue.fifo" ,
                 DelaySeconds = sqsMessageAttribute.DelaySeconds,
                 DeduplicationScope = sqsMessageAttribute.DeduplicationScope,
                 KmsDataKeyReusePeriodSeconds = sqsMessageAttribute.KmsDataKeyReusePeriodSeconds,
@@ -39,6 +34,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 // the function is using an existing queue
                 QueueLogicalId = string.IsNullOrEmpty(sqsMessageAttribute.EventQueueARN) ? lambdaFunction.Name + "Queue" : null
             };
+            if (!string.IsNullOrEmpty(sqsMessageAttribute.QueueName))
+            {
+                if (sqsMessageAttribute.QueueName.TrimStart(' ','\t').StartsWith("{")
+                    && sqsMessageAttribute.QueueName.TrimEnd(' ', '\t').EndsWith("}"))
+                {
+                    sqsQueueModel.QueueName = JObject.Parse(sqsMessageAttribute.QueueName);
+                }
+                else
+                {
+                    sqsQueueModel.QueueName = new JValue(sqsMessageAttribute.QueueName);
+
+                }
+            }
+            else if (sqsMessageAttribute.FifoQueue)
+            {
+                sqsQueueModel.QueueName = new JValue(lambdaFunction.Name + "Queue.fifo");
+            }
+
+            return sqsQueueModel;
         }
     }
 }

@@ -167,10 +167,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                 }
             }
 
-            if (data.FifoQueue && !string.IsNullOrEmpty(data.QueueName) && !data.QueueName.EndsWith(".fifo"))
-            {
-                throw new ArgumentOutOfRangeException(nameof(SqsMessageAttribute.QueueName), $"If using {nameof(SqsMessageAttribute.FifoQueue)} = true, {nameof(SqsMessageAttribute.QueueName)} must end in '.fifo'");
-            }
+            //if (data.FifoQueue && !string.IsNullOrEmpty(data.QueueName) && !data.QueueName.EndsWith(".fifo"))
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(SqsMessageAttribute.QueueName), $"If using {nameof(SqsMessageAttribute.FifoQueue)} = true, {nameof(SqsMessageAttribute.QueueName)} must end in '.fifo'");
+            //}
 
             return data;
         }
