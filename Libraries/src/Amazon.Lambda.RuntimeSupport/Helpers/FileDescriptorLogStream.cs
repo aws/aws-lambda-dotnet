@@ -27,9 +27,11 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// <returns></returns>
         public static StreamWriter GetWriter(string fileDescriptorId)
         {
-            SafeFileHandle handle = new SafeFileHandle(new IntPtr(int.Parse(fileDescriptorId)), false);
-            var writer = _writers.GetOrAdd(fileDescriptorId,
-                (x) => InitializeWriter(new FileStream(handle, FileAccess.Write)));
+            var writer = _writers.GetOrAdd(fileDescriptorId, 
+                (x) => {
+                    SafeFileHandle handle = new SafeFileHandle(new IntPtr(int.Parse(fileDescriptorId)), false);
+                    return InitializeWriter(new FileStream(handle, FileAccess.Write));
+                });
             return writer;
         }
 
