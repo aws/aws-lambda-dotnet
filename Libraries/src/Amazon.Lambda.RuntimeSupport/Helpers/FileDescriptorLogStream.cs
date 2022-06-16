@@ -15,6 +15,11 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
     {
         private readonly static ConcurrentDictionary<string, StreamWriter> _writers = new ConcurrentDictionary<string, StreamWriter>();
 
+        // max cloudwatch log event size, 256k - 26 bytes of overhead.
+        internal const int MaxCloudWatchLogEventSize = 256 * 1024 - 26;
+        internal const int LambdaTelemetryLogHeaderLength = 8;
+        internal const uint LambdaTelemetryLogHeaderFrameType = 0xa55a0001;
+
         /// <summary>
         /// Get the StreamWriter for the particular file descriptor ID. If the same ID is passed the same StreamWriter instance is returned.
         /// </summary>
@@ -22,10 +27,29 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// <returns></returns>
         public static StreamWriter GetWriter(string fileDescriptorId)
         {
+            var writer = _writers.GetOrAdd(fileDescriptorId, 
+                (x) => {
+                    SafeFileHandle handle = new SafeFileHandle(new IntPtr(int.Parse(fileDescriptorId)), false);
+                    return InitializeWriter(new FileStream(handle, FileAccess.Write));
+                });
+            return writer;
+        }
+
+        /// <summary>
+        /// Initialize a StreamWriter for the given Stream.
+        /// This method is internal as it is tested in Amazon.RuntimeSupport.Tests
+        /// </summary>
+        /// <param name="fileDescriptorStream"></param>
+        /// <returns></returns>
+        internal static StreamWriter InitializeWriter(Stream fileDescriptorStream)
+        {
             // AutoFlush must be turned out otherwise the StreamWriter might not send the data to the stream before the Lambda function completes.
             // Set the buffer size to the same max size as CloudWatch Logs records.
-            var writer = _writers.GetOrAdd(fileDescriptorId, (x) => new StreamWriter(new FileDescriptorLogStream(fileDescriptorId), Encoding.UTF8, 256 * 1024) { AutoFlush = true });
-            return writer;
+            // Encoder has encoderShouldEmitUTF8Identifier = false as Lambda FD will assume UTF-8 so there is no need to emit an extra log entry.
+            // In fact this extra log entry is cast to UTF-8 and results in an empty log entry which will be rejected by CloudWatch Logs.
+            return new StreamWriter(new FileDescriptorLogStream(fileDescriptorStream),
+                    new UTF8Encoding(false), MaxCloudWatchLogEventSize)
+                { AutoFlush = true };
         }
 
         /// <summary>
@@ -40,16 +64,14 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// </summary>
         private class FileDescriptorLogStream : Stream
         {
-            private const uint FRAME_TYPE = 0xa55a0001;
             private readonly Stream _fileDescriptorStream;
             private readonly byte[] _frameTypeBytes;
 
-            public FileDescriptorLogStream(string fileDescriptorId)
+            public FileDescriptorLogStream(Stream logStream)
             {
-                SafeFileHandle handle = new SafeFileHandle(new IntPtr(int.Parse(fileDescriptorId)), false);
-                _fileDescriptorStream = new FileStream(handle, FileAccess.Write);
+                _fileDescriptorStream = logStream;
 
-                _frameTypeBytes = BitConverter.GetBytes(FRAME_TYPE);
+                _frameTypeBytes = BitConverter.GetBytes(LambdaTelemetryLogHeaderFrameType);
                 if (BitConverter.IsLittleEndian)
                 {
                     Array.Reverse(_frameTypeBytes);
@@ -69,7 +91,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     Array.Reverse(messageLengthBytes);
                 }
 
-                var typeAndLength = ArrayPool<byte>.Shared.Rent(8);
+                var typeAndLength = ArrayPool<byte>.Shared.Rent(LambdaTelemetryLogHeaderLength);
                 try
                 {
                     Buffer.BlockCopy(_frameTypeBytes, 0, typeAndLength, 0, 4);
