@@ -53,6 +53,35 @@ public class Functions
 }
 ```
 
+## Using References To Other Resources and Parameters in the template
+
+To use a reference to a Resource or Parameter in the template, prefix the value with `@`.  Example shows using CloudFormation template Parameter named `LambdaRoleParameter` for the role of the Lambda function.
+```csharp
+public class Functions
+{
+    [LambdaFunction( Role="@LambdaRoleParameter")]
+    [RestApi("/plus/{x}/{y}")]
+    public int Plus(int x, int y)
+    {
+        return x + y;
+    }
+}
+```
+
+and place in your template:
+
+```
+
+  "Parameters": {
+    "LambdaExecutionRole": {
+      "Type": "String"
+    }
+  },
+
+```
+
+The above two examples when used together will the use the value of LambdaRoleParameter as the role during deployment.
+
 ## Source Generator
 
 To bridge the gap from Lambda Annotations programming model to the normal programming model a .NET source generator is included in this package.
