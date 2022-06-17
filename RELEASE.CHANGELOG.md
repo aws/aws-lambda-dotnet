@@ -1,4 +1,8 @@
 ### Release 2022-05-26
+* **Amazon.Lambda.RuntimeSupport (1.8.2)**
+  * Fixed issue with large log messages triggering an extra empty CloudWatch Log record being created.
+  
+### Release 2022-05-26
 * **Amazon.Lambda.RuntimeSupport (1.8.1)**
   * Fixed issue when log messages were larger then 1K they would be broken up over multiple CloudWatch Log records.
 * **Amazon.Lambda.AspNetCoreServer.Hosting (1.3.1)**
