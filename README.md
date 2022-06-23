@@ -86,7 +86,7 @@ To migrate an existing project away from the older project tool, you need to edi
 
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
-    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.3.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="2.1.0" />
   </ItemGroup>
 </Project>
 ```
