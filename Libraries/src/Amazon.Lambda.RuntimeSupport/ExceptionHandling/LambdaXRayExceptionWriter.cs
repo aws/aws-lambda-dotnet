@@ -27,16 +27,7 @@ namespace Amazon.Lambda.RuntimeSupport
             string workingDirJson = TabString($"\"{WORKING_DIR}\": \"{workingDir}\"", 1);
             string exceptionJson = TabString($"\"{EXCEPTION}\": [ {exceptionTxt} ]", 1);
 
-            var paths = new string[0];
-            // Build the paths list by getting all the unique file names in the stack trace elements
-            if (ex.StackFrames != null)
-            {
-                paths = (
-                    from sf in ex.StackFrames
-                    where sf.Path != null
-                    select "\"" + JsonExceptionWriterHelpers.EscapeStringForJson(sf.Path) + "\""
-                ).Distinct().ToArray();
-            }
+            var paths = ex.StackTrace.Split(new string[] { "at " }, StringSplitOptions.None).Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
 
             StringBuilder pathsBuilder = new StringBuilder();
             pathsBuilder.Append(TabString($"\"{PATHS}\": ", 1));
@@ -54,7 +45,6 @@ namespace Amazon.Lambda.RuntimeSupport
             // Grab the elements we want to capture
             string message = JsonExceptionWriterHelpers.EscapeStringForJson(ex.ErrorMessage);
             string type = JsonExceptionWriterHelpers.EscapeStringForJson(ex.ErrorType);
-            var stackTrace = ex.StackFrames;
 
             // Create the JSON lines for each non-null element
             string messageJson = null;
@@ -66,7 +56,7 @@ namespace Amazon.Lambda.RuntimeSupport
             }
 
             string typeJson = TabString($"\"{ERROR_TYPE}\": \"{type}\"", tab + 1);
-            string stackTraceJson = GetStackTraceJson(stackTrace, tab + 1);
+            string stackTraceJson = GetStackTraceJson(ex.OriginalException, tab + 1);
 
             // Add each non-null element to the json elements list
             string[] jsonElements = GetNonNullElements(typeJson, messageJson, stackTraceJson);
@@ -74,20 +64,16 @@ namespace Amazon.Lambda.RuntimeSupport
         }
 
         // Craft the JSON element (ex: "stack": [ {...}, {...} ]) for the stack trace
-        private static string GetStackTraceJson(StackFrameInfo[] stackTrace, int tab)
+        private static string GetStackTraceJson(Exception exception, int tab)
         {
             // Null stack trace means the entire stack trace json should be null, and therefore not included
-            if (stackTrace == null)
+            if (exception == null)
             {
                 return null;
             }
 
             // Convert each ExceptionStackFrameResponse object to string using CreateStackFrameJson
-            string[] stackTraceElements = (
-                    from frame in stackTrace
-                    where frame != null
-                    select CreateStackFrameJson(frame, tab + 1)
-                ).ToArray();
+            string[] stackTraceElements = exception.StackTrace.Split(new string[] { "at " }, StringSplitOptions.None).Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
 
             // If there aren't any frames, return null and therefore don't include the stack trace
             if (stackTraceElements.Length == 0)

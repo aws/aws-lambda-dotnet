@@ -33,7 +33,7 @@ namespace Amazon.Lambda.RuntimeSupport
             Path = stackFrame.GetFileName();
             Line = stackFrame.GetFileLineNumber();
 
-            var method = stackFrame.GetMethod();
+            Type method = null;// This isn't used anymore because it causes trim warnings. stackFrame.GetMethod();
             if (method != null)
             {
                 var methodTypeName = method.DeclaringType?.Name;

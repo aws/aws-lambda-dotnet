@@ -29,7 +29,11 @@ namespace Amazon.Lambda.RuntimeSupport
     {
         public string ErrorMessage { get; set; }
         public string ErrorType { get; set; }
-        public StackFrameInfo[] StackFrames { get; set; }
+
+// Can't use StackFrames because:
+// StackFrameInfo.StackFrameInfo(StackFrame): Using member 'System.Diagnostics.StackFrame.GetMethod()'
+// which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code.
+        //public StackFrameInfo[] StackFrames { get; set; }
         public string StackTrace { get; set; }
 
         public ExceptionInfo InnerException { get; set; }
@@ -47,26 +51,27 @@ namespace Amazon.Lambda.RuntimeSupport
             ErrorType = exception.GetType().Name;
             ErrorMessage = exception.Message;
 
-            if (!string.IsNullOrEmpty(exception.StackTrace))
-            {
-                StackTrace stackTrace = new StackTrace(exception, true);
-                StackTrace = stackTrace.ToString();
+            //if (!string.IsNullOrEmpty(exception.StackTrace))
+            //{
+            //    StackTrace stackTrace = new StackTrace(exception, true);
+            //    StackTrace = stackTrace.ToString();
 
-                // Only extract the stack frames like this for the top-level exception
-                // This is used for Xray Exception serialization
-                if (isNestedException || stackTrace?.GetFrames() == null)
-                {
-                    StackFrames = new StackFrameInfo[0];
-                }
-                else
-                {
-                    StackFrames = (
-                        from sf in stackTrace.GetFrames()
-                        where sf != null
-                        select new StackFrameInfo(sf)
-                    ).ToArray();
-                }
-            }
+            //    // Only extract the stack frames like this for the top-level exception
+            //    // This is used for Xray Exception serialization
+            //    if (isNestedException || stackTrace?.GetFrames() == null)
+            //    {
+            //        StackFrames = new StackFrameInfo[0];
+            //    }
+            //    else
+            //    {
+            //        var a = stackTrace.
+            //        StackFrames = (
+            //            from sf in stackTrace.GetFrames()
+            //            where sf != null
+            //            select new StackFrameInfo(sf)
+            //        ).ToArray();
+            //    }
+            //}
 
             if (exception.InnerException != null)
             {

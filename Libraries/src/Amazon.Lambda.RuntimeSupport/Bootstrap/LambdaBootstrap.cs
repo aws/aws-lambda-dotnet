@@ -20,6 +20,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
 using Amazon.Lambda.RuntimeSupport.Helpers;
+#if NET6_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -112,9 +115,12 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns>A Task that represents the operation.</returns>
+#if NET6_0_OR_GREATER
+        [RequiresUnreferencedCode("Use RunAsyncTrimmable instead. This method is not trim-safe since it uses reflection that may attempt to use types that have already been trimmed.")]
+#endif
         public async Task RunAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            if(UserCodeInit.IsCallPreJit())
+            if (UserCodeInit.IsCallPreJit())
             {
                 this._logger.LogInformation("PreJit: CultureInfo");
                 UserCodeInit.LoadStringCultureInfo();
@@ -122,6 +128,24 @@ namespace Amazon.Lambda.RuntimeSupport
                 this._logger.LogInformation("PreJit: Amazon.Lambda.Core");
                 UserCodeInit.PreJitAssembly(typeof(Amazon.Lambda.Core.ILambdaContext).Assembly);
             }
+
+            await RunAsyncCore(cancellationToken);
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task RunNativeAotAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            this._logger.LogInformation("Running in RunNativeAotAsync.");
+
+            await RunAsyncCore(cancellationToken);
+        }
+
+        private async Task RunAsyncCore(CancellationToken cancellationToken)
+        {
 
             // For local debugging purposes this environment variable can be set to run a Lambda executable assembly and process one event
             // and then shut down cleanly. Useful for profiling or running local tests with the .NET Lambda Test Tool. This environment
