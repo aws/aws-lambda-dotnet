@@ -14,7 +14,7 @@
     <ProjectReference Include="..\..\..\src\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="FSharp.Core" Version="4.2.3" />
     <PackageReference Include="Fable.JsonConverter" Version="1.0.7" />
   </ItemGroup>
