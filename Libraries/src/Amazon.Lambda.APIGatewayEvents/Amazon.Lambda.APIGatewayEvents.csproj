@@ -6,7 +6,7 @@
     <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>    
     <Description>Amazon Lambda .NET Core support - API Gateway package.</Description>
     <AssemblyTitle>Amazon.Lambda.APIGatewayEvents</AssemblyTitle>
-    <VersionPrefix>2.4.1</VersionPrefix>
+    <VersionPrefix>2.5.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.APIGatewayEvents</AssemblyName>
     <PackageId>Amazon.Lambda.APIGatewayEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
@@ -25,7 +25,7 @@
   </ItemGroup>	
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
 </Project>
