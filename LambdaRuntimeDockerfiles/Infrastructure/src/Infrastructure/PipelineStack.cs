@@ -71,10 +71,13 @@ namespace Infrastructure
                 .OrderBy(variable => variable);
 
             // Self mutation
+            // TODO: DOTNET-6085 - Migration from CDKPipeline to CodePipeline
+            const string cdkCliVersion = "1.159.0";
             var pipeline = new CdkPipeline(this, "Pipeline", new CdkPipelineProps
             {
                 PipelineName = $"{id}-{framework}",
                 CloudAssemblyArtifact = outputArtifact,
+                CdkCliVersion = cdkCliVersion,
 
                 SourceAction = new CodeCommitSourceAction(new CodeCommitSourceActionProps
                 {
@@ -94,7 +97,7 @@ namespace Infrastructure
                     Subdirectory = "LambdaRuntimeDockerfiles/Infrastructure",
                     InstallCommands = new[]
                     {
-                        "npm install -g aws-cdk",
+                        $"npm install -g aws-cdk@{cdkCliVersion}",
                     },
                     BuildCommands = new[] {"dotnet build"},
                     SynthCommand = "cdk synth",

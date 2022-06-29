@@ -1,3 +1,21 @@
+### Release 2022-06-28
+* **BlueprintPackager**
+  * Bump Newtonsoft.Json to 13.0.1
+* **VS2017 Blueprints**
+  * Bump Newtonsoft.Json to 13.0.1
+* **VS2019 Blueprints**
+  * Bump Newtonsoft.Json to 13.0.1
+* **Amazon.Lambda.Serialization.Json (2.1.0)**
+  * Bump Newtonsoft.Json to 13.0.1
+* **Amazon.Lambda.APIGatewayEvents (2.5.0)**
+  * Bump Newtonsoft.Json to 13.0.1
+* **Amazon.Lambda.TestTool-3.1 (0.12.3)**
+  * Bump Newtonsoft.Json to 13.0.1
+* **Amazon.Lambda.TestTool-5.0 (0.12.3)**
+  * Bump Newtonsoft.Json to 13.0.1
+* **Amazon.Lambda.TestTool-6.0 (0.12.3)**
+  * Bump Newtonsoft.Json to 13.0.1
+
 ### Release 2022-05-26
 * **Amazon.Lambda.RuntimeSupport (1.8.2)**
   * Fixed issue with large log messages triggering an extra empty CloudWatch Log record being created.

@@ -25,7 +25,8 @@
         <file src="Amazon.Lambda.Annotations\bin\Release\netstandard2.0\Amazon.Lambda.Annotations.dll" target="lib/netstandard2.0" />
 
         <!-- Include every dependency manually for analyzer, whenever a new dependency is added, it has to be added here. -->
-        <file src="Amazon.Lambda.Annotations.SourceGenerator\bin\Release\netstandard2.0\Amazon.Lambda.Annotations.dll" target="analyzers\dotnet\cs" />
+        <!-- NOTE: Project dependencies should come from their own bin folder to make sure a code signed binary is packed -->
+        <file src="Amazon.Lambda.Annotations\bin\Release\netstandard2.0\Amazon.Lambda.Annotations.dll" target="analyzers\dotnet\cs" />
         <file src="Amazon.Lambda.Annotations.SourceGenerator\bin\Release\netstandard2.0\Amazon.Lambda.Annotations.SourceGenerator.dll" target="analyzers\dotnet\cs" />
         <file src="Amazon.Lambda.Annotations.SourceGenerator\bin\Release\netstandard2.0\Newtonsoft.Json.dll" target="analyzers\dotnet\cs" />
     </files>
