@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.1'">
-    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.1.5">
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.1.15">
 <Publish Condition="'%(PackageReference.Version)' == ''">true</Publish>
 </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="1.1.0" />
