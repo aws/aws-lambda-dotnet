@@ -344,15 +344,15 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             internal void FormattedWriteBytes(string level, ReadOnlySpan<byte> message)
             {
+                if (_innerOutputStream is null)
+                {
+                    // the telemetry FD output stream is not present, we delegate to FormattedWriteLine()
+                    FormattedWriteLine(level, _innerWriter.Encoding.GetString(message));
+                    return;
+                }
+
                 lock (LockObject)
                 {
-                    if (_innerOutputStream is null)
-                    {
-                        // the telemetry FD output stream is not present, we delegate to WriteLine()
-                        _innerWriter.WriteLine(_innerWriter.Encoding.GetString(message));
-                        return;
-                    }
-
                     var displayLevel = level;
                     if (Enum.TryParse<LogLevel>(level, true, out var levelEnum))
                     {
