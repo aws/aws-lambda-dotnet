@@ -170,6 +170,8 @@ namespace CustomRuntimeFunctionTest
 
             Amazon.Lambda.Core.LambdaLogger.Log("A fake message level");
 
+            Amazon.Lambda.Core.LambdaLogger.Log(Encoding.UTF8.GetBytes("a fake new message \n hello"));
+
             return Task.FromResult(GetInvocationResponse(nameof(LoggingTest), true));
         }
 

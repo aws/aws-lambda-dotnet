@@ -4,6 +4,9 @@ using System.Buffers;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Concurrent;
+#if NET6_0_OR_GREATER
+using System.Buffers.Binary;
+#endif
 
 namespace Amazon.Lambda.RuntimeSupport.Helpers
 {
@@ -27,7 +30,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// <returns></returns>
         public static StreamWriter GetWriter(string fileDescriptorId)
         {
-            var writer = _writers.GetOrAdd(fileDescriptorId, 
+            var writer = _writers.GetOrAdd(fileDescriptorId,
                 (x) => {
                     SafeFileHandle handle = new SafeFileHandle(new IntPtr(int.Parse(fileDescriptorId)), false);
                     return InitializeWriter(new FileStream(handle, FileAccess.Write));
@@ -106,6 +109,29 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     ArrayPool<byte>.Shared.Return(typeAndLength);
                 }
             }
+
+#if NET6_0_OR_GREATER
+            public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                while (buffer.Length > 0)
+                {
+                    var bufferToWrite = buffer.Length > MaxCloudWatchLogEventSize ? buffer.Slice(0, MaxCloudWatchLogEventSize) : buffer;
+                    DoWriteBuffer(bufferToWrite);
+                    buffer = buffer.Slice(bufferToWrite.Length);
+                }
+            }
+
+            private void DoWriteBuffer(ReadOnlySpan<byte> buffer)
+            {
+                Span<byte> typeAndLength = stackalloc byte[LambdaTelemetryLogHeaderLength];
+                BinaryPrimitives.WriteUInt32BigEndian(typeAndLength[..4], LambdaTelemetryLogHeaderFrameType);
+                BinaryPrimitives.WriteInt32BigEndian(typeAndLength.Slice(4, 4), buffer.Length);
+
+                _fileDescriptorStream.Write(typeAndLength);
+                _fileDescriptorStream.Write(buffer);
+                _fileDescriptorStream.Flush();
+            }
+#endif
 
             #region Not implemented read and seek operations
             public override bool CanRead => false;

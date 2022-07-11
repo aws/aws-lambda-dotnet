@@ -22,6 +22,11 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
             WriteAction(TrimTrailingNullBytes(buffer).Take(count).ToArray(), offset, count);
         }
 
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            Write(buffer.ToArray(), 0, buffer.Length);
+        }
+
         private static IEnumerable<byte> TrimTrailingNullBytes(IEnumerable<byte> buffer)
         {
             // Trim trailing null bytes to make testing assertions easier

@@ -389,10 +389,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 var userCodeLoader = new UserCodeLoader(handler, _internalLogger);
                 var handlerWrapper = HandlerWrapper.GetHandlerWrapper(userCodeLoader.Invoke);
                 var initializer = new UserCodeInitializer(userCodeLoader, _internalLogger);
-                var bootstrap = new LambdaBootstrap(handlerWrapper, initializer.InitializeAsync)
-                {
-                    Client = testRuntimeApiClient
-                };
+                using var bootstrap = new LambdaBootstrap(new System.Net.Http.HttpClient(), handlerWrapper.Handler, initializer.InitializeAsync, true, testRuntimeApiClient);
 
                 if (assertLoggedByInitialize != null)
                 {

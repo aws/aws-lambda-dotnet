@@ -107,6 +107,25 @@ namespace Amazon.Lambda.RuntimeSupport
         }
 
         /// <summary>
+        /// Create a LambdaBootstrap that will call the given initializer and handler.
+        /// </summary>
+        /// <param name="httpClient">The HTTP client to use with the Lambda runtime.</param>
+        /// <param name="handler">Delegate called for each invocation of the Lambda function.</param>
+        /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
+        /// <param name="ownsHttpClient">Whether the instance owns the HTTP client and should dispose of it.</param>
+        /// <param name="runtimeApiClient">Instance of <see cref="IRuntimeApiClient"/> to call the runtime API.</param>
+        /// <returns></returns>
+        internal LambdaBootstrap(HttpClient httpClient, LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer, bool ownsHttpClient, IRuntimeApiClient runtimeApiClient)
+        {
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _handler = handler ?? throw new ArgumentNullException(nameof(handler));
+            _ownsHttpClient = ownsHttpClient;
+            _initializer = initializer;
+            _httpClient.Timeout = RuntimeApiHttpTimeout;
+            Client = runtimeApiClient;
+        }
+
+        /// <summary>
         /// Run the initialization Func if provided.
         /// Then run the invoke loop, calling the handler for each invocation.
         /// </summary>
