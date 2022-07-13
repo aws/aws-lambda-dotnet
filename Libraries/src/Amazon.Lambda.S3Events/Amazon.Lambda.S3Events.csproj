@@ -4,16 +4,12 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - S3Events package.</Description>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.S3Events</AssemblyTitle>
     <VersionPrefix>2.0.1</VersionPrefix>
     <AssemblyName>Amazon.Lambda.S3Events</AssemblyName>
     <PackageId>Amazon.Lambda.S3Events</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-  </ItemGroup>
 
 </Project>

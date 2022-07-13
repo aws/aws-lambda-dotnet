@@ -2,16 +2,14 @@ namespace Amazon.Lambda.S3Events
 {
     using System;
     using System.Collections.Generic;
-
-    using Newtonsoft.Json;
+    using System.Runtime.Serialization;
 
     /// <summary>
     /// AWS S3 event
     /// http://docs.aws.amazon.com/lambda/latest/dg/with-s3.html
     /// http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html#eventsources-s3-put
-
-
     /// </summary>
+
     public class S3Event
     {
 
@@ -123,19 +121,22 @@ namespace Amazon.Lambda.S3Events
         /// <summary>
         /// This class holds the response elements.
         /// </summary>
+
+        [DataContract]
         public class ResponseElementsEntity
         {
             /// <summary>
             /// Gets and sets the XAmzId2 Property. This is the Amazon S3 host that processed the request.
             /// </summary>
-
-            [JsonProperty("x-amz-id-2")]
+            [DataMember(Name = "x-amz-id-2", EmitDefaultValue = false)]
+            [System.Text.Json.Serialization.JsonPropertyName("x-amz-id-2")]
             public string XAmzId2 { get; set; }
 
             /// <summary>
             /// Gets and sets the XAmzRequestId. This is the Amazon S3 generated request ID.
             /// </summary>
-            [JsonProperty("x-amz-request-id")]
+            [DataMember(Name = "x-amz-request-id", EmitDefaultValue = false)]
+            [System.Text.Json.Serialization.JsonPropertyName("x-amz-request-id")]
             public string XAmzRequestId { get; set; }
         }
 
