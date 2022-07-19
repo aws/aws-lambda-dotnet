@@ -33,7 +33,7 @@
 <h4>Connect Executable Assembly Functions</h4>
 <p>
     To test Lambda function built as an executable assembly the environment variable <b>AWS_LAMBDA_RUNTIME_API</b> must be set to 
-    <b>localhost:@httpContextAccessor.HttpContext.Connection.LocalPort</b>. This will tell Amazon.Lambda.RuntimeSupport to connect to this instance of the test tool for Lambda
+    <b>@httpContextAccessor.HttpContext.Request.Host</b>. This will tell Amazon.Lambda.RuntimeSupport to connect to this instance of the test tool for Lambda
     events to process. To configure AWS credentials and region for the function the environment variables <b>AWS_PROFILE</b> and <b>AWS_REGION</b> can be set. 
 </p>
 <p>
@@ -45,7 +45,7 @@
     "Lambda Runtime API": {
       "commandName": "Project",
       "environmentVariables": {
-        "AWS_LAMBDA_RUNTIME_API": "localhost:5050"
+        "AWS_LAMBDA_RUNTIME_API": "@httpContextAccessor.HttpContext.Request.Host"
         "AWS_PROFILE": "test-profile"
         "AWS_REGION": "us-west-2"
       }
@@ -54,7 +54,7 @@
 }
     </pre>
 <h4>Programmatically Queue Events</h4>
-To queue an event to be processed without using the UI send a <b>POST</b> request to <b>http://localhost:@httpContextAccessor.HttpContext.Connection.LocalPort/runtime/test-event</b> with the 
+To queue an event to be processed without using the UI send a <b>POST</b> request to <b>http://@httpContextAccessor.HttpContext.Request.Host/runtime/test-event</b> with the 
 JSON Lambda event document as the POST request's body.
 </p>
 
@@ -97,6 +97,8 @@ These options are valid for either mode the Lambda test tool is running in.
 
 These options are valid when using the web interface to select and execute the Lambda code.
 
+        --host &lt;hostname-or-ip-address&gt;       The hostname or IP address used for the test tool's web interface.
+                                              Any host other than an explicit IP address or localhost (e.g. '*', '+' or 'example.com') binds to all public IPv4 and IPv6 addresses. 
         --port &lt;port-number&gt;                  The port number used for the test tool's web interface.
         --no-launch-window                    Disable auto launching the test tool's web interface in a browser.
 
@@ -117,6 +119,12 @@ These options are valid in the no web interface mode.
                                               when executing from an IDE so you can avoid having the output window immediately disappear after
                                               executing the Lambda code. The default value is true.
 </pre>
+
+<p>
+    <i>Note</i>: The <b>--host</b> argument do not to bind to specific hostname as it's value is largely ignored by 
+    <a href="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints?view=aspnetcore-6.0#url-prefixes-1" target="_blank">web hosting</a>. 
+    This is mostly used to expose web interface through docker by binding to all public IP addresses.
+</p>
 
 <p class="faq-answer">
     For command line arguments not set the defaults and config file will be used to determine the .NET Lambda code to run. For example if you just use the <b>--no-ui</b> argument then the

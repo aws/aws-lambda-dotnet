@@ -1,12 +1,13 @@
 ﻿using System;
-using System.IO;
 
 namespace Amazon.Lambda.TestTool
 {
     public class CommandLineOptions
     {
+        public string Host { get; set; }
+
         public int? Port { get; set; }
-        
+
         public bool NoLaunchWindow { get; set; }
 
         public string Path { get; set; }
@@ -20,9 +21,9 @@ namespace Amazon.Lambda.TestTool
         public string Payload { get; set; }
 
         public string AWSProfile { get; set; }
-        
+
         public string AWSRegion { get; set; }
-        
+
         public bool ShowHelp { get; set; }
 
         public bool PauseExit { get; set; } = true;
@@ -38,10 +39,14 @@ namespace Amazon.Lambda.TestTool
                 {
                     case "--help":
                         options.ShowHelp = GetNextBoolValue(i, out skipAhead);
-                        if(skipAhead)
+                        if (skipAhead)
                         {
                             i++;
                         }
+                        break;
+                    case "--host":
+                        options.Host = GetNextStringValue(i);
+                        i++;
                         break;
                     case "--port":
                         options.Port = GetNextIntValue(i);
@@ -49,15 +54,15 @@ namespace Amazon.Lambda.TestTool
                         break;
                     case "--no-launch-window":
                         options.NoLaunchWindow = GetNextBoolValue(i, out skipAhead);
-                        if(skipAhead)
+                        if (skipAhead)
                         {
                             i++;
                         }
                         break;
                     case "--path":
-                      options.Path = GetNextStringValue(i);
-                      i++;
-                      break;
+                        options.Path = GetNextStringValue(i);
+                        i++;
+                        break;
                     case "--profile":
                         options.AWSProfile = GetNextStringValue(i);
                         i++;
@@ -94,15 +99,15 @@ namespace Amazon.Lambda.TestTool
                         break;
                 }
             }
-            
+
             return options;
 
             string GetNextStringValue(int currentIndex)
             {
                 var valueIndex = currentIndex + 1;
-                if(valueIndex == args.Length)
+                if (valueIndex == args.Length)
                     throw new CommandLineParseException($"Missing value for {args[currentIndex]}");
-                
+
                 return args[valueIndex];
             }
 
@@ -114,7 +119,7 @@ namespace Amazon.Lambda.TestTool
                 }
                 throw new CommandLineParseException($"Value for {args[currentIndex]} is not a valid integer");
             }
-            
+
             bool GetNextBoolValue(int currentIndex, out bool skipAhead)
             {
                 if (currentIndex + 1 < args.Length && !args[currentIndex + 1].StartsWith("--") && bool.TryParse(GetNextStringValue(currentIndex), out var value))
@@ -136,7 +141,7 @@ namespace Amazon.Lambda.TestTool
             Console.WriteLine("to execute with in the Lambda test tool. The second mode skips using the web interface and the Lambda code is identified");
             Console.WriteLine("using the commandline switches as described below. To switch to the no web interface mode use the --no-ui command line switch.");
             Console.WriteLine();
-            
+
             Console.WriteLine("These options are valid for either mode the Lambda test tool is running in.");
             Console.WriteLine();
             Console.WriteLine("\t--path <directory>                    The path to the lambda project to execute. If not set then the current directory will be used.");
@@ -147,7 +152,7 @@ namespace Amazon.Lambda.TestTool
             Console.WriteLine("\t--port <port-number>                  The port number used for the test tool's web interface.");
             Console.WriteLine("\t--no-launch-window                    Disable auto launching the test tool's web interface in a browser.");
             Console.WriteLine();
-            
+
             Console.WriteLine("These options are valid in the no web interface mode.");
             Console.WriteLine();
             Console.WriteLine("\t--no-ui                               Disable launching the web interface and immediately execute the Lambda code.");

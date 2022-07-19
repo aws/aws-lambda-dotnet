@@ -2,14 +2,11 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Xunit;
 
 namespace Amazon.Lambda.TestTool.BlazorTester.Tests
@@ -19,7 +16,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
         [Fact]
         public async Task ExecuteEventSuccessfully()
         {
-            using var session = await TestSession.CreateSessionAsync(10111);
+            using var session = await TestSession.CreateSessionAsync(host: "*", port: 10111);
 
             using var queueResponse = await session.Client.SendAsync(new HttpRequestMessage
             {
@@ -61,7 +58,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
         [Fact]
         public async Task ExecuteEventFailure()
         {
-            using var session = await TestSession.CreateSessionAsync(10112);
+            using var session = await TestSession.CreateSessionAsync(host: "example.com", port: 10112);
 
             using var queueResponse = await session.Client.SendAsync(new HttpRequestMessage
             {
@@ -107,7 +104,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
         [Fact]
         public async Task InitError()
         {
-            using var session = await TestSession.CreateSessionAsync(10113);
+            using var session = await TestSession.CreateSessionAsync(host: "127.0.0.1", port: 10113);
 
             using var queueResponse = await session.Client.SendAsync(new HttpRequestMessage
             {
@@ -124,30 +121,40 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
 
             private CancellationTokenSource Source { get; set; }
 
+            private string Host { get; set; }
+
             private int Port { get; set; }
 
-            private IWebHost Host { get; set; }
+            private IWebHost WebHost { get; set; }
 
             public HttpClient Client { get; private set; }
 
             public IRuntimeApiDataStore Store { get; private set; }
 
-            public static async Task<TestSession> CreateSessionAsync(int port)
+            public static async Task<TestSession> CreateSessionAsync(string host, int port)
             {
                 var session = new TestSession()
                 {
+                    Host = host,
                     Port = port,
                     Source = new CancellationTokenSource()
                 };
 
-                session.Host = await Startup.StartWebTesterAsync(new LocalLambdaOptions { Port = port }, false, session.Source.Token);
-
-                session.Client = new HttpClient()
+                var lambdaOptions = new LocalLambdaOptions()
                 {
-                    BaseAddress = new Uri("http://localhost:" + session.Port)
+                    Host = host,
+                    Port = port
                 };
 
-                session.Store = session.Host.Services.GetService<IRuntimeApiDataStore>();
+                session.WebHost = await Startup.StartWebTesterAsync(lambdaOptions, false, session.Source.Token);
+
+                var uriString = Utils.DetermineLaunchUrl(session.Host, session.Port, Constants.DEFAULT_HOST);
+                session.Client = new HttpClient()
+                {
+                    BaseAddress = new Uri(uriString)
+                };
+
+                session.Store = session.WebHost.Services.GetService<IRuntimeApiDataStore>();
 
                 return session;
             }
@@ -160,7 +167,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
                     {
                         this.Client.Dispose();
                         this.Source.Cancel();
-                        this.Host.StopAsync().GetAwaiter().GetResult();
+                        this.WebHost.StopAsync().GetAwaiter().GetResult();
                     }
 
                     disposedValue = true;

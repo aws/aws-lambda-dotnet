@@ -1,5 +1,4 @@
-﻿using System;
-using Xunit;
+﻿using Xunit;
 
 namespace Amazon.Lambda.TestTool.Tests
 {
@@ -8,12 +7,12 @@ namespace Amazon.Lambda.TestTool.Tests
         [Fact]
         public void AllValuesGetSet()
         {
-            var options = CommandLineOptions.Parse(new string[] {"--help", "--port", "1111", "--no-launch-window", 
+            var options = CommandLineOptions.Parse(new string[] {"--help", "--host", "example.com", "--port", "1111", "--no-launch-window",
                                                                 "--path", "./foo", "--profile", "test", "--region", "special-region",
                                                                 "--no-ui", "--config-file", "test-config.json", "--payload", "myfile.json", "--pause-exit", "false" });
 
-
             Assert.True(options.ShowHelp);
+            Assert.Equal("example.com", options.Host);
             Assert.Equal(1111, options.Port);
             Assert.True(options.NoLaunchWindow);
             Assert.Equal("./foo", options.Path);
@@ -32,24 +31,24 @@ namespace Amazon.Lambda.TestTool.Tests
             var options = CommandLineOptions.Parse(new string[0]);
             Assert.NotNull(options);
         }
-        
+
         [Fact]
         public void ParseIntValueForSwitch()
         {
-            var options = CommandLineOptions.Parse(new string[]{"--port", "8080"});
-            Assert.Equal(8080, options.Port);            
+            var options = CommandLineOptions.Parse(new string[] { "--port", "8080" });
+            Assert.Equal(8080, options.Port);
         }
 
         [Fact]
         public void MissingValue()
         {
-            Assert.Throws<CommandLineParseException>(() =>  CommandLineOptions.Parse(new string[]{"--port"}));
+            Assert.Throws<CommandLineParseException>(() => CommandLineOptions.Parse(new string[] { "--port" }));
         }
 
         [Fact]
         public void ValueNotAnInt()
         {
-            Assert.Throws<CommandLineParseException>(() =>  CommandLineOptions.Parse(new string[]{"--port", "aaa"}));
+            Assert.Throws<CommandLineParseException>(() => CommandLineOptions.Parse(new string[] { "--port", "aaa" }));
         }
 
 
@@ -74,7 +73,7 @@ namespace Amazon.Lambda.TestTool.Tests
             var options = CommandLineOptions.Parse(new string[0]);
             Assert.True(options.PauseExit);
 
-            options = CommandLineOptions.Parse(new string[] { "--pause-exit", "false"});
+            options = CommandLineOptions.Parse(new string[] { "--pause-exit", "false" });
             Assert.False(options.PauseExit);
         }
 

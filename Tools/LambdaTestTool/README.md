@@ -86,6 +86,8 @@ These options are valid for either mode the Lambda test tool is running in.
 
 These options are valid when using the web interface to select and execute the Lambda code.
 
+        --host &lt;hostname-or-ip-address&gt;       The hostname or IP address used for the test tool's web interface.                                                    
+                                                    Any host other than an explicit IP address or localhost (e.g. '*', '+' or 'example.com') binds to all public IPv4 and IPv6 addresses. 
         --port &lt;port-number&gt;                  The port number used for the test tool's web interface.
         --no-launch-window                    Disable auto launching the test tool's web interface in a browser.
 
@@ -106,6 +108,8 @@ These options are valid in the no web interface mode.
                                               when executing from an IDE so you can avoid having the output window immediately disappear after
                                               executing the Lambda code. The default value is true.
 </pre>
+
+**Note**: The `--host` argument do not to bind to specific hostname as it's value is largely ignored by [web hosting](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints?view=aspnetcore-6.0#url-prefixes-1). This is mostly used to expose web interface through docker by binding to all public IP addresses.
 
 For command line arguments not set the defaults and config file will be used to determine the .NET Lambda code to run. For example if you just use the <b>--no-ui</b> argument then the
 <b>aws-lambda-tools-defaults.json</b> will be searched for and used if found. The tool will then use the function handler, profile and region specified in the configuration file to run

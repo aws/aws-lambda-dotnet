@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Amazon.Lambda.TestTool.Runtime;
+using Amazon.Lambda.TestTool.SampleRequests;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-
-using Amazon.Lambda.TestTool.Runtime;
-using Amazon.Lambda.TestTool.SampleRequests;
 
 namespace Amazon.Lambda.TestTool
 {
@@ -14,7 +11,7 @@ namespace Amazon.Lambda.TestTool
     {
         public class RunConfiguration
         {
-            public enum RunMode { Normal, Test};
+            public enum RunMode { Normal, Test };
 
             /// <summary>
             /// If this is set to Test then that disables any interactive activity or any calls to Environment.Exit which wouldn't work well during a test run.
@@ -47,6 +44,7 @@ namespace Amazon.Lambda.TestTool
 
                 var localLambdaOptions = new LocalLambdaOptions()
                 {
+                    Host = commandOptions.Host,
                     Port = commandOptions.Port
                 };
 
@@ -122,12 +120,12 @@ namespace Amazon.Lambda.TestTool
             }
         }
 
-        
+
         public static void ExecuteWithNoUi(LocalLambdaOptions localLambdaOptions, CommandLineOptions commandOptions, string lambdaAssemblyDirectory, RunConfiguration runConfiguration)
         {
             runConfiguration.OutputWriter.WriteLine("Executing Lambda function without web interface");
             var lambdaProjectDirectory = Utils.FindLambdaProjectDirectory(lambdaAssemblyDirectory);
-            
+
             string configFile = DetermineConfigFile(commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory);
             LambdaConfigInfo configInfo = LoadLambdaConfigInfo(configFile, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);
             LambdaFunction lambdaFunction = LoadLambdaFunction(configInfo, localLambdaOptions, commandOptions, lambdaAssemblyDirectory: lambdaAssemblyDirectory, lambdaProjectDirectory: lambdaProjectDirectory, runConfiguration);

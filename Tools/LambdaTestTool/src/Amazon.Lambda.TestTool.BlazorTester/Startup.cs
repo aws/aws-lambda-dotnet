@@ -1,20 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using Amazon.Lambda.TestTool.BlazorTester.Services;
+using Blazored.Modal;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Amazon.Lambda.TestTool.BlazorTester.Services;
-
-using Blazored.Modal;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Amazon.Lambda.TestTool.BlazorTester
 {
@@ -28,9 +23,11 @@ namespace Amazon.Lambda.TestTool.BlazorTester
 
         public static async Task<IWebHost> StartWebTesterAsync(LocalLambdaOptions lambdaOptions, bool openWindow, CancellationToken token = default(CancellationToken))
         {
+            var host = string.IsNullOrEmpty(lambdaOptions.Host)
+                ? Constants.DEFAULT_HOST
+                : lambdaOptions.Host;
             var port = lambdaOptions.Port ?? Constants.DEFAULT_PORT;
-            
-            var url = $"http://localhost:{port}";
+            var url = $"http://{host}:{port}";
 
             var contentPath = Path.GetFullPath(Directory.GetCurrentDirectory());
             var builder = new WebHostBuilder()
@@ -41,19 +38,20 @@ namespace Amazon.Lambda.TestTool.BlazorTester
                 .UseUrls(url)
                 .UseStartup<Startup>();
 
-            var host = builder.Build();
+            var webHost = builder.Build();
 
-            await host.StartAsync(token);
+            await webHost.StartAsync(token);
             Console.WriteLine($"Environment running at {url}");
 
             if (openWindow)
             {
                 try
                 {
+                    string launchUrl = Utils.DetermineLaunchUrl(host, port, Constants.DEFAULT_HOST);
                     var info = new ProcessStartInfo
                     {
                         UseShellExecute = true,
-                        FileName = url
+                        FileName = launchUrl
                     };
                     Process.Start(info);
                 }
@@ -63,9 +61,9 @@ namespace Amazon.Lambda.TestTool.BlazorTester
                 }
             }
 
-            return host;
+            return webHost;
         }
-        
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
