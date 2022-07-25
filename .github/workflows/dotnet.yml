@@ -20,9 +20,9 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build Libraries --no-restore
+      run: dotnet build Libraries\Libraries.sln --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test Libraries\Libraries.sln --no-build --verbosity normal
       
 #      - cd Libraries
 #      - dotnet build -c Release
