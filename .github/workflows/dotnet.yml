@@ -22,7 +22,7 @@ jobs:
     - name: Build
       run: dotnet build Libraries/Libraries.sln --no-restore
     - name: Test
-      run: dotnet test Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --framework net60
+      run: dotnet test Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --framework net6.0
       
 #      - cd Libraries
 #      - dotnet build -c Release
