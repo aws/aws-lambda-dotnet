@@ -18,7 +18,7 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore Libraries\Libraries.sln
     - name: Build
       run: dotnet build Libraries\Libraries.sln --no-restore
     - name: Test
