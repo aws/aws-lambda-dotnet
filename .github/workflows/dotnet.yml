@@ -13,6 +13,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Get Branch Name
+      run: echo "BRANCH_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+    - name: Setup Version
+      run: echo "VERSION=0.51.${{ github.run_number }}-$(BRANCH_NAME)" >> $GITHUB_ENV
+    - name: Echo Branch Name
+      run: echo $BRANCH_NAME
     - name: Setup .NET 3.1
       uses: actions/setup-dotnet@v1
       with:
