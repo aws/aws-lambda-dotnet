@@ -24,9 +24,9 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore Libraries/Libraries.sln
     - name: Build
-      run: dotnet build Libraries/Libraries.sln --no-restore --framework net6.0
+      run: dotnet build Libraries/Libraries.sln --no-restore
     - name: Test
-      run: dotnet test Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --framework net6.0
+      run: dotnet test Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj
       
 #      - cd Libraries
 #      - dotnet build -c Release
