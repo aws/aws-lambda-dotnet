@@ -20,6 +20,14 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build Libraries --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
+      
+#      - cd Libraries
+#      - dotnet build -c Release
+#      - dotnet test test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --results-directory $CODEBUILD_SRC_DIR/TestResults --logger trx
+#      - VERSION="0.5.1-preview-$CODEBUILD_BUILD_NUMBER-$Branch"
+#      - dotnet pack -c Release src/Amazon.Lambda.Annotations/Amazon.Lambda.Annotations.csproj -p:NuspecFile=$CODEBUILD_SRC_DIR/Libraries/src/Amazon.Lambda.Annotations.nuspec -p:NuspecProperties="Version=0.5.1-preview-$CODEBUILD_BUILD_NUMBER-$Branch" -p:TargetFrameworks=netstandard2.0
+#      - dotnet pack -c Release src/Amazon.Lambda.Annotations.SourceGenerator/Amazon.Lambda.Annotations.SourceGenerator.csproj -p:NuspecProperties="Version=0.5.1-preview-$CODEBUILD_BUILD_NUMBER-$Branch" -p:TargetFrameworks=netstandard2.0
+      
