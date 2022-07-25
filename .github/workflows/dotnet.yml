@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "master","feature/annotations-enchilada" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master"," feature/annotations-enchilada" ]
 
 jobs:
   build:
