@@ -53,6 +53,7 @@
 
     <ItemGroup>
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
+      <None Remove="Snapshots\ServerlessTemplates\voidexample.template" />
     </ItemGroup>
 
   <ItemGroup>
@@ -71,6 +72,12 @@
 	  -->
       <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" AdditionalProperties="TargetFramework=netstandard2.0" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="Snapshots\VoidExample_VoidReturn_Generated.g.cs">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 

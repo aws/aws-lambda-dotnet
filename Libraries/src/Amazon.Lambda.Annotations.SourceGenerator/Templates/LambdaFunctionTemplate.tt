@@ -368,10 +368,16 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 <#
         }
 
-        if (_model.LambdaMethod.ReturnsVoidOrTask)
+        if (_model.LambdaMethod.ReturnsVoid)
         {
 #>
-            <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+            <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+<#
+        }
+        else if (_model.LambdaMethod.ReturnsTask)
+        {
+#>
+            await <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
 <#
         }
         else
@@ -389,7 +395,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
         }
         else
         {
-            if (!_model.LambdaMethod.ReturnsVoidOrTask)
+            if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsTask)
             {
                 if (_model.LambdaMethod.ReturnType.IsValueType)
                 {
@@ -415,7 +421,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             return new <#= _model.LambdaMethod.IsAsync ? _model.GeneratedMethod.ReturnType.TaskTypeArgument : _model.GeneratedMethod.ReturnType.FullName #>
             {
 <#
-            if (!_model.LambdaMethod.ReturnsVoidOrTask)
+            if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsTask)
             {
 #>
                 Body = <#= _model.LambdaMethod.ReturnType.IsString() ? "response" : "body" #>,
@@ -455,10 +461,16 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             }
         }
 
-        if (_model.LambdaMethod.ReturnsVoidOrTask)
+        if (_model.LambdaMethod.ReturnsVoid)
         {
 #>
-            return <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+            <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+<#
+        }
+        else if (_model.LambdaMethod.ReturnsTask)
+        {
+#>
+            return await <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
 <#
         }
         else

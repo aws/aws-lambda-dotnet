@@ -18,9 +18,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public bool IsAsync { get; set; }
 
         /// <summary>
-        /// Returns true if original method returns void or <see cref="System.Threading.Tasks.Task"/>
+        /// Returns true if original method returns void
         /// </summary>
-        public bool ReturnsVoidOrTask { get; set; }
+        public bool ReturnsVoid { get; set; }
+
+        /// <summary>
+        /// Returns true if original method returns <see cref="System.Threading.Tasks.Task"/>
+        /// </summary>
+        public bool ReturnsTask { get; set; }
 
         /// <summary>
         /// Gets or sets the return type of the method.
