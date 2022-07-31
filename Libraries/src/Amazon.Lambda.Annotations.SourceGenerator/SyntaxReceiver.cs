@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -12,8 +13,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
         public List<ClassDeclarationSyntax> StartupClasses { get; private set; } = new List<ClassDeclarationSyntax>();
 
+        public string ProjectDirectory { get; private set; }
+
+        private readonly IFileManager _fileManager;
+        private readonly IDirectoryManager _directoryManager;
+
+        public SyntaxReceiver(IFileManager fileManager, IDirectoryManager directoryManager)
+        {
+            _fileManager = fileManager;
+            _directoryManager = directoryManager;
+        }
+
         public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
         {
+            if(this.ProjectDirectory == null && context.Node is ClassDeclarationSyntax)
+            {
+                var templateFinder = new CloudFormationTemplateFinder(_fileManager, _directoryManager);
+                this.ProjectDirectory = templateFinder.DetermineProjectRootDirectory(context.Node.SyntaxTree.FilePath);
+            }
+
             // any method with at least one attribute is a candidate of function generation
             if (context.Node is MethodDeclarationSyntax methodDeclarationSyntax && methodDeclarationSyntax.AttributeLists.Count > 0)
             {
