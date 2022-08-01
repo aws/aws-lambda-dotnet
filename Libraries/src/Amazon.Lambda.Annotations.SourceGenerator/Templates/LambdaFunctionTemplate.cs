@@ -264,8 +264,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
 
                 return p.Name;
             }));
-        var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute) as AttributeModel<RestApiAttribute>;
-        var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<HttpApiAttribute>;
+        var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.RestApiAttribute>;
+        var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.HttpApiAttribute>;
 
         if (restApiAttribute != null && httpApiAttribute != null)
         {
@@ -326,7 +326,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             }
             else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
             {
-                var fromQueryAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromQueryAttribute) as AttributeModel<FromQueryAttribute>;
+                var fromQueryAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromQueryAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromQueryAttribute>;
 
                 // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
                 var parameterKey = fromQueryAttribute?.Data?.Name ?? parameter.Name;
@@ -362,14 +362,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     // Therefore, it is required to split the string to convert to an enumerable
                     // and convert individual item to target data type.
                     var commaSplit = "";
-                    if (httpApiAttribute?.Data.Version == HttpApiVersion.V2)
+                    if (httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V2)
                     {
                         commaSplit = @".Split("","")";
                     }
 
                     // HTTP API V1 and Rest API, multiple values for the same parameter are provided
                     // dedicated dictionary of string key and list value.
-                    if (restApiAttribute != null || httpApiAttribute?.Data.Version == HttpApiVersion.V1)
+                    if (restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1)
                     {
                         queryStringParameters = "MultiValueQueryStringParameters";
                     }
@@ -553,7 +553,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             {
                 var fromHeaderAttribute =
                     parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute) as
-                        AttributeModel<FromHeaderAttribute>;
+                        AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromHeaderAttribute>;
 
                 // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
                 var headerKey = fromHeaderAttribute?.Data?.Name ?? parameter.Name;
@@ -589,14 +589,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     // Therefore, it is required to split the string to convert to an enumerable
                     // and convert individual item to target data type.
                     var commaSplit = "";
-                    if (httpApiAttribute?.Data.Version == HttpApiVersion.V2)
+                    if (httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V2)
                     {
                         commaSplit = @".Split("","")";
                     }
 
                     // HTTP API V1 and Rest API, multiple values for the same header are provided
                     // dedicated dictionary of string key and list value.
-                    if (restApiAttribute != null || httpApiAttribute?.Data.Version == HttpApiVersion.V1)
+                    if (restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1)
                     {
                         headers = "MultiValueHeaders";
                     }
@@ -847,7 +847,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             }
             else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) || routeParameters.Contains(parameter.Name))
             {
-                var fromRouteAttribute = parameter.Attributes?.FirstOrDefault(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) as AttributeModel<FromRouteAttribute>;
+                var fromRouteAttribute = parameter.Attributes?.FirstOrDefault(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromRouteAttribute>;
 
                 // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
                 var routeKey = fromRouteAttribute?.Data?.Name ?? parameter.Name;
