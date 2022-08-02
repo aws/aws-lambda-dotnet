@@ -1370,7 +1370,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Null(lexV2Event.Interpretations[0].Intent.Slots["ActionTime"]);
                 Assert.Equal("InProgress", lexV2Event.Interpretations[0].Intent.State);
                 Assert.Equal("None", lexV2Event.Interpretations[0].Intent.ConfirmationState);
-                Assert.Equal(1.0, lexV2Event.Interpretations[0].NluConfidence.Score);
+                Assert.Equal(0.79, lexV2Event.Interpretations[0].NluConfidence);
                 Assert.Equal("testsentiment", lexV2Event.Interpretations[0].SentimentResponse.Sentiment);
                 Assert.Equal(0.1, lexV2Event.Interpretations[0].SentimentResponse.SentimentScore.Mixed);
                 Assert.Equal(0.1, lexV2Event.Interpretations[0].SentimentResponse.SentimentScore.Negative);

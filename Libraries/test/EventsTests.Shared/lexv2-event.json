@@ -45,9 +45,7 @@
         "state": "InProgress",
         "confirmationState": "None"
       },
-      "nluConfidence": {
-        "score": 1.0
-      },
+      "nluConfidence": 0.79,
       "sentimentResponse": {
         "sentiment": "testsentiment",
         "sentimentScore": {
