@@ -46,8 +46,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     return;
                 }
 
-                // If there are no Lambda methods, return early
-                if (!receiver.LambdaMethods.Any())
+                // If no project directory was detected then skip the generator.
+                // This is most likely to happen when the project is empty and doesn't have any classes in it yet.
+                if(string.IsNullOrEmpty(receiver.ProjectDirectory))
                 {
                     return;
                 }
@@ -69,7 +70,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var annotationReport = new AnnotationReport();
 
                 var templateFinder = new CloudFormationTemplateFinder(_fileManager, _directoryManager);
-                var projectRootDirectory = string.Empty;
 
                 foreach (var lambdaMethod in receiver.LambdaMethods)
                 {
@@ -112,15 +112,19 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.CodeGeneration, Location.None, $"{model.GeneratedMethod.ContainingType.Name}.g.cs", sourceText));
 
                     annotationReport.LambdaFunctions.Add(model);
-
-                    if (string.IsNullOrEmpty(projectRootDirectory))
-                        projectRootDirectory = templateFinder.DetermineProjectRootDirectory(lambdaMethod.SyntaxTree.FilePath);
                 }
 
-                annotationReport.CloudFormationTemplatePath = templateFinder.FindCloudFormationTemplate(projectRootDirectory);
-                annotationReport.ProjectRootDirectory = projectRootDirectory;
-                var cloudFormationJsonWriter = new CloudFormationJsonWriter(_fileManager, _directoryManager,_jsonWriter, diagnosticReporter);
-                cloudFormationJsonWriter.ApplyReport(annotationReport);
+                // Run the CloudFormation sync if any LambdaMethods exists. Also run if no LambdaMethods exists but there is a
+                // CloudFormation template in case orphaned functions in the template need to be removed.
+                // Both checks are required because if there is no template but there are LambdaMethods the CF template the template will be created.
+                if (receiver.LambdaMethods.Any() || templateFinder.DoesCloudFormationTemplateExist(receiver.ProjectDirectory))
+                {
+                    annotationReport.CloudFormationTemplatePath = templateFinder.FindCloudFormationTemplate(receiver.ProjectDirectory);
+                    annotationReport.ProjectRootDirectory = receiver.ProjectDirectory;
+                    var cloudFormationJsonWriter = new CloudFormationJsonWriter(_fileManager, _directoryManager, _jsonWriter, diagnosticReporter);
+                    cloudFormationJsonWriter.ApplyReport(annotationReport);
+                }
+
             }
             catch (Exception e)
             {
@@ -135,7 +139,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public void Initialize(GeneratorInitializationContext context)
         {
             // Register a syntax receiver that will be created for each generation pass
-            context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
+            context.RegisterForSyntaxNotifications(() => new SyntaxReceiver(_fileManager, _directoryManager));
         }
     }
 }

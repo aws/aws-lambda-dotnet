@@ -35,11 +35,27 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
         public string FindCloudFormationTemplate(string projectRootDirectory)
         {
+            var templateAbsolutePath = DetermineCloudFormationTemplatePath(projectRootDirectory);
+
+            if (!_fileManager.Exists(templateAbsolutePath))
+                _fileManager.Create(templateAbsolutePath).Close();
+            
+            return templateAbsolutePath;
+        }
+
+        public bool DoesCloudFormationTemplateExist(string projectRootDirectory)
+        {
+            var templateAbsolutePath = DetermineCloudFormationTemplatePath(projectRootDirectory);
+            return _fileManager.Exists(templateAbsolutePath);
+        }
+
+        private string DetermineCloudFormationTemplatePath(string projectRootDirectory)
+        {
             if (!_directoryManager.Exists(projectRootDirectory))
                 throw new DirectoryNotFoundException("Failed to find the project root directory");
 
             var templateAbsolutePath = string.Empty;
-            
+
             var defaultConfigFile = _directoryManager.GetFiles(projectRootDirectory, "aws-lambda-tools-defaults.json", SearchOption.AllDirectories)
                 .FirstOrDefault();
 
@@ -51,10 +67,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             // set the template path inside the project root directory. 
             if (string.IsNullOrEmpty(templateAbsolutePath))
                 templateAbsolutePath = Path.Combine(projectRootDirectory, "serverless.template");
-                
-            if (!_fileManager.Exists(templateAbsolutePath))
-                _fileManager.Create(templateAbsolutePath).Close();
-            
+
             return templateAbsolutePath;
         }
 
