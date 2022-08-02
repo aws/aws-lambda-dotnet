@@ -1,3 +1,12 @@
+### Release 2022-08-02
+* **Amazon.Lambda.Annotations (0.6.0-preview)**  
+  * Breaking Change: API Gataway attributes have been moved to the Amazon.Lambda.Annotations.APIGateway namespace.
+  * Fix issue with incorrect code being generated when Lambda function return void.
+  * Fix issue with CloudFormation template not being sync when all LambdaFunction attributes are removed from code. 
+* **Amazon.Lambda.S3 (3.0.0)**
+  * Remove dependency from the AWSDK.S3. This reduces deployment bundle size and fixes serialization issues with the SDK enum like classes. This is a small breaking change due to class having different namespaces.
+ 
+
 ### Release 2022-06-28
 * **BlueprintPackager**
   * Bump Newtonsoft.Json to 13.0.1
