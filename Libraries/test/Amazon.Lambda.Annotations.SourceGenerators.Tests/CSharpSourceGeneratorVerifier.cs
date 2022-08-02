@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Immutable;
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Serialization.SystemTextJson;

@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Text.Json;
 using System.Threading;
 using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 
