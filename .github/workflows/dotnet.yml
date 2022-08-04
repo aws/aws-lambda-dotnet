@@ -20,10 +20,15 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.x
-    - name: Setup .NET
+    - name: Setup .NET 6
       uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 6.0.x
+    - name: Setup .NET 7.0
+      uses: actions/setup-dotnet@v1
+      with:
+        include-prerelease: true
+        dotnet-version: 7.0.100-preview.6.22352.1
     - name: Restore dependencies
       run: dotnet restore Libraries/Libraries.sln
     - name: Build
