@@ -16,9 +16,9 @@ namespace TestServerlessApp
             messaging = new Messaging();
         }
 
-        public System.Threading.Tasks.Task MessageHandlerForNewQueue(Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage message, Amazon.Lambda.Core.ILambdaContext __context__)
+        public async System.Threading.Tasks.Task<int> MessageHandlerForNewQueue(Amazon.Lambda.SQSEvents.SQSEvent.SQSMessage message, Amazon.Lambda.Core.ILambdaContext __context__)
         {
-            return messaging.MessageHandlerForNewQueue(message, __context__);
+            return await messaging.MessageHandlerForNewQueue(message, __context__);
         }
 
         private static void SetExecutionEnvironment()
@@ -33,7 +33,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_0.5.1.0");
+            envValue.Append("amazon-lambda-annotations_0.6.0.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }
