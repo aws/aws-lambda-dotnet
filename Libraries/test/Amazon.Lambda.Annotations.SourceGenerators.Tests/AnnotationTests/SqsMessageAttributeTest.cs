@@ -7,6 +7,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.AnnotationTests
 {
     // I am putting this here because there is no Amazon.Lambda.Annotations.Tests project
     // I did not want to add a project in a pull request without asking first
+
     public class SqsMessageAttributeTest
     {
         [Theory]
