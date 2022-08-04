@@ -2,10 +2,7 @@ name: .NET
 
 on:
   push:
-    branches: [ "master","feature/annotations-enchilada" ]
-  pull_request:
-    branches: [ "master"," feature/annotations-enchilada" ]
-
+    branches: [ "master","feature/annotations-enchilada","feature/annotations-queue" ]
 jobs:
   build:
 
