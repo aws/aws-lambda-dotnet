@@ -1,3 +1,7 @@
+### Release 2022-08-03
+* **Amazon.Lambda.Templates (6.3.0)**
+  * Updated PackageReferences of AWS packages referenced in the templates.
+
 ### Release 2022-08-02
 * **Amazon.Lambda.Annotations (0.6.0-preview)**  
   * Breaking Change: API Gataway attributes have been moved to the Amazon.Lambda.Annotations.APIGateway namespace.
