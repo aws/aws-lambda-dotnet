@@ -1,11 +1,11 @@
 using System;
 
-namespace Amazon.Lambda.Annotations
+namespace Amazon.Lambda.Annotations.APIGateway
 {
     [AttributeUsage(AttributeTargets.Method)]
     public class RestApiAttribute : Attribute
     {
-        public string Template { get; set;  }
+        public string Template { get; set; }
         public LambdaHttpMethod Method { get; set; }
 
         public RestApiAttribute(LambdaHttpMethod method, string template)

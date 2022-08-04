@@ -55,6 +55,7 @@
     <ItemGroup>
       <None Remove="Snapshots\ServerlessTemplates\messaging.template" />
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
+      <None Remove="Snapshots\ServerlessTemplates\voidexample.template" />
     </ItemGroup>
 
   <ItemGroup>
@@ -77,6 +78,12 @@
 
     <ItemGroup>
       <Folder Include="Models\Attributes\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="Snapshots\VoidExample_VoidReturn_Generated.g.cs">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 

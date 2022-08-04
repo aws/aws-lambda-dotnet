@@ -1,4 +1,5 @@
 using System;
+using Amazon.Lambda.Annotations.APIGateway;
 using Microsoft.CodeAnalysis;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes

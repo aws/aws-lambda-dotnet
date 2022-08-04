@@ -1,3 +1,18 @@
+### Release 2022-08-03
+* **Amazon.Lambda.Templates (6.3.0)**
+  * Updated PackageReferences of AWS packages referenced in the templates.
+
+### Release 2022-08-02
+* **Amazon.Lambda.Annotations (0.6.0-preview)**  
+  * Breaking Change: API Gataway attributes have been moved to the Amazon.Lambda.Annotations.APIGateway namespace.
+  * Fix issue with incorrect code being generated when Lambda function return void.
+  * Fix issue with CloudFormation template not being sync when all LambdaFunction attributes are removed from code. 
+* **Amazon.Lambda.S3Events (3.0.0)**
+  * Remove dependency from the AWSDK.S3. This reduces deployment bundle size and fixes serialization issues with the SDK enum like classes. This is a small breaking change due to class having different namespaces.
+* **Amazon.Lambda.LexV2Events (1.0.1)**
+  * Fixed the type of LexV2Interpretation.NluConfidence to double.
+ 
+
 ### Release 2022-06-28
 * **BlueprintPackager**
   * Bump Newtonsoft.Json to 13.0.1

@@ -4,21 +4,21 @@ using System.Collections.Generic;
 using System.Text;
 using Amazon.Lambda.Core;
 
-namespace TestServerlessApp.Sub1
+namespace TestServerlessApp
 {
-    public class Functions_ToUpper_Generated
+    public class VoidExample_VoidReturn_Generated
     {
-        private readonly Functions functions;
+        private readonly VoidExample voidExample;
 
-        public Functions_ToUpper_Generated()
+        public VoidExample_VoidReturn_Generated()
         {
             SetExecutionEnvironment();
-            functions = new Functions();
+            voidExample = new VoidExample();
         }
 
-        public string ToUpper(string text)
+        public void VoidReturn(string text, Amazon.Lambda.Core.ILambdaContext __context__)
         {
-            return functions.ToUpper(text);
+            voidExample.VoidReturn(text, __context__);
         }
 
         private static void SetExecutionEnvironment()

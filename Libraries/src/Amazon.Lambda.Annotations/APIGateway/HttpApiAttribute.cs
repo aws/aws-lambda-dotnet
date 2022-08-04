@@ -1,12 +1,12 @@
 using System;
 
-namespace Amazon.Lambda.Annotations
+namespace Amazon.Lambda.Annotations.APIGateway
 {
     [AttributeUsage(AttributeTargets.Method)]
     public class HttpApiAttribute : Attribute
     {
         public HttpApiVersion Version { get; set; } = HttpApiVersion.V2;
-        public string Template { get; set;  }
+        public string Template { get; set; }
         public LambdaHttpMethod Method { get; set; }
 
         public HttpApiAttribute(LambdaHttpMethod method, string template)
