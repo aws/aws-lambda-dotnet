@@ -1,4 +1,4 @@
-namespace Amazon.Lambda.Annotations
+namespace Amazon.Lambda.Annotations.APIGateway
 {
     public enum LambdaHttpMethod
     {

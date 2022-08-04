@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;

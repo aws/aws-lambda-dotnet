@@ -1,8 +1,6 @@
 # Amazon.Lambda.S3Events
 
-This package contains classes that can be used as input types for Lambda functions that process Amazon Simple Storage Service (Amazon S3) events. 
-
-This package has a dependency on the [AWS SDK for .NET package AWSSDK.S3](https://www.nuget.org/packages/AWSSDK.S3/) in order to use the `Amazon.S3.Util.S3EventNotification` type. 
+This package contains classes that can be used as input types for Lambda functions that process Amazon Simple Storage Service (Amazon S3) events.
 
 # Serialization
 
@@ -10,7 +8,7 @@ If you are using this package with Amazon Lambda but are not also using `Amazon.
 1. `XAmzRequestId` should be treated as `x-amz-request-id`
 2. `XAmzId2` should be treated as `x-amz-id-2`
 
-A Newtonsoft.Json `IContractResolver` implementation which handles this custom serialization is located in [Amazon.Lambda.Serialization.Json\AwsResolver.cs](../Amazon.Lambda.Serialization.Json/AwsResolver.cs), consult this source for more information. 
+A Newtonsoft.Json `IContractResolver` implementation which handles this custom serialization is located in [Amazon.Lambda.Serialization.Json\AwsResolver.cs](../Amazon.Lambda.Serialization.Json/AwsResolver.cs), consult this source for more information.
 
 # Sample Function
 

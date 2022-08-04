@@ -1,9 +1,9 @@
 using System;
 
-namespace Amazon.Lambda.Annotations
+namespace Amazon.Lambda.Annotations.APIGateway
 {
     [AttributeUsage(AttributeTargets.Parameter)]
-    public class FromHeaderAttribute : Attribute, INamedAttribute
+    public class FromQueryAttribute : Attribute, INamedAttribute
     {
         public string Name { get; set; }
     }

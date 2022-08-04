@@ -12,29 +12,17 @@
         public LexV2Intent Intent { get; set; }
 
         /// <summary>
-        /// Determines the threshold where Amazon Lex V2 will insert the <c>AMAZON.FallbackIntent</c>, <c>AMAZON.KendraSearchIntent</c>, or both when returning 
-        /// alternative intents in a response. <c>AMAZON.FallbackIntent</c> and <c>AMAZON.KendraSearchIntent</c> are only inserted if they are configured for the bot.
+        /// Represents a score that indicates the confidence that Amazon Lex V2 has that an intent is the one that satisfies the user's intent. Determines the threshold 
+        /// where Amazon Lex V2 will insert the <c>AMAZON.FallbackIntent</c>, <c>AMAZON.KendraSearchIntent</c>, or both when returning alternative intents in a response. 
+        /// <c>AMAZON.FallbackIntent</c> and <c>AMAZON.KendraSearchIntent</c> are only inserted if they are configured for the bot.
         /// </summary>
-        public LexV2ConfidenceScore NluConfidence { get; set; }
+        public double? NluConfidence { get; set; }
 
         /// <summary>
         /// The sentiment expressed in an utterance.
         /// </summary>
         /// 
         public LexV2SentimentResponse SentimentResponse { get; set; }
-    }
-
-    /// <summary>
-    /// The class that represents a score that indicates the confidence that Amazon Lex V2 has that an intent is the one that satisfies the user's intent.
-    /// https://docs.aws.amazon.com/lexv2/latest/dg/API_runtime_ConfidenceScore.html
-    /// </summary>
-    public class LexV2ConfidenceScore
-    {
-        /// <summary>
-        /// A score that indicates how confident Amazon Lex V2 is that an intent satisfies the user's intent. 
-        /// Ranges between 0.00 and 1.00. Higher scores indicate higher confidence.
-        /// </summary>
-        public double? Score { get; set; }
     }
 
     /// <summary>
