@@ -15,7 +15,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
     public class CloudFormationJsonWriterTests
     {
         private readonly IDirectoryManager _mockDirectoryManager = new InMemoryDirectoryManager();
-        private readonly IJsonWriter _jsonWriter = new JsonWriter();
+        private readonly ITemplateWriter _jsonWriter = new JsonWriter();
         private readonly IDiagnosticReporter _diagnosticReporter = new Mock<IDiagnosticReporter>().Object;
         private const string ProjectRootDirectory = "C:/CodeBase/MyProject";
         private const string ServerlessTemplateFilePath = "C:/CodeBase/MyProject/serverless.template";

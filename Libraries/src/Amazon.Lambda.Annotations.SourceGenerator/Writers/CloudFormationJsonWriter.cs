@@ -16,10 +16,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
     {
         private readonly IFileManager _fileManager;
         private readonly IDirectoryManager _directoryManager;
-        private readonly IJsonWriter _jsonWriter;
+        private readonly ITemplateWriter _jsonWriter;
         private readonly IDiagnosticReporter _diagnosticReporter;
 
-        public CloudFormationJsonWriter(IFileManager fileManager, IDirectoryManager directoryManager, IJsonWriter jsonWriter, IDiagnosticReporter diagnosticReporter)
+        public CloudFormationJsonWriter(IFileManager fileManager, IDirectoryManager directoryManager, ITemplateWriter jsonWriter, IDiagnosticReporter diagnosticReporter)
         {
             _fileManager = fileManager;
             _directoryManager = directoryManager;
@@ -49,7 +49,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             RemoveOrphanedLambdaFunctions(processedLambdaFunctions);
-            var json = _jsonWriter.GetPrettyJson();
+            var json = _jsonWriter.GetContent();
             _fileManager.WriteAllText(report.CloudFormationTemplatePath, json);
 
             _diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.CodeGeneration, Location.None, $"{report.CloudFormationTemplatePath}", json));
@@ -62,8 +62,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (!_jsonWriter.Exists(lambdaFunctionPath))
                 return true;
 
-            var creationTool = _jsonWriter.GetToken($"{lambdaFunctionPath}.Metadata.Tool", string.Empty);
-            return string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal);
+            var creationTool = _jsonWriter.GetToken<string>($"{lambdaFunctionPath}.Metadata.Tool", string.Empty);
+            return string.Equals(creationTool, "Amazon.Lambda.Annotations", StringComparison.Ordinal);
         }
 
         private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction, string relativeProjectUri)
@@ -95,7 +95,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (!string.IsNullOrEmpty(lambdaFunction.Policies))
             {
                 var policyArray = lambdaFunction.Policies.Split(',').Select(x => GetValueOrRef(x.Trim()));
-                _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray(policyArray));
+                _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray(policyArray), TokenType.List);
                 _jsonWriter.RemoveToken($"{propertiesPath}.Role");
             }
 
@@ -117,7 +117,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
                 case LambdaPackageType.Image:
                     _jsonWriter.SetToken($"{propertiesPath}.ImageUri", relativeProjectUri);
-                    _jsonWriter.SetToken($"{propertiesPath}.ImageConfig.Command", new JArray(lambdaFunction.Handler));
+                    _jsonWriter.SetToken($"{propertiesPath}.ImageConfig.Command", new JArray(lambdaFunction.Handler), TokenType.List);
                     _jsonWriter.RemoveToken($"{propertiesPath}.Handler");
                     _jsonWriter.RemoveToken($"{propertiesPath}.CodeUri");
                     _jsonWriter.RemoveToken($"{propertiesPath}.Runtime");
@@ -161,7 +161,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             if (currentSyncedEvents.Any())
-                _jsonWriter.SetToken(syncedEventsMetadataPath, new JArray(currentSyncedEvents));
+                _jsonWriter.SetToken(syncedEventsMetadataPath, new JArray(currentSyncedEvents), TokenType.List);
             else
                 _jsonWriter.RemoveToken(syncedEventsMetadataPath);
         }
@@ -203,7 +203,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             _jsonWriter.SetToken($"{propertiesPath}.CodeUri", "");
             _jsonWriter.SetToken($"{propertiesPath}.MemorySize", 256);
             _jsonWriter.SetToken($"{propertiesPath}.Timeout", 30);
-            _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray("AWSLambdaBasicExecutionRole"));
+            _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray("AWSLambdaBasicExecutionRole"), TokenType.List);
         }
 
         private void CreateNewTemplate()
@@ -222,11 +222,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             foreach (var resource in resourceToken.Properties())
             {
                 var resourcePath = $"Resources.{resource.Name}";
-                var type = _jsonWriter.GetToken($"{resourcePath}.Type", string.Empty);
-                var creationTool = _jsonWriter.GetToken($"{resourcePath}.Metadata.Tool", string.Empty);
+                var type = _jsonWriter.GetToken<string>($"{resourcePath}.Type", string.Empty);
+                var creationTool = _jsonWriter.GetToken<string>($"{resourcePath}.Metadata.Tool", string.Empty);
 
-                if (string.Equals(type.ToObject<string>(), "AWS::Serverless::Function", StringComparison.Ordinal)
-                    && string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal)
+                if (string.Equals(type, "AWS::Serverless::Function", StringComparison.Ordinal)
+                    && string.Equals(creationTool, "Amazon.Lambda.Annotations", StringComparison.Ordinal)
                     && !processedLambdaFunctions.Contains(resource.Name))
                 {
                     toRemove.Add(resource.Name);

@@ -6,7 +6,10 @@ using Newtonsoft.Json.Linq;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 {
-    public class JsonWriter : IJsonWriter
+    /// <summary>
+    /// This contains the functionality to manipulate a JSON blob
+    /// </summary>
+    public class JsonWriter : ITemplateWriter
     {
         private JObject _rootNode;
 
@@ -15,18 +18,19 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             _rootNode = new JObject();
         }
 
-        public JsonWriter(JObject rootNode)
-        {
-            _rootNode = rootNode;
-        }
-
+        /// <summary>
+        /// Checks if the dot(.) seperated jsonPath exists in the json blob stored at the _rootNode
+        /// </summary>
+        /// <param name="jsonPath">dot(.) seperated path. Example "Person.Name.FirstName"</param>
+        /// <returns>true if the path exist, else false</returns>
+        /// <exception cref="InvalidDataException">Thrown if the jsonPath is invalid</exception>
         public bool Exists(string jsonPath)
         {
             if (!IsValidPath(jsonPath))
             {
                 throw new InvalidDataException($"'{jsonPath}' is not a valid '{nameof(jsonPath)}'");
             }
-            
+
             JToken currentNode = _rootNode;
             foreach (var property in jsonPath.Split('.'))
             {
@@ -40,7 +44,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             return currentNode != null;
         }
 
-        public void SetToken(string jsonPath, JToken token)
+        /// <summary>
+        /// This method converts the supplied token it into a <see cref="JToken"/> type and sets it at the dot(.) seperated jsonPath.
+        /// Any non-existing nodes in the jsonPath are created on the fly.
+        /// All non-terminal nodes in the jsonPath need to be of type <see cref="JObject"/>.
+        /// </summary>
+        /// <param name="jsonPath">dot(.) seperated path. Example "Person.Name.FirstName"</param>
+        /// <param name="token">The object to set at the specified jsonPath</param>
+        /// <param name="tokenType"><see cref="TokenType"/>This does not play any role while setting a token for the JsonWriter</param>
+        /// <exception cref="InvalidDataException">Thrown if the jsonPath is invalid</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the terminal property in the jsonPath is null/empty or if any non-terminal nodes in the jsonPath cannot be converted to <see cref="JObject"/></exception>
+        public void SetToken(string jsonPath, object token, TokenType tokenType = TokenType.Other)
         {
             if (!IsValidPath(jsonPath))
             {
@@ -50,17 +64,24 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             {
                 return;
             }
-                
+
             var pathList = jsonPath.Split('.');
             var lastProperty = pathList.LastOrDefault();
             if (string.IsNullOrEmpty((lastProperty)))
             {
                 throw new InvalidOperationException($"Cannot set a token at '{jsonPath}' because the terminal property is null or empty");
             }
+
+            var terminalToken = GetDeserializedToken<JToken>(token);
             var currentNode = _rootNode;
 
             for (var i = 0; i < pathList.Length-1; i++)
             {
+                if (currentNode == null)
+                {
+                    throw new InvalidOperationException($"Cannot set a token at '{jsonPath}' because one of the nodes in the path is null");
+                }
+
                 var property = pathList[i];
                 if (!currentNode.ContainsKey(property))
                 {
@@ -73,10 +94,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 }
             }
 
-            currentNode[lastProperty] = token;
+            currentNode[lastProperty] = terminalToken;
         }
 
-        public JToken GetToken(string jsonPath, JToken defaultToken = null)
+        /// <summary>
+        /// Gets the object stored at the dot(.) seperated jsonPath. If the path does not exist then return the defaultToken.
+        /// The defaultToken is only returned if it holds a non-null value.
+        /// </summary>
+        /// <param name="jsonPath">dot(.) seperated path. Example "Person.Name.FirstName"</param>
+        /// <param name="defaultToken">The object that is returned if jsonPath does not exist.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the jsonPath does not exist and the defaultToken is null</exception>
+        public object GetToken(string jsonPath, object defaultToken = null)
         {
             if (!Exists(jsonPath))
             {
@@ -96,6 +124,30 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             return currentNode;
         }
 
+        /// <summary>
+        /// Gets the object stored at the dot(.) seperated jsonPath. If the path does not exist then return the defaultToken.
+        /// The defaultToken is only returned if it holds a non-null value.
+        /// The object is deserialized into type T before being returned.
+        /// </summary>
+        /// <param name="jsonPath">dot(.) seperated path. Example "Person.Name.FirstName"</param>
+        /// <param name="defaultToken">The object that is returned if jsonPath does not exist in the JSON blob. It will be convert to type T before being returned.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the jsonPath does not exist and the defaultToken is null</exception>
+        public T GetToken<T>(string jsonPath, object defaultToken = null)
+        {
+            var token = GetToken(jsonPath, defaultToken);
+            if (token == null)
+            {
+                throw new InvalidOperationException($"'{jsonPath}' points to a null token");
+            }
+
+            return GetDeserializedToken<T>(token);
+        }
+
+        /// <summary>
+        /// Deletes the token found at the dot(.) separated jsonPath. It does not do anything if the jsonPath does not exist.
+        /// </summary>
+        /// <param name="jsonPath">dot(.) seperated path. Example "Person.Name.FirstName"</param>
+        /// <exception cref="InvalidOperationException">Thrown if the terminal property in jsonPath is null or empty</exception>
         public void RemoveToken(string jsonPath)
         {
             if (!Exists(jsonPath))
@@ -105,7 +157,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             var pathList = jsonPath.Split('.');
             var lastProperty = pathList.LastOrDefault();
-            if (string.IsNullOrEmpty((lastProperty)))
+            if (string.IsNullOrEmpty(lastProperty))
             {
                 throw new InvalidOperationException(
                     $"Cannot remove the token at '{jsonPath}' because the terminal property is null or empty");
@@ -121,22 +173,43 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             currentNode.Remove(lastProperty);
         }
 
-        public string GetPrettyJson()
+        /// <summary>
+        /// Returns the template as a string
+        /// </summary>
+        public string GetContent()
         {
             return JsonConvert.SerializeObject(_rootNode, formatting: Formatting.Indented);
         }
 
+        /// <summary>
+        /// Converts the JSON string into a <see cref="JObject"/>
+        /// </summary>
+        /// <param name="content"></param>
         public void Parse(string content)
         {
             _rootNode = string.IsNullOrEmpty(content) ? new JObject() : JObject.Parse(content);
         }
-        
+
+        /// <summary>
+        /// Validates that the jsonPath is not null or comprises only of white spaces. Also ensures that it does not have consecutive dots(.)
+        /// </summary>
+        /// <param name="jsonPath"></param>
+        /// <returns>true if the path is valid, else fail</returns>
         private bool IsValidPath(string jsonPath)
         {
             if (string.IsNullOrWhiteSpace(jsonPath))
                 return false;
-            
-            return !jsonPath.Split('.').Any(x => string.IsNullOrWhiteSpace(x));
+
+            return !jsonPath.Split('.').Any(string.IsNullOrWhiteSpace);
+        }
+
+        private T GetDeserializedToken<T>(object token)
+        {
+            if (token is T deserializedToken)
+            {
+                return deserializedToken;
+            }
+            return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(token));
         }
     }
 }

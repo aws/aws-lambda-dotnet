@@ -1,0 +1,19 @@
+﻿{
+  "Person": {
+    "Name": {
+      "FirstName": "John",
+      "LastName": "Smith"
+    },
+    "Age": 50,
+    "PhoneNumbers": [
+      1,
+      2,
+      3
+    ],
+    "Address": {
+      "City": "AmazingCity",
+      "State": "AmazingState"
+    },
+    "IsAlive": true
+  }
+}
