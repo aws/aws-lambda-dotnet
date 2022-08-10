@@ -22,7 +22,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
     {
         private readonly IFileManager _fileManager = new FileManager();
         private readonly IDirectoryManager _directoryManager = new DirectoryManager();
-        private readonly IJsonWriter _jsonWriter = new JsonWriter();
+        private readonly ITemplateWriter _jsonWriter = new JsonWriter();
 
         public Generator()
         {
@@ -74,7 +74,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 foreach (var lambdaMethod in receiver.LambdaMethods)
                 {
                     var lambdaMethodModel = semanticModelProvider.GetMethodSemanticModel(lambdaMethod);
-                    
+
                     // Check for necessary references
                     if (lambdaMethodModel.HasAttribute(context, TypeFullNames.RestApiAttribute)
                         || lambdaMethodModel.HasAttribute(context, TypeFullNames.HttpApiAttribute))
@@ -87,7 +87,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                                 "Amazon.Lambda.APIGatewayEvents"));
                         }
                     }
-                    
+
                     var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context);
 
                     // If there are more than one event, report them as errors

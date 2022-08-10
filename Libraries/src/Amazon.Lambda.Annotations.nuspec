@@ -27,5 +27,6 @@
         <file src="Amazon.Lambda.Annotations\bin\Release\netstandard2.0\Amazon.Lambda.Annotations.dll" target="analyzers\dotnet\cs" />
         <file src="Amazon.Lambda.Annotations.SourceGenerator\bin\Release\netstandard2.0\Amazon.Lambda.Annotations.SourceGenerator.dll" target="analyzers\dotnet\cs" />
         <file src="Amazon.Lambda.Annotations.SourceGenerator\bin\Release\netstandard2.0\Newtonsoft.Json.dll" target="analyzers\dotnet\cs" />
+        <file src="Amazon.Lambda.Annotations.SourceGenerator\bin\Release\netstandard2.0\YamlDotNet.dll" target="analyzers\dotnet\cs" />
     </files>
 </package>
