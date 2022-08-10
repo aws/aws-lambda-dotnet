@@ -2,22 +2,35 @@
 using System.Collections.Generic;
 using System.IO;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
     public class JsonWriterTests
     {
-        private const string SampleJsonString = @"{ 'Person': { 'Name': { 'FirstName': 'John', 'LastName': 'Smith', }, 
-                'Gender': 'male', 'Age': 32, 'PhoneNumbers': ['123', '456', '789'] } }";
+        private const string SampleJsonString =
+            @"{
+               'Person':{
+                  'Name':{
+                     'FirstName':'John',
+                     'LastName':'Smith'
+                  },
+                  'Gender':'male',
+                  'Age':32,
+                  'PhoneNumbers':[
+                     '123',
+                     '456',
+                     '789'
+                  ]
+               }
+            }";
 
         [Fact]
-        public void ExistsTests()
+        public void Exists()
         {
             // ARRANGE
-            var rootNode = JObject.Parse(SampleJsonString);
-            var jsonWriter = new JsonWriter(rootNode);
+            ITemplateWriter jsonWriter = new JsonWriter();
+            jsonWriter.Parse(SampleJsonString);
 
             // ACT and ASSERT
             Assert.True(jsonWriter.Exists("Person.Name.FirstName"));
@@ -32,77 +45,105 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         }
 
         [Fact]
-        public void SetTokenTests()
+        public void SetToken()
         {
             // ARRANGE
-            var rootNode = new JObject();
-            var jsonWriter = new JsonWriter(rootNode);
+            ITemplateWriter jsonWriter = new JsonWriter();
 
             // ACT
-            jsonWriter.SetToken("Person.Name.FirstName", new JValue("ABC"));
-            jsonWriter.SetToken("Person.Name.LastName", new JValue("XYZ"));
-            jsonWriter.SetToken("Person.Age", new JValue(50));
-            jsonWriter.SetToken("Person.DOB", new JValue(new DateTime(2000, 1, 1)));
-            jsonWriter.SetToken("Person.PhoneNumbers", new JArray(new List<string> { "123", "456", "789" }));
+            jsonWriter.SetToken("Person.Name.FirstName", "ABC");
+            jsonWriter.SetToken("Person.Name.LastName", "XYZ");
+            jsonWriter.SetToken("Person.Age", 50);
+            jsonWriter.SetToken("Person.DOB", new DateTime(2000, 1, 1));
+            jsonWriter.SetToken("Person.PhoneNumbers", new List<string> { "123", "456", "789" }, TokenType.List);
 
             // ASSERT
-            var firstName = rootNode["Person"]["Name"]["FirstName"];
-            Assert.Equal("ABC", firstName.ToObject<string>());
+            var firstName = jsonWriter.GetToken<string>("Person.Name.FirstName");
+            var lastName =  jsonWriter.GetToken<string>("Person.Name.LastName");
+            var age = jsonWriter.GetToken<int>("Person.Age");
+            var dob = jsonWriter.GetToken<DateTime>("Person.DOB");
+            var phoneNumbers = jsonWriter.GetToken<List<string>>("Person.PhoneNumbers");
 
-            var lastName = rootNode["Person"]["Name"]["LastName"];
-            Assert.Equal("XYZ", lastName.ToObject<string>());
-
-            var age = rootNode["Person"]["Age"];
-            Assert.Equal(50, age.ToObject<int>());
-
-            var dob = rootNode["Person"]["DOB"];
-            Assert.True(new DateTime(2000, 1, 1).Equals(dob.ToObject<DateTime>()));
-
-            var phoneNumbers = rootNode["Person"]["PhoneNumbers"];
-            Assert.Equal(new List<string> { "123", "456", "789" }, phoneNumbers.ToObject<List<string>>());
+            Assert.Equal("ABC", firstName);
+            Assert.Equal("XYZ", lastName);
+            Assert.Equal(50, age);
+            Assert.Equal(new DateTime(2000, 1, 1), dob);
+            Assert.Equal(new List<string> { "123", "456", "789" }, phoneNumbers);
+            Assert.Throws<InvalidOperationException>(() => jsonWriter.SetToken("Person.PhoneNumbers.Mobile", "789"));
+            Assert.Throws<InvalidOperationException>(() => jsonWriter.SetToken("Person.Name.FirstName.MiddleName", "PQR"));
         }
 
         [Fact]
-        public void GetTokenTests()
+        public void GetToken()
         {
             // ARRANGE
-            var rootNode = JObject.Parse(SampleJsonString);
-            var jsonWriter = new JsonWriter(rootNode);
+            ITemplateWriter jsonWriter = new JsonWriter();
+            jsonWriter.Parse(SampleJsonString);
 
-            // ACT 
-            var firstName = jsonWriter.GetToken("Person.Name.FirstName");
-            var lastName = jsonWriter.GetToken("Person.Name.LastName");
-            var gender = jsonWriter.GetToken("Person.Gender");
-            var age = jsonWriter.GetToken("Person.Age");
-            var phoneNumbers = jsonWriter.GetToken("Person.PhoneNumbers");
+            // ACT
+            var firstName = jsonWriter.GetToken<string>("Person.Name.FirstName");
+            var lastName = jsonWriter.GetToken<string>("Person.Name.LastName");
+            var gender = jsonWriter.GetToken<string>("Person.Gender");
+            var age = jsonWriter.GetToken<int>("Person.Age");
+            var phoneNumbers = jsonWriter.GetToken<List<string>>("Person.PhoneNumbers");
 
             // ASSERT
-            Assert.Equal("John", firstName.ToObject<string>());
-            Assert.Equal("Smith", lastName.ToObject<string>());
-            Assert.Equal("male", gender.ToObject<string>());
-            Assert.Equal(32, age.ToObject<int>());
-            Assert.Equal(new List<string> { "123", "456", "789" }, phoneNumbers.ToObject<List<string>>());
+            Assert.Equal("John", firstName);
+            Assert.Equal("Smith", lastName);
+            Assert.Equal("male", gender);
+            Assert.Equal(32, age);
+            Assert.Equal(new List<string> {"123", "456", "789"}, phoneNumbers);
             Assert.Throws<InvalidOperationException>(() => jsonWriter.GetToken("Person.Weight"));
             Assert.Throws<InvalidOperationException>(() => jsonWriter.GetToken("Person.Name.MiddleName"));
         }
 
         [Fact]
-        public void RemoveTokenTests()
+        public void RemoveToken()
         {
             // ARRANGE
-            var rootNode = JObject.Parse(SampleJsonString);
-            var jsonWriter = new JsonWriter(rootNode);
+            ITemplateWriter jsonWriter = new JsonWriter();
+            jsonWriter.Parse(SampleJsonString);
 
-            // ACT 
+            // ACT
             jsonWriter.RemoveToken("Person.Name.LastName");
             jsonWriter.RemoveToken("Person.Name.Age");
 
             // ASSERT
-            Assert.Null(rootNode["Person"]["Name"]["LastName"]);
-            Assert.Null(rootNode["Person"]["Name"]["Age"]);
-            Assert.NotNull(rootNode["Person"]["Name"]["FirstName"]);
-            Assert.NotNull(rootNode["Person"]["Gender"]);
-            Assert.NotNull(rootNode["Person"]["PhoneNumbers"]);
+            Assert.False(jsonWriter.Exists("Person.Name.LastName"));
+            Assert.False(jsonWriter.Exists("Person.Name.Age"));
+            Assert.True(jsonWriter.Exists("Person.Name.FirstName"));
+            Assert.True(jsonWriter.Exists("Person.Gender"));
+            Assert.True(jsonWriter.Exists("Person.PhoneNumbers"));
+        }
+
+        [Fact]
+        public void GetContent()
+        {
+            // ARRANGE
+            ITemplateWriter jsonWriter = new JsonWriter();
+            jsonWriter.SetToken("Person.Name.FirstName", "John");
+            jsonWriter.SetToken("Person.Name.LastName", "Smith");
+            jsonWriter.SetToken("Person.Age", 50);
+            jsonWriter.SetToken("Person.PhoneNumbers", new List<int> { 1, 2, 3 }, TokenType.List);
+            jsonWriter.SetToken("Person.Address", new Dictionary<string, string> { { "City", "AmazingCity" }, { "State", "AmazingState" } }, TokenType.KeyVal);
+            jsonWriter.SetToken("Person.IsAlive", true);
+
+            // ACT
+            var actualSnapshot = jsonWriter.GetContent();
+
+            // ASSERT
+            var expectedSnapshot = File.ReadAllText(Path.Combine("WriterTests", "snapshot.json"));
+            actualSnapshot = SanitizeFileContents(actualSnapshot);
+            expectedSnapshot = SanitizeFileContents(expectedSnapshot);
+            Assert.Equal(expectedSnapshot, actualSnapshot);
+        }
+
+        private string SanitizeFileContents(string content)
+        {
+            return content.Replace("\r\n", Environment.NewLine)
+                .Replace("\n", Environment.NewLine)
+                .Replace("\r\r\n", Environment.NewLine)
+                .Trim();
         }
     }
 }

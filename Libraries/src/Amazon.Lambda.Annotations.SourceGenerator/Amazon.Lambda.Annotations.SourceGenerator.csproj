@@ -17,6 +17,7 @@
   <ItemGroup>
     <!-- Generator dependencies, update Libraries/src/Amazon.Lambda.Annotations.nuspec whenever a new generator dependency is added.  -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" GeneratePathProperty="true" PrivateAssets="all" />
+    <PackageReference Include="YamlDotNet" Version="12.0.0" GeneratePathProperty="true" PrivateAssets="all" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -26,6 +27,7 @@
   <Target Name="GetDependencyTargetPaths">
     <ItemGroup>
       <TargetPathWithTargetPlatformMoniker Include="$(PKGNewtonsoft_Json)\lib\netstandard2.0\Newtonsoft.Json.dll" IncludeRuntimeDependency="false" />
+      <TargetPathWithTargetPlatformMoniker Include="$(PKGYamlDotNet)\lib\netstandard2.0\YamlDotNet.dll" IncludeRuntimeDependency="false" />
     </ItemGroup>
   </Target>
 

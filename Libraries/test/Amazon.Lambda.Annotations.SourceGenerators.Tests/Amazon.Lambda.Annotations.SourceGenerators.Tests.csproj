@@ -54,6 +54,12 @@
     <ItemGroup>
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
       <None Remove="Snapshots\ServerlessTemplates\voidexample.template" />
+      <None Update="WriterTests\snapshot.yaml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="WriterTests\snapshot.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
   <ItemGroup>
