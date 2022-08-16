@@ -33,7 +33,7 @@ namespace BlueprintBaseName._1
             var docs = @"Lambda Calculator Home:
 You can make the following requests to invoke other Lambda functions perform calculator operations:
 /add/{x}/{y}
-/substract/{x}/{y}
+/subtract/{x}/{y}
 /multiply/{x}/{y}
 /divide/{x}/{y}
 ";
@@ -67,12 +67,12 @@ You can make the following requests to invoke other Lambda functions perform cal
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
-        /// <returns>x substract y</returns>
+        /// <returns>x subtract y</returns>
         [LambdaFunction()]
-        [HttpApi(LambdaHttpMethod.Get, "/substract/{x}/{y}")]
-        public int Substract(int x, int y, ILambdaContext context)
+        [HttpApi(LambdaHttpMethod.Get, "/subtract/{x}/{y}")]
+        public int Subtract(int x, int y, ILambdaContext context)
         {
-            context.Logger.LogInformation($"{x} substract {y} is {x - y}");
+            context.Logger.LogInformation($"{x} subtract {y} is {x - y}");
             return x - y;
         }
 

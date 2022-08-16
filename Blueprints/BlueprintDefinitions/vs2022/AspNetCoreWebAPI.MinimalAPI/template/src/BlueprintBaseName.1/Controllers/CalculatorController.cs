@@ -21,7 +21,7 @@ public class CalculatorController : ControllerBase
         return x + y;
     }
 
-    // GET calculator/substract/4/2/
+    // GET calculator/subtract/4/2/
     [HttpGet("subtract/{x}/{y}")]
     public int Subtract(int x, int y)
     {
