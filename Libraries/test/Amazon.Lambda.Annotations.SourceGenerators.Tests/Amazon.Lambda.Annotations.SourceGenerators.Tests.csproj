@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
-        <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-        <LangVersion>latest</LangVersion>
-    </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
 
-    <ItemGroup>
+	<ItemGroup>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
         <PackageReference Include="Moq" Version="4.16.1" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
@@ -40,7 +40,8 @@
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
         <Content Remove="..\..\src\Amazon.Lambda.Annotations\obj\**" />
-        <Content Remove="..\..\src\Amazon.Lambda.Annotations\bin\**" />
+		<Content Remove="..\..\src\Amazon.Lambda.Annotations\bin\**" />
+		<Content Remove="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -52,6 +53,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Remove="Snapshots\ServerlessTemplates\messaging.template" />
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
       <None Remove="Snapshots\ServerlessTemplates\voidexample.template" />
     </ItemGroup>
@@ -64,7 +66,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations.SourceGenerator\Amazon.Lambda.Annotations.SourceGenerator.csproj" />
-      <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
       <!-- 
 	    We need to force using the .NET Standard 2.0 version because the source generator test framework will complain
@@ -72,6 +73,11 @@
 	  -->
       <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" AdditionalProperties="TargetFramework=netstandard2.0" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Models\Attributes\" />
     </ItemGroup>
 
     <ItemGroup>

@@ -107,6 +107,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestServerlessApp", "test\TestServerlessApp\TestServerlessApp.csproj", "{3D322CAB-0DDD-4C84-B3ED-0862F244AF5C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Annotations.SourceGenerators.Tests", "test\Amazon.Lambda.Annotations.SourceGenerators.Tests\Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj", "{D76F2C74-3D7F-4DB3-BA1A-F2EA14749253}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3D322CAB-0DDD-4C84-B3ED-0862F244AF5C} = {3D322CAB-0DDD-4C84-B3ED-0862F244AF5C}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Annotations", "src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj", "{ADA9AF37-A8C1-47E6-BBBD-5C7E49C26C0E}"
 EndProject
@@ -126,14 +129,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestMinimalAPIApp", "test\T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.MQEvents", "src\Amazon.Lambda.MQEvents\Amazon.Lambda.MQEvents.csproj", "{BF85932E-2DFF-41CD-8090-A672468B8FBB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.LexV2Events", "src\Amazon.Lambda.LexV2Events\Amazon.Lambda.LexV2Events.csproj", "{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.LexV2Events", "src\Amazon.Lambda.LexV2Events\Amazon.Lambda.LexV2Events.csproj", "{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		test\EventsTests.Shared\EventsTests.Shared.projitems*{44e9d925-b61d-4234-97b7-61424c963ba6}*SharedItemsImports = 5
-		test\EventsTests.Shared\EventsTests.Shared.projitems*{a2cb78bb-e54f-48ca-bbfb-9553d27ef23d}*SharedItemsImports = 13
-		test\EventsTests.Shared\EventsTests.Shared.projitems*{c1bb30d2-3237-4cfc-ba93-627471148ec2}*SharedItemsImports = 5
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -411,5 +409,10 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		test\EventsTests.Shared\EventsTests.Shared.projitems*{44e9d925-b61d-4234-97b7-61424c963ba6}*SharedItemsImports = 5
+		test\EventsTests.Shared\EventsTests.Shared.projitems*{a2cb78bb-e54f-48ca-bbfb-9553d27ef23d}*SharedItemsImports = 13
+		test\EventsTests.Shared\EventsTests.Shared.projitems*{c1bb30d2-3237-4cfc-ba93-627471148ec2}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

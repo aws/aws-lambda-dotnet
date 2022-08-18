@@ -19,6 +19,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string APIGatewayHttpApiV2ProxyResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse";
 
         public const string LambdaFunctionAttribute = "Amazon.Lambda.Annotations.LambdaFunctionAttribute";
+        public const string SqsMessageAttribute = "Amazon.Lambda.Annotations.SqsMessageAttribute";
         public const string FromServiceAttribute = "Amazon.Lambda.Annotations.FromServicesAttribute";
 
         public const string HttpApiVersion = "Amazon.Lambda.Annotations.APIGateway.HttpApiVersion";

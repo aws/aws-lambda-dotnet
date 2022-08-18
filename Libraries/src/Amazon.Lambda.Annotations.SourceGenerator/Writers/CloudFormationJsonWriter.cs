@@ -49,6 +49,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             RemoveOrphanedLambdaFunctions(processedLambdaFunctions);
+            RemoveOrphanedResources();
+
             var json = _jsonWriter.GetPrettyJson();
             _fileManager.WriteAllText(report.CloudFormationTemplatePath, json);
 
@@ -131,6 +133,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         private void ProcessLambdaFunctionEventAttributes(ILambdaFunctionSerializable lambdaFunction)
         {
             var currentSyncedEvents = new List<string>();
+            var currentSyncedResources = new List<string>();
 
             foreach (var attributeModel in lambdaFunction.Attributes)
             {
@@ -145,11 +148,24 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         eventName = ProcessRestApiAttribute(lambdaFunction, restApiAttributeModel.Data);
                         currentSyncedEvents.Add(eventName);
                         break;
+                    case AttributeModel<SqsMessageAttribute> sqsAttributeModel:
+                        ISqsQueueSerializable sqsQueue = SqsQueueModelBuilder.Build(lambdaFunction, sqsAttributeModel.Data);
+                        eventName = ProcessSqsMessageAttribute(lambdaFunction, sqsQueue);
+                        currentSyncedEvents.Add(eventName);
+                        if (ShouldProcessQueue(lambdaFunction, sqsQueue))
+                        {
+                            string queueLogicalId = ProcessQueue(sqsQueue);
+                            currentSyncedResources.Add(queueLogicalId);
+                            _processedResources.Add(queueLogicalId);
+                        }
+                        break;
                 }
             }
 
             var eventsPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
-            var syncedEventsMetadataPath = $"Resources.{lambdaFunction.Name}.Metadata.SyncedEvents";
+            var metadataPath = $"Resources.{lambdaFunction.Name}.Metadata";
+            var syncedEventsMetadataPath = $"{metadataPath}.SyncedEvents";
+            var syncedResourcesMetadataPath = $"{metadataPath}.SyncedResources";
 
             if (_jsonWriter.GetToken(syncedEventsMetadataPath, new JArray()) is JArray previousSyncedEvents)
             {
@@ -160,12 +176,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 }
             }
 
+            if (_jsonWriter.GetToken(syncedResourcesMetadataPath, new JArray()) is JArray previousSyncedResources)
+            {
+                foreach (var previousSyncedResource in previousSyncedResources.Select(x => x.ToObject<string>()))
+                {
+                    if (!currentSyncedResources.Contains(previousSyncedResource))
+                        _jsonWriter.RemoveToken($"{eventsPath}.{previousSyncedResources}");
+                }
+            }
+
             if (currentSyncedEvents.Any())
                 _jsonWriter.SetToken(syncedEventsMetadataPath, new JArray(currentSyncedEvents));
             else
                 _jsonWriter.RemoveToken(syncedEventsMetadataPath);
-        }
 
+            if (currentSyncedResources.Any())
+                _jsonWriter.SetToken(syncedResourcesMetadataPath, new JArray(currentSyncedResources));
+            else
+                _jsonWriter.RemoveToken(syncedResourcesMetadataPath);
+        }
         private string ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute)
         {
             var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
@@ -193,7 +222,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             return $"Root{methodName}";
         }
-
         private void ApplyLambdaFunctionDefaults(string lambdaFunctionPath, string propertiesPath)
         {
             _jsonWriter.SetToken($"{lambdaFunctionPath}.Type", "AWS::Serverless::Function");
@@ -205,13 +233,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             _jsonWriter.SetToken($"{propertiesPath}.Timeout", 30);
             _jsonWriter.SetToken($"{propertiesPath}.Policies", new JArray("AWSLambdaBasicExecutionRole"));
         }
-
         private void CreateNewTemplate()
         {
             var content = @"{'AWSTemplateFormatVersion' : '2010-09-09', 'Transform' : 'AWS::Serverless-2016-10-31'}";
             _jsonWriter.Parse(content);
         }
-
         private void RemoveOrphanedLambdaFunctions(HashSet<string> processedLambdaFunctions)
         {
             var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
@@ -247,6 +273,406 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var refNode = new JObject();
             refNode["Ref"] = value.Substring(1);
             return refNode;
+        }
+
+        // I don't like this being a field member, but given
+        // the previous patterns, I can't find a better method
+        private readonly HashSet<string> _processedResources = new HashSet<string>();
+        private string ProcessQueue(ISqsQueueSerializable data)
+        {
+            //var sqsQueueTemplateInfo = GetSqsQueueLogicalIdAndPath(data);
+            var queueResourcePath = $"Resources.{data.QueueLogicalId}";
+            var propertiesPath = $"{queueResourcePath}.Properties";
+
+            if (!_jsonWriter.Exists(queueResourcePath))
+                ApplyQueueDefaults(queueResourcePath, propertiesPath);
+
+            ProcessQueueAttributes(data, propertiesPath);
+
+            return data.QueueLogicalId;
+        }
+        private void ProcessQueueAttributes(ISqsQueueSerializable sqsMessageAttribute, string propertiesPath)
+        {
+            try
+            {
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.ContentBasedDeduplication)}", sqsMessageAttribute.ContentBasedDeduplication, SqsMessageAttribute.ContentBasedDeduplicationDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.ContentBasedDeduplication)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.DeduplicationScope)}", sqsMessageAttribute.DeduplicationScope, string.Empty);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.DeduplicationScope)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.DelaySeconds)}", sqsMessageAttribute.DelaySeconds, SqsMessageAttribute.DelaySecondsDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.DelaySeconds)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.FifoQueue)}", sqsMessageAttribute.FifoQueue, SqsMessageAttribute.FifoQueueDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.FifoQueue)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.FifoThroughputLimit)}", sqsMessageAttribute.FifoThroughputLimit, string.Empty);
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.FifoThroughputLimit)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.KmsDataKeyReusePeriodSeconds)}", sqsMessageAttribute.KmsDataKeyReusePeriodSeconds, SqsMessageAttribute.KmsDataKeyReusePeriodSecondsDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.KmsDataKeyReusePeriodSeconds)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.KmsMasterKeyId)}", sqsMessageAttribute.KmsMasterKeyId, string.Empty);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.KmsDataKeyReusePeriodSeconds)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.MaximumMessageSize)}", sqsMessageAttribute.MaximumMessageSize, SqsMessageAttribute.MaximumMessageSizeDefault);
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.MaximumMessageSize)}", e);
+                }
+
+                // MessageRetentionPeriod
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.MessageRetentionPeriod)}", sqsMessageAttribute.MessageRetentionPeriod, SqsMessageAttribute.MessageRetentionPeriodDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.MessageRetentionPeriod)}", e);
+                }
+
+                // QueueName
+                try
+                {
+                    var queueNamePath = $"{propertiesPath}.{nameof(ISqsMessage.QueueName)}";
+
+                    if (sqsMessageAttribute.QueueName!= null)
+                    {
+                        _jsonWriter.SetToken(queueNamePath, sqsMessageAttribute.QueueName);
+                    }
+                    else
+                    {
+                        _jsonWriter.RemoveToken(queueNamePath);
+                    }
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.QueueName)}", e);
+                }
+
+                //ReceiveMessageWaitTimeSeconds
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.ReceiveMessageWaitTimeSeconds)}", sqsMessageAttribute.ReceiveMessageWaitTimeSeconds, SqsMessageAttribute.ReceiveMessageWaitTimeSecondsDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.ReceiveMessageWaitTimeSeconds)}", e);
+                }
+
+                //RedriveAllowPolicy
+                try
+                {
+                    WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedriveAllowPolicy)}", sqsMessageAttribute.RedriveAllowPolicy);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.RedriveAllowPolicy)}", e);
+                }
+
+                //RedrivePolicy
+                try
+                {
+                    WriteOrRemoveAsJson($"{propertiesPath}.{nameof(ISqsMessage.RedrivePolicy)}", sqsMessageAttribute.RedrivePolicy);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.RedrivePolicy)}", e);
+                }
+
+                // Tags
+                try
+                {
+                    var tagArray = new JArray();
+                    if (sqsMessageAttribute.Tags != default)
+                    {
+                        foreach (var tag in sqsMessageAttribute.Tags)
+                        {
+                            var tagParts = tag.Split('=');
+                            var key = tagParts.FirstOrDefault();
+                            var value = tagParts.LastOrDefault();
+                            if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
+                            {
+                                var tagObject = new JObject();
+                                tagObject.Add(new JProperty("Key", key));
+                                tagObject.Add(new JProperty("Value", value));
+                                tagArray.Add(tagObject);
+                            }
+                        }
+                    }
+
+                    if (tagArray.Any())
+                    {
+                        _jsonWriter.SetToken($"{propertiesPath}.{nameof(ISqsMessage.Tags)}", tagArray);
+                    }
+                    else
+                    {
+                        _jsonWriter.RemoveToken($"{propertiesPath}.{nameof(ISqsMessage.Tags)}");
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.Tags)}", e);
+                }
+
+                try
+                {
+                    WriteOrRemove($"{propertiesPath}.{nameof(ISqsMessage.VisibilityTimeout)}", sqsMessageAttribute.VisibilityTimeout, SqsMessageAttribute.VisibilityTimeoutDefault);
+
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.VisibilityTimeout)}", e);
+                }
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Failed to write AWS::SQS::Queue: {e.Message} {e.InnerException?.Message}", e);
+            }
+        }
+
+        private void RemoveOrphanedResources()
+        {
+            var resourceToken = _jsonWriter.GetToken("Resources") as JObject;
+            if (resourceToken == null)
+                return;
+
+            var toRemove = new List<string>();
+            foreach (var resource in resourceToken.Properties())
+            {
+                var resourcePath = $"Resources.{resource.Name}";
+                var type = _jsonWriter.GetToken($"{resourcePath}.Type", string.Empty);
+                var creationTool = _jsonWriter.GetToken($"{resourcePath}.Metadata.Tool", string.Empty);
+
+                if (string.Equals(type.ToObject<string>(), "AWS::SQS::Queue", StringComparison.Ordinal)
+                    && string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal)
+                    && !_processedResources.Contains(resource.Name))
+                {
+                    toRemove.Add(resource.Name);
+                }
+            }
+
+            foreach (var resourceName in toRemove)
+            {
+                _jsonWriter.RemoveToken($"Resources.{resourceName}");
+            }
+        }
+        private void WriteOrRemove(string path, bool value, bool defaultValue)
+        {
+            if (value != defaultValue)
+            {
+                _jsonWriter.SetToken(path, value);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(path);
+            }
+        }
+        private void WriteOrRemoveAsJson(string path, string value)
+        {
+
+            if (!string.IsNullOrEmpty(value))
+            {
+                _jsonWriter.SetToken(path, JObject.Parse(value));
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(path);
+            }
+        }
+        private void WriteOrRemove(string path, string value, string defaultValue)
+        {
+            if (value == null)
+            {
+                value = string.Empty;
+            }
+
+            if (defaultValue == null)
+            {
+                defaultValue = string.Empty;
+            }
+            if (value != defaultValue)
+            {
+                _jsonWriter.SetToken(path, value);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(path);
+            }
+        }
+        private void WriteOrRemove(string path, uint value, uint defaultValue)
+        {
+            if (value != defaultValue)
+            {
+                _jsonWriter.SetToken(path, value);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(path);
+            }
+        }
+        private void ApplyQueueDefaults(string sqsQueuePath, string propertiesPath)
+        {
+            _jsonWriter.SetToken($"{sqsQueuePath}.Type", "AWS::SQS::Queue");
+            _jsonWriter.SetToken($"{sqsQueuePath}.Metadata.Tool", "Amazon.Lambda.Annotations");
+
+        }
+        private bool ShouldProcessQueue(ILambdaFunctionSerializable lambdaFunctionSerializable, ISqsQueueSerializable data)
+        {
+            if (!string.IsNullOrEmpty(data.EventQueueARN)) return false;
+
+            var sqsInfo = GetSqsQueueLogicalIdAndPath(data);
+            var sqsQueuePath = sqsInfo.Item2;
+
+
+            if (!_jsonWriter.Exists(sqsQueuePath))
+                return true;
+
+            var creationTool = _jsonWriter.GetToken($"{sqsQueuePath}.Metadata.Tool", string.Empty);
+            return string.Equals(creationTool.ToObject<string>(), "Amazon.Lambda.Annotations", StringComparison.Ordinal);
+        }
+
+        internal static (string, string) GetSqsQueueLogicalIdAndPath(ISqsQueueSerializable data)
+        {
+            return (data.QueueLogicalId, $"Resources.{data.QueueLogicalId}");
+        }
+        private string ProcessSqsMessageAttribute(ILambdaFunctionSerializable lambdaFunction, ISqsQueueSerializable sqsQueueSerializable)
+        {
+            string eventHandle = "Sqs";
+
+            var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
+            var methodPath = $"{eventPath}.{eventHandle}";
+
+            _jsonWriter.SetToken($"{methodPath}.Type", "SQS");
+
+            var batchSizePropertyPath = $"{methodPath}.Properties.BatchSize";
+
+            if (sqsQueueSerializable.EventBatchSize != SqsMessageAttribute.EventBatchSizeDefault)
+            {
+                _jsonWriter.SetToken(batchSizePropertyPath, sqsQueueSerializable.EventBatchSize);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(batchSizePropertyPath);
+            }
+
+            var queueNamePath = $"{methodPath}.Properties.Queue";
+            if (!string.IsNullOrEmpty(sqsQueueSerializable.EventQueueARN))
+            {
+                _jsonWriter.SetToken(queueNamePath, sqsQueueSerializable.EventQueueARN);
+            }
+            else if (!string.IsNullOrEmpty(sqsQueueSerializable.QueueLogicalId))
+            {
+                _jsonWriter.SetToken(queueNamePath, new JObject(new JProperty("Fn::GetAtt",
+                    new JArray(sqsQueueSerializable.QueueLogicalId, "Arn"))));
+            }
+
+            try
+            {
+                var filterCriteriaPropertiesPath = $"{methodPath}.Properties.FilterCriteria";
+                if (sqsQueueSerializable.EventFilterCriteria.Any())
+                {
+                    var filterCriteriaPayload = new JObject();
+                    var filtersArray = new JArray();
+
+                    foreach (var eventFilterCriterion in sqsQueueSerializable.EventFilterCriteria)
+                    {
+                        var jObject = new JObject();
+                        jObject.Add("Pattern", eventFilterCriterion);
+                        filtersArray.Add(jObject);
+                    }
+
+                    filterCriteriaPayload.Add("Filters", filtersArray);
+
+                    if (filtersArray.Any())
+                    {
+                        _jsonWriter.SetToken(filterCriteriaPropertiesPath, filterCriteriaPayload);
+                    }
+                    else
+                    {
+                        _jsonWriter.RemoveToken(filterCriteriaPropertiesPath);
+                    }
+                }
+                else
+                {
+                        _jsonWriter.RemoveToken(filterCriteriaPropertiesPath);
+                }
+
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Failed to write {nameof(ISqsMessageSerializable.Tags)}", e);
+            }
+
+            var eventMaximumBatchingWindowInSecondsPropertyPath = $"{methodPath}.Properties.MaximumBatchingWindowInSeconds";
+            if (sqsQueueSerializable.EventMaximumBatchingWindowInSeconds != SqsMessageAttribute.MaximumBatchingWindowInSecondsDefault)
+            {
+                _jsonWriter.SetToken(eventMaximumBatchingWindowInSecondsPropertyPath, sqsQueueSerializable.EventMaximumBatchingWindowInSeconds);
+            }
+            else
+            {
+                _jsonWriter.RemoveToken(eventMaximumBatchingWindowInSecondsPropertyPath);
+            }
+
+
+            return eventHandle;
         }
     }
 }
