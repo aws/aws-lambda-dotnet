@@ -180,3 +180,12 @@ parameter to the `LambdaFunction` must be the event object and the event source 
     * Map method parameter to HTTP request body. If parameter is a complex type then request body will be assumed to be JSON and deserialized into the type.
 * FromServices
     * Map method parameter to registered service in IServiceProvider
+
+
+## Project References
+
+If you are using API Gateway event attributes, such as `RestAPI` or `HttpAPI`, you need to manually add a package reference to `Amazon.Lambda.APIGatewayEvents` in your project, otherwise the project will not compile. We do not include it by default in order to keep the `Amazon.Lambda.Annotations` library lightweight.
+
+This release only supports API Gateway Events. As we add support for other types of events, such as S3 or DynamoDB, the list of required package references will depend on the Lambda .NET attributes you are using. 
+
+**Note**: If you are using [dependency injection](#dependency-injection) to write functions for other service events , such as S3 or DynamoDB, you will need to reference these packages in your project as well
