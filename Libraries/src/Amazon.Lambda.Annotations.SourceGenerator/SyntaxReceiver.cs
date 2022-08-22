@@ -28,8 +28,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         {
             if(this.ProjectDirectory == null && context.Node is ClassDeclarationSyntax)
             {
-                var templateFinder = new CloudFormationTemplateFinder(_fileManager, _directoryManager);
-                this.ProjectDirectory = templateFinder.DetermineProjectRootDirectory(context.Node.SyntaxTree.FilePath);
+                var templateHandler = new CloudFormationTemplateHandler(_fileManager, _directoryManager);
+                this.ProjectDirectory = templateHandler.DetermineProjectRootDirectory(context.Node.SyntaxTree.FilePath);
             }
 
             // any method with at least one attribute is a candidate of function generation

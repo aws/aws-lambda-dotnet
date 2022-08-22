@@ -130,20 +130,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             YamlNode terminalToken;
-            switch (tokenType)
+
+            if (token is YamlNode yamlNode)
             {
-                case TokenType.List:
-                    terminalToken = GetDeserializedToken<YamlSequenceNode>(token);
-                    break;
-                case TokenType.KeyVal:
-                case TokenType.Object:
-                    terminalToken = GetDeserializedToken<YamlMappingNode>(token);
-                    break;
-                case TokenType.Other:
-                    terminalToken = GetDeserializedToken<YamlScalarNode>(token);
-                    break;
-                default:
-                    throw new InvalidOperationException($"Failed to deserialize token because {nameof(tokenType)} is invalid");
+                terminalToken = yamlNode;
+            }
+            else
+            {
+                switch (tokenType)
+                {
+                    case TokenType.List:
+                        terminalToken = GetDeserializedToken<YamlSequenceNode>(token);
+                        break;
+                    case TokenType.KeyVal:
+                    case TokenType.Object:
+                        terminalToken = GetDeserializedToken<YamlMappingNode>(token);
+                        break;
+                    case TokenType.Other:
+                        terminalToken = GetDeserializedToken<YamlScalarNode>(token);
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Failed to deserialize token because {nameof(tokenType)} is invalid");
+                }
             }
 
             var currentNode = _rootNode;
@@ -225,6 +233,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 .WithIndentedSequences()
                 .Build()
                 .Serialize(_rootNode);
+        }
+
+        /// <summary>
+        /// If the string does not start with '@', return it as is.
+        /// If a string value starts with '@' then a reference node is created and returned.
+        /// </summary>
+        public object GetValueOrRef(string value)
+        {
+            if (!value.StartsWith("@"))
+                return value;
+
+            var yamlNode = new YamlMappingNode();
+            yamlNode.Children["Ref"] = value.Substring(1);
+            return yamlNode;
         }
 
         /// <summary>

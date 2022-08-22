@@ -208,8 +208,7 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/ComplexCalculator/Add",
-              "Method": "POST",
-              "PayloadFormatVersion": "2.0"
+              "Method": "POST"
             }
           }
         },
@@ -241,8 +240,7 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/ComplexCalculator/Subtract",
-              "Method": "POST",
-              "PayloadFormatVersion": "2.0"
+              "Method": "POST"
             }
           }
         },

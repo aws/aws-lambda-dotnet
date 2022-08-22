@@ -191,6 +191,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         }
 
         /// <summary>
+        /// If the string does not start with '@', return it as is.
+        /// If a string value starts with '@' then a reference node is created and returned.
+        /// </summary>
+        public object GetValueOrRef(string value)
+        {
+            if (!value.StartsWith("@"))
+                return value;
+
+            var jsonNode = new JObject();
+            jsonNode["Ref"] = value.Substring(1);
+            return jsonNode;
+        }
+
+        /// <summary>
         /// Validates that the jsonPath is not null or comprises only of white spaces. Also ensures that it does not have consecutive dots(.)
         /// </summary>
         /// <param name="jsonPath"></param>

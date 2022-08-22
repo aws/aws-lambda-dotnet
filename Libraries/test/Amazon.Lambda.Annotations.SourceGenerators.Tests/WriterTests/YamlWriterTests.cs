@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Xunit;
+using YamlDotNet.RepresentationModel;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
@@ -138,6 +139,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             actualSnapshot = SanitizeFileContents(actualSnapshot);
             expectedSnapshot = SanitizeFileContents(expectedSnapshot);
             Assert.Equal(expectedSnapshot, actualSnapshot);
+        }
+
+        [Fact]
+        public void GetValueOrRef()
+        {
+            // ARRANGE
+            ITemplateWriter yamlWriter = new YamlWriter();
+
+            // ACT
+            var stringVal = yamlWriter.GetValueOrRef("Hello");
+            var refNode = (YamlMappingNode)yamlWriter.GetValueOrRef("@Hello");
+
+            Assert.Equal("Hello", stringVal);
+            Assert.Equal("Hello", refNode.Children["Ref"]);
         }
 
         private string SanitizeFileContents(string content)
