@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
@@ -136,6 +137,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             actualSnapshot = SanitizeFileContents(actualSnapshot);
             expectedSnapshot = SanitizeFileContents(expectedSnapshot);
             Assert.Equal(expectedSnapshot, actualSnapshot);
+        }
+
+        [Fact]
+        public void GetValueOrRef()
+        {
+            // ARRANGE
+            ITemplateWriter jsonWriter = new JsonWriter();
+
+            // ACT
+            var stringVal = jsonWriter.GetValueOrRef("Hello");
+            var refNode = (JObject)jsonWriter.GetValueOrRef("@Hello");
+
+            Assert.Equal("Hello", stringVal);
+            Assert.Equal("Hello", refNode["Ref"]);
         }
 
         private string SanitizeFileContents(string content)

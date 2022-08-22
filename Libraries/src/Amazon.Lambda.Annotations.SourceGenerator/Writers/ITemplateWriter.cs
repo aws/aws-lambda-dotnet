@@ -50,5 +50,11 @@
         /// </summary>
         /// <param name="content"></param>
         void Parse(string content);
+
+        /// <summary>
+        /// If the string does not start with '@', return it as is.
+        /// If a string value starts with '@' then a reference node is created and returned.
+        /// </summary>
+        object GetValueOrRef(string value);
     }
 }
