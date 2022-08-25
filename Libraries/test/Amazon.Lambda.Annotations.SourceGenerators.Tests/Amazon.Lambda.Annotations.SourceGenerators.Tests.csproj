@@ -53,6 +53,7 @@
 
     <ItemGroup>
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
+      <None Remove="Snapshots\ServerlessTemplates\taskexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\voidexample.template" />
     </ItemGroup>
 
