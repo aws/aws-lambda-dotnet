@@ -320,7 +320,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
                 if (customerSerializerInstance == null)
                 {
                     throw LambdaExceptions.ValidationException(Errors.UserCodeLoader.SerializeMissingAttribute,
-                        _handler.AssemblyName, _handler.MethodName, dataType.FullName);
+                        _handler.AssemblyName, _handler.MethodName, dataType.FullName, typeof(LambdaSerializerAttribute).FullName);
                 }
 
                 iLambdaSerializerType = customerSerializerInstance
@@ -372,7 +372,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
                 if (customerSerializerInstance == null)
                 {
                     throw LambdaExceptions.ValidationException(Errors.UserCodeLoader.DeserializeMissingAttribute,
-                        _handler.AssemblyName, _handler.MethodName, dataType.FullName);
+                        _handler.AssemblyName, _handler.MethodName, dataType.FullName, typeof(LambdaSerializerAttribute).FullName);
                 }
 
                 genericTypes = new[] {dataType};

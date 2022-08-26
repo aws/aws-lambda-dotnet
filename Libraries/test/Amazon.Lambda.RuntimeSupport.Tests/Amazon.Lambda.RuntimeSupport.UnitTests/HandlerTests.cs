@@ -21,6 +21,7 @@ using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
 using Amazon.Lambda.RuntimeSupport.ExceptionHandling;
 using Amazon.Lambda.RuntimeSupport.Helpers;
@@ -149,8 +150,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             await TestHandlerFailAsync("HandlerTest::HandlerTest.CustomerType::TwoInputsNoContextMethod", "is not supported: the method has 2 parameters, but the second parameter is not of type");
             await TestHandlerFailAsync("HandlerTest::HandlerTest.CustomerType::TooManyInputsMethod", "is not supported: the method has more than 2 parameters.");
 
-            await TestHandlerFailAsync("HandlerTestNoSerializer::HandlerTestNoSerializer.CustomerType::PocoInPocoOut", "To use types other than System.IO.Stream as input/output parameters, the assembly or Lambda function should be annotated with Amazon.Lambda.LambdaSerializerAttribute.");
-            await TestHandlerFailAsync("HandlerTestNoSerializer::HandlerTestNoSerializer.CustomerType::PocoInPocoOut", "To use types other than System.IO.Stream as input/output parameters, the assembly or Lambda function should be annotated with Amazon.Lambda.LambdaSerializerAttribute.");
+            await TestHandlerFailAsync("HandlerTestNoSerializer::HandlerTestNoSerializer.CustomerType::PocoInPocoOut", $"To use types other than System.IO.Stream as input/output parameters, the assembly or Lambda function should be annotated with {typeof(LambdaSerializerAttribute).FullName}.");
+            await TestHandlerFailAsync("HandlerTestNoSerializer::HandlerTestNoSerializer.CustomerType::PocoInPocoOut", $"To use types other than System.IO.Stream as input/output parameters, the assembly or Lambda function should be annotated with {typeof(LambdaSerializerAttribute).FullName}.");
 
             var noZeroParamTypeEx = await TestHandlerFailAsync("HandlerTest::HandlerTest.NoZeroParamConstructorCustomerType::SimpleMethod", "No parameterless constructor defined");
             Assert.IsAssignableFrom<MissingMethodException>(noZeroParamTypeEx);
