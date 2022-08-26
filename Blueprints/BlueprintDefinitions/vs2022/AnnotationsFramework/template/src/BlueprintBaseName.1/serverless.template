@@ -63,7 +63,7 @@
         }
       }
     },
-    "BlueprintBaseName1FunctionsSubstractGenerated": {
+    "BlueprintBaseName1FunctionsSubtractGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -80,12 +80,12 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "BlueprintBaseName._1::BlueprintBaseName._1.Functions_Substract_Generated::Substract",
+        "Handler": "BlueprintBaseName._1::BlueprintBaseName._1.Functions_Subtract_Generated::Subtract",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
             "Properties": {
-              "Path": "/substract/{x}/{y}",
+              "Path": "/subtract/{x}/{y}",
               "Method": "GET",
               "PayloadFormatVersion": "2.0"
             }
