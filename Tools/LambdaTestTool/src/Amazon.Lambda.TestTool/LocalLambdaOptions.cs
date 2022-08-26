@@ -1,15 +1,15 @@
-﻿using System;
+﻿using Amazon.Lambda.TestTool.Runtime;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-
-using Amazon.Lambda.TestTool.Runtime;
 
 namespace Amazon.Lambda.TestTool
 {
     public class LocalLambdaOptions
     {
+        public string Host { get; set; }
+
         public int? Port { get; set; }
 
         public IList<string> LambdaConfigFiles { get; set; }
@@ -24,7 +24,7 @@ namespace Amazon.Lambda.TestTool
             {
                 throw new Exception($"{configFile} is not a config file for this project");
             }
-            
+
             var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(fullConfigFilePath);
             return LoadLambdaFuntion(configInfo, functionHandler);
         }
@@ -53,7 +53,7 @@ namespace Amazon.Lambda.TestTool
 
             var function = this.LambdaRuntime.LoadLambdaFunction(functionInfo);
             return function;
-        }        
+        }
 
         /// <summary>
         /// The directory to store in local settings for a Lambda project for example saved Lambda requests.
@@ -70,7 +70,7 @@ namespace Amazon.Lambda.TestTool
                 currentDirectory = this.LambdaRuntime.LambdaAssemblyDirectory;
 
             var preferenceDirectory = Path.Combine(currentDirectory, ".lambda-test-tool");
-            if(createIfNotExist && !Directory.Exists(preferenceDirectory))
+            if (createIfNotExist && !Directory.Exists(preferenceDirectory))
             {
                 Directory.CreateDirectory(preferenceDirectory);
             }

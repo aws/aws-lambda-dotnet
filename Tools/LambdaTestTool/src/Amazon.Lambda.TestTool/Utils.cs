@@ -1,12 +1,13 @@
-﻿using Amazon.Lambda.TestTool.Runtime;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using Amazon.Lambda.TestTool.Runtime;
 
 namespace Amazon.Lambda.TestTool
 {
@@ -31,7 +32,7 @@ namespace Amazon.Lambda.TestTool
 
             return attribute?.InformationalVersion;
         }
-        
+
         /// <summary>
         /// A collection of known paths for common utilities that are usually not found in the path
         /// </summary>
@@ -54,7 +55,7 @@ namespace Amazon.Lambda.TestTool
 
             if (string.Equals(command, "dotnet.exe"))
             {
-                if(!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     command = "dotnet";
                 }
@@ -99,10 +100,10 @@ namespace Amazon.Lambda.TestTool
 
         public static bool IsProjectDirectory(string directory)
         {
-            if(Directory.GetFiles(directory, "*.csproj").Length > 0 ||
+            if (Directory.GetFiles(directory, "*.csproj").Length > 0 ||
                 Directory.GetFiles(directory, "*.fsproj").Length > 0 ||
                 Directory.GetFiles(directory, "*.vbproj").Length > 0)
-                {
+            {
                 return true;
             }
 
@@ -113,10 +114,10 @@ namespace Amazon.Lambda.TestTool
         {
             if (string.IsNullOrEmpty(lambdaAssemblyDirectory))
                 return null;
-            
+
             if (IsProjectDirectory(lambdaAssemblyDirectory))
                 return lambdaAssemblyDirectory;
-            
+
             return FindLambdaProjectDirectory(Directory.GetParent(lambdaAssemblyDirectory)?.FullName);
         }
 
@@ -143,10 +144,10 @@ namespace Amazon.Lambda.TestTool
                             Console.WriteLine($"Found Lambda config file {file}");
                             configFiles.Add(file);
                         }
-                        else if(!string.IsNullOrEmpty(configFile.Template) && File.Exists(Path.Combine(lambdaFunctionDirectory, configFile.Template)))
+                        else if (!string.IsNullOrEmpty(configFile.Template) && File.Exists(Path.Combine(lambdaFunctionDirectory, configFile.Template)))
                         {
                             var config = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
-                            if(config.FunctionInfos?.Count > 0)
+                            if (config.FunctionInfos?.Count > 0)
                             {
                                 Console.WriteLine($"Found Lambda config file {file}");
                                 configFiles.Add(file);
@@ -211,6 +212,15 @@ namespace Amazon.Lambda.TestTool
                 return false;
 #endif
             }
+        }
+
+        public static string DetermineLaunchUrl(string host, int port, string defaultHost)
+        {
+            if (!IPAddress.TryParse(host, out _))
+                // Any host other than explicit IP will be redirected to default host (i.e. localhost)
+                return $"http://{defaultHost}:{port}";
+
+            return $"http://{host}:{port}";
         }
     }
 }
