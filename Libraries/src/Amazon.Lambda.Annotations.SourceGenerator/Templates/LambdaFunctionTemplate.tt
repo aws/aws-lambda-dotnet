@@ -470,7 +470,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
         else if (_model.LambdaMethod.ReturnsTask)
         {
 #>
-            return await <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+            await <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
 <#
         }
         else

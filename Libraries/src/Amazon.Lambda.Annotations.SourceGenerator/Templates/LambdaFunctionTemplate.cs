@@ -1251,7 +1251,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write("            return await ");
+            this.Write("            await ");
             
             #line 473 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));

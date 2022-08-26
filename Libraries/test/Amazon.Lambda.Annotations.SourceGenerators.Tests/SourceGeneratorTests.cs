@@ -252,5 +252,41 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
             Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
+
+        [Fact]
+        public async Task VerifyFunctionReturnTask()
+        {
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "taskexample.template")).ToEnvironmentLineEndings();
+            var expectedSubNamespaceGenerated = File.ReadAllText(Path.Combine("Snapshots", "TaskExample_TaskReturn_Generated.g.cs")).ToEnvironmentLineEndings();
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "TaskExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "TaskExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "TaskExample_TaskReturn_Generated.g.cs",
+                            SourceText.From(expectedSubNamespaceGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("TaskExample_TaskReturn_Generated.g.cs", expectedSubNamespaceGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    }
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
     }
 }
