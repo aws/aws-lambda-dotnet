@@ -40,3 +40,8 @@ Deploy application
     cd "BlueprintBaseName.1/src/BlueprintBaseName.1"
     dotnet lambda deploy-serverless
 ```
+## Arm64
+
+Arm64 support is provided by the AWS Graviton2 processor. For many Lambda workloads Graviton2 provides the best price performance.
+
+If you want to run your Lambda on a Graviton2 Arm64 processor, all you need to do is replace `x86_64` with `arm64` under `"Architectures": ` in the `serverless.template` file. Then deploy as described above. 
