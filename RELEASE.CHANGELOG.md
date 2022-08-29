@@ -1,3 +1,8 @@
+### Release 2022-08-29
+* **Amazon.Lambda.Annotations (0.7.0-preview)**
+  * Add support for syncing YAML based CloudFormation templates
+  * Fix code generation bug for non API Gateway based Lambda functions returning a Task with no value
+
 ### Release 2022-08-03
 * **Amazon.Lambda.Templates (6.3.0)**
   * Updated PackageReferences of AWS packages referenced in the templates.
