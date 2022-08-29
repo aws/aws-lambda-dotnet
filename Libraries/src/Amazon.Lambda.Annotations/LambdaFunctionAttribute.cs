@@ -1,9 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Amazon.Lambda.Annotations
 {
+    /// <summary>
+    /// Indicates this method should be exposed as a Lambda function
+    /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
     public class LambdaFunctionAttribute : Attribute
     {
@@ -32,10 +33,7 @@ namespace Amazon.Lambda.Annotations
         /// </summary>
         public string Policies { get; set; }
 
-        /// <summary>
-        /// The deployment package type of the Lambda function. The supported values are Zip or Image. The default value is Zip.
-        /// For more information, see <a href="https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-package.html">here</a>
-        /// </summary>
+        /// <inheritdoc cref="LambdaPackageType" />
         public LambdaPackageType PackageType { get; set; }
     }
 }
