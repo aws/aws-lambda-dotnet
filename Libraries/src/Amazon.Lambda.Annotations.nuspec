@@ -22,6 +22,7 @@
 
         <!-- Dependencies to make sure attributes are available in consuming csproj, this ensures packaged version of customer code have all the dependencies needed. -->
         <file src="Amazon.Lambda.Annotations\bin\Release\netstandard2.0\Amazon.Lambda.Annotations.dll" target="lib/net6.0" />
+        <file src="Amazon.Lambda.Annotations\bin\Release\netstandard2.0\Amazon.Lambda.Annotations.xml" target="lib/net6.0" />
 
         <!-- Include every dependency manually for analyzer, whenever a new dependency is added, it has to be added here. -->
         <!-- NOTE: Project dependencies should come from their own bin folder to make sure a code signed binary is packed -->
