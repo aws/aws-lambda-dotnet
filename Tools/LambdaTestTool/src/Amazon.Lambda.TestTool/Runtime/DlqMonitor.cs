@@ -1,12 +1,9 @@
-﻿using System;
+﻿using Amazon.SQS.Model;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon.Lambda.SQSEvents;
-using Amazon.Lambda.TestTool.Services;
-
-using Amazon.SQS.Model;
 
 namespace Amazon.Lambda.TestTool.Runtime
 {
@@ -72,9 +69,9 @@ namespace Amazon.Lambda.TestTool.Runtime
                     var request = new ExecutionRequest
                     {
                         AWSProfile = this._profile,
-                        AWSRegion =  this._region,
+                        AWSRegion = this._region,
                         Function = this._function,
-                        Payload = JsonSerializer.Serialize(new 
+                        Payload = JsonSerializer.Serialize(new
                         {
                             Records = new List<Message>
                             {
