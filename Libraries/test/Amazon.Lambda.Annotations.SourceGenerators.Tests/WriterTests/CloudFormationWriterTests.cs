@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator;
@@ -134,20 +135,58 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         public void UseRefForRole(CloudFormationTemplateFormat templateFormat)
         {
             // ARRANGE
-            var mockFileManager = GetMockFileManager(string.Empty);
+            const string jsonContent = @"{
+                       'Parameters':{
+                          'Basic':{
+                             'Type':'String',
+                          }
+                       }
+                    }";
+
+            const string yamlContent = @"Parameters:
+                                          Basic:
+                                            Type: String";
+
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            var content = templateFormat == CloudFormationTemplateFormat.Json ? jsonContent : yamlContent;
+
+            var mockFileManager = GetMockFileManager(content);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, "@Basic", null);
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
-            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
-            const string rolePath = "Resources.TestMethod.Properties.Role.Ref";
 
             // ACT
             cloudFormationWriter.ApplyReport(report);
 
             // ASSERT
+            const string rolePath = "Resources.TestMethod.Properties.Role.Ref";
             templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
             Assert.Equal("Basic", templateWriter.GetToken<string>(rolePath));
+            Assert.False(templateWriter.Exists("Resources.TestMethod.Properties.Role.Fn::GetAtt"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void UseFnGetForRole(CloudFormationTemplateFormat templateFormat)
+        {
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "TestMethod", 45, 512, "@Basic", null);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            const string rolePath = "Resources.TestMethod.Properties.Role.Fn::GetAtt";
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.Equal(new List<string>{"Basic", "Arn"}, templateWriter.GetToken<List<string>>(rolePath));
+            Assert.False(templateWriter.Exists("Resources.TestMethod.Properties.Role.Ref"));
         }
 
         [Theory]
