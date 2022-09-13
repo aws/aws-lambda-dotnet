@@ -1,3 +1,10 @@
+### Release 2022-09-13
+* **Amazon.Lambda.Annotations (0.8.0-preview)**
+  * Add third party licenses
+  * Correctly populate the role property in CloudFormation template
+  * Copy XML documentation for Amazon.Lambda.Annotations into nupkg to drive IntelliSense
+  * Add more detail to the Lambda Annotations README.md
+
 ### Release 2022-08-29
 * **Amazon.Lambda.Annotations (0.7.0-preview)**
   * Add support for syncing YAML based CloudFormation templates
