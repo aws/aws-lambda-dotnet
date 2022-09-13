@@ -1,10 +1,9 @@
-﻿using System;
+﻿using Amazon.SQS.Model;
+using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon.Lambda.TestTool.Services;
-
-using Amazon.SQS.Model;
 
 namespace Amazon.Lambda.TestTool.Runtime
 {
@@ -17,7 +16,7 @@ namespace Amazon.Lambda.TestTool.Runtime
         private readonly object LOG_LOCK = new object();
         private CancellationTokenSource _cancelSource;
         private IList<LogRecord> _records = new List<LogRecord>();
-        
+
         private readonly ILocalLambdaRuntime _runtime;
         private readonly LambdaFunction _function;
         private readonly string _profile;
@@ -70,13 +69,19 @@ namespace Amazon.Lambda.TestTool.Runtime
                     var request = new ExecutionRequest
                     {
                         AWSProfile = this._profile,
-                        AWSRegion =  this._region,
+                        AWSRegion = this._region,
                         Function = this._function,
-                        Payload = message.Body
+                        Payload = JsonSerializer.Serialize(new
+                        {
+                            Records = new List<Message>
+                            {
+                                message
+                            }
+                        })
                     };
 
                     var response = await this._runtime.ExecuteLambdaFunctionAsync(request);
-                    
+
                     // Capture the results to send back to the client application.
                     logRecord = new LogRecord
                     {
@@ -93,17 +98,17 @@ namespace Amazon.Lambda.TestTool.Runtime
                         ProcessTime = DateTime.Now,
                         Error = e.Message
                     };
-                    
+
                     Thread.Sleep(1000);
                 }
 
-                if(logRecord != null && message != null)
+                if (logRecord != null && message != null)
                 {
                     logRecord.Event = message.Body;
                 }
 
                 lock (LOG_LOCK)
-                {                    
+                {
                     this._records.Add(logRecord);
                 }
             }
@@ -119,7 +124,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                 return logsToSend;
             }
         }
-        
+
 
         public class LogRecord
         {

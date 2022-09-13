@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-using Amazon.Runtime;
+﻿using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
-
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Amazon.Lambda.TestTool.Services
 {
@@ -53,7 +50,9 @@ namespace Amazon.Lambda.TestTool.Services
                     QueueUrl = queueUrl,
                     WaitTimeSeconds = 20,
                     MaxNumberOfMessages = 1,
-                    VisibilityTimeout = 60
+                    VisibilityTimeout = 60,
+                    AttributeNames = new List<string>() { "All" },
+                    MessageAttributeNames = new List<string>() { "*" }
                 };
                 var response = await client.ReceiveMessageAsync(request);
                 if (response.Messages.Count == 0)
