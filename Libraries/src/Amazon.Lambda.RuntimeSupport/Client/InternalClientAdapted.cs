@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -263,7 +263,7 @@ namespace Amazon.Lambda.RuntimeSupport
 #if NET6_0_OR_GREATER
                                 result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_, RuntimeApiSerializationContext.Default.ErrorResponse);
 #else
-                                    result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
+                                result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
 #endif
                             }
                             catch (System.Exception exception_)

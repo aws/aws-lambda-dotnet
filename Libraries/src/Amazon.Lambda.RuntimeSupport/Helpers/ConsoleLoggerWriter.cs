@@ -1,4 +1,19 @@
-﻿using Amazon.Lambda.RuntimeSupport.Bootstrap;
+﻿/*
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://aws.amazon.com/apache2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
 using System;
 using System.IO;
 using System.Reflection;
@@ -9,7 +24,7 @@ using System.Threading.Tasks;
 namespace Amazon.Lambda.RuntimeSupport.Helpers
 {
     /// <summary>
-    /// Interface used by bootstrap to format logging message as well as Console Writeline messages.
+    /// Interface used by bootstrap to format logging message as well as Console WriteLine messages.
     /// </summary>
     public interface IConsoleLoggerWriter
     {
@@ -34,7 +49,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
     }
 
     /// <summary>
-    /// Simple logger to maintain compatiblity with verisons of .NET before .NET 6
+    /// Simple logger to maintain compatibility with versions of .NET before .NET 6
     /// </summary>
     public class SimpleLoggerWriter : IConsoleLoggerWriter
     {
@@ -128,10 +143,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         WrapperTextWriter _wrappedStdErrorWriter;
 
         /// <summary>
-        /// Constructor used by bootstrap to put in place a wrapper TextWriter around stdout and stderror so all Console.Writeline calls
+        /// Constructor used by bootstrap to put in place a wrapper TextWriter around stdout and stderror so all Console.WriteLine calls
         /// will be formatted.
-        /// 
-        /// Stdoud will default log messages to be Information
+        ///
+        /// Stdout will default log messages to be Information
         /// Stderror will default log messages to be Error
         /// </summary>
         public LogLevelLoggerWriter()
@@ -219,8 +234,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
 
         /// <summary>
-        /// Wraps around a provided TextWriter. In normal usage the wrapped TextWriter will either be stdout or stderr. 
-        /// For all calls besides Writeline and WritelineAsync call into the wrapped TextWriter. For the Writeline and WritelineAsync
+        /// Wraps around a provided TextWriter. In normal usage the wrapped TextWriter will either be stdout or stderr.
+        /// For all calls besides WriteLine and WriteLineAsync call into the wrapped TextWriter. For the WriteLine and WriteLineAsync
         /// format the message with time, request id, log level and the provided message.
         /// </summary>
         class WrapperTextWriter : TextWriter
@@ -228,8 +243,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             private readonly TextWriter _innerWriter;
             private string _defaultLogLevel;
 
-            const string LOG_LEVEL_ENVIRONMENT_VARAIBLE = "AWS_LAMBDA_HANDLER_LOG_LEVEL";
-            const string LOG_FORMAT_ENVIRONMENT_VARAIBLE = "AWS_LAMBDA_HANDLER_LOG_FORMAT";
+            const string LOG_LEVEL_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_LEVEL";
+            const string LOG_FORMAT_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_FORMAT";
 
             private LogLevel _minmumLogLevel = LogLevel.Information;
 
@@ -241,9 +256,9 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             /// <summary>
             /// This is typically set to either Console.Out or Console.Error to make sure we acquiring a lock
-            /// on that object whenever we are going through FormattedWriteLine. This is important for 
+            /// on that object whenever we are going through FormattedWriteLine. This is important for
             /// logging that goes through ILambdaLogger that skips going through Console.WriteX. Without
-            /// this ILambdaLogger only acquries one lock but Console.WriteX acquires 2 locks and we can get deadlocks.
+            /// this ILambdaLogger only acquires one lock but Console.WriteX acquires 2 locks and we can get deadlocks.
             /// </summary>
             internal object LockObject { get; set; } = new object();
 
@@ -252,7 +267,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 _innerWriter = innerWriter;
                 _defaultLogLevel = defaultLogLevel;
 
-                var envLogLevel = Environment.GetEnvironmentVariable(LOG_LEVEL_ENVIRONMENT_VARAIBLE);
+                var envLogLevel = Environment.GetEnvironmentVariable(LOG_LEVEL_ENVIRONMENT_VARIABLE);
                 if (!string.IsNullOrEmpty(envLogLevel))
                 {
                     if (Enum.TryParse<LogLevel>(envLogLevel, true, out var result))
@@ -261,7 +276,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     }
                 }
 
-                var envLogFormat = Environment.GetEnvironmentVariable(LOG_FORMAT_ENVIRONMENT_VARAIBLE);
+                var envLogFormat = Environment.GetEnvironmentVariable(LOG_FORMAT_ENVIRONMENT_VARIABLE);
                 if (!string.IsNullOrEmpty(envLogFormat))
                 {
                     if (Enum.TryParse<LogFormatType>(envLogFormat, true, out var result))
