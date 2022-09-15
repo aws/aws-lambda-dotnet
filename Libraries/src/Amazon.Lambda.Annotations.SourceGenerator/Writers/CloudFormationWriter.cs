@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
@@ -20,6 +21,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
     public class CloudFormationWriter : IAnnotationReportWriter
     {
         private const string CREATION_TOOL = "Amazon.Lambda.Annotations";
+        private const string PARAMETERS = "Parameters";
+        private const string GET_ATTRIBUTE = "Fn::GetAtt";
+        private const string REF = "Ref";
 
         private readonly IFileManager _fileManager;
         private readonly IDirectoryManager _directoryManager;
@@ -113,7 +117,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             if (!string.IsNullOrEmpty(lambdaFunction.Role))
             {
-                _templateWriter.SetToken($"{propertiesPath}.Role", _templateWriter.GetValueOrRef(lambdaFunction.Role));
+                ProcessLambdaFunctionRole(lambdaFunction, $"{propertiesPath}.Role");
                 _templateWriter.RemoveToken($"{propertiesPath}.Policies");
             }
 
@@ -290,6 +294,34 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             foreach (var resourceName in toRemove)
             {
                 _templateWriter.RemoveToken($"Resources.{resourceName}");
+            }
+        }
+
+        /// <summary>
+        /// Write the IAM role associated with the Lambda function.
+        /// The IAM role is specified under 'Resources.FUNCTION_NAME.Properties.Role' path.
+        /// </summary>
+        private void ProcessLambdaFunctionRole(ILambdaFunctionSerializable lambdaFunction, string rolePath)
+        {
+            if (string.IsNullOrEmpty(lambdaFunction.Role))
+            {
+                return;
+            }
+
+            if (!lambdaFunction.Role.StartsWith("@"))
+            {
+                _templateWriter.SetToken(rolePath, lambdaFunction.Role);
+                return;
+            }
+
+            var role = lambdaFunction.Role.Substring(1);
+            if (_templateWriter.Exists($"{PARAMETERS}.{role}"))
+            {
+                _templateWriter.SetToken($"{rolePath}.{REF}", role);
+            }
+            else
+            {
+                _templateWriter.SetToken($"{rolePath}.{GET_ATTRIBUTE}", new List<string>{role, "Arn"}, TokenType.List);
             }
         }
     }

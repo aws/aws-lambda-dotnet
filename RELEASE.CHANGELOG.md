@@ -1,3 +1,16 @@
+### Release 2022-09-13
+* **Amazon.Lambda.Annotations (0.8.0-preview)**
+  * Add third party licenses
+  * Correctly populate the role property in CloudFormation template
+  * Copy XML documentation for Amazon.Lambda.Annotations into nupkg to drive IntelliSense
+  * Add more detail to the Lambda Annotations README.md
+* **Amazon.Lambda.TestTool-3.1 (0.12.4)**
+  * Pull request [#1308](https://github.com/aws/aws-lambda-dotnet/pull/1308) fixing serialization of messages while monitoring dead letter queue. Thanks [William Keller](https://github.com/william-keller) 
+* **Amazon.Lambda.TestTool-5.0 (0.12.4)**
+  * Pull request [#1308](https://github.com/aws/aws-lambda-dotnet/pull/1308) fixing serialization of messages while monitoring dead letter queue. Thanks [William Keller](https://github.com/william-keller) 
+* **Amazon.Lambda.TestTool-6.0 (0.12.4)**
+  * Pull request [#1308](https://github.com/aws/aws-lambda-dotnet/pull/1308) fixing serialization of messages while monitoring dead letter queue. Thanks [William Keller](https://github.com/william-keller) 
+
 ### Release 2022-08-29
 * **Amazon.Lambda.Annotations (0.7.0-preview)**
   * Add support for syncing YAML based CloudFormation templates
