@@ -1,5 +1,7 @@
 ﻿using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
+using Amazon.Lambda.Core;
+using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -35,8 +37,23 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="services"></param>
         /// <param name="eventSource"></param>
+        /// <param name="serializer"></param>
         /// <returns></returns>
         public static IServiceCollection AddAWSLambdaHosting(this IServiceCollection services, LambdaEventSource eventSource)
+        {
+            // Not running in Lambda so exit and let Kestrel be the web server
+            return services.AddAWSLambdaHosting(eventSource, new DefaultLambdaJsonSerializer());
+        }
+
+        /// <summary>
+        /// Add the ability to run the ASP.NET Core Lambda function in AWS Lambda. If the project is not running in Lambda 
+        /// this method will do nothing allowing the normal Kestrel webserver to host the application.
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="serializer"></param>
+        /// <returns></returns>
+        public static IServiceCollection AddAWSLambdaHosting(this IServiceCollection services, LambdaEventSource eventSource, ILambdaSerializer serializer)
         {
             // Not running in Lambda so exit and let Kestrel be the web server
             if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME")))
@@ -50,6 +67,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 _ => throw new ArgumentException($"Event source type {eventSource} unknown")
             };
 
+
+            Utilities.Serializer = serializer;
             Utilities.EnsureLambdaServerRegistered(services, serverType);
             return services;
         }

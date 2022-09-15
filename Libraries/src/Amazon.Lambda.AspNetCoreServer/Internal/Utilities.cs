@@ -14,6 +14,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Core;
+using Amazon.Lambda.Serialization.SystemTextJson;
 
 namespace Amazon.Lambda.AspNetCoreServer.Internal
 {
@@ -22,6 +24,14 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
     /// </summary>
     public static class Utilities
     {
+        private static ILambdaSerializer _serializer;
+
+        public static ILambdaSerializer Serializer
+        {
+            get { return _serializer ??= new DefaultLambdaJsonSerializer(); }
+            set => _serializer = value;
+        }
+
         public static void EnsureLambdaServerRegistered(IServiceCollection services)
         {
             EnsureLambdaServerRegistered(services, typeof(LambdaServer));

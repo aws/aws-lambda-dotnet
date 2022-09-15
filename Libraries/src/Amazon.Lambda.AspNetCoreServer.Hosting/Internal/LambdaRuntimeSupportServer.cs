@@ -70,7 +70,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
             var handler = new APIGatewayHttpApiV2MinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, new DefaultLambdaJsonSerializer());
+            return HandlerWrapper.GetHandlerWrapper(handler, Utilities.Serializer);
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
             var handler = new APIGatewayRestApiMinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, new DefaultLambdaJsonSerializer());
+            return HandlerWrapper.GetHandlerWrapper(handler, Utilities.Serializer);
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
             var handler = new ApplicationLoadBalancerMinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, new DefaultLambdaJsonSerializer());
+            return HandlerWrapper.GetHandlerWrapper(handler, Utilities.Serializer);
         }
 
         /// <summary>
