@@ -149,6 +149,9 @@ namespace Amazon.Lambda.TestTool
 
             Console.WriteLine("These options are valid when using the web interface to select and execute the Lambda code.");
             Console.WriteLine();
+            Console.WriteLine("\t--host <hostname-or-ip-address>       The port number used for the test tool's web interface.");
+            Console.WriteLine("\t                                      Any host other than an explicit IP address or localhost (e.g. '*', '+' or 'example.com')");
+            Console.WriteLine("\t                                      binds to all public IPv4 and IPv6 addresses.");
             Console.WriteLine("\t--port <port-number>                  The port number used for the test tool's web interface.");
             Console.WriteLine("\t--no-launch-window                    Disable auto launching the test tool's web interface in a browser.");
             Console.WriteLine();
