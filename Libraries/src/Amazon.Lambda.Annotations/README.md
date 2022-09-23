@@ -11,7 +11,7 @@ Topics:
 * [Getting build information](#getting-build-information)
 * [Amazon API Gateway example](#amazon-api-gateway-example)
 * [Amazon S3 example](#amazon-s3-example)
-* [Lambda .NET Attributes Reference](#lambda.net-attributes-reference)
+* [Lambda .NET Attributes Reference](#lambda-net-attributes-reference)
 
 ## How does Lambda Annotations work?
 
