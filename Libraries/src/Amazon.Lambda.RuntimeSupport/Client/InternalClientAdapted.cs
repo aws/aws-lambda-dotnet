@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -243,11 +243,11 @@ namespace Amazon.Lambda.RuntimeSupport
                     try
                     {
                         var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
+
+                        // NOTE: response_.Content can never be null (See: https://github.com/dotnet/runtime/blob/main/src/libraries/System.Net.Http/src/System/Net/Http/HttpResponseMessage.cs#L42)
+                        // NOTE: response_.Content.Headers can never be null (See: https://github.com/dotnet/runtime/blob/main/src/libraries/System.Net.Http/src/System/Net/Http/HttpContent.cs#L112)
+                        foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
-                        }
 
                         if (response_.StatusCode == HttpStatusCode.OK)
                         {
