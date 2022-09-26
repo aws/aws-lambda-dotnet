@@ -62,6 +62,14 @@ namespace Amazon.Lambda.Core
 #if NET6_0_OR_GREATER
 
         /// <summary>
+        /// Logs an entry.
+        /// </summary>
+        /// <typeparam name="TEntry">The type of the log entry.</typeparam>
+        /// <param name="level">Log level.</param>
+        /// <param name="entry">The log entry.</param>
+        void LogEntry<TEntry>(LogLevel level, TEntry entry);
+
+        /// <summary>
         /// Log message catagorized by the given log level
         /// <para>
         /// To configure the minimum log level set the AWS_LAMBDA_HANDLER_LOG_LEVEL environment variable. The value should be set

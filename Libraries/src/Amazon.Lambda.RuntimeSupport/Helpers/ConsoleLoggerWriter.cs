@@ -1,8 +1,14 @@
-﻿using Amazon.Lambda.RuntimeSupport.Bootstrap;
+﻿using Amazon.Lambda.Core;
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
 using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,6 +37,15 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// <param name="level"></param>
         /// <param name="message"></param>
         void FormattedWriteLine(string level, string message);
+
+#if NET6_0_OR_GREATER
+        /// <summary>
+        /// Writes the log entry with given log level.
+        /// </summary>
+        /// <param name="level">Log level.</param>
+        /// <param name="entry">Log entry.</param>
+        void FormattedWriteEntry<TEntry>(LogLevel level, TEntry entry);
+#endif
     }
 
     /// <summary>
@@ -78,6 +93,14 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         {
             _writer.WriteLine(message);
         }
+
+#if NET6_0_OR_GREATER
+        /// <inheritdoc/>
+        public void FormattedWriteEntry<TEntry>(LogLevel level, TEntry entry)
+        {
+            _writer.WriteLine(entry.ToString());
+        }
+#endif
     }
 
 #if NET6_0_OR_GREATER
@@ -148,7 +171,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     Initialize(stdOutWriter, stdErrorWriter);
                     InternalLogger.GetDefaultLogger().LogInformation("Using file descriptor stream writer for logging.");
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     InternalLogger.GetDefaultLogger().LogError(ex, "Error creating file descriptor log stream writer. Fallback to stdout and stderr.");
                     Initialize(Console.Out, Console.Error);
@@ -171,9 +194,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             ConfigureLoggingActionField();
         }
 
-        public LogLevelLoggerWriter(TextWriter stdOutWriter, TextWriter stdErrorWriter)
+        public LogLevelLoggerWriter(TextWriter stdOutWriter, TextWriter stdErrorWriter, string minimumLogLevel, string logFormatType)
         {
-            Initialize(stdOutWriter, stdErrorWriter);
+            _wrappedStdOutWriter = new WrapperTextWriter(stdOutWriter, LogLevel.Information.ToString(), minimumLogLevel, logFormatType);
+            _wrappedStdErrorWriter = new WrapperTextWriter(stdErrorWriter, LogLevel.Error.ToString());
         }
 
         private void Initialize(TextWriter stdOutWriter, TextWriter stdErrorWriter)
@@ -217,6 +241,21 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             _wrappedStdOutWriter.FormattedWriteLine(level, message);
         }
 
+        /// <inheritdoc/>
+        public void FormattedWriteEntry<TEntry>(Core.LogLevel level, TEntry entry)
+        {
+            var innerLogLevel = level switch
+            {
+                Core.LogLevel.Trace => LogLevel.Trace,
+                Core.LogLevel.Debug => LogLevel.Debug,
+                Core.LogLevel.Information => LogLevel.Information,
+                Core.LogLevel.Warning => LogLevel.Warning,
+                Core.LogLevel.Error => LogLevel.Error,
+                Core.LogLevel.Critical => LogLevel.Critical,
+                _ => LogLevel.Information, // use 'info' as fallback level
+            };
+            _wrappedStdOutWriter.FormattedWriteEntry(innerLogLevel, entry);
+        }
 
         /// <summary>
         /// Wraps around a provided TextWriter. In normal usage the wrapped TextWriter will either be stdout or stderr. 
@@ -225,6 +264,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// </summary>
         class WrapperTextWriter : TextWriter
         {
+            private const string _dateFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+            private static readonly UTF8Encoding UTF8NoBomNoThrow = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
             private readonly TextWriter _innerWriter;
             private string _defaultLogLevel;
 
@@ -233,7 +274,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             private LogLevel _minmumLogLevel = LogLevel.Information;
 
-            enum LogFormatType { Default, Unformatted }
+            enum LogFormatType { Default, Unformatted, Json }
 
             private LogFormatType _logFormatType = LogFormatType.Default;
 
@@ -247,24 +288,28 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             /// </summary>
             internal object LockObject { get; set; } = new object();
 
-            public WrapperTextWriter(TextWriter innerWriter, string defaultLogLevel)
+            public WrapperTextWriter(TextWriter innerWriter, string defaultLogLevel) : this(innerWriter, defaultLogLevel,
+                minimumLogLevel: Environment.GetEnvironmentVariable(LOG_LEVEL_ENVIRONMENT_VARAIBLE),
+                logFormatType: Environment.GetEnvironmentVariable(LOG_FORMAT_ENVIRONMENT_VARAIBLE))
+            {
+            }
+
+            public WrapperTextWriter(TextWriter innerWriter, string defaultLogLevel, string minimumLogLevel, string logFormatType)
             {
                 _innerWriter = innerWriter;
                 _defaultLogLevel = defaultLogLevel;
 
-                var envLogLevel = Environment.GetEnvironmentVariable(LOG_LEVEL_ENVIRONMENT_VARAIBLE);
-                if (!string.IsNullOrEmpty(envLogLevel))
+                if (!string.IsNullOrEmpty(minimumLogLevel))
                 {
-                    if (Enum.TryParse<LogLevel>(envLogLevel, true, out var result))
+                    if (Enum.TryParse<LogLevel>(minimumLogLevel, true, out var result))
                     {
                         _minmumLogLevel = result;
                     }
                 }
 
-                var envLogFormat = Environment.GetEnvironmentVariable(LOG_FORMAT_ENVIRONMENT_VARAIBLE);
-                if (!string.IsNullOrEmpty(envLogFormat))
+                if (!string.IsNullOrEmpty(logFormatType))
                 {
-                    if (Enum.TryParse<LogFormatType>(envLogFormat, true, out var result))
+                    if (Enum.TryParse<LogFormatType>(logFormatType, true, out var result))
                     {
                         _logFormatType = result;
                     }
@@ -278,7 +323,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             internal void FormattedWriteLine(string level, string message)
             {
-                lock(LockObject)
+                lock (LockObject)
                 {
                     var displayLevel = level;
                     if (Enum.TryParse<LogLevel>(level, true, out var levelEnum))
@@ -295,18 +340,36 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     }
                     else
                     {
-                        string line;
-                        if (!string.IsNullOrEmpty(displayLevel))
+                        string line = _logFormatType switch
                         {
-                            line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{displayLevel}\t{message ?? string.Empty}";
-                        }
-                        else
-                        {
-                            line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{message ?? string.Empty}";
-                        }
+                            LogFormatType.Json => ConvertToJsonFormattedMessage(displayLevel, message),
+                            _ => ConvertToDefaultFormattedMessage(displayLevel, message)
+                        };
 
                         _innerWriter.WriteLine(line);
                     }
+                }
+            }
+
+            internal void FormattedWriteEntry<TEntry>(LogLevel level, TEntry entry)
+            {
+                if (level < _minmumLogLevel)
+                {
+                    return;
+                }
+
+                var displayLevel = ConvertLogLevelToLabel(level);
+                string line = _logFormatType switch
+                {
+                    LogFormatType.Unformatted => entry.ToString(),
+                    LogFormatType.Json => ConvertToJsonFormattedMessage(displayLevel, entry),
+                    _ => ConvertToDefaultFormattedMessage(displayLevel, entry.ToString())   // TODO consider including exception info
+                };
+
+                lock (LockObject)
+                {
+                    _innerWriter.WriteLine(line);
+                    return;
                 }
             }
 
@@ -314,6 +377,21 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             {
                 FormattedWriteLine(message);
                 return Task.CompletedTask;
+            }
+
+            private string ConvertToDefaultFormattedMessage(string displayLevel, string message)
+            {
+                string line;
+                if (!string.IsNullOrEmpty(displayLevel))
+                {
+                    line = $"{DateTime.UtcNow.ToString(_dateFormat)}\t{CurrentAwsRequestId}\t{displayLevel}\t{message ?? string.Empty}";
+                }
+                else
+                {
+                    line = $"{DateTime.UtcNow.ToString(_dateFormat)}\t{CurrentAwsRequestId}\t{message ?? string.Empty}";
+                }
+
+                return line;
             }
 
             /// <summary>
@@ -341,6 +419,116 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
                 return level.ToString();
             }
+
+            private string ConvertToJsonFormattedMessage<TEntry>(string displayLevel, TEntry entry)
+            {
+                var bufferWriter = new ArrayBufferWriter<byte>();
+                using var writer = new Utf8JsonWriter(bufferWriter, new JsonWriterOptions
+                {
+                    Indented = false
+                });
+
+                writer.WriteStartObject();      // root json object
+
+                writer.WriteString("Timestamp", DateTime.UtcNow.ToString(_dateFormat, CultureInfo.InvariantCulture));
+
+                writer.WriteString("AwsRequestId", CurrentAwsRequestId);    // allows log message to be discoverable by X-ray
+
+                writer.WriteString("Level", displayLevel);
+
+                writer.WriteString("Message", entry.ToString());
+
+                if (entry is MessageEntry messageEntry)
+                {
+                    if (messageEntry.Exception is null)
+                    {
+                        writer.WriteNull("Exception");
+                    }
+                    else
+                    {
+                        // TODO limit exception stacktrace length?
+                        writer.WriteString("Exception", messageEntry.Exception.ToString());
+                    }
+
+                    writer.WriteStartObject("State");  // 'State' object
+
+                    foreach (var kvp in messageEntry.State)
+                    {
+                        WriteItem(writer, kvp);
+                    }
+
+                    writer.WriteEndObject();     // 'State' object
+                }
+
+                writer.WriteEndObject();        // root json object
+                writer.Flush();
+
+                // here we convert the json from bytes to UTF8 string
+                // this is later encoded back to bytes by _innerWriter, which is quite wasteful
+                // consider finding a way to output this directly to the log file descriptor
+                return UTF8NoBomNoThrow.GetString(bufferWriter.WrittenSpan);
+            }
+
+            private static void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object> item)
+            {
+                var key = item.Key;
+                switch (item.Value)
+                {
+                    case bool boolValue:
+                        writer.WriteBoolean(key, boolValue);
+                        break;
+                    case byte byteValue:
+                        writer.WriteNumber(key, byteValue);
+                        break;
+                    case sbyte sbyteValue:
+                        writer.WriteNumber(key, sbyteValue);
+                        break;
+                    case char charValue:
+                        writer.WriteString(key, MemoryMarshal.CreateSpan(ref charValue, 1));
+                        break;
+                    case decimal decimalValue:
+                        writer.WriteNumber(key, decimalValue);
+                        break;
+                    case double doubleValue:
+                        writer.WriteNumber(key, doubleValue);
+                        break;
+                    case float floatValue:
+                        writer.WriteNumber(key, floatValue);
+                        break;
+                    case int intValue:
+                        writer.WriteNumber(key, intValue);
+                        break;
+                    case uint uintValue:
+                        writer.WriteNumber(key, uintValue);
+                        break;
+                    case long longValue:
+                        writer.WriteNumber(key, longValue);
+                        break;
+                    case ulong ulongValue:
+                        writer.WriteNumber(key, ulongValue);
+                        break;
+                    case short shortValue:
+                        writer.WriteNumber(key, shortValue);
+                        break;
+                    case ushort ushortValue:
+                        writer.WriteNumber(key, ushortValue);
+                        break;
+                    case null:
+                        writer.WriteNull(key);
+                        break;
+                    case DateTime dateTimeValue:
+                        writer.WriteString(key, dateTimeValue.ToString(_dateFormat, CultureInfo.InvariantCulture));
+                        break;
+                    case DateTimeOffset dateTimeOffsetValue:
+                        writer.WriteString(key, dateTimeOffsetValue.ToString(_dateFormat, CultureInfo.InvariantCulture));
+                        break;
+                    default:
+                        writer.WriteString(key, ToInvariantString(item.Value));
+                        break;
+                }
+            }
+
+            private static string ToInvariantString(object obj) => Convert.ToString(obj, CultureInfo.InvariantCulture);
 
             #region WriteLine redirects to formatting
             [CLSCompliant(false)]
