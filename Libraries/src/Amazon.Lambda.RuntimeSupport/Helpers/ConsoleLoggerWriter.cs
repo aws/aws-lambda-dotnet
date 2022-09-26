@@ -363,7 +363,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 {
                     LogFormatType.Unformatted => entry.ToString(),
                     LogFormatType.Json => ConvertToJsonFormattedMessage(displayLevel, entry),
-                    _ => ConvertToDefaultFormattedMessage(displayLevel, entry.ToString())   // TODO consider including exception info
+                    _ => ConvertEntryToDefaultFormattedMessage(displayLevel, entry)   // TODO consider including exception info
                 };
 
                 lock (LockObject)
@@ -392,6 +392,28 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 }
 
                 return line;
+            }
+
+            private string ConvertEntryToDefaultFormattedMessage<TEntry>(string displayLevel, TEntry entry)
+            {
+                var sb = new StringBuilder();
+                sb
+                    .Append(DateTime.UtcNow.ToString(_dateFormat, CultureInfo.InvariantCulture))
+                    .Append('\t')
+                    .AppendFormat(CurrentAwsRequestId)
+                    .Append('\t');
+                if (!string.IsNullOrEmpty(displayLevel))
+                {
+                    sb.Append(displayLevel).Append('\t');
+                }
+
+                sb.Append(entry.ToString() ?? string.Empty);
+                if (entry is IMessageEntry messageEntry && messageEntry.Exception != null)
+                {
+                    sb.Append('\t').Append(messageEntry.Exception);
+                }
+
+                return sb.ToString();
             }
 
             /// <summary>
@@ -438,7 +460,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
                 writer.WriteString("Message", entry.ToString());
 
-                if (entry is MessageEntry messageEntry)
+                if (entry is IMessageEntry messageEntry)
                 {
                     if (messageEntry.Exception is null)
                     {

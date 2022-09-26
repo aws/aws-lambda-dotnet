@@ -84,7 +84,7 @@
         private static void LogMessageEntry(ILambdaLogger logger, LogLevel level, Exception exception, string format, params object[] args)
             => logger.LogEntry(level, new FormattedMessageEntry(format, exception, args));
 
-        internal sealed class FormattedMessageEntry : MessageEntry, IReadOnlyList<KeyValuePair<string, object>>
+        internal readonly struct FormattedMessageEntry : IMessageEntry, IReadOnlyList<KeyValuePair<string, object>>
         {
             /// <summary>
             /// Use a cache to look-up formatter so we don't have to parse the format for every entry.
@@ -123,9 +123,9 @@
                 ? new KeyValuePair<string, object>(_formatter.ParameterNames[index], _args[index])
                 : throw new IndexOutOfRangeException(nameof(index));
 
-            public override IReadOnlyList<KeyValuePair<string, object>> State => this;
+            public IReadOnlyList<KeyValuePair<string, object>> State => this;
 
-            public override Exception Exception { get; }
+            public Exception Exception { get; }
 
             public int Count => _formatter is null ? 0 : _formatter.ParameterNames.Count;
 
