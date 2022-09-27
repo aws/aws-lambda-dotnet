@@ -15,7 +15,10 @@
         </div>
     </div>
     <div class="col-sm form-group">
-        <label class="col-xs-3 control-label" for="functions-picker">Function</label>
+        <div class="col-xs-5">
+            <label class="control-label" for="functions-picker">Function</label>
+            <button class="float-right btn btn-primary btn-sm" id="functions-picker-sort-order" @onclick="SortFunctionsClicked" >Sort Functions</button>
+        </div>
         <div class="col-xs-5">
             <select class="form-control" name="color" @bind="FunctionHandler">
                 @if (AvailableFunctions != null)
@@ -101,6 +104,11 @@
             this._functionHandler = value;
             OnChangeAsync?.Invoke();
         }
+    }
+    
+    void SortFunctionsClicked()
+    {
+        AvailableFunctions = AvailableFunctions?.OrderBy(x => x?.FunctionInfo?.Name).ToList();
     }
 
     IList<string> AvailableAWSProfiles;
