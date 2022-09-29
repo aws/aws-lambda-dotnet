@@ -1,3 +1,7 @@
+### Release 2022-09-29
+* **Amazon.Lambda.Templates (6.4.0)**
+  * Fixed issue with using templates with .NET 7 RC is installed.
+  
 ### Release 2022-09-13
 * **Amazon.Lambda.Annotations (0.8.0-preview)**
   * Add third party licenses
