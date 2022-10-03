@@ -1,13 +1,18 @@
 using Amazon.Lambda.TestTool.BlazorTester.Services;
+using Amazon.Lambda.TestTool.Services;
 using Blazored.Modal;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -81,7 +86,8 @@ namespace Amazon.Lambda.TestTool.BlazorTester
             services.AddServerSideBlazor()
                     .AddHubOptions(options => options.MaximumReceiveMessageSize = null);
             services.AddHttpContextAccessor();
-
+            services.AddScoped<ILamdaService, LamdaService>();
+            services.AddSingleton<IAwsProfileConfig, AwsProfileConfig>();
             services.AddBlazoredModal();
 
             services.AddOptions<StaticFileOptions>()
@@ -95,7 +101,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILamdaService lamdaService, LocalLambdaOptions localLambdaOptions, IAwsProfileConfig awsProfileConfig)
         {
             app.UseDeveloperExceptionPage();
 
@@ -103,8 +109,62 @@ namespace Amazon.Lambda.TestTool.BlazorTester
 
             app.UseRouting();
 
+            app.UseCors();
+            var configInfo = awsProfileConfig.LambdaConfigInfo();
+
             app.UseEndpoints(endpoints =>
             {
+                if (configInfo != null)
+                {
+                    foreach (var function in configInfo.FunctionInfos.Where(x => !string.IsNullOrEmpty(x.Method)))
+                    {
+                        endpoints.MapMethods(function.Path, new string[] { function.Method.ToUpper() }, async (context) =>
+                        {
+                            var routeValue = context.Request.RouteValues.ToDictionary(x => x.Key, x => x.Value.ToString());
+                            var result = await lamdaService.Execute(function.Name, context, context.Request.RouteValues.ToDictionary(x => x.Key, x => x.Value.ToString()));
+                            var response = result.IsSuccess ? result.Response : result.Error;
+
+                            var statusCode = (int)HttpStatusCode.OK;
+                            //check if response contains the error status code
+                            if (result.IsSuccess) //we belive it is success but is it really?
+                            {
+                                try
+                                {
+                                    var jDoc = JsonDocument.Parse(response);
+                                    if (jDoc.RootElement.TryGetProperty("statusCode", out JsonElement jsonElement))
+                                    {
+                                        jsonElement.TryGetInt32(out statusCode);
+                                    }
+
+                                }
+                                catch (Exception)
+                                {
+
+                                }
+
+                            }
+
+                            //check if there is body in response
+
+                            try
+                            {
+                                var jDoc = JsonDocument.Parse(response);
+                                if (jDoc.RootElement.TryGetProperty("body", out JsonElement jsonElement))
+                                {
+                                    response = jsonElement.ToString();
+                                }
+                            }
+                            catch (Exception)
+                            {
+
+                            }
+
+                            var responseCode = result.IsSuccess ? statusCode : (int)HttpStatusCode.InternalServerError;
+                            context.Response.StatusCode = responseCode;
+                            await context.Response.WriteAsync(response);
+                        });
+                    }
+                }
                 endpoints.MapControllers();
                 endpoints.MapBlazorHub(o =>
                 {

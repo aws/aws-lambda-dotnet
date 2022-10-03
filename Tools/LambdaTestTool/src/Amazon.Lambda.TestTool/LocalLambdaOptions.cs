@@ -45,7 +45,7 @@ namespace Amazon.Lambda.TestTool
         public LambdaFunction LoadLambdaFuntion(LambdaConfigInfo configInfo, string functionHandler)
         {
             var functionInfo = configInfo.FunctionInfos.FirstOrDefault(x =>
-                string.Equals(functionHandler, x.Handler, StringComparison.OrdinalIgnoreCase));
+                string.Equals(functionHandler, functionHandler.Contains("::") ? x.Handler : x.Name, StringComparison.OrdinalIgnoreCase));
             if (functionInfo == null)
             {
                 throw new Exception($"Failed to find function {functionHandler}");

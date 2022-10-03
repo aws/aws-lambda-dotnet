@@ -189,12 +189,47 @@ namespace Amazon.Lambda.TestTool.Runtime
                 
                 if (handler == null) continue;
                 if (string.IsNullOrEmpty(handler)) continue;
-                
-                
+
+                var events = resourceBody.Children.ContainsKey("events") ?
+                                ((YamlSequenceNode)resourceBody.Children["events"]) : null;
+
+
+                var path = string.Empty;
+                var method = string.Empty;
+
+                if (events != null)
+                {
+                    foreach (var evt in events)
+                    {
+                        var mapping = evt as YamlMappingNode;
+                        foreach (var pair in mapping)
+                        {
+                            var keyScalar = pair.Key as YamlScalarNode;
+                            if (keyScalar?.Value == "http")
+                            {
+                                var keyValue = pair.Value as YamlMappingNode;
+                                foreach (var child in keyValue)
+                                {
+                                    var childScalar = child.Key as YamlScalarNode;
+                                    if (childScalar?.Value == "path")
+                                    {
+                                        path = child.Value.ToString();
+                                    }
+                                    if (childScalar?.Value == "method")
+                                    {
+                                        method = child.Value.ToString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 var functionInfo = new LambdaFunctionInfo
                 {
                     Name = resource.Key.ToString(),
-                    Handler = handler
+                    Handler = handler,
+                    Method = method,
+                    Path = path
                 };
 
                 configInfo.FunctionInfos.Add(functionInfo);
