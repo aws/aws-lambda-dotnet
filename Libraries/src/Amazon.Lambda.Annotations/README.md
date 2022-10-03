@@ -2,9 +2,10 @@
 
 Lambda Annotations is a programming model for writing .NET Lambda functions. At a high level the programming model allows
 idiomatic .NET coding patterns. [C# Source Generators](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview) are used to bridge the 
-gap between the Lambda programming model to the Lambda Annotations programming model.
+gap between the Lambda programming model to the Lambda Annotations programming model without adding any performance penalty.
 
 Topics:
+* [Getting Started](#getting-started)
 * [How does Lambda Annotations work?](#how-does-lambda-annotations-work)
 * [Dependency Injection integration](#dependency-injection-integration)
 * [Synchronizing CloudFormation template](#synchronizing-cloudFormation-template)
@@ -71,6 +72,80 @@ public class Functions
 Lambda Annotations uses C# source generators to generate that boiler plate code to bridge the gap between the default Lambda programming model to Lambda Annotations programming model at compile time.
 In addition the source generator also synchronizes the CloudFormation template to declare all of the .NET methods with the `LambdaFunction` attribute as 
 Lambda functions in the CloudFormation template.
+
+## Getting started
+
+To get started with Lambda annotations a Lambda blueprint is available. For Visual Studio users the blueprint can be 
+accessed using the [AWS Toolkit for Visual Studio](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.AWSToolkitforVisualStudio2022). 
+For non-Visual Studio users the [Amazon.Lambda.Templates](https://www.nuget.org/packages/Amazon.Lambda.Templates) 
+NuGet package is available for creating .NET Lambda projects from the .NET CLI.
+
+
+### Visual Studio 2022
+
+To get started with Visual Studio install [AWS Toolkit for Visual Studio](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.AWSToolkitforVisualStudio2022) 
+extension. Once installed, a pre-configured Lambda Annotations project can be created using the following steps:
+
+* Select **Create a new project**
+* In the template search box enter **AWS Serverless**
+* Select the **AWS Serverless Application (.NET Core C#)** from the search result and click **Next**
+* Name the project and click **Create**
+* The **Select Blueprint** wizard will be displayed for choosing the initial content of the project.
+* Select the **Annotations Framework** blueprint and click **Finish**
+
+### .NET CLI
+
+.NET Lambda projects can be be created using the .NET CLI's `dotnet new` command. To create a project using the
+Lambda Annotations library run the following steps from a terminal.
+
+* Run `dotnet new install Amazon.Lambda.Templates` to install the AWS Lambda templates into the .NET CLI
+* Run `dotnet new serverless.Annotations --output FirstAnnotationsProject` to create a project using Lambda Annotations
+
+This will create a project in a sub directory of the current director called `FirstAnnotationsProject`. The directory 
+will contain both a Lambda project using Annotations as well as a unit test project.
+
+### The sample project
+
+The sample project contains the following files:
+
+* **Functions.cs** - Defines a collection of REST API Lambda functions using Lambda Annotation.
+* **Startup.cs** - Where services can be registered for dependency injection into the Lambda functions.
+* **serverless.template** - CloudFormation template used to deploy the Lambda functions. The Lambda Annotations library 
+will automatically sync the functions defined in the project in the CloudFormation template.
+* **aws-lambda-tools-defaults.json** - Config file for default settings used for deployment.
+
+To reset to an empty project delete the code in the `Functions` class and recompile the project. The Lambda
+Annotations library will remove all of the Lambda function declarations from the CloudFormation template.
+If the project will not include any Lambda functions that use API Gateway's HTTP API event sources then the `ApiURL` 
+output parameter should be manually removed from the CloudFormation template.
+
+### Deployment
+
+The Lambda Annotations library requires no special tooling for deployment. Any tool that supports CloudFormation-based 
+.NET Lambda function deployment is compatible with Lambda Annotations. This includes 
+[AWS Toolkit for Visual Studio](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.AWSToolkitforVisualStudio2022), 
+[Amazon.Lambda.Tools](https://github.com/aws/aws-extensions-for-dotnet-cli/#aws-lambda-amazonlambdatools) for the .NET CLI and [AWS SAM CLI](https://aws.amazon.com/serverless/sam/).
+
+For the AWS Toolkit for Visual Studio deployment can be initiated by right clicking on the Lambda project in the 
+Solution Explorer and selecting **Publish to AWS Lambda...**. This will launch a wizard to configure the name
+of the CloudFormation stack and a S3 bucket used for storage of the compiled Lambda function deployment bundles.
+
+Amazon.Lambda.Tools is a .NET CLI global tool that can be install using the command 
+`dotnet tool install --global Amazon.Lambda.Tools`. Once installed deployment can be initiated by running the command
+`dotnet lambda deploy-serverless` in the directory of the Lambda project.
+
+
+### Adding Lambda Annotations to an existing project
+
+Lambda Annotations can be added to existing projects. Lambda Annotations does require that deployment of existing 
+projects is done using a CloudFormation template. In the future Lambda Annotations may support
+other deployment technologies.
+
+To get started with Lambda Annotations in existing projects add a reference to the [Amazon.Lambda.Annotations](https://www.nuget.org/packages/Amazon.Lambda.Annotations/)
+NuGet package. Then decorate C# methods that should be exposed as Lambda Functions with the `LambdaFunction` attribute.
+If the `LambdaFunction` attribute is added to a method that was already declared in the CloudFormation template the
+original declaration should be manually removed.
+
 
 ## Dependency Injection integration
 
