@@ -5,7 +5,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Description>A tool to help debug and test your .NET 6.0 AWS Lambda functions locally.</Description>
-    <VersionPrefix>0.12.4</VersionPrefix>
+    <VersionPrefix>0.12.5</VersionPrefix>
     <Product>AWS .NET Lambda Test Tool</Product>
     <Copyright>Apache 2</Copyright>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
