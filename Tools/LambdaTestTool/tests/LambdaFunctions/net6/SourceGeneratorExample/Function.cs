@@ -30,4 +30,10 @@ public class Function
     {
         return new Output { Response = "Response = " + request.Name};
     }
+
+    public Task VoidReturnFunctionHandler(Input request, ILambdaContext context)
+    {
+        context.Logger.LogInformation("Calling function with: " + request.Name);
+        return Task.CompletedTask;
+    }
 }

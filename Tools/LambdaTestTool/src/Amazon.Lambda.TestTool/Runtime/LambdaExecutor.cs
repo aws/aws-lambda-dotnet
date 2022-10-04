@@ -138,7 +138,10 @@ namespace Amazon.Lambda.TestTool.Runtime
                 await task;
 
                 // Check to see if the Task returns back an object.
-                if (task.GetType().IsGenericType)
+                // The return type from the Lambda functions MethodInfo must be used for checking if it generic.
+                // If you check the type from the object instance returned the non generic Task gets converted
+                // by the runtime to Task<VoidTaskResult>.
+                if (request.Function.LambdaMethod.ReturnType.IsGenericType)
                 {
                     var resultProperty = task.GetType().GetProperty("Result", BindingFlags.Public | BindingFlags.Instance);
                     if (resultProperty != null)
