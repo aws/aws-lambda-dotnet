@@ -20,6 +20,10 @@ namespace Infrastructure
 {
     internal class Configuration
     {
+        public string AccountId { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_ACCOUNT_ID");
+        public string CodeCommitAccountId { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_CODECOMMIT_ACCOUNT_ID");
+        public string Region { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_REGION");
+
         public Source Source { get; } = new Source();
         public Ecrs Ecrs { get; } = new Ecrs();
         public readonly string[] EcrRepositoryNames = Environment.GetEnvironmentVariable("AWS_LAMBDA_ECR_REPOSITORY_NAME")?.Split(";");
@@ -37,7 +41,6 @@ namespace Infrastructure
     {
         public string RepositoryArn { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_SOURCE_REPOSITORY_ARN");
         public string BranchName { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_SOURCE_BRANCH_NAME");
-        public string CrossAccountRoleArn { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_SOURCE_CROSS_ACCOUNT_ROLE_ARN");
     }
 
     internal class Ecrs
