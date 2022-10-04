@@ -13,32 +13,39 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.FileIO
         /// <summary>
         /// This method mimics the behaviour of <see href="https://docs.microsoft.com/en-us/dotnet/api/system.io.path.getrelativepath?view=net-6.0"/>
         /// This logic already exists in the aws-extensions-for-dotnet-cli package. <see href="https://github.com/aws/aws-extensions-for-dotnet-cli/blob/9639f8f4902349d289491b290979a3a1671cc0a5/src/Amazon.Common.DotNetCli.Tools/Utilities.cs#L91">see here</see>
+        /// Note - Path.GetRelativePath() was introduced in .NET Standard 2.1 but source generators can only be used in .NET Standard 2.0 therefore this
+        /// custom implementation is needed.
         /// </summary>
         public string GetRelativePath(string relativeTo, string path)
         {
-            relativeTo = SanitizePath(relativeTo);
-            path = SanitizePath(path);
-
-            var relativeToDirs = relativeTo.Split('/');
-            var pathDirs = path.Split('/');
-
-            int len = relativeToDirs.Length < pathDirs.Length ? relativeToDirs.Length : pathDirs.Length;
-
-            int lastCommonRoot = -1;
-            int index;
-
-            for (index = 0; index < len && string.Equals(relativeToDirs[index], pathDirs[index], StringComparison.OrdinalIgnoreCase); index++)
+            if (string.IsNullOrEmpty(relativeTo) || string.IsNullOrEmpty(path))
             {
-                lastCommonRoot = index;
+                throw new InvalidOperationException($"{nameof(relativeTo)} or {nameof(path)} cannot be null or empty");
             }
 
-            // The 2 paths don't share a common ancestor. So the closest we can give is the absolute path to the target.
-            if (lastCommonRoot == -1)
+            // If there is no common ancestor, just return the path.
+            if (!string.Equals(SanitizePath(relativeTo).Split('/')[0], SanitizePath(path).Split('/')[0]))
             {
                 return path;
             }
 
-            StringBuilder relativePath = new StringBuilder();
+            // Calculate the full paths by preserving the OS specific directory separator character and then perform the sanitization.
+            relativeTo = SanitizePath(new DirectoryInfo(relativeTo).FullName);
+            path = SanitizePath(new DirectoryInfo(path).FullName);
+
+            var relativeToDirs = relativeTo.Split('/');
+            var pathDirs = path.Split('/');
+            var len = Math.Min(relativeToDirs.Length, pathDirs.Length);
+
+            var lastCommonRoot = -1;
+            int index;
+
+            for (index = 0; index < len && string.Equals(relativeToDirs[index], pathDirs[index]); index++)
+            {
+                lastCommonRoot = index;
+            }
+
+            var relativePath = new StringBuilder();
             for (index = lastCommonRoot + 1; index < relativeToDirs.Length; index++)
             {
                 if (relativeToDirs[index].Length > 0) relativePath.Append("../");
