@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Amazon.CDK;
@@ -21,93 +22,150 @@ using Amazon.CDK.AWS.CodeCommit;
 using Amazon.CDK.AWS.CodePipeline;
 using Amazon.CDK.AWS.CodePipeline.Actions;
 using Amazon.CDK.AWS.IAM;
+using Amazon.CDK.AWS.KMS;
+using Amazon.CDK.AWS.S3;
 using Amazon.CDK.Pipelines;
+using Constructs;
+using Action = Amazon.CDK.AWS.CodePipeline.Actions.Action;
 using RepositoryProps = Amazon.CDK.AWS.ECR.RepositoryProps;
 
 namespace Infrastructure
 {
     public class PipelineStack : Stack
     {
+        private const string cdkCliVersion = "2.44.0";
         private const string PowershellArm64 = "7.1.3 powershell-7.1.3-linux-arm64.tar.gz";
         private const string PowershellAmd64 = "7.1.3 powershell-7.1.3-linux-x64.tar.gz";
         private const string BaseImageMultiArch = "contributed-base-image-multi-arch";
 
         internal PipelineStack(
-            Construct scope, 
-            string id, 
-            string ecrRepositoryName, 
-            string framework, 
+            Construct scope,
+            string id,
+            string ecrRepositoryName,
+            string framework,
             string channel,
             string dockerBuildImage,
-            Configuration configuration, 
-            IStackProps props = null) : base(scope, $"{id}-{framework}", props)
+            Configuration configuration,
+            IStackProps props = null) : base(scope, id, props)
         {
             var repository = Repository.FromRepositoryArn(this, "Repository", configuration.Source.RepositoryArn);
 
+            var artifactBucket = new Bucket(this, "ArtifactBucket", new BucketProps
+            {
+                AutoDeleteObjects = true,
+                BucketName = $"{id}-{configuration.AccountId}",
+                EncryptionKey = new Key(this, $"{id}-crossaccountaccess-encryptionkey"),
+                RemovalPolicy = RemovalPolicy.DESTROY
+            });
+
             var sourceArtifact = new Artifact_();
-            var outputArtifact = new Artifact_();
+
             var ecrPolicy = new PolicyStatement(new PolicyStatementProps
             {
                 Effect = Effect.ALLOW,
-                Actions = new[] {"ecr:*"},
-                Resources = new[] {"*"}
+                Actions = new[] { "ecr:*" },
+                Resources = new[] { "*" }
             });
 
-
-            // Setup CodeCommit cross account role access policies if required
-            IRole codeCommitRole = null;
-            if (!string.IsNullOrWhiteSpace(configuration.Source.CrossAccountRoleArn))
+            var sourceAction = new CodeCommitSourceAction(new CodeCommitSourceActionProps
             {
-                codeCommitRole = Role.FromRoleArn(this, "CodeCommitRole", configuration.Source.CrossAccountRoleArn, new FromRoleArnOptions
-                {
-                    Mutable = false // Flag to indicate CDK to not modify the role
-                });
-            }
+                ActionName = repository.RepositoryName,
+                Output = sourceArtifact,
+                Repository = repository,
+                Branch = configuration.Source.BranchName,
+                Trigger = CodeCommitTrigger.POLL
+            });
 
-            // Strict ordering is required to make sure CloudFormation template doesn't result in false difference
-            var environmentVariablesToCopy = System.Environment.GetEnvironmentVariables()
-                .Keys.Cast<string>()
-                .Where(variable => variable.StartsWith("AWS_LAMBDA_"))
-                .OrderBy(variable => variable);
+            var basePipeline = new Pipeline(this, "CodePipeline", new PipelineProps
+            {
+                PipelineName = id,
+                RestartExecutionOnUpdate = true,
+                ArtifactBucket = artifactBucket,
+                Stages = new StageOptions[] {
+                    new StageOptions
+                    {
+                        StageName = "Source",
+                        Actions = new Action[] { sourceAction }
+                    }
+                }
+            });
+
+            var environmentVariables =
+                new Dictionary<string, IBuildEnvironmentVariable>
+                {
+                    { "AWS_LAMBDA_PIPELINE_ACCOUNT_ID",
+                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_ACCOUNT_ID") ?? string.Empty } },
+                    { "AWS_LAMBDA_PIPELINE_CODECOMMIT_ACCOUNT_ID",
+                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_CODECOMMIT_ACCOUNT_ID") ?? string.Empty } },
+                    { "AWS_LAMBDA_PIPELINE_REGION",
+                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_REGION") ?? string.Empty } },
+                    { "AWS_LAMBDA_SOURCE_REPOSITORY_ARN",
+                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_SOURCE_REPOSITORY_ARN") ?? string.Empty } },
+                    { "AWS_LAMBDA_SOURCE_BRANCH_NAME",
+                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_SOURCE_BRANCH_NAME") ?? string.Empty } },
+                    { "AWS_LAMBDA_STAGE_ECR",
+                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_STAGE_ECR") ?? string.Empty } },
+                    { "AWS_LAMBDA_BETA_ECRS",
+                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_BETA_ECRS") ?? string.Empty } },
+                    { "AWS_LAMBDA_PROD_ECRS",
+                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PROD_ECRS") ?? string.Empty } },
+                    { "AWS_LAMBDA_ECR_REPOSITORY_NAME",
+                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_ECR_REPOSITORY_NAME") ?? string.Empty } },
+                    { "AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION",
+                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION") ?? string.Empty } },
+                    { "AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL",
+                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL") ?? string.Empty } },
+                };
 
             // Self mutation
-            // TODO: DOTNET-6085 - Migration from CDKPipeline to CodePipeline
-            const string cdkCliVersion = "1.159.0";
-            var pipeline = new CdkPipeline(this, "Pipeline", new CdkPipelineProps
+            var pipeline = new CodePipeline(this, "Pipeline", new CodePipelineProps
             {
-                PipelineName = $"{id}-{framework}",
-                CloudAssemblyArtifact = outputArtifact,
-                CdkCliVersion = cdkCliVersion,
-
-                SourceAction = new CodeCommitSourceAction(new CodeCommitSourceActionProps
-                {
-                    ActionName = "CodeCommit",
-                    Output = sourceArtifact,
-                    Repository = repository,
-                    Branch = configuration.Source.BranchName,
-                    Role = codeCommitRole,
-                    Trigger = CodeCommitTrigger.POLL
-                }),
+                CodePipeline = basePipeline,
 
                 // It synthesizes CDK code to cdk.out directory which is picked by SelfMutate stage to mutate the pipeline
-                SynthAction = new SimpleSynthAction(new SimpleSynthActionProps
+                Synth = new ShellStep("Synth", new ShellStepProps
                 {
-                    SourceArtifact = sourceArtifact,
-                    CloudAssemblyArtifact = outputArtifact,
-                    Subdirectory = "LambdaRuntimeDockerfiles/Infrastructure",
-                    InstallCommands = new[]
+                    Input = CodePipelineFileSet.FromArtifact(sourceArtifact),
+                    InstallCommands = new[] { $"npm install -g aws-cdk@{cdkCliVersion}" },
+                    Commands = new[] { $"dotnet build {Configuration.ProjectRoot}", "cdk synth" }
+                }),
+                CodeBuildDefaults = new CodeBuildOptions
+                {
+                    BuildEnvironment = new BuildEnvironment
                     {
-                        $"npm install -g aws-cdk@{cdkCliVersion}",
-                    },
-                    BuildCommands = new[] {"dotnet build"},
-                    SynthCommand = "cdk synth",
-                    CopyEnvironmentVariables = environmentVariablesToCopy.ToArray()
-                })
+                        EnvironmentVariables = environmentVariables
+                    }
+                },
+                SelfMutationCodeBuildDefaults = new CodeBuildOptions
+                {
+                    RolePolicy = new PolicyStatement[]
+                    {
+                        new PolicyStatement(new PolicyStatementProps
+                        {
+                            Effect = Effect.ALLOW,
+                            Actions = new[] { "sts:AssumeRole" },
+                            Resources = new[] { $"arn:aws:iam::{configuration.CodeCommitAccountId}:role/*" }
+                        })
+                    }
+                }
             });
+
+            pipeline.BuildPipeline();
 
             var stageEcr = GetStageEcr(this, ecrRepositoryName, configuration);
 
-            var dockerBuildStage = pipeline.AddStage("Stage-DockerBuild");
+            var dockerBuildActions = new List<Action>();
 
             // Stage
             // Build AMD64 image
@@ -138,13 +196,13 @@ namespace Infrastructure
             });
 
             dockerBuildAmd64.AddToRolePolicy(ecrPolicy);
-            dockerBuildStage.AddActions(new CodeBuildAction(new CodeBuildActionProps
+            dockerBuildActions.Add(new CodeBuildAction(new CodeBuildActionProps
             {
                 Input = sourceArtifact,
                 Project = dockerBuildAmd64,
                 ActionName = "amd64"
             }));
-            
+
             if (configuration.DockerARM64Images.Contains(framework))
             {
                 // Build ARM64 image
@@ -154,7 +212,7 @@ namespace Infrastructure
                     Description = $"Builds and pushes image to {stageEcr}",
                     Environment = new BuildEnvironment
                     {
-                        BuildImage = LinuxBuildImage.AMAZON_LINUX_2_ARM,
+                        BuildImage = LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_1_0,
                         Privileged = true
                     },
                     Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
@@ -175,13 +233,19 @@ namespace Infrastructure
                 });
 
                 dockerBuildArm64.AddToRolePolicy(ecrPolicy);
-                dockerBuildStage.AddActions(new CodeBuildAction(new CodeBuildActionProps
+                dockerBuildActions.Add(new CodeBuildAction(new CodeBuildActionProps
                 {
                     Input = sourceArtifact,
                     Project = dockerBuildArm64,
                     ActionName = "arm64"
                 }));
             }
+
+            basePipeline.AddStage(new StageOptions
+            {
+                StageName = "DockerBuild",
+                Actions = dockerBuildActions.ToArray()
+            });
 
             // Create multi arch image manifest
             var dockerImageManifest = new Project(this, "DockerImageManifest", new ProjectProps
@@ -211,13 +275,18 @@ namespace Infrastructure
 
             dockerImageManifest.AddToRolePolicy(ecrPolicy);
 
-            var dockerImageManifestStage = pipeline.AddStage("DockerImageManifest");
-            dockerImageManifestStage.AddActions(new CodeBuildAction(new CodeBuildActionProps
+            basePipeline.AddStage(new StageOptions
             {
-                Input = sourceArtifact,
-                Project = dockerImageManifest,
-                ActionName = "DockerImageManifest"
-            }));
+                StageName = "DockerImageManifest",
+                Actions = new Action[] {
+                    new CodeBuildAction(new CodeBuildActionProps
+                    {
+                        Input = sourceArtifact,
+                        Project = dockerImageManifest,
+                        ActionName = "DockerImageManifest"
+                    })
+                }
+            });
 
             // Smoke test AMD64 image
             var amd64SmokeTests = new Project(this, "SmokeTests-amd64", new ProjectProps
@@ -256,19 +325,19 @@ namespace Infrastructure
                     "ecr:*",
                     "lambda:*"
                 },
-                Resources = new[] {"*"}
+                Resources = new[] { "*" }
             });
 
             amd64SmokeTests.AddToRolePolicy(smokeTestsPolicy);
 
-            var smokeTestsStage = pipeline.AddStage("SmokeTests");
-            smokeTestsStage.AddActions(new CodeBuildAction(new CodeBuildActionProps
+            var smokeTestsActions = new List<Action>();
+            smokeTestsActions.Add(new CodeBuildAction(new CodeBuildActionProps
             {
                 Input = sourceArtifact,
                 Project = amd64SmokeTests,
                 ActionName = "amd64"
             }));
-            
+
             if (configuration.DockerARM64Images.Contains(framework))
             {
                 // Smoke test ARM64 image
@@ -278,7 +347,7 @@ namespace Infrastructure
                     Description = "Runs smoke tests on the built image.",
                     Environment = new BuildEnvironment
                     {
-                        BuildImage = LinuxBuildImage.AMAZON_LINUX_2_ARM,
+                        BuildImage = LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_1_0,
                         Privileged = true
                     },
                     Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
@@ -300,13 +369,19 @@ namespace Infrastructure
 
                 arm64SmokeTests.AddToRolePolicy(smokeTestsPolicy);
 
-                smokeTestsStage.AddActions(new CodeBuildAction(new CodeBuildActionProps
+                smokeTestsActions.Add(new CodeBuildAction(new CodeBuildActionProps
                 {
                     Input = sourceArtifact,
                     Project = arm64SmokeTests,
                     ActionName = "arm64"
                 }));
             }
+
+            basePipeline.AddStage(new StageOptions
+            {
+                StageName = "SmokeTests",
+                Actions = smokeTestsActions.ToArray()
+            });
 
             // Beta
             if (!string.IsNullOrWhiteSpace(configuration.Ecrs.Beta))
@@ -339,26 +414,36 @@ namespace Infrastructure
 
                 betaDockerPush.AddToRolePolicy(ecrPolicy);
 
-                var betaDockerPushStage = pipeline.AddStage("Beta-DockerPush");
-                betaDockerPushStage.AddActions(new CodeBuildAction(new CodeBuildActionProps
+                basePipeline.AddStage(new StageOptions
                 {
-                    Input = sourceArtifact,
-                    Project = betaDockerPush,
-                    ActionName = "DockerPush"
-                }));
+                    StageName = "Beta-DockerPush",
+                    Actions = new Action[]
+                    {
+                        new CodeBuildAction(new CodeBuildActionProps
+                        {
+                            Input = sourceArtifact,
+                            Project = betaDockerPush,
+                            ActionName = "DockerPush"
+                        })
+                    }
+                });
             }
-
 
             // Prod
             if (!string.IsNullOrWhiteSpace(configuration.Ecrs.Prod))
             {
                 // Manual Approval
-                var manualApprovalStage = pipeline.AddStage("Prod-ManualApproval");
-                manualApprovalStage.AddActions(new ManualApprovalAction(new ManualApprovalActionProps
+                basePipeline.AddStage(new StageOptions
                 {
-                    ActionName = "ManualApproval"
-                }));
-
+                    StageName = "Prod-ManualApproval",
+                    Actions = new Action[]
+                    {
+                        new ManualApprovalAction(new ManualApprovalActionProps
+                        {
+                            ActionName = "ManualApproval"
+                        })
+                    }
+                });
 
                 var prodDockerPush = new Project(this, "Prod-DockerPush", new ProjectProps
                 {
@@ -388,13 +473,19 @@ namespace Infrastructure
 
                 prodDockerPush.AddToRolePolicy(ecrPolicy);
 
-                var prodDockerPushStage = pipeline.AddStage("Prod-DockerPush");
-                prodDockerPushStage.AddActions(new CodeBuildAction(new CodeBuildActionProps
+                basePipeline.AddStage(new StageOptions
                 {
-                    Input = sourceArtifact,
-                    Project = prodDockerPush,
-                    ActionName = "DockerPush"
-                }));
+                    StageName = "Prod-DockerPush",
+                    Actions = new Action[]
+                    {
+                        new CodeBuildAction(new CodeBuildActionProps
+                        {
+                            Input = sourceArtifact,
+                            Project = prodDockerPush,
+                            ActionName = "DockerPush"
+                        })
+                    }
+                });
             }
         }
 
