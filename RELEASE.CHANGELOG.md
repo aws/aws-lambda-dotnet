@@ -1,3 +1,7 @@
+### Release 2022-10-04
+* **Amazon.Lambda.TestTool (0.12.6)**
+  * Fixed issue with Lambda Functions using source generator serializer and returning a non-generic Task.
+
 ### Release 2022-10-03
 * **Amazon.Lambda.TestTool (0.12.5)**
   * Fixed issue [#1124](https://github.com/aws/aws-lambda-dotnet/issues/1124) with Lambda Functions using source generator serializer.
