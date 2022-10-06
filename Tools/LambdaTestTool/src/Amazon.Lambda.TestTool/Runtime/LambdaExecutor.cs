@@ -138,7 +138,10 @@ namespace Amazon.Lambda.TestTool.Runtime
                 await task;
 
                 // Check to see if the Task returns back an object.
-                if (task.GetType().IsGenericType)
+                // The return type from the Lambda functions MethodInfo must be used for checking if it generic.
+                // If you check the type from the object instance returned the non generic Task gets converted
+                // by the runtime to Task<VoidTaskResult>.
+                if (request.Function.LambdaMethod.ReturnType.IsGenericType)
                 {
                     var resultProperty = task.GetType().GetProperty("Result", BindingFlags.Public | BindingFlags.Instance);
                     if (resultProperty != null)
@@ -151,7 +154,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                         else
                         {
                             lambdaReturnStream = new MemoryStream();
-                            request.Function.Serializer.Serialize(taskResult, lambdaReturnStream);
+                            MakeGenericSerializerCall(request.Function.Serializer, taskResult, lambdaReturnStream);
                         }
                     }
                 }
@@ -159,7 +162,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             else
             {
                 lambdaReturnStream = new MemoryStream();
-                request.Function.Serializer.Serialize(lambdaReturnObject, lambdaReturnStream);
+                MakeGenericSerializerCall(request.Function.Serializer, lambdaReturnObject, lambdaReturnStream);
             }
 
             if (lambdaReturnStream == null)
@@ -171,6 +174,24 @@ namespace Amazon.Lambda.TestTool.Runtime
                 return reader.ReadToEnd();
             }
 
+        }
+
+        /// <summary>
+        /// Reflection is used to invoke the Lambda function which returns the response as an object. The 
+        /// Serialize method from ILambdaSerializer is a generic method based on the type of the response object.
+        /// This method converts the generic Serialize method to the specific type of the response. 
+        /// 
+        /// If we don't do this the 'T' of the generic Serialize method is an object which will break
+        /// when using the source generator serializer SourceGeneratorLambdaJsonSerializer.
+        /// </summary>
+        /// <param name="serializer"></param>
+        /// <param name="lambdaReturnObject"></param>
+        /// <param name="lambdaReturnStream"></param>
+        private static void MakeGenericSerializerCall(ILambdaSerializer serializer, object lambdaReturnObject, Stream lambdaReturnStream)
+        {
+            var serializerMethodInfo = typeof(ILambdaSerializer).GetMethod("Serialize");
+            var genericSerializerMethodInfo = serializerMethodInfo.MakeGenericMethod(lambdaReturnObject.GetType());
+            genericSerializerMethodInfo.Invoke(serializer, new object[] { lambdaReturnObject, lambdaReturnStream });
         }
 
         /// <summary>

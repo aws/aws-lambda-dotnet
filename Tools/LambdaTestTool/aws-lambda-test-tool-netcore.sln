@@ -38,13 +38,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspNetCoreAPIExample", "tests\LambdaFunctions\netcore31\AspNetCoreAPIExample\AspNetCoreAPIExample.csproj", "{5E1FF56C-9691-45B4-A961-24950A2C106C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool.BlazorTester.Tests", "tests\Amazon.Lambda.TestTool.BlazorTester.Tests\Amazon.Lambda.TestTool.BlazorTester.Tests.csproj", "{0CA7DDC6-A1C5-467C-9CBF-8B4290D56D4A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.BlazorTester.Tests", "tests\Amazon.Lambda.TestTool.BlazorTester.Tests\Amazon.Lambda.TestTool.BlazorTester.Tests.csproj", "{0CA7DDC6-A1C5-467C-9CBF-8B4290D56D4A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "net6", "net6", "{F08BF489-BD05-4DC1-9772-AB5E137B87B8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SourceGeneratorExample", "tests\LambdaFunctions\net6\SourceGeneratorExample\SourceGeneratorExample.csproj", "{9F8D7697-46FC-45E4-B795-11CCDA2B68B3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool.Tests.NET6", "tests\Amazon.Lambda.TestTool.Tests.NET6\Amazon.Lambda.TestTool.Tests.NET6.csproj", "{2C69BEB2-858E-43E3-9951-74E780FEB1BF}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		tests\Amazon.Lambda.TestTool.Tests.Shared\Amazon.Lambda.TestTool.Tests.Shared.projitems*{70aff681-844a-428c-aba2-7053e61d39c8}*SharedItemsImports = 13
-		tests\Amazon.Lambda.TestTool.Tests.Shared\Amazon.Lambda.TestTool.Tests.Shared.projitems*{e57abb02-e8fc-4011-95d3-e9cb9412edcb}*SharedItemsImports = 5
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -94,6 +96,14 @@ Global
 		{0CA7DDC6-A1C5-467C-9CBF-8B4290D56D4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0CA7DDC6-A1C5-467C-9CBF-8B4290D56D4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0CA7DDC6-A1C5-467C-9CBF-8B4290D56D4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F8D7697-46FC-45E4-B795-11CCDA2B68B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F8D7697-46FC-45E4-B795-11CCDA2B68B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F8D7697-46FC-45E4-B795-11CCDA2B68B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F8D7697-46FC-45E4-B795-11CCDA2B68B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C69BEB2-858E-43E3-9951-74E780FEB1BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C69BEB2-858E-43E3-9951-74E780FEB1BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C69BEB2-858E-43E3-9951-74E780FEB1BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C69BEB2-858E-43E3-9951-74E780FEB1BF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -113,8 +123,15 @@ Global
 		{E57ABB02-E8FC-4011-95D3-E9CB9412EDCB} = {28C935E3-4FB4-4B09-A9DB-26A1EB04CDE0}
 		{5E1FF56C-9691-45B4-A961-24950A2C106C} = {0B078893-2F43-4C0C-88FE-98D0839ED7A9}
 		{0CA7DDC6-A1C5-467C-9CBF-8B4290D56D4A} = {28C935E3-4FB4-4B09-A9DB-26A1EB04CDE0}
+		{F08BF489-BD05-4DC1-9772-AB5E137B87B8} = {BFD718DB-4526-4BED-B2B0-BB446EDFFEA1}
+		{9F8D7697-46FC-45E4-B795-11CCDA2B68B3} = {F08BF489-BD05-4DC1-9772-AB5E137B87B8}
+		{2C69BEB2-858E-43E3-9951-74E780FEB1BF} = {28C935E3-4FB4-4B09-A9DB-26A1EB04CDE0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E6C77567-6F16-4EE3-8743-ADE6B68434FD}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		tests\Amazon.Lambda.TestTool.Tests.Shared\Amazon.Lambda.TestTool.Tests.Shared.projitems*{70aff681-844a-428c-aba2-7053e61d39c8}*SharedItemsImports = 13
+		tests\Amazon.Lambda.TestTool.Tests.Shared\Amazon.Lambda.TestTool.Tests.Shared.projitems*{e57abb02-e8fc-4011-95d3-e9cb9412edcb}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

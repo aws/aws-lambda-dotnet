@@ -1,14 +1,22 @@
+### Release 2022-10-04
+* **Amazon.Lambda.TestTool (0.12.6)**
+  * Fixed issue with Lambda Functions using source generator serializer and returning a non-generic Task.
+
+### Release 2022-10-03
+* **Amazon.Lambda.TestTool (0.12.5)**
+  * Fixed issue [#1124](https://github.com/aws/aws-lambda-dotnet/issues/1124) with Lambda Functions using source generator serializer.
+  
+### Release 2022-09-29
+* **Amazon.Lambda.Templates (6.4.0)**
+  * Fixed issue with using templates with .NET 7 RC is installed.
+  
 ### Release 2022-09-13
 * **Amazon.Lambda.Annotations (0.8.0-preview)**
   * Add third party licenses
   * Correctly populate the role property in CloudFormation template
   * Copy XML documentation for Amazon.Lambda.Annotations into nupkg to drive IntelliSense
   * Add more detail to the Lambda Annotations README.md
-* **Amazon.Lambda.TestTool-3.1 (0.12.4)**
-  * Pull request [#1308](https://github.com/aws/aws-lambda-dotnet/pull/1308) fixing serialization of messages while monitoring dead letter queue. Thanks [William Keller](https://github.com/william-keller) 
-* **Amazon.Lambda.TestTool-5.0 (0.12.4)**
-  * Pull request [#1308](https://github.com/aws/aws-lambda-dotnet/pull/1308) fixing serialization of messages while monitoring dead letter queue. Thanks [William Keller](https://github.com/william-keller) 
-* **Amazon.Lambda.TestTool-6.0 (0.12.4)**
+* **Amazon.Lambda.TestTool (0.12.4)**
   * Pull request [#1308](https://github.com/aws/aws-lambda-dotnet/pull/1308) fixing serialization of messages while monitoring dead letter queue. Thanks [William Keller](https://github.com/william-keller) 
 
 ### Release 2022-08-29
