@@ -45,4 +45,13 @@ Resources:
       Policies:
       - AWSLambdaBasicExecutionRole
   MissingProperties:
-    Type: AWS::Serverless::Function
+    Type: AWS::Serverless::Function    
+  AFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: ServerlessTemplateYamlExample::ServerlessTemplateYamlExample.Functions::AFunction
+      CodeUri: ''
+      MemorySize: 256
+      Timeout: 30
+      Policies:
+        - AWSLambdaBasicExecutionRole
