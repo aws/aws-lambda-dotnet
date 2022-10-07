@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>Amazon.Lambda.Templates</id>
-    <version>6.5.0</version>
+    <version>6.4.0</version>
     <authors>Amazon Web Services</authors>
     <tags>AWS Amazon Lambda</tags>
     <description>AWS Lambda templates for Microsoft Template Engine accessible with the dotnet CLI's new command</description>
