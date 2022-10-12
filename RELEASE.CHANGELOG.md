@@ -1,3 +1,7 @@
+### Release 2022-10-12
+* **Amazon.Lambda.Templates (6.5.0)**
+  * Updated Javascript Dependencies in ASPNetCoreWeb App template to latest versions
+
 ### Release 2022-10-04
 * **Amazon.Lambda.TestTool (0.12.6)**
   * Fixed issue with Lambda Functions using source generator serializer and returning a non-generic Task.
