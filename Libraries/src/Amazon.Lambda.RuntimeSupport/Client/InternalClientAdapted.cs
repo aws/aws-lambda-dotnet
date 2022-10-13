@@ -260,7 +260,7 @@ namespace Amazon.Lambda.RuntimeSupport
 #if NET6_0_OR_GREATER
                                 result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_, RuntimeApiSerializationContext.Default.ErrorResponse);
 #else
-                                    result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
+                                result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
 #endif
                             }
                             catch (System.Exception exception_)
