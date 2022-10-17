@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -91,17 +91,17 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             }
             catch (FileNotFoundException fex)
             {
-                _logger.LogError(fex, "An error occured on UCL Init");
+                _logger.LogError(fex, "An error occurred on UCL Init");
                 throw LambdaExceptions.ValidationException(Errors.UserCodeLoader.CouldNotFindHandlerAssembly, fex.FileName);
             }
             catch (LambdaValidationException validationException)
             {
-                _logger.LogError(validationException, "An error occured on UCL Init");
+                _logger.LogError(validationException, "An error occurred on UCL Init");
                 throw;
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, "An error occured on UCL Init");
+                _logger.LogError(exception, "An error occurred on UCL Init");
                 throw LambdaExceptions.ValidationException(Errors.UserCodeLoader.UnableToLoadAssembly, _handler.AssemblyName);
             }
 

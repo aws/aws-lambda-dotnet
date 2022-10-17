@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -243,11 +243,8 @@ namespace Amazon.Lambda.RuntimeSupport
                     try
                     {
                         var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
+                        foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
-                        }
 
                         if (response_.StatusCode == HttpStatusCode.OK)
                         {
@@ -263,7 +260,7 @@ namespace Amazon.Lambda.RuntimeSupport
 #if NET6_0_OR_GREATER
                                 result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_, RuntimeApiSerializationContext.Default.ErrorResponse);
 #else
-                                    result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
+                                result_ = JsonSerializer.Deserialize<ErrorResponse>(responseData_);
 #endif
                             }
                             catch (System.Exception exception_)

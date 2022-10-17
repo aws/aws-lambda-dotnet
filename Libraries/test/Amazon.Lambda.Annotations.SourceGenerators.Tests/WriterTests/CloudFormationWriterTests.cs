@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
@@ -15,7 +16,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
     public class CloudFormationWriterTests
     {
-        private readonly IDirectoryManager _mockDirectoryManager = new InMemoryDirectoryManager();
+        private readonly IDirectoryManager _directoryManager = new DirectoryManager();
         private readonly IDiagnosticReporter _diagnosticReporter = new Mock<IDiagnosticReporter>().Object;
         private const string ProjectRootDirectory = "C:/CodeBase/MyProject";
         private const string ServerlessTemplateFilePath = "C:/CodeBase/MyProject/serverless.template";
@@ -29,7 +30,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, null, null);
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
             ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
 
@@ -61,7 +62,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         {
             // ARRANGE
             var mockFileManager = GetMockFileManager(string.Empty);
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
             const string policiesPath = "Resources.TestMethod.Properties.Policies";
             const string rolePath = "Resources.TestMethod.Properties.Role";
@@ -109,7 +110,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, null, "Policy1, @Policy2, Policy3");
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
             ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
             const string policiesPath = "Resources.TestMethod.Properties.Policies";
@@ -153,7 +154,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(content);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, "@Basic", null);
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -176,7 +177,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, "@Basic", null);
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -198,7 +199,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "OldName", 45, 512, "@Basic", null);
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
             ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
 
@@ -271,7 +272,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(content);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "NewMethod", 45, 512, null, null);
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -332,7 +333,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var mockFileManager = GetMockFileManager(content);
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "MethodNotCreatedFromAnnotationsPackage", 45, 512, null, "Policy1, Policy2, Policy3");
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> {lambdaFunctionModel});
 
             // ACT
@@ -367,7 +368,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 }
             };
             lambdaFunctionModel.Attributes = new List<AttributeModel>() {httpAttributeModel};
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
             ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
 
@@ -413,7 +414,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
                 "TestMethod", 45, 512, null, null);
             lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _mockDirectoryManager, templateFormat, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() {lambdaFunctionModel});
             ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
 
@@ -458,6 +459,45 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.False(templateWriter.Exists($"{propertiesPath}.ImageConfig"));
         }
 
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void CodeUriTest(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "TestMethod", 45, 512, null, null);
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+
+            // ARRANGE - CloudFormation template is inside project root directory
+            var projectRoot = Path.Combine("C:", "src", "serverlessApp");
+            var cloudFormationTemplatePath = Path.Combine(projectRoot, "templates", "serverless.template");
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>{lambdaFunctionModel}, projectRoot, cloudFormationTemplatePath);
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT - CodeUri is relative to CloudFormation template directory
+            templateWriter.Parse(mockFileManager.ReadAllText(cloudFormationTemplatePath));
+            const string propertiesPath = "Resources.TestMethod.Properties";
+            Assert.Equal("..", templateWriter.GetToken<string>($"{propertiesPath}.CodeUri"));
+
+            // ARRANGE - CloudFormation template is above project root directory
+            projectRoot = Path.Combine("C:", "src", "serverlessApp");
+            cloudFormationTemplatePath = Path.Combine(projectRoot, "..", "serverless.template");
+            report = GetAnnotationReport(new List<ILambdaFunctionSerializable>{lambdaFunctionModel}, projectRoot, cloudFormationTemplatePath);
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT - CodeUri is relative to CloudFormation template directory
+            templateWriter.Parse(mockFileManager.ReadAllText(cloudFormationTemplatePath));
+            Assert.Equal("serverlessApp", templateWriter.GetToken<string>($"{propertiesPath}.CodeUri"));
+        }
+
         private IFileManager GetMockFileManager(string originalContent)
         {
             var mockFileManager = new InMemoryFileManager();
@@ -478,12 +518,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             };
         }
 
-        private AnnotationReport GetAnnotationReport(List<ILambdaFunctionSerializable> lambdaFunctionModels)
+        private AnnotationReport GetAnnotationReport(List<ILambdaFunctionSerializable> lambdaFunctionModels,
+            string projectRootDirectory = ProjectRootDirectory, string cloudFormationTemplatePath = ServerlessTemplateFilePath)
         {
             var annotationReport = new AnnotationReport
             {
-                CloudFormationTemplatePath = ServerlessTemplateFilePath,
-                ProjectRootDirectory = ProjectRootDirectory
+                CloudFormationTemplatePath = cloudFormationTemplatePath,
+                ProjectRootDirectory = projectRootDirectory
             };
             foreach (var model in lambdaFunctionModels)
             {

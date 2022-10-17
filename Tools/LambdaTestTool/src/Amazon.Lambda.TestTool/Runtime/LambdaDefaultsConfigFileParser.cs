@@ -72,7 +72,7 @@ namespace Amazon.Lambda.TestTool.Runtime
             
                 configInfo.FunctionInfos.Add(info);
             }
-            
+            configInfo.FunctionInfos.Sort((x, y ) => string.CompareOrdinal(x.Name, y.Name));
             return configInfo;
         }
 

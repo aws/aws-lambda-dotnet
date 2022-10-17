@@ -12,6 +12,7 @@ For a history of releases view the [release change log](RELEASE.CHANGELOG.md)
     - [Amazon.Lambda.Tools](#amazonlambdatools)
       - [Global Tool Migration](#global-tool-migration)
         - [Migrating from DotNetCliToolReference](#migrating-from-dotnetclitoolreference)
+    - [Amazon.Lambda.Annotations](#amazonlambdaannotations)
     - [Amazon.Lambda.AspNetCoreServer](#amazonlambdaaspnetcoreserver)
     - [Amazon.Lambda.TestUtilities](#amazonlambdatestutilities)
   - [Blueprints](#blueprints)
@@ -93,6 +94,13 @@ To migrate an existing project away from the older project tool, you need to edi
 To migrate this project, you need to delete the **DotNetCliToolReference** element, including **Amazon.Lambda.Tools**. If you don't remove this line, the older project tool version of **Amazon.Lambda.Tools** will be used instead of an installed Global Tool.
 
 The AWS Toolkit for Visual Studio before .NET Core 2.1 would look for the presence of **Amazon.Lambda.Tools** in the project file to determine whether to show the Lambda deployment menu item. Because we knew we were going to switch to Global Tools, and the reference to **Amazon.Lambda.Tools** in the project was going away, we added the **AWSProjectType** property to the project file. The current version of the AWS Toolkit for Visual Studio now looks for either the presence of **Amazon.Lambda.Tools** or the **AWSProjectType** set to **Lambda**. Make sure when removing the **DotNetCliToolReference** that your project file has the **AWSProjectType** property to continue deploying with the AWS Toolkit for Visual Studio.
+
+### Amazon.Lambda.Annotations
+
+The Lambda Annotations library allows C# functions to use .NET attributes for a more idiomatic experience
+writing Lambda functions. This includes dependency injection integration, simplified access to Lambda event
+information and automatic synchronization with CloudFormation template.
+For more information see the [README.md](Libraries/src/Amazon.Lambda.Annotations/README.md) file for Amazon.Lambda.Annotations.
 
 ### Amazon.Lambda.AspNetCoreServer
 

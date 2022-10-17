@@ -94,5 +94,31 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.CloudFormationTemplat
             Assert.Equal(expectedPath, templatePath);
             Assert.True(File.Exists(templatePath));
         }
+
+        [Fact]
+        public void FindTemplate_DefaultConfigFile_Template_Is_AboveProjectRoot()
+        {
+            // ARRANGE
+            const string content = @"{
+                'profile': 'default',
+                'region': 'us-west-2',
+                'template': '../serverless.template',
+            }";
+
+            var tempDir = Path.Combine(Path.GetTempPath(), Helpers.GetRandomDirectoryName());
+            var projectRoot = Path.Combine(tempDir, "Codebase", "Src", "MyServerlessApp");
+            Helpers.CreateCustomerApplication(projectRoot);
+            var templateHandler = new CloudFormationTemplateHandler(new FileManager(), new DirectoryManager());
+            Helpers.CreateFile(Path.Combine(projectRoot, "aws-lambda-tools-defaults.json"));
+            File.WriteAllText(Path.Combine(projectRoot, "aws-lambda-tools-defaults.json"), content);
+
+            // ACT
+            var templatePath = templateHandler.FindTemplate(projectRoot);
+
+            // ASSERT
+            var expectedPath = Path.Combine(projectRoot, "..", "serverless.template");
+            Assert.Equal(expectedPath, templatePath);
+            Assert.True(File.Exists(templatePath));
+        }
     }
 }
