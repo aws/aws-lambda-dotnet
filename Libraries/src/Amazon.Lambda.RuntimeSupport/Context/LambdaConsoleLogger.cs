@@ -45,7 +45,7 @@ namespace Amazon.Lambda.RuntimeSupport
             _consoleLoggerRedirector.FormattedWriteLine(level, message);
         }
 
-        public void LogEntry<TEntry>(LogLevel level, TEntry entry)
+        public void LogEntry<TEntry>(string level, TEntry entry)
         {
             _consoleLoggerRedirector.FormattedWriteEntry(level, entry);
         }

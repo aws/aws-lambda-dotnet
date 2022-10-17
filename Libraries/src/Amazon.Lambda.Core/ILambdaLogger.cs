@@ -4,7 +4,7 @@ namespace Amazon.Lambda.Core
     /// <summary>
     /// Log Level for logging messages
     /// </summary>
-    public enum LogLevel 
+    public enum LogLevel
     {
         /// <summary>
         /// Trace level logging
@@ -60,14 +60,13 @@ namespace Amazon.Lambda.Core
         void LogLine(string message);
 
 #if NET6_0_OR_GREATER
-
         /// <summary>
         /// Logs an entry.
         /// </summary>
         /// <typeparam name="TEntry">The type of the log entry.</typeparam>
         /// <param name="level">Log level.</param>
         /// <param name="entry">The log entry.</param>
-        void LogEntry<TEntry>(LogLevel level, TEntry entry);
+        void LogEntry<TEntry>(string level, TEntry entry) => Log(level, entry.ToString());
 
         /// <summary>
         /// Log message catagorized by the given log level

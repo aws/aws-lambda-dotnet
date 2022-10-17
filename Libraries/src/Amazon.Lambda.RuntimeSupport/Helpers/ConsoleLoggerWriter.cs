@@ -44,7 +44,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// </summary>
         /// <param name="level">Log level.</param>
         /// <param name="entry">Log entry.</param>
-        void FormattedWriteEntry<TEntry>(LogLevel level, TEntry entry);
+        void FormattedWriteEntry<TEntry>(string level, TEntry entry);
 #endif
     }
 
@@ -96,7 +96,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
 #if NET6_0_OR_GREATER
         /// <inheritdoc/>
-        public void FormattedWriteEntry<TEntry>(LogLevel level, TEntry entry)
+        public void FormattedWriteEntry<TEntry>(string level, TEntry entry)
         {
             _writer.WriteLine(entry.ToString());
         }
@@ -242,19 +242,9 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         }
 
         /// <inheritdoc/>
-        public void FormattedWriteEntry<TEntry>(Core.LogLevel level, TEntry entry)
+        public void FormattedWriteEntry<TEntry>(string level, TEntry entry)
         {
-            var innerLogLevel = level switch
-            {
-                Core.LogLevel.Trace => LogLevel.Trace,
-                Core.LogLevel.Debug => LogLevel.Debug,
-                Core.LogLevel.Information => LogLevel.Information,
-                Core.LogLevel.Warning => LogLevel.Warning,
-                Core.LogLevel.Error => LogLevel.Error,
-                Core.LogLevel.Critical => LogLevel.Critical,
-                _ => LogLevel.Information, // use 'info' as fallback level
-            };
-            _wrappedStdOutWriter.FormattedWriteEntry(innerLogLevel, entry);
+            _wrappedStdOutWriter.FormattedWriteEntry(level, entry);
         }
 
         /// <summary>
@@ -264,6 +254,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// </summary>
         class WrapperTextWriter : TextWriter
         {
+            private const string ExceptionParamName = "{Exception}";
             private const string _dateFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
             private static readonly UTF8Encoding UTF8NoBomNoThrow = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
             private readonly TextWriter _innerWriter;
@@ -351,19 +342,22 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 }
             }
 
-            internal void FormattedWriteEntry<TEntry>(LogLevel level, TEntry entry)
+            internal void FormattedWriteEntry<TEntry>(string level, TEntry entry)
             {
-                if (level < _minmumLogLevel)
+                var displayLevel = level;
+                if (Enum.TryParse<LogLevel>(level, true, out var levelEnum))
                 {
-                    return;
+                    if (levelEnum < _minmumLogLevel)
+                        return;
+
+                    displayLevel = ConvertLogLevelToLabel(levelEnum);
                 }
 
-                var displayLevel = ConvertLogLevelToLabel(level);
                 string line = _logFormatType switch
                 {
                     LogFormatType.Unformatted => entry.ToString(),
                     LogFormatType.Json => ConvertToJsonFormattedMessage(displayLevel, entry),
-                    _ => ConvertEntryToDefaultFormattedMessage(displayLevel, entry)   // TODO consider including exception info
+                    _ => ConvertEntryToDefaultFormattedMessage(displayLevel, entry)
                 };
 
                 lock (LockObject)
@@ -408,9 +402,13 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 }
 
                 sb.Append(entry.ToString() ?? string.Empty);
-                if (entry is IMessageEntry messageEntry && messageEntry.Exception != null)
+                if (entry is IReadOnlyList<KeyValuePair<string, object>> messageEntry && messageEntry.Count > 0)
                 {
-                    sb.Append('\t').Append(messageEntry.Exception);
+                    var param0 = messageEntry[0];
+                    if (ExceptionParamName.Equals(param0.Key, StringComparison.Ordinal) && param0.Value is Exception exception)
+                    {
+                        sb.Append('\t').Append(exception);
+                    }
                 }
 
                 return sb.ToString();
@@ -444,6 +442,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             private string ConvertToJsonFormattedMessage<TEntry>(string displayLevel, TEntry entry)
             {
+                const string exceptionJsonKey = "Exception";
                 var bufferWriter = new ArrayBufferWriter<byte>();
                 using var writer = new Utf8JsonWriter(bufferWriter, new JsonWriterOptions
                 {
@@ -460,23 +459,31 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
                 writer.WriteString("Message", entry.ToString());
 
-                if (entry is IMessageEntry messageEntry)
+                if (entry is IReadOnlyList<KeyValuePair<string, object>> messageEntry)
                 {
-                    if (messageEntry.Exception is null)
+                    // find and write the Exception if present
+                    if (messageEntry.Count > 0)
                     {
-                        writer.WriteNull("Exception");
-                    }
-                    else
-                    {
-                        // TODO limit exception stacktrace length?
-                        writer.WriteString("Exception", messageEntry.Exception.ToString());
+                        var param0 = messageEntry[0];
+                        if (ExceptionParamName.Equals(param0.Key, StringComparison.Ordinal))
+                        {
+                            if (param0.Value is Exception exception)
+                            {
+                                // TODO limit exception stacktrace length?
+                                writer.WriteString(exceptionJsonKey, exception.ToString());
+                            }
+                            else
+                            {
+                                writer.WriteNull(exceptionJsonKey);
+                            }
+                        }
                     }
 
                     writer.WriteStartObject("State");  // 'State' object
 
-                    foreach (var kvp in messageEntry.State)
+                    for (int i = 1, l = messageEntry.Count; i < l; i++)
                     {
-                        WriteItem(writer, kvp);
+                        WriteItem(writer, messageEntry[i]);
                     }
 
                     writer.WriteEndObject();     // 'State' object

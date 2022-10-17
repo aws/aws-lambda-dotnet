@@ -17,10 +17,4 @@
 	<None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
-  <ItemGroup>
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-      <_Parameter1>Amazon.Lambda.Core.Tests</_Parameter1>
-    </AssemblyAttribute>
-  </ItemGroup>
-
 </Project>

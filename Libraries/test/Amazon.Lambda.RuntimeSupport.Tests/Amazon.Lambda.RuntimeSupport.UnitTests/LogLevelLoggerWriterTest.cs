@@ -2,6 +2,7 @@
 using Amazon.Lambda.RuntimeSupport.Helpers;
 using Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -12,21 +13,30 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 #if NET6_0_OR_GREATER
     public class LogLevelLoggerWriterTest
     {
-        private class TestMessageEntry : MessageEntry
+        private class TestMessageEntry : IReadOnlyList<KeyValuePair<string, object>>
         {
-            public override IReadOnlyList<KeyValuePair<string, object>> State { get; } = new Dictionary<string, object>
+            public static readonly Exception TestException = new Exception("TestMessageEntry test exception");
+
+            public IReadOnlyList<KeyValuePair<string, object>> State { get; } = new Dictionary<string, object>
             {
+                ["{Exception}"] = TestException,
                 ["stringVal"] = "string",
                 ["boolVal"] = true,
                 ["intVal"] = int.MaxValue,
                 ["dateVal"] = DateTime.UtcNow
             }.ToArray();
 
-            public override Exception Exception { get; } = new Exception("TestMessageEntry test exception");
-
             public override string ToString() => "TestMessageEntry test message";
 
+            IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator() => State.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => State.GetEnumerator();
+
             public static TestMessageEntry Instance { get; } = new TestMessageEntry();
+
+            int IReadOnlyCollection<KeyValuePair<string, object>>.Count => State.Count;
+
+            KeyValuePair<string, object> IReadOnlyList<KeyValuePair<string, object>>.this[int index] => State[index];
         }
 
         public static IEnumerable<object[]> LogLevels => new List<object[]>
@@ -107,7 +117,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var logWriter = new LogLevelLoggerWriter(output, output, logLevel.ToString(), "Unformatted");
             logWriter.SetCurrentAwsRequestId("fake-request");
 
-            logWriter.FormattedWriteEntry(logLevel, TestMessageEntry.Instance);
+            logWriter.FormattedWriteEntry(logLevel.ToString(), TestMessageEntry.Instance);
 
             Assert.Equal(TestMessageEntry.Instance.ToString(), output.Lines[0]);
         }
@@ -123,7 +133,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var requestId = Guid.NewGuid().ToString("");
             logWriter.SetCurrentAwsRequestId(requestId);
 
-            logWriter.FormattedWriteEntry(logLevel, TestMessageEntry.Instance);
+            logWriter.FormattedWriteEntry(logLevel.ToString(), TestMessageEntry.Instance);
 
             var outputMsg = output.Lines.Single();
 
@@ -146,7 +156,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var requestId = Guid.NewGuid().ToString();
             logWriter.SetCurrentAwsRequestId(requestId);
 
-            logWriter.FormattedWriteEntry(logLevel, TestMessageEntry.Instance);
+            logWriter.FormattedWriteEntry(logLevel.ToString(), TestMessageEntry.Instance);
 
             // assert json output
             using var json = JsonDocument.Parse(output.Lines.Single());
@@ -154,11 +164,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Equal(requestId, json.RootElement.GetProperty("AwsRequestId").GetString());
             Assert.Equal(ConvertLogLevelToLabel(logLevel), json.RootElement.GetProperty("Level").GetString());
             Assert.Equal(TestMessageEntry.Instance.ToString(), json.RootElement.GetProperty("Message").GetString());
-            Assert.Contains(TestMessageEntry.Instance.Exception.Message, json.RootElement.GetProperty("Exception").GetString());
+            Assert.Contains(TestMessageEntry.TestException.Message, json.RootElement.GetProperty("Exception").GetString());
 
             var jsonState = json.RootElement.GetProperty("State");
-            foreach (var stateProperty in TestMessageEntry.Instance.State)
+            for (var i = 1; i < TestMessageEntry.Instance.State.Count; i++)
             {
+                var stateProperty = TestMessageEntry.Instance.State[i];
                 var jsonValue = jsonState.GetProperty(stateProperty.Key);
                 switch (stateProperty.Value)
                 {
@@ -186,13 +197,33 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [InlineData(LogLevel.Information, LogLevel.Trace)]
         [InlineData(LogLevel.Warning, LogLevel.Information)]
         [InlineData(LogLevel.Error, LogLevel.Information)]
-        public void FormattedWriteEntry_LowerLevel_WritesJsonObject(LogLevel minLevel, LogLevel writeLevel)
+        public void FormattedWriteEntry_LowerLevel_DoesNotWrite(LogLevel minLevel, LogLevel writeLevel)
         {
             using var output = new TestOutputTextWriter();
             var logWriter = new LogLevelLoggerWriter(output, output, minLevel.ToString(), "Json");
 
-            logWriter.FormattedWriteEntry(writeLevel, TestMessageEntry.Instance);
+            logWriter.FormattedWriteEntry(writeLevel.ToString(), TestMessageEntry.Instance);
             Assert.Empty(output.Lines);
+        }
+
+        /// <summary>
+        /// If customer uses a custom level, it should be printed as such.
+        /// </summary>
+        [Theory]
+        [InlineData("Json")]
+        [InlineData("Default")]
+        public void FormattedWriteEntry_CustomLevel_WritesCustomLevel(string format)
+        {
+            const string customLevel = "customLevel";
+            using var output = new TestOutputTextWriter();
+            // create writer with highest minLevel
+            var logWriter = new LogLevelLoggerWriter(output, output, LogLevel.Critical.ToString(), format);
+
+            logWriter.FormattedWriteEntry(customLevel, TestMessageEntry.Instance);
+
+            // if the level is not recognized it should be written no matter what 'minLevel' is
+            var line = Assert.Single(output.Lines);
+            Assert.Contains(customLevel, line);
         }
 
         private static string ConvertLogLevelToLabel(LogLevel level)

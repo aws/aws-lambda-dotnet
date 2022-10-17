@@ -21,7 +21,7 @@
         /// <param name="logger">Instance of <see cref="ILambdaLogger"/>.</param>
         /// <param name="format">Log message format.</param>
         /// <param name="args">Log parameters.</param>
-        public static void Trace(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, LogLevel.Trace, null, format, args);
+        public static void Trace(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, nameof(LogLevel.Trace), null, format, args);
 
         /// <summary>
         /// Logs a debug message.
@@ -29,7 +29,7 @@
         /// <param name="logger">Instance of <see cref="ILambdaLogger"/>.</param>
         /// <param name="format">Log message format.</param>
         /// <param name="args">Log parameters.</param>
-        public static void Debug(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, LogLevel.Debug, null, format, args);
+        public static void Debug(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, nameof(LogLevel.Debug), null, format, args);
 
         /// <summary>
         /// Logs an information message.
@@ -37,7 +37,7 @@
         /// <param name="logger">Instance of <see cref="ILambdaLogger"/>.</param>
         /// <param name="format">Log message format.</param>
         /// <param name="args">Log parameters.</param>
-        public static void Info(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, LogLevel.Information, null, format, args);
+        public static void Info(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, nameof(LogLevel.Information), null, format, args);
 
         /// <summary>
         /// Logs a warning message.
@@ -45,7 +45,7 @@
         /// <param name="logger">Instance of <see cref="ILambdaLogger"/>.</param>
         /// <param name="format">Log message format.</param>
         /// <param name="args">Log parameters.</param>
-        public static void Warning(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, LogLevel.Warning, null, format, args);
+        public static void Warning(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, nameof(LogLevel.Warning), null, format, args);
 
         /// <summary>
         /// Logs an error message.
@@ -53,7 +53,7 @@
         /// <param name="logger">Instance of <see cref="ILambdaLogger"/>.</param>
         /// <param name="format">Log message format.</param>
         /// <param name="args">Log parameters.</param>
-        public static void Error(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, LogLevel.Error, null, format, args);
+        public static void Error(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, nameof(LogLevel.Error), null, format, args);
 
         /// <summary>
         /// Logs an error message.
@@ -62,7 +62,7 @@
         /// <param name="exception">Exception to include in the log.</param>
         /// <param name="format">Log message format.</param>
         /// <param name="args">Log parameters.</param>
-        public static void Error(this ILambdaLogger logger, Exception exception, string format, params object[] args) => LogMessageEntry(logger, LogLevel.Error, exception, format, args);
+        public static void Error(this ILambdaLogger logger, Exception exception, string format, params object[] args) => LogMessageEntry(logger, nameof(LogLevel.Error), exception, format, args);
 
         /// <summary>
         /// Logs a critical message.
@@ -70,7 +70,7 @@
         /// <param name="logger">Instance of <see cref="ILambdaLogger"/>.</param>
         /// <param name="format">Log message format.</param>
         /// <param name="args">Log parameters.</param>
-        public static void Critical(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, LogLevel.Critical, null, format, args);
+        public static void Critical(this ILambdaLogger logger, string format, params object[] args) => LogMessageEntry(logger, nameof(LogLevel.Critical), null, format, args);
 
         /// <summary>
         /// Logs a critical message.
@@ -79,13 +79,19 @@
         /// <param name="exception">Exception to include in the log.</param>
         /// <param name="format">Log message format.</param>
         /// <param name="args">Log parameters.</param>
-        public static void Critical(this ILambdaLogger logger, Exception exception, string format, params object[] args) => LogMessageEntry(logger, LogLevel.Critical, exception, format, args);
+        public static void Critical(this ILambdaLogger logger, Exception exception, string format, params object[] args) => LogMessageEntry(logger, nameof(LogLevel.Critical), exception, format, args);
 
-        private static void LogMessageEntry(ILambdaLogger logger, LogLevel level, Exception exception, string format, params object[] args)
+        private static void LogMessageEntry(ILambdaLogger logger, string level, Exception exception, string format, params object[] args)
             => logger.LogEntry(level, new FormattedMessageEntry(format, exception, args));
 
-        internal readonly struct FormattedMessageEntry : IMessageEntry, IReadOnlyList<KeyValuePair<string, object>>
+        internal readonly struct FormattedMessageEntry : IReadOnlyList<KeyValuePair<string, object>>
         {
+            /// <summary>
+            /// Magic string to store the exception in <see cref="State"/>.
+            /// Since the formatted parameter names cannot contain '}', this will not conflict with other parameters.
+            /// </summary>
+            private const string ExceptionParamName = "{Exception}";
+
             /// <summary>
             /// Use a cache to look-up formatter so we don't have to parse the format for every entry.
             /// </summary>
@@ -119,15 +125,27 @@
                 }
             }
 
-            public KeyValuePair<string, object> this[int index] => _formatter != null
-                ? new KeyValuePair<string, object>(_formatter.ParameterNames[index], _args[index])
-                : throw new IndexOutOfRangeException(nameof(index));
+            public KeyValuePair<string, object> this[int index]
+            {
+                get
+                {
+                    if (index == 0)
+                    {
+                        // store the exception as the first item
+                        return new KeyValuePair<string, object>(ExceptionParamName, Exception);
+                    }
+
+                    return _formatter != null
+                      ? new KeyValuePair<string, object>(_formatter.ParameterNames[index - 1], _args[index - 1])
+                      : throw new IndexOutOfRangeException(nameof(index));
+                }
+            }
 
             public IReadOnlyList<KeyValuePair<string, object>> State => this;
 
             public Exception Exception { get; }
 
-            public int Count => _formatter is null ? 0 : _formatter.ParameterNames.Count;
+            public int Count => _formatter is null ? 1 : _formatter.ParameterNames.Count + 1;
 
             public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
             {
@@ -148,7 +166,7 @@
 
             public MessageFormatter(string formatString)
             {
-                ArgumentNullException.ThrowIfNull(formatString);
+                System.Diagnostics.Debug.Assert(formatString != null);
                 _format = ParseLogFormatString(formatString, ParameterNames);
             }
 
@@ -182,6 +200,7 @@
                             }
                             else if (state == LogFormatParserState.PossibleParameterOpen)
                             {
+                                // this is an escaped brace, copy this as-is since string.Format can recognize it and transition to InMessage
                                 sb.Append(c);
                                 state = LogFormatParserState.InMessage;
                             }
@@ -197,6 +216,8 @@
                             }
                             else
                             {
+                                // state is either PossibleParameterOpen or InParameter, which '}' indicates the closing of parameter
+                                // parse and append the parameter format then append the closing brace
                                 ParseParameterAndFormat(formatString.AsSpan().Slice(paramStartIdx, i - paramStartIdx), sb, names);
                                 sb.Append('}');
                                 state = LogFormatParserState.InMessage;
@@ -209,12 +230,14 @@
                             }
                             else if (state == LogFormatParserState.PossibleParameterOpen)
                             {
+                                // non-brace character after '{', transition to InParameter
                                 paramStartIdx = i;
                                 state = LogFormatParserState.InParameter;
                             }
                             else
                             {
-                                // ignore
+                                // character as part of parameter, ignore
+                                // parameter name and format will be parsed by ParseParameterAndFormat when '}' is encountered
                             }
                             break;
                     }
