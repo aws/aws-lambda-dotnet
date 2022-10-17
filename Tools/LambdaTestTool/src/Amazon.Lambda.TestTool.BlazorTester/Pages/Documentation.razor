@@ -98,7 +98,8 @@ These options are valid for either mode the Lambda test tool is running in.
 These options are valid when using the web interface to select and execute the Lambda code.
 
         --host &lt;hostname-or-ip-address&gt;       The hostname or IP address used for the test tool's web interface.
-                                              Any host other than an explicit IP address or localhost (e.g. '*', '+' or 'example.com') binds to all public IPv4 and IPv6 addresses. 
+                                              Any host other than an explicit IP address or localhost (e.g. '*', '+' or 'example.com') 
+                                              binds to all public IPv4 and IPv6 addresses. 
         --port &lt;port-number&gt;                  The port number used for the test tool's web interface.
         --no-launch-window                    Disable auto launching the test tool's web interface in a browser.
 
@@ -121,7 +122,7 @@ These options are valid in the no web interface mode.
 </pre>
 
 <p>
-    <i>Note</i>: The <b>--host</b> argument do not to bind to specific hostname as it's value is largely ignored by 
+    <i>Note</i>: The <b>--host</b> argument do not bind to specific hostname as it's value is largely ignored by 
     <a href="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints?view=aspnetcore-6.0#url-prefixes-1" target="_blank">web hosting</a>. 
     This is mostly used to expose web interface through docker by binding to all public IP addresses.
 </p>

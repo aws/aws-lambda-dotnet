@@ -22,6 +22,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.FileIOTests
         [InlineData("C:/CodeBase/Src/MyProject/MyProject.csproj", "C:/CodeBase/Src", "../..")]
         [InlineData("MyFolder", "MyFolder", ".")]
         [InlineData("C:/CodeBase/Src/MyProject/MyProject.csproj", "D:/CodeBase/Src/MyProject/MyProject.csproj", "D:/CodeBase/Src/MyProject/MyProject.csproj")]
+        [InlineData("C:/src/serverlessApp/..", "C:/src/serverlessApp", "serverlessApp")]
         public void GetRelativePath(string relativeTo, string path, string expectedPath)
         {
             var directoryManager = new DirectoryManager();

@@ -29,15 +29,6 @@
       "datatype": "string",
       "replaces": "DefaultRegion",
       "defaultValue": ""
-    },
-    "safe-sourcename": {
-      "type": "generated",
-      "generator": "coalesce",
-      "parameters": {
-        "sourceVariableName": "safe_namespace",
-        "fallbackVariableName": "safe_name"
-      },
-      "replaces": "BlueprintBaseName._1"
     }
   },
   "primaryOutputs": [

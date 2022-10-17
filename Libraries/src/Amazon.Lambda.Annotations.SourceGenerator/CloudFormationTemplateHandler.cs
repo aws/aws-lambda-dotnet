@@ -130,7 +130,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 return string.Empty;
             }
 
-            var templateRelativePath = rootToken["template"]?.ToObject<string>();
+            var templateRelativePath = rootToken["template"]?
+                .ToObject<string>()?
+                .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 
             if (string.IsNullOrEmpty(templateRelativePath))
                 return string.Empty;
