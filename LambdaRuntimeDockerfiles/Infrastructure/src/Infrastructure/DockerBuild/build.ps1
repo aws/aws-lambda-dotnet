@@ -12,10 +12,7 @@ param (
     [string] $Architecture,
                           
     [Parameter(HelpMessage = ".NET version")]
-    [string] $Framework,
-                                                 
-    [Parameter(HelpMessage = ".NET channel")]
-    [string] $Channel
+    [string] $Framework
 )
 
 # Change the ErrorActionPreference to 'Stop' to allow aborting script on error

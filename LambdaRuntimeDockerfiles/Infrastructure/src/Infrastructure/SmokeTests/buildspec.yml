@@ -2,7 +2,12 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel $AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL
+      - |
+        if [ "$AWS_LAMBDA_DOTNET_SDK_VERSION" = "" ]; then
+          curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel $AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL
+        else
+          curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version $AWS_LAMBDA_DOTNET_SDK_VERSION
+        fi
       - export PATH="$PATH:$HOME/.dotnet"
       - export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
       - rm -rf /usr/bin/pwsh
