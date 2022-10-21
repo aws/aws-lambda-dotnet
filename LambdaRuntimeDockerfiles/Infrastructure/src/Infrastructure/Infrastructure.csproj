@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,11 +9,7 @@
 
   <ItemGroup>
     <!-- CDK Construct Library dependencies -->
-    <PackageReference Include="Amazon.CDK" Version="1.74.0" />
-    <PackageReference Include="Amazon.CDK.Pipelines" Version="1.74.0" />
-    <PackageReference Include="Amazon.CDK.AWS.CodePipeline" Version="1.74.0" />
-    <PackageReference Include="Amazon.CDK.AWS.CodeCommit" Version="1.74.0" />
-    <PackageReference Include="Amazon.CDK.AWS.CodePipeline.Actions" Version="1.74.0" />
+	<PackageReference Include="Amazon.CDK.Lib" Version="2.44.0" />
 
     <!-- jsii Roslyn analyzers (un-comment to obtain compile-time checks for missing required props
     <PackageReference Include="Amazon.Jsii.Analyzers" Version="*" PrivateAssets="all" />

@@ -77,7 +77,28 @@
       },
       "MissingProperties":{ 
          "Type":"AWS::Lambda::Function"
-      }
+      },
+      "AFunction":{ 
+               "Type":"AWS::Serverless::Function",
+               "Properties":{ 
+                  "Handler":"ServerlessTemplateExample::ServerlessTemplateExample.Functions::AFunction",
+                  "Runtime":"dotnetcore3.1",
+                  "CodeUri":"",
+                  "Description":"",
+                  "MemorySize":256,
+                  "Timeout":30,
+                  "Role":null,
+                  "Policies":[ 
+                     "AWSLambda_FullAccess"
+                  ],
+                  "Environment":{ 
+      
+                  },
+                  "Events":{ 
+      
+                  }
+               }
+            }
    },
    "Outputs":{ 
 
