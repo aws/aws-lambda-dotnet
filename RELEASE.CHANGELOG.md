@@ -1,3 +1,7 @@
+### Release 2022-10-26
+* **Amazon.Lambda.Annotations (0.9.0-preview)**
+  * Fixed issue with incorrectly syncing CloudFormation template when there are build errors.
+
 ### Release 2022-10-12
 * **Amazon.Lambda.Templates (6.5.0)**
   * Updated Javascript Dependencies in ASPNetCoreWeb App template to latest versions
