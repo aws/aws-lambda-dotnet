@@ -1,21 +1,21 @@
 ﻿/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
  * A copy of the License is located at
- * 
+ *
  *  http://aws.amazon.com/apache2.0
- * 
+ *
  * or in the "license" file accompanying this file. This file is distributed
  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+
 using System;
 using System.IO;
 using System.Net.Http;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
@@ -126,7 +126,7 @@ namespace Amazon.Lambda.RuntimeSupport
             // For local debugging purposes this environment variable can be set to run a Lambda executable assembly and process one event
             // and then shut down cleanly. Useful for profiling or running local tests with the .NET Lambda Test Tool. This environment
             // variable should never be set when function is deployed to Lambda.
-            var runOnce = string.Equals(Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIANLE_AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE), "true", StringComparison.OrdinalIgnoreCase);
+            var runOnce = string.Equals(Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE), "true", StringComparison.OrdinalIgnoreCase);
 
             bool doStartInvokeLoop = _initializer == null || await InitializeAsync();
 
@@ -139,7 +139,7 @@ namespace Amazon.Lambda.RuntimeSupport
                     {
                         _logger.LogInformation("Exiting Lambda processing loop because the run once environment variable was set.");
                         return;
-                    }    
+                    }
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -233,7 +233,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         private void WriteUnhandledExceptionToLog(Exception exception)
         {
-            // Console.Error.WriteLine are redirected to the IConsoleLoggerWriter which 
+            // Console.Error.WriteLine are redirected to the IConsoleLoggerWriter which
             // will take care of writing to the function's log stream.
             Console.Error.WriteLine(exception);
         }
