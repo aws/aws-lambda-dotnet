@@ -1559,7 +1559,8 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisResponse.Records[0].RecordId);
                 Assert.Equal(KinesisFirehoseResponse.TRANSFORMED_STATE_OK, kinesisResponse.Records[0].Result);
                 Assert.Equal("SEVMTE8gV09STEQ=", kinesisResponse.Records[0].Base64EncodedData);
-
+                Assert.Equal("iamValue1", kinesisResponse.Records[0].Metadata.PartitionKeys["iamKey1"]);
+                Assert.Equal("iamValue2", kinesisResponse.Records[0].Metadata.PartitionKeys["iamKey2"]);
 
 
                 MemoryStream ms = new MemoryStream();
