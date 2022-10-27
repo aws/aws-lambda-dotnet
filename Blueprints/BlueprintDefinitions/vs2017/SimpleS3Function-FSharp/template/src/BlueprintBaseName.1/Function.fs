@@ -24,7 +24,7 @@ type Function(s3Client: IAmazonS3) =
     /// <param name="context"></param>
     /// <returns></returns>
     member __.FunctionHandler (event: S3Event) (context: ILambdaContext) =
-        let fetchContentType (s3Event: S3EventNotification.S3Entity) = async {
+        let fetchContentType (s3Event: S3Event.S3Entity) = async {
             sprintf "Processing object %s from bucket %s" s3Event.Object.Key s3Event.Bucket.Name
             |> context.Logger.LogLine
 
