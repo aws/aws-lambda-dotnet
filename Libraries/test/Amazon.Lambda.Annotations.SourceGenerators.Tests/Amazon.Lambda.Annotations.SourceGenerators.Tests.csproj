@@ -33,7 +33,12 @@
         <Content Remove="..\TestServerlessApp\obj\**" />
         <Content Remove="..\TestServerlessApp\bin\**" />
         <Content Remove="..\TestServerlessApp\serverless.template" />
-    </ItemGroup>
+
+		<Content Include="..\NonCompilableCodeFile.cs">
+			<Link>NonCompilableCodeFile.cs</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
 
     <ItemGroup>
         <Content Include="..\..\src\Amazon.Lambda.Annotations\**">

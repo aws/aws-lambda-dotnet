@@ -40,6 +40,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     return;
                 }
 
+                // Check to see if any of the current syntax trees has any error diagnostics. If so
+                // Skip generation. We only want to sync the CloudFormation template if the project
+                // can compile.
+                foreach(var syntaxTree in context.Compilation.SyntaxTrees)
+                {
+                    if(syntaxTree.GetDiagnostics().Any(x => x.Severity == DiagnosticSeverity.Error))
+                    {
+                        return;
+                    }
+                }
+
+
                 // If no project directory was detected then skip the generator.
                 // This is most likely to happen when the project is empty and doesn't have any classes in it yet.
                 if(string.IsNullOrEmpty(receiver.ProjectDirectory))
