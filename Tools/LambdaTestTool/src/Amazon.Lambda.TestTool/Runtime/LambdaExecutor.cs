@@ -40,7 +40,8 @@ namespace Amazon.Lambda.TestTool.Runtime
 
                 var context = new LocalLambdaContext()
                 {
-                    Logger = logger
+                    Logger = logger,
+                    ClientContext = request.ClientContext
                 };
 
                 object instance = null;

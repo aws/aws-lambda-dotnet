@@ -1,4 +1,7 @@
-﻿namespace Amazon.Lambda.TestTool.Runtime
+﻿using Amazon.Lambda.Core;
+using Amazon.Lambda.TestTool.Runtime.LambdaMocks;
+
+namespace Amazon.Lambda.TestTool.Runtime
 {
     /// <summary>
     /// The information used to execute the Lambda function within the test tool
@@ -24,6 +27,11 @@
         /// The JSON payload that will be the input of the Lambda function.
         /// </summary>
         public string Payload { get; set; }
+
+        /// <summary>
+        /// ClientContext that pass to Lambda function as a part of ILambdaContext
+        /// </summary>
+        public IClientContext ClientContext { get; set; }
         
     }
 }
