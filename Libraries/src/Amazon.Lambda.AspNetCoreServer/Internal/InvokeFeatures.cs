@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
@@ -32,6 +33,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
 #if NET6_0_OR_GREATER
                             ,IHttpRequestBodyDetectionFeature
+                            ,IHttpActivityFeature
 #endif
     /*
     ,
@@ -55,6 +57,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
 #if NET6_0_OR_GREATER
             this[typeof(IHttpRequestBodyDetectionFeature)] = this;
+            this[typeof(IHttpActivityFeature)] = this;
 #endif
         }
 
@@ -132,16 +135,16 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             return this._features.GetEnumerator();
         }
 
-#endregion
-        
+        #endregion
+
         #region IItemsFeature
         IDictionary<object, object> IItemsFeature.Items { get; set; }
-#endregion
-        
+        #endregion
+
         #region IHttpAuthenticationFeature
         ClaimsPrincipal IHttpAuthenticationFeature.User { get; set; }
 
-#endregion
+        #endregion
 
         #region IHttpRequestFeature
         string IHttpRequestFeature.Protocol { get; set; }
@@ -162,7 +165,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         Stream IHttpRequestFeature.Body { get; set; } = new MemoryStream();
 
-#endregion
+        #endregion
 
         #region IHttpResponseFeature
         int IHttpResponseFeature.StatusCode
@@ -274,7 +277,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         void IHttpResponseBodyFeature.DisableBuffering()
         {
-            
+
         }
 
         // This code is taken from the Apache 2.0 licensed ASP.NET Core repo.
@@ -337,10 +340,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         #region IServiceProvidersFeature
 
-        IServiceProvider IServiceProvidersFeature.RequestServices 
-        { 
-            get; 
-            set; 
+        IServiceProvider IServiceProvidersFeature.RequestServices
+        {
+            get;
+            set;
         }
 
         #endregion
@@ -361,7 +364,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         string _traceIdentifier;
         string IHttpRequestIdentifierFeature.TraceIdentifier
         {
-            get 
+            get
             {
                 if(_traceIdentifier != null)
                 {
@@ -392,6 +395,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 return requestFeature.Body != null;
             }
         }
+
+        Activity IHttpActivityFeature.Activity { get; set; }
 #endif
     }
 }
