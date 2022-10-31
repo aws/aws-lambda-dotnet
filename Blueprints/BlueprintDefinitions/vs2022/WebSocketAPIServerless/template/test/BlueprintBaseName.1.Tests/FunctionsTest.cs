@@ -12,9 +12,9 @@ using Amazon.ApiGatewayManagementApi.Model;
 
 namespace BlueprintBaseName._1.Tests;
 
-public class FunctionTest
+public class FunctionsTest
 {
-    public FunctionTest()
+    public FunctionsTest()
     {
     }
 

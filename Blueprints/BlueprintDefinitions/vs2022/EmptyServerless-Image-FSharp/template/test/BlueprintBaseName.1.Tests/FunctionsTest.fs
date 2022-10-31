@@ -8,7 +8,7 @@ open Amazon.Lambda.APIGatewayEvents
 open BlueprintBaseName._1
 
 
-module FunctionTest =
+module FunctionsTest =
     [<Fact>]
     let ``Call HTTP GET on Root``() =
         let functions = Functions()
