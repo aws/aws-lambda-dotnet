@@ -8,6 +8,7 @@ using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
+using System.Collections.Generic;
 
 namespace BlueprintBaseName._1.Tests;
 
@@ -35,14 +36,14 @@ public class FunctionTest
             // Setup the S3 event object that S3 notifications would create with the fields used by the Lambda function.
             var s3Event = new S3Event
             {
-                Records = new List<S3EventNotification.S3EventNotificationRecord>
+                Records = new List<S3Event.S3EventNotificationRecord>
                 {
-                    new S3EventNotification.S3EventNotificationRecord
+                    new S3Event.S3EventNotificationRecord
                     {
-                        S3 = new S3EventNotification.S3Entity
+                        S3 = new S3Event.S3Entity
                         {
-                            Bucket = new S3EventNotification.S3BucketEntity {Name = bucketName },
-                            Object = new S3EventNotification.S3ObjectEntity {Key = key }
+                            Bucket = new S3Event.S3BucketEntity {Name = bucketName },
+                            Object = new S3Event.S3ObjectEntity {Key = key }
                         }
                     }
                 }
