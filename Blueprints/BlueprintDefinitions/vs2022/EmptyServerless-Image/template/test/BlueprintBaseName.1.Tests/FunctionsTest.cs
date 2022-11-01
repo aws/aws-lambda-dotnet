@@ -6,9 +6,9 @@ using Amazon.Lambda.APIGatewayEvents;
 
 namespace BlueprintBaseName._1.Tests;
 
-public class FunctionTest
+public class FunctionsTest
 {
-    public FunctionTest()
+    public FunctionsTest()
     {
     }
 

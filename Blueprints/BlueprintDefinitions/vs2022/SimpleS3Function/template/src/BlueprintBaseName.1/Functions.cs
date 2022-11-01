@@ -8,7 +8,7 @@ using Amazon.S3.Util;
 
 namespace BlueprintBaseName._1;
 
-public class Function
+public class Functions
 {
     IAmazonS3 S3Client { get; set; }
 
@@ -17,20 +17,20 @@ public class Function
     /// the AWS credentials will come from the IAM role associated with the function and the AWS region will be set to the
     /// region the Lambda function is executed in.
     /// </summary>
-    public Function()
+    public Functions()
     {
         S3Client = new AmazonS3Client();
     }
 
     /// <summary>
-    /// Constructs an instance with a preconfigured S3 client. This can be used for testing the outside of the Lambda environment.
+    /// Constructs an instance with a preconfigured S3 client. This can be used for testing outside of the Lambda environment.
     /// </summary>
     /// <param name="s3Client"></param>
-    public Function(IAmazonS3 s3Client)
+    public Functions(IAmazonS3 s3Client)
     {
         this.S3Client = s3Client;
     }
-    
+
     /// <summary>
     /// This method is called for every Lambda invocation. This method takes in an S3 event object and can be used 
     /// to respond to S3 notifications.
@@ -38,25 +38,29 @@ public class Function
     /// <param name="evnt"></param>
     /// <param name="context"></param>
     /// <returns></returns>
-    public async Task<string?> FunctionHandler(S3Event evnt, ILambdaContext context)
+    public async Task FunctionHandler(S3Event evnt, ILambdaContext context)
     {
-        var s3Event = evnt.Records?[0].S3;
-        if(s3Event == null)
+        var eventRecords = evnt.Records ?? new List<S3Event.S3EventNotificationRecord>();
+        foreach (var record in eventRecords)
         {
-            return null;
-        }
+            var s3Event = record.S3;
+            if (s3Event == null)
+            {
+                continue;
+            }
 
-        try
-        {
-            var response = await this.S3Client.GetObjectMetadataAsync(s3Event.Bucket.Name, s3Event.Object.Key);
-            return response.Headers.ContentType;
-        }
-        catch(Exception e)
-        {
-            context.Logger.LogInformation($"Error getting object {s3Event.Object.Key} from bucket {s3Event.Bucket.Name}. Make sure they exist and your bucket is in the same region as this function.");
-            context.Logger.LogInformation(e.Message);
-            context.Logger.LogInformation(e.StackTrace);
-            throw;
+            try
+            {
+                var response = await this.S3Client.GetObjectMetadataAsync(s3Event.Bucket.Name, s3Event.Object.Key);
+                context.Logger.LogInformation(response.Headers.ContentType);
+            }
+            catch (Exception e)
+            {
+                context.Logger.LogError($"Error getting object {s3Event.Object.Key} from bucket {s3Event.Bucket.Name}. Make sure they exist and your bucket is in the same region as this function.");
+                context.Logger.LogError(e.Message);
+                context.Logger.LogError(e.StackTrace);
+                throw;
+            }
         }
     }
 }
