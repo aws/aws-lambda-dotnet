@@ -1,7 +1,7 @@
 {
   "display-name": "Custom Runtime Function",
   "system-name": "CustomRuntimeFunction",
-  "description": "Use Lambda Custom Runtime feature to build Lambda functions using .NET 6.",
+  "description": "Use Lambda Custom Runtime feature to build Lambda functions using .NET 7.",
   "sort-order": 400,
   "hidden-tags": [
     "C#",
