@@ -44,9 +44,8 @@ Deploy function to AWS Lambda
 
 ## Arm64
 
-Arm64 support is provided by the AWS Graviton2 processor. For many Lambda workloads Graviton2 provides the best price performance.
-
-If you want to run your Lambda on an Arm64 processor, all you need to do is replace `x86_64` with `arm64` under `"function-architecture": ` in the `aws-lambda-tools-defaults.json` file. Then deploy as described above
+.NET 7 ARM requires a newer version of GLIBC than is available in the provided.al2 Lambda runtime. .NET 7 functions that are deployed using
+the Arm64 architecture will fail to start with a runtime error about the GLIBC version being below the required version for .NET 7.
 
 ## Improve Cold Start
 
