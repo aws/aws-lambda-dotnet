@@ -20,10 +20,6 @@ namespace BlueprintBaseName._1
 
         /// <summary>
         /// Root route that provides information about the other requests that can be made.
-        ///
-        /// PackageType is currently required to be set to LambdaPackageType.Image till the upcoming .NET 6 managed
-        /// runtime is available. Once the .NET 6 managed runtime is available PackageType will be optional and will
-        /// default to Zip.
         /// </summary>
         /// <returns>API descriptions.</returns>
         [LambdaFunction()]
@@ -42,10 +38,6 @@ You can make the following requests to invoke other Lambda functions perform cal
 
         /// <summary>
         /// Perform x + y
-        ///
-        /// PackageType is currently required to be set to LambdaPackageType.Image till the upcoming .NET 6 managed
-        /// runtime is available. Once the .NET 6 managed runtime is available PackageType will be optional and will
-        /// default to Zip.
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
@@ -60,10 +52,6 @@ You can make the following requests to invoke other Lambda functions perform cal
 
         /// <summary>
         /// Perform x - y.
-        ///
-        /// PackageType is currently required to be set to LambdaPackageType.Image till the upcoming .NET 6 managed
-        /// runtime is available. Once the .NET 6 managed runtime is available PackageType will be optional and will
-        /// default to Zip.
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
@@ -78,10 +66,6 @@ You can make the following requests to invoke other Lambda functions perform cal
 
         /// <summary>
         /// Perform x * y.
-        ///
-        /// PackageType is currently required to be set to LambdaPackageType.Image till the upcoming .NET 6 managed
-        /// runtime is available. Once the .NET 6 managed runtime is available PackageType will be optional and will
-        /// default to Zip.
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
@@ -96,10 +80,6 @@ You can make the following requests to invoke other Lambda functions perform cal
 
         /// <summary>
         /// Perform x / y.
-        ///
-        /// PackageType is currently required to be set to LambdaPackageType.Image till the upcoming .NET 6 managed
-        /// runtime is available. Once the .NET 6 managed runtime is available PackageType will be optional and will
-        /// default to Zip.
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
