@@ -135,16 +135,16 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             return this._features.GetEnumerator();
         }
 
-        #endregion
-
+#endregion
+        
         #region IItemsFeature
         IDictionary<object, object> IItemsFeature.Items { get; set; }
-        #endregion
-
+#endregion
+        
         #region IHttpAuthenticationFeature
         ClaimsPrincipal IHttpAuthenticationFeature.User { get; set; }
 
-        #endregion
+#endregion
 
         #region IHttpRequestFeature
         string IHttpRequestFeature.Protocol { get; set; }
@@ -165,7 +165,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         Stream IHttpRequestFeature.Body { get; set; } = new MemoryStream();
 
-        #endregion
+#endregion
 
         #region IHttpResponseFeature
         int IHttpResponseFeature.StatusCode
@@ -277,7 +277,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         void IHttpResponseBodyFeature.DisableBuffering()
         {
-
+            
         }
 
         // This code is taken from the Apache 2.0 licensed ASP.NET Core repo.
@@ -340,10 +340,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         #region IServiceProvidersFeature
 
-        IServiceProvider IServiceProvidersFeature.RequestServices
-        {
-            get;
-            set;
+        IServiceProvider IServiceProvidersFeature.RequestServices 
+        { 
+            get; 
+            set; 
         }
 
         #endregion
@@ -364,7 +364,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         string _traceIdentifier;
         string IHttpRequestIdentifierFeature.TraceIdentifier
         {
-            get
+            get 
             {
                 if(_traceIdentifier != null)
                 {
