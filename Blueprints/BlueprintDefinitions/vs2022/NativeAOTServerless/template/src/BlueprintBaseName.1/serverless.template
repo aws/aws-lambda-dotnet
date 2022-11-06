@@ -1,0 +1,67 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "An AWS Serverless Application.",
+  "Resources": {
+    "RootGet": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "Handler": "GetFunctionHandler",
+        "Runtime": "provided.al2",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "RootPut": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "Handler": "PutFunctionHandler",
+        "Runtime": "provided.al2",
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "RootPut": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/",
+              "Method": "PUT"
+            }
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ApiURL": {
+      "Description": "API endpoint URL for Prod environment",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+      }
+    }
+  }
+}
