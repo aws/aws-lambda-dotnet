@@ -1,4 +1,5 @@
 using Amazon.Lambda.Serialization.SystemTextJson;
+using CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +10,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, options =>
+{
+    options.Serializer = new SourceGeneratorLambdaJsonSerializer<CustomJsonSerializerContext>();
+});
 
 var app = builder.Build();
 
