@@ -37,12 +37,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="services"></param>
         /// <param name="eventSource"></param>
-        /// <param name="serializer"></param>
         /// <returns></returns>
         public static IServiceCollection AddAWSLambdaHosting(this IServiceCollection services, LambdaEventSource eventSource)
         {
             // Not running in Lambda so exit and let Kestrel be the web server
-            return services.AddAWSLambdaHosting(eventSource, new DefaultLambdaJsonSerializer());
+            return services.AddAWSLambdaHosting(eventSource);
         }
 
         /// <summary>
@@ -51,13 +50,20 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="services"></param>
         /// <param name="eventSource"></param>
-        /// <param name="serializer"></param>
+        /// <param name="configure"></param>
         /// <returns></returns>
-        public static IServiceCollection AddAWSLambdaHosting(this IServiceCollection services, LambdaEventSource eventSource, ILambdaSerializer serializer)
+        public static IServiceCollection AddAWSLambdaHosting(this IServiceCollection services, LambdaEventSource eventSource, Action<HostingOptions>? configure = null)
         {
             // Not running in Lambda so exit and let Kestrel be the web server
             if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME")))
                 return services;
+
+            var hostingOptions = new HostingOptions();
+            
+            if (configure != null)
+                configure.Invoke(hostingOptions);
+
+            services.AddSingleton<ILambdaSerializer>(hostingOptions.Serializer ?? new DefaultLambdaJsonSerializer());
 
             var serverType = eventSource switch
             {
@@ -66,10 +72,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 LambdaEventSource.ApplicationLoadBalancer => typeof(ApplicationLoadBalancerLambdaRuntimeSupportServer),
                 _ => throw new ArgumentException($"Event source type {eventSource} unknown")
             };
-
-
-            Utilities.Serializer = serializer;
+            
             Utilities.EnsureLambdaServerRegistered(services, serverType);
+            
             return services;
         }
     }

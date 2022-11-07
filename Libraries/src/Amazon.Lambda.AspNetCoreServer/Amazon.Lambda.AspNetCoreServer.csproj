@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<None Include="README.md" Pack="true" PackagePath="\"/>
+	<None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>	
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj" />

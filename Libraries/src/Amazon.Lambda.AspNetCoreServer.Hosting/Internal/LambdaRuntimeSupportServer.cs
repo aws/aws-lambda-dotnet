@@ -1,7 +1,10 @@
 ﻿using Amazon.Lambda.AspNetCoreServer.Internal;
+using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Mvc.ApplicationParts;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
 {
@@ -14,6 +17,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
     public abstract class LambdaRuntimeSupportServer : LambdaServer
     {
         IServiceProvider _serviceProvider;
+        internal ILambdaSerializer Serializer;
 
         /// <summary>
         /// Creates an instance on the LambdaRuntimeSupportServer
@@ -22,6 +26,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         public LambdaRuntimeSupportServer(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
+            Serializer = serviceProvider.GetRequiredService<ILambdaSerializer>();
         }
 
         /// <summary>
@@ -70,7 +75,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
             var handler = new APIGatewayHttpApiV2MinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, Utilities.Serializer);
+            return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
         }
 
         /// <summary>
@@ -111,7 +116,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
             var handler = new APIGatewayRestApiMinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, Utilities.Serializer);
+            return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
         }
 
         /// <summary>
@@ -152,7 +157,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
             var handler = new ApplicationLoadBalancerMinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, Utilities.Serializer);
+            return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
         }
 
         /// <summary>
