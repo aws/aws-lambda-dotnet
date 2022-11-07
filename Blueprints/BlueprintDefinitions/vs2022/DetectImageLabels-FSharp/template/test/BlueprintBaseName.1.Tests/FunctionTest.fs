@@ -36,10 +36,10 @@ module FunctionTest =
                 |> Async.AwaitTask
 
             let eventRecords = [
-                S3EventNotification.S3EventNotificationRecord(
-                    S3 = S3EventNotification.S3Entity(
-                        Bucket = S3EventNotification.S3BucketEntity (Name = bucketName),
-                        Object = S3EventNotification.S3ObjectEntity (Key = fileName)
+                S3Event.S3EventNotificationRecord(
+                    S3 = S3Event.S3Entity(
+                        Bucket = S3Event.S3BucketEntity (Name = bucketName),
+                        Object = S3Event.S3ObjectEntity (Key = fileName)
                     )
                 )
             ]

@@ -1,3 +1,15 @@
+### Release 2022-11-04
+* **Amazon.Lambda.Templates (6.6.0)**
+  * Update packagereferences for Amazon NuGet packages to latest versions.
+  * Update Custom Runtime blueprint to target .NET 7.
+  * Miscellaneous style and documentation clean up in S3 event, Annotations ASP.NET Core Web API blueprints.
+* **Amazon.Lambda.TestTool (0.12.6)**
+  * Release NuGet package Amazon.Lambda.TestTool-7.0 for .NET 7.
+  
+### Release 2022-10-26
+* **Amazon.Lambda.Annotations (0.9.0-preview)**
+  * Fixed issue with incorrectly syncing CloudFormation template when there are build errors.
+
 ### Release 2022-10-12
 * **Amazon.Lambda.Templates (6.5.0)**
   * Updated Javascript Dependencies in ASPNetCoreWeb App template to latest versions

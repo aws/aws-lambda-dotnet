@@ -56,6 +56,8 @@ namespace Amazon.Lambda.TestTool
                 var targetFramework = "net5.0";
 #elif NET6_0
                 var targetFramework = "net6.0";
+#elif NET7_0
+                var targetFramework = "net7.0";
 #endif
 
                 // Check to see if running in debug mode from this project's directory which means the test tool is being debugged.
@@ -73,6 +75,8 @@ namespace Amazon.Lambda.TestTool
                 {
                     lambdaAssemblyDirectory = Path.Combine(lambdaAssemblyDirectory, $"bin/Debug/{targetFramework}");
                 }
+
+                lambdaAssemblyDirectory = Utils.SearchLatestCompilationDirectory(lambdaAssemblyDirectory);
 
                 localLambdaOptions.LambdaRuntime = LocalLambdaRuntime.Initialize(lambdaAssemblyDirectory);
                 runConfiguration.OutputWriter.WriteLine($"Loaded local Lambda runtime from project output {lambdaAssemblyDirectory}");

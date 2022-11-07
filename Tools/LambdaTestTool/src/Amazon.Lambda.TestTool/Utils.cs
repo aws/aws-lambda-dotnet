@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -221,6 +222,24 @@ namespace Amazon.Lambda.TestTool
                 return $"http://{defaultHost}:{port}";
 
             return $"http://{host}:{port}";
+        }
+
+        /// <summary>
+        /// From the debug directory look to see where the latest compilation occurred for debugging. This can vary between the
+        /// root debug directory and the runtime specific subfolders. Starting with .NET 7 SDK if ready 2 run is enabled then 
+        /// project compiles into the runtime specific folder.
+        /// </summary>
+        /// <param name="debugDirectory"></param>
+        /// <returns></returns>
+        public static string SearchLatestCompilationDirectory(string debugDirectory)
+        {
+            var depsFile = new DirectoryInfo(debugDirectory).GetFiles("*.deps.json", SearchOption.AllDirectories)
+                                    .OrderByDescending(x => x.LastWriteTime).ToList();
+
+            if (depsFile.Count == 0)
+                return debugDirectory;
+
+            return depsFile[0].Directory.FullName;            
         }
     }
 }

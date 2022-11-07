@@ -43,7 +43,7 @@ type Function(s3Client: IAmazonS3, rekognitionClient: IAmazonRekognition, minCon
     /// <param name="context"></param>
     /// <returns></returns>
     member __.FunctionHandler (input: S3Event) (context: ILambdaContext) =
-        let isSupportedImageType (record: S3EventNotification.S3EventNotificationRecord) =
+        let isSupportedImageType (record: S3Event.S3EventNotificationRecord) =
             match Set.contains (Path.GetExtension record.S3.Object.Key) supportedImageTypes with
             | true -> true
             | false ->
@@ -51,7 +51,7 @@ type Function(s3Client: IAmazonS3, rekognitionClient: IAmazonRekognition, minCon
                 |> context.Logger.LogLine
                 false
 
-        let processRecordAsync (record: S3EventNotification.S3EventNotificationRecord) (context: ILambdaContext) = async {
+        let processRecordAsync (record: S3Event.S3EventNotificationRecord) (context: ILambdaContext) = async {
             sprintf "Looking for labels in image %s:%s" record.S3.Bucket.Name record.S3.Object.Key
             |> context.Logger.LogLine
 
