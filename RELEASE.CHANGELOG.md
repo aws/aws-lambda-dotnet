@@ -2,7 +2,7 @@
 * **Amazon.Lambda.Templates (6.6.0)**
   * Update packagereferences for Amazon NuGet packages to latest versions.
   * Update Custom Runtime blueprint to target .NET 7.
-  * Miscellaneous style and documentation clean up in S3 event, Annotations ASP.NET Core Web API blueprints.
+  * Miscellaneous style and documentation clean up in S3 event, Annotations and ASP.NET Core Web API blueprints.
 * **Amazon.Lambda.TestTool (0.12.6)**
   * Release NuGet package Amazon.Lambda.TestTool-7.0 for .NET 7.
   
