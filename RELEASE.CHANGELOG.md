@@ -1,3 +1,7 @@
+### Release 2022-11-08
+* **Amazon.Lambda.Templates (6.7.0)**
+  * Add Native AOT .NET 7 blueprints.
+  
 ### Release 2022-11-04
 * **Amazon.Lambda.Templates (6.6.0)**
   * Update packagereferences for Amazon NuGet packages to latest versions.
