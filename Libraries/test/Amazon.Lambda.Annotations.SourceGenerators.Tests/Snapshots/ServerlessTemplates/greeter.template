@@ -1,6 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v0.9.0.0).",
   "Resources": {
     "GreeterSayHello": {
       "Type": "AWS::Serverless::Function",

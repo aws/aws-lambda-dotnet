@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator;
@@ -497,6 +498,228 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             templateWriter.Parse(mockFileManager.ReadAllText(cloudFormationTemplatePath));
             Assert.Equal("serverlessApp", templateWriter.GetToken<string>($"{propertiesPath}.CodeUri"));
         }
+
+        #region CloudFormation template description
+
+        /// <summary>
+        /// Tests that the CloudFormation template's "Description" field is set
+        /// correctly for an entirely new template.
+        /// </summary>
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void TemplateDescription_NewTemplate(CloudFormationTemplateFormat templateFormat)
+        {
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+
+            cloudFormationWriter.ApplyReport(report);
+
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            Assert.True(templateWriter.Exists("Description"));
+            Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+        }
+
+        /// <summary>
+        /// Tests that the CloudFormation template's "Description" field is set
+        /// correctly for an existing template without a Description field.
+        /// </summary>
+        [Fact]
+        public void TemplateDescription_ExistingTemplateNoDescription_Json()
+        {
+            const string content = @"{
+                              'AWSTemplateFormatVersion': '2010-09-09',
+                              'Transform': 'AWS::Serverless-2016-10-31',
+                              'Resources': {
+                                'MethodNotCreatedFromAnnotationsPackage': {
+                                  'Type': 'AWS::Serverless::Function',
+                                  'Properties': {
+                                    'Runtime': 'dotnetcore3.1',
+                                    'CodeUri': '',
+                                    'MemorySize': 128,
+                                    'Timeout': 100,
+                                    'Policies': [
+                                      'AWSLambdaBasicExecutionRole'
+                                    ],
+                                    'Handler': 'MyAssembly::MyNamespace.MyType::Handler'
+                                  }
+                                }
+                              }
+                            }";
+
+            var templateWriter = new JsonWriter();
+            var mockFileManager = GetMockFileManager(content);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Json, _diagnosticReporter);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+
+            cloudFormationWriter.ApplyReport(report);
+
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            Assert.True(templateWriter.Exists("Description"));
+            Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+        }
+
+        /// <summary>
+        /// Tests that the CloudFormation template's "Description" field is set
+        /// correctly for an existing template without a Description field.
+        /// </summary>
+        [Fact]
+        public void TemplateDescription_ExistingTemplateNoDescription_Yaml()
+        {
+            const string content = @"
+                        AWSTemplateFormatVersion: '2010-09-09'
+                        Transform: AWS::Serverless-2016-10-31
+                        Resources:
+                          MethodNotCreatedFromAnnotationsPackage:
+                            Type: AWS::Serverless::Function
+                            Properties:
+                              Runtime: dotnetcore3.1
+                              CodeUri: ''
+                              MemorySize: 128
+                              Timeout: 100
+                              Policies:
+                                - AWSLambdaBasicExecutionRole
+                              Handler: MyAssembly::MyNamespace.MyType::Handler
+                                ";
+
+            var templateWriter = new YamlWriter();
+            var mockFileManager = GetMockFileManager(content);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Yaml, _diagnosticReporter);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+
+            cloudFormationWriter.ApplyReport(report);
+
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            Assert.True(templateWriter.Exists("Description"));
+            Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+        }
+
+        /// <summary>
+        /// Test cases for manipulating the CloudFormation template description if it already has a value
+        /// </summary>
+        public static IEnumerable<object[]> CloudFormationDescriptionCases
+            => new List<object[]> {
+
+                // A blank description should be transformed to just our suffix
+                new object[] { "", CloudFormationWriter.CurrentDescriptionSuffix },
+
+                // An existing description that is entirely our suffix should be replaced by the current version
+                new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1).",
+                    CloudFormationWriter.CurrentDescriptionSuffix },
+
+                // An existing description should have our version appended to it
+                new object[] { "Existing description before",
+                    $"Existing description before {CloudFormationWriter.CurrentDescriptionSuffix}" },
+
+                // An existing description with our version in the front should be replaced
+                new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1). Existing description.", 
+                     $"{CloudFormationWriter.CurrentDescriptionSuffix} Existing description." },
+
+                // An existing description with our version in the front should be replaced
+                new object[] { "PREFIX This template is partially managed by Amazon.Lambda.Annotations (v0.1). SUFFIX",
+                     $"PREFIX {CloudFormationWriter.CurrentDescriptionSuffix} SUFFIX" },
+
+                // This would exceed CloudFormation's current limit on the description field, so should not be modified
+                new object[] { new string('-', 1000), new string('-', 1000)}
+        };
+
+        /// <summary>
+        /// Tests that the CloudFormation template's "Description" field is set
+        /// correctly for an existing template without a Description field.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(CloudFormationDescriptionCases))]
+        public void TemplateDescription_ExistingDescription_Json(string originalDescription, string expectedDescription)
+        {
+            string content = @"{
+                              'AWSTemplateFormatVersion': '2010-09-09',
+                              'Transform': 'AWS::Serverless-2016-10-31',
+                              'Description': '" + originalDescription + @"',
+                              'Resources': {
+                                'MethodNotCreatedFromAnnotationsPackage': {
+                                  'Type': 'AWS::Serverless::Function',
+                                  'Properties': {
+                                    'Runtime': 'dotnetcore3.1',
+                                    'CodeUri': '',
+                                    'MemorySize': 128,
+                                    'Timeout': 100,
+                                    'Policies': [
+                                      'AWSLambdaBasicExecutionRole'
+                                    ],
+                                    'Handler': 'MyAssembly::MyNamespace.MyType::Handler'
+                                  }
+                                }
+                              }
+                            }";
+
+            var templateWriter = new JsonWriter();
+            var mockFileManager = GetMockFileManager(content);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Json, _diagnosticReporter);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+
+            cloudFormationWriter.ApplyReport(report);
+
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            Assert.True(templateWriter.Exists("Description"));
+            Assert.Equal(expectedDescription, templateWriter.GetToken<string>("Description"));
+        }
+
+        /// <summary>
+        /// Tests that the CloudFormation template's "Description" field is set
+        /// correctly for an existing template without a Description field.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(CloudFormationDescriptionCases))]
+        public void TemplateDescription_ExistingDescription_Yaml(string originalDescription, string expectedDescription)
+        {
+            // ARRANGE
+            string content = @"
+                        AWSTemplateFormatVersion: '2010-09-09'
+                        Transform: AWS::Serverless-2016-10-31
+                        Description: " + originalDescription + @"
+                        Resources:
+                          MethodNotCreatedFromAnnotationsPackage:
+                            Type: AWS::Serverless::Function
+                            Properties:
+                              Runtime: dotnetcore3.1
+                              CodeUri: ''
+                              MemorySize: 128
+                              Timeout: 100
+                              Policies:
+                                - AWSLambdaBasicExecutionRole
+                              Handler: MyAssembly::MyNamespace.MyType::Handler
+                                ";
+
+            var templateWriter = new YamlWriter();
+            var mockFileManager = GetMockFileManager(content);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Yaml, _diagnosticReporter);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+
+            cloudFormationWriter.ApplyReport(report);
+
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            Assert.True(templateWriter.Exists("Description"));
+            Assert.Equal(expectedDescription, templateWriter.GetToken<string>("Description"));
+        }
+
+        #endregion
 
         private IFileManager GetMockFileManager(string originalContent)
         {
