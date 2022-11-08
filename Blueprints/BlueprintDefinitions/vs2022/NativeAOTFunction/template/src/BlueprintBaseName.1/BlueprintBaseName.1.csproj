@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AWSProjectType>Lambda</AWSProjectType>
+    <AssemblyName>bootstrap</AssemblyName>
+    <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- Generate Native AOT image during publishing to improve cold start time. -->
+    <PublishAot>true</PublishAot>
+    <!-- StripSymbols tells the compiler to strip debugging symbols from the final executable if we're on Linux and put them into their own file. 
+    This will greatly reduce the final executable's size.-->
+    <StripSymbols>true</StripSymbols>
+  </PropertyGroup>
+  <!-- 
+  When publishing Lambda functions for ARM64 to the provided.al2 runtime a newer version of libicu needs to be included
+  in the deployment bundle because .NET requires a newer version of libicu then is preinstalled with Amazon Linux 2.
+  -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-arm64'">
+    <RuntimeHostConfigurationOption Include="System.Globalization.AppLocalIcu" Value="68.2.0.9" />
+    <PackageReference Include="Microsoft.ICU.ICU4C.Runtime" Version="68.2.0.9" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.8.2" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <!--The runtime directives file allows the compiler to know what types and assemblies to not trim out of the final binary, even if they don't appear to be used.-->
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
+</Project>
