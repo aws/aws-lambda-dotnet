@@ -1,3 +1,7 @@
+### Release 2022-11-09
+* **Amazon.Lambda.TestTool (0.12.7)**
+  * Fixed issue with .NET 7 version looking in build output folder for .NET 6.
+  
 ### Release 2022-11-08
 * **Amazon.Lambda.Templates (6.7.0)**
   * Add Native AOT .NET 7 blueprints.
