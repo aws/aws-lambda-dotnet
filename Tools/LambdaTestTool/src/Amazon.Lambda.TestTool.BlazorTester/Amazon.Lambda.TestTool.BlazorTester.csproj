@@ -6,7 +6,7 @@
     <OutputType>Exe</OutputType>
     <Description>A tool to help debug and test your .NET Core AWS Lambda functions locally.</Description>
     <LangVersion>Latest</LangVersion>
-    <VersionPrefix>0.12.6</VersionPrefix>
+    <VersionPrefix>0.12.7</VersionPrefix>
     <Product>AWS .NET Lambda Test Tool</Product>
     <Copyright>Apache 2</Copyright>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
@@ -29,7 +29,7 @@
     </ItemGroup>
 
     <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="7.0.0-rc.2.22476.2" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="7.0.0" />
     </ItemGroup>		
 
   <ItemGroup>
