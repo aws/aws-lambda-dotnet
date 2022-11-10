@@ -3,7 +3,7 @@
   <Import Project="..\..\..\..\buildtools\common.props" />
   
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net5.0;net6.0;net7.0</TargetFrameworks>
     <Description>Common code for the AWS .NET Core Lambda Mock Test Tool.</Description>
     <NoWarn>1701;1702;1591;1587;3021;NU5100;CS1591</NoWarn>
   </PropertyGroup>
@@ -41,6 +41,9 @@
 		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="6.0.0" />
 	</ItemGroup>
 
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
+		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="7.0.0" />
+	</ItemGroup>
 
 	<ItemGroup>
     <EmbeddedResource Include="Resources\**" />
