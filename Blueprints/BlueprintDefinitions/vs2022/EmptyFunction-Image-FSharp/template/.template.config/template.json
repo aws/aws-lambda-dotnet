@@ -5,7 +5,7 @@
     "Lambda",
     "Function"
   ],
-  "name": "Lambda Empty Function (.NET 6 Container Image)",
+  "name": "Lambda Empty Function (.NET 7 Container Image)",
   "identity": "AWS.Lambda.Function.Image.Empty.FSharp",
   "groupIdentity": "AWS.Lambda.Function.Image.Empty",
   "shortName": "lambda.image.EmptyFunction",
