@@ -1,3 +1,7 @@
+### Release 2022-11-16
+* **Amazon.Lambda.Templates (6.8.0)**
+  * Update container based blueprints to use .NET 7 base image.
+  
 ### Release 2022-11-09
 * **Amazon.Lambda.TestTool (0.12.7)**
   * Fixed issue with .NET 7 version looking in build output folder for .NET 6.
