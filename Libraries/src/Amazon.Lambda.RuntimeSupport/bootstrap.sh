@@ -24,7 +24,7 @@ export DOTNET_ROOT="/var/lang/bin"
 DOTNET_BIN="${DOTNET_ROOT}/dotnet"
 DOTNET_EXEC="exec"
 DOTNET_ARGS=()
-EXECUTABLE_FILE_EXIST=false
+EXECUTABLE_BINARY_EXIST=false
 
 LAMBDA_HANDLER=""
 # Command-line parameter has precedence over "_HANDLER" environment variable
@@ -41,16 +41,16 @@ HANDLER_COL_INDEX=$(expr index "${LAMBDA_HANDLER}" ":")
 
 if [[ "${HANDLER_COL_INDEX}" == 0 ]]; then 
   EXECUTABLE_ASSEMBLY="${LAMBDA_TASK_ROOT}/${LAMBDA_HANDLER}"
-  EXECUTABLE_FILE="${LAMBDA_TASK_ROOT}/${LAMBDA_HANDLER}"
+  EXECUTABLE_BINARY="${LAMBDA_TASK_ROOT}/${LAMBDA_HANDLER}"
   if [[ "${EXECUTABLE_ASSEMBLY}" != *.dll ]]; then
     EXECUTABLE_ASSEMBLY="${EXECUTABLE_ASSEMBLY}.dll"
   fi
   if [[ -f "${EXECUTABLE_ASSEMBLY}" ]]; then
     DOTNET_ARGS+=("${EXECUTABLE_ASSEMBLY}")
-  elif [[ -f "${EXECUTABLE_FILE}" ]]; then
-    EXECUTABLE_FILE_EXIST=true
+  elif [[ -f "${EXECUTABLE_BINARY}" ]]; then
+    EXECUTABLE_BINARY_EXIST=true
   else
-    echo "Error: executable assembly ${EXECUTABLE_ASSEMBLY} or file ${EXECUTABLE} was not found." 1>&2
+    echo "Error: executable assembly ${EXECUTABLE_ASSEMBLY} or binary ${EXECUTABLE_BINARY} not found." 1>&2
     exit 104
   fi
 else
@@ -100,8 +100,8 @@ fi
 # https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
 if [ -z "${AWS_LAMBDA_EXEC_WRAPPER}" ]; then
   exec "${DOTNET_BIN}" "${DOTNET_EXEC}" "${DOTNET_ARGS[@]}"
-elif [ ${EXECUTABLE_FILE_EXIST} = true ]; then
-  exec "${EXECUTABLE_FILE}"
+elif [ ${EXECUTABLE_BINARY_EXIST} = true ]; then
+  exec "${EXECUTABLE_BINARY}"
 else
   if [ ! -f "${AWS_LAMBDA_EXEC_WRAPPER}" ]; then
     echo "${AWS_LAMBDA_EXEC_WRAPPER}: does not exist"
