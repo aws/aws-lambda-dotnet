@@ -319,5 +319,48 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
             Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
+
+        [Fact]
+        public async Task VerifyFunctionDynamic()
+        {
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "dynamicexample.template")).ToEnvironmentLineEndings();
+            var expectedSubNamespaceGenerated_DynamicReturn = File.ReadAllText(Path.Combine("Snapshots", "DynamicExample_DynamicReturn_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedSubNamespaceGenerated_DynamicInput = File.ReadAllText(Path.Combine("Snapshots", "DynamicExample_DynamicInput_Generated.g.cs")).ToEnvironmentLineEndings();
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "DynamicExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "DynamicExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "DynamicExample_DynamicReturn_Generated.g.cs",
+                            SourceText.From(expectedSubNamespaceGenerated_DynamicReturn, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "DynamicExample_DynamicInput_Generated.g.cs",
+                            SourceText.From(expectedSubNamespaceGenerated_DynamicInput, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("DynamicExample_DynamicReturn_Generated.g.cs", expectedSubNamespaceGenerated_DynamicReturn),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("DynamicExample_DynamicInput_Generated.g.cs", expectedSubNamespaceGenerated_DynamicInput)
+                    }
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
     }
 }
