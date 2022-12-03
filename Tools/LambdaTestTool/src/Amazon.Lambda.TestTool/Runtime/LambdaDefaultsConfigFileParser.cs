@@ -6,7 +6,6 @@ using System.Text.Json;
 
 using YamlDotNet.RepresentationModel;
 
-
 namespace Amazon.Lambda.TestTool.Runtime
 {
     /// <summary>
@@ -68,6 +67,19 @@ namespace Amazon.Lambda.TestTool.Runtime
                 if (string.IsNullOrEmpty(info.Name))
                 {
                     info.Name = functionHandler;
+                }
+
+                if(configFile.EnvironmentVariables != null)
+                {
+                    var variables = configFile.EnvironmentVariables.Split(';');
+                    foreach(var variable in variables)
+                    {
+                        var kvp = variable.Split('=');
+                        if(kvp.Length == 2)
+                        {
+                            info.EnvironmentVariables[kvp[0]] = kvp[1];
+                        }
+                    }
                 }
             
                 configInfo.FunctionInfos.Add(info);
@@ -197,6 +209,21 @@ namespace Amazon.Lambda.TestTool.Runtime
                     Handler = handler
                 };
 
+                if (resourceBody.Children.TryGetValue("Environment", out var environmentProperty) && environmentProperty is YamlMappingNode)
+                {
+                    if (((YamlMappingNode)environmentProperty).Children.TryGetValue("Environment", out var variableProperty) && variableProperty is YamlMappingNode)
+                    {
+                        foreach(var kvp in ((YamlMappingNode)variableProperty).Children) 
+                        {
+                            if(kvp.Key is YamlScalarNode keyNode && keyNode.Value != null && 
+                                kvp.Value is YamlScalarNode valueNode && valueNode.Value != null)
+                            {
+                                functionInfo.EnvironmentVariables[keyNode.Value] = valueNode.Value;
+                            }
+                        }
+                    }
+                }
+
                 configInfo.FunctionInfos.Add(functionInfo);
             }
         }
@@ -254,6 +281,18 @@ namespace Amazon.Lambda.TestTool.Runtime
                         Name = resourceProperty.Name,
                         Handler = handler
                     };
+
+                    if(propertiesProperty.TryGetProperty("Environment", out var environmentProperty) && 
+                        environmentProperty.TryGetProperty("Variables", out var variablesProperty))
+                    {
+                        foreach(var property in variablesProperty.EnumerateObject())
+                        {
+                            if(property.Value.ValueKind == JsonValueKind.String)
+                            {
+                                functionInfo.EnvironmentVariables[property.Name] = property.Value.GetString();
+                            }
+                        }
+                    }
 
                     configInfo.FunctionInfos.Add(functionInfo);
                 }

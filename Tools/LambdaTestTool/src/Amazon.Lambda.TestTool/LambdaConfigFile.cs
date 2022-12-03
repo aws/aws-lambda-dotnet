@@ -19,6 +19,9 @@ namespace Amazon.Lambda.TestTool
         [JsonPropertyName("image-command")]
         public string ImageCommand { get; set; }
 
+        [JsonPropertyName("environment-variables")]
+        public string EnvironmentVariables { get; set; }
+
         public string ConfigFileLocation { get; set; }
 
         public string DetermineHandler()

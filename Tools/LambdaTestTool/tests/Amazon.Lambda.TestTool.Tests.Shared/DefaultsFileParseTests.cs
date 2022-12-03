@@ -41,6 +41,28 @@ namespace Amazon.Lambda.TestTool.Tests
                 File.Delete(jsonFile);
             }
         }
+
+        [Fact]
+        public void LambdaFunctionWithEnvironmentVariables()
+        {
+            var jsonFile = WriteTempConfigFile("{\"function-handler\" : \"Assembly::Type::Method\", \"environment-variables\" : \"key1=value1;key2=value2\"}");
+            try
+            {
+                var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
+                Assert.Single(configInfo.FunctionInfos);
+                Assert.Equal("Assembly::Type::Method", configInfo.FunctionInfos[0].Handler);
+                Assert.Equal("TheFunc", configInfo.FunctionInfos[0].Name);
+
+                Assert.Equal(2, configInfo.FunctionInfos[0].EnvironmentVariables.Count);
+                Assert.Equal("value1", configInfo.FunctionInfos[0].EnvironmentVariables["key1"]);
+                Assert.Equal("value2", configInfo.FunctionInfos[0].EnvironmentVariables["key2"]);
+            }
+            finally
+            {
+                File.Delete(jsonFile);
+            }
+        }
+
         [Fact]
         public void LambdaFunctionWithImageCommand()
         {

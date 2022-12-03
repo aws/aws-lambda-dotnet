@@ -1,4 +1,6 @@
-﻿namespace Amazon.Lambda.TestTool.Runtime
+﻿using System.Collections.Generic;
+
+namespace Amazon.Lambda.TestTool.Runtime
 {
     public class LambdaFunctionInfo
     {
@@ -11,5 +13,7 @@
         /// The Lambda function handler string.
         /// </summary>
         public string Handler { get; set; }
+
+        public IDictionary<string, string> EnvironmentVariables { get; }  = new Dictionary<string, string>();
     }
 }
