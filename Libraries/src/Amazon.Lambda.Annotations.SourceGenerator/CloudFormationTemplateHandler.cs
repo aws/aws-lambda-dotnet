@@ -25,11 +25,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         }
 
         /// <summary>
-        /// This method takes any file path in the customer's .NET project and resolves the project root directory.
-        /// The root directory is the folder that contains the .csproj file.
+        /// This method takes any file path in the customer's .NET project and resolves the path to the .csproj file.
         /// </summary>
-        /// <returns>The .NET project root directory path</returns>
-        public string DetermineProjectRootDirectory(string sourceFilePath)
+        /// <remarks>
+        /// This is the first .csproj file we find searching upward from the source file, where there 
+        /// is only a single .csproj in the current directory.
+        /// </remarks>
+        /// <returns>The .NET project path</returns>
+        public string DetermineProjectPath(string sourceFilePath)
         {
             if (!_fileManager.Exists(sourceFilePath))
                 return string.Empty;
@@ -37,8 +40,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             var directoryPath = _directoryManager.GetDirectoryName(sourceFilePath);
             while (!string.IsNullOrEmpty(directoryPath))
             {
-                if (_directoryManager.GetFiles(directoryPath, "*.csproj").Length == 1)
-                    return directoryPath;
+                var csprojFilesInDirectory = _directoryManager.GetFiles(directoryPath, "*.csproj");
+                if (csprojFilesInDirectory.Length == 1)
+                {
+                    return csprojFilesInDirectory[0];
+                }
+
                 directoryPath = _directoryManager.GetDirectoryName(directoryPath);
             }
 

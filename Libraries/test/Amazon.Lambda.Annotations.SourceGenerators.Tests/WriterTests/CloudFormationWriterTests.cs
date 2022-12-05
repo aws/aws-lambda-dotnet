@@ -506,31 +506,42 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         /// correctly for an entirely new template.
         /// </summary>
         [Theory]
-        [InlineData(CloudFormationTemplateFormat.Json)]
-        [InlineData(CloudFormationTemplateFormat.Yaml)]
-        public void TemplateDescription_NewTemplate(CloudFormationTemplateFormat templateFormat)
+        [InlineData(CloudFormationTemplateFormat.Json, false)]
+        [InlineData(CloudFormationTemplateFormat.Json, true)]
+        [InlineData(CloudFormationTemplateFormat.Yaml, false)]
+        [InlineData(CloudFormationTemplateFormat.Yaml, true)]
+        public void TemplateDescription_NewTemplate(CloudFormationTemplateFormat templateFormat, bool isTelemetrySuppressed)
         {
             ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
             var mockFileManager = GetMockFileManager(string.Empty);
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
 
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
-            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel }, isTelemetrySuppressed: isTelemetrySuppressed);
 
             cloudFormationWriter.ApplyReport(report);
 
             templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
 
-            Assert.True(templateWriter.Exists("Description"));
-            Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+            if (isTelemetrySuppressed)
+            {
+                Assert.False(templateWriter.Exists("Description"));
+            }
+            else
+            {
+                Assert.True(templateWriter.Exists("Description"));
+                Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+            }
         }
 
         /// <summary>
         /// Tests that the CloudFormation template's "Description" field is set
         /// correctly for an existing template without a Description field.
         /// </summary>
-        [Fact]
-        public void TemplateDescription_ExistingTemplateNoDescription_Json()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TemplateDescription_ExistingTemplateNoDescription_Json(bool isTelemetrySuppressed)
         {
             const string content = @"{
                               'AWSTemplateFormatVersion': '2010-09-09',
@@ -557,22 +568,31 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Json, _diagnosticReporter);
 
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
-            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel }, isTelemetrySuppressed: isTelemetrySuppressed);
 
             cloudFormationWriter.ApplyReport(report);
 
             templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
 
-            Assert.True(templateWriter.Exists("Description"));
-            Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+            if (isTelemetrySuppressed)
+            {
+                Assert.False(templateWriter.Exists("Description"));
+            }
+            else
+            {
+                Assert.True(templateWriter.Exists("Description"));
+                Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+            }
         }
 
         /// <summary>
         /// Tests that the CloudFormation template's "Description" field is set
         /// correctly for an existing template without a Description field.
         /// </summary>
-        [Fact]
-        public void TemplateDescription_ExistingTemplateNoDescription_Yaml()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TemplateDescription_ExistingTemplateNoDescription_Yaml(bool isTelemetrySuppressed)
         {
             const string content = @"
                         AWSTemplateFormatVersion: '2010-09-09'
@@ -595,14 +615,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Yaml, _diagnosticReporter);
 
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
-            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel }, isTelemetrySuppressed: isTelemetrySuppressed);
 
             cloudFormationWriter.ApplyReport(report);
 
             templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
 
-            Assert.True(templateWriter.Exists("Description"));
-            Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+            if (isTelemetrySuppressed)
+            {
+                Assert.False(templateWriter.Exists("Description"));
+            }
+            else
+            {
+                Assert.True(templateWriter.Exists("Description"));
+                Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+            }
         }
 
         /// <summary>
@@ -611,27 +638,56 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         public static IEnumerable<object[]> CloudFormationDescriptionCases
             => new List<object[]> {
 
+                /*
+                 * This first set are without the opt-out flag
+                 */
+
                 // A blank description should be transformed to just our suffix
-                new object[] { "", CloudFormationWriter.CurrentDescriptionSuffix },
+                new object[] { "", false, CloudFormationWriter.CurrentDescriptionSuffix },
 
                 // An existing description that is entirely our suffix should be replaced by the current version
                 new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1).",
-                    CloudFormationWriter.CurrentDescriptionSuffix },
+                    false, CloudFormationWriter.CurrentDescriptionSuffix },
 
                 // An existing description should have our version appended to it
                 new object[] { "Existing description before",
-                    $"Existing description before {CloudFormationWriter.CurrentDescriptionSuffix}" },
+                    false, $"Existing description before {CloudFormationWriter.CurrentDescriptionSuffix}" },
 
                 // An existing description with our version in the front should be replaced
                 new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1). Existing description.", 
-                     $"{CloudFormationWriter.CurrentDescriptionSuffix} Existing description." },
+                     false, $"{CloudFormationWriter.CurrentDescriptionSuffix} Existing description." },
 
                 // An existing description with our version in the front should be replaced
                 new object[] { "PREFIX This template is partially managed by Amazon.Lambda.Annotations (v0.1). SUFFIX",
-                     $"PREFIX {CloudFormationWriter.CurrentDescriptionSuffix} SUFFIX" },
+                     false, $"PREFIX {CloudFormationWriter.CurrentDescriptionSuffix} SUFFIX" },
 
                 // This would exceed CloudFormation's current limit on the description field, so should not be modified
-                new object[] { new string('-', 1000), new string('-', 1000)}
+                new object[] { new string('-', 1000), false, new string('-', 1000)},
+
+                /* 
+                 * The remaining cases are with the opt-out flag set to true, which should remove any version descriptions
+                 */
+                
+                // A blank description should be left alone
+                new object[] { "", true, "" },
+
+                // A non-blank description without our version description should be left alone
+                new object[] { "An AWS Serverless Application.", true, "An AWS Serverless Application." },
+
+                // An existing description that is entirely our suffix should be cleared
+                new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1).", true, "" },
+
+                // An existing description with our version suffix should have it removed
+                new object[] { "Existing description. This template is partially managed by Amazon.Lambda.Annotations (v0.1).",
+                     true, "Existing description. " },
+
+                // An existing description with our version in the front should have it removed
+                new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1). Existing description.",
+                     true, " Existing description." },
+
+                // An existing description with our version in the front should be replaced
+                new object[] { "PREFIX This template is partially managed by Amazon.Lambda.Annotations (v0.1). SUFFIX",
+                     true, $"PREFIX  SUFFIX" }
         };
 
         /// <summary>
@@ -640,7 +696,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         /// </summary>
         [Theory]
         [MemberData(nameof(CloudFormationDescriptionCases))]
-        public void TemplateDescription_ExistingDescription_Json(string originalDescription, string expectedDescription)
+        public void TemplateDescription_ExistingDescription_Json(string originalDescription, bool isTelemetrySuppressed, string expectedDescription)
         {
             string content = @"{
                               'AWSTemplateFormatVersion': '2010-09-09',
@@ -668,7 +724,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Json, _diagnosticReporter);
 
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
-            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel }, isTelemetrySuppressed: isTelemetrySuppressed);
 
             cloudFormationWriter.ApplyReport(report);
 
@@ -684,7 +740,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         /// </summary>
         [Theory]
         [MemberData(nameof(CloudFormationDescriptionCases))]
-        public void TemplateDescription_ExistingDescription_Yaml(string originalDescription, string expectedDescription)
+        public void TemplateDescription_ExistingDescription_Yaml(string originalDescription, bool isTelemetrySuppressed, string expectedDescription)
         {
             // ARRANGE
             string content = @"
@@ -709,7 +765,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Yaml, _diagnosticReporter);
 
             var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
-            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel }, isTelemetrySuppressed: isTelemetrySuppressed);
 
             cloudFormationWriter.ApplyReport(report);
 
@@ -742,12 +798,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         }
 
         private AnnotationReport GetAnnotationReport(List<ILambdaFunctionSerializable> lambdaFunctionModels,
-            string projectRootDirectory = ProjectRootDirectory, string cloudFormationTemplatePath = ServerlessTemplateFilePath)
+            string projectRootDirectory = ProjectRootDirectory, string cloudFormationTemplatePath = ServerlessTemplateFilePath, bool isTelemetrySuppressed = false)
         {
             var annotationReport = new AnnotationReport
             {
                 CloudFormationTemplatePath = cloudFormationTemplatePath,
-                ProjectRootDirectory = projectRootDirectory
+                ProjectRootDirectory = projectRootDirectory,
+                IsTelemetrySuppressed = isTelemetrySuppressed
             };
             foreach (var model in lambdaFunctionModels)
             {
