@@ -13,7 +13,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
         public List<ClassDeclarationSyntax> StartupClasses { get; private set; } = new List<ClassDeclarationSyntax>();
 
-        public string ProjectDirectory { get; private set; }
+        /// <summary>
+        /// Path to the directory containing the .csproj file
+        /// </summary>
+        public string ProjectDirectory 
+        {
+            get
+            {
+                return _directoryManager.GetDirectoryName(ProjectPath);
+            }
+        }
+
+        /// <summary>
+        /// Path to the .csproj file
+        /// </summary>
+        public string ProjectPath { get; private set; }
 
         private readonly IFileManager _fileManager;
         private readonly IDirectoryManager _directoryManager;
@@ -29,7 +43,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             if(this.ProjectDirectory == null && context.Node is ClassDeclarationSyntax)
             {
                 var templateHandler = new CloudFormationTemplateHandler(_fileManager, _directoryManager);
-                this.ProjectDirectory = templateHandler.DetermineProjectRootDirectory(context.Node.SyntaxTree.FilePath);
+                this.ProjectPath = templateHandler.DetermineProjectPath(context.Node.SyntaxTree.FilePath);
             }
 
             // any method with at least one attribute is a candidate of function generation

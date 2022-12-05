@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -56,7 +57,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             else
                 _templateWriter.Parse(originalContent);
 
-            ProcessTemplateDescription();
+            ProcessTemplateDescription(report);
 
             var processedLambdaFunctions = new HashSet<string>();
 
@@ -353,7 +354,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// helps understanding our version adoption, and allows us to prioritize improvements to this
         /// library against other .NET projects.
         /// </summary>
-        private void ProcessTemplateDescription()
+        private void ProcessTemplateDescription(AnnotationReport report)
+        {
+            if (report.IsTelemetrySuppressed)
+            {
+                RemoveTemplateDescriptionIfSet();
+            }
+            else
+            {
+                SetOrUpdateTemplateDescription();
+            }
+        }
+
+        /// <summary>
+        /// Either appends the new version suffix in the CloudFormation template 
+        /// description, or updates it if an older version is found.
+        /// </summary>
+        private void SetOrUpdateTemplateDescription()
         {
             string updatedDescription;
 
@@ -361,21 +378,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             {
                 var existingDescription = _templateWriter.GetToken<string>("Description");
 
-                var startIndex = existingDescription.IndexOf(BASE_DESCRIPTION);
-                if (startIndex >= 0)
-                {
-                    // Find the next ")." which will be the end of the old version string
-                    var endIndex = existingDescription.IndexOf(END_OF_VESRION_IN_DESCRIPTION, startIndex);
+                var existingDescriptionSuffix = ExtractCurrentDescriptionSuffix(existingDescription);
 
-                    // If we couldn't find the end of our version string, it's only a fragment, so abort.
-                    if (endIndex == -1)
-                    {
-                        return;
-                    }
-                    
-                    var lengthOfCurrentDescription = (endIndex + END_OF_VESRION_IN_DESCRIPTION.Length) - startIndex;
-                    var currentVersion = existingDescription.Substring(startIndex, lengthOfCurrentDescription);
-                    updatedDescription = existingDescription.Replace(currentVersion, CurrentDescriptionSuffix);
+                if (!string.IsNullOrEmpty(existingDescriptionSuffix))
+                {
+                    updatedDescription = existingDescription.Replace(existingDescriptionSuffix, CurrentDescriptionSuffix);
                 }
                 else if (!string.IsNullOrEmpty(existingDescription)) // The version string isn't in the current description, so we just append it.
                 {
@@ -399,6 +406,55 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             _templateWriter.SetToken("Description", updatedDescription);
+        }
+
+        /// <summary>
+        /// Removes the version suffix from a CloudFormation template descripton
+        /// </summary>
+        private void RemoveTemplateDescriptionIfSet()
+        {
+            if (!_templateWriter.Exists("Description"))
+            {
+                return;
+            }
+
+            var existingDescription = _templateWriter.GetToken<string>("Description");
+            var existingDescriptionSuffix = ExtractCurrentDescriptionSuffix(existingDescription);
+
+            if (string.IsNullOrEmpty(existingDescriptionSuffix))
+            {
+                return;
+            }
+
+            var updatedDescription = existingDescription.Replace(existingDescriptionSuffix, "");
+
+            _templateWriter.SetToken("Description", updatedDescription);
+        }
+
+        /// <summary>
+        /// Extracts the version suffix from a CloudFormation template description  
+        /// </summary>
+        /// <param name="templateDescription"></param>
+        /// <returns></returns>
+        private string ExtractCurrentDescriptionSuffix(string templateDescription)
+        {
+            var startIndex = templateDescription.IndexOf(BASE_DESCRIPTION);
+            if (startIndex >= 0)
+            {
+                // Find the next ")." which will be the end of the old version string
+                var endIndex = templateDescription.IndexOf(END_OF_VESRION_IN_DESCRIPTION, startIndex);
+
+                // If we couldn't find the end of our version string, it's only a fragment, so abort.
+                if (endIndex == -1)
+                {
+                    return string.Empty;
+                }
+
+                var lengthOfCurrentDescription = endIndex + END_OF_VESRION_IN_DESCRIPTION.Length - startIndex;
+                return templateDescription.Substring(startIndex, lengthOfCurrentDescription);
+            }
+
+            return string.Empty;
         }
     }
 }
