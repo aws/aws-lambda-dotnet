@@ -1,3 +1,8 @@
+### Release 2022-12-06
+* **Amazon.Lambda.Templates (6.8.1)**
+  * Fixed S3 Lambda blueprint using inconsistent name between the class name and the function handler value.
+  * Pull request [#1374](https://github.com/aws/aws-lambda-dotnet/pull/1374), fixed typo in Native AOT blueprint. Thanks [Pieter Germishuys](https://github.com/pgermishuys)
+  
 ### Release 2022-11-16
 * **Amazon.Lambda.Templates (6.8.0)**
   * Update container based blueprints to use .NET 7 base image.
