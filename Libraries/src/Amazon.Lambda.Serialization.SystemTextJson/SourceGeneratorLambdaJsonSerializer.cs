@@ -1,5 +1,6 @@
 ﻿#if NET6_0_OR_GREATER
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -27,7 +28,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
     /// will avoid any reflection based serialization.
     /// </summary>
     /// <typeparam name="TSGContext"></typeparam>
-    public class SourceGeneratorLambdaJsonSerializer<TSGContext> : AbstractLambdaJsonSerializer, ILambdaSerializer where TSGContext : JsonSerializerContext
+    public class SourceGeneratorLambdaJsonSerializer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TSGContext> : AbstractLambdaJsonSerializer, ILambdaSerializer where TSGContext : JsonSerializerContext
     {
         TSGContext _jsonSerializerContext;
 
