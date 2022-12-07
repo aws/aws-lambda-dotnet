@@ -99,9 +99,11 @@ fi
 # To support runtime wrapper scripts
 # https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
 if [ -z "${AWS_LAMBDA_EXEC_WRAPPER}" ]; then
-  exec "${DOTNET_BIN}" "${DOTNET_EXEC}" "${DOTNET_ARGS[@]}"
-elif [ ${EXECUTABLE_BINARY_EXIST} = true ]; then
-  exec "${EXECUTABLE_BINARY}"
+  if [ ${EXECUTABLE_BINARY_EXIST} = true ]; then
+    exec "${EXECUTABLE_BINARY}"
+  else
+    exec "${DOTNET_BIN}" "${DOTNET_EXEC}" "${DOTNET_ARGS[@]}"
+  fi
 else
   if [ ! -f "${AWS_LAMBDA_EXEC_WRAPPER}" ]; then
     echo "${AWS_LAMBDA_EXEC_WRAPPER}: does not exist"
@@ -111,5 +113,9 @@ else
     echo "${AWS_LAMBDA_EXEC_WRAPPER}: is not an executable"
     exit 126
   fi
-  exec -- "${AWS_LAMBDA_EXEC_WRAPPER}" "${DOTNET_BIN}" "${DOTNET_EXEC}" "${DOTNET_ARGS[@]}"
+  if [ ${EXECUTABLE_BINARY_EXIST} = true ]; then
+    exec -- "${AWS_LAMBDA_EXEC_WRAPPER}" "${EXECUTABLE_BINARY}"
+  else
+    exec -- "${AWS_LAMBDA_EXEC_WRAPPER}" "${DOTNET_BIN}" "${DOTNET_EXEC}" "${DOTNET_ARGS[@]}"
+  fi
 fi
