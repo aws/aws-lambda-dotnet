@@ -1,3 +1,9 @@
+### Release 2022-12-07
+* **Amazon.Lambda.AspNetCoreServer (7.3.0)**
+  * Pull request [#1350](https://github.com/aws/aws-lambda-dotnet/pull/1350), implement IHttpActivityFeature for plumbing diagnostic activities. Thanks [Brendon Parker](https://github.com/brendonparker)
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.4.0)**
+  * Pull request [#1350](https://github.com/aws/aws-lambda-dotnet/pull/1350), implement IHttpActivityFeature for plumbing diagnostic activities. Thanks [Brendon Parker](https://github.com/brendonparker)
+
 ### Release 2022-12-06
 * **Amazon.Lambda.Templates (6.8.1)**
   * Fixed S3 Lambda blueprint using inconsistent name between the class name and the function handler value.
