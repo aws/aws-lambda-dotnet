@@ -2,6 +2,8 @@
 * **Amazon.Lambda.Annotations (0.10.0-preview)**
   * Added support for `dynamic` return types and parameters
   * Added a message to the CloudFormation template description when managed by Lambda Annotations with an opt-out flag
+* **Amazon.Lambda.Templates (6.9.0)**
+  * Update AWS package dependencies in blueprints.
 
 ### Release 2022-12-07
 * **Amazon.Lambda.AspNetCoreServer (7.3.0)**
