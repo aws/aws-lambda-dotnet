@@ -1,6 +1,6 @@
 ﻿using Amazon.Lambda.Core;
 
-namespace Amazon.Lambda.AspNetCoreServer.Internal;
+namespace Amazon.Lambda.AspNetCoreServer;
 
 public class HostingOptions
 {
