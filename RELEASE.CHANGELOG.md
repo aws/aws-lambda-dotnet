@@ -1,3 +1,8 @@
+### Release 2022-12-08
+* **Amazon.Lambda.Annotations (0.10.0-preview)**
+  * Added support for `dynamic` return types and parameters
+  * Added a message to the CloudFormation template description when managed by Lambda Annotations with an opt-out flag
+
 ### Release 2022-12-07
 * **Amazon.Lambda.AspNetCoreServer (7.3.0)**
   * Pull request [#1350](https://github.com/aws/aws-lambda-dotnet/pull/1350), implement IHttpActivityFeature for plumbing diagnostic activities. Thanks [Brendon Parker](https://github.com/brendonparker)
