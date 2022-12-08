@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "An AWS Serverless Application.",
+  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v0.10.0.0).",
   "Parameters": {
     "ArchitectureTypeParameter": {
       "Type": "String",
@@ -402,6 +402,46 @@
         "ImageConfig": {
           "Command": [
             "TestServerlessApp::TestServerlessApp.TaskExample_TaskReturn_Generated::TaskReturn"
+          ]
+        }
+      }
+    },
+    "TestServerlessAppDynamicExampleDynamicReturnGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.DynamicExample_DynamicReturn_Generated::DynamicReturn"
+          ]
+        }
+      }
+    },
+    "TestServerlessAppDynamicExampleDynamicInputGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.DynamicExample_DynamicInput_Generated::DynamicInput"
           ]
         }
       }

@@ -1,8 +1,36 @@
+### Release 2022-12-08
+* **Amazon.Lambda.Annotations (0.10.0-preview)**
+  * Added support for `dynamic` return types and parameters
+  * Added a message to the CloudFormation template description when managed by Lambda Annotations with an opt-out flag
+
+### Release 2022-12-07
+* **Amazon.Lambda.AspNetCoreServer (7.3.0)**
+  * Pull request [#1350](https://github.com/aws/aws-lambda-dotnet/pull/1350), implement IHttpActivityFeature for plumbing diagnostic activities. Thanks [Brendon Parker](https://github.com/brendonparker)
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.4.0)**
+  * Pull request [#1350](https://github.com/aws/aws-lambda-dotnet/pull/1350), implement IHttpActivityFeature for plumbing diagnostic activities. Thanks [Brendon Parker](https://github.com/brendonparker)
+
+### Release 2022-12-06
+* **Amazon.Lambda.Templates (6.8.1)**
+  * Fixed S3 Lambda blueprint using inconsistent name between the class name and the function handler value.
+  * Pull request [#1374](https://github.com/aws/aws-lambda-dotnet/pull/1374), fixed typo in Native AOT blueprint. Thanks [Pieter Germishuys](https://github.com/pgermishuys)
+  
+### Release 2022-11-16
+* **Amazon.Lambda.Templates (6.8.0)**
+  * Update container based blueprints to use .NET 7 base image.
+  
+### Release 2022-11-09
+* **Amazon.Lambda.TestTool (0.12.7)**
+  * Fixed issue with .NET 7 version looking in build output folder for .NET 6.
+  
+### Release 2022-11-08
+* **Amazon.Lambda.Templates (6.7.0)**
+  * Add Native AOT .NET 7 blueprints.
+  
 ### Release 2022-11-04
 * **Amazon.Lambda.Templates (6.6.0)**
   * Update packagereferences for Amazon NuGet packages to latest versions.
   * Update Custom Runtime blueprint to target .NET 7.
-  * Miscellaneous style and documentation clean up in S3 event, Annotations ASP.NET Core Web API blueprints.
+  * Miscellaneous style and documentation clean up in S3 event, Annotations and ASP.NET Core Web API blueprints.
 * **Amazon.Lambda.TestTool (0.12.6)**
   * Release NuGet package Amazon.Lambda.TestTool-7.0 for .NET 7.
   

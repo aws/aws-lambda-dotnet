@@ -5,22 +5,26 @@ using Xunit;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.CloudFormationTemplateHandlerTests
 {
-    public class DetermineProjectRootDirectoryTests
+    public class DetermineProjectPathTests
     {
+        /// <summary>
+        /// Tests that that we can resolve the path of the .csproj from different source files in a Lambda project
+        /// </summary>
         [Fact]
-        public void DetermineProjectRootDirectory()
+        public void DetermineProjectPath()
         {
             // ARRANGE
             var tempDir = Path.Combine(Path.GetTempPath(), Helpers.GetRandomDirectoryName());
             var projectRoot = Path.Combine(tempDir, "Codebase", "Src", "MyServerlessApp");
             Helpers.CreateCustomerApplication(projectRoot);
+            var expectedProjectPath = Path.Combine(projectRoot, "MyServerlessApp.csproj");
             var templateHandler = new CloudFormationTemplateHandler(new FileManager(), new DirectoryManager());
 
             // ACT and ASSERT
-            Assert.Equal(projectRoot, templateHandler.DetermineProjectRootDirectory(Path.Combine(projectRoot, "Models", "Cars.cs")));
-            Assert.Equal(projectRoot, templateHandler.DetermineProjectRootDirectory(Path.Combine(projectRoot, "BusinessLogic", "Logic2.cs")));
-            Assert.Equal(projectRoot, templateHandler.DetermineProjectRootDirectory(Path.Combine(projectRoot, "Program.cs")));
-            Assert.Equal(projectRoot, templateHandler.DetermineProjectRootDirectory(Path.Combine(projectRoot, "MyServerlessApp.csproj")));
+            Assert.Equal(expectedProjectPath, templateHandler.DetermineProjectPath(Path.Combine(projectRoot, "Models", "Cars.cs")));
+            Assert.Equal(expectedProjectPath, templateHandler.DetermineProjectPath(Path.Combine(projectRoot, "BusinessLogic", "Logic2.cs")));
+            Assert.Equal(expectedProjectPath, templateHandler.DetermineProjectPath(Path.Combine(projectRoot, "Program.cs")));
+            Assert.Equal(expectedProjectPath, templateHandler.DetermineProjectPath(Path.Combine(projectRoot, "MyServerlessApp.csproj")));
         }
     }
 }

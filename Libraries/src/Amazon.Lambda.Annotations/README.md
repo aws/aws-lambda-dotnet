@@ -284,6 +284,25 @@ public class Functions
     },
 ```
 
+By default, Lambda Annotations will update the CloudFormation template's [description](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-description-structure.html) 
+field to include the version of Lambda Annotations that was used to modify the template.
+```
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v0.9.0.0).",
+   ...
+```
+
+This description allow AWS to record the version and the usage of the Lambda Annotations framework in order to improve its quality. We record details at the CloudFormation stack level, and do not identify the application, library, or tool that was deployed. Note that we do not record any personal information, such as usernames, email addresses or sensitive project-level information. 
+
+If you do not want AWS to track the usage of the library, please set the following in your project (csproj) file:
+```
+<PropertyGroup>
+  <AWSSuppressLambdaAnnotationsTelemetry>true</AWSSuppressLambdaAnnotationsTelemetry>
+</PropertyGroup>
+```
+
 ## Amazon API Gateway example
 
 This example creates a REST API through Amazon API Gateway that exposes the common arithmetic operations. 

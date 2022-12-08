@@ -8,7 +8,7 @@ using Amazon.S3.Util;
 
 namespace BlueprintBaseName._1;
 
-public class Functions
+public class Function
 {
     IAmazonS3 S3Client { get; set; }
 
@@ -17,7 +17,7 @@ public class Functions
     /// the AWS credentials will come from the IAM role associated with the function and the AWS region will be set to the
     /// region the Lambda function is executed in.
     /// </summary>
-    public Functions()
+    public Function()
     {
         S3Client = new AmazonS3Client();
     }
@@ -26,7 +26,7 @@ public class Functions
     /// Constructs an instance with a preconfigured S3 client. This can be used for testing outside of the Lambda environment.
     /// </summary>
     /// <param name="s3Client"></param>
-    public Functions(IAmazonS3 s3Client)
+    public Function(IAmazonS3 s3Client)
     {
         this.S3Client = s3Client;
     }

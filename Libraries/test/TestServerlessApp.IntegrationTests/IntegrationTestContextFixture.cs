@@ -55,7 +55,7 @@ namespace TestServerlessApp.IntegrationTests
 
             Assert.Equal(StackStatus.CREATE_COMPLETE, await _cloudFormationHelper.GetStackStatusAsync(_stackName));
             Assert.True(await _s3Helper.BucketExistsAsync(_bucketName));
-            Assert.Equal(14, LambdaFunctions.Count);
+            Assert.Equal(16, LambdaFunctions.Count);
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix));
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix));
 

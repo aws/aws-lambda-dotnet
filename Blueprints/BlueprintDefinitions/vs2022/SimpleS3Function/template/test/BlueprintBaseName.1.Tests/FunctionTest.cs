@@ -8,7 +8,7 @@ using Xunit;
 
 namespace BlueprintBaseName._1.Tests;
 
-public class FunctionsTest
+public class FunctionTest
 {
     [Fact]
     public async Task TestS3EventLambdaFunction()
@@ -44,7 +44,7 @@ public class FunctionsTest
             Logger = testLambdaLogger
         };
 
-        var function = new Functions(mockS3Client.Object);
+        var function = new Function(mockS3Client.Object);
         await function.FunctionHandler(s3Event, testLambdaContext);
 
         Assert.Equal("text/plain", ((TestLambdaLogger)testLambdaLogger).Buffer.ToString().Trim());

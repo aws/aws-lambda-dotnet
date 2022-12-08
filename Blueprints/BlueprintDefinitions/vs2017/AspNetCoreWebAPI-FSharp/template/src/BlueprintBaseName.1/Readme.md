@@ -10,7 +10,7 @@ This project shows how to run an ASP.NET Core Web API project as an AWS Lambda e
 * LambdaEntryPoint.fs - type that derives from **Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction**. The code in this file bootstraps the ASP.NET Core hosting framework. The Lambda function is defined in the base class.
 * LocalEntryPoint.fs - for local development this contains the executable Main function which bootstraps the ASP.NET Core hosting framework with Kestrel, as for typical ASP.NET Core applications.
 * Startup.fs - usual ASP.NET Core Startup type used to configure the services ASP.NET Core will use.
-* web.config - used for local development.
+* appsettings.json - used for local development.
 * Controllers\ValuesController.fs - example Web API controller
 
 You may also have a test project depending on the options selected.

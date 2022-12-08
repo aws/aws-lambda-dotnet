@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
@@ -32,6 +33,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
 #if NET6_0_OR_GREATER
                             ,IHttpRequestBodyDetectionFeature
+                            ,IHttpActivityFeature
 #endif
     /*
     ,
@@ -55,6 +57,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
 #if NET6_0_OR_GREATER
             this[typeof(IHttpRequestBodyDetectionFeature)] = this;
+            this[typeof(IHttpActivityFeature)] = this;
 #endif
         }
 
@@ -392,6 +395,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 return requestFeature.Body != null;
             }
         }
+
+        Activity IHttpActivityFeature.Activity { get; set; }
 #endif
     }
 }
