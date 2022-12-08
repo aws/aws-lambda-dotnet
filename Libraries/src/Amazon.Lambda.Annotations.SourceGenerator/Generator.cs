@@ -127,6 +127,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 {
                     annotationReport.CloudFormationTemplatePath = templateHandler.FindTemplate(receiver.ProjectDirectory);
                     annotationReport.ProjectRootDirectory = receiver.ProjectDirectory;
+                    annotationReport.IsTelemetrySuppressed = ProjectFileHandler.IsTelemetrySuppressed(receiver.ProjectPath, _fileManager);
+
                     var templateFormat = templateHandler.DetermineTemplateFormat(annotationReport.CloudFormationTemplatePath);
                     ITemplateWriter templateWriter;
                     if (templateFormat == CloudFormationTemplateFormat.Json)

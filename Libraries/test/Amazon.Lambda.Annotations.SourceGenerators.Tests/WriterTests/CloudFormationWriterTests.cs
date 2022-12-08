@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator;
@@ -498,6 +499,284 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal("serverlessApp", templateWriter.GetToken<string>($"{propertiesPath}.CodeUri"));
         }
 
+        #region CloudFormation template description
+
+        /// <summary>
+        /// Tests that the CloudFormation template's "Description" field is set
+        /// correctly for an entirely new template.
+        /// </summary>
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json, false)]
+        [InlineData(CloudFormationTemplateFormat.Json, true)]
+        [InlineData(CloudFormationTemplateFormat.Yaml, false)]
+        [InlineData(CloudFormationTemplateFormat.Yaml, true)]
+        public void TemplateDescription_NewTemplate(CloudFormationTemplateFormat templateFormat, bool isTelemetrySuppressed)
+        {
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel }, isTelemetrySuppressed: isTelemetrySuppressed);
+
+            cloudFormationWriter.ApplyReport(report);
+
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            if (isTelemetrySuppressed)
+            {
+                Assert.False(templateWriter.Exists("Description"));
+            }
+            else
+            {
+                Assert.True(templateWriter.Exists("Description"));
+                Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+            }
+        }
+
+        /// <summary>
+        /// Tests that the CloudFormation template's "Description" field is set
+        /// correctly for an existing template without a Description field.
+        /// </summary>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TemplateDescription_ExistingTemplateNoDescription_Json(bool isTelemetrySuppressed)
+        {
+            const string content = @"{
+                              'AWSTemplateFormatVersion': '2010-09-09',
+                              'Transform': 'AWS::Serverless-2016-10-31',
+                              'Resources': {
+                                'MethodNotCreatedFromAnnotationsPackage': {
+                                  'Type': 'AWS::Serverless::Function',
+                                  'Properties': {
+                                    'Runtime': 'dotnetcore3.1',
+                                    'CodeUri': '',
+                                    'MemorySize': 128,
+                                    'Timeout': 100,
+                                    'Policies': [
+                                      'AWSLambdaBasicExecutionRole'
+                                    ],
+                                    'Handler': 'MyAssembly::MyNamespace.MyType::Handler'
+                                  }
+                                }
+                              }
+                            }";
+
+            var templateWriter = new JsonWriter();
+            var mockFileManager = GetMockFileManager(content);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Json, _diagnosticReporter);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel }, isTelemetrySuppressed: isTelemetrySuppressed);
+
+            cloudFormationWriter.ApplyReport(report);
+
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            if (isTelemetrySuppressed)
+            {
+                Assert.False(templateWriter.Exists("Description"));
+            }
+            else
+            {
+                Assert.True(templateWriter.Exists("Description"));
+                Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+            }
+        }
+
+        /// <summary>
+        /// Tests that the CloudFormation template's "Description" field is set
+        /// correctly for an existing template without a Description field.
+        /// </summary>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TemplateDescription_ExistingTemplateNoDescription_Yaml(bool isTelemetrySuppressed)
+        {
+            const string content = @"
+                        AWSTemplateFormatVersion: '2010-09-09'
+                        Transform: AWS::Serverless-2016-10-31
+                        Resources:
+                          MethodNotCreatedFromAnnotationsPackage:
+                            Type: AWS::Serverless::Function
+                            Properties:
+                              Runtime: dotnetcore3.1
+                              CodeUri: ''
+                              MemorySize: 128
+                              Timeout: 100
+                              Policies:
+                                - AWSLambdaBasicExecutionRole
+                              Handler: MyAssembly::MyNamespace.MyType::Handler
+                                ";
+
+            var templateWriter = new YamlWriter();
+            var mockFileManager = GetMockFileManager(content);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Yaml, _diagnosticReporter);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel }, isTelemetrySuppressed: isTelemetrySuppressed);
+
+            cloudFormationWriter.ApplyReport(report);
+
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            if (isTelemetrySuppressed)
+            {
+                Assert.False(templateWriter.Exists("Description"));
+            }
+            else
+            {
+                Assert.True(templateWriter.Exists("Description"));
+                Assert.Equal(CloudFormationWriter.CurrentDescriptionSuffix, templateWriter.GetToken<string>("Description"));
+            }
+        }
+
+        /// <summary>
+        /// Test cases for manipulating the CloudFormation template description if it already has a value
+        /// </summary>
+        public static IEnumerable<object[]> CloudFormationDescriptionCases
+            => new List<object[]> {
+
+                /*
+                 * This first set are without the opt-out flag
+                 */
+
+                // A blank description should be transformed to just our suffix
+                new object[] { "", false, CloudFormationWriter.CurrentDescriptionSuffix },
+
+                // An existing description that is entirely our suffix should be replaced by the current version
+                new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1).",
+                    false, CloudFormationWriter.CurrentDescriptionSuffix },
+
+                // An existing description should have our version appended to it
+                new object[] { "Existing description before",
+                    false, $"Existing description before {CloudFormationWriter.CurrentDescriptionSuffix}" },
+
+                // An existing description with our version in the front should be replaced
+                new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1). Existing description.", 
+                     false, $"{CloudFormationWriter.CurrentDescriptionSuffix} Existing description." },
+
+                // An existing description with our version in the front should be replaced
+                new object[] { "PREFIX This template is partially managed by Amazon.Lambda.Annotations (v0.1). SUFFIX",
+                     false, $"PREFIX {CloudFormationWriter.CurrentDescriptionSuffix} SUFFIX" },
+
+                // This would exceed CloudFormation's current limit on the description field, so should not be modified
+                new object[] { new string('-', 1000), false, new string('-', 1000)},
+
+                /* 
+                 * The remaining cases are with the opt-out flag set to true, which should remove any version descriptions
+                 */
+                
+                // A blank description should be left alone
+                new object[] { "", true, "" },
+
+                // A non-blank description without our version description should be left alone
+                new object[] { "An AWS Serverless Application.", true, "An AWS Serverless Application." },
+
+                // An existing description that is entirely our suffix should be cleared
+                new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1).", true, "" },
+
+                // An existing description with our version suffix should have it removed
+                new object[] { "Existing description. This template is partially managed by Amazon.Lambda.Annotations (v0.1).",
+                     true, "Existing description. " },
+
+                // An existing description with our version in the front should have it removed
+                new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1). Existing description.",
+                     true, " Existing description." },
+
+                // An existing description with our version in the front should be replaced
+                new object[] { "PREFIX This template is partially managed by Amazon.Lambda.Annotations (v0.1). SUFFIX",
+                     true, $"PREFIX  SUFFIX" }
+        };
+
+        /// <summary>
+        /// Tests that the CloudFormation template's "Description" field is set
+        /// correctly for an existing template without a Description field.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(CloudFormationDescriptionCases))]
+        public void TemplateDescription_ExistingDescription_Json(string originalDescription, bool isTelemetrySuppressed, string expectedDescription)
+        {
+            string content = @"{
+                              'AWSTemplateFormatVersion': '2010-09-09',
+                              'Transform': 'AWS::Serverless-2016-10-31',
+                              'Description': '" + originalDescription + @"',
+                              'Resources': {
+                                'MethodNotCreatedFromAnnotationsPackage': {
+                                  'Type': 'AWS::Serverless::Function',
+                                  'Properties': {
+                                    'Runtime': 'dotnetcore3.1',
+                                    'CodeUri': '',
+                                    'MemorySize': 128,
+                                    'Timeout': 100,
+                                    'Policies': [
+                                      'AWSLambdaBasicExecutionRole'
+                                    ],
+                                    'Handler': 'MyAssembly::MyNamespace.MyType::Handler'
+                                  }
+                                }
+                              }
+                            }";
+
+            var templateWriter = new JsonWriter();
+            var mockFileManager = GetMockFileManager(content);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Json, _diagnosticReporter);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel }, isTelemetrySuppressed: isTelemetrySuppressed);
+
+            cloudFormationWriter.ApplyReport(report);
+
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            Assert.True(templateWriter.Exists("Description"));
+            Assert.Equal(expectedDescription, templateWriter.GetToken<string>("Description"));
+        }
+
+        /// <summary>
+        /// Tests that the CloudFormation template's "Description" field is set
+        /// correctly for an existing template without a Description field.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(CloudFormationDescriptionCases))]
+        public void TemplateDescription_ExistingDescription_Yaml(string originalDescription, bool isTelemetrySuppressed, string expectedDescription)
+        {
+            // ARRANGE
+            string content = @"
+                        AWSTemplateFormatVersion: '2010-09-09'
+                        Transform: AWS::Serverless-2016-10-31
+                        Description: " + originalDescription + @"
+                        Resources:
+                          MethodNotCreatedFromAnnotationsPackage:
+                            Type: AWS::Serverless::Function
+                            Properties:
+                              Runtime: dotnetcore3.1
+                              CodeUri: ''
+                              MemorySize: 128
+                              Timeout: 100
+                              Policies:
+                                - AWSLambdaBasicExecutionRole
+                              Handler: MyAssembly::MyNamespace.MyType::Handler
+                                ";
+
+            var templateWriter = new YamlWriter();
+            var mockFileManager = GetMockFileManager(content);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Yaml, _diagnosticReporter);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler", "TestMethod", 45, 512, null, null);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel }, isTelemetrySuppressed: isTelemetrySuppressed);
+
+            cloudFormationWriter.ApplyReport(report);
+
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            Assert.True(templateWriter.Exists("Description"));
+            Assert.Equal(expectedDescription, templateWriter.GetToken<string>("Description"));
+        }
+
+        #endregion
+
         private IFileManager GetMockFileManager(string originalContent)
         {
             var mockFileManager = new InMemoryFileManager();
@@ -519,12 +798,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         }
 
         private AnnotationReport GetAnnotationReport(List<ILambdaFunctionSerializable> lambdaFunctionModels,
-            string projectRootDirectory = ProjectRootDirectory, string cloudFormationTemplatePath = ServerlessTemplateFilePath)
+            string projectRootDirectory = ProjectRootDirectory, string cloudFormationTemplatePath = ServerlessTemplateFilePath, bool isTelemetrySuppressed = false)
         {
             var annotationReport = new AnnotationReport
             {
                 CloudFormationTemplatePath = cloudFormationTemplatePath,
-                ProjectRootDirectory = projectRootDirectory
+                ProjectRootDirectory = projectRootDirectory,
+                IsTelemetrySuppressed = isTelemetrySuppressed
             };
             foreach (var model in lambdaFunctionModels)
             {

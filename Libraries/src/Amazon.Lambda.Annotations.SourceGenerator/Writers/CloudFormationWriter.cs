@@ -1,14 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using Amazon.Lambda.Annotations.APIGateway;
+﻿using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Microsoft.CodeAnalysis;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 {
@@ -24,6 +25,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         private const string PARAMETERS = "Parameters";
         private const string GET_ATTRIBUTE = "Fn::GetAtt";
         private const string REF = "Ref";
+
+        // Constants related to the message we append to the CloudFormation template description
+        private const string BASE_DESCRIPTION = "This template is partially managed by Amazon.Lambda.Annotations";
+        private const string END_OF_VESRION_IN_DESCRIPTION = ").";
 
         private readonly IFileManager _fileManager;
         private readonly IDirectoryManager _directoryManager;
@@ -51,6 +56,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 CreateNewTemplate();
             else
                 _templateWriter.Parse(originalContent);
+
+            ProcessTemplateDescription(report);
 
             var processedLambdaFunctions = new HashSet<string>();
 
@@ -323,6 +330,131 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             {
                 _templateWriter.SetToken($"{rolePath}.{GET_ATTRIBUTE}", new List<string>{role, "Arn"}, TokenType.List);
             }
+        }
+
+        /// <summary>
+        /// Suffix that is appended to the CloudFormation template with the name
+        /// and version of the Lambda Annotations library
+        /// </summary>
+        public static string CurrentDescriptionSuffix
+        {
+            get
+            {
+                var version = Assembly.GetAssembly(MethodBase.GetCurrentMethod().DeclaringType).GetName().Version.ToString();
+                return $"{BASE_DESCRIPTION} (v{version}).";
+            }
+        }
+
+        /// <summary>
+        /// This appends a string to the CloudFormation template description field with the version
+        /// of Lambda Annotations that was used during compilation.
+        /// 
+        /// This string allows AWS to report on these templates to measure the usage of this framework.
+        /// This aids investigations and outreach if we find a critical bug, 
+        /// helps understanding our version adoption, and allows us to prioritize improvements to this
+        /// library against other .NET projects.
+        /// </summary>
+        private void ProcessTemplateDescription(AnnotationReport report)
+        {
+            if (report.IsTelemetrySuppressed)
+            {
+                RemoveTemplateDescriptionIfSet();
+            }
+            else
+            {
+                SetOrUpdateTemplateDescription();
+            }
+        }
+
+        /// <summary>
+        /// Either appends the new version suffix in the CloudFormation template 
+        /// description, or updates it if an older version is found.
+        /// </summary>
+        private void SetOrUpdateTemplateDescription()
+        {
+            string updatedDescription;
+
+            if (_templateWriter.Exists("Description"))
+            {
+                var existingDescription = _templateWriter.GetToken<string>("Description");
+
+                var existingDescriptionSuffix = ExtractCurrentDescriptionSuffix(existingDescription);
+
+                if (!string.IsNullOrEmpty(existingDescriptionSuffix))
+                {
+                    updatedDescription = existingDescription.Replace(existingDescriptionSuffix, CurrentDescriptionSuffix);
+                }
+                else if (!string.IsNullOrEmpty(existingDescription)) // The version string isn't in the current description, so we just append it.
+                {
+                    updatedDescription = existingDescription + " " + CurrentDescriptionSuffix;
+                }
+                else // "Description" path exists but is null or empty, so just overwrite it
+                {
+                    updatedDescription = CurrentDescriptionSuffix;
+                }
+            }
+            else // the "Description" path doesn't exist, so set it
+            {
+                updatedDescription = CurrentDescriptionSuffix;
+            }
+
+            // In any case if the updated description is longer than CloudFormation's limit, fall back to the existing one.
+            // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-description-structure.html
+            if (updatedDescription.Length > 1024)
+            {
+                return;
+            }
+
+            _templateWriter.SetToken("Description", updatedDescription);
+        }
+
+        /// <summary>
+        /// Removes the version suffix from a CloudFormation template descripton
+        /// </summary>
+        private void RemoveTemplateDescriptionIfSet()
+        {
+            if (!_templateWriter.Exists("Description"))
+            {
+                return;
+            }
+
+            var existingDescription = _templateWriter.GetToken<string>("Description");
+            var existingDescriptionSuffix = ExtractCurrentDescriptionSuffix(existingDescription);
+
+            if (string.IsNullOrEmpty(existingDescriptionSuffix))
+            {
+                return;
+            }
+
+            var updatedDescription = existingDescription.Replace(existingDescriptionSuffix, "");
+
+            _templateWriter.SetToken("Description", updatedDescription);
+        }
+
+        /// <summary>
+        /// Extracts the version suffix from a CloudFormation template description  
+        /// </summary>
+        /// <param name="templateDescription"></param>
+        /// <returns></returns>
+        private string ExtractCurrentDescriptionSuffix(string templateDescription)
+        {
+            var startIndex = templateDescription.IndexOf(BASE_DESCRIPTION);
+            if (startIndex >= 0)
+            {
+                // Find the next ")." which will be the end of the old version string
+                var endIndex = templateDescription.IndexOf(END_OF_VESRION_IN_DESCRIPTION, startIndex);
+
+                // If we couldn't find the end of our version string, it's only a fragment, so abort.
+                if (endIndex == -1)
+                {
+                    return string.Empty;
+                }
+
+                var lengthOfCurrentDescription = endIndex + END_OF_VESRION_IN_DESCRIPTION.Length - startIndex;
+                return templateDescription.Substring(startIndex, lengthOfCurrentDescription);
+            }
+
+            return string.Empty;
         }
     }
 }
