@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+	<AssemblyName>bootstrap</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="aws-lambda-tools-defaults.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="aws-lambda-tools-defaults.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.1.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Amazon.Lambda.AspNetCoreServer.Hosting\Amazon.Lambda.AspNetCoreServer.Hosting.csproj" />
+  </ItemGroup>
+
+</Project>
