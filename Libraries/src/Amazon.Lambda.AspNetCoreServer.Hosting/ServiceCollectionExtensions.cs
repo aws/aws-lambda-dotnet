@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.AspNetCoreServer;
+﻿using Amazon.Lambda.AspNetCoreServer.Hosting;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
 using Amazon.Lambda.Core;
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddAWSLambdaHosting(this IServiceCollection services, LambdaEventSource eventSource)
         {
             // Not running in Lambda so exit and let Kestrel be the web server
-            return services.AddAWSLambdaHosting(eventSource);
+            return services.AddAWSLambdaHosting(eventSource, (Action<HostingOptions>?)null);
         }
 
         /// <summary>

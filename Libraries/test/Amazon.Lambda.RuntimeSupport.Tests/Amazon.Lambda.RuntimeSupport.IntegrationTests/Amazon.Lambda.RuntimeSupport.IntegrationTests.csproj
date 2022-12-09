@@ -48,7 +48,11 @@
 
 	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Command="dotnet restore" />
 	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release" />
-	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --function-architecture arm64" />	  
+	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --function-architecture arm64" />
+
+	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest" Command="dotnet restore" />
+	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release" />
+	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --function-architecture arm64" />	  
   </Target>
 
 </Project>
