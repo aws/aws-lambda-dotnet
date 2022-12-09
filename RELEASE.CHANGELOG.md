@@ -1,3 +1,7 @@
+### Release 2022-12-09
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.5.0)**
+  * Pull request [#1311](https://github.com/aws/aws-lambda-dotnet/pull/1311) add ability to configure the ILambdaSerializer when calling AddAWSLambdaHosting. Thanks [James Eastham](https://github.com/jeastham1993).
+
 ### Release 2022-12-08
 * **Amazon.Lambda.Annotations (0.10.0-preview)**
   * Added support for `dynamic` return types and parameters
