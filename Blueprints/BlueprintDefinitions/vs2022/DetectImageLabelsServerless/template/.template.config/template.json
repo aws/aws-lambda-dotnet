@@ -5,7 +5,7 @@
     "Lambda",
     "Serverless"
   ],
-  "name": "Serverless Detect Image Labels",
+  "name": "Lambda Serverless Detect Image Labels",
   "identity": "AWS.Lambda.Serverless.DetectImageLabels.CSharp",
   "groupIdentity": "AWS.Lambda.Serverless.DetectImageLabels",
   "shortName": "serverless.DetectImageLabels",

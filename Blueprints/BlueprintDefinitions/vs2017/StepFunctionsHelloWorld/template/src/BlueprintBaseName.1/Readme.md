@@ -1,4 +1,4 @@
-# Step Functions Hello World
+# Lambda Step Functions Hello World
 
 This starter project consists of:
 

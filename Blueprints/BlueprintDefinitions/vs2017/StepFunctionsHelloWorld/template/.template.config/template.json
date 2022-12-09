@@ -5,7 +5,7 @@
     "Lambda",
     "Serverless"
   ],
-  "name": "Step Functions Hello World",
+  "name": "Lambda Step Functions Hello World",
   "identity": "AWS.Lambda.Serverless.StepFunctionsHelloWorld.CSharp",
   "groupIdentity": "AWS.Lambda.Serverless.StepFunctionsHelloWorld",
   "shortName": "serverless.StepFunctionsHelloWorld",

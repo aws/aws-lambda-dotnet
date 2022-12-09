@@ -5,7 +5,7 @@
     "Lambda",
     "Serverless"
   ],
-  "name": "Serverless Simple S3 Function",
+  "name": "Lambda Serverless Simple S3 Function",
   "identity": "AWS.Serverless.Simple.S3.FSharp",
   "groupIdentity": "AWS.Serverless.Simple.S3",
   "shortName": "serverless.S3",
