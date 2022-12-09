@@ -5,7 +5,7 @@
     "Lambda",
     "Serverless"
   ],
-  "name": "Serverless WebSocket API",
+  "name": "Lambda Serverless WebSocket API",
   "identity": "AWS.Lambda.Serverless.WebSocketAPI.CSharp",
   "groupIdentity": "AWS.Lambda.Serverless.WebSocketAPI",
   "shortName": "serverless.WebSocketAPI",

@@ -5,7 +5,7 @@
     "Lambda",
     "Serverless"
   ],
-  "name": "Serverless project configured for deployment using .NET 7's Native AOT feature.",
+  "name": "Lambda Serverless project configured for deployment using .NET 7's Native AOT feature.",
   "identity": "AWS.Serverless.NativeAOT.CSharp",
   "groupIdentity": "AWS.Serverless.NativeAOT",
   "shortName": "serverless.NativeAOT",
