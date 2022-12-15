@@ -51,6 +51,10 @@
             [System.Text.Json.Serialization.JsonPropertyName("Resource")]
 #endif
             public HashSet<string> Resource { get; set; }
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("Condition")]
+#endif
+            public HashSet<HashSet<string>> Condition {get;set;}
         }
     }
 }
