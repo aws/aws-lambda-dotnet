@@ -16,7 +16,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         private static readonly byte[] ExpectedMagicBytes =
         {
-            0xA5, 0x5A, 0x00, 0x01
+            0xA5, 0x5A, 0x00, 0x03
         };
 
         [Fact]
