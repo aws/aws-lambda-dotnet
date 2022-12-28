@@ -32,8 +32,9 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
         // max cloudwatch log event size, 256k - 26 bytes of overhead.
         internal const int MaxCloudWatchLogEventSize = 256 * 1024 - 26;
-        internal const int LambdaTelemetryLogHeaderLength = 8;
-        internal const uint LambdaTelemetryLogHeaderFrameType = 0xa55a0001;
+        internal const int LambdaTelemetryLogHeaderLength = 16;
+        internal const uint LambdaTelemetryLogHeaderFrameType = 0xa55a0003;
+        internal static readonly DateTimeOffset UnixEpoch = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         /// <summary>
         /// Get the StreamWriter for the particular file descriptor ID. If the same ID is passed the same StreamWriter instance is returned.
@@ -70,11 +71,13 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// <summary>
         /// Write log message to the file descriptor which will make sure the message is recorded as a single CloudWatch Log record.
         /// The format of the message must be:
-        /// +----------------------+------------------------+-----------------------+
-        /// | Frame Type - 4 bytes | Length (len) - 4 bytes | Message - 'len' bytes |
-        /// +----------------------+------------------------+-----------------------+
-        /// The first 4 bytes are the frame type. For logs this is always 0xa55a0001.
+        /// 0                      4                        8                      16
+        /// +----------------------+------------------------+-----------------------+-----------------------+
+        /// | Frame Type - 4 bytes | Length (len) - 4 bytes | Timestamp - 8 bytes   | Message - 'len' bytes |
+        /// +----------------------+------------------------+-----------------------+-----------------------+
+        /// The first 4 bytes are the frame type. For logs with timestamps this is always 0xa55a0003.
         /// The second 4 bytes are the length of the message.
+        /// Next is 8 bytes timestamp of emitting the message expressed as microseconds since UNIX epoch.
         /// The remaining bytes are the message itself. Byte order is big-endian.
         /// </summary>
         private class FileDescriptorLogStream : Stream
@@ -106,13 +109,20 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     Array.Reverse(messageLengthBytes);
                 }
 
+                var now = (DateTimeOffset.UtcNow - UnixEpoch).Ticks / 10; // There are 10 tick per microsecond
+                var nowInBytes = BitConverter.GetBytes(now);
+                if (BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(nowInBytes);
+                }
                 var typeAndLength = ArrayPool<byte>.Shared.Rent(LambdaTelemetryLogHeaderLength);
                 try
                 {
                     Buffer.BlockCopy(_frameTypeBytes, 0, typeAndLength, 0, 4);
                     Buffer.BlockCopy(messageLengthBytes, 0, typeAndLength, 4, 4);
+                    Buffer.BlockCopy(nowInBytes, 0, typeAndLength, 8, 8);
 
-                    _fileDescriptorStream.Write(typeAndLength, 0, 8);
+                    _fileDescriptorStream.Write(typeAndLength, 0, LambdaTelemetryLogHeaderLength);
                     _fileDescriptorStream.Write(buffer, offset, count);
                     _fileDescriptorStream.Flush();
                 }
