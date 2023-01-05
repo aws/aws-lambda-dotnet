@@ -2107,6 +2107,9 @@ namespace Amazon.Lambda.Tests
 
                 Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides.Count, 1);
                 Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides[0].Name, "FargateApp");
+                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides[0].Environment.Count, 1);
+                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides[0].Environment[0].Name, "testname");
+                Assert.Equal(ecsEvent.Detail.Overrides.ContainerOverrides[0].Environment[0].Value, "testvalue");
 
                 Assert.Equal(ecsEvent.Detail.Connectivity, "CONNECTED");
                 Assert.Equal(ecsEvent.Detail.ConnectivityAt.ToUniversalTime(), DateTime.Parse("2020-01-23T17:57:38.453Z").ToUniversalTime());

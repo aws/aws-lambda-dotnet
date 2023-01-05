@@ -65,7 +65,13 @@
     "overrides": {
       "containerOverrides": [
         {
-          "name": "FargateApp"
+          "name": "FargateApp",
+          "environment": [
+            {
+              "name": "testname",
+              "value": "testvalue"
+            }
+          ]
         }
       ]
     },

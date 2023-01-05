@@ -27,7 +27,7 @@ namespace Amazon.Lambda.CloudWatchEvents.ECSEvents
         /// which are added to the container at launch, or you can override the existing environment
         /// variables from the Docker image or the task definition. You must also specify a container name.
         /// </summary>
-        public List<KeyValuePair<string, string>> Environment { get; set; }
+        public List<NameValue> Environment { get; set; }
 
         /// <summary>
         /// The hard limit (in MiB) of memory to present to the container, instead of the default value
