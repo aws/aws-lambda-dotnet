@@ -33,9 +33,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             });
             TextWriter writer = FileDescriptorLogFactory.InitializeWriter(stream);
             // assert that initializing the stream does not result in UTF-8 preamble log entry
-            Assert.Equal(0, counts.Count);
-            Assert.Equal(0, offsets.Count);
-            Assert.Equal(0, logs.Count);
+            Assert.Empty(counts);
+            Assert.Empty(offsets);
+            Assert.Empty(logs);
 
             const string logMessage = "hello world\nsomething else on a new line.";
             int logMessageLength = logMessage.Length;
@@ -81,9 +81,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             });
             TextWriter writer = FileDescriptorLogFactory.InitializeWriter(stream);
             // assert that initializing the stream does not result in UTF-8 preamble log entry
-            Assert.Equal(0, counts.Count);
-            Assert.Equal(0, offsets.Count);
-            Assert.Equal(0, logs.Count);
+            Assert.Empty(counts);
+            Assert.Empty(offsets);
+            Assert.Empty(logs);
 
             string logMessage = new string('a', LogEntryMaxLength - 1) + "b";
             writer.Write(logMessage);
@@ -128,9 +128,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             });
             TextWriter writer = FileDescriptorLogFactory.InitializeWriter(stream);
             // assert that initializing the stream does not result in UTF-8 preamble log entry
-            Assert.Equal(0, counts.Count);
-            Assert.Equal(0, offsets.Count);
-            Assert.Equal(0, logs.Count);
+            Assert.Empty(counts);
+            Assert.Empty(offsets);
+            Assert.Empty(logs);
 
             string logMessage = new string('a', LogEntryMaxLength) + "b";
             writer.Write(logMessage);
@@ -163,7 +163,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Equal(HeaderLength, headerLogEntry.Length);
             Assert.Equal(LogEntryMaxLength, consoleLogEntry.Length);
             Assert.Equal(HeaderLength, headerLogSecondEntry.Length);
-            Assert.Equal(1, consoleLogSecondEntry.Length);
+            Assert.Single(consoleLogSecondEntry);
 
             byte[] expectedLengthBytes =
             {
@@ -185,7 +185,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         private static void AssertHeaderBytes(byte[] buf, byte[] expectedLengthBytes)
         {
             byte[] actualHeaderMagicBytes = buf.Take(4).ToArray();
-            byte[] actualHeaderLengthBytes = buf.TakeLast(4).ToArray();
+            byte[] actualHeaderLengthBytes = buf.Skip(4).Take(4).ToArray();
             Assert.Equal(ExpectedMagicBytes, actualHeaderMagicBytes);
             Assert.Equal(expectedLengthBytes, actualHeaderLengthBytes);
         }
