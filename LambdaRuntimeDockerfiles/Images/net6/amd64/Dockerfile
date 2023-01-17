@@ -42,17 +42,11 @@ RUN dos2unix /app/publish/bootstrap.sh && \
     mv /app/publish/bootstrap.sh /app/publish/bootstrap && \
     chmod +x /app/publish/bootstrap
 
-# Generate runtime-release file
-ARG LAMBDA_RUNTIME_NAME
-RUN export BUILD_TIMESTAMP=$(printf '%x' $(date +%s)) && \
-    export LOGGING_PROTOCOL="LOGGING=amzn-stdout-tlv" && \
-    export LAMBDA_RUNTIME_NAME="LAMBDA_RUNTIME_NAME=${LAMBDA_RUNTIME_NAME}" && \
-    echo "NAME=dotnet\nVERSION=${ASPNET_VERSION}-${BUILD_TIMESTAMP}\n${LOGGING_PROTOCOL}\n${LAMBDA_RUNTIME_NAME}\n" > /app/publish/runtime-release
-
 
 FROM base
 
 ARG ASPNET_VERSION
+ARG LAMBDA_RUNTIME_NAME
 
 ENV \
     # Export .NET version as environment variable
@@ -68,5 +62,11 @@ ENV \
 
 COPY --from=builder-net6    /dotnet         ${DOTNET_ROOT}
 COPY --from=publish         /app/publish    ${LAMBDA_RUNTIME_DIR}
+
+# Generate runtime-release file
+RUN export BUILD_TIMESTAMP=$(printf '%x' $(date +%s)) && \
+    export LOGGING_PROTOCOL="LOGGING=amzn-stdout-tlv" && \
+    export LAMBDA_RUNTIME_NAME="LAMBDA_RUNTIME_NAME=${LAMBDA_RUNTIME_NAME}" && \
+    echo -e "NAME=dotnet\nVERSION=${ASPNET_VERSION}-${BUILD_TIMESTAMP}\n${LOGGING_PROTOCOL}\n${LAMBDA_RUNTIME_NAME}\n" > ${LAMBDA_RUNTIME_DIR}/runtime-release
 
 # Entrypoint is inherited from public.ecr.aws/lambda/provided
