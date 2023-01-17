@@ -1,3 +1,9 @@
+### Release 2023-01-15
+* **Amazon.Lambda.RuntimeSupport (1.8.2)**
+  * Add timestamp when making API calls to the Lambda service runtime's logging API. This timestamp is not visible to end users but is instead used by the Lambda service to make sure the log statements are properly orderd.
+* **Amazon.Lambda.CloudWatchEvents (4.0.1)**
+  * Corrected the type of the ContainerOverride.Environment property.
+
 ### Release 2022-12-09
 * **Amazon.Lambda.AspNetCoreServer.Hosting (1.5.0)**
   * Pull request [#1311](https://github.com/aws/aws-lambda-dotnet/pull/1311) add ability to configure the ILambdaSerializer when calling AddAWSLambdaHosting. Thanks [James Eastham](https://github.com/jeastham1993).
