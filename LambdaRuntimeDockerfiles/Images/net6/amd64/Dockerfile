@@ -1,7 +1,7 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=6.0.11
-ARG ASPNET_SHA512=12a30719aacd5b3dd444d075c13966a4bb1dc149c36bcbc0e685730f08d1c75eb3929749b89a88569ddb48bd8104db84aaee2ee097ac3a5fe6fff60c9f09f741
+ARG ASPNET_VERSION=6.0.13
+ARG ASPNET_SHA512=96239951972a04021b1953581c88a3e1e64553d05278fb92729c62827f38eeecd533845d6b0d3e9ba97e9d19701b9ee8e5c02d1ee54b8c14efe54c08c45c15a0
 
 ARG LAMBDA_RUNTIME_NAME=dotnet6
 ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2
@@ -42,17 +42,11 @@ RUN dos2unix /app/publish/bootstrap.sh && \
     mv /app/publish/bootstrap.sh /app/publish/bootstrap && \
     chmod +x /app/publish/bootstrap
 
-# Generate runtime-release file
-ARG LAMBDA_RUNTIME_NAME
-RUN export BUILD_TIMESTAMP=$(printf '%x' $(date +%s)) && \
-    export LOGGING_PROTOCOL="LOGGING=amzn-stdout-tlv" && \
-    export LAMBDA_RUNTIME_NAME="LAMBDA_RUNTIME_NAME=${LAMBDA_RUNTIME_NAME}" && \
-    echo "NAME=dotnet\nVERSION=${ASPNET_VERSION}-${BUILD_TIMESTAMP}\n${LOGGING_PROTOCOL}\n${LAMBDA_RUNTIME_NAME}\n" > /app/publish/runtime-release
-
 
 FROM base
 
 ARG ASPNET_VERSION
+ARG LAMBDA_RUNTIME_NAME
 
 ENV \
     # Export .NET version as environment variable
@@ -68,5 +62,11 @@ ENV \
 
 COPY --from=builder-net6    /dotnet         ${DOTNET_ROOT}
 COPY --from=publish         /app/publish    ${LAMBDA_RUNTIME_DIR}
+
+# Generate runtime-release file
+RUN export BUILD_TIMESTAMP=$(printf '%x' $(date +%s)) && \
+    export LOGGING_PROTOCOL="LOGGING=amzn-stdout-tlv" && \
+    export LAMBDA_RUNTIME_NAME="LAMBDA_RUNTIME_NAME=${LAMBDA_RUNTIME_NAME}" && \
+    echo -e "NAME=dotnet\nVERSION=${ASPNET_VERSION}-${BUILD_TIMESTAMP}\n${LOGGING_PROTOCOL}\n${LAMBDA_RUNTIME_NAME}\n" > ${LAMBDA_RUNTIME_DIR}/runtime-release
 
 # Entrypoint is inherited from public.ecr.aws/lambda/provided
