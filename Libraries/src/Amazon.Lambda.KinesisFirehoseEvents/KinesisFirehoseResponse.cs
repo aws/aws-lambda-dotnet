@@ -93,6 +93,16 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             public string Base64EncodedData { get; set; }
 
             /// <summary>
+            /// The response record metadata.
+            /// </summary>
+            [DataMember(Name = "metadata")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("metadata")]
+#endif
+            public FirehoseResponseRecordMetadata Metadata { get; set; }
+
+
+            /// <summary>
             /// Base64 encodes the data and sets the Base64EncodedData property.
             /// </summary>
             /// <param name="data">The data to be base64 encoded.</param>
@@ -100,6 +110,23 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             {
                 this.Base64EncodedData = Convert.ToBase64String(Encoding.UTF8.GetBytes(data));
             }
+        }
+
+        /// <summary>
+        /// The response record metadata after processing KinesisFirehoseEvent.Records
+        /// </summary>
+        [DataContract]
+        public class FirehoseResponseRecordMetadata
+        {
+            /// <summary>
+            /// Key Value pairs used for Dynamic Partitioning
+            /// https://docs.aws.amazon.com/firehose/latest/dev/dynamic-partitioning.html
+            /// </summary>
+            [DataMember(Name = "partitionKeys")]
+#if NETCOREAPP_3_1
+            [System.Text.Json.Serialization.JsonPropertyName("partitionKeys")]
+#endif
+            public Dictionary<string, string> PartitionKeys { get; set; }
         }
     }
 }
