@@ -1,3 +1,7 @@
+### Release 2023-01-23
+* **Amazon.Lambda.KinesisFirehoseEvents (2.2.0)**
+  * Pull request [#1346](https://github.com/aws/aws-lambda-dotnet/pull/1346) adding partition key metadata for response object. Thanks [Chris Smith](https://github.com/chris-smith-zocdoc)
+
 ### Release 2023-01-15
 * **Amazon.Lambda.RuntimeSupport (1.8.2)**
   * Add timestamp when making API calls to the Lambda service runtime's logging API. This timestamp is not visible to end users but is instead used by the Lambda service to make sure the log statements are properly orderd.
