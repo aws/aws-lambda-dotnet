@@ -12,10 +12,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     {
         private AttributeModel<LambdaFunctionAttribute> _lambdaFunctionAttribute;
 
-        /// <summary>
-        /// Returns true if original method is an async method
-        /// </summary>
-        public bool IsAsync { get; set; }
 
         /// <summary>
         /// Returns true if original method returns void
@@ -25,12 +21,48 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// <summary>
         /// Returns true if original method returns <see cref="System.Threading.Tasks.Task"/>
         /// </summary>
-        public bool ReturnsTask { get; set; }
+        public bool ReturnsVoidTask { get; set; }
+
+        /// <summary>
+        /// Returns true if original method returns <see cref="System.Threading.Tasks.Task<T>"/>
+        /// </summary>
+        public bool ReturnsGenericTask { get; set; }
+
+        /// <summary>
+        /// Returns true if either the ReturnsVoidTask or ReturnsGenericTask are true
+        /// </summary>
+        public bool ReturnsVoidOrGenericTask => ReturnsVoidTask || ReturnsGenericTask;
 
         /// <summary>
         /// Gets or sets the return type of the method.
         /// </summary>
         public TypeModel ReturnType { get; set; }
+
+        /// <summary>
+        /// Returns true if the Lambda function returns either IHttpResult or Task<IHttpResult>
+        /// </summary>
+        public bool ReturnsIHttpResults
+        {
+            get
+            {
+                if(ReturnsVoid)
+                {
+                    return false;
+                }
+
+                if(ReturnType.FullName == TypeFullNames.IHttpResult)
+                {
+                    return true;
+                }
+                if(ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.IHttpResult) 
+                {
+                    return true;
+                }
+
+
+                return false;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the parameters of original method. If this method has no parameters, returns

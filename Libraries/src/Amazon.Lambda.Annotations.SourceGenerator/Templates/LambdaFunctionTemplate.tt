@@ -63,7 +63,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
 #>
         }
 
-        public <#= _model.LambdaMethod.IsAsync ? "async " : "" #><#= _model.GeneratedMethod.ReturnType.FullName #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
+        public <#= _model.LambdaMethod.ReturnsVoidOrGenericTask ? "async " : "" #><#= _model.GeneratedMethod.ReturnType.FullName #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
         {
 <#
     if (_model.LambdaMethod.UsingDependencyInjection)
@@ -353,7 +353,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             // return 400 Bad Request if there exists a validation error
             if (validationErrors.Any())
             {
-                return new <#= _model.LambdaMethod.IsAsync ? _model.GeneratedMethod.ReturnType.TaskTypeArgument : _model.GeneratedMethod.ReturnType.FullName #>
+                var errorResult = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
                 {
                     Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
                     Headers = new Dictionary<string, string>
@@ -363,18 +363,44 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
                     },
                     StatusCode = 400
                 };
+<#
+                if(_model.LambdaMethod.ReturnsIHttpResults)
+                {
+#>
+                var errorStream = new System.IO.MemoryStream();
+                System.Text.Json.JsonSerializer.Serialize(errorStream, errorResult);
+                return errorStream;
+<#
+                }
+                else
+                {
+#>
+                return errorResult;
+<#
+                }
+#>
             }
 
 <#
         }
 
-        if (_model.LambdaMethod.ReturnsVoid)
+        if (_model.LambdaMethod.ReturnsIHttpResults)
+        {
+#>
+            var httpResults = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+            HttpResultSerializationOptions.ProtocolFormat serializationFormat = <#= restApiAttribute != null ? "HttpResultSerializationOptions.ProtocolFormat.RestApi" : "HttpResultSerializationOptions.ProtocolFormat.HttpApi"#>;
+            HttpResultSerializationOptions.ProtocolVersion serializationVersion = <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "HttpResultSerializationOptions.ProtocolVersion.V1" : "HttpResultSerializationOptions.ProtocolVersion.V2"#>;
+            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion };
+            var response = httpResults.Serialize(serializationOptions);
+<#
+        }
+        else if (_model.LambdaMethod.ReturnsVoid)
         {
 #>
             <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
 <#
         }
-        else if (_model.LambdaMethod.ReturnsTask)
+        else if (_model.LambdaMethod.ReturnsVoidTask)
         {
 #>
             await <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
@@ -383,11 +409,11 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
         else
         {
 #>
-            var response = <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+            var response = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
 <#
         }
 
-        if (_model.GeneratedMethod.ReturnType.FullName == _model.LambdaMethod.ReturnType.FullName)
+        if (_model.GeneratedMethod.ReturnType.FullName == _model.LambdaMethod.ReturnType.FullName || _model.LambdaMethod.ReturnsIHttpResults)
         {
 #>
             return response;
@@ -395,7 +421,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
         }
         else
         {
-            if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsTask)
+            if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsVoidTask)
             {
                 if (_model.LambdaMethod.ReturnType.IsValueType)
                 {
@@ -418,10 +444,10 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             }
 #>
 
-            return new <#= _model.LambdaMethod.IsAsync ? _model.GeneratedMethod.ReturnType.TaskTypeArgument : _model.GeneratedMethod.ReturnType.FullName #>
+            return new <#= _model.LambdaMethod.ReturnsVoidOrGenericTask ? _model.GeneratedMethod.ReturnType.TaskTypeArgument : _model.GeneratedMethod.ReturnType.FullName #>
             {
 <#
-            if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsTask)
+            if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsVoidTask)
             {
 #>
                 Body = <#= _model.LambdaMethod.ReturnType.IsString() ? "response" : "body" #>,
@@ -467,7 +493,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
             <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
 <#
         }
-        else if (_model.LambdaMethod.ReturnsTask)
+        else if (_model.LambdaMethod.ReturnsVoidTask)
         {
 #>
             await <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
@@ -476,7 +502,7 @@ namespace <#= _model.LambdaMethod.ContainingNamespace #>
         else
         {
 #>
-            return <#= _model.LambdaMethod.IsAsync ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
+            return <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= parameters #>);
 <#
         }
     }

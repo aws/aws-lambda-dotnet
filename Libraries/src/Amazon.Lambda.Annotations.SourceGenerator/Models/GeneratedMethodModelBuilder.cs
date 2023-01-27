@@ -19,7 +19,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         {
             var model = new GeneratedMethodModel
             {
-                Usings = BuildUsings(lambdaMethodSymbol, configureMethodSymbol, context),
+                Usings = BuildUsings(lambdaMethodModel, lambdaMethodSymbol, configureMethodSymbol, context),
                 Parameters = BuildParameters(lambdaMethodSymbol, lambdaMethodModel, context),
                 ReturnType = BuildResponseType(lambdaMethodSymbol, lambdaMethodModel, context),
                 ContainingType = BuildContainingType(lambdaMethodSymbol),
@@ -27,7 +27,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             return model;
         }
 
-        private static IList<string> BuildUsings(IMethodSymbol lambdaMethodSymbol,
+        private static IList<string> BuildUsings(LambdaMethodModel lambdaMethodModel, 
+            IMethodSymbol lambdaMethodSymbol,
             IMethodSymbol configureMethodSymbol,
             GeneratorExecutionContext context)
         {
@@ -46,6 +47,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 
             namespaces.Add("Amazon.Lambda.Core");
 
+            if(lambdaMethodModel.ReturnsIHttpResults)
+            {
+                namespaces.Add("Amazon.Lambda.Annotations.APIGateway");
+            }
+
             return namespaces;
         }
 
@@ -53,9 +59,22 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             LambdaMethodModel lambdaMethodModel, GeneratorExecutionContext context)
         {
             var task = context.Compilation.GetTypeByMetadataName(TypeFullNames.Task1);
+
+            if (lambdaMethodModel.ReturnsIHttpResults)
+            {
+                var typeStream = context.Compilation.GetTypeByMetadataName(TypeFullNames.Stream);
+                if (lambdaMethodModel.ReturnsGenericTask)
+                {
+                    var genericTask = task.Construct(typeStream);
+                    return TypeModelBuilder.Build(genericTask, context);
+                }
+                return TypeModelBuilder.Build(typeStream, context);
+            }
+
+            
             if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute))
             {
-                var symbol = lambdaMethodModel.IsAsync ?
+                var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
                     task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse)):
                     context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse);
                 return TypeModelBuilder.Build(symbol, context);
@@ -67,17 +86,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 {
                     case HttpApiVersion.V1:
                     {
-                        var symbol = lambdaMethodModel.IsAsync ?
+                        var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
                             task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse)):
                             context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse);
-                        return TypeModelBuilder.Build(symbol, context);;
+                        return TypeModelBuilder.Build(symbol, context);
                     }
                     case HttpApiVersion.V2:
                     {
-                        var symbol = lambdaMethodModel.IsAsync ?
+                        var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
                             task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse)):
                             context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse);
-                        return TypeModelBuilder.Build(symbol, context);;
+                        return TypeModelBuilder.Build(symbol, context);
                     }
                     default:
                         throw new ArgumentOutOfRangeException();

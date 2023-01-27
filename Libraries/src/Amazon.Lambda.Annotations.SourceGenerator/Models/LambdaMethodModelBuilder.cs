@@ -16,10 +16,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         {
             var model = new LambdaMethodModel
             {
-                IsAsync = lambdaMethodSymbol.IsAsync,
                 ReturnType = TypeModelBuilder.Build(lambdaMethodSymbol.ReturnType, context),
                 ReturnsVoid = lambdaMethodSymbol.ReturnsVoid,
-                ReturnsTask = lambdaMethodSymbol.ReturnType.Equals(context.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task"), SymbolEqualityComparer.Default),
+                ReturnsVoidTask = lambdaMethodSymbol.ReturnType.Equals(context.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task"), SymbolEqualityComparer.Default),
+                ReturnsGenericTask = (lambdaMethodSymbol.ReturnType.BaseType?.Equals(context.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task"), SymbolEqualityComparer.Default)).GetValueOrDefault(),
                 Parameters = ParameterModelBuilder.Build(lambdaMethodSymbol, context),
                 Name = lambdaMethodSymbol.Name,
                 ContainingAssembly = lambdaMethodSymbol.ContainingAssembly.Name,

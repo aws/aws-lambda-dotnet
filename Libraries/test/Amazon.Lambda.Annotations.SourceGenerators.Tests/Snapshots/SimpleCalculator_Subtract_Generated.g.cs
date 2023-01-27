@@ -64,7 +64,7 @@ namespace TestServerlessApp
             // return 400 Bad Request if there exists a validation error
             if (validationErrors.Any())
             {
-                return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
+                var errorResult = new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
                 {
                     Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
                     Headers = new Dictionary<string, string>
@@ -74,6 +74,7 @@ namespace TestServerlessApp
                     },
                     StatusCode = 400
                 };
+                return errorResult;
             }
 
             var response = simpleCalculator.Subtract(x, y, simpleCalculatorService);

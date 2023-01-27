@@ -48,7 +48,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Greeter_SayHello_Generated.g.cs", expectedSayHelloGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Greeter_SayHelloAsync_Generated.g.cs", expectedSayHelloAsyncGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
-                    }
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -82,7 +83,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         // Now AWS Lambda Annotations INFO diagnostics were emited showing again the generator didn't run.
                         new DiagnosticResult("CS1513", DiagnosticSeverity.Error).WithSpan("NonCompilableCodeFile.cs", 22, 2, 22, 2)
-                    }
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
         }
@@ -112,6 +114,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "FromServicesAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "FromServicesAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -161,7 +165,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_Random_Generated.g.cs", expectedRandomGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SimpleCalculator_Randoms_Generated.g.cs", expectedRandomsGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
-                    }
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -204,7 +209,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ComplexCalculator_Add_Generated.g.cs", expectedAddGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ComplexCalculator_Subtract_Generated.g.cs", expectedSubtractGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
-                    }
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -240,7 +246,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Functions_ToUpper_Generated.g.cs", expectedSubNamespaceGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
-                    }
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -276,7 +283,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("VoidExample_VoidReturn_Generated.g.cs", expectedSubNamespaceGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
-                    }
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -312,7 +320,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("TaskExample_TaskReturn_Generated.g.cs", expectedSubNamespaceGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
-                    }
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
@@ -355,12 +364,119 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("DynamicExample_DynamicReturn_Generated.g.cs", expectedSubNamespaceGenerated_DynamicReturn),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("DynamicExample_DynamicInput_Generated.g.cs", expectedSubNamespaceGenerated_DynamicInput)
-                    }
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
             }.RunAsync();
 
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
             Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task CustomizeResponses()
+        {
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "customizeResponse.template")).ToEnvironmentLineEndings();
+            var expectedOkResponseWithHeaderGenerated = File.ReadAllText(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithHeader_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedNotFoundResponseWithHeaderV2Generated = File.ReadAllText(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedNotFoundResponseWithHeaderV1Generated = File.ReadAllText(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated.g.cs")).ToEnvironmentLineEndings();
+
+            var expectedOkResponseWithHeaderAsyncGenerated = File.ReadAllText(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedNotFoundResponseWithHeaderV2AsyncGenerated = File.ReadAllText(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedNotFoundResponseWithHeaderV1AsyncGenerated = File.ReadAllText(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs")).ToEnvironmentLineEndings();
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "CustomizeResponseExamples.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "CustomizeResponseExamples.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomizeResponseExamples_OkResponseWithHeader_Generated.g.cs",
+                            SourceText.From(expectedOkResponseWithHeaderGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated.g.cs",
+                            SourceText.From(expectedOkResponseWithHeaderAsyncGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated.g.cs",
+                            SourceText.From(expectedNotFoundResponseWithHeaderV2Generated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated.g.cs",
+                            SourceText.From(expectedNotFoundResponseWithHeaderV2AsyncGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated.g.cs",
+                            SourceText.From(expectedNotFoundResponseWithHeaderV1Generated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs",
+                            SourceText.From(expectedNotFoundResponseWithHeaderV1AsyncGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_OkResponseWithHeader_Generated.g.cs", expectedOkResponseWithHeaderGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated.g.cs", expectedOkResponseWithHeaderAsyncGenerated),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated.g.cs", expectedNotFoundResponseWithHeaderV2Generated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated.g.cs", expectedNotFoundResponseWithHeaderV2AsyncGenerated),
+                        
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated.g.cs", expectedNotFoundResponseWithHeaderV1Generated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs", expectedNotFoundResponseWithHeaderV1AsyncGenerated),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                }
+                
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task InvalidReturnTypeIHttpResult()
+        {
+
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "CustomizeResponseWithErrors.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "CustomizeResponseWithErrors.cs.error"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                         DiagnosticResult.CompilerError("AWSLambda0105").WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}CustomizeResponseWithErrors.cs", 14, 9, 21, 10).WithArguments("Error")
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                }
+
+            }.RunAsync();
         }
     }
 }

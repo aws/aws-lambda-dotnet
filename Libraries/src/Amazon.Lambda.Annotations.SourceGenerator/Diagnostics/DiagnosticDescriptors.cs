@@ -1,5 +1,6 @@
 using System;
 using Microsoft.CodeAnalysis;
+using Amazon.Lambda.Annotations.APIGateway;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
 {
@@ -44,5 +45,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
+        public static readonly DiagnosticDescriptor HttpResultsOnNonApiFunction = new DiagnosticDescriptor(id: "AWSLambda0105",
+            title: $"Invalid return type {nameof(IHttpResult)}",
+            messageFormat: $"{nameof(IHttpResult)} is not a valid return type for LambdaFunctions without {nameof(HttpApiAttribute)} or {nameof(RestApiAttribute)} attributes",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

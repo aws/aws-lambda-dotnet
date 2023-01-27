@@ -11,12 +11,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string Task1 = "System.Threading.Tasks.Task`1";
         public const string Task = "System.Threading.Tasks.Task";
         public const string MemoryStream = "System.IO.MemoryStream";
+        public const string Stream = "System.IO.Stream";
 
         public const string ILambdaContext = "Amazon.Lambda.Core.ILambdaContext";
         public const string APIGatewayProxyRequest = "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest";
         public const string APIGatewayProxyResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse";
         public const string APIGatewayHttpApiV2ProxyRequest = "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest";
         public const string APIGatewayHttpApiV2ProxyResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse";
+
+        public const string IHttpResult = "Amazon.Lambda.Annotations.APIGateway.IHttpResult";
 
         public const string LambdaFunctionAttribute = "Amazon.Lambda.Annotations.LambdaFunctionAttribute";
         public const string FromServiceAttribute = "Amazon.Lambda.Annotations.FromServicesAttribute";
