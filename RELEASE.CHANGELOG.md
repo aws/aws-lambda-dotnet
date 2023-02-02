@@ -1,3 +1,7 @@
+### Release 2023-02-02
+* **Amazon.Lambda.Serialization.SystemTextJson (2.3.1)**
+  * Pull request [#1382](https://github.com/aws/aws-lambda-dotnet/pull/1382) Make Amazon.Lambda.Serialization.SystemTextJson compatible with trimming. Thanks [Beau Gosse](https://github.com/Beau-Gosse-dev)
+
 ### Release 2023-01-23
 * **Amazon.Lambda.KinesisFirehoseEvents (2.2.0)**
   * Pull request [#1346](https://github.com/aws/aws-lambda-dotnet/pull/1346) adding partition key metadata for response object. Thanks [Chris Smith](https://github.com/chris-smith-zocdoc)
