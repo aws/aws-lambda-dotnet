@@ -168,8 +168,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                         path = path.Replace($"{{{pathParameter.Key}}}", pathParameter.Value);
                     }
                 }
-                // As a matter of fact, is there a reason for the if clause above? A simpler/faster solution would be to straight on replace the path as below
-
+ 
                 if (string.IsNullOrEmpty(path))
                 {
                     path = apiGatewayRequest.Path;
