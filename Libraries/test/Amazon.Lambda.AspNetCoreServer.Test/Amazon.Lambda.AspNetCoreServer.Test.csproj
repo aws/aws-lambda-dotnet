@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="additional-path-parameters-in-non-proxy-path.json" />
     <None Remove="additional-path-parameters-in-proxy-path.json" />
     <None Remove="authtest-access-request.json" />
     <None Remove="missing-resource-request.json" />
