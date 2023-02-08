@@ -737,6 +737,45 @@ parameter to the `LambdaFunction` must be the event object and the event source 
 * FromServices
     * Map method parameter to registered service in IServiceProvider
 
+### Customizing responses for API Gateway Lambda functions
+
+The attributes `RestApi` or `HttpApi` configure a `LambdaFunction` method to use API Gateway as the event source for the function. By default these methods return an 
+HTTP status code of 200. To customize the HTTP response, including adding HTTP headers, the method signature must return an `Amazon.Lambda.Annotations.APIGateway.IHttpResult`
+or `Task<Amazon.Lambda.Annotations.APIGateway.IHttpResult>`.
+The `Amazon.Lambda.Annotations.APIGateway.HttpResults` class contains static methods for creating an instance of `IHttpResult` with the appropriate HTTP status code and headers.
+
+The example below shows how to return a HTTP status code 404 with a response body and custom header.
+
+```
+[LambdaFunction(PackageType = LambdaPackageType.Image)]
+[HttpApi(LambdaHttpMethod.Get, "/resource/{id}")]
+public IHttpResult NotFoundResponseWithHeaderV2(int id, ILambdaContext context)
+{
+    return HttpResults.NotFound($"Resource with id {id} could not be found")
+                        .AddHeader("Custom-Header1", "Value1");
+}
+```
+
+Available static methods for creating an instance of `IHttpResult`.
+* HttpResults.Accepted()
+* HttpResults.BadRequest()
+* HttpResults.Conflict()
+* HttpResults.Created()
+* HttpResults.Forbid()
+* HttpResults.NotFound()
+* HttpResults.Ok()
+* HttpResults.Redirect()
+* HttpResults.Unauthorized()
+* HttpResults.NewResult()
+
+#### Content-Type
+`HttpResults` will automatically assign a content-type for the response if there is a response body and content type was not specified using the `AddHeader` method.
+The content type is determined using the following rules.
+
+* Content type will be set to `text/plain` when the response body is a string.
+* Content type will be set to `application/octet-stream` when the response body is a `Stream`, `byte[]` or `IList<byte>`.
+* For any other response body the content type is set to `application/json`.
+
 
 ## Project References
 
