@@ -1,3 +1,8 @@
+### Release 2023-02-08
+* **Amazon.Lambda.Annotations (0.11.0)**
+  * Support customizng HTTP responses including status code and headers using the new IHttpResult and HttpResults types. Read more information [here](https://github.com/aws/aws-lambda-dotnet/tree/master/Libraries/src/Amazon.Lambda.Annotations#customizing-responses-for-api-gateway-lambda-functions).
+  * Fix issue with incorrect code being generated from methods that return a `Task` but does not use the `async` keyword.
+
 ### Release 2023-02-02
 * **Amazon.Lambda.Serialization.SystemTextJson (2.3.1)**
   * Pull request [#1382](https://github.com/aws/aws-lambda-dotnet/pull/1382) Make Amazon.Lambda.Serialization.SystemTextJson compatible with trimming. Thanks [Beau Gosse](https://github.com/Beau-Gosse-dev)
