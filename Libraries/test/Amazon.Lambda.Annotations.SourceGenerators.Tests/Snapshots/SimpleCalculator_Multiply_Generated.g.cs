@@ -63,7 +63,7 @@ namespace TestServerlessApp
             // return 400 Bad Request if there exists a validation error
             if (validationErrors.Any())
             {
-                return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
+                var errorResult = new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
                 {
                     Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
                     Headers = new Dictionary<string, string>
@@ -73,6 +73,7 @@ namespace TestServerlessApp
                     },
                     StatusCode = 400
                 };
+                return errorResult;
             }
 
             var response = simpleCalculator.Multiply(x, y);
@@ -100,7 +101,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_0.10.0.0");
+            envValue.Append("amazon-lambda-annotations_0.11.0.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

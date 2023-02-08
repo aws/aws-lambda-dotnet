@@ -3,7 +3,7 @@
   "Transform": "AWS::Serverless-2016-10-31",
   "Description": "This template is partially managed by Amazon.Lambda.Annotations (v0.11.0.0).",
   "Resources": {
-    "SimpleCalculatorAdd": {
+    "TestServerlessAppCustomizeResponseExamplesOkResponseWithHeaderGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -21,21 +21,21 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestProject::TestServerlessApp.SimpleCalculator_Add_Generated::Add"
+            "TestProject::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeader_Generated::OkResponseWithHeader"
           ]
         },
         "Events": {
           "RootGet": {
             "Type": "Api",
             "Properties": {
-              "Path": "/SimpleCalculator/Add",
+              "Path": "/okresponsewithheader/{x}",
               "Method": "GET"
             }
           }
         }
       }
     },
-    "SimpleCalculatorSubtract": {
+    "TestServerlessAppCustomizeResponseExamplesOkResponseWithHeaderAsyncGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -53,21 +53,21 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestProject::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract"
+            "TestProject::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated::OkResponseWithHeaderAsync"
           ]
         },
         "Events": {
           "RootGet": {
             "Type": "Api",
             "Properties": {
-              "Path": "/SimpleCalculator/Subtract",
+              "Path": "/okresponsewithheaderasync/{x}",
               "Method": "GET"
             }
           }
         }
       }
     },
-    "SimpleCalculatorMultiply": {
+    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV2Generated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -85,21 +85,21 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestProject::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply"
+            "TestProject::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated::NotFoundResponseWithHeaderV2"
           ]
         },
         "Events": {
           "RootGet": {
-            "Type": "Api",
+            "Type": "HttpApi",
             "Properties": {
-              "Path": "/SimpleCalculator/Multiply/{x}/{y}",
+              "Path": "/notfoundwithheaderv2/{x}",
               "Method": "GET"
             }
           }
         }
       }
     },
-    "SimpleCalculatorDivideAsync": {
+    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV2AsyncGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -117,24 +117,27 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestProject::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync"
+            "TestProject::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated::NotFoundResponseWithHeaderV2Async"
           ]
         },
         "Events": {
           "RootGet": {
-            "Type": "Api",
+            "Type": "HttpApi",
             "Properties": {
-              "Path": "/SimpleCalculator/DivideAsync/{x}/{y}",
+              "Path": "/notfoundwithheaderv2async/{x}",
               "Method": "GET"
             }
           }
         }
       }
     },
-    "PI": {
+    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV1Generated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
       },
       "Properties": {
         "MemorySize": 256,
@@ -146,15 +149,28 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestProject::TestServerlessApp.SimpleCalculator_Pi_Generated::Pi"
+            "TestProject::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated::NotFoundResponseWithHeaderV1"
           ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/notfoundwithheaderv1/{x}",
+              "Method": "GET",
+              "PayloadFormatVersion": "1.0"
+            }
+          }
         }
       }
     },
-    "Random": {
+    "TestServerlessAppCustomizeResponseExamplesNotFoundResponseWithHeaderV1AsyncGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
       },
       "Properties": {
         "MemorySize": 256,
@@ -166,28 +182,18 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestProject::TestServerlessApp.SimpleCalculator_Random_Generated::Random"
+            "TestProject::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated::NotFoundResponseWithHeaderV1Async"
           ]
-        }
-      }
-    },
-    "Randoms": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestProject::TestServerlessApp.SimpleCalculator_Randoms_Generated::Randoms"
-          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/notfoundwithheaderv1async/{x}",
+              "Method": "GET",
+              "PayloadFormatVersion": "1.0"
+            }
+          }
         }
       }
     }

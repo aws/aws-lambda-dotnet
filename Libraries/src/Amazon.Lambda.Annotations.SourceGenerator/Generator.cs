@@ -77,6 +77,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
                 var templateHandler = new CloudFormationTemplateHandler(_fileManager, _directoryManager);
 
+                bool foundFatalError = false;
                 foreach (var lambdaMethod in receiver.LambdaMethods)
                 {
                     var lambdaMethodModel = semanticModelProvider.GetMethodSemanticModel(lambdaMethod);
@@ -106,7 +107,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                                 DiagnosticSeverity.Error));
                         }
 
+                        foundFatalError = true;
                         // Skip multi-event lambda method from processing and check remaining lambda methods for diagnostics
+                        continue;
+                    }
+                    if(model.LambdaMethod.ReturnsIHttpResults && !model.LambdaMethod.Events.Contains(EventType.API))
+                    {
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.HttpResultsOnNonApiFunction,
+                            Location.Create(lambdaMethod.SyntaxTree, lambdaMethod.Span),
+                            DiagnosticSeverity.Error));
+
+                        foundFatalError = true;
                         continue;
                     }
 
@@ -123,7 +134,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 // Run the CloudFormation sync if any LambdaMethods exists. Also run if no LambdaMethods exists but there is a
                 // CloudFormation template in case orphaned functions in the template need to be removed.
                 // Both checks are required because if there is no template but there are LambdaMethods the CF template the template will be created.
-                if (receiver.LambdaMethods.Any() || templateHandler.DoesTemplateExist(receiver.ProjectDirectory))
+                if (!foundFatalError && (receiver.LambdaMethods.Any() || templateHandler.DoesTemplateExist(receiver.ProjectDirectory)))
                 {
                     annotationReport.CloudFormationTemplatePath = templateHandler.FindTemplate(receiver.ProjectDirectory);
                     annotationReport.ProjectRootDirectory = receiver.ProjectDirectory;
