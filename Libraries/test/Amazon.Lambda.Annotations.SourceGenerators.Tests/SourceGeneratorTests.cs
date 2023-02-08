@@ -463,6 +463,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 {
                     Sources =
                     {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
                         (Path.Combine("TestServerlessApp", "CustomizeResponseWithErrors.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "CustomizeResponseWithErrors.cs.error"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),

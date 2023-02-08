@@ -1,10 +1,10 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>Amazon.Lambda.Annotations</id>
-        <version>0.10.0-preview</version>
+        <version>0.11.0</version>
         <authors>Amazon Web Services</authors>
         <tags>AWS Amazon Lambda</tags>
-        <description>Annotations that can be added to Lambda projects to generate C# code and CloudFormation templates.</description>
+        <description>Annotations that can be added to Lambda projects to generate C# code and CloudFormation templates. This library is currently in dev preview.</description>
         <language>en-US</language>
         <projectUrl>https://github.com/aws/aws-lambda-dotnet</projectUrl>
         <license type="expression">Apache-2.0</license>

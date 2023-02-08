@@ -5,5 +5,3 @@
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
-AWSLambda0104 | AWSLambdaCSharpGenerator | Error | Missing reference to a required dependency
-AWSLambda0105 | AWSLambdaCSharpGenerator | Error | Invalid return type IHttpResult
