@@ -1,0 +1,55 @@
+﻿{
+  "version": "1",
+  "region": "us-east-1",
+  "userPoolId": "us-east-1_id",
+  "userName": "username_uuid",
+  "callerContext": {
+    "awsSdkVersion": "version",
+    "clientId": "client_id"
+  },
+  "triggerSource": "trigger_source",
+  "request": {
+    "userAttributes": {
+      "attribute_1": "attribute_value_1",
+      "attribute_2": "attribute_value_2"
+    },
+    "groupConfiguration": {
+      "groupsToOverride": [
+        "group1",
+        "group2"
+      ],
+      "iamRolesToOverride": [
+        "role1",
+        "role2"
+      ],
+      "preferredRole": "role"
+    },
+    "clientMetadata": {
+      "metadata_1": "metadata_value_1",
+      "metadata_2": "metadata_value_2"
+    }
+  },
+  "response": {
+    "claimsOverrideDetails": {
+      "claimsToAddOrOverride": {
+        "claim_1": "claim_1_value_1",
+        "claim_2": "claim_1_value_2"
+      },
+      "claimsToSuppress": [
+        "suppress1",
+        "suppress2"
+      ],
+      "groupOverrideDetails": {
+        "groupsToOverride": [
+          "group1",
+          "group2"
+        ],
+        "iamRolesToOverride": [
+          "role1",
+          "role2"
+        ],
+        "preferredRole": "role"
+      }
+    }
+  }
+}

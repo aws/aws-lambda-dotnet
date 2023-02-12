@@ -38,7 +38,6 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.CloudWatchEvents.S3Events;
 
     using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
-    using Amazon.Lambda.CognitoEvents.LambdaTriggerEvents.PreTokenGenerationTrigger;
 
     public class EventTest
     {
@@ -413,68 +412,6 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
-        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
-        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
-        public void PreTokenGenerationEvent(Type serializerType)
-        {
-            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
-            using (var fileStream = LoadJsonTestFile("cognito-pre-token-generation-event.json"))
-            {
-                var preTokenEvent = serializer.Deserialize<PreTokenGenerationEvent>(fileStream);
-                Assert.Equal(preTokenEvent.Version, "1");
-                Assert.Equal(preTokenEvent.TriggerSource, "TokenGeneration_NewPasswordChallenge");
-                Assert.Equal(preTokenEvent.Region, "eu-west-1");
-                Assert.Equal(preTokenEvent.UserPoolId, "eu-west-1_someId");
-                Assert.Equal(preTokenEvent.UserName, "user04");
-                Assert.Equal(preTokenEvent.CallerContext.AwsSdkVersion, "aws-sdk-unknown-unknown");
-                Assert.Equal(preTokenEvent.CallerContext.ClientId, "someId");
-                AssertRequest(preTokenEvent.Request);
-                AssertResponse(preTokenEvent.Response);
-            }
-        }
-
-        private void AssertResponse(PreTokenGenerationResponse response)
-        {
-            Assert.Equal(response.ClaimsOverrideDetails.ClaimsToAddOrOverride.Count(), 2);
-            Assert.Equal(response.ClaimsOverrideDetails.ClaimsToAddOrOverride["claimA"], "Something");
-            Assert.Equal(response.ClaimsOverrideDetails.ClaimsToAddOrOverride["claimB"], "SomeOtherThing");
-
-            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.GroupsToOverride.Count(), 2);
-            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.GroupsToOverride.ElementAt(0), "AnotherGroup");
-            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.GroupsToOverride.ElementAt(1), "SomeOtherGroup");
-
-            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.IamRolesToOverride.Count(), 2);
-            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.IamRolesToOverride.ElementAt(0), "RoleA");
-            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.IamRolesToOverride.ElementAt(1), "RoleC");
-
-            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.PreferredRole, "RoleC");
-        }
-
-        private void AssertRequest(PreTokenGenerationRequest request)
-        {
-            Assert.Equal(request.UserAttributes.Count, 4);
-            Assert.Equal(request.UserAttributes["sub"], "some-sub");
-            Assert.Equal(request.UserAttributes["cognito:user_status"], "CONFIRMED");
-            Assert.Equal(request.UserAttributes["email_verified"], "true");
-            Assert.Equal(request.UserAttributes["email"], "mail@mail.com");
-
-            Assert.Equal(request.GroupConfiguration.PreferredRole, "RoleB");
-
-            Assert.Equal(request.GroupConfiguration.GroupsToOverride.Count(), 3);
-            Assert.Equal(request.GroupConfiguration.GroupsToOverride.ElementAt(0), "SomeGroup");
-            Assert.Equal(request.GroupConfiguration.GroupsToOverride.ElementAt(1), "AnotherGroup");
-            Assert.Equal(request.GroupConfiguration.GroupsToOverride.ElementAt(2), "SomeOtherGroup");
-
-            Assert.Equal(request.GroupConfiguration.IamRolesToOverride.Count(), 3);
-            Assert.Equal(request.GroupConfiguration.IamRolesToOverride.ElementAt(0), "RoleA");
-            Assert.Equal(request.GroupConfiguration.IamRolesToOverride.ElementAt(1), "RoleB");
-            Assert.Equal(request.GroupConfiguration.IamRolesToOverride.ElementAt(2), "RoleC");
-        }
-
-        [Theory]
-        [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -510,6 +447,556 @@ namespace Amazon.Lambda.Tests
 
                 Console.WriteLine($"[{cognitoEvent.EventType}-{datasetName}] {datasetRecord.OldValue} -> {datasetRecord.Op} -> {datasetRecord.NewValue}");
             }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoPreSignUpEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-presignup-event.json"))
+            {
+                var cognitoPreSignupEvent = serializer.Deserialize<CognitoPreSignupEvent>(fileStream);
+
+                AssertBaseClass(cognitoPreSignupEvent);
+
+                Assert.Equal(2, cognitoPreSignupEvent.Request.ValidationData.Count);
+                Assert.Equal("validation_1", cognitoPreSignupEvent.Request.ValidationData.ToArray()[0].Key);
+                Assert.Equal("validation_value_1", cognitoPreSignupEvent.Request.ValidationData.ToArray()[0].Value);
+                Assert.Equal("validation_2", cognitoPreSignupEvent.Request.ValidationData.ToArray()[1].Key);
+                Assert.Equal("validation_value_2", cognitoPreSignupEvent.Request.ValidationData.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoPreSignupEvent.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoPreSignupEvent.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoPreSignupEvent.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoPreSignupEvent.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoPreSignupEvent.Request.ClientMetadata.ToArray()[1].Value);
+
+                Assert.True(cognitoPreSignupEvent.Response.AutoConfirmUser);
+                Assert.True(cognitoPreSignupEvent.Response.AutoVerifyPhone);
+                Assert.True(cognitoPreSignupEvent.Response.AutoVerifyEmail);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoPreSignupEvent>(cognitoPreSignupEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-presignup-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoPostConfirmationEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-presignup-event.json"))
+            {
+                var cognitoPostConfirmationEvent = serializer.Deserialize<CognitoPostConfirmationEvent>(fileStream);
+
+                AssertBaseClass(cognitoPostConfirmationEvent);
+
+                Assert.Equal(2, cognitoPostConfirmationEvent.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoPostConfirmationEvent.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoPostConfirmationEvent.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoPostConfirmationEvent.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoPostConfirmationEvent.Request.ClientMetadata.ToArray()[1].Value);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoPostConfirmationEvent>(cognitoPostConfirmationEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-postconfirmation-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoPreAuthenticationEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-preauthentication-event.json"))
+            {
+                var cognitoPreAuthenticationEvent = serializer.Deserialize<CognitoPreAuthenticationEvent>(fileStream);
+
+                AssertBaseClass(cognitoPreAuthenticationEvent);
+
+                Assert.Equal(2, cognitoPreAuthenticationEvent.Request.ValidationData.Count);
+                Assert.Equal("validation_1", cognitoPreAuthenticationEvent.Request.ValidationData.ToArray()[0].Key);
+                Assert.Equal("validation_value_1", cognitoPreAuthenticationEvent.Request.ValidationData.ToArray()[0].Value);
+                Assert.Equal("validation_2", cognitoPreAuthenticationEvent.Request.ValidationData.ToArray()[1].Key);
+                Assert.Equal("validation_value_2", cognitoPreAuthenticationEvent.Request.ValidationData.ToArray()[1].Value);
+
+                Assert.True(cognitoPreAuthenticationEvent.Request.UserNotFound);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoPreAuthenticationEvent>(cognitoPreAuthenticationEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-preauthentication-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoPostAuthenticationEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-postauthentication-event.json"))
+            {
+                var cognitoPostAuthenticationEvent = serializer.Deserialize<CognitoPostAuthenticationEvent>(fileStream);
+
+                AssertBaseClass(cognitoPostAuthenticationEvent);
+
+                Assert.Equal(2, cognitoPostAuthenticationEvent.Request.ClientMetadata.Count);
+                Assert.Equal("client_1", cognitoPostAuthenticationEvent.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("client_value_1", cognitoPostAuthenticationEvent.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("client_2", cognitoPostAuthenticationEvent.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("client_value_2", cognitoPostAuthenticationEvent.Request.ClientMetadata.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoPostAuthenticationEvent.Request.ValidationData.Count);
+                Assert.Equal("validation_1", cognitoPostAuthenticationEvent.Request.ValidationData.ToArray()[0].Key);
+                Assert.Equal("validation_value_1", cognitoPostAuthenticationEvent.Request.ValidationData.ToArray()[0].Value);
+                Assert.Equal("validation_2", cognitoPostAuthenticationEvent.Request.ValidationData.ToArray()[1].Key);
+                Assert.Equal("validation_value_2", cognitoPostAuthenticationEvent.Request.ValidationData.ToArray()[1].Value);
+
+                Assert.True(cognitoPostAuthenticationEvent.Request.NewDevicedUsed);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoPostAuthenticationEvent>(cognitoPostAuthenticationEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-postauthentication-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoDefineAuthChallengeEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-defineauthchallenge-event.json"))
+            {
+                var cognitoDefineAuthChallengeEvent = serializer.Deserialize<CognitoDefineAuthChallengeEvent>(fileStream);
+
+                AssertBaseClass(cognitoDefineAuthChallengeEvent);
+
+                Assert.Equal(2, cognitoDefineAuthChallengeEvent.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoDefineAuthChallengeEvent.Request.Session.Count);
+
+                var session0 = cognitoDefineAuthChallengeEvent.Request.Session[0];
+                Assert.Equal("challenge1", session0.ChallengeName);
+                Assert.True(session0.ChallengeResult);
+
+                Assert.Equal("challenge_metadata1", session0.ChallengeMetadata);
+                
+                var session1 = cognitoDefineAuthChallengeEvent.Request.Session[1];
+                Assert.Equal("challenge2", session1.ChallengeName);
+                Assert.False(session1.ChallengeResult);
+                Assert.Equal("challenge_metadata2", session1.ChallengeMetadata);
+
+                Assert.True(cognitoDefineAuthChallengeEvent.Request.UserNotFound);
+
+                Assert.Equal("challenge", cognitoDefineAuthChallengeEvent.Response.ChallengeName);
+                Assert.True(cognitoDefineAuthChallengeEvent.Response.IssueTokens);
+                Assert.True(cognitoDefineAuthChallengeEvent.Response.FailAuthentication);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoDefineAuthChallengeEvent>(cognitoDefineAuthChallengeEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-defineauthchallenge-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoCreateAuthChallengeEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-createauthchallenge-event.json"))
+            {
+                var cognitoCreateAuthChallengeEvent = serializer.Deserialize<CognitoCreateAuthChallengeEvent>(fileStream);
+
+                AssertBaseClass(cognitoCreateAuthChallengeEvent);
+
+                Assert.Equal("challenge", cognitoCreateAuthChallengeEvent.Request.ChallengeName);
+
+                Assert.Equal(2, cognitoCreateAuthChallengeEvent.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoCreateAuthChallengeEvent.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoCreateAuthChallengeEvent.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoCreateAuthChallengeEvent.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoCreateAuthChallengeEvent.Request.ClientMetadata.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoCreateAuthChallengeEvent.Request.Session.Count);
+
+                var session0 = cognitoCreateAuthChallengeEvent.Request.Session[0];
+                Assert.Equal("challenge1", session0.ChallengeName);
+                Assert.True(session0.ChallengeResult);
+
+                Assert.Equal("challenge_metadata1", session0.ChallengeMetadata);
+
+                var session1 = cognitoCreateAuthChallengeEvent.Request.Session[1];
+                Assert.Equal("challenge2", session1.ChallengeName);
+                Assert.False(session1.ChallengeResult);
+                Assert.Equal("challenge_metadata2", session1.ChallengeMetadata);
+
+                Assert.True(cognitoCreateAuthChallengeEvent.Request.UserNotFound);
+
+                Assert.Equal(2, cognitoCreateAuthChallengeEvent.Response.PublicChallengeParameters.Count);
+                Assert.Equal("public_1", cognitoCreateAuthChallengeEvent.Response.PublicChallengeParameters.ToArray()[0].Key);
+                Assert.Equal("public_value_1", cognitoCreateAuthChallengeEvent.Response.PublicChallengeParameters.ToArray()[0].Value);
+                Assert.Equal("public_2", cognitoCreateAuthChallengeEvent.Response.PublicChallengeParameters.ToArray()[1].Key);
+                Assert.Equal("public_value_2", cognitoCreateAuthChallengeEvent.Response.PublicChallengeParameters.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoCreateAuthChallengeEvent.Response.PrivateChallengeParameters.Count);
+                Assert.Equal("private_1", cognitoCreateAuthChallengeEvent.Response.PrivateChallengeParameters.ToArray()[0].Key);
+                Assert.Equal("private_value_1", cognitoCreateAuthChallengeEvent.Response.PrivateChallengeParameters.ToArray()[0].Value);
+                Assert.Equal("private_2", cognitoCreateAuthChallengeEvent.Response.PrivateChallengeParameters.ToArray()[1].Key);
+                Assert.Equal("private_value_2", cognitoCreateAuthChallengeEvent.Response.PrivateChallengeParameters.ToArray()[1].Value);
+
+                Assert.Equal("challenge", cognitoCreateAuthChallengeEvent.Response.ChallengeMetadata);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoCreateAuthChallengeEvent>(cognitoCreateAuthChallengeEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-createauthchallenge-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoVerifyAuthChallengeEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-verifyauthchallenge-event.json"))
+            {
+                var cognitoVerifyAuthChallengeEvent = serializer.Deserialize<CognitoVerifyAuthChallengeEvent>(fileStream);
+
+                AssertBaseClass(cognitoVerifyAuthChallengeEvent);
+
+                Assert.Equal(2, cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer.Count);
+                Assert.Equal("answer_1", cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer.ToArray()[0].Key);
+                Assert.Equal("answer_value_1", cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer.ToArray()[0].Value);
+                Assert.Equal("answer_2", cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer.ToArray()[1].Key);
+                Assert.Equal("answer_value_2", cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoVerifyAuthChallengeEvent.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoVerifyAuthChallengeEvent.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoVerifyAuthChallengeEvent.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoVerifyAuthChallengeEvent.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoVerifyAuthChallengeEvent.Request.ClientMetadata.ToArray()[1].Value);
+
+
+                Assert.Equal(2, cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.Count);
+                Assert.Equal("private_1", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[0].Key);
+                Assert.Equal("private_value_1", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[0].Value);
+                Assert.Equal("private_2", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[1].Key);
+                Assert.Equal("private_value_2", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[1].Value);
+
+                Assert.True(cognitoVerifyAuthChallengeEvent.Request.UserNotFound);
+            
+                Assert.True(cognitoVerifyAuthChallengeEvent.Response.AnswerCorrect);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoVerifyAuthChallengeEvent>(cognitoVerifyAuthChallengeEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-verifyauthchallenge-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoPreTokenGenerationEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-pretokengeneration-event.json"))
+            {
+                var cognitoPreTokenGenerationEvent = serializer.Deserialize<CognitoPreTokenGenerationEvent>(fileStream);
+
+                AssertBaseClass(cognitoPreTokenGenerationEvent);
+
+                Assert.Equal(2, cognitoPreTokenGenerationEvent.Request.GroupConfiguration.GroupsToOverride.Count);
+                Assert.Equal("group1", cognitoPreTokenGenerationEvent.Request.GroupConfiguration.GroupsToOverride[0]);
+                Assert.Equal("group2", cognitoPreTokenGenerationEvent.Request.GroupConfiguration.GroupsToOverride[1]);
+
+                Assert.Equal(2, cognitoPreTokenGenerationEvent.Request.GroupConfiguration.IamRolesToOverride.Count);
+                Assert.Equal("role1", cognitoPreTokenGenerationEvent.Request.GroupConfiguration.IamRolesToOverride[0]);
+                Assert.Equal("role2", cognitoPreTokenGenerationEvent.Request.GroupConfiguration.IamRolesToOverride[1]);
+
+                Assert.Equal("role", cognitoPreTokenGenerationEvent.Request.GroupConfiguration.PreferredRole);
+
+                Assert.Equal(2, cognitoPreTokenGenerationEvent.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoPreTokenGenerationEvent.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoPreTokenGenerationEvent.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoPreTokenGenerationEvent.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoPreTokenGenerationEvent.Request.ClientMetadata.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.ClaimsToAddOrOverride.Count);
+                Assert.Equal("claim_1", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.ClaimsToAddOrOverride.ToArray()[0].Key);
+                Assert.Equal("claim_1_value_1", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.ClaimsToAddOrOverride.ToArray()[0].Value);
+                Assert.Equal("claim_2", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.ClaimsToAddOrOverride.ToArray()[1].Key);
+                Assert.Equal("claim_1_value_2", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.ClaimsToAddOrOverride.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.ClaimsToSuppress.Count);
+                Assert.Equal("suppress1", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.ClaimsToSuppress[0]);
+                Assert.Equal("suppress2", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.ClaimsToSuppress[1]);
+
+                Assert.Equal(2, cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.GroupOverrideDetails.GroupsToOverride.Count);
+                Assert.Equal("group1", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.GroupOverrideDetails.GroupsToOverride[0]);
+                Assert.Equal("group2", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.GroupOverrideDetails.GroupsToOverride[1]);
+
+                Assert.Equal(2, cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.GroupOverrideDetails.IamRolesToOverride.Count);
+                Assert.Equal("role1", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.GroupOverrideDetails.IamRolesToOverride[0]);
+                Assert.Equal("role2", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.GroupOverrideDetails.IamRolesToOverride[1]);
+
+                Assert.Equal("role", cognitoPreTokenGenerationEvent.Response.ClaimsOverrideDetails.GroupOverrideDetails.PreferredRole);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoPreTokenGenerationEvent>(cognitoPreTokenGenerationEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-pretokengeneration-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoMigrateUserEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-migrateuser-event.json"))
+            {
+                var cognitoMigrateUserEvent = serializer.Deserialize<CognitoMigrateUserEvent>(fileStream);
+
+                AssertBaseClass(cognitoMigrateUserEvent);
+
+                Assert.Equal("username", cognitoMigrateUserEvent.Request.UserName);
+                Assert.Equal("pwd", cognitoMigrateUserEvent.Request.Password);
+
+                Assert.Equal(2, cognitoMigrateUserEvent.Request.ValidationData.Count);
+                Assert.Equal("validation_1", cognitoMigrateUserEvent.Request.ValidationData.ToArray()[0].Key);
+                Assert.Equal("validation_value_1", cognitoMigrateUserEvent.Request.ValidationData.ToArray()[0].Value);
+                Assert.Equal("validation_2", cognitoMigrateUserEvent.Request.ValidationData.ToArray()[1].Key);
+                Assert.Equal("validation_value_2", cognitoMigrateUserEvent.Request.ValidationData.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoMigrateUserEvent.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoMigrateUserEvent.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoMigrateUserEvent.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoMigrateUserEvent.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoMigrateUserEvent.Request.ClientMetadata.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoMigrateUserEvent.Response.UserAttributes.Count);
+                Assert.Equal("attribute_1", cognitoMigrateUserEvent.Response.UserAttributes.ToArray()[0].Key);
+                Assert.Equal("attribute_value_1", cognitoMigrateUserEvent.Response.UserAttributes.ToArray()[0].Value);
+                Assert.Equal("attribute_2", cognitoMigrateUserEvent.Response.UserAttributes.ToArray()[1].Key);
+                Assert.Equal("attribute_value_2", cognitoMigrateUserEvent.Response.UserAttributes.ToArray()[1].Value);
+
+                Assert.Equal("action", cognitoMigrateUserEvent.Response.MessageAction);
+                Assert.Equal("status", cognitoMigrateUserEvent.Response.FinalUserStatus);
+                Assert.True(cognitoMigrateUserEvent.Response.ForceAliasCreation);
+
+                Assert.Equal(2, cognitoMigrateUserEvent.Response.DesiredDeliveryMediums.Count);
+                Assert.Equal("medium1", cognitoMigrateUserEvent.Response.DesiredDeliveryMediums[0]);
+                Assert.Equal("medium2", cognitoMigrateUserEvent.Response.DesiredDeliveryMediums[1]);
+                Assert.True(cognitoMigrateUserEvent.Response.ForceAliasCreation);
+
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoMigrateUserEvent>(cognitoMigrateUserEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-migrateuser-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoCustomMessageEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-custommessage-event.json"))
+            {
+                var cognitoCustomMessageEvent = serializer.Deserialize<CognitoCustomMessageEvent>(fileStream);
+
+                AssertBaseClass(cognitoCustomMessageEvent);
+
+                Assert.Equal("code", cognitoCustomMessageEvent.Request.CodeParameter);
+                Assert.Equal("username", cognitoCustomMessageEvent.Request.UsernameParameter);
+
+                Assert.Equal(2, cognitoCustomMessageEvent.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoCustomMessageEvent.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoCustomMessageEvent.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoCustomMessageEvent.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoCustomMessageEvent.Request.ClientMetadata.ToArray()[1].Value);
+
+                Assert.Equal("sms", cognitoCustomMessageEvent.Response.SmsMessage);
+                Assert.Equal("email", cognitoCustomMessageEvent.Response.EmailMessage);
+                Assert.Equal("subject", cognitoCustomMessageEvent.Response.EmailSubject);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoCustomMessageEvent>(cognitoCustomMessageEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-custommessage-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoCustomEmailSenderEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-customemailsender-event.json"))
+            {
+                var cognitoCustomEmailSenderEvent = serializer.Deserialize<CognitoCustomEmailSenderEvent>(fileStream);
+
+                AssertBaseClass(cognitoCustomEmailSenderEvent);
+
+                Assert.Equal("code", cognitoCustomEmailSenderEvent.Request.Code);
+                Assert.Equal("type", cognitoCustomEmailSenderEvent.Request.Type);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoCustomEmailSenderEvent>(cognitoCustomEmailSenderEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-customemailsender-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoCustomSmsSenderEventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-customsmssender-event.json"))
+            {
+                var cognitoCustomSmsSenderEvent = serializer.Deserialize<CognitoCustomSmsSenderEvent>(fileStream);
+
+                AssertBaseClass(cognitoCustomSmsSenderEvent);
+
+                Assert.Equal("code", cognitoCustomSmsSenderEvent.Request.Code);
+                Assert.Equal("type", cognitoCustomSmsSenderEvent.Request.Type);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoCustomSmsSenderEvent>(cognitoCustomSmsSenderEvent, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-customsmssender-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        private static void AssertBaseClass<TRequest, TResponse>(CognitoTriggerEvent<TRequest, TResponse> cognitoTriggerEvent)
+            where TRequest : CognitoTriggerRequest, new()
+            where TResponse : CognitoTriggerResponse, new()
+        {
+            Assert.Equal("1", cognitoTriggerEvent.Version);
+            Assert.Equal("us-east-1", cognitoTriggerEvent.Region);
+            Assert.Equal("us-east-1_id", cognitoTriggerEvent.UserPoolId);
+            Assert.Equal("username_uuid", cognitoTriggerEvent.UserName);
+            Assert.NotNull(cognitoTriggerEvent.CallerContext);
+            Assert.Equal("version", cognitoTriggerEvent.CallerContext.AwsSdkVersion);
+            Assert.Equal("client_id", cognitoTriggerEvent.CallerContext.ClientId);
+            Assert.Equal("trigger_source", cognitoTriggerEvent.TriggerSource);
+
+            Assert.NotNull(cognitoTriggerEvent.Request);
+            Assert.Equal(2, cognitoTriggerEvent.Request.UserAttributes.Count);
+            Assert.Equal("attribute_1", cognitoTriggerEvent.Request.UserAttributes.ToArray()[0].Key);
+            Assert.Equal("attribute_value_1", cognitoTriggerEvent.Request.UserAttributes.ToArray()[0].Value);
+            Assert.Equal("attribute_2", cognitoTriggerEvent.Request.UserAttributes.ToArray()[1].Key);
+            Assert.Equal("attribute_value_2", cognitoTriggerEvent.Request.UserAttributes.ToArray()[1].Value);
+
+            Assert.NotNull(cognitoTriggerEvent.Response);
         }
 
         String ConfigInvokingEvent = "{\"configSnapshotId\":\"00000000-0000-0000-0000-000000000000\",\"s3ObjectKey\":\"AWSLogs/000000000000/Config/us-east-1/2016/2/24/ConfigSnapshot/000000000000_Config_us-east-1_ConfigSnapshot_20160224T182319Z_00000000-0000-0000-0000-000000000000.json.gz\",\"s3Bucket\":\"config-bucket\",\"notificationCreationTime\":\"2016-02-24T18:23:20.328Z\",\"messageType\":\"ConfigurationSnapshotDeliveryCompleted\",\"recordVersion\":\"1.1\"}";
@@ -2515,10 +3002,10 @@ namespace Amazon.Lambda.Tests
             var namingStrategy = new CamelCaseNamingStrategy();
             var serializer = new JsonSerializer(_ => { }, namingStrategy);
 
-            var camelCaseString  = @"{""someValue"":12,""someOtherValue"":""abcd""}";
+            var camelCaseString = @"{""someValue"":12,""someOtherValue"":""abcd""}";
             var pascalCaseString = @"{""SomeValue"":12,""SomeOtherValue"":""abcd""}";
 
-            var camelCaseObject  = serializer.Deserialize<ClassUsingPascalCase>(new MemoryStream(Encoding.ASCII.GetBytes(camelCaseString)));
+            var camelCaseObject = serializer.Deserialize<ClassUsingPascalCase>(new MemoryStream(Encoding.ASCII.GetBytes(camelCaseString)));
             var pascalCaseObject = serializer.Deserialize<ClassUsingPascalCase>(new MemoryStream(Encoding.ASCII.GetBytes(pascalCaseString)));
 
             Assert.Equal(12, camelCaseObject.SomeValue);
