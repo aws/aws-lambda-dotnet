@@ -35,6 +35,8 @@ namespace Amazon.Lambda.Tests
     using Xunit;
     using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
     using Newtonsoft.Json;
+    using Amazon.Lambda.CloudWatchEvents;
+    using Amazon.Lambda.CloudWatchEvents.S3Events;
 
     public class EventTest
     {
@@ -2459,6 +2461,95 @@ namespace Amazon.Lambda.Tests
             Assert.Equal(12, pascalCaseObject.SomeValue);
             Assert.Equal("abcd", camelCaseObject.SomeOtherValue);
             Assert.Equal("abcd", pascalCaseObject.SomeOtherValue);
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CloudWatchEventsS3ObjectCreate(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-s3objectcreated.json"))
+            {
+                var request = serializer.Deserialize<S3ObjectCreateEvent>(fileStream);
+                Assert.Equal("17793124-05d4-b198-2fde-7ededc63b103", request.Id);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal("0", detail.Version);
+                Assert.Equal("DOC-EXAMPLE-BUCKET1", detail.Bucket.Name);
+                Assert.Equal("example-key", detail.Object.Key);
+                Assert.Equal(5L, detail.Object.Size);
+                Assert.Equal("b1946ac92492d2347c6235b4d2611184", detail.Object.ETag);
+                Assert.Equal("IYV3p45BT0ac8hjHg1houSdS1a.Mro8e", detail.Object.VersionId);
+                Assert.Equal("617f08299329d189", detail.Object.Sequencer);
+                Assert.Equal("N4N7GDK58NMKJ12R", detail.RequestId);
+                Assert.Equal("123456789012", detail.Requester);
+                Assert.Equal("1.2.3.4", detail.SourceIpAddress);
+                Assert.Equal("PutObject", detail.Reason);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CloudWatchEventsS3ObjectDelete(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-s3objectdeleted.json"))
+            {
+                var request = serializer.Deserialize<S3ObjectDeleteEvent>(fileStream);
+                Assert.Equal("2ee9cc15-d022-99ea-1fb8-1b1bac4850f9", request.Id);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal("0", detail.Version);
+                Assert.Equal("DOC-EXAMPLE-BUCKET1", detail.Bucket.Name);
+                Assert.Equal("example-key", detail.Object.Key);
+                Assert.Equal("d41d8cd98f00b204e9800998ecf8427e", detail.Object.ETag);
+                Assert.Equal("1QW9g1Z99LUNbvaaYVpW9xDlOLU.qxgF", detail.Object.VersionId);
+                Assert.Equal("617f0837b476e463", detail.Object.Sequencer);
+                Assert.Equal("0BH729840619AG5K", detail.RequestId);
+                Assert.Equal("123456789012", detail.Requester);
+                Assert.Equal("1.2.3.4", detail.SourceIpAddress);
+                Assert.Equal("DeleteObject", detail.Reason);
+                Assert.Equal("Delete Marker Created", detail.DeletionType);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CloudWatchEventsS3ObjectRestore(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-s3objectrestore.json"))
+            {
+                var request = serializer.Deserialize<S3ObjectRestoreEvent>(fileStream);
+                Assert.Equal("6924de0d-13e2-6bbf-c0c1-b903b753565e", request.Id);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal("0", detail.Version);
+                Assert.Equal("DOC-EXAMPLE-BUCKET1", detail.Bucket.Name);
+                Assert.Equal("example-key", detail.Object.Key);
+                Assert.Equal(5L, detail.Object.Size);
+                Assert.Equal("b1946ac92492d2347c6235b4d2611184", detail.Object.ETag);
+                Assert.Equal("KKsjUC1.6gIjqtvhfg5AdMI0eCePIiT3", detail.Object.VersionId);
+                Assert.Equal("189F19CB7FB1B6A4", detail.RequestId);
+                Assert.Equal("s3.amazonaws.com", detail.Requester);
+                Assert.Equal("2021-11-13T00:00:00Z", detail.RestoreExpiryTime);
+                Assert.Equal("GLACIER", detail.SourceStorageClass);
+            }
         }
 
         class ClassUsingPascalCase

@@ -1,0 +1,29 @@
+{
+  "version": "0",
+  "id": "2ee9cc15-d022-99ea-1fb8-1b1bac4850f9",
+  "detail-type": "Object Deleted",
+  "source": "aws.s3",
+  "account": "111122223333",
+  "time": "2021-11-12T00:00:00Z",
+  "region": "ca-central-1",
+  "resources": [
+    "arn:aws:s3:::DOC-EXAMPLE-BUCKET1"
+  ],
+  "detail": {
+    "version": "0",
+    "bucket": {
+      "name": "DOC-EXAMPLE-BUCKET1"
+    },
+    "object": {
+      "key": "example-key",
+      "etag": "d41d8cd98f00b204e9800998ecf8427e",
+      "version-id": "1QW9g1Z99LUNbvaaYVpW9xDlOLU.qxgF",
+      "sequencer": "617f0837b476e463"
+    },
+    "request-id": "0BH729840619AG5K",
+    "requester": "123456789012",
+    "source-ip-address": "1.2.3.4",
+    "reason": "DeleteObject",
+    "deletion-type": "Delete Marker Created"
+  }
+}

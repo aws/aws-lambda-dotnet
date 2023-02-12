@@ -1,0 +1,28 @@
+{
+  "version": "0",
+  "id": "6924de0d-13e2-6bbf-c0c1-b903b753565e",
+  "detail-type": "Object Restore Completed",
+  "source": "aws.s3",
+  "account": "111122223333",
+  "time": "2021-11-12T00:00:00Z",
+  "region": "ca-central-1",
+  "resources": [
+    "arn:aws:s3:::DOC-EXAMPLE-BUCKET1"
+  ],
+  "detail": {
+    "version": "0",
+    "bucket": {
+      "name": "DOC-EXAMPLE-BUCKET1"
+    },
+    "object": {
+      "key": "example-key",
+      "size": 5,
+      "etag": "b1946ac92492d2347c6235b4d2611184",
+      "version-id": "KKsjUC1.6gIjqtvhfg5AdMI0eCePIiT3"
+    },
+    "request-id": "189F19CB7FB1B6A4",
+    "requester": "s3.amazonaws.com",
+    "restore-expiry-time": "2021-11-13T00:00:00Z",
+    "source-storage-class": "GLACIER"
+  }
+}
