@@ -154,13 +154,21 @@ namespace Amazon.Lambda.AspNetCoreServer
                 requestFeatures.Method = apiGatewayRequest.HttpMethod;
 
                 string path = null;
+
+                // Replaces {proxy+} in path, if exists
                 if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.TryGetValue("proxy", out var proxy) &&
                     !string.IsNullOrEmpty(apiGatewayRequest.Resource))
                 {
                     var proxyPath = proxy;
                     path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);
-                }
 
+                    // Adds all the rest of non greedy parameters in apiGateway.Resource to the path
+                    foreach (var pathParameter in apiGatewayRequest.PathParameters.Where(pp => pp.Key != "proxy"))
+                    {
+                        path = path.Replace($"{{{pathParameter.Key}}}", pathParameter.Value);
+                    }
+                }
+ 
                 if (string.IsNullOrEmpty(path))
                 {
                     path = apiGatewayRequest.Path;
@@ -253,7 +261,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             }
 
             {
-                var tlsConnectionFeature = (ITlsConnectionFeature) features;
+                var tlsConnectionFeature = (ITlsConnectionFeature)features;
                 var clientCertPem = apiGatewayRequest?.RequestContext?.Identity?.ClientCert?.ClientCertPem;
                 if (clientCertPem != null)
                 {

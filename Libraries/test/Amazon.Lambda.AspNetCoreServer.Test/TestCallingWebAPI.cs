@@ -280,6 +280,26 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestAdditionalPathParametersInProxyPath()
+        {
+            var response = await this.InvokeAPIGatewayRequest("additional-path-parameters-in-proxy-path.json");
+            Assert.Equal(200, response.StatusCode);
+
+            var root = JsonSerializer.Deserialize<JsonObject>(response.Body);
+            Assert.Equal("/path/bar/api", root?["Path"]?.ToString());
+        }
+
+        [Fact]
+        public async Task TestAdditionalPathParametersInNonProxyPath()
+        {
+            var response = await this.InvokeAPIGatewayRequest("additional-path-parameters-in-non-proxy-path.json");
+            Assert.Equal(200, response.StatusCode);
+
+            var root = JsonSerializer.Deserialize<JsonObject>(response.Body);
+            Assert.Equal("/path/bar/api", root?["Path"]?.ToString());
+        }
+
+        [Fact]
         public async Task TestSpaceInResourcePathAndQueryString()
         {
             var response = await this.InvokeAPIGatewayRequest("encode-space-in-resource-path-and-query.json");
