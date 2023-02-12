@@ -1,0 +1,45 @@
+﻿{
+  "version": "1",
+  "triggerSource": "TokenGeneration_NewPasswordChallenge",
+  "region": "eu-west-1",
+  "userPoolId": "eu-west-1_someId",
+  "userName": "user04",
+  "callerContext": {
+    "awsSdkVersion": "aws-sdk-unknown-unknown",
+    "clientId": "someId"
+  },
+  "request": {
+    "userAttributes": {
+      "sub": "some-sub",
+      "cognito:user_status": "CONFIRMED",
+      "email_verified": "true",
+      "email": "mail@mail.com"
+    },
+    "groupConfiguration": {
+      "groupsToOverride": [
+        "SomeGroup",
+        "AnotherGroup",
+        "SomeOtherGroup"
+      ],
+      "iamRolesToOverride": [
+        "RoleA",
+        "RoleB",
+        "RoleC"
+      ],
+      "preferredRole": "RoleB"
+    }
+  },
+  "response": {
+    "claimsOverrideDetails": {
+      "claimsToAddOrOverride": {
+        "claimA": "Something",
+        "claimB": "SomeOtherThing"
+      },
+      "groupOverrideDetails": {
+        "groupsToOverride": [ "AnotherGroup", "SomeOtherGroup" ],
+        "iamRolesToOverride": [ "RoleA", "RoleC" ],
+        "preferredRole": "RoleC"
+      }
+    }
+  }
+}

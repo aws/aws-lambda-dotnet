@@ -33,10 +33,12 @@ namespace Amazon.Lambda.Tests
     using System.Linq;
     using System.Text;
     using Xunit;
-    using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
     using Newtonsoft.Json;
     using Amazon.Lambda.CloudWatchEvents;
     using Amazon.Lambda.CloudWatchEvents.S3Events;
+
+    using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
+    using Amazon.Lambda.CognitoEvents.LambdaTriggerEvents.PreTokenGenerationTrigger;
 
     public class EventTest
     {
@@ -412,6 +414,68 @@ namespace Amazon.Lambda.Tests
         [Theory]
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void PreTokenGenerationEvent(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-pre-token-generation-event.json"))
+            {
+                var preTokenEvent = serializer.Deserialize<PreTokenGenerationEvent>(fileStream);
+                Assert.Equal(preTokenEvent.Version, "1");
+                Assert.Equal(preTokenEvent.TriggerSource, "TokenGeneration_NewPasswordChallenge");
+                Assert.Equal(preTokenEvent.Region, "eu-west-1");
+                Assert.Equal(preTokenEvent.UserPoolId, "eu-west-1_someId");
+                Assert.Equal(preTokenEvent.UserName, "user04");
+                Assert.Equal(preTokenEvent.CallerContext.AwsSdkVersion, "aws-sdk-unknown-unknown");
+                Assert.Equal(preTokenEvent.CallerContext.ClientId, "someId");
+                AssertRequest(preTokenEvent.Request);
+                AssertResponse(preTokenEvent.Response);
+            }
+        }
+
+        private void AssertResponse(PreTokenGenerationResponse response)
+        {
+            Assert.Equal(response.ClaimsOverrideDetails.ClaimsToAddOrOverride.Count(), 2);
+            Assert.Equal(response.ClaimsOverrideDetails.ClaimsToAddOrOverride["claimA"], "Something");
+            Assert.Equal(response.ClaimsOverrideDetails.ClaimsToAddOrOverride["claimB"], "SomeOtherThing");
+
+            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.GroupsToOverride.Count(), 2);
+            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.GroupsToOverride.ElementAt(0), "AnotherGroup");
+            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.GroupsToOverride.ElementAt(1), "SomeOtherGroup");
+
+            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.IamRolesToOverride.Count(), 2);
+            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.IamRolesToOverride.ElementAt(0), "RoleA");
+            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.IamRolesToOverride.ElementAt(1), "RoleC");
+
+            Assert.Equal(response.ClaimsOverrideDetails.GroupOverrideDetails.PreferredRole, "RoleC");
+        }
+
+        private void AssertRequest(PreTokenGenerationRequest request)
+        {
+            Assert.Equal(request.UserAttributes.Count, 4);
+            Assert.Equal(request.UserAttributes["sub"], "some-sub");
+            Assert.Equal(request.UserAttributes["cognito:user_status"], "CONFIRMED");
+            Assert.Equal(request.UserAttributes["email_verified"], "true");
+            Assert.Equal(request.UserAttributes["email"], "mail@mail.com");
+
+            Assert.Equal(request.GroupConfiguration.PreferredRole, "RoleB");
+
+            Assert.Equal(request.GroupConfiguration.GroupsToOverride.Count(), 3);
+            Assert.Equal(request.GroupConfiguration.GroupsToOverride.ElementAt(0), "SomeGroup");
+            Assert.Equal(request.GroupConfiguration.GroupsToOverride.ElementAt(1), "AnotherGroup");
+            Assert.Equal(request.GroupConfiguration.GroupsToOverride.ElementAt(2), "SomeOtherGroup");
+
+            Assert.Equal(request.GroupConfiguration.IamRolesToOverride.Count(), 3);
+            Assert.Equal(request.GroupConfiguration.IamRolesToOverride.ElementAt(0), "RoleA");
+            Assert.Equal(request.GroupConfiguration.IamRolesToOverride.ElementAt(1), "RoleB");
+            Assert.Equal(request.GroupConfiguration.IamRolesToOverride.ElementAt(2), "RoleC");
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP_3_1        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
