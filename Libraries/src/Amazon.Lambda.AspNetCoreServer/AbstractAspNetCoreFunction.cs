@@ -181,6 +181,13 @@ namespace Amazon.Lambda.AspNetCoreServer
             _responseContentEncodingForContentEncoding[contentEncoding] = encoding;
         }
 
+        /// <summary>
+        /// If true, information about unhandled exceptions thrown during request processing
+        /// will be included in the HTTP response.
+        /// Defaults to false
+        /// </summary>
+        public bool IncludeUnhandledExceptionDetailInResponse { get; set;  }
+
 
         /// <summary>
         /// Method to initialize the web builder before starting the web host. In a typical Web API this is similar to the main function. 
@@ -535,7 +542,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 }
                 var response = this.MarshallResponse(features, lambdaContext, defaultStatusCode);
 
-                if (ex != null)
+                if (ex != null && IncludeUnhandledExceptionDetailInResponse)
                 {
                     InternalCustomResponseExceptionHandling(response, lambdaContext, ex);
                 }

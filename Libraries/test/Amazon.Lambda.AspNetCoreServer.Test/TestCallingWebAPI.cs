@@ -136,16 +136,25 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Theory]
-        [InlineData("values-get-aggregateerror-apigateway-request.json", "AggregateException")]
-        [InlineData("values-get-typeloaderror-apigateway-request.json", "ReflectionTypeLoadException")]
-        public async Task TestEnhancedExceptions(string requestFileName, string expectedExceptionType)
+        [InlineData("values-get-aggregateerror-apigateway-request.json", "AggregateException", true)]
+        [InlineData("values-get-typeloaderror-apigateway-request.json", "ReflectionTypeLoadException", true)]
+        [InlineData("values-get-aggregateerror-apigateway-request.json", "AggregateException", false)]
+        [InlineData("values-get-typeloaderror-apigateway-request.json", "ReflectionTypeLoadException", false)]
+        public async Task TestEnhancedExceptions(string requestFileName, string expectedExceptionType, bool configureApiToReturnExceptionDetail)
         {
-            var response = await this.InvokeAPIGatewayRequest(requestFileName);
+            var response = await this.InvokeAPIGatewayRequest(requestFileName, configureApiToReturnExceptionDetail);
 
             Assert.Equal(500, response.StatusCode);
             Assert.Equal(string.Empty, response.Body);
+            if (configureApiToReturnExceptionDetail)
+            {
             Assert.True(response.MultiValueHeaders.ContainsKey("ErrorType"));
             Assert.Equal(expectedExceptionType, response.MultiValueHeaders["ErrorType"][0]);
+        }
+            else
+            {
+                Assert.False(response.MultiValueHeaders.ContainsKey("ErrorType"));
+            }
         }
 
         [Fact]
@@ -442,19 +451,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal(traceId1, traceId2);
         }
 
-        private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName)
+        private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName, bool configureApiToReturnExceptionDetail = false)
         {
-            return await InvokeAPIGatewayRequest(new TestLambdaContext(), fileName);
+            return await InvokeAPIGatewayRequest(new TestLambdaContext(), fileName, configureApiToReturnExceptionDetail);
         }
 
-        private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(TestLambdaContext context, string fileName)
+        private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(TestLambdaContext context, string fileName, bool configureApiToReturnExceptionDetail = false)
         {
-            return await InvokeAPIGatewayRequestWithContent(context, GetRequestContent(fileName));
+            return await InvokeAPIGatewayRequestWithContent(context, GetRequestContent(fileName), configureApiToReturnExceptionDetail);
         }
 
-        private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequestWithContent(TestLambdaContext context, string requestContent)
+        private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequestWithContent(TestLambdaContext context, string requestContent, bool configureApiToReturnExceptionDetail = false)
         {
             var lambdaFunction = new ApiGatewayLambdaFunction();
+            if (configureApiToReturnExceptionDetail)
+                lambdaFunction.IncludeUnhandledExceptionDetailInResponse = true;
             var requestStream = new MemoryStream(System.Text.UTF8Encoding.UTF8.GetBytes(requestContent));
             var request = new Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer().Deserialize<APIGatewayProxyRequest>(requestStream);
 
