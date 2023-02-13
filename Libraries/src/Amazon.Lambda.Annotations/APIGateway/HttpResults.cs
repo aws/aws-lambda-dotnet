@@ -168,6 +168,15 @@ namespace Amazon.Lambda.Annotations.APIGateway
         {
             return new HttpResults(HttpStatusCode.Accepted, body);
         }
+        
+        /// <summary>
+        /// Creates an IHttpResult for a Bad Gateway (502) status code.
+        /// </summary>
+        /// <returns></returns>
+        public static IHttpResult BadGateway()
+        {
+            return new HttpResults(HttpStatusCode.BadGateway);
+        }
 
         /// <summary>
         /// Creates an IHttpResult for a BadRequest (400) status code.
@@ -214,6 +223,16 @@ namespace Amazon.Lambda.Annotations.APIGateway
         public static IHttpResult Forbid(object body = null)
         {
             return new HttpResults(HttpStatusCode.Forbidden, body);
+        }
+        
+        /// <summary>
+        /// Creates an IHttpResult for an Internal Server Error (500) status code.
+        /// </summary>
+        /// <param name="body">Optional response body</param>
+        /// <returns></returns>
+        public static IHttpResult InternalServerError(object body = null)
+        {
+            return new HttpResults(HttpStatusCode.InternalServerError, body);
         }
 
         /// <summary>
@@ -274,6 +293,22 @@ namespace Amazon.Lambda.Annotations.APIGateway
                 result.AddHeader("location", uri);
             }
 
+            return result;
+        }
+        
+        /// <summary>
+        /// Creates an IHttpResult for a Service Unavailable (503) status code.
+        /// </summary>
+        /// <param name="delaySeconds">Optional number of seconds to return in a Retry-After header</param>
+        /// <returns></returns>
+        public static IHttpResult ServiceUnavailable(int? delaySeconds = null)
+        {
+            var result = new HttpResults(HttpStatusCode.ServiceUnavailable);
+            if (delaySeconds != null && delaySeconds > 0)
+            {
+                result.AddHeader("Retry-After", delaySeconds.ToString());
+            }
+            
             return result;
         }
 

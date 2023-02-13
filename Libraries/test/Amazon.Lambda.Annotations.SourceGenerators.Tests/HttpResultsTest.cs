@@ -249,6 +249,39 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 {"key", new List<string> {"value1", "value2", "VALUE3"} }
             });
         }
+        
+        [Fact]
+        public void InternalServerError()
+        {
+            var result = HttpResults.InternalServerError();
+            ValidateResult(result, HttpStatusCode.InternalServerError);
+        }
+        
+        [Fact]
+        public void BadGateway()
+        {
+            var result = HttpResults.BadGateway();
+            ValidateResult(result, HttpStatusCode.BadGateway);
+        }
+        
+        [Theory]
+        [InlineData(null)]
+        [InlineData(0)]
+        public void ServiceUnavailable_WithoutRetryAfter(int? delay)
+        {
+            var result = HttpResults.ServiceUnavailable(delay);
+            ValidateResult(result, HttpStatusCode.ServiceUnavailable);
+        }
+        
+        [Fact]
+        public void ServiceUnavailable_WithRetryAfter()
+        {
+            var result = HttpResults.ServiceUnavailable(100);
+            ValidateResult(result, HttpStatusCode.ServiceUnavailable, headers: new Dictionary<string, IList<string>>
+            {
+                {"retry-after", new List<string> {"100"} }
+            });
+        }
 
 
         private void ValidateResult(IHttpResult result, HttpStatusCode statusCode, string body = null, bool isBase64Encoded = false, IDictionary<string, IList<string>> headers = null)
