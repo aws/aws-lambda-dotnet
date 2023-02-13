@@ -264,10 +264,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             ValidateResult(result, HttpStatusCode.BadGateway);
         }
         
-        [Fact]
-        public void ServiceUnavailable_WithoutRetryAfter()
+        [Theory]
+        [InlineData(null)]
+        [InlineData(0)]
+        public void ServiceUnavailable_WithoutRetryAfter(int? delay)
         {
-            var result = HttpResults.ServiceUnavailable();
+            var result = HttpResults.ServiceUnavailable(delay);
             ValidateResult(result, HttpStatusCode.ServiceUnavailable);
         }
         
