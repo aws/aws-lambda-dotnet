@@ -1,3 +1,14 @@
+### Release 2023-02-13
+* **Amazon.Lambda.APIGatewayEvents (2.6.0)**
+  * Pull request [#1066](https://github.com/aws/aws-lambda-dotnet/pull/1066) add V2 API Gateway customer authrorizer. Thanks [Oleksandr Liakhevych](https://github.com/Dreamescaper)
+* **Amazon.Lambda.AspNetCoreServer (8.0.0)**
+  * **Breaking change** Pull request [#899](https://github.com/aws/aws-lambda-dotnet/pull/899) make adding exception detail to http response opt-in using new `IncludeUnhandledExceptionDetailInResponse` property. Thanks [duncanbrown](https://github.com/duncanbrown)
+  * Pull request [#1403](https://github.com/aws/aws-lambda-dotnet/pull/1403) add support for resource path variable substitution. Thanks [christostatitzikidis](https://github.com/christostatitzikidis)
+* **Amazon.Lambda.CloudWatchEvents (4.1.0)**
+  * Pull request [#1073](https://github.com/aws/aws-lambda-dotnet/pull/1073) add CloudWatch Events/EventBridge event types for S3 object events. Thanks [Richard P. Field III](https://github.com/rpf3)
+* **Amazon.Lambda.CognitoEvents (2.1.0)**
+  * Pull request [#1051](https://github.com/aws/aws-lambda-dotnet/pull/1051) add contract types for Cognito Trigger events. Thanks [Jon Armen](https://github.com/jon-armen)
+
 ### Release 2023-02-08
 * **Amazon.Lambda.Annotations (0.11.0)**
   * Support customizng HTTP responses including status code and headers using the new IHttpResult and HttpResults types. Read more information [here](https://github.com/aws/aws-lambda-dotnet/tree/master/Libraries/src/Amazon.Lambda.Annotations#customizing-responses-for-api-gateway-lambda-functions).
