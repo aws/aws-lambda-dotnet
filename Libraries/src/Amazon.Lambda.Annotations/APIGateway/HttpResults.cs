@@ -304,7 +304,11 @@ namespace Amazon.Lambda.Annotations.APIGateway
         public static IHttpResult ServiceUnavailable(int? delaySeconds = null)
         {
             var result = new HttpResults(HttpStatusCode.ServiceUnavailable);
-            if (delaySeconds != null && delaySeconds > 0) result.AddHeader("Retry-After", delaySeconds.ToString());
+            if (delaySeconds != null && delaySeconds > 0)
+            {
+                result.AddHeader("Retry-After", delaySeconds.ToString());
+            }
+            
             return result;
         }
 
