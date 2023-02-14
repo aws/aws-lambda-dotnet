@@ -1,4 +1,6 @@
 ### Release 2023-02-13
+* **Amazon.Lambda.Annotations (0.12.0)**
+  * Pull request [#1432](https://github.com/aws/aws-lambda-dotnet/pull/1432) add common 5xx status codes to HttpResults. Thanks [Ryan Cormack](https://github.com/ryancormack)
 * **Amazon.Lambda.APIGatewayEvents (2.6.0)**
   * Pull request [#1066](https://github.com/aws/aws-lambda-dotnet/pull/1066) add V2 API Gateway customer authrorizer. Thanks [Oleksandr Liakhevych](https://github.com/Dreamescaper)
 * **Amazon.Lambda.AspNetCoreServer (8.0.0)**
