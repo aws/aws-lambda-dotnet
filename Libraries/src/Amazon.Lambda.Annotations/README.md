@@ -758,13 +758,16 @@ public IHttpResult NotFoundResponseWithHeaderV2(int id, ILambdaContext context)
 
 Available static methods for creating an instance of `IHttpResult`.
 * HttpResults.Accepted()
+* HttpResults.BadGateway()
 * HttpResults.BadRequest()
 * HttpResults.Conflict()
 * HttpResults.Created()
 * HttpResults.Forbid()
+* HttpResults.InternalServerError()
 * HttpResults.NotFound()
 * HttpResults.Ok()
 * HttpResults.Redirect()
+* HttpResults.ServiceUnavailable()
 * HttpResults.Unauthorized()
 * HttpResults.NewResult()
 
