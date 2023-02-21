@@ -8,11 +8,11 @@ You may also have a test project depending on the options selected.
 
 The generated function handler is a simple method accepting a string argument that returns the uppercase equivalent of the input string. Replace the body of this method, and parameters, to suit your needs. 
 
-## Lambda Powertools
+## AWS Lambda Powertools for .NET
 
-[AWS Lambda Powertools for .NET](https://awslabs.github.io/aws-lambda-powertools-dotnet/) is a suite of utilities for AWS Lambda functions to ease adopting best practices such as tracing, structured logging, custom metrics, and more.
+[AWS Lambda Powertools for .NET](https://awslabs.github.io/aws-lambda-powertools-dotnet/) is a developer toolkit to implement Serverless best practices and increase developer velocity.
 
-This starter project comes with Powertools Loging, Metrics and Tracing configured in Function.cs. 
+This starter project comes with Powertools Loging, Metrics and Tracing configured through environment variables and annotations on methods in Function.cs
 
 Included NuGet Packages:
 * [AWS.Lambda.Powertools.Logging](https://awslabs.github.io/aws-lambda-powertools-dotnet/core/logging/)

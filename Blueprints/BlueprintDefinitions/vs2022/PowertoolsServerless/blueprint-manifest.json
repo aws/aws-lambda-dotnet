@@ -2,7 +2,7 @@
   "display-name": "Serverless Application with Powertools",
   "system-name": "ServerlessPowertools",
   "description": "Setup the project and test project to create a Serverless application with Powertools from scratch.",
-  "sort-order": 100,
+  "sort-order": 160,
   "hidden-tags": ["C#", "ServerlessProject"],
   "tags": ["Powertools"]
 }

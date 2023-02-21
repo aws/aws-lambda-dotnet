@@ -24,8 +24,8 @@ public class Function
     /// <param name="input"></param>
     /// <param name="context"></param>
     /// <returns></returns>
-    [Logging(LogEvent = true, Service = "To_Upper_Function")]
-    [Tracing(CaptureMode = TracingCaptureMode.ResponseAndError)]
+    [Logging(LogEvent = true)]
+    [Tracing]
     public string FunctionHandler(string input, ILambdaContext context)
     {
         var upperCaseString = UpperCaseString(input);
@@ -35,7 +35,7 @@ public class Function
         return upperCaseString;
     }
 
-    [Metrics(Namespace = "PowertoolsNamespace", CaptureColdStart = true, Service = "To_Upper_Function")]
+    [Metrics(CaptureColdStart = true)]
     [Tracing(SegmentName = "UpperCaseString Method")]
     private static string UpperCaseString(string input)
     {

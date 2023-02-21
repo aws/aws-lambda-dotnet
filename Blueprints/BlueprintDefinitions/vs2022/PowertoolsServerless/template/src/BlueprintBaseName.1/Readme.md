@@ -9,11 +9,11 @@ You may also have a test project depending on the options selected.
 
 The generated project contains a Serverless template declaration for a single AWS Lambda function that will be exposed through Amazon API Gateway as a HTTP *Get* operation. Edit the template to customize the function or add more functions and other resources needed by your application, and edit the function code in Function.cs. You can then deploy your Serverless application.
 
-## Lambda Powertools
+## AWS Lambda Powertools for .NET
 
-[AWS Lambda Powertools for .NET](https://awslabs.github.io/aws-lambda-powertools-dotnet/) is a suite of utilities for AWS Lambda functions to ease adopting best practices such as tracing, structured logging, custom metrics, and more.
+[AWS Lambda Powertools for .NET](https://awslabs.github.io/aws-lambda-powertools-dotnet/) is a developer toolkit to implement Serverless best practices and increase developer velocity.
 
-This starter project comes with Powertools Loging, Metrics and Tracing configured in Function.cs.
+This starter project comes with Powertools Loging, Metrics and Tracing configured through environment variables and annotations on methods in Function.cs
 
 Included NuGet Packages:
 

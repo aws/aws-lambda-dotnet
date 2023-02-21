@@ -20,8 +20,12 @@
         ],
         "Environment": {
           "Variables": {
-            "POWERTOOLS_METRICS_NAMESPACE": "ServerlessGreeting",
-            "POWERTOOLS_SERVICE_NAME": "ServerlessGreeting"
+            "POWERTOOLS_SERVICE_NAME": "ServerlessGreeting",
+            "POWERTOOLS_LOG_LEVEL": "Info",
+            "POWERTOOLS_LOGGER_CASE": "PascalCase",
+            "POWERTOOLS_TRACER_CAPTURE_RESPONSE": true,
+            "POWERTOOLS_TRACER_CAPTURE_ERROR": true,
+            "POWERTOOLS_METRICS_NAMESPACE": "ServerlessGreeting"
           }
         },
         "Events": {
