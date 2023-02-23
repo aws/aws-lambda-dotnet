@@ -28,7 +28,7 @@ public class Functions
     [Tracing(CaptureMode = TracingCaptureMode.ResponseAndError)]
     public APIGatewayProxyResponse Get(APIGatewayProxyRequest request, ILambdaContext context)
     {
-        Logger.LogInformation("Get Request\n");
+        Logger.LogInformation("Get Request");
 
         var greeting = GetGreeting();
 

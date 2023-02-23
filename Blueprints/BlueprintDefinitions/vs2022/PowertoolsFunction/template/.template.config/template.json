@@ -4,7 +4,7 @@
   "name": "Lambda Function with Powertools",
   "identity": "AWS.Lambda.Function.Powertools.CSharp",
   "groupIdentity": "AWS.Lambda.Function.Powertools",
-  "shortName": "lambda.Function.Powertools",
+  "shortName": "lambda.Powertools",
   "tags": {
     "language": "C#",
     "type": "project"

@@ -13,8 +13,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.0" />
-    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.5.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.1" />
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.6.0" />
     <PackageReference Include="AWS.Lambda.Powertools.Logging" Version="0.0.2-preview" />
     <PackageReference Include="AWS.Lambda.Powertools.Metrics" Version="0.0.2-preview" />
     <PackageReference Include="AWS.Lambda.Powertools.Tracing" Version="0.0.2-preview" />
