@@ -11,7 +11,7 @@ namespace TestServerlessApp
 {
     public class Greeter
     {
-        [LambdaFunction(Name = "GreeterSayHello", MemorySize = 1024, PackageType = LambdaPackageType.Image)]
+        [LambdaFunction(ResourceName = "GreeterSayHello", MemorySize = 1024, PackageType = LambdaPackageType.Image)]
         [HttpApi(LambdaHttpMethod.Get, "/Greeter/SayHello", Version = HttpApiVersion.V1)]
         public void SayHello([FromQuery(Name = "names")]IEnumerable<string> firstNames, APIGatewayProxyRequest request, ILambdaContext context)
         {
@@ -28,7 +28,7 @@ namespace TestServerlessApp
             }
         }
 
-        [LambdaFunction(Name = "GreeterSayHelloAsync", Timeout = 50, PackageType = LambdaPackageType.Image)]
+        [LambdaFunction(ResourceName = "GreeterSayHelloAsync", Timeout = 50, PackageType = LambdaPackageType.Image)]
         [HttpApi(LambdaHttpMethod.Get, "/Greeter/SayHelloAsync", Version = HttpApiVersion.V1)]
         public async Task SayHelloAsync([FromHeader(Name = "names")]IEnumerable<string> firstNames)
         {

@@ -66,7 +66,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 if (!ShouldProcessLambdaFunction(lambdaFunction))
                     continue;
                 ProcessLambdaFunction(lambdaFunction, relativeProjectUri);
-                processedLambdaFunctions.Add(lambdaFunction.Name);
+                processedLambdaFunctions.Add(lambdaFunction.ResourceName);
             }
 
             RemoveOrphanedLambdaFunctions(processedLambdaFunctions);
@@ -84,7 +84,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// </summary>
         private bool ShouldProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction)
         {
-            var lambdaFunctionPath = $"Resources.{lambdaFunction.Name}";
+            var lambdaFunctionPath = $"Resources.{lambdaFunction.ResourceName}";
 
             if (!_templateWriter.Exists(lambdaFunctionPath))
                 return true;
@@ -100,7 +100,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// </summary>
         private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction, string relativeProjectUri)
         {
-            var lambdaFunctionPath = $"Resources.{lambdaFunction.Name}";
+            var lambdaFunctionPath = $"Resources.{lambdaFunction.ResourceName}";
             var propertiesPath = $"{lambdaFunctionPath}.Properties";
 
             if (!_templateWriter.Exists(lambdaFunctionPath))
@@ -194,8 +194,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 }
             }
 
-            var eventsPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
-            var syncedEventsMetadataPath = $"Resources.{lambdaFunction.Name}.Metadata.SyncedEvents";
+            var eventsPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events";
+            var syncedEventsMetadataPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedEvents";
             var previousSyncedEvents = _templateWriter.GetToken<List<string>>(syncedEventsMetadataPath, new List<string>());
 
             // Remove all events that exist in the serverless template but were not encountered during the current source generation pass.
@@ -216,7 +216,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// </summary>
         private string ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute)
         {
-            var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events";
             var methodName = restApiAttribute.Method.ToString();
             var methodPath = $"{eventPath}.Root{methodName}";
 
@@ -232,7 +232,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// </summary>
         private string ProcessHttpApiAttribute(ILambdaFunctionSerializable lambdaFunction, HttpApiAttribute httpApiAttribute)
         {
-            var eventPath = $"Resources.{lambdaFunction.Name}.Properties.Events";
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events";
             var methodName = httpApiAttribute.Method.ToString();
             var methodPath = $"{eventPath}.Root{methodName}";
 

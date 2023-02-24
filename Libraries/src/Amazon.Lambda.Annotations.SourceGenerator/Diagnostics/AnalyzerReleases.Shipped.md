@@ -1,6 +1,13 @@
 ; Shipped analyzer releases
 ; https://github.com/dotnet/roslyn-analyzers/blob/master/src/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md
 
+## Release 0.13.0.0
+
+Rule ID | Category | Severity | Notes
+--------|----------|----------|-------
+AWSLambda0106 | AWSLambdaCSharpGenerator | Error | Invalid CloudFormation resource name
+
+
 ## Release 0.11.0.0
 
 Rule ID | Category | Severity | Notes
