@@ -37,7 +37,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Info,
             isEnabledByDefault: true);
-        
+
         public static readonly DiagnosticDescriptor MissingDependencies = new DiagnosticDescriptor(id: "AWSLambda0104",
             title: "Missing reference to a required dependency",
             messageFormat: "Your project has a missing required package dependency. Please add a reference to the following package: {0}",
@@ -48,6 +48,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly DiagnosticDescriptor HttpResultsOnNonApiFunction = new DiagnosticDescriptor(id: "AWSLambda0105",
             title: $"Invalid return type {nameof(IHttpResult)}",
             messageFormat: $"{nameof(IHttpResult)} is not a valid return type for LambdaFunctions without {nameof(HttpApiAttribute)} or {nameof(RestApiAttribute)} attributes",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly  DiagnosticDescriptor InvalidResourceName = new DiagnosticDescriptor(id: "AWSLambda0106",
+            title: $"Invalid CloudFormation resource name",
+            messageFormat: "The specified CloudFormation resource name is not valid. It must only contain alphanumeric characters.",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

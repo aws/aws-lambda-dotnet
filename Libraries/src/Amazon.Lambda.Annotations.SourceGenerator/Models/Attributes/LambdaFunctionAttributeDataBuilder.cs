@@ -13,9 +13,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
 
             foreach (var pair in att.NamedArguments)
             {
-                if (pair.Key == nameof(data.Name) && pair.Value.Value is string value)
+                if (pair.Key == nameof(data.ResourceName) && pair.Value.Value is string value)
                 {
-                    data.Name = value;
+                    data.ResourceName = value;
                 }
 
                 if (pair.Key == nameof(data.Policies) && pair.Value.Value is string policies)

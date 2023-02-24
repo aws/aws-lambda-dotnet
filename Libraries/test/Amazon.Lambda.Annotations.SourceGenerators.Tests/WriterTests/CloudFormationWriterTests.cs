@@ -213,7 +213,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", templateWriter.GetToken<string>("Resources.OldName.Properties.Handler"));
 
             // ACT - CHANGE NAME
-            lambdaFunctionModel.Name = "NewName";
+            lambdaFunctionModel.ResourceName = "NewName";
             cloudFormationWriter.ApplyReport(report);
 
             // ASSERT
@@ -654,7 +654,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                     false, $"Existing description before {CloudFormationWriter.CurrentDescriptionSuffix}" },
 
                 // An existing description with our version in the front should be replaced
-                new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1). Existing description.", 
+                new object[] { "This template is partially managed by Amazon.Lambda.Annotations (v0.1). Existing description.",
                      false, $"{CloudFormationWriter.CurrentDescriptionSuffix} Existing description." },
 
                 // An existing description with our version in the front should be replaced
@@ -664,10 +664,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 // This would exceed CloudFormation's current limit on the description field, so should not be modified
                 new object[] { new string('-', 1000), false, new string('-', 1000)},
 
-                /* 
+                /*
                  * The remaining cases are with the opt-out flag set to true, which should remove any version descriptions
                  */
-                
+
                 // A blank description should be left alone
                 new object[] { "", true, "" },
 
@@ -783,13 +783,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             mockFileManager.WriteAllText(ServerlessTemplateFilePath, originalContent);
             return mockFileManager;
         }
-        private LambdaFunctionModelTest GetLambdaFunctionModel(string handler, string name, uint? timeout,
+        private LambdaFunctionModelTest GetLambdaFunctionModel(string handler, string resourceName, uint? timeout,
             uint? memorySize, string role, string policies)
         {
             return new LambdaFunctionModelTest
             {
                 Handler = handler,
-                Name = name,
+                ResourceName = resourceName,
                 MemorySize = memorySize,
                 Timeout = timeout,
                 Policies = policies,
@@ -823,7 +823,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         public class LambdaFunctionModelTest : ILambdaFunctionSerializable
         {
             public string Handler { get; set; }
-            public string Name { get; set; }
+            public string ResourceName { get; set; }
             public uint? Timeout { get; set; }
             public uint? MemorySize { get; set; }
             public string Role { get; set; }
