@@ -1,6 +1,11 @@
 {
   "author": "AWS",
-  "classifications": ["AWS", "Lambda", "Serverless", "Powertools"],
+  "classifications": [
+    "AWS",
+    "Lambda",
+    "Serverless",
+    "Powertools"
+  ],
   "name": "Lambda Serverless with Powertools",
   "identity": "AWS.Lambda.Serverless.Powertools.CSharp",
   "groupIdentity": "AWS.Lambda.Serverless.Powertools",

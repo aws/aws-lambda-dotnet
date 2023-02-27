@@ -1,8 +1,14 @@
 {
-  "display-name": "Function with Powertools",
+  "display-name": "Lambda Powertools",
   "system-name": "FunctionPowertools",
   "description": "Setup the project and test project to create a Lambda function with Powertools from scratch.",
-  "sort-order": 160,
-  "hidden-tags": ["C#", "LambdaProject"],
-  "tags": ["Powertools", "Custom"]
+  "sort-order": 124,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "Powertools",
+    "Custom"
+  ]
 }
