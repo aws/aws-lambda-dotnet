@@ -16,9 +16,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         string Handler { get; }
 
         /// <summary>
-        /// The name of the Lambda function which is used to uniquely identify the function within an AWS region.
+        /// The name of the CloudFormation resource that is associated with the Lambda function.
         /// </summary>
-        string Name { get; }
+        string ResourceName { get; }
 
         /// <summary>
         /// The amount of time in seconds that Lambda allows a function to run before stopping it.

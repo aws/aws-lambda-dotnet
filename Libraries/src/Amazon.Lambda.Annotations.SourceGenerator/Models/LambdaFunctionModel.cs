@@ -35,7 +35,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public string Handler => $"{LambdaMethod.ContainingAssembly}::{GeneratedMethod.ContainingType.FullName}::{LambdaMethod.Name}";
 
         /// <inheritdoc />
-        public string Name => LambdaMethod.LambdaFunctionAttribute.Data.Name ??
+        public string ResourceName => LambdaMethod.LambdaFunctionAttribute.Data.ResourceName ??
                               string.Join(string.Empty, GeneratedMethod.ContainingType.FullName.Where(char.IsLetterOrDigit));
 
         /// <inheritdoc />

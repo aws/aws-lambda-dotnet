@@ -25,14 +25,14 @@ namespace TestServerlessApp
             this._simpleCalculatorService = simpleCalculatorService;
         }
 
-        [LambdaFunction(Name = "SimpleCalculatorAdd", PackageType = LambdaPackageType.Image)]
+        [LambdaFunction(ResourceName = "SimpleCalculatorAdd", PackageType = LambdaPackageType.Image)]
         [RestApi(LambdaHttpMethod.Get, "/SimpleCalculator/Add")]
         public int Add([FromQuery]int x, [FromQuery]int y)
         {
             return _simpleCalculatorService.Add(x, y);
         }
 
-        [LambdaFunction(Name = "SimpleCalculatorSubtract", PackageType = LambdaPackageType.Image)]
+        [LambdaFunction(ResourceName = "SimpleCalculatorSubtract", PackageType = LambdaPackageType.Image)]
         [RestApi(LambdaHttpMethod.Get, "/SimpleCalculator/Subtract")]
         public APIGatewayProxyResponse Subtract([FromHeader]int x, [FromHeader]int y, [FromServices]ISimpleCalculatorService simpleCalculatorService)
         {
@@ -43,27 +43,27 @@ namespace TestServerlessApp
             };
         }
 
-        [LambdaFunction(Name = "SimpleCalculatorMultiply", PackageType = LambdaPackageType.Image)]
+        [LambdaFunction(ResourceName = "SimpleCalculatorMultiply", PackageType = LambdaPackageType.Image)]
         [RestApi(LambdaHttpMethod.Get, "/SimpleCalculator/Multiply/{x}/{y}")]
         public string Multiply(int x, int y)
         {
             return _simpleCalculatorService.Multiply(x, y).ToString();
         }
 
-        [LambdaFunction(Name = "SimpleCalculatorDivideAsync", PackageType = LambdaPackageType.Image)]
+        [LambdaFunction(ResourceName = "SimpleCalculatorDivideAsync", PackageType = LambdaPackageType.Image)]
         [RestApi(template: "/SimpleCalculator/DivideAsync/{x}/{y}", method: LambdaHttpMethod.Get)]
         public async Task<int> DivideAsync([FromRoute(Name = "x")]int first, [FromRoute(Name = "y")]int second)
         {
             return await Task.FromResult(_simpleCalculatorService.Divide(first, second));
         }
 
-        [LambdaFunction(Name = "PI", PackageType = LambdaPackageType.Image)]
+        [LambdaFunction(ResourceName = "PI", PackageType = LambdaPackageType.Image)]
         public double Pi([FromServices]ISimpleCalculatorService simpleCalculatorService)
         {
             return simpleCalculatorService.PI();
         }
 
-        [LambdaFunction(Name = "Random", PackageType = LambdaPackageType.Image)]
+        [LambdaFunction(ResourceName = "Random", PackageType = LambdaPackageType.Image)]
         public async Task<int> Random(int maxValue, ILambdaContext context)
         {
             context.Logger.Log($"Max value: {maxValue}");
@@ -71,7 +71,7 @@ namespace TestServerlessApp
             return await Task.FromResult(value);
         }
 
-        [LambdaFunction(Name = "Randoms", PackageType = LambdaPackageType.Image)]
+        [LambdaFunction(ResourceName = "Randoms", PackageType = LambdaPackageType.Image)]
         public IList<int> Randoms(RandomsInput input, ILambdaContext context)
         {
             context.Logger.Log($"Count: {input.Count}");

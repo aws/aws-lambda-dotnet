@@ -9,9 +9,9 @@ namespace Amazon.Lambda.Annotations
     public class LambdaFunctionAttribute : Attribute
     {
         /// <summary>
-        /// The name of the Lambda function which is used to uniquely identify the function within an AWS region.
+        /// The name of the CloudFormation resource that is associated with the Lambda function.
         /// </summary>
-        public string Name { get; set; }
+        public string ResourceName { get; set; }
 
         /// <summary>
         /// The amount of time in seconds that Lambda allows a function to run before stopping it.

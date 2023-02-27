@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
@@ -17,6 +18,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
     {
         private readonly IFileManager _fileManager = new FileManager();
         private readonly IDirectoryManager _directoryManager = new DirectoryManager();
+
+        // Only allow alphanumeric characters
+        private readonly Regex _resourceNameRegex = new Regex("^[a-zA-Z0-9]+$");
 
         public Generator()
         {
@@ -114,6 +118,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     if(model.LambdaMethod.ReturnsIHttpResults && !model.LambdaMethod.Events.Contains(EventType.API))
                     {
                         diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.HttpResultsOnNonApiFunction,
+                            Location.Create(lambdaMethod.SyntaxTree, lambdaMethod.Span),
+                            DiagnosticSeverity.Error));
+
+                        foundFatalError = true;
+                        continue;
+                    }
+
+                    if (!_resourceNameRegex.IsMatch(model.ResourceName))
+                    {
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.InvalidResourceName,
                             Location.Create(lambdaMethod.SyntaxTree, lambdaMethod.Span),
                             DiagnosticSeverity.Error));
 
