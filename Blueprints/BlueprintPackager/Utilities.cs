@@ -29,7 +29,9 @@ namespace Packager
                     if (relativePath.StartsWith("bin/") ||
                         relativePath.Contains("/bin/") ||
                         relativePath.StartsWith("obj/") ||
-                        relativePath.Contains("/obj/"))
+                        relativePath.Contains("/obj/") ||
+                        relativePath.StartsWith(".vs/") ||
+                        relativePath.Contains("/.vs/"))
                         continue;
 
                     var entry = archive.CreateEntry(relativePath);
