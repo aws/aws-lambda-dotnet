@@ -1,3 +1,8 @@
+### Release 2023-02-27
+* **Amazon.Lambda.Templates (6.10.0)**
+  * Add new blueprints for [Amazon Lambda Powertools](https://github.com/awslabs/aws-lambda-powertools-dotnet)
+  * Update Annotations blueprint to use version 0.12.0 of Amazon.Lambda.Annotations.
+  
 ### Release 2023-02-13
 * **Amazon.Lambda.Annotations (0.12.0)**
   * Pull request [#1432](https://github.com/aws/aws-lambda-dotnet/pull/1432) add common 5xx status codes to HttpResults. Thanks [Ryan Cormack](https://github.com/ryancormack)
