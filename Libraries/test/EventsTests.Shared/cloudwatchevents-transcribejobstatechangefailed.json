@@ -1,0 +1,15 @@
+{
+  "version": "0",
+  "id": "5505f4fc-979b-0304-3570-8fa0e3c09525",
+  "detail-type": "Transcribe Job State Change",
+  "source": "aws.transcribe",
+  "account": "694977046108",
+  "time": "2023-02-24T15:42:10Z",
+  "region": "us-east-1",
+  "resources": [],
+  "detail": {
+      "TranscriptionJobName": "d43d0b58-2129-46ba-b2e2-b53ec9d1b210",
+      "TranscriptionJobStatus": "FAILED",
+      "FailureReason": "The media format that you specified doesn't match the detected media format. Check the media format and try your request again."
+  }
+}

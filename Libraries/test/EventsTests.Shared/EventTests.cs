@@ -6,6 +6,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.CloudWatchEvents.BatchEvents;
     using Amazon.Lambda.CloudWatchEvents.ECSEvents;
     using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
+    using Amazon.Lambda.CloudWatchEvents.TranscribeEvents;
     using Amazon.Lambda.CloudWatchLogsEvents;
     using Amazon.Lambda.CognitoEvents;
     using Amazon.Lambda.ConfigEvents;
@@ -3100,6 +3101,50 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("s3.amazonaws.com", detail.Requester);
                 Assert.Equal("2021-11-13T00:00:00Z", detail.RestoreExpiryTime);
                 Assert.Equal("GLACIER", detail.SourceStorageClass);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CloudWatchTranscribeJobStateChangeCompleted(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-transcribejobstatechangecompleted.json"))
+            {
+                var request = serializer.Deserialize<TranscribeJobStateChangeEvent>(fileStream);
+                Assert.Equal("1de9a55a-39aa-d889-84eb-22d245492319", request.Id);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal("51a3dfef-87fa-423a-8d3b-690ca9cae1f4", detail.TranscriptionJobName);
+                Assert.Equal("COMPLETED", detail.TranscriptionJobStatus);
+                Assert.Null(detail.FailureReason);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CloudWatchTranscribeJobStateChangeFailed(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-transcribejobstatechangefailed.json"))
+            {
+                var request = serializer.Deserialize<TranscribeJobStateChangeEvent>(fileStream);
+                Assert.Equal("5505f4fc-979b-0304-3570-8fa0e3c09525", request.Id);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal("d43d0b58-2129-46ba-b2e2-b53ec9d1b210", detail.TranscriptionJobName);
+                Assert.Equal("FAILED", detail.TranscriptionJobStatus);
+                Assert.Equal("The media format that you specified doesn't match the detected media format. Check the media format and try your request again.", detail.FailureReason);
             }
         }
 
