@@ -31,6 +31,16 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
     {
         public static bool IsCallPreJit()
         {
+#if NET6_0_OR_GREATER
+            // If dynamic code is not supported we are most likely running in an AOT environment. In that
+            // case there is no point in doing any prejit optmization and will most likely cause errors
+            // using APIs that are not supported in AOT.
+            if(!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                return false;
+            }    
+#endif
+
             string awsLambdaDotNetPreJitStr = Environment.GetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT);
             string awsLambdaInitTypeStr = Environment.GetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE);
             AwsLambdaDotNetPreJit awsLambdaDotNetPreJit;
