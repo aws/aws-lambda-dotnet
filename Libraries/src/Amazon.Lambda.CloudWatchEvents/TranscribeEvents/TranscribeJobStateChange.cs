@@ -2,6 +2,7 @@ namespace Amazon.Lambda.CloudWatchEvents.TranscribeEvents
 {
     /// <summary>
     /// This class represents the details of a Transcribe Job State Change sent via EventBridge.
+    /// For more see - https://docs.aws.amazon.com/transcribe/latest/dg/monitoring-events.html
     /// </summary>
     public class TranscribeJobStateChange
     {
