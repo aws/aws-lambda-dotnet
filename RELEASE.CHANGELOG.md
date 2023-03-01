@@ -1,3 +1,16 @@
+### Release 2023-03-01
+* **Amazon.Lambda.Annotations (0.13.0)**
+  * **Breaking Change:** Renamed `LambdaFunctionAttribute` property `Name` to `ResourceName` to clarify this property is used for setting the CloudFormation resource name.
+  * Add diagnostic error message if the value for `ResourceName` is invalid for a CloudFormation resource name.
+* **Amazon.Lambda.RuntimeSupport (1.8.4)**
+  * Fixed `FUNCTION_ERROR_INIT_FAILURE` error when using provisioned concurrency with Native AOT
+* **Amazon.Lambda.CloudWatchEvents (4.2.0)**
+  * Pull request [#1445](https://github.com/aws/aws-lambda-dotnet/pull/1445) add Transcribe event object. Thanks [Bryan Hogan](https://github.com/bjhogan)
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.5.1)**
+  * Update dependency of Amazon.Lambda.Runtime to version 1.8.4
+  * Update dependency of Amazon.Lambda.AspNetCoreServer to version 8.0.0
+
+
 ### Release 2023-02-27
 * **Amazon.Lambda.Templates (6.10.0)**
   * Add new blueprints for [Amazon Lambda Powertools](https://github.com/awslabs/aws-lambda-powertools-dotnet)
