@@ -1,0 +1,17 @@
+{
+  "version": "0",
+  "id": "e99030f3-a7a8-42f5-923a-684fbf9bff65",
+  "detail-type": "Translate Parallel Data State Change",
+  "source": "aws.translate",
+  "account": "111122223333",
+  "time": "2017-04-22T03:31:47Z",
+  "region": "us-east-1",
+  "resources": [
+    "arn:aws:translate:us-east-1:111122223333:parallel-data/ExampleParallelData"
+  ],
+  "detail": {
+    "operation": "CreateParallelData",
+    "name": "ExampleParallelData",
+    "status": "ACTIVE"
+  }
+}

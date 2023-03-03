@@ -7,6 +7,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.CloudWatchEvents.ECSEvents;
     using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
     using Amazon.Lambda.CloudWatchEvents.TranscribeEvents;
+    using Amazon.Lambda.CloudWatchEvents.TranslateEvents;
     using Amazon.Lambda.CloudWatchLogsEvents;
     using Amazon.Lambda.CognitoEvents;
     using Amazon.Lambda.ConfigEvents;
@@ -3148,6 +3149,73 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CloudWatchTranslateTextTranslationJobStateChange(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-translatetexttranslationjobstatechange.json"))
+            {
+                var request = serializer.Deserialize<TranslateTextTranslationJobStateChangeEvent>(fileStream);
+                Assert.Equal("8882c5af-c9da-4a58-99e2-91fbe33b9e52", request.Id);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal("8ce682a1-9be8-4f2c-875c-f8ae2fe1b015", detail.JobId);
+                Assert.Equal("COMPLETED", detail.JobStatus);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CloudWatchTranslateParallelDataStateChangeCreate(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-translateparalleldatastatechange-create.json"))
+            {
+                var request = serializer.Deserialize<TranslateParallelDataStateChangeEvent>(fileStream);
+                Assert.Equal("e99030f3-a7a8-42f5-923a-684fbf9bff65", request.Id);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal("CreateParallelData", detail.Operation);
+                Assert.Equal("ExampleParallelData", detail.Name);
+                Assert.Equal("ACTIVE", detail.Status);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CloudWatchTranslateParallelDataStateChangeUpdate(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cloudwatchevents-translateparalleldatastatechange-update.json"))
+            {
+                var request = serializer.Deserialize<TranslateParallelDataStateChangeEvent>(fileStream);
+                Assert.Equal("920d9de3-fbd0-4cfb-87aa-e35b5f7cba8f", request.Id);
+
+                var detail = request.Detail;
+                Assert.NotNull(detail);
+                Assert.Equal("UpdateParallelData", detail.Operation);
+                Assert.Equal("ExampleParallelData2", detail.Name);
+                Assert.Equal("ACTIVE", detail.Status);
+                Assert.Equal("ACTIVE", detail.LatestUpdateAttemptStatus);
+                Assert.Equal(DateTime.Parse("2023-03-02T03:31:47Z").ToUniversalTime(), detail.LatestUpdateAttemptAt);
+
+            }
+        }
         class ClassUsingPascalCase
         {
             public int SomeValue { get; set; }
