@@ -1,7 +1,7 @@
 namespace Amazon.Lambda.CloudWatchEvents.TranslateEvents
 {
     /// <summary>
-    /// This class represents the details of a TTranslate TextTranslationJob State Change sent via EventBridge.
+    /// This class represents the details of a Translate Text Translation Job State Change sent via EventBridge.
     /// For more see - https://docs.aws.amazon.com/translate/latest/dg/monitoring-with-eventbridge.html
     /// </summary>
     public class TranslateTextTranslationJobStateChange
