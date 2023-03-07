@@ -1,3 +1,7 @@
+### Release 2023-03-06
+* **Amazon.Lambda.CloudWatchEvents (4.3.0)**
+  * Pull request [#1447](https://github.com/aws/aws-lambda-dotnet/pull/1447) adds events for Translate Parallel Data State Change and Translate Text Translation Job State Change. Thanks [Bryan Hogan](https://github.com/bjhogan)
+
 ### Release 2023-03-01
 * **Amazon.Lambda.Annotations (0.13.0)**
   * **Breaking Change:** Renamed `LambdaFunctionAttribute` property `Name` to `ResourceName` to clarify this property is used for setting the CloudFormation resource name.
@@ -9,7 +13,6 @@
 * **Amazon.Lambda.AspNetCoreServer.Hosting (1.5.1)**
   * Update dependency of Amazon.Lambda.Runtime to version 1.8.4
   * Update dependency of Amazon.Lambda.AspNetCoreServer to version 8.0.0
-
 
 ### Release 2023-02-27
 * **Amazon.Lambda.Templates (6.10.0)**
