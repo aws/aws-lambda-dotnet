@@ -19,6 +19,11 @@ on:
         type: boolean
         required: true
         default: "true"
+      NET_7_ARM64:
+        description: ".NET 7 ARM64"
+        type: boolean
+        required: true
+        default: "true"
 
 jobs:
   build:
@@ -27,6 +32,7 @@ jobs:
       NET_6_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net6/amd64/Dockerfile"
       NET_6_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net6/arm64/Dockerfile"
       NET_7_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net7/amd64/Dockerfile"
+      NET_7_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net7/arm64/Dockerfile"
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -53,6 +59,13 @@ jobs:
         run: |
           .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile ${{ env.NET_7_AMD64_Dockerfile }}
         if: ${{ github.event.inputs.NET_7_AMD64 == 'true' }}
+
+      - name: Update .NET 7 ARM64
+        id: update-net7-arm64
+        shell: pwsh
+        run: |
+          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile ${{ env.NET_7_ARM64_Dockerfile }}
+        if: ${{ github.event.inputs.NET_7_ARM64 == 'true' }}
 
       # Update Dockerfiles if newer version of ASP.NET Core is available
       - name: Commit and Push
@@ -87,7 +100,8 @@ jobs:
                   '{0}\n{1}\n{2}',
                   join(steps.update-net6-amd64.outputs.*, '\n'),
                   join(steps.update-net6-arm64.outputs.*, '\n'),
-                  join(steps.update-net7-amd64.outputs.*, '\n')
+                  join(steps.update-net7-amd64.outputs.*, '\n'),
+                  join(steps.update-net7-arm64.outputs.*, '\n')
                 )
             }}"
           github_token: ${{ secrets.GITHUB_TOKEN }}

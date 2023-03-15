@@ -29,7 +29,7 @@ namespace Infrastructure
         public readonly string[] EcrRepositoryNames = Environment.GetEnvironmentVariable("AWS_LAMBDA_ECR_REPOSITORY_NAME")?.Split(";");
         public const string ProjectRoot = "LambdaRuntimeDockerfiles/Infrastructure/src/Infrastructure";
         public const string ProjectName = "aws-lambda-container-images";
-        public readonly string[] DockerARM64Images = new string[] { "net6" };
+        public readonly string[] DockerARM64Images = new string[] { "net6", "net7" };
         // DotnetSdkVersions is used to specify a specific version of the .NET SDK to be installed on the CodeBuild image
         // The default behavior is to specify a channel and that installs the latest version in that channel
         // By specifying a specific .NET SDK version, you override the default channel behavior
