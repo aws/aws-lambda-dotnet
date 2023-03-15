@@ -223,11 +223,11 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
                 StackTrace = errorLines.Skip(1).Select(s => s.Trim()).ToArray();
 
                 var errorMessage = errorLines[0];
-                var errorTypeDelimiterPos = errorMessage.IndexOf(':');
-                if (errorTypeDelimiterPos > 0)
+                var errorMessageParts = errorMessage.Split(':');
+                if (errorMessageParts.Length > 1)
                 {
-                    ErrorType = errorMessage.Substring(0, errorTypeDelimiterPos).Trim();
-                    ErrorMessage = errorMessage.Substring(errorTypeDelimiterPos + 1).Trim();
+                    ErrorType = errorMessageParts[0].Trim();
+                    ErrorMessage = errorMessageParts[1].Trim();
                 }
                 else
                 {
