@@ -82,7 +82,7 @@
             /// <summary>
             /// Custom Properties
             /// </summary>
-            public Dictionary<string, string> Properties { get; set; }
+            public IDictionary<string, string> Properties { get; set; }
         }
 
         /// <summary>
