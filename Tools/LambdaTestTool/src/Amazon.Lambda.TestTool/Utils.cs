@@ -241,5 +241,21 @@ namespace Amazon.Lambda.TestTool
 
             return depsFile[0].Directory.FullName;            
         }
+
+        /// <summary>
+        /// Return tool path compatible with specific IDE for debug purposes
+        /// </summary>
+        /// <param name="ideName"></param>
+        /// <returns></returns>
+        public static string GetToolPath(string ideName)
+        {
+            ideName = ideName.Trim().ToLower();
+            if (ideName == "vs" || ideName == "vscode")
+            {
+                return Process.GetCurrentProcess().MainModule!.FileName;
+            }
+
+            return Assembly.GetEntryAssembly()!.Location;
+        }
     }
 }
