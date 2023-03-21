@@ -1,3 +1,7 @@
+### Release 2023-03-20
+* **Amazon.Lambda.MQEvents (1.1.0)**
+  * Pull request [#1452](https://github.com/aws/aws-lambda-dotnet/pull/1452) Adds custom properties to ActiveMQ event. Thanks [Alex Issa](https://github.com/alexaiss)
+  
 ### Release 2023-03-06
 * **Amazon.Lambda.CloudWatchEvents (4.3.0)**
   * Pull request [#1447](https://github.com/aws/aws-lambda-dotnet/pull/1447) adds events for Translate Parallel Data State Change and Translate Text Translation Job State Change. Thanks [Bryan Hogan](https://github.com/bjhogan)
