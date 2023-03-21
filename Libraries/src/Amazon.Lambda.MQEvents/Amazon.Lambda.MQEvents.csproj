@@ -6,7 +6,7 @@
     <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - MQEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.MQEvents</AssemblyTitle>
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>1.1.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.MQEvents</AssemblyName>
     <PackageId>Amazon.Lambda.MQEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Amazon MQ;Rabbit MQ;Apache Active MQ</PackageTags>
