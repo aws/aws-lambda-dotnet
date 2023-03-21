@@ -78,6 +78,11 @@
             /// Broker Out Time
             /// </summary>
             public long? BrokerOutTime { get; set; }
+
+            /// <summary>
+            /// Custom Properties
+            /// </summary>
+            public IDictionary<string, string> Properties { get; set; }
         }
 
         /// <summary>

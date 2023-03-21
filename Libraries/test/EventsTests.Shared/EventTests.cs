@@ -2788,6 +2788,7 @@ namespace Amazon.Lambda.Tests
                 Assert.NotNull(activemqEvent.Messages[0].Timestamp);
                 Assert.NotNull(activemqEvent.Messages[0].BrokerInTime);
                 Assert.NotNull(activemqEvent.Messages[0].BrokerOutTime);
+                Assert.Equal("testValue", activemqEvent.Messages[0].Properties["testKey"]);
 
                 Assert.Equal("ID:b-9bcfa592-423a-4942-879d-eb284b418fc8-1.mq.us-west-2.amazonaws.com-37557-1234520418293-4:1:1:1:1", activemqEvent.Messages[1].MessageId);
                 Assert.Equal("jms/bytes-message", activemqEvent.Messages[1].MessageType);
@@ -2799,6 +2800,7 @@ namespace Amazon.Lambda.Tests
                 Assert.NotNull(activemqEvent.Messages[1].Timestamp);
                 Assert.NotNull(activemqEvent.Messages[1].BrokerInTime);
                 Assert.NotNull(activemqEvent.Messages[1].BrokerOutTime);
+                Assert.Equal("testValue", activemqEvent.Messages[1].Properties["testKey"]);
             }
         }
 
