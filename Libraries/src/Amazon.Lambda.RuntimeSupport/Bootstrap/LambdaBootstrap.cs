@@ -215,7 +215,6 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             var dotnetRuntimeVersion = new DirectoryInfo(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory()).Name;
             var amazonLambdaRuntimeSupport = typeof(LambdaBootstrap).Assembly.GetName().Version;
-            var userAgentString = $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}";
 
 #if NET6_0_OR_GREATER
             // Create the SocketsHttpHandler directly to avoid spending cold start time creating the wrapper HttpClientHandler
@@ -223,8 +222,14 @@ namespace Amazon.Lambda.RuntimeSupport
             {
 
             };
+
+            // If we are running in an AOT environment, mark it as such.
+            var userAgentString = NativeAotHelper.IsRunningNativeAot() ? $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}-aot"
+                : $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}";
+
             var client = new HttpClient(handler);
 #else
+            var userAgentString = $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}";
             var client = new HttpClient();
 #endif
             client.DefaultRequestHeaders.Add("User-Agent", userAgentString);
