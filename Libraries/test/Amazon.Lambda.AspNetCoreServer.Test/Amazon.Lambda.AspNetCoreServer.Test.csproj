@@ -23,6 +23,18 @@
     <None Remove="additional-path-parameters-in-proxy-path.json" />
     <None Remove="authtest-access-request.json" />
     <None Remove="missing-resource-request.json" />
+    <None Remove="rawtarget-escaped-percent-in-path-alb.json" />
+    <None Remove="rawtarget-escaped-percent-in-path-httpapi-v2.json" />
+    <None Remove="rawtarget-escaped-percent-in-path.json" />
+    <None Remove="rawtarget-escaped-percent-slash-in-path-alb.json" />
+    <None Remove="rawtarget-escaped-percent-slash-in-path-httpapi-v2.json" />
+    <None Remove="rawtarget-escaped-percent-slash-in-path.json" />
+    <None Remove="rawtarget-escaped-reserved-in-query-alb.json" />
+    <None Remove="rawtarget-escaped-reserved-in-query-httpapi-v2.json" />
+    <None Remove="rawtarget-escaped-reserved-in-query.json" />
+    <None Remove="rawtarget-escaped-slash-in-path-alb.json" />
+    <None Remove="rawtarget-escaped-slash-in-path-httpapi-v2.json" />
+    <None Remove="rawtarget-escaped-slash-in-path.json" />
     <None Remove="values-get-all-httpapi-request.json" />
   </ItemGroup>
 

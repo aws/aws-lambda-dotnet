@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Runtime.Serialization.Json;
 using System.IO;
+using Microsoft.AspNetCore.Http.Features;
 
 #if NETCOREAPP_2_1
 using Newtonsoft.Json.Linq;
@@ -88,10 +89,13 @@ namespace TestWebApp
 #endif
             app.Run(async (context) =>
             {
+                var rawTarget = context.Features.Get<IHttpRequestFeature>()?.RawTarget;
+
 #if NETCOREAPP_2_1
                 var root = new JObject();
                 root["Path"] = new JValue(context.Request.Path);
                 root["PathBase"] = new JValue(context.Request.PathBase);
+                root["RawTarget"] = new JValue(rawTarget);
 
                 var query = new JObject();
                 foreach(var queryKey in context.Request.Query.Keys)
@@ -112,6 +116,7 @@ namespace TestWebApp
                 writer.WriteStartObject();
                 writer.WriteString("Path", context.Request.Path);
                 writer.WriteString("PathBase", context.Request.PathBase);
+                writer.WriteString("RawTarget", rawTarget);
                 writer.WriteStartObject("QueryVariables");
                 foreach (var queryKey in context.Request.Query.Keys)
                 {
