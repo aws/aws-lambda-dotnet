@@ -108,7 +108,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                     _logger.LogWarning($"Request does not contain domain name information but is derived from {nameof(APIGatewayProxyFunction)}.");
                 }
 
-                string rawQueryString = Utilities.CreateQueryStringParametersFromHttpApiV2(apiGatewayRequest.RawQueryString);
+                var rawQueryString = Utilities.CreateQueryStringParametersFromHttpApiV2(apiGatewayRequest.RawQueryString);
                 requestFeatures.RawTarget = apiGatewayRequest.RawPath + rawQueryString;
                 requestFeatures.QueryString = rawQueryString;
 
