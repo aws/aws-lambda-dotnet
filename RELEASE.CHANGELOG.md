@@ -1,3 +1,7 @@
+### Release 2023-03-22
+* **Amazon.Lambda.RuntimeSupport (1.8.5)**
+  * Update user agent string when running as Native AOT
+
 ### Release 2023-03-20
 * **Amazon.Lambda.MQEvents (1.1.0)**
   * Pull request [#1452](https://github.com/aws/aws-lambda-dotnet/pull/1452) Adds custom properties to ActiveMQ event. Thanks [Alex Issa](https://github.com/alexaiss)
