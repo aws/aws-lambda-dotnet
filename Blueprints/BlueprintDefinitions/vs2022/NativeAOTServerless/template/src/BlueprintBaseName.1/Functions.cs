@@ -50,10 +50,12 @@ public class Functions
     /// LambdaFunctionJsonSerializerContext must have two JsonSerializable attributes, one for each type.
     ///
     /// When using Native AOT, libraries used with your Lambda function might not be compatible with trimming that
-    /// happens as part of the Native AOT compilation. If you find when testing your Native AOT Lambda function that 
-    /// you get runtime errors about missing types, methods or constructors then add the assembly that contains the
-    /// types into the rd.xml file. This will tell the Native AOT compiler to not trim those assemblies. Currently the 
-    /// AWS SDK for .NET does not support trimming and when used should be added to the rd.xml file.    
+    /// happens as part of the Native AOT compilation. When testing Native AOT Lambda functions in Lambda if a runtime 
+    /// error occurs about missing types or methods the most likely solution will be to remove references to trim-unsafe 
+    /// code or configure trimming options. To guarantee no runtime errors related to trimming, there needs to be zero 
+    /// trim warnings during the build and publish. This sample defaults to partial TrimMode because currently the AWS 
+    /// SDK for .NET does not support trimming. This will result in a larger executable size, and still does not 
+    /// guarantee runtime trimming errors won't be hit. 
     /// </summary>
     /// <param name="request"></param>
     /// <param name="context"></param>
@@ -83,10 +85,12 @@ public class Functions
     /// LambdaFunctionJsonSerializerContext must have two JsonSerializable attributes, one for each type.
     ///
     /// When using Native AOT, libraries used with your Lambda function might not be compatible with trimming that
-    /// happens as part of the Native AOT compilation. If you find when testing your Native AOT Lambda function that 
-    /// you get runtime errors about missing types, methods or constructors then add the assembly that contains the
-    /// types into the rd.xml file. This will tell the Native AOT compiler to not trim those assemblies. Currently the 
-    /// AWS SDK for .NET does not support trimming and when used should be added to the rd.xml file.    
+    /// happens as part of the Native AOT compilation. When testing Native AOT Lambda functions in Lambda if a runtime 
+    /// error occurs about missing types or methods the most likely solution will be to remove references to trim-unsafe 
+    /// code or configure trimming options. To guarantee no runtime errors related to trimming, there needs to be zero 
+    /// trim warnings during the build and publish. This sample defaults to partial TrimMode because currently the AWS 
+    /// SDK for .NET does not support trimming. This will result in a larger executable size, and still does not 
+    /// guarantee runtime trimming errors won't be hit. 
     /// </summary>
     /// <param name="request"></param>
     /// <param name="context"></param>

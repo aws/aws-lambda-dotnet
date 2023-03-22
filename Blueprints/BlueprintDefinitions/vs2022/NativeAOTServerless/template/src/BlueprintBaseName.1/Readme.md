@@ -4,7 +4,6 @@ This starter project consists of:
 * serverless.template - an AWS CloudFormation Serverless Application Model template file for declaring your Serverless functions and other AWS resources.
 * Function.cs - contains a class with a `Main` method that starts the bootstrap and a single function handler method.
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS.
-* rd.xml - Runtime directives configuration file used to tell the Native AOT compiler what code to not trim out of .NET assemblies.
 
 You may also have a test project depending on the options selected.
 
@@ -28,34 +27,16 @@ platform is Amazon Linux 2. The AWS tooling for Lambda like the AWS Toolkit for 
 perform a container build using a .NET 7 Amazon Linux 2 build image when `PublishAot` is set to `true`. This means **docker is a requirement**
 when packaging .NET Native AOT Lambda functions on non-Amazon Linux 2 build environments. To install docker go to https://www.docker.com/.
 
-Due to an incompatibility with Amazon Linux 2 and .NET 7 ARM support it is not possible to build and deploy ARM based Native AOT Lambda functions.
-Since the architectures need to match between the build and target environments for .NET Native AOT Lambda functions it is not currently possible
-to deploy Native AOT Lambda functions from an M based Mac.
-
 ### Trimming
 
 As part of the Native AOT compilation, .NET assemblies will be trimmed removing types and methods that the compiler does not find a reference to. This is important
-to keep the native executable size small. When types are used through reflection this can go undetected by the compiler causing necessary types and methods to 
-be removed. The `rd.xml` file in the project is used to provide additional configuration to the compiler about what types are used to prevent them from 
-being trimmed. When testing Native AOT Lambda functions in Lambda if a runtime error occurs about missing types or methods the most likely solution will
-be to update the `rd.xml` to not trim the type. 
+to keep the native executable size small. When types are used through reflection this can go undetected by the compiler causing necessary types and methods to
+be removed. When testing Native AOT Lambda functions in Lambda if a runtime error occurs about missing types or methods the most likely solution will
+be to remove references to trim-unsafe code or configure [trimming options](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options?pivots=dotnet-7-0).
+To guarantee no runtime errors related to trimming, there needs to be zero trim warnings during the build and publish. This sample defaults to partial TrimMode because currently
+the AWS SDK for .NET does not support trimming. This will result in a larger executable size, and still does not guarantee runtime trimming errors won't be hit.
 
-Currently the AWS SDK for .NET does not support trimming and when used should be added to the rd.xml file. For example here is a `rd.xml` file that excludes
-the AWS SDK's core and AWS DynamoDB package.
-```xml
-<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
-	<Application>
-		<Assembly Name="AWSSDK.Core" Dynamic="Required All">
-		</Assembly>
-		<Assembly Name="AWSSDK.DynamoDBv2" Dynamic="Required All">
-		</Assembly>
-		<Assembly Name="bootstrap" Dynamic="Required All">
-		</Assembly>
-	</Application>
-</Directives>
-```
-
-For informaton about the `rd.xml` checkout the runtime directives configuration file reference: https://learn.microsoft.com/en-us/windows/uwp/dotnet-native/runtime-directives-rd-xml-configuration-file-reference
+For information about trimming see the documentation: <https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-self-contained>
 
 ## Docker requirement
 
