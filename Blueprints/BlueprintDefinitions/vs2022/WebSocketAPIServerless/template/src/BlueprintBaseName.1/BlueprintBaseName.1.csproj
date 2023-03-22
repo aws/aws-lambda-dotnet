@@ -12,9 +12,9 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.0" />
-    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.5.0" />
-    <PackageReference Include="AWSSDK.ApiGatewayManagementApi" Version="3.7.100.32" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.101.2" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.1" />
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.6.0" />
+    <PackageReference Include="AWSSDK.ApiGatewayManagementApi" Version="3.7.100.96" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.102.10" />
   </ItemGroup>
 </Project>
