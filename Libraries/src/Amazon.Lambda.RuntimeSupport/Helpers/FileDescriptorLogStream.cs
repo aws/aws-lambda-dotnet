@@ -63,7 +63,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             // Set the buffer size to the same max size as CloudWatch Logs records.
             // Encoder has encoderShouldEmitUTF8Identifier = false as Lambda FD will assume UTF-8 so there is no need to emit an extra log entry.
             // In fact this extra log entry is cast to UTF-8 and results in an empty log entry which will be rejected by CloudWatch Logs.
-            return new StreamWriter(new FileDescriptorLogStream(fileDescriptorStream),
+            return new NonDisposableStreamWriter(new FileDescriptorLogStream(fileDescriptorStream),
                     new UTF8Encoding(false), MaxCloudWatchLogEventSize)
                 { AutoFlush = true };
         }
@@ -158,6 +158,31 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 throw new NotSupportedException();
             }
             #endregion
+        }
+
+        /// <summary>
+        /// This class is used to ensure the StreamWriter that is returned can not be unintentionally closed/disposed by users.
+        /// If we allow the stream to be closed/disposed then future logging in the Lambda function will fail with object disposed exceptions.
+        /// This situation was discovered for a function using NUnitLite to run tests and that library would trigger a dispose on Console.Out
+        /// https://github.com/nunit/nunit/blob/92180f13381621e308b01f0abd1a397cc1350c12/src/NUnitFramework/nunitlite/TextRunner.cs#L104
+        /// </summary>
+        class NonDisposableStreamWriter : StreamWriter
+        {
+            public NonDisposableStreamWriter(Stream stream, Encoding encoding, int buffersize)
+                : base(stream, encoding, buffersize)
+            {
+
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                // This StreamWriter must never be disposed. If disposed logging will fail in the function.
+            }
+
+            public override void Close()
+            {
+                // This StreamWriter must never be disposed. If disposed logging will fail in the function.
+            }
         }
     }
 }

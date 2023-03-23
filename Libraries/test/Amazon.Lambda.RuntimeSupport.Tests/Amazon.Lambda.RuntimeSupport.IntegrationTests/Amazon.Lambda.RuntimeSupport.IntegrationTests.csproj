@@ -20,19 +20,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.IdentityManagement" Version="3.7.0" />
-    <PackageReference Include="AWSSDK.Lambda" Version="3.7.4.9" />
-    <PackageReference Include="AWSSDK.S3" Version="3.7.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.1.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+    <PackageReference Include="AWSSDK.IdentityManagement" Version="3.7.100.98" />
+    <PackageReference Include="AWSSDK.Lambda" Version="3.7.105.17" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.103.34" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit" Version="2.4.2" />
 
     <!-- This needs to be referenced to allow testing via AssumeRole credentials -->
-    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.0" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.101.32" />
   </ItemGroup>
 
   <ItemGroup>
