@@ -128,6 +128,14 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
                 // Wait for role to propagate.
                 await Task.Delay(10000);
+
+                await iamClient.AttachRolePolicyAsync(new AttachRolePolicyRequest
+                {
+                    PolicyArn = "arn:aws:iam::aws:policy/AWSLambdaExecute",
+                    RoleName = ExecutionRoleName,
+                });
+
+
                 return false;
             }
         }
@@ -188,14 +196,20 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
         protected async Task UpdateHandlerAsync(IAmazonLambda lambdaClient, string handler, Dictionary<string, string> environmentVariables = null)
         {
+            if(environmentVariables == null)
+            {
+                environmentVariables = new Dictionary<string, string>();
+            }
+
+            environmentVariables["TEST_HANDLER"] = handler;
+
             var updateFunctionConfigurationRequest = new UpdateFunctionConfigurationRequest
             {
                 FunctionName = FunctionName,
-                Handler = handler,
                 Environment = new Model.Environment
                 {
                     IsVariablesSet = true,
-                    Variables = environmentVariables ?? new Dictionary<string, string>()
+                    Variables = environmentVariables
                 }
             };
             await lambdaClient.UpdateFunctionConfigurationAsync(updateFunctionConfigurationRequest);
@@ -223,10 +237,10 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     S3Bucket = bucketName,
                     S3Key = DeploymentZipKey
                 },
-                Handler = "PingAsync",
+                Handler = "CustomRuntimeFunctionTest",
                 MemorySize = 512,
                 Timeout = 30,
-                Runtime = Runtime.ProvidedAl2,
+                Runtime = Runtime.Dotnet6,
                 Role = ExecutionRoleArn
             };
 

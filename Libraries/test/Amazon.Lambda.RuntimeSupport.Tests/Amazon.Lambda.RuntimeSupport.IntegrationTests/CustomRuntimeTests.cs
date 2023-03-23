@@ -54,6 +54,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 {
                     roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
 
+                    await RunTestSuccessAsync(lambdaClient, "UnintendedDisposeTest", "not-used", "UnintendedDisposeTest-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "LoggingStressTest", "not-used", "LoggingStressTest-success");
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", null);
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", "debug");
@@ -64,7 +65,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await RunTestSuccessAsync(lambdaClient, "HttpsWorksAsync", "", "HttpsWorksAsync-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "CertificateCallbackWorksAsync", "", "CertificateCallbackWorksAsync-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "NetworkingProtocolsAsync", "", "NetworkingProtocolsAsync-SUCCESS");
-                    await RunTestSuccessAsync(lambdaClient, "HandlerEnvVarAsync", "", "HandlerEnvVarAsync-HandlerEnvVarAsync");
+                    await RunTestSuccessAsync(lambdaClient, "HandlerEnvVarAsync", "", "HandlerEnvVarAsync-CustomRuntimeFunctionTest");
                     await RunTestExceptionAsync(lambdaClient, "AggregateExceptionUnwrappedAsync", "", "Exception", "Exception thrown from an async handler.");
                     await RunTestExceptionAsync(lambdaClient, "AggregateExceptionUnwrapped", "", "Exception", "Exception thrown from a synchronous handler.");
                     await RunTestExceptionAsync(lambdaClient, "AggregateExceptionNotUnwrappedAsync", "", "AggregateException", "AggregateException thrown from an async handler.");

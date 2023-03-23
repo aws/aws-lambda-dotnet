@@ -28,7 +28,7 @@ namespace CustomRuntimeFunctionTest
 
         private static async Task Main(string[] args)
         {
-            var handler = LambdaEnvironment.Handler;
+            var handler = Environment.GetEnvironmentVariable("TEST_HANDLER");
             LambdaBootstrap bootstrap = null;
             HandlerWrapper handlerWrapper = null;
 
@@ -36,6 +36,9 @@ namespace CustomRuntimeFunctionTest
             {
                 switch (handler)
                 {
+                    case nameof(UnintendedDisposeTest):
+                        bootstrap = new LambdaBootstrap(UnintendedDisposeTest);
+                        break;
                     case nameof(LoggingStressTest):
                         bootstrap = new LambdaBootstrap(LoggingStressTest);
                         break;
@@ -172,6 +175,43 @@ namespace CustomRuntimeFunctionTest
 
             return Task.FromResult(GetInvocationResponse(nameof(LoggingTest), true));
         }
+
+        private static Task<InvocationResponse> UnintendedDisposeTest(InvocationRequest invocation)
+        {
+            int errorCode = new NUnitLite.AutoRun().Execute(new string[] { "--noresult" });
+            Console.WriteLine("This is standard output stream.");
+
+            return Task.FromResult(GetInvocationResponse(nameof(UnintendedDisposeTest), true));
+        }
+
+        public class WrapTextWriter : TextWriter
+        {
+            TextWriter _textWriter;
+            public WrapTextWriter(TextWriter textWriter)
+            {
+                _textWriter = textWriter;
+            }
+            public override Encoding Encoding => UTF8Encoding.UTF8;
+
+            protected override void Dispose(bool disposing)
+            {
+                if(disposing)
+                {
+                    _textWriter.Dispose();
+                }
+            }
+
+            public override async ValueTask DisposeAsync()
+            {
+                await _textWriter.DisposeAsync();
+            }
+
+            public override void Close()
+            {
+                _textWriter.Close();
+            }
+        }
+
 
         private static Task<InvocationResponse> ToUpperAsync(InvocationRequest invocation)
         {
