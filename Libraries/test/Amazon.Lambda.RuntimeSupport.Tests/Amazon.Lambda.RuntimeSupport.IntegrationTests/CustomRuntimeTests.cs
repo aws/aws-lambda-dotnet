@@ -32,7 +32,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     public class CustomRuntimeTests : BaseCustomRuntimeTest
     {
         public CustomRuntimeTests() 
-            : base("CustomRuntimeFunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip")
+            : base("CustomRuntimeFunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest")
         {
         }
 

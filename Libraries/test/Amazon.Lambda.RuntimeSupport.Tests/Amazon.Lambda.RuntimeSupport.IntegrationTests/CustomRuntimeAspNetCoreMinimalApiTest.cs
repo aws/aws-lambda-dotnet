@@ -21,7 +21,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     public class CustomRuntimeAspNetCoreMinimalApiTest : BaseCustomRuntimeTest
     {
         public CustomRuntimeAspNetCoreMinimalApiTest()
-            : base("CustomRuntimeAspNetCoreMinimalApiTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiTest.zip", @"CustomRuntimeAspNetCoreMinimalApiTest\bin\Release\net6.0\CustomRuntimeAspNetCoreMinimalApiTest.zip")
+            : base("CustomRuntimeAspNetCoreMinimalApiTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiTest.zip", @"CustomRuntimeAspNetCoreMinimalApiTest\bin\Release\net6.0\CustomRuntimeAspNetCoreMinimalApiTest.zip", "bootstrap")
         {
         }
 

@@ -33,6 +33,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
         ".Trim();
 
+        protected string Handler { get; }
         protected string FunctionName { get; }
         protected string DeploymentZipKey { get; }
         protected string DeploymentPackageZipRelativePath { get; }
@@ -41,10 +42,11 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         protected string ExecutionRoleArn { get; set; }
         private const string TestsProjectDirectoryName = "Amazon.Lambda.RuntimeSupport.Tests";
 
-        protected BaseCustomRuntimeTest(string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath)
+        protected BaseCustomRuntimeTest(string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler)
         {
             FunctionName = functionName;
             ExecutionRoleName = FunctionName;
+            Handler = handler;
             DeploymentZipKey = deploymentZipKey;
             DeploymentPackageZipRelativePath = deploymentPackageZipRelativePath;
         }
@@ -237,7 +239,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     S3Bucket = bucketName,
                     S3Key = DeploymentZipKey
                 },
-                Handler = "CustomRuntimeFunctionTest",
+                Handler = this.Handler,
                 MemorySize = 512,
                 Timeout = 30,
                 Runtime = Runtime.Dotnet6,

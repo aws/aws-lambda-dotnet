@@ -21,7 +21,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     public class CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest : BaseCustomRuntimeTest
     {
         public CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest()
-            : base("CustomRuntimeMinimalApiCustomSerializerTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", @"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net6.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip")
+            : base("CustomRuntimeMinimalApiCustomSerializerTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", @"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net6.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", "bootstrap")
         {
         }
 
