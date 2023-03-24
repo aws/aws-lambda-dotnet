@@ -11,7 +11,7 @@ using Amazon.Lambda.ApplicationLoadBalancerEvents;
 using Amazon.Lambda.TestUtilities;
 
 using Newtonsoft.Json;
-
+using Newtonsoft.Json.Linq;
 using TestWebApp;
 
 using Xunit;
@@ -218,6 +218,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("gzip", response.Headers["Content-Encoding"]);
 
             Assert.Contains("OnStarting Called", ((TestLambdaLogger)context.Logger).Buffer.ToString());
+        }
+
+        [Theory]
+        [InlineData("rawtarget-escaped-percent-in-path-alb.json", "/foo%25bar")]
+        [InlineData("rawtarget-escaped-percent-slash-in-path-alb.json", "/foo%25%2Fbar")]
+        [InlineData("rawtarget-escaped-reserved-in-query-alb.json", "/foo/bar?foo=b%40r")]
+        [InlineData("rawtarget-escaped-slash-in-path-alb.json", "/foo%2Fbar")]
+        public async Task TestRawTarget(string requestFileName, string expectedRawTarget)
+        {
+            var response = await this.InvokeApplicationLoadBalancerRequest(requestFileName);
+
+            Assert.Equal(200, response.StatusCode);
+
+            var root = JObject.Parse(response.Body);
+            Assert.Equal(expectedRawTarget, root["RawTarget"]?.ToString());
         }
 
         private async Task<ApplicationLoadBalancerResponse> InvokeApplicationLoadBalancerRequest(string fileName)

@@ -325,6 +325,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal("/foo/", root?["Path"]?.ToString());
         }
 
+        [Theory]
+        [InlineData("rawtarget-escaped-percent-in-path.json", "/foo%25bar")]
+        [InlineData("rawtarget-escaped-percent-slash-in-path.json", "/foo%25%2Fbar")]
+        [InlineData("rawtarget-escaped-reserved-in-query.json", "/foo/bar?foo=b%2540r")]
+        [InlineData("rawtarget-escaped-slash-in-path.json", "/foo%2Fbar")]
+        public async Task TestRawTarget(string requestFileName, string expectedRawTarget)
+        {
+            var response = await this.InvokeAPIGatewayRequest(requestFileName);
+
+            Assert.Equal(200, response.StatusCode);
+
+            var root = JsonSerializer.Deserialize<JsonObject>(response.Body);
+            Assert.Equal(expectedRawTarget, root["RawTarget"]?.ToString());
+        }
+
         [Fact]
         public async Task TestAuthTestAccess()
         {
