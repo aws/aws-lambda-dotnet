@@ -1,4 +1,14 @@
 ### Release 2023-03-22
+* **Amazon.Lambda.RuntimeSupport (1.8.6)**
+  * Fixed issue getting ObjectDisposedException writing to Console.Out after Console.Out had been unintendedly disposed.
+* **Amazon.Lambda.AspNetCoreServer (8.1.0)**
+  * Pull request [#1463](https://github.com/aws/aws-lambda-dotnet/pull/1463) add support for IHttpRequestFeature.RawTarget. Thanks [Kevin Stapleton](https://github.com/kevinstapleton)
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.6.0)**
+  * Update to Amazon.Lambda.AspNetCoreServer dependency version to 8.1.0
+* **Amazon.Lambda.Templates (6.11.0)**
+  * Update blueprints to latest versions of AWS dependencies.  
+
+### Release 2023-03-22
 * **Amazon.Lambda.RuntimeSupport (1.8.5)**
   * Update user agent string when running as Native AOT
 
