@@ -1,4 +1,4 @@
-### Release 2023-03-22
+### Release 2023-03-23
 * **Amazon.Lambda.RuntimeSupport (1.8.6)**
   * Fixed issue getting ObjectDisposedException writing to Console.Out after Console.Out had been unintendedly disposed.
 * **Amazon.Lambda.AspNetCoreServer (8.1.0)**
