@@ -31,6 +31,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string FromHeaderAttribute = "Amazon.Lambda.Annotations.APIGateway.FromHeaderAttribute";
         public const string FromBodyAttribute = "Amazon.Lambda.Annotations.APIGateway.FromBodyAttribute";
         public const string FromRouteAttribute = "Amazon.Lambda.Annotations.APIGateway.FromRouteAttribute";
+        public const string FromCustomAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.FromCustomAuthorizerAttribute";
 
         public static HashSet<string> Requests = new HashSet<string>
         {
