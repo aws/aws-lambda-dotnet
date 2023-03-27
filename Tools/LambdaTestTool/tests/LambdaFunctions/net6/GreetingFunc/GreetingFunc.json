@@ -1,0 +1,4 @@
+﻿{
+  "profile": "default",
+  "function-handler": "GreetingFunc::GreetingFunc.Function::FunctionHandler"
+}
