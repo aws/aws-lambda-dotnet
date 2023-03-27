@@ -136,8 +136,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     }
 
                     var template = new LambdaFunctionTemplate(model);
-                    var sourceText = template.TransformText().ToEnvironmentLineEndings();
-                    context.AddSource($"{model.GeneratedMethod.ContainingType.Name}.g.cs", SourceText.From(sourceText, Encoding.UTF8, SourceHashAlgorithm.Sha256));
+
+                    string sourceText;
+                    try
+                    {
+                        sourceText = template.TransformText().ToEnvironmentLineEndings();
+                        context.AddSource($"{model.GeneratedMethod.ContainingType.Name}.g.cs", SourceText.From(sourceText, Encoding.UTF8, SourceHashAlgorithm.Sha256));
+                    }
+                    catch (Exception e) when (e is NotSupportedException || e is InvalidOperationException)  
+                    {
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.CodeGenerationFailed, Location.Create(lambdaMethod.SyntaxTree, lambdaMethod.Span), e.Message));
+                        return;
+                    }
 
                     // report every generated file to build output
                     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.CodeGeneration, Location.None, $"{model.GeneratedMethod.ContainingType.Name}.g.cs", sourceText));

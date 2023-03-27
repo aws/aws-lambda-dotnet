@@ -1,0 +1,25 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+using Amazon.Lambda.Core;
+using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
+
+// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+
+namespace TestServerlessApp
+{
+    public class MissingResourcePathMapping
+    {
+		// This fails because the "x" resource path has a different name then the FromRoute name
+	    [LambdaFunction()]
+		[HttpApi(LambdaHttpMethod.Get, "/add/{x}/{y}")]
+		public int Add([FromRoute(Name = "x1")] int x1, [FromRoute(Name = "y")] int y1, ILambdaContext context)
+		{
+			return x1 + y1;
+		}	
+	}
+}

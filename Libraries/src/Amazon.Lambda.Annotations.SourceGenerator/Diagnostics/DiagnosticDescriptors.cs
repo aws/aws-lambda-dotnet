@@ -27,7 +27,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly DiagnosticDescriptor MultipleEventsNotSupported = new DiagnosticDescriptor(id: "AWSLambda0102",
             title: "Multiple events on Lambda function not supported",
             messageFormat: "Multiple event attributes on LambdaFunction are not supported",
-            category: "AWSLambdaCSharpGenerator",
+            category: "AWSLambdaCSharpGenerator",   
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
@@ -55,6 +55,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly  DiagnosticDescriptor InvalidResourceName = new DiagnosticDescriptor(id: "AWSLambda0106",
             title: $"Invalid CloudFormation resource name",
             messageFormat: "The specified CloudFormation resource name is not valid. It must only contain alphanumeric characters.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor CodeGenerationFailed = new DiagnosticDescriptor(id: "AWSLambda0107",
+            title: "Failed Code Generation",
+            messageFormat: $"{{0}}{Environment.NewLine}{{1}}",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
