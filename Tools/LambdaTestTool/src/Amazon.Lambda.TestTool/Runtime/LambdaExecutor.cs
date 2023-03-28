@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
@@ -38,10 +39,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                 }
 
 
-                var context = new LocalLambdaContext()
-                {
-                    Logger = logger
-                };
+                var context = GetLambdaContextForRequest(request.LambdaContext, logger);
 
                 object instance = null;
                 if (!request.Function.LambdaMethod.IsStatic)
@@ -79,6 +77,23 @@ namespace Amazon.Lambda.TestTool.Runtime
             response.Logs = logger.Buffer;
 
             return response;
+        }
+
+        public ILambdaContext GetLambdaContextForRequest(string requestLambdaContext, ILambdaLogger defaultLogger)
+        {
+            if (string.IsNullOrWhiteSpace(requestLambdaContext))
+            {
+                return new LocalLambdaContext()
+                {
+                    Logger = defaultLogger
+                };
+            }
+
+            var context = JsonSerializer.Deserialize<LocalLambdaContext>(requestLambdaContext);
+
+            context.Logger = defaultLogger;
+
+            return context;
         }
 
         private static string SeachForDllNotFoundException(Exception e)

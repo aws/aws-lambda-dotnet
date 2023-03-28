@@ -25,5 +25,9 @@
         /// </summary>
         public string Payload { get; set; }
         
+        /// <summary>
+        /// The JSON payload that will be the Lambda Context input of the Lambda function.
+        /// </summary>
+        public string LambdaContext { get; set; }
     }
 }

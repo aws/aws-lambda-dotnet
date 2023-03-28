@@ -105,6 +105,8 @@ These options are valid in the no web interface mode.
                                               from the config file will be used. This is the format of &lt;assembly::type-name::method-name&gt;.
         --payload &lt;file-name&gt;                 The JSON payload to send to the Lambda function. This can be either an inline string or a
                                               file path to a JSON file.
+        --lambdaContext <file-name>           The JSON Context object to send to the Lambda function. This can be either an inline string or a
+                                              file path to a JSON file.
         --pause-exit &lt;true or false&gt;          If set to true the test tool will pause waiting for a key input before exiting. The is useful
                                               when executing from an IDE so you can avoid having the output window immediately disappear after
                                               executing the Lambda code. The default value is true.

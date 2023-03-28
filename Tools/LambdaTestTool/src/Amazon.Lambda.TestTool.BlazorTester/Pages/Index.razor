@@ -3,6 +3,7 @@
 @using System.Threading; 
 @using Amazon.Lambda.TestTool.Runtime;
 @using Amazon.Lambda.TestTool.SampleRequests;
+@using System.Text.Json
 @inject LocalLambdaOptions LambdaOptions
 @inject IModalService Modal
 
@@ -62,6 +63,13 @@
     </div>
 </div>
 
+<div class="row">
+    <div class="col-sm form-group">
+        <label class="col-xs-3 control-label" for="function-context">Lambda Context Input:</label>
+        <button type="button" class="btn btn-secondary btn-sm" @onclick="GenerateLocalLambdaContext">Generate Sample Context</button>
+        <textarea class="form-control" rows="10" id="function-context" @bind="LambdaContextInput" placeholder="JSON document to pass a custom Lambda Context object. If nothing is passed, only the logger will be set. Plain strings must be wrapped in quotes."></textarea>
+    </div>
+</div>
 
 <div class="row mt-3">
     <div class="col-sm form-group">
@@ -100,6 +108,8 @@
     public string FunctionResponse { get; set; }
 
     public string FunctionLogs { get; set; }
+    
+    public string LambdaContextInput { get; set; }
 
     string _selectedSampleRequestName;
     string SelectedSampleRequestName
@@ -114,11 +124,21 @@
     }
 
     SampleRequestManager SampleRequestManager { get; set; }
+    SampleLambdaContextManager SampleLambdaContextManager { get; set; }
 
     protected override void OnInitialized()
     {
         this.SampleRequestManager = new SampleRequestManager(LambdaOptions.GetPreferenceDirectory(false));
         this.SampleRequests = SampleRequestManager.GetSampleRequests();
+        this.SampleLambdaContextManager = new SampleLambdaContextManager();
+    }
+    
+    void GenerateLocalLambdaContext()
+    {
+        var context = SampleLambdaContextManager.GetSampleContextRequest();
+
+        this.LambdaContextInput = JsonSerializer.Serialize(context, new JsonSerializerOptions {WriteIndented = true});
+        this.StateHasChanged();
     }
 
     void OnSaveRequestClick()
@@ -166,7 +186,8 @@
                 Function = function,
                 AWSProfile = FunctionPicker.AWSProfile,
                 AWSRegion = FunctionPicker.AWSRegion,
-                Payload = this.FunctionInput
+                Payload = this.FunctionInput,
+                LambdaContext = this.LambdaContextInput
             };
 
             response = this.LambdaOptions.LambdaRuntime.ExecuteLambdaFunctionAsync(request).GetAwaiter().GetResult();
