@@ -13,6 +13,9 @@
     <!-- StripSymbols tells the compiler to strip debugging symbols from the final executable if we're on Linux and put them into their own file. 
     This will greatly reduce the final executable's size.-->
     <StripSymbols>true</StripSymbols>
+    <!-- TrimMode partial will only trim assemblies marked as trimmable. To reduce package size make all assemblies trimmable and set TrimMode to full.
+    If there are trim warnings during build, you can hit errors at runtime.-->
+    <TrimMode>partial</TrimMode>
   </PropertyGroup>
   <!-- 
   When publishing Lambda functions for ARM64 to the provided.al2 runtime a newer version of libicu needs to be included
@@ -27,9 +30,5 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.1" />
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.6.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <!--The runtime directives file allows the compiler to know what types and assemblies to not trim out of the final binary, even if they don't appear to be used.-->
-    <RdXmlFile Include="rd.xml" />
   </ItemGroup>
 </Project>
