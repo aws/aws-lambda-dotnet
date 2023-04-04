@@ -2729,20 +2729,25 @@ namespace Amazon.Lambda.Tests
                 var eventRecord = record.Value.FirstOrDefault();
                 Assert.Equal(eventRecord.Topic, "mytopic");
                 Assert.Equal(eventRecord.Partition, 12);
-                Assert.Equal(eventRecord.Offset, 15);
+                Assert.Equal(eventRecord.Offset, 3043205);
                 Assert.Equal(eventRecord.Timestamp, 1545084650987);
                 Assert.Equal(eventRecord.TimestampType, "CREATE_TIME");
 
                 Assert.Equal(new StreamReader(eventRecord.Value).ReadToEnd(), "Hello, this is a test.");
 
-                Assert.Equal(eventRecord.Headers.Count, 1);
+                Assert.Equal(eventRecord.Headers.Count, 8);
                 var eventRecordHeader = eventRecord.Headers.FirstOrDefault();
                 Assert.NotNull(eventRecordHeader);
                 Assert.Equal(eventRecordHeader.Count, 1);
                 var eventRecordHeaderValue = eventRecordHeader.FirstOrDefault();
                 Assert.NotNull(eventRecordHeaderValue);
                 Assert.Equal(eventRecordHeaderValue.Key, "headerKey");
-                Assert.Equal(Encoding.UTF8.GetString(eventRecordHeaderValue.Value), "headerValue");
+
+                // Convert sbyte[] to byte[] array.
+                var tempHeaderValueByteArray = new byte[eventRecordHeaderValue.Value.Length];
+                Buffer.BlockCopy(eventRecordHeaderValue.Value, 0, tempHeaderValueByteArray, 0, tempHeaderValueByteArray.Length);
+
+                Assert.Equal(Encoding.UTF8.GetString(tempHeaderValueByteArray), "headerValue");
 
                 Handle(kafkaEvent);
             }

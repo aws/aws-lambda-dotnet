@@ -73,7 +73,7 @@
             /// <summary>
             /// The Kafka event record headers.
             /// </summary>
-            public IList<IDictionary<string, byte[]>> Headers { get; set; }
+            public IList<IDictionary<string, sbyte[]>> Headers { get; set; }
         }
     }
 }
