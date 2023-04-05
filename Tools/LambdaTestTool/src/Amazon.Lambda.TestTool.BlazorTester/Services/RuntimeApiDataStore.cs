@@ -8,7 +8,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
 {
     public interface IRuntimeApiDataStore
     {
-        EventContainer QueueEvent(string eventBody);
+        EventContainer QueueEvent(string functionName, string eventBody);
         
         IReadOnlyList<IEventContainer> QueuedEvents { get; }
         
@@ -25,7 +25,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
 
         event EventHandler StateChange;
 
-        bool TryActivateEvent(out IEventContainer activeEvent);
+        bool TryActivateEvent(string functionName, out IEventContainer activeEvent);
 
         void ReportSuccess(string awsRequestId, string response);
         void ReportError(string awsRequestId, string errorType, string errorBody);
@@ -40,9 +40,9 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
         
         public event EventHandler StateChange;
         
-        public EventContainer QueueEvent(string eventBody)
+        public EventContainer QueueEvent(string functionName, string eventBody)
         {
-            var evnt = new EventContainer(this, _eventCounter++, eventBody);
+            var evnt = new EventContainer(this, _eventCounter++, functionName, eventBody);
             lock (_lock)
             {
                 _queuedEvents.Add(evnt);
@@ -52,18 +52,19 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
             return evnt;
         }
 
-        public bool TryActivateEvent(out IEventContainer activeEvent)
+        public bool TryActivateEvent(string functionName, out IEventContainer activeEvent)
         {
             activeEvent = null;
             lock(_lock)
             {
-                if (!_queuedEvents.Any())
+                var evnt = _queuedEvents.FirstOrDefault(m => m.FunctionName == functionName);
+
+                if (evnt == null)
                 {
                     return false;
                 }
 
-                var evnt = _queuedEvents[0];
-                _queuedEvents.RemoveAt(0);
+                _queuedEvents.Remove(evnt);
                 evnt.EventStatus = IEventContainer.Status.Executing;
                 if (ActiveEvent != null)
                 {
@@ -199,6 +200,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
         public enum Status {Queued, Executing, Success, Failure}
         
         string AwsRequestId { get; }
+        string FunctionName { get; }
         string EventJson { get; }
         string ErrorResponse { get; }
         string ErrorType { get; }
@@ -216,6 +218,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
         
         private const string defaultFunctionArn = "arn:aws:lambda:us-west-2:123412341234:function:Function";
         public string AwsRequestId { get; }
+        public string FunctionName { get; }
         public string EventJson { get; }
         public string ErrorResponse { get; private set; }
         
@@ -237,17 +240,18 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
         }
 
         private readonly RuntimeApiDataStore _dataStore;
-        public EventContainer(RuntimeApiDataStore dataStore, int eventCount, string eventJson)
+        public EventContainer(RuntimeApiDataStore dataStore, int eventCount, string functionName, string eventJson)
         {
             LastUpdated = DateTime.Now;
             this._dataStore = dataStore;
             this.AwsRequestId = eventCount.ToString("D12");
+            this.FunctionName = functionName;
             this.EventJson = eventJson;
         }
 
         public string FunctionArn
         {
-            get => defaultFunctionArn;
+            get => this.FunctionName != null ? $"arn:aws:lambda:us-west-2:123412341234:function:{this.FunctionName}" : defaultFunctionArn;
         }
 
         public void ReportSuccessResponse(string response)
