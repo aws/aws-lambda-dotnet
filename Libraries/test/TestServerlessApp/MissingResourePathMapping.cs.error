@@ -14,12 +14,12 @@ namespace TestServerlessApp
 {
     public class MissingResourcePathMapping
     {
-		// This fails because the "x" resource path has a different name then the FromRoute name
-	    [LambdaFunction()]
-		[HttpApi(LambdaHttpMethod.Get, "/add/{x}/{y}")]
-		public int Add([FromRoute(Name = "x1")] int x1, [FromRoute(Name = "y")] int y1, ILambdaContext context)
-		{
-			return x1 + y1;
-		}	
-	}
+        // This fails because the "x" resource path has a different name then the FromRoute name
+        [LambdaFunction()]
+        [HttpApi(LambdaHttpMethod.Get, "/add/{x}/{y}")]
+        public int Add([FromRoute(Name = "x1")] int x1, [FromRoute(Name = "y")] int y1, ILambdaContext context)
+        {
+            return x1 + y1;
+        }
+    }
 }

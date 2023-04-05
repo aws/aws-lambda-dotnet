@@ -483,8 +483,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task MissingResourePathMapping()
         {
-
-
             await new VerifyCS.Test
             {
                 TestState =
@@ -500,7 +498,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     },
                     ExpectedDiagnostics =
                     {
-                         DiagnosticResult.CompilerError("AWSLambda0107").WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}MissingResourePathMapping.cs", 18, 6, 23, 4)
+                         DiagnosticResult.CompilerError("AWSLambda0107").WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}MissingResourePathMapping.cs", 18, 9, 23, 10)
                                             .WithArguments("Route template /add/{x}/{y} is invalid. Missing x parameters in method definition.")
                     },
                     ReferenceAssemblies = ReferenceAssemblies.Net.Net60

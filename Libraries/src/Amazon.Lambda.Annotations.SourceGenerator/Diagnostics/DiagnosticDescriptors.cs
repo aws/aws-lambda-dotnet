@@ -27,7 +27,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly DiagnosticDescriptor MultipleEventsNotSupported = new DiagnosticDescriptor(id: "AWSLambda0102",
             title: "Multiple events on Lambda function not supported",
             messageFormat: "Multiple event attributes on LambdaFunction are not supported",
-            category: "AWSLambdaCSharpGenerator",   
+            category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
