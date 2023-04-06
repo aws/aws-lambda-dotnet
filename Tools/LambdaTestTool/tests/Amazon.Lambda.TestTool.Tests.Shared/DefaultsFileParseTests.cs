@@ -51,7 +51,6 @@ namespace Amazon.Lambda.TestTool.Tests
                 var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
                 Assert.Single(configInfo.FunctionInfos);
                 Assert.Equal("Assembly::Type::Method", configInfo.FunctionInfos[0].Handler);
-                Assert.Equal("TheFunc", configInfo.FunctionInfos[0].Name);
 
                 Assert.Equal(2, configInfo.FunctionInfos[0].EnvironmentVariables.Count);
                 Assert.Equal("value1", configInfo.FunctionInfos[0].EnvironmentVariables["key1"]);

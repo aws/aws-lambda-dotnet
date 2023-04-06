@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -33,6 +34,12 @@ namespace ToUpperFunc
         public static string ToLower(string input, ILambdaContext context)
         {
             return input?.ToLower();
+        }
+
+        public static void StreamExample(Stream stream, ILambdaContext context)
+        {
+            var content = new StreamReader(stream).ReadToEnd();
+            context.Logger.LogLine(content);
         }
     }
 }

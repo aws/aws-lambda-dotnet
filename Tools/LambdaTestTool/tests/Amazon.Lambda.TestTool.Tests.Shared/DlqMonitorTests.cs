@@ -28,7 +28,7 @@ namespace Amazon.Lambda.TestTool.Tests
                 await TestUtils.WaitTillQueueIsCreatedAsync(client, createResponse.QueueUrl);
                 try
                 {
-                    var configFile = TestUtils.GetLambdaFunctionSourceFile("ToUpperFunc", "aws-lambda-tools-defaults.json");
+                    var configFile = TestUtils.GetLambdaFunctionSourceFile("ToUpperFunc", "stream-function.json");
                     var buildPath = TestUtils.GetLambdaFunctionBuildPath("ToUpperFunc");
 
                     var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
