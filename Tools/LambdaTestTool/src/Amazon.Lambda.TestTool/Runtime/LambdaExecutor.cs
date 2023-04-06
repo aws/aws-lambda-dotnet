@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -37,6 +38,18 @@ namespace Amazon.Lambda.TestTool.Runtime
                     Environment.SetEnvironmentVariable("AWS_PROFILE", request.AWSProfile);
                 }
 
+                // Set the Lambda environment variable for the function name. Some libraries like
+                // our Amazon.Lambda.AspNetCoreServer.Hosting use this environment variable to
+                // tell if they are running in Lambda and if so activate. Since we are emulating
+                // Lambda we want those libraries to activate.
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME", request.Function.FunctionInfo.Name);
+
+                // If Environment variables were defined for the function
+                // then set them for the process to the emulated function picks up the variables.
+                foreach (var kvp in request.Function.FunctionInfo.EnvironmentVariables)
+                {
+                    Environment.SetEnvironmentVariable(kvp.Key, kvp.Value);
+                }
 
                 var context = new LocalLambdaContext()
                 {
@@ -64,6 +77,12 @@ namespace Amazon.Lambda.TestTool.Runtime
                 }
                 finally
                 {
+                    // To avoid side effects remove the environment variables that were set specifically 
+                    // for running the lambda function.
+                    foreach (var kvp in request.Function.FunctionInfo.EnvironmentVariables)
+                    {
+                        Environment.SetEnvironmentVariable(kvp.Key, null);
+                    }
                     executeSlim.Release();
                 }
             }
