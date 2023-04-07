@@ -1,4 +1,9 @@
 ### Release 2023-04-06
+* **Amazon.Lambda.Templates (6.11.0)**
+  * Update blueprints to latest versions of AWS dependencies.  
+  * Update Lambda Annotations blueprint to use `FrameworkReference` to take advantage of the ASP.NET Core assemblies already available in the Lambda environment.
+ 
+### Release 2023-04-06
 * **Amazon.Lambda.KafkaEvents (2.0.0)**
   * **Breaking Change:** Corrected the data type for Headers to use signed bytes.
 * **Amazon.Lambda.Annotations (0.13.1)**
