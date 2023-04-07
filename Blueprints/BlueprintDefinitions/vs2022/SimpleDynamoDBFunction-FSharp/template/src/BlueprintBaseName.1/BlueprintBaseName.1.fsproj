@@ -12,7 +12,7 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.1" />
     <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="2.1.1" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.102.10" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.102.21" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Function.fs" />
