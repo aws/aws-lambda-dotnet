@@ -1,3 +1,11 @@
+### Release 2023-04-06
+* **Amazon.Lambda.KafkaEvents (2.0.0)**
+  * **Breaking Change:** Corrected the data type for Headers to use signed bytes.
+* **Amazon.Lambda.Annotations (0.13.1)**
+  * Fixed issue with code generation errors not being reported correctly as diagnostic errors. 
+* **Amazon.Lambda.TestTool (0.13.0)**
+  * Added support for setting environment variables configured in CloudFormation template or config file before invoking function.
+
 ### Release 2023-03-23
 * **Amazon.Lambda.RuntimeSupport (1.8.6)**
   * Fixed issue getting ObjectDisposedException writing to Console.Out after Console.Out had been unintendedly disposed.
