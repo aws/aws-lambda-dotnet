@@ -97,7 +97,7 @@ jobs:
             \n\n*Description of changes:*
             \n${{ format
                 (
-                  '{0}\n{1}\n{2}',
+                  '{0}\n{1}\n{2}\n{3}',
                   join(steps.update-net6-amd64.outputs.*, '\n'),
                   join(steps.update-net6-arm64.outputs.*, '\n'),
                   join(steps.update-net7-amd64.outputs.*, '\n'),
