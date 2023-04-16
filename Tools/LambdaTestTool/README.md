@@ -83,6 +83,7 @@ using the commandline switches as described below. To switch to the no web inter
 These options are valid for either mode the Lambda test tool is running in.
 
         --path &lt;directory&gt;                    The path to the lambda project to execute. If not set then the current directory will be used.
+        --print-tool-path &lt;vs|vscode|other&gt;   Printing the .NET Lambda Test Tool location path to be inserted in the IDE."
 
 These options are valid when using the web interface to select and execute the Lambda code.
 
@@ -157,6 +158,12 @@ Before using Visual Studio Code you must follow the instructions above on instal
 
 To debug with Visual Studio Code and the .NET Mock Lambda Test Tool edit the [launch.json](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) configuration file and have the `program` property point to `dotnet-lambda-test-tool-3.1.exe` and make sure `cwd` is pointing the .NET Core Lambda project. Note that on a non-windows environment the executable will be called `dotnet-lambda-test-tool-3.1` without the ".exe" at the end. The `dotnet-lambda-test-tool-3.1.exe` executable can be found in the `.dotnet/tools` directory under your home directory. Depending on your file system settings, the `.dotnet` directory can appear hidden.
 
+**Note:** to make it easier to find the location of a tool, you can call it with the arguments `--print-tool-path` and copy the resulting path into the IDE.
+
+```
+dotnet lambda-test-tool-3.1 --print-tool-path vscode
+```
+
 ```json
 {
     "version": "0.2.0",
@@ -195,6 +202,12 @@ The path to the .NET Core 3.1 entry assembly is:
 <home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-3.1/<nuget-version>/amazon.lambda.testtool-3.1/<nuget-version>/tools/netcoreapp3.1/any/Amazon.Lambda.TestTool.WebTester31.dll
 ```
 
+**Note:** to make it easier to find the location of a tool, you can call it with the arguments `--print-tool-path` and
+copy the resulting path into the IDE.
+
+```
+dotnet lambda-test-tool-3.1 --print-tool-path other
+```
 
 Remember when you update your version of the .NET Mock Lambda Test Tool to update the nuget versions numbers in this path string for your IDE's configuration.
 
@@ -221,6 +234,13 @@ The path to the .NET Core 3.1 entry assembly is:
 
 ```
 <home-directory>/.dotnet/tools/.store/amazon.lambda.testtool-3.1/<nuget-version>/amazon.lambda.testtool-3.1/<nuget-version>/tools/netcoreapp3.1/any/Amazon.Lambda.TestTool.WebTester31.dll
+```
+
+**Note:** to make it easier to find the location of a tool, you can call it with the arguments `--print-tool-path` and
+copy the resulting path into the IDE.
+
+```
+dotnet lambda-test-tool-3.1 --print-tool-path other
 ```
 
 Remember when you update your version of the .NET Mock Lambda Test Tool to update the nuget versions numbers in this path string for your IDE's configuration.

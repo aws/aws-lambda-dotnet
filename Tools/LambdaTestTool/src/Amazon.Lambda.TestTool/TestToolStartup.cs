@@ -42,6 +42,12 @@ namespace Amazon.Lambda.TestTool
                     return;
                 }
 
+                if (!string.IsNullOrEmpty(commandOptions.PrintToolPathIde))
+                {
+                    Console.WriteLine(Utils.GetToolPath(commandOptions.PrintToolPathIde));
+                    return;
+                }
+
                 var localLambdaOptions = new LocalLambdaOptions()
                 {
                     Host = commandOptions.Host,
