@@ -214,6 +214,10 @@ namespace Amazon.Lambda.RuntimeSupport
         public static HttpClient ConstructHttpClient()
         {
             var dotnetRuntimeVersion = new DirectoryInfo(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory()).Name;
+            if (dotnetRuntimeVersion == "/")
+            {
+                dotnetRuntimeVersion = "unknown";
+            }
             var amazonLambdaRuntimeSupport = typeof(LambdaBootstrap).Assembly.GetName().Version;
 
 #if NET6_0_OR_GREATER
