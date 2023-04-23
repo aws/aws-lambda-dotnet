@@ -1,3 +1,7 @@
+### Release 2023-04-23
+* **Amazon.Lambda.RuntimeSupport (1.8.7)**
+  * Pull request [#1491](https://github.com/aws/aws-lambda-dotnet/pull/1491) Fix issue with running native aot executables in root folder. Thanks [Richard Davison](https://github.com/richarddd)
+
 ### Release 2023-04-06
 * **Amazon.Lambda.Templates (6.11.0)**
   * Update blueprints to latest versions of AWS dependencies.  
