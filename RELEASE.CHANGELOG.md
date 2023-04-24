@@ -1,7 +1,9 @@
-### Release 2023-04-23
+### Release 2023-04-24
 * **Amazon.Lambda.Annotations (0.13.1)**
   * Fixed issue with diagnostics message not being correctly formatted.
- 
+* **Amazon.Lambda.Templates (6.13.0)**
+  * Update blueprints to latest versions of AWS dependencies.
+  
 ### Release 2023-04-23
 * **Amazon.Lambda.RuntimeSupport (1.8.7)**
   * Pull request [#1491](https://github.com/aws/aws-lambda-dotnet/pull/1491) Fix issue with running native aot executables in root folder. Thanks [Richard Davison](https://github.com/richarddd)
