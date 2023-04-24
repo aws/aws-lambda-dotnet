@@ -499,7 +499,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                          DiagnosticResult.CompilerError("AWSLambda0107").WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}MissingResourePathMapping.cs", 18, 9, 23, 10)
-                                            .WithArguments("Route template /add/{x}/{y} is invalid. Missing x parameters in method definition.")
+                                            .WithMessage("Route template /add/{x}/{y} is invalid. Missing x parameters in method definition.")
                     },
                     ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
