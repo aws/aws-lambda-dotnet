@@ -11,8 +11,8 @@
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.103.44" />
-    <PackageReference Include="AWSSDK.Rekognition" Version="3.7.102.73" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.104.2" />
+    <PackageReference Include="AWSSDK.Rekognition" Version="3.7.103.8" />
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.1" />
     <PackageReference Include="Amazon.Lambda.S3Events" Version="3.0.0" />
