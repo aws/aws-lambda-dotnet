@@ -61,7 +61,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
 
         public static readonly DiagnosticDescriptor CodeGenerationFailed = new DiagnosticDescriptor(id: "AWSLambda0107",
             title: "Failed Code Generation",
-            messageFormat: $"{{0}}{Environment.NewLine}{{1}}",
+            messageFormat: "{0}",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
