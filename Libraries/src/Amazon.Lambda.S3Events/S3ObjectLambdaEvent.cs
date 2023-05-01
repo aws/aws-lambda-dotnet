@@ -89,7 +89,7 @@ namespace Amazon.Lambda.S3Events
             public string SupportingAccessPointArn { get; set; }
 
             /// <summary>
-            /// ustom data that is applied to the S3 Object Lambda access point configuration. S3 Object Lambda treats 
+            /// Custom data that is applied to the S3 Object Lambda access point configuration. S3 Object Lambda treats 
             /// this as an opaque string, so it might need to be decoded before use.
             /// </summary>
             public string Payload { get; set; }
