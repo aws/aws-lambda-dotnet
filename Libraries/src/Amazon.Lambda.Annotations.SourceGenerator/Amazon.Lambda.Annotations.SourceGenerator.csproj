@@ -36,17 +36,53 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Templates\APIGatewayInvoke.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>APIGatewayInvoke.cs</LastGenOutput>
+    </None>
+    <None Update="Templates\APIGatewaySetupParameters.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>APIGatewaySetupParameters.cs</LastGenOutput>
+    </None>
+    <None Update="Templates\FieldsAndConstructor.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>FieldsAndConstructor.cs</LastGenOutput>
+    </None>
     <None Update="Templates\LambdaFunctionTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>LambdaFunctionTemplate.cs</LastGenOutput>
     </None>
+    <None Update="Templates\NoEventMethodBody.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>NoEventMethodBody.cs</LastGenOutput>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Templates\APIGatewayInvoke.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>APIGatewayInvoke.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Templates\APIGatewaySetupParameters.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>APIGatewaySetupParameters.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Templates\FieldsAndConstructor.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>FieldsAndConstructor.tt</DependentUpon>
+    </Compile>
     <Compile Update="Templates\LambdaFunctionTemplate.cs">
       <DependentUpon>LambdaFunctionTemplate.tt</DependentUpon>
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Templates\NoEventMethodBody.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>NoEventMethodBody.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 

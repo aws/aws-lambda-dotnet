@@ -1,0 +1,92 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Validation" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes" #>
+<#
+        var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.RestApiAttribute>;
+        var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.HttpApiAttribute>;
+
+        if (_model.LambdaMethod.ReturnsIHttpResults)
+        {
+#>
+            var httpResults = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+            HttpResultSerializationOptions.ProtocolFormat serializationFormat = <#= restApiAttribute != null ? "HttpResultSerializationOptions.ProtocolFormat.RestApi" : "HttpResultSerializationOptions.ProtocolFormat.HttpApi"#>;
+            HttpResultSerializationOptions.ProtocolVersion serializationVersion = <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "HttpResultSerializationOptions.ProtocolVersion.V1" : "HttpResultSerializationOptions.ProtocolVersion.V2"#>;
+            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion };
+            var response = httpResults.Serialize(serializationOptions);
+<#
+        }
+        else if (_model.LambdaMethod.ReturnsVoid)
+        {
+#>
+            <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+<#
+        }
+        else if (_model.LambdaMethod.ReturnsVoidTask)
+        {
+#>
+            await <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+<#
+        }
+        else
+        {
+#>
+            var response = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+<#
+        }
+
+        if (_model.GeneratedMethod.ReturnType.FullName == _model.LambdaMethod.ReturnType.FullName || _model.LambdaMethod.ReturnsIHttpResults)
+        {
+#>
+            return response;
+<#
+        }
+        else
+        {
+            if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsVoidTask)
+            {
+                if (_model.LambdaMethod.ReturnType.IsValueType)
+                {
+#>
+
+            var body = response.ToString();
+<#
+                }
+                else if (_model.LambdaMethod.ReturnType.IsString())
+                {
+                    // no action
+                }
+                else
+                {
+#>
+
+            var body = <#= _model.Serializer #>.Serialize(response);
+<#
+                }
+            }
+#>
+
+            return new <#= _model.LambdaMethod.ReturnsVoidOrGenericTask ? _model.GeneratedMethod.ReturnType.TaskTypeArgument : _model.GeneratedMethod.ReturnType.FullName #>
+            {
+<#
+            if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsVoidTask)
+            {
+#>
+                Body = <#= _model.LambdaMethod.ReturnType.IsString() ? "response" : "body" #>,
+                Headers = new Dictionary<string, string>
+                {
+                    {"Content-Type", <#= _model.LambdaMethod.ReturnType.IsString() ? "\"text/plain\"" : "\"application/json\"" #>}
+                },
+<#
+            }
+#>
+                StatusCode = 200
+            };
+<#
+        }
+#>

@@ -1,0 +1,47 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#
+    if (_model.LambdaMethod.UsingDependencyInjection)
+    {
+#>
+        private readonly ServiceProvider serviceProvider;
+<#
+    }
+    else
+    {
+#>
+        private readonly <#= _model.LambdaMethod.ContainingType.Name #> <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>;
+<#
+    }
+#>
+
+        public <#= _model.GeneratedMethod.ContainingType.Name #>()
+        {
+            SetExecutionEnvironment();
+<#
+    if (_model.LambdaMethod.UsingDependencyInjection)
+    {
+#>
+            var services = new ServiceCollection();
+
+            // By default, Lambda function class is added to the service container using the singleton lifetime
+            // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
+            services.AddSingleton<<#= _model.LambdaMethod.ContainingType.Name #>>();
+
+            var startup = new <#= _model.StartupType.FullName #>();
+            startup.ConfigureServices(services);
+            serviceProvider = services.BuildServiceProvider();
+<#
+    }
+    else
+    {
+#>
+            <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #> = new <#= _model.LambdaMethod.ContainingType.Name #>();
+<#
+    }
+#>
+        }

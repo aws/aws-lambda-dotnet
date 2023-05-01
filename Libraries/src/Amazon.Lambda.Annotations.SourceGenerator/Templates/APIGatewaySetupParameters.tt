@@ -1,0 +1,314 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Validation" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes" #>
+<#
+        ParameterSignature = string.Join(", ", _model.LambdaMethod.Parameters
+            .Select(p =>
+            {
+                // Pass the same context parameter for ILambdaContext that comes from the generated method.
+                if (p.Type.FullName == TypeFullNames.ILambdaContext)
+                {
+                    return "__context__";
+                }
+
+                // Pass the same request parameter for Request Type that comes from the generated method.
+                if (TypeFullNames.Requests.Contains(p.Type.FullName))
+                {
+                    return "__request__";
+                }
+
+                return p.Name;
+            }));
+        var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.RestApiAttribute>;
+        var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.HttpApiAttribute>;
+
+        if (restApiAttribute != null && httpApiAttribute != null)
+        {
+            throw new NotSupportedException($"A method cannot have both {TypeFullNames.RestApiAttribute} and {TypeFullNames.HttpApiAttribute} attribute at the same time.");
+        }
+
+        var routeParameters = restApiAttribute?.Data?.GetTemplateParameters() ?? httpApiAttribute?.Data?.GetTemplateParameters() ?? new HashSet<string>();
+
+        var (routeTemplateValid, missingRouteParams) = RouteParametersValidator.Validate(routeParameters, _model.LambdaMethod.Parameters);
+        if (!routeTemplateValid)
+        {
+            var template = restApiAttribute?.Data?.Template ?? httpApiAttribute?.Data?.Template ?? string.Empty;
+            throw new InvalidOperationException($"Route template {template} is invalid. Missing {string.Join(",", missingRouteParams)} parameters in method definition.");
+        }
+
+        if (_model.LambdaMethod.Parameters.HasConvertibleParameter())
+        {
+#>
+            var validationErrors = new List<string>();
+
+<#
+        }
+
+        foreach (var parameter in _model.LambdaMethod.Parameters)
+        {
+            if (parameter.Type.FullName == TypeFullNames.ILambdaContext || TypeFullNames.Requests.Contains(parameter.Type.FullName))
+            {
+                // No action required for ILambdaContext and RequestType, they are passed from the generated method parameter directly to the original method.
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromServiceAttribute))
+            {
+#>
+            var <#= parameter.Name #> = scope.ServiceProvider.GetRequiredService<<#= parameter.Type.FullName #>>();
+<#
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
+            {   
+                var fromQueryAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromQueryAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromQueryAttribute>;
+
+                // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                var parameterKey = fromQueryAttribute?.Data?.Name ?? parameter.Name;
+
+                var queryStringParameters = "QueryStringParameters";
+
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+<#
+
+                if (parameter.Type.IsEnumerable && parameter.Type.IsGenericType)
+                {
+                    // In HTTP API V2 multiple values for the same parameter are represented via comma separated string
+                    // Therefore, it is required to split the string to convert to an enumerable
+                    // and convert individual item to target data type.
+                    var commaSplit = "";
+                    if (httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V2)
+                    {
+                        commaSplit = @".Split("","")";
+                    }
+
+                    // HTTP API V1 and Rest API, multiple values for the same parameter are provided
+                    // dedicated dictionary of string key and list value.
+                    if (restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1)
+                    {
+                        queryStringParameters = "MultiValueQueryStringParameters";
+                    }
+
+                    if (parameter.Type.TypeArguments.Count != 1)
+                    {
+                        throw new NotSupportedException("Only one type argument is supported for generic types.");
+                    }
+
+                    // Generic types are mapped using Select statement to the target parameter type argument.
+                    var typeArgument = parameter.Type.TypeArguments.First();
+#>
+            if (__request__.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
+            {
+                <#= parameter.Name #> = __request__.<#= queryStringParameters #>["<#= parameterKey #>"]<#= commaSplit #>
+                    .Select(q =>
+                    {
+                        try
+                        {
+                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullName #>));
+                        }
+                        catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                        {
+                            validationErrors.Add($"Value {q} at '<#= parameterKey #>' failed to satisfy constraint: {e.Message}");
+                            return default;
+                        }
+                    })
+                    .ToList();
+            }
+
+<#
+                }
+                else
+                {
+                    // Non-generic types are mapped directly to the target parameter.
+#>
+            if (__request__.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
+            {
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullName #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {__request__.<#= queryStringParameters #>["<#= parameterKey #>"]} at '<#= parameterKey #>' failed to satisfy constraint: {e.Message}");
+                }
+            }
+
+<#
+                }
+
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute))
+            {
+                var fromHeaderAttribute =
+                    parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute) as
+                        AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromHeaderAttribute>;
+
+                // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                var headerKey = fromHeaderAttribute?.Data?.Name ?? parameter.Name;
+
+                var headers = "Headers";
+
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+<#
+
+                if (parameter.Type.IsEnumerable && parameter.Type.IsGenericType)
+                {
+                    // In HTTP API V2 multiple values for the same header are represented via comma separated string
+                    // Therefore, it is required to split the string to convert to an enumerable
+                    // and convert individual item to target data type.
+                    var commaSplit = "";
+                    if (httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V2)
+                    {
+                        commaSplit = @".Split("","")";
+                    }
+
+                    // HTTP API V1 and Rest API, multiple values for the same header are provided
+                    // dedicated dictionary of string key and list value.
+                    if (restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1)
+                    {
+                        headers = "MultiValueHeaders";
+                    }
+
+                    if (parameter.Type.TypeArguments.Count != 1)
+                    {
+                        throw new NotSupportedException("Only one type argument is supported for generic types.");
+                    }
+
+                    // Generic types are mapped using Select statement to the target parameter type argument.
+                    var typeArgument = parameter.Type.TypeArguments.First();
+#>
+            if (__request__.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
+            {
+                <#= parameter.Name #> = __request__.<#= headers #>["<#= headerKey #>"]<#= commaSplit #>
+                    .Select(q =>
+                    {
+                        try
+                        {
+                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullName #>));
+                        }
+                        catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                        {
+                        validationErrors.Add($"Value {q} at '<#= headerKey #>' failed to satisfy constraint: {e.Message}");
+                            return default;
+                        }
+                    })
+                    .ToList();
+            }
+
+<#
+                }
+                else
+                {
+                    // Non-generic types are mapped directly to the target parameter.
+#>
+            if (__request__.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
+            {
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.<#= headers #>["<#= headerKey #>"], typeof(<#= parameter.Type.FullName #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {__request__.<#= headers #>["<#= headerKey #>"]} at '<#= headerKey #>' failed to satisfy constraint: {e.Message}");
+                }
+            }
+
+<#
+                }
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromBodyAttribute))
+            {
+                // string parameter does not need to be de-serialized
+                if (parameter.Type.IsString())
+                {
+ #>
+            var <#= parameter.Name #> = __request__.Body;
+
+<#
+                }
+                else
+                {
+ #>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            try
+            {
+                <#= parameter.Name #> = <#= _model.Serializer #>.Deserialize<<#= parameter.Type.FullName #>>(__request__.Body);
+            }
+            catch (Exception e)
+            {
+                validationErrors.Add($"Value {__request__.Body} at 'body' failed to satisfy constraint: {e.Message}");
+            }
+
+<#
+                }
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) || routeParameters.Contains(parameter.Name))
+            {
+                var fromRouteAttribute = parameter.Attributes?.FirstOrDefault(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromRouteAttribute>;
+
+                // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                var routeKey = fromRouteAttribute?.Data?.Name ?? parameter.Name;
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            if (__request__.PathParameters?.ContainsKey("<#= routeKey #>") == true)
+            {
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.PathParameters["<#= routeKey #>"], typeof(<#= parameter.Type.FullName #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {__request__.PathParameters["<#= routeKey #>"]} at '<#= routeKey #>' failed to satisfy constraint: {e.Message}");
+                }
+            }
+
+<#
+            }
+            else
+            {
+                throw new NotSupportedException($"{parameter.Name} parameter of type {parameter.Type.FullName} passing is not supported.");
+            }
+        }
+
+        if (_model.LambdaMethod.Parameters.HasConvertibleParameter())
+        {
+#>
+            // return 400 Bad Request if there exists a validation error
+            if (validationErrors.Any())
+            {
+                var errorResult = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                {
+                    Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "ValidationException"}
+                    },
+                    StatusCode = 400
+                };
+<#
+                if(_model.LambdaMethod.ReturnsIHttpResults)
+                {
+#>
+                var errorStream = new System.IO.MemoryStream();
+                System.Text.Json.JsonSerializer.Serialize(errorStream, errorResult);
+                return errorStream;
+<#
+                }
+                else
+                {
+#>
+                return errorResult;
+<#
+                }
+#>
+            }
+
+<#
+        }
+#>
