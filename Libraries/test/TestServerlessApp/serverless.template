@@ -633,6 +633,38 @@
           ]
         }
       }
+    },
+    "TestServerlessAppNullableReferenceTypeExampleNullableHeaderHttpApiGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
+      "Properties": {
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.NullableReferenceTypeExample_NullableHeaderHttpApi_Generated::NullableHeaderHttpApi"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/nullableheaderhttpapi",
+              "Method": "GET"
+            }
+          }
+        }
+      }
     }
   },
   "Outputs": {
