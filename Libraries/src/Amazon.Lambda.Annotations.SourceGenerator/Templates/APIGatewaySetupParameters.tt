@@ -108,7 +108,7 @@
                     {
                         try
                         {
-                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullName #>));
+                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullNameWithoutAnnotations #>));
                         }
                         catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                         {
@@ -129,7 +129,7 @@
             {
                 try
                 {
-                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullName #>));
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
@@ -182,14 +182,14 @@
                     // Generic types are mapped using Select statement to the target parameter type argument.
                     var typeArgument = parameter.Type.TypeArguments.First();
 #>
-            if (__request__.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
+            if (__request__.<#= headers #>?.Any(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)) == true)
             {
-                <#= parameter.Name #> = __request__.<#= headers #>["<#= headerKey #>"]<#= commaSplit #>
+                <#= parameter.Name #> = __request__.<#= headers #>.First(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)).Value<#= commaSplit #>
                     .Select(q =>
                     {
                         try
                         {
-                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullName #>));
+                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullNameWithoutAnnotations #>));
                         }
                         catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                         {
@@ -206,15 +206,15 @@
                 {
                     // Non-generic types are mapped directly to the target parameter.
 #>
-            if (__request__.<#= headers #>?.ContainsKey("<#= headerKey #>") == true)
+            if (__request__.<#= headers #>?.Any(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)) == true)
             {
                 try
                 {
-                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.<#= headers #>["<#= headerKey #>"], typeof(<#= parameter.Type.FullName #>));
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.<#= headers #>.First(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)).Value, typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    validationErrors.Add($"Value {__request__.<#= headers #>["<#= headerKey #>"]} at '<#= headerKey #>' failed to satisfy constraint: {e.Message}");
+                    validationErrors.Add($"Value {__request__.<#= headers #>.First(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)).Value} at '<#= headerKey #>' failed to satisfy constraint: {e.Message}");
                 }
             }
 
@@ -259,7 +259,7 @@
             {
                 try
                 {
-                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.PathParameters["<#= routeKey #>"], typeof(<#= parameter.Type.FullName #>));
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.PathParameters["<#= routeKey #>"], typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {

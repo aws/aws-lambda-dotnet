@@ -38,7 +38,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 IsValueType = symbol.IsValueType,
                 IsGenericType = isGenericType,
                 TypeArguments = typeArguments,
-                IsEnumerable = isEnumerable
+                IsEnumerable = isEnumerable,
+                HasNullableAnnotations = symbol.NullableAnnotation == NullableAnnotation.Annotated
             };
 
             return model;

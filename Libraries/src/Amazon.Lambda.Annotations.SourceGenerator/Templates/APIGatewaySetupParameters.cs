@@ -226,7 +226,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write(")Convert.ChangeType(q, typeof(");
             
             #line 111 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(typeArgument.FullName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(typeArgument.FullNameWithoutAnnotations));
             
             #line default
             #line hidden
@@ -301,7 +301,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\"], typeof(");
             
             #line 132 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullNameWithoutAnnotations));
             
             #line default
             #line hidden
@@ -407,14 +407,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write("?.ContainsKey(\"");
+            this.Write("?.Any(x => string.Equals(x.Key, \"");
             
             #line 185 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
             
             #line default
             #line hidden
-            this.Write("\") == true)\r\n            {\r\n                ");
+            this.Write("\", StringComparison.OrdinalIgnoreCase)) == true)\r\n            {\r\n                " +
+                    "");
             
             #line 187 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
@@ -428,14 +429,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write("[\"");
+            this.Write(".First(x => string.Equals(x.Key, \"");
             
             #line 187 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
             
             #line default
             #line hidden
-            this.Write("\"]");
+            this.Write("\", StringComparison.OrdinalIgnoreCase)).Value");
             
             #line 187 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(commaSplit));
@@ -453,7 +454,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write(")Convert.ChangeType(q, typeof(");
             
             #line 192 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(typeArgument.FullName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(typeArgument.FullNameWithoutAnnotations));
             
             #line default
             #line hidden
@@ -489,15 +490,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write("?.ContainsKey(\"");
+            this.Write("?.Any(x => string.Equals(x.Key, \"");
             
             #line 209 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
             
             #line default
             #line hidden
-            this.Write("\") == true)\r\n            {\r\n                try\r\n                {\r\n             " +
-                    "       ");
+            this.Write("\", StringComparison.OrdinalIgnoreCase)) == true)\r\n            {\r\n                " +
+                    "try\r\n                {\r\n                    ");
             
             #line 213 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
@@ -518,17 +519,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write("[\"");
+            this.Write(".First(x => string.Equals(x.Key, \"");
             
             #line 213 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
             
             #line default
             #line hidden
-            this.Write("\"], typeof(");
+            this.Write("\", StringComparison.OrdinalIgnoreCase)).Value, typeof(");
             
             #line 213 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullNameWithoutAnnotations));
             
             #line default
             #line hidden
@@ -542,14 +543,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write("[\"");
+            this.Write(".First(x => string.Equals(x.Key, \"");
             
             #line 217 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
             
             #line default
             #line hidden
-            this.Write("\"]} at \'");
+            this.Write("\", StringComparison.OrdinalIgnoreCase)).Value} at \'");
             
             #line 217 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
@@ -689,7 +690,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\"], typeof(");
             
             #line 262 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullNameWithoutAnnotations));
             
             #line default
             #line hidden
