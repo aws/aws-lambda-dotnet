@@ -35,28 +35,28 @@ namespace TestServerlessApp
             var validationErrors = new List<string>();
 
             var x = default(int);
-            if (__request__.Headers?.ContainsKey("x") == true)
+            if (__request__.Headers?.Any(x => string.Equals(x.Key, "x", StringComparison.OrdinalIgnoreCase)) == true)
             {
                 try
                 {
-                    x = (int)Convert.ChangeType(__request__.Headers["x"], typeof(int));
+                    x = (int)Convert.ChangeType(__request__.Headers.First(x => string.Equals(x.Key, "x", StringComparison.OrdinalIgnoreCase)).Value, typeof(int));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    validationErrors.Add($"Value {__request__.Headers["x"]} at 'x' failed to satisfy constraint: {e.Message}");
+                    validationErrors.Add($"Value {__request__.Headers.First(x => string.Equals(x.Key, "x", StringComparison.OrdinalIgnoreCase)).Value} at 'x' failed to satisfy constraint: {e.Message}");
                 }
             }
 
             var y = default(int);
-            if (__request__.Headers?.ContainsKey("y") == true)
+            if (__request__.Headers?.Any(x => string.Equals(x.Key, "y", StringComparison.OrdinalIgnoreCase)) == true)
             {
                 try
                 {
-                    y = (int)Convert.ChangeType(__request__.Headers["y"], typeof(int));
+                    y = (int)Convert.ChangeType(__request__.Headers.First(x => string.Equals(x.Key, "y", StringComparison.OrdinalIgnoreCase)).Value, typeof(int));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    validationErrors.Add($"Value {__request__.Headers["y"]} at 'y' failed to satisfy constraint: {e.Message}");
+                    validationErrors.Add($"Value {__request__.Headers.First(x => string.Equals(x.Key, "y", StringComparison.OrdinalIgnoreCase)).Value} at 'y' failed to satisfy constraint: {e.Message}");
                 }
             }
 

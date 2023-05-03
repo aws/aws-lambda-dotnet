@@ -36,8 +36,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             protected override CompilationOptions CreateCompilationOptions()
             {
                 var compilationOptions = base.CreateCompilationOptions();
-                return compilationOptions.WithSpecificDiagnosticOptions(
-                    compilationOptions.SpecificDiagnosticOptions.SetItems(GetNullableWarningsFromCompiler()));
+
+                return compilationOptions
+                    .WithSpecificDiagnosticOptions(compilationOptions.SpecificDiagnosticOptions.SetItems(GetNullableWarningsFromCompiler()))
+                    .WithSpecificDiagnosticOptions(compilationOptions.SpecificDiagnosticOptions.SetItems(EnableNullability()));
             }
 
             public LanguageVersion LanguageVersion { get; set; } = LanguageVersion.Default;
@@ -45,6 +47,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             private static ImmutableDictionary<string, ReportDiagnostic> GetNullableWarningsFromCompiler()
             {
                 string[] args = { "/warnaserror:nullable" };
+                var commandLineArguments = CSharpCommandLineParser.Default.Parse(args, baseDirectory: Environment.CurrentDirectory, sdkDirectory: Environment.CurrentDirectory);
+                var nullableWarnings = commandLineArguments.CompilationOptions.SpecificDiagnosticOptions;
+
+                return nullableWarnings;
+            }
+
+            private static ImmutableDictionary<string, ReportDiagnostic> EnableNullability()
+            {
+                string[] args = { "/p:Nullable=enable" };
                 var commandLineArguments = CSharpCommandLineParser.Default.Parse(args, baseDirectory: Environment.CurrentDirectory, sdkDirectory: Environment.CurrentDirectory);
                 var nullableWarnings = commandLineArguments.CompilationOptions.SpecificDiagnosticOptions;
 

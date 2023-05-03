@@ -506,5 +506,46 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
             }.RunAsync();
         }
+
+        [Fact]
+        public async Task VerifyApiFunctionUsingNullableParameters()
+        {
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "nullreferenceexample.template")).ToEnvironmentLineEndings();
+            var expectedCSharpContent = File.ReadAllText(Path.Combine("Snapshots", "NullableReferenceTypeExample_NullableHeaderHttpApi_Generated.g.cs")).ToEnvironmentLineEndings();
+
+            var test = new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "NullableReferenceTypeExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "NullableReferenceTypeExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "NullableReferenceTypeExample_NullableHeaderHttpApi_Generated.g.cs",
+                            SourceText.From(expectedCSharpContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("NullableReferenceTypeExample_NullableHeaderHttpApi_Generated.g.cs", expectedCSharpContent),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60,                    
+                },                
+            };
+
+            await test.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
     }
 }

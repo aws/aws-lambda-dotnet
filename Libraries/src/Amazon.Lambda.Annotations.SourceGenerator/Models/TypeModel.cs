@@ -35,6 +35,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// </summary>
         public IList<TypeModel> TypeArguments { get; set; }
 
+        /// <summary>
+        /// True if the type has the "?" annotation for nullable.
+        /// </summary>
+        public bool HasNullableAnnotations { get; set; }
+
+
+        public string FullNameWithoutAnnotations
+        {
+            get
+            {
+                if(!HasNullableAnnotations)
+                {
+                    return this.FullName;
+                }
+
+                return this.FullName.Substring(0, this.FullName.Length - 1);
+            }
+        }
+
 
         /// <summary>
         /// Gets type argument of the <see cref="Task{TResult}"/> type.

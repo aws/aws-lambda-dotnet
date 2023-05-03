@@ -12,20 +12,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using Amazon.Lambda.Annotations.SourceGenerator.Models;
     using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
-    using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
-    using Microsoft.CodeAnalysis;
-    using Amazon.Lambda.Annotations.SourceGenerator.Validation;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+    #line 1 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class LambdaFunctionTemplate : LambdaFunctionTemplateBase
+    public partial class NoEventMethodBody : NoEventMethodBodyBase
     {
 #line hidden
         /// <summary>
@@ -34,149 +30,155 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
         public virtual string TransformText()
         {
             
-            #line 11 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 7 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
 
-    foreach (var ns in _model.GeneratedMethod.Usings)
-    {
+        var parameters = string.Join(", ", _model.LambdaMethod.Parameters
+            .Select(p =>
+            {
+                // Pass the same context parameter for ILambdaContext that comes from the generated method.
+                if (p.Type.FullName == TypeFullNames.ILambdaContext)
+                {
+                    return "__context__";
+                }
 
-            
-            #line default
-            #line hidden
-            this.Write("using ");
-            
-            #line 15 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(ns));
-            
-            #line default
-            #line hidden
-            this.Write(";\r\n");
-            
-            #line 16 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+                return p.Name;
+            }));
 
-    }
+        foreach (var parameter in _model.LambdaMethod.Parameters)
+        {
+            if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromServiceAttribute))
+            {
 
             
             #line default
             #line hidden
-            this.Write("\r\nnamespace ");
+            this.Write("            var ");
             
-            #line 20 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingNamespace));
-            
-            #line default
-            #line hidden
-            this.Write("\r\n{\r\n    public class ");
-            
-            #line 22 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ContainingType.Name));
+            #line 25 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
-            this.Write("\r\n    {\r\n");
+            this.Write(" = scope.ServiceProvider.GetRequiredService<");
             
-            #line 24 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 25 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
+            
+            #line default
+            #line hidden
+            this.Write(">();\r\n");
+            
+            #line 26 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
 
-this.Write(new FieldsAndConstructor(_model).TransformText());
+            }
+        }
+
+        if (_model.LambdaMethod.ReturnsVoid)
+        {
 
             
             #line default
             #line hidden
-            this.Write("\r\n\r\n        public ");
+            this.Write("            ");
             
-            #line 29 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ReturnsVoidOrGenericTask ? "async " : ""));
-            
-            #line default
-            #line hidden
-            
-            #line 29 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ReturnType.FullName));
+            #line 33 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
-            this.Write(" ");
+            this.Write(".");
             
-            #line 29 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 33 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.Name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 29 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}"))));
+            #line 33 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameters));
             
             #line default
             #line hidden
-            this.Write(")\r\n        {\r\n");
+            this.Write(");\r\n");
             
-            #line 31 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 34 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
 
-    if (_model.LambdaMethod.UsingDependencyInjection)
-    {
+        }
+        else if (_model.LambdaMethod.ReturnsVoidTask)
+        {
 
             
             #line default
             #line hidden
-            this.Write("            // Create a scope for every request,\r\n            // this allows crea" +
-                    "ting scoped dependencies without creating a scope manually.\r\n            using v" +
-                    "ar scope = serviceProvider.CreateScope();\r\n            var ");
+            this.Write("            await ");
             
-            #line 38 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 39 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
-            this.Write(" = scope.ServiceProvider.GetRequiredService<");
+            this.Write(".");
             
-            #line 39 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
-            
-            #line default
-            #line hidden
-            this.Write(">();\r\n\r\n");
-            
-            #line 41 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-
-    }
-
-    if (_model.LambdaMethod.Events.Contains(EventType.API))
-    {
-        var apiParameters = new APIGatewaySetupParameters(_model);
-        this.Write(apiParameters.TransformText());
-        this.Write(new APIGatewayInvoke(_model, apiParameters.ParameterSignature).TransformText());
-    }
-    else if (_model.LambdaMethod.Events.Count == 0)
-    {
-        this.Write(new NoEventMethodBody(_model).TransformText());
-    }
-
+            #line 39 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.Name));
             
             #line default
             #line hidden
-            this.Write(@"        }
+            this.Write("(");
+            
+            #line 39 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameters));
+            
+            #line default
+            #line hidden
+            this.Write(");\r\n");
+            
+            #line 40 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
 
-        private static void SetExecutionEnvironment()
+        }
+        else
         {
-            const string envName = ""AWS_EXECUTION_ENV"";
 
-            var envValue = new StringBuilder();
-
-            // If there is an existing execution environment variable add the annotations package as a suffix.
-            if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envName)))
-            {
-                envValue.Append($""{Environment.GetEnvironmentVariable(envName)}_"");
-            }
-
-            envValue.Append(""amazon-lambda-annotations_");
-            
-            #line 69 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.SourceGeneratorVersion));
             
             #line default
             #line hidden
-            this.Write("\");\r\n\r\n            Environment.SetEnvironmentVariable(envName, envValue.ToString(" +
-                    "));\r\n        }\r\n    }\r\n}");
+            this.Write("            return ");
+            
+            #line 45 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ReturnsGenericTask ? "await " : ""));
+            
+            #line default
+            #line hidden
+            
+            #line 45 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
+            
+            #line default
+            #line hidden
+            this.Write(".");
+            
+            #line 45 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.Name));
+            
+            #line default
+            #line hidden
+            this.Write("(");
+            
+            #line 45 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameters));
+            
+            #line default
+            #line hidden
+            this.Write(");\r\n");
+            
+            #line 46 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
+
+        }
+
+            
+            #line default
+            #line hidden
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -188,7 +190,7 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class LambdaFunctionTemplateBase
+    public class NoEventMethodBodyBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;
