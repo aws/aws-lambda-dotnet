@@ -1,6 +1,11 @@
 ; Shipped analyzer releases
 ; https://github.com/dotnet/roslyn-analyzers/blob/master/src/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md
 
+## Release 0.13.3.0
+Rule ID | Category | Severity | Notes
+--------|----------|----------|-------
+AWSLambda0108 | AWSLambdaCSharpGenerator | Error | Assembly attribute Amazon.Lambda.Core.LambdaSerializerAttribute is missing
+
 ## Release 0.13.1.0
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------

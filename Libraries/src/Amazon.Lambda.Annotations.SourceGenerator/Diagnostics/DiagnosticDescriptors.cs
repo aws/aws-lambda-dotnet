@@ -40,7 +40,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
 
         public static readonly DiagnosticDescriptor MissingDependencies = new DiagnosticDescriptor(id: "AWSLambda0104",
             title: "Missing reference to a required dependency",
-            messageFormat: "Your project has a missing required package dependency. Please add a reference to the following package: {0}",
+            messageFormat: "Your project has a missing required package dependency. Please add a reference to the following package: {0}.",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -62,6 +62,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly DiagnosticDescriptor CodeGenerationFailed = new DiagnosticDescriptor(id: "AWSLambda0107",
             title: "Failed Code Generation",
             messageFormat: "{0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor MissingLambdaSerializer = new DiagnosticDescriptor(id: "AWSLambda0108",
+            title: "Failed Code Generation",
+            messageFormat: "Assembly attribute Amazon.Lambda.Core.LambdaSerializerAttribute is missing. Add serialization package like " + 
+                "Amazon.Lambda.Serialization.SystemTextJson and add the assembly attribute to register the JSON serializer for Lambda events.",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
