@@ -581,7 +581,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0104", DiagnosticSeverity.Error)
-                            .WithMessage("Your project has a missing required package dependency. Please add a reference to the following package: Amazon.Lambda.APIGatewayEvents")
+                            .WithMessage("Your project has a missing required package dependency. Please add a reference to the following package: Amazon.Lambda.APIGatewayEvents.")
                             .WithSpan("TestServerlessApp\\FromScratch\\NoApiGatewayEventsReference.cs", 9, 9, 14, 10),
                     },
                     ReferenceAssemblies = ReferenceAssemblies.Net.Net60,
@@ -610,7 +610,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0108", DiagnosticSeverity.Error)
-                            .WithSpan("TestServerlessApp\\FromScratch\\NoSerializerAttributeReference.cs", 9, 9, 13, 10),
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}FromScratch{Path.DirectorySeparatorChar}NoSerializerAttributeReference.cs", 9, 9, 13, 10),
                     },
                     ReferenceAssemblies = ReferenceAssemblies.Net.Net60,
                 },
