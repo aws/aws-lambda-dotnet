@@ -58,8 +58,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="snapshots\serverlesstemplates\authorizerHttpApi.template" />
-      <None Remove="Snapshots\ServerlessTemplates\authorizerrest.template" />
       <None Remove="Snapshots\ServerlessTemplates\customizeResponse.template" />
       <None Remove="Snapshots\ServerlessTemplates\dynamicexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
