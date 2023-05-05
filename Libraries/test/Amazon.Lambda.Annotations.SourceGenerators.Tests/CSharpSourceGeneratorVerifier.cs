@@ -20,17 +20,33 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
     {
         public class Test : CSharpSourceGeneratorTest<TSourceGenerator, XUnitVerifier>
         {
-            public Test()
+            public enum ReferencesMode {All, NoApiGatewayEvents}
+            public Test(ReferencesMode referencesMode = ReferencesMode.All)
             {
-                this.SolutionTransforms.Add((solution, projectId) =>
+                if(referencesMode == ReferencesMode.NoApiGatewayEvents)
                 {
-                    return solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ILambdaContext).Assembly.Location))
-                        .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(APIGatewayProxyRequest).Assembly.Location))
-                        .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
-                        .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
-                        .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
-                        .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location));
-                });
+                    this.SolutionTransforms.Add((solution, projectId) =>
+                    {
+                        return solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ILambdaContext).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location));
+                    });
+
+                }
+                else
+                {
+                    this.SolutionTransforms.Add((solution, projectId) =>
+                    {
+                        return solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ILambdaContext).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(APIGatewayProxyRequest).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location));
+                    });
+                }
             }
 
             protected override CompilationOptions CreateCompilationOptions()

@@ -86,6 +86,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 {
                     var lambdaMethodModel = semanticModelProvider.GetMethodSemanticModel(lambdaMethod);
 
+                    if (!HasSerializerAttribute(context, lambdaMethodModel))
+                    {
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingLambdaSerializer,
+                            lambdaMethod.GetLocation()));
+
+                        foundFatalError = true;
+                        continue;
+                    }
+
                     // Check for necessary references
                     if (lambdaMethodModel.HasAttribute(context, TypeFullNames.RestApiAttribute)
                         || lambdaMethodModel.HasAttribute(context, TypeFullNames.HttpApiAttribute))
@@ -96,6 +105,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                             diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies,
                                 lambdaMethod.GetLocation(),
                                 "Amazon.Lambda.APIGatewayEvents"));
+
+                            foundFatalError = true;
+                            continue;
                         }
                     }
 
@@ -187,6 +199,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 throw;
 #endif
             }
+        }
+
+        private bool HasSerializerAttribute(GeneratorExecutionContext context, IMethodSymbol methodModel)
+        {
+            return methodModel.ContainingAssembly.HasAttribute(context, TypeFullNames.LambdaSerializerAttribute);
         }
 
         public void Initialize(GeneratorInitializationContext context)

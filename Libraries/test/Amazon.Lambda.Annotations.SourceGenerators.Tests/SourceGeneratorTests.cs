@@ -29,6 +29,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestServerlessApp", "Greeter.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "Greeter.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -74,6 +75,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         ("NonCompilableCodeFile.cs", File.ReadAllText("NonCompilableCodeFile.cs")),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -116,6 +118,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("Amazon.Lambda.Annotations", "FromServicesAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "FromServicesAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -190,6 +193,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestServerlessApp", "ComplexCalculator.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "ComplexCalculator.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -233,6 +237,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestServerlessApp", "Sub1", "Functions.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "Sub1", "Functions.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -270,6 +275,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestServerlessApp", "VoidExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "VoidExample.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -307,6 +313,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestServerlessApp", "TaskExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "TaskExample.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -345,6 +352,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestServerlessApp", "DynamicExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "DynamicExample.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -396,6 +404,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -469,6 +478,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     ExpectedDiagnostics =
                     {
@@ -495,10 +505,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     ExpectedDiagnostics =
                     {
-                         DiagnosticResult.CompilerError("AWSLambda0107").WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}MissingResourePathMapping.cs", 18, 9, 23, 10)
+                         DiagnosticResult.CompilerError("AWSLambda0107").WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}MissingResourePathMapping.cs", 15, 9, 20, 10)
                                             .WithMessage("Route template /add/{x}/{y} is invalid. Missing x parameters in method definition.")
                     },
                     ReferenceAssemblies = ReferenceAssemblies.Net.Net60
@@ -524,6 +535,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -546,6 +558,65 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
             Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task VerifyNoApiGatewayEventsReference()
+        {
+            var test = new VerifyCS.Test(VerifyCS.Test.ReferencesMode.NoApiGatewayEvents)
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "FromScratch", "NoApiGatewayEventsReference.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "FromScratch", "NoApiGatewayEventsReference.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0104", DiagnosticSeverity.Error)
+                            .WithMessage("Your project has a missing required package dependency. Please add a reference to the following package: Amazon.Lambda.APIGatewayEvents.")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}FromScratch{Path.DirectorySeparatorChar}NoApiGatewayEventsReference.cs", 9, 9, 14, 10),
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60,
+                },
+            };
+
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyNoSerializerAttributeReference()
+        {
+            var test = new VerifyCS.Test()
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "FromScratch", "NoSerializerAttributeReference.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "FromScratch", "NoSerializerAttributeReference.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0108", DiagnosticSeverity.Error)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}FromScratch{Path.DirectorySeparatorChar}NoSerializerAttributeReference.cs", 9, 9, 13, 10),
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60,
+                },
+            };
+
+            await test.RunAsync();
         }
     }
 }
