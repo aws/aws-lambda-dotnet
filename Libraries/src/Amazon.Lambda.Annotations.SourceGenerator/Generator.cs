@@ -203,12 +203,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
         private bool HasSerializerAttribute(GeneratorExecutionContext context, IMethodSymbol methodModel)
         {
-            if(methodModel.ContainingAssembly.HasAttribute(context, TypeFullNames.LambdaSerializerAttribute))
-            {
-                return true;
-            }
-
-            return false;
+            return methodModel.ContainingAssembly.HasAttribute(context, TypeFullNames.LambdaSerializerAttribute);
         }
 
         public void Initialize(GeneratorInitializationContext context)

@@ -10,11 +10,11 @@
         <license type="expression">Apache-2.0</license>
         <dependencies>
             <group targetFramework=".net6.0">
-				<dependency id="Amazon.Lambda.Core" version="2.1.0" />
-			</group>
+                <dependency id="Amazon.Lambda.Core" version="2.1.0" />
+            </group>
         </dependencies>
-		<icon>images\icon.png</icon>
-		<readme>docs\README.md</readme>
+        <icon>images\icon.png</icon>
+        <readme>docs\README.md</readme>
     </metadata>
 
     <files>
