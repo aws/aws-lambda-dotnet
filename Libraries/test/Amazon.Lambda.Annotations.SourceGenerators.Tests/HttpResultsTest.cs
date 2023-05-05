@@ -5,7 +5,6 @@ using System.Text.Json;
 using Amazon.Lambda.Annotations.APIGateway;
 using Xunit;
 using System.IO;
-using System.Text.Json.Nodes;
 using System.Linq;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
@@ -16,6 +15,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void OkNoBody()
         {
             var result = HttpResults.Ok();
+
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.OK);
         }
 
@@ -24,6 +26,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             var body = "Hello World";
             var result = HttpResults.Ok(body);
+
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.OK, body, headers: new Dictionary<string, IList<string>>
                             {
                                 { "content-type", new List<string> { "text/plain" } }
@@ -36,6 +41,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             var body = "Hello World";
             var result = HttpResults.Ok(body).AddHeader("content-type", "custom/foo");
+
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.OK, body, headers: new Dictionary<string, IList<string>>
                             {
                                 { "content-type", new List<string> { "custom/foo" } }
@@ -49,6 +57,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var body = new byte[] { 0x01, 0x02 };
 
             var result = HttpResults.Ok(body);
+
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.OK, Convert.ToBase64String(body), isBase64Encoded: true, headers: new Dictionary<string, IList<string>>
                             {
                                 { "content-type", new List<string> { "application/octet-stream" } }
@@ -61,6 +72,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             var body = new byte[] { 0x01, 0x02 };
             var result = HttpResults.Ok(new MemoryStream(body));
+
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.OK, Convert.ToBase64String(body), isBase64Encoded: true, headers: new Dictionary<string, IList<string>>
                             {
                                 { "content-type", new List<string> { "application/octet-stream" } }
@@ -73,6 +87,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             var body = new byte[] { 0x01, 0x02 };
             var result = HttpResults.Ok(new List<byte>(body));
+
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.OK, Convert.ToBase64String(body), isBase64Encoded: true, headers: new Dictionary<string, IList<string>>
                             {
                                 { "content-type", new List<string> { "application/octet-stream" } }
@@ -85,6 +102,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             var body = new FakeBody();
             var result = HttpResults.Ok(body);
+
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.OK, "{\"Id\":1}", isBase64Encoded: false, headers: new Dictionary<string, IList<string>>
                             {
                                 { "content-type", new List<string> { "application/json" } }
@@ -98,6 +118,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var result = HttpResults.Ok()
                                     .AddHeader("header1", "value1")
                                     .AddHeader("header2", "value2");
+
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
 
             ValidateResult(result, HttpStatusCode.OK, 
                 headers: new Dictionary<string, IList<string>> 
@@ -117,6 +139,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                                     .AddHeader("header2", "bar1")
                                     .AddHeader("header2", "bar2");
 
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.OK,
                 headers: new Dictionary<string, IList<string>>
                             {
@@ -130,6 +154,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void Accepted()
         {
             var result = HttpResults.Accepted();
+
+            Assert.Equal(HttpStatusCode.Accepted, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.Accepted);
         }
 
@@ -137,6 +164,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void BadRequest()
         {
             var result = HttpResults.BadRequest();
+
+            Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.BadRequest);
         }
 
@@ -144,6 +174,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void Conflict()
         {
             var result = HttpResults.Conflict();
+
+            Assert.Equal(HttpStatusCode.Conflict, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.Conflict);
         }
 
@@ -151,6 +184,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void Created()
         {
             var result = HttpResults.Created();
+
+            Assert.Equal(HttpStatusCode.Created, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.Created);
         }
 
@@ -158,6 +194,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void CreatedWithUriAndBody()
         {
             var result = HttpResults.Created("http://localhost/foo", "Resource Created");
+
+            Assert.Equal(HttpStatusCode.Created, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.Created, "Resource Created",
                 headers: new Dictionary<string, IList<string>>
                             {
@@ -171,6 +210,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void Forbid()
         {
             var result = HttpResults.Forbid();
+
+            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.Forbidden);
         }
 
@@ -178,6 +220,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void Redirect_PermanentRedirect()
         {
             var result = HttpResults.Redirect("http://localhost/foo", permanent: true, preserveMethod: true);
+
+            Assert.Equal(HttpStatusCode.PermanentRedirect, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.PermanentRedirect,
                 headers: new Dictionary<string, IList<string>>
                             {
@@ -190,6 +235,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void Redirect_MovedPermanently()
         {
             var result = HttpResults.Redirect("http://localhost/foo", permanent: true, preserveMethod: false);
+
+            Assert.Equal(HttpStatusCode.MovedPermanently, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.MovedPermanently,
                 headers: new Dictionary<string, IList<string>>
                             {
@@ -202,6 +250,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void Redirect_TemporaryRedirect()
         {
             var result = HttpResults.Redirect("http://localhost/foo", permanent: false, preserveMethod: true);
+
+            Assert.Equal(HttpStatusCode.TemporaryRedirect, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.TemporaryRedirect,
                 headers: new Dictionary<string, IList<string>>
                             {
@@ -214,6 +265,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void Redirect_Redirect()
         {
             var result = HttpResults.Redirect("http://localhost/foo", permanent: false, preserveMethod: false);
+
+            Assert.Equal(HttpStatusCode.Redirect, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.Redirect,
                 headers: new Dictionary<string, IList<string>>
                             {
@@ -226,6 +280,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void NotFound()
         {
             var result = HttpResults.NotFound();
+
+            Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.NotFound);
         }
 
@@ -233,6 +290,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void Unauthorized()
         {
             var result = HttpResults.Unauthorized();
+
+            Assert.Equal(HttpStatusCode.Unauthorized, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.Unauthorized);
         }
 
@@ -244,6 +304,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                                     .AddHeader("key", "value2")
                                     .AddHeader("KEY", "VALUE3");
 
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.OK, headers: new Dictionary<string, IList<string>>
             {
                 {"key", new List<string> {"value1", "value2", "VALUE3"} }
@@ -254,6 +316,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void InternalServerError()
         {
             var result = HttpResults.InternalServerError();
+            
+            Assert.Equal(HttpStatusCode.InternalServerError, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.InternalServerError);
         }
         
@@ -261,6 +326,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void BadGateway()
         {
             var result = HttpResults.BadGateway();
+
+            Assert.Equal(HttpStatusCode.BadGateway, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.BadGateway);
         }
         
@@ -270,6 +338,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void ServiceUnavailable_WithoutRetryAfter(int? delay)
         {
             var result = HttpResults.ServiceUnavailable(delay);
+
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.ServiceUnavailable);
         }
         
@@ -277,6 +348,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public void ServiceUnavailable_WithRetryAfter()
         {
             var result = HttpResults.ServiceUnavailable(100);
+
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, result.StatusCode);
+
             ValidateResult(result, HttpStatusCode.ServiceUnavailable, headers: new Dictionary<string, IList<string>>
             {
                 {"retry-after", new List<string> {"100"} }

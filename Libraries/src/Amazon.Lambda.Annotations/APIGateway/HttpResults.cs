@@ -81,6 +81,11 @@ namespace Amazon.Lambda.Annotations.APIGateway
     public interface IHttpResult
     {
         /// <summary>
+        /// The Status code of the HttpResult
+        /// </summary>
+        HttpStatusCode StatusCode { get; }
+
+        /// <summary>
         /// Used by the Lambda Annotations framework to serialize the IHttpResult to the correct JSON response.
         /// </summary>
         /// <param name="options"></param>
@@ -126,7 +131,6 @@ namespace Amazon.Lambda.Annotations.APIGateway
         private const string CONTENT_TYPE_TEXT_PLAIN = "text/plain";
         private const string CONTENT_TYPE_APPLICATION_OCTET_STREAM = "application/octet-stream";
 
-        private HttpStatusCode _statusCode;
         private string _body;
         private IDictionary<string, IList<string>> _headers;
         private bool _isBase64Encoded;
@@ -134,7 +138,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
 
         private HttpResults(HttpStatusCode statusCode, object body = null)
         {
-            _statusCode = statusCode;
+            StatusCode = statusCode;
 
             FormatBody(body);
         }
@@ -387,6 +391,9 @@ namespace Amazon.Lambda.Annotations.APIGateway
 #endif
         }
 
+        /// <inheritdoc/>
+        public HttpStatusCode StatusCode { get; }
+
         /// <summary>
         /// Serialize the IHttpResult into the expect format for the event source.
         /// </summary>
@@ -410,7 +417,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
             {
                 var response = new APIGatewayV1Response
                 {
-                    StatusCode = (int)_statusCode,
+                    StatusCode = (int)StatusCode,
                     Body = _body,
                     MultiValueHeaders = _headers,
                     IsBase64Encoded = _isBase64Encoded
@@ -422,7 +429,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
             {
                 var response = new APIGatewayV2Response
                 {
-                    StatusCode = (int)_statusCode,
+                    StatusCode = (int)StatusCode,
                     Body = _body,
                     Headers = ConvertToV2MultiValueHeaders(_headers),
                     IsBase64Encoded = _isBase64Encoded
