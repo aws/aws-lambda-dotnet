@@ -1,0 +1,24 @@
+﻿using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Core;
+
+namespace TestServerlessApp
+{
+    public class ComplexQueryParameter
+    {
+
+        // This fails because the complex query parameter 'person' is not supported currently.
+        [LambdaFunction(ResourceName = "TestQueryParams", Policies = "AdministratorAccess")]
+        [RestApi(LambdaHttpMethod.Get, "/api/say-hello")]
+        public string SayHello([FromQuery] Person person, ILambdaContext context)
+        {
+            return $"Hello! {person.FirstName} {person.LastName}";
+        }
+    }
+
+    public class Person
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+    }
+}

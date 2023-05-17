@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
@@ -8,6 +10,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// </summary>
     public class TypeModel
     {
+        private readonly HashSet<string> _primitiveTypes = new HashSet<string>()
+        {
+            "bool",
+            "char", "string",
+            "byte", "sbyte",
+            "double", "decimal", "float",
+            "short", "int", "long",
+            "ushort", "uint", "ulong",
+            "System.DateTime"
+        };
+
         /// <summary>
         /// Gets or sets the name of the type.
         /// </summary>
@@ -89,6 +102,30 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public bool IsString()
         {
             return FullName == "string";
+        }
+
+        /// <summary>
+        /// True, if the type is a primitive .NET type.
+        /// </summary>
+        public bool IsPrimitiveType()
+        {
+            return _primitiveTypes.Contains(FullNameWithoutAnnotations);
+        }
+
+        /// <summary>
+        /// True, if type model is an enumerable and its argument type is a primitive .NET type.
+        /// </summary>
+        public bool IsPrimitiveEnumerableType()
+        {
+            if (!IsEnumerable)
+                return false;
+            
+            if (TypeArguments.Count != 1)
+            {
+                throw new NotSupportedException("Exactly one type argument is required for enumerables");
+            }
+            var typeArgument = TypeArguments.First();
+            return _primitiveTypes.Contains(typeArgument.FullNameWithoutAnnotations);
         }
     }
 }
