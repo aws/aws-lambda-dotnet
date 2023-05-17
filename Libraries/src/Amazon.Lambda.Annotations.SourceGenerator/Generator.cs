@@ -6,9 +6,11 @@ using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
+using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.SourceGenerator.Templates;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
@@ -147,6 +149,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         continue;
                     }
 
+                    if (!AreLambdaMethodParamatersValid(lambdaMethod, model, diagnosticReporter))
+                    {
+                        foundFatalError = true;
+                        continue;
+                    }
+
                     var template = new LambdaFunctionTemplate(model);
 
                     string sourceText;
@@ -210,6 +218,30 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         {
             // Register a syntax receiver that will be created for each generation pass
             context.RegisterForSyntaxNotifications(() => new SyntaxReceiver(_fileManager, _directoryManager));
+        }
+
+        private bool AreLambdaMethodParamatersValid(MethodDeclarationSyntax declarationSyntax, LambdaFunctionModel model, DiagnosticReporter diagnosticReporter)
+        {
+            var isValid = true;
+            foreach (var parameter in model.LambdaMethod.Parameters)
+            {
+                if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
+                {
+                    var fromQueryAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromQueryAttribute) as AttributeModel<APIGateway.FromQueryAttribute>;
+                    // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                    var parameterKey = fromQueryAttribute?.Data?.Name ?? parameter.Name;
+
+                    if (!parameter.Type.IsPrimitiveType() && !parameter.Type.IsPrimitiveEnumerableType())
+                    {
+                        isValid = false;
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.UnsupportedMethodParamaterType, 
+                            Location.Create(declarationSyntax.SyntaxTree, declarationSyntax.Span),
+                            parameterKey, parameter.Type.FullName));
+                    }
+                }
+            }
+
+            return isValid;
         }
     }
 }

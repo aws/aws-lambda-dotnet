@@ -73,5 +73,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor UnsupportedMethodParamaterType = new DiagnosticDescriptor(id: "AWSLambda0109",
+            title: "Unsupported Method Paramater Type",
+            messageFormat: "Unsupported query paramter '{0}' of type '{1}' encountered. Only primitive .NET types and their corresponding enumerables can be used as query parameters.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }
