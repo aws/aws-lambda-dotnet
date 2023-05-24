@@ -1,4 +1,4 @@
-# AWS Lambda Function Project with Lambda Powertools
+# AWS Lambda Function Project with Powertools for AWS Lambda (.NET)
 
 This starter project consists of:
 
@@ -9,9 +9,9 @@ You may also have a test project depending on the options selected.
 
 The generated function handler is a simple method accepting a string argument that returns the uppercase equivalent of the input string. Replace the body of this method, and parameters, to suit your needs.
 
-## AWS Lambda Powertools for .NET
+## Powertools for AWS Lambda (.NET)
 
-[AWS Lambda Powertools for .NET](https://awslabs.github.io/aws-lambda-powertools-dotnet/) is a developer toolkit to implement Serverless best practices and increase developer velocity.
+[Powertools for AWS Lambda (.NET)](https://awslabs.github.io/aws-lambda-powertools-dotnet/) is a developer toolkit to implement Serverless best practices and increase developer velocity.
 
 This starter project comes with Powertools Loging, Metrics and Tracing configured through environment variables defined in the `aws-lambda-tools-defaults.json` file and annotations on methods in `Function.cs`
 

@@ -6,7 +6,7 @@
     "Function",
     "Powertools"
   ],
-  "name": "Lambda Function with Powertools",
+  "name": "Lambda Function with Powertools for AWS Lambda (.NET)",
   "identity": "AWS.Lambda.Function.Powertools.CSharp",
   "groupIdentity": "AWS.Lambda.Function.Powertools",
   "shortName": "lambda.Powertools",

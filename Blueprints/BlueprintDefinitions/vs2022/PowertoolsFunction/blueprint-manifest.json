@@ -1,7 +1,7 @@
 {
-  "display-name": "Lambda Powertools",
+  "display-name": "Powertools for AWS Lambda",
   "system-name": "FunctionPowertools",
-  "description": "Setup the project and test project to create a Lambda function with Powertools from scratch.",
+  "description": "Setup the project and test project to create a Lambda function with Powertools for AWS Lambda from scratch.",
   "sort-order": 124,
   "hidden-tags": [
     "C#",
