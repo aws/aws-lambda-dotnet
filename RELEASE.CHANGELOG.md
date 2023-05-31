@@ -1,5 +1,17 @@
+### Release 2023-05-08
+* **Amazon.Lambda.Annotations (0.13.3)**
+  * Pull Request [#1504](https://github.com/aws/aws-lambda-dotnet/pull/1504) Add Http Status Code property on IHttpResult. Thanks [Paulo Serra](https://github.com/kabaluk)
+  * Fixed issue mapping to HTTP headers using different casing
+  * Fixed issue using nullable parameter types for mapped HTTP elements
+  * Added dependency to Amazon.Lambda.Core to make sure core interfaces are always available when adding Amazon.Lambda.Annotations to a project
+  * Added compile error if no `LambdaSerailizerAttribute` is set for the assembly
+  * Added compile error if missing a reference to `Amazon.Lambda.APIGatewayEvents` when using the API Gateway attributes
+* **Amazon.Lambda.S3Events (3.0.1)**
+  * Fixed typo in documentation for S3ObjectLambdaEvent
+
+
 ### Release 2023-04-24
-* **Amazon.Lambda.Annotations (0.13.1)**
+* **Amazon.Lambda.Annotations (0.13.2)**
   * Fixed issue with diagnostics message not being correctly formatted.
 * **Amazon.Lambda.Templates (6.13.0)**
   * Update blueprints to latest versions of AWS dependencies.
