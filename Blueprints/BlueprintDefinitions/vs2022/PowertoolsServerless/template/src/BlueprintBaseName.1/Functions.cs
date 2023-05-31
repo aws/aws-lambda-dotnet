@@ -11,10 +11,10 @@ using AWS.Lambda.Powertools.Tracing;
 namespace BlueprintBaseName._1;
 
 /// <summary>
-/// Learn more about Lambda Powertools at https://awslabs.github.io/aws-lambda-powertools-dotnet/
-/// Lambda Powertools Logging: https://awslabs.github.io/aws-lambda-powertools-dotnet/core/logging/
-/// Lambda Powertools Tracing: https://awslabs.github.io/aws-lambda-powertools-dotnet/core/tracing/
-/// Lambda Powertools Metrics: https://awslabs.github.io/aws-lambda-powertools-dotnet/core/metrics/
+/// Learn more about Powertools for AWS Lambda (.NET) at https://awslabs.github.io/aws-lambda-powertools-dotnet/
+/// Powertools for AWS Lambda (.NET) Logging: https://awslabs.github.io/aws-lambda-powertools-dotnet/core/logging/
+/// Powertools for AWS Lambda (.NET) Tracing: https://awslabs.github.io/aws-lambda-powertools-dotnet/core/tracing/
+/// Powertools for AWS Lambda (.NET) Metrics: https://awslabs.github.io/aws-lambda-powertools-dotnet/core/metrics/
 /// </summary>
 public class Functions
 {
@@ -47,6 +47,6 @@ public class Functions
     {
         Metrics.AddMetric("GetGreeting_Invocations", 1, MetricUnit.Count);
 
-        return "Hello Lambda Powertools";
+        return "Hello Powertools for AWS Lambda (.NET)";
     }
 }

@@ -6,7 +6,7 @@
     "Serverless",
     "Powertools"
   ],
-  "name": "Lambda Serverless with Powertools",
+  "name": "Lambda Serverless with Powertools for AWS Lambda (.NET)",
   "identity": "AWS.Lambda.Serverless.Powertools.CSharp",
   "groupIdentity": "AWS.Lambda.Serverless.Powertools",
   "shortName": "serverless.Powertools",
