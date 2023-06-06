@@ -224,7 +224,8 @@ namespace Amazon.Lambda.RuntimeSupport
             // Create the SocketsHttpHandler directly to avoid spending cold start time creating the wrapper HttpClientHandler
             var handler = new SocketsHttpHandler
             {
-
+                // Fix for https://github.com/aws/aws-lambda-dotnet/issues/1231. HttpClient by default supports only ASCII characters in headers. Changing it to allow UTF8 characters.
+                RequestHeaderEncodingSelector = delegate { return System.Text.Encoding.UTF8; }
             };
 
             // If we are running in an AOT environment, mark it as such.

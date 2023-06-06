@@ -54,6 +54,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 {
                     roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
 
+                    await RunTestExceptionAsync(lambdaClient, "ExceptionNonAsciiCharacterUnwrappedAsync", "", "Exception", "Unhandled exception with non ASCII character: ♂");
                     await RunTestSuccessAsync(lambdaClient, "UnintendedDisposeTest", "not-used", "UnintendedDisposeTest-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "LoggingStressTest", "not-used", "LoggingStressTest-success");
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", null);
