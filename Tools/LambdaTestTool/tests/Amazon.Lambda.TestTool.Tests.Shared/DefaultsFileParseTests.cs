@@ -3,6 +3,8 @@ using System.IO;
 using Xunit;
 
 using Amazon.Lambda.TestTool.Runtime;
+using Amazon.Lambda.AspNetCoreServer.Internal;
+using System.Collections.Generic;
 
 namespace Amazon.Lambda.TestTool.Tests
 {
@@ -46,6 +48,26 @@ namespace Amazon.Lambda.TestTool.Tests
         public void LambdaFunctionWithEnvironmentVariables()
         {
             var jsonFile = WriteTempConfigFile("{\"function-handler\" : \"Assembly::Type::Method\", \"environment-variables\" : \"key1=value1;key2=value2\"}");
+            try
+            {
+                var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
+                Assert.Single(configInfo.FunctionInfos);
+                Assert.Equal("Assembly::Type::Method", configInfo.FunctionInfos[0].Handler);
+
+                Assert.Equal(2, configInfo.FunctionInfos[0].EnvironmentVariables.Count);
+                Assert.Equal("value1", configInfo.FunctionInfos[0].EnvironmentVariables["key1"]);
+                Assert.Equal("value2", configInfo.FunctionInfos[0].EnvironmentVariables["key2"]);
+            }
+            finally
+            {
+                File.Delete(jsonFile);
+            }
+        }
+
+        [Fact]
+        public void LambdaFunctionWithQuotedEnvironmentVariables()
+        {
+            var jsonFile = WriteTempConfigFile("{\"function-handler\" : \"Assembly::Type::Method\", \"environment-variables\" : \"\\\"key1\\\"=\\\"value1\\\";\\\"key2\\\"=\\\"value2\\\"\"}");
             try
             {
                 var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
@@ -210,7 +232,66 @@ namespace Amazon.Lambda.TestTool.Tests
             Assert.Equal("update", configInfo.FunctionInfos[2].Name);
             Assert.Equal("DotNetServerless.Lambda::DotNetServerless.Lambda.Functions.UpdateItemFunction::Run", configInfo.FunctionInfos[2].Handler);
 
-        }        
+        }
+
+        [Fact]
+        public void ParseKeyValueParameter()
+        {
+            var parameters = new Dictionary<string, string>();
+            LambdaDefaultsConfigFileParser.ParseKeyValueOption("Table=Blog", parameters);
+            Assert.Single(parameters);
+            Assert.Equal("Blog", parameters["Table"]);
+
+            parameters = new Dictionary<string, string>();
+            LambdaDefaultsConfigFileParser.ParseKeyValueOption("Table=Blog;", parameters);
+            Assert.Single(parameters);
+            Assert.Equal("Blog", parameters["Table"]);
+
+            parameters = new Dictionary<string, string>();
+            LambdaDefaultsConfigFileParser.ParseKeyValueOption("\"ConnectionString\"=\"User=foo;Password=test\"", parameters);
+            Assert.Single(parameters);
+            Assert.Equal("User=foo;Password=test", parameters["ConnectionString"]);
+        }
+
+        [Fact]
+        public void ParseTwoKeyValueParameter()
+        {
+            var parameters = new Dictionary<string, string>();
+            LambdaDefaultsConfigFileParser.ParseKeyValueOption("Table=Blog;Bucket=MyBucket", parameters);
+            Assert.Equal(2, parameters.Count);
+
+            Assert.Equal("Blog", parameters["Table"]);
+            Assert.Equal("MyBucket", parameters["Bucket"]);
+
+            parameters = new Dictionary<string, string>();
+            LambdaDefaultsConfigFileParser.ParseKeyValueOption("\"ConnectionString1\"=\"User=foo;Password=test\";\"ConnectionString2\"=\"Password=test;User=foo\"", parameters);
+            Assert.Equal(2, parameters.Count);
+            Assert.Equal("User=foo;Password=test", parameters["ConnectionString1"]);
+            Assert.Equal("Password=test;User=foo", parameters["ConnectionString2"]);
+        }
+
+        [Fact]
+        public void ParseEmptyValue()
+        {
+            var parameters = new Dictionary<string, string>();
+            LambdaDefaultsConfigFileParser.ParseKeyValueOption("ShouldCreateTable=true;BlogTableName=", parameters);
+            Assert.Equal(2, parameters.Count);
+            Assert.Equal("true", parameters["ShouldCreateTable"]);
+            Assert.Equal("", parameters["BlogTableName"]);
+
+            parameters = new Dictionary<string, string>();
+            LambdaDefaultsConfigFileParser.ParseKeyValueOption("BlogTableName=;ShouldCreateTable=true", parameters);
+            Assert.Equal(2, parameters.Count);
+            Assert.Equal("true", parameters["ShouldCreateTable"]);
+            Assert.Equal("", parameters["BlogTableName"]);
+        }
+
+        [Fact]
+        public void ParseErrors()
+        {
+            var parameters = new Dictionary<string, string>();
+            Assert.Throws<CommandLineParseException>(() => LambdaDefaultsConfigFileParser.ParseKeyValueOption("=aaa", parameters));
+        }
 
         private string WriteTempConfigFile(string json)
         {

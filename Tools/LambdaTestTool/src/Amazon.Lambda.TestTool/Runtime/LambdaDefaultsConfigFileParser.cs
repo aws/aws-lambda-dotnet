@@ -71,21 +71,93 @@ namespace Amazon.Lambda.TestTool.Runtime
 
                 if(configFile.EnvironmentVariables != null)
                 {
-                    var variables = configFile.EnvironmentVariables.Split(';');
-                    foreach(var variable in variables)
-                    {
-                        var kvp = variable.Split('=');
-                        if(kvp.Length == 2)
-                        {
-                            info.EnvironmentVariables[kvp[0]] = kvp[1];
-                        }
-                    }
+                    ParseKeyValueOption(configFile.EnvironmentVariables, info.EnvironmentVariables);
                 }
             
                 configInfo.FunctionInfos.Add(info);
             }
             configInfo.FunctionInfos.Sort((x, y ) => string.CompareOrdinal(x.Name, y.Name));
             return configInfo;
+        }
+
+        public static void ParseKeyValueOption(string keyValueString, IDictionary<string, string> values)
+        {
+            if (string.IsNullOrWhiteSpace(keyValueString))
+                return;
+
+            try
+            {
+                var currentPos = 0;
+                while (currentPos != -1 && currentPos < keyValueString.Length)
+                {
+                    string name;
+                    GetNextToken(keyValueString, '=', ref currentPos, out name);
+
+                    string value;
+                    GetNextToken(keyValueString, ';', ref currentPos, out value);
+
+                    if (string.IsNullOrEmpty(name))
+                        throw new CommandLineParseException($"Error parsing option ({keyValueString}), format should be <key1>=<value1>;<key2>=<value2>");
+
+                    values[name] = value ?? string.Empty;
+                }
+            }
+            catch (CommandLineParseException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                throw new CommandLineParseException($"Error parsing option ({keyValueString}), format should be <key1>=<value1>;<key2>=<value2>: {e.Message}");
+            }
+
+            return;
+        }
+
+        private static void GetNextToken(string option, char endToken, ref int currentPos, out string token)
+        {
+            if (option.Length <= currentPos)
+            {
+                token = string.Empty;
+                return;
+            }
+
+            int tokenStart = currentPos;
+            int tokenEnd = -1;
+            bool inQuote = false;
+            if (option[currentPos] == '"')
+            {
+                inQuote = true;
+                tokenStart++;
+                currentPos++;
+
+                while (currentPos < option.Length && option[currentPos] != '"')
+                {
+                    currentPos++;
+                }
+
+                if (option[currentPos] == '"')
+                    tokenEnd = currentPos;
+            }
+
+            while (currentPos < option.Length && option[currentPos] != endToken)
+            {
+                currentPos++;
+            }
+
+
+            if (!inQuote)
+            {
+                if (currentPos < option.Length && option[currentPos] == endToken)
+                    tokenEnd = currentPos;
+            }
+
+            if (tokenEnd == -1)
+                token = option.Substring(tokenStart);
+            else
+                token = option.Substring(tokenStart, tokenEnd - tokenStart);
+
+            currentPos++;
         }
 
         private static void ProcessServerlessTemplate(LambdaConfigInfo configInfo, string templateFilePath)
