@@ -36,6 +36,9 @@ namespace CustomRuntimeFunctionTest
             {
                 switch (handler)
                 {
+                    case nameof(ExceptionNonAsciiCharacterUnwrappedAsync):
+                        bootstrap = new LambdaBootstrap(ExceptionNonAsciiCharacterUnwrappedAsync);
+                        break;
                     case nameof(UnintendedDisposeTest):
                         bootstrap = new LambdaBootstrap(UnintendedDisposeTest);
                         break;
@@ -342,6 +345,13 @@ namespace CustomRuntimeFunctionTest
             // do something async so this function is compiled as async
             var dummy = await Task.FromResult("xyz");
             throw new Exception("Exception thrown from an async handler.");
+        }
+
+        private static async Task<InvocationResponse> ExceptionNonAsciiCharacterUnwrappedAsync(InvocationRequest invocation)
+        {
+            // do something async so this function is compiled as async
+            var dummy = await Task.FromResult("xyz");
+            throw new Exception("Unhandled exception with non ASCII character: ♂");
         }
 
         private static void AggregateExceptionUnwrapped()
