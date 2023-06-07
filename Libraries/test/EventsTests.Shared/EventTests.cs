@@ -728,11 +728,7 @@ namespace Amazon.Lambda.Tests
 
                 AssertBaseClass(cognitoVerifyAuthChallengeEvent);
 
-                Assert.Equal(2, cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer.Count);
-                Assert.Equal("answer_1", cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer.ToArray()[0].Key);
-                Assert.Equal("answer_value_1", cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer.ToArray()[0].Value);
-                Assert.Equal("answer_2", cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer.ToArray()[1].Key);
-                Assert.Equal("answer_value_2", cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer.ToArray()[1].Value);
+                Assert.Equal("answer_value", cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer);
 
                 Assert.Equal(2, cognitoVerifyAuthChallengeEvent.Request.ClientMetadata.Count);
                 Assert.Equal("metadata_1", cognitoVerifyAuthChallengeEvent.Request.ClientMetadata.ToArray()[0].Key);
