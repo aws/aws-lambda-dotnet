@@ -24,7 +24,7 @@ namespace Amazon.Lambda.CognitoEvents
 #if NETCOREAPP3_1
         [System.Text.Json.Serialization.JsonPropertyName("challengeAnswer")]
 # endif
-        public Dictionary<string, string> ChallengeAnswer { get; set; } = new Dictionary<string, string>();
+        public string ChallengeAnswer { get; set; } = string.Empty;
 
         /// <summary>
         /// One or more key-value pairs that you can provide as custom input to the Lambda function that you specify for the pre sign-up trigger. You can pass this data to your Lambda function by using the ClientMetadata parameter in the following API actions: AdminVerifyUser, AdminRespondToAuthChallenge, ForgotPassword, and SignUp.
