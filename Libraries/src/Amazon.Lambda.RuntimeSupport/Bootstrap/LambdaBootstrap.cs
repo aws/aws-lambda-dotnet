@@ -224,7 +224,7 @@ namespace Amazon.Lambda.RuntimeSupport
             // Create the SocketsHttpHandler directly to avoid spending cold start time creating the wrapper HttpClientHandler
             var handler = new SocketsHttpHandler
             {
-
+                RequestHeaderEncodingSelector = delegate { return System.Text.Encoding.UTF8; }
             };
 
             // If we are running in an AOT environment, mark it as such.

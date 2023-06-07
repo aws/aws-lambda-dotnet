@@ -1,3 +1,9 @@
+### Release 2023-06-07
+* **Amazon.Lambda.TestTool (0.13.1)**
+  * Fixed issues parsing environment variables from `aws-lambda-tools-defaults.json` that were quoted.
+* **Amazon.Lambda.Templates (6.13.1)**
+  * Renamed Powertools for AWS Lambda blueprint and updated dependencies to Powertools for AWS Lambda.
+
 ### Release 2023-05-08
 * **Amazon.Lambda.Annotations (0.13.3)**
   * Pull Request [#1504](https://github.com/aws/aws-lambda-dotnet/pull/1504) Add Http Status Code property on IHttpResult. Thanks [Paulo Serra](https://github.com/kabaluk)
