@@ -1,3 +1,9 @@
+### Release 2023-06-08
+* **Amazon.Lambda.RuntimeSupport (1.8.8)**
+  * Fixed issue with failing to report uncaught exceptions that have non-ascii characters from Lambda functions.
+* **Amazon.Lambda.CognitoEvents (2.1.1)**
+  * Pull Request [#1523](https://github.com/aws/aws-lambda-dotnet/pull/1523) fixed incorrect modeling of the `ChallengeAnswer` property. Thanks [JP Grusling](https://github.com/jp-grusling)
+
 ### Release 2023-06-07
 * **Amazon.Lambda.TestTool (0.13.1)**
   * Fixed issues parsing environment variables from `aws-lambda-tools-defaults.json` that were quoted.
