@@ -26,8 +26,9 @@
         "Attribute2": {
           "stringValue": "AttributeValue2",
           "stringListValues": [ "b1", "b2" ],
-          "binaryListValues": [  ],
-          "dataType": "String"
+          "binaryListValues": [],
+          "dataType": "String",
+          "binaryValue": null
         }
       }
     }

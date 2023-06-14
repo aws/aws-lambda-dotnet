@@ -24,6 +24,9 @@ namespace Amazon.Lambda.Serialization.Json
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, NewtonsoftJsonSerializer serializer)
         {
             var dataBase64 = reader.Value as string;
+            if (dataBase64 is null)
+                return null;
+
             return Common.Base64ToMemoryStream(dataBase64);
         }
 

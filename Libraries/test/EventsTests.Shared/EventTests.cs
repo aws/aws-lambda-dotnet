@@ -1302,6 +1302,7 @@ namespace Amazon.Lambda.Tests
                     Assert.Equal("b2", attribute2.StringListValues[1]);
 
                     Assert.Equal("String", attribute2.DataType);
+                    Assert.Null(attribute2.BinaryValue);
                 }
 
                 Handle(sqsEvent);
