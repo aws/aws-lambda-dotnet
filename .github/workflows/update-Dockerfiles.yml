@@ -1,4 +1,4 @@
-name: Update Dockerfiles
+name: Update Lambda Dockerfiles
 
 on:
   # Allows to run this workflow manually from the Actions tab
@@ -14,6 +14,10 @@ on:
         type: boolean
         required: true
         default: "true"
+      NET_6_NEXT_VERSION:
+        description: ".NET 6 Next Version"
+        type: string
+        required: true
       NET_7_AMD64:
         description: ".NET 7 AMD64"
         type: boolean
@@ -24,6 +28,10 @@ on:
         type: boolean
         required: true
         default: "true"
+      NET_7_NEXT_VERSION:
+        description: ".NET 7 Next Version"
+        type: string
+        required: true
 
 jobs:
   build:
@@ -43,28 +51,28 @@ jobs:
         id: update-net6-amd64
         shell: pwsh
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile ${{ env.NET_6_AMD64_Dockerfile }}
+          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_6_AMD64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_6_NEXT_VERSION }}
         if: ${{ github.event.inputs.NET_6_AMD64 == 'true' }}
 
       - name: Update .NET 6 ARM64
         id: update-net6-arm64
         shell: pwsh
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile ${{ env.NET_6_ARM64_Dockerfile }}
+          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_6_ARM64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_6_NEXT_VERSION }}
         if: ${{ github.event.inputs.NET_6_ARM64 == 'true' }}
 
       - name: Update .NET 7 AMD64
         id: update-net7-amd64
         shell: pwsh
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile ${{ env.NET_7_AMD64_Dockerfile }}
+          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_7_AMD64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_7_NEXT_VERSION }}
         if: ${{ github.event.inputs.NET_7_AMD64 == 'true' }}
 
       - name: Update .NET 7 ARM64
         id: update-net7-arm64
         shell: pwsh
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -Dockerfile ${{ env.NET_7_ARM64_Dockerfile }}
+          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_7_ARM64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_7_NEXT_VERSION }}
         if: ${{ github.event.inputs.NET_7_ARM64 == 'true' }}
 
       # Update Dockerfiles if newer version of ASP.NET Core is available
