@@ -60,6 +60,7 @@
     <ItemGroup>
       <None Remove="Snapshots\ServerlessTemplates\customizeResponse.template" />
       <None Remove="Snapshots\ServerlessTemplates\dynamicexample.template" />
+      <None Remove="Snapshots\ServerlessTemplates\intrinsicexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\nullreferenceexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
       <None Remove="Snapshots\ServerlessTemplates\taskexample.template" />

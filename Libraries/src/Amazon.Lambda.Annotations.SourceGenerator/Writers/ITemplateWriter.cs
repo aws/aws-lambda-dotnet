@@ -1,4 +1,7 @@
-﻿namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
+﻿using System.Collections;
+using System.Collections.Generic;
+
+namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 {
     /// <summary>
     /// This interface contains utility methods to manipulate a YAML or JSON blob
@@ -56,5 +59,11 @@
         /// If a string value starts with '@' then a reference node is created and returned.
         /// </summary>
         object GetValueOrRef(string value);
+
+        /// <summary>
+        /// Retrieves a list of keys for a specified template path.
+        /// </summary>
+        /// <param name="path">dot(.) seperated path. Example "Person.Name.FirstName"</param>
+        IList<string> GetKeys(string path);
     }
 }

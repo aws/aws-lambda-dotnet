@@ -284,7 +284,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             var toRemove = new List<string>();
-            foreach (var resourceName in _templateWriter.GetToken<Dictionary<string, object>>("Resources").Keys)
+            foreach (var resourceName in _templateWriter.GetKeys("Resources"))
             {
                 var resourcePath = $"Resources.{resourceName}";
                 var type = _templateWriter.GetToken<string>($"{resourcePath}.Type", string.Empty);

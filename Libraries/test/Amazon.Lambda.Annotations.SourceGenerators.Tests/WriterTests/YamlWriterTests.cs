@@ -10,6 +10,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
     public class YamlWriterTests
     {
         const string yamlContent = @"
+                        Description: !Sub '${AWS::Region}'
                         Person:
                           Name:
                             FirstName: John
@@ -29,12 +30,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             yamlWriter.Parse(yamlContent);
 
             // ACT and ASSERT
+            Assert.True(yamlWriter.Exists("Description"));
             Assert.True(yamlWriter.Exists("Person"));
             Assert.True(yamlWriter.Exists("Person.Name"));
             Assert.True(yamlWriter.Exists("Person.Name.LastName"));
             Assert.True(yamlWriter.Exists("Person.Age"));
             Assert.True(yamlWriter.Exists("Person.PhoneNumbers"));
 
+            Assert.False(yamlWriter.Exists("description"));
             Assert.False(yamlWriter.Exists("person"));
             Assert.False(yamlWriter.Exists("Person.FirstName"));
             Assert.False(yamlWriter.Exists("Person.DOB"));
@@ -109,10 +112,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             yamlWriter.Parse(yamlContent);
 
             // ACT
+            yamlWriter.RemoveToken("Description");
             yamlWriter.RemoveToken("Person.Name.LastName");
             yamlWriter.RemoveToken("Person.Age");
 
             // ASSERT
+            Assert.False(yamlWriter.Exists("Description"));
             Assert.False(yamlWriter.Exists("Person.Name.LastName"));
             Assert.False(yamlWriter.Exists("Person.Age"));
             Assert.True(yamlWriter.Exists("Person.Name"));
@@ -161,6 +166,38 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 .Replace("\n", Environment.NewLine)
                 .Replace("\r\r\n", Environment.NewLine)
                 .Trim();
+        }
+
+        [Fact]
+        public void GetKeys()
+        {
+            // ARRANGE
+            const string yamlContent = @"
+                      Resources:
+                        Function1:
+                          Description:
+                            Fn::Sub:
+                              - '${var1}'
+                              - var1: Test
+                        Function2:
+                          Description: !Sub '${AWS::Region}'
+                        ";
+            ITemplateWriter yamlWriter = new YamlWriter();
+            yamlWriter.Parse(yamlContent);
+
+            // ACT
+            var functionNames = yamlWriter.GetKeys("Resources");
+            var function1Keys = yamlWriter.GetKeys("Resources.Function1");
+
+            // ASSERT
+            Assert.NotEmpty(functionNames);
+            Assert.Equal(2, functionNames.Count);
+            Assert.Equal("Function1", functionNames[0]);
+            Assert.Equal("Function2", functionNames[1]);
+            Assert.NotEmpty(function1Keys);
+            var description = Assert.Single(function1Keys);
+            Assert.Equal("Description", description);
+            Assert.Throws<InvalidOperationException>(() => { yamlWriter.GetKeys("Resources.Function2"); });
         }
     }
 }
