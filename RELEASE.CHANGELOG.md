@@ -1,3 +1,9 @@
+### Release 2023-06-18
+* **Amazon.Lambda.Serialization.Json (2.1.1)**
+  * Fixed issue null pointer exception when parsing events for types with MemoryStream.
+* **Amazon.Lambda.Annotations (0.13.4)**
+  * Add diagnostic error message when using complex types mapped to query string parameters.
+
 ### Release 2023-06-08
 * **Amazon.Lambda.RuntimeSupport (1.8.8)**
   * Fixed issue with failing to report uncaught exceptions that have non-ascii characters from Lambda functions.
