@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v0.13.4.0).",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v0.13.5.0).",
   "Resources": {
     "TestServerlessAppVoidExampleVoidReturnGenerated": {
       "Type": "AWS::Serverless::Function",
