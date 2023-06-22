@@ -11,7 +11,7 @@ using VerifyCS = Amazon.Lambda.Annotations.SourceGenerators.Tests.CSharpSourceGe
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 {
-    public class SourceGeneratorTests
+    public class SourceGeneratorTests : IDisposable
     {
         [Fact]
         public async Task Greeter()
@@ -288,6 +288,45 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("VoidExample_VoidReturn_Generated.g.cs", expectedSubNamespaceGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task VerifyNoErrorWithIntrinsicInTemplate()
+        {
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "intrinsicexample.template")).ToEnvironmentLineEndings();
+            var expectedSubNamespaceGenerated = File.ReadAllText(Path.Combine("Snapshots", "IntrinsicExample_HasIntrinsic_Generated.g.cs")).ToEnvironmentLineEndings();
+            File.WriteAllText(Path.Combine("TestServerlessApp", "serverless.template"), expectedTemplateContent);
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "IntrinsicExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "IntrinsicExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "IntrinsicExample_HasIntrinsic_Generated.g.cs",
+                            SourceText.From(expectedSubNamespaceGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("IntrinsicExample_HasIntrinsic_Generated.g.cs", expectedSubNamespaceGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     },
                     ReferenceAssemblies = ReferenceAssemblies.Net.Net60
@@ -645,6 +684,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 }
 
             }.RunAsync();
+        }
+
+        public void Dispose()
+        {
+            File.Delete(Path.Combine("TestServerlessApp", "serverless.template"));
         }
     }
 }

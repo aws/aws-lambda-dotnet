@@ -271,5 +271,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             return _deserializer.Deserialize<T>(_serializer.Serialize(token));
         }
+
+        public IList<string> GetKeys(string path)
+        {
+            try
+            {
+                return GetToken<Dictionary<string, YamlMappingNode>>(path).Keys.ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Unable to retrieve keys for the specified YAML path '{path}'.", ex);
+            }
+        }
     }
 }

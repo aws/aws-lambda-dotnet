@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: This template is partially managed by Amazon.Lambda.Annotations (v0.13.4.0).
+Resources:
+  TestServerlessAppIntrinsicExampleHasIntrinsicGenerated:
+    Type: AWS::Serverless::Function
+    Metadata:
+      Tool: Amazon.Lambda.Annotations
+    Properties:
+      Description: !Sub 'This is deployed in region ${AWS::Region}'
+      MemorySize: 256
+      Timeout: 30
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      PackageType: Image
+      ImageUri: .
+      ImageConfig:
+        Command:
+          - TestProject::TestServerlessApp.IntrinsicExample_HasIntrinsic_Generated::HasIntrinsic

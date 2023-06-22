@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
@@ -224,6 +225,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 return deserializedToken;
             }
             return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(token));
+        }
+
+        public IList<string> GetKeys(string path)
+        {
+            try
+            {
+                return GetToken<Dictionary<string, object>>(path).Keys.ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Unable to retrieve keys for the specified JSON path '{path}'.", ex);
+            }
         }
     }
 }
