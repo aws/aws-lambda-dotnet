@@ -1,3 +1,7 @@
+### Release 2023-06-23
+* **Amazon.Lambda.Annotations (0.13.5)**
+  * Fixed error thrown when template includes a CloudFormation short-hand intrinsic function
+
 ### Release 2023-06-18
 * **Amazon.Lambda.Serialization.Json (2.1.1)**
   * Fixed issue null pointer exception when parsing events for types with MemoryStream.
