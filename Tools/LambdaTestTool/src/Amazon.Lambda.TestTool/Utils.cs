@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using Amazon.Lambda.TestTool.Runtime;
+using Newtonsoft.Json.Linq;
 
 namespace Amazon.Lambda.TestTool
 {
@@ -240,6 +241,67 @@ namespace Amazon.Lambda.TestTool
                 return debugDirectory;
 
             return depsFile[0].Directory.FullName;            
+        }
+
+        /// <summary>
+        /// Returns the Lambda assembly file path that will debugged by the test tool.
+        /// It returns an empty string if no Lambda assembly path is found.
+        /// </summary>
+        /// <param name="debugDirectory">This points to the .../bin/{CONFIGURATION}/{TARGET_FRAMEWORK} directory</param>
+        public static string FindLambdaAssemblyPath(string debugDirectory)
+        {
+            var depsFiles = Directory.GetFiles(debugDirectory, "*.deps.json");
+            if (!depsFiles.Any())
+            {
+                return string.Empty;
+            }
+
+            if (depsFiles.Length == 1)
+            {
+                var depsFilePath = depsFiles.First();
+                var lambdaAssemblyPath = depsFilePath.Substring(0, depsFilePath.Length - ".deps.json".Length) + ".dll";
+                return lambdaAssemblyPath;
+            }
+
+            var dependencies = new HashSet<string>();
+            foreach (var depsFilePath in depsFiles)
+            {
+                var depsFileContent = File.ReadAllText(depsFilePath);
+                ExtractDependenciesFromDepsJson(JsonDocument.Parse(depsFileContent).RootElement, dependencies);
+            }
+
+            foreach (var depsFilePath in depsFiles)
+            {
+                var depsFileName = Path.GetFileName(depsFilePath);
+                var projectName = depsFileName.Substring(0, depsFileName.Length - ".deps.json".Length);
+                if (!dependencies.Contains(projectName))
+                {
+                    var lambdaAssemblyPath = depsFilePath.Substring(0, depsFilePath.Length - ".deps.json".Length) + ".dll";
+                    return lambdaAssemblyPath;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static void ExtractDependenciesFromDepsJson(JsonElement node, HashSet<string> dependencies)
+        {
+            if (node.ValueKind != JsonValueKind.Object)
+                return;
+
+            if (node.TryGetProperty("dependencies", out var depenciesBlob)) 
+            {
+                foreach (var dependency in depenciesBlob.EnumerateObject())
+                {
+                    dependencies.Add(dependency.Name);
+                }
+                return;
+            }
+
+            foreach (var childNode in node.EnumerateObject())
+            {
+                ExtractDependenciesFromDepsJson(childNode.Value, dependencies);
+            }
         }
     }
 }
