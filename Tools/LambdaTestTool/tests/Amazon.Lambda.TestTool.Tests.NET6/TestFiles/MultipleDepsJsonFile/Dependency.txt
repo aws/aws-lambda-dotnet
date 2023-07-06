@@ -1,0 +1,3 @@
+The dependency graph is as follows:
+	1. LambdaDemo depends on LambdaDemo.Api1 and LambdaDemo.Api2
+	2. LambdaDemo.Api1 depends on LambdaDemo.Api2

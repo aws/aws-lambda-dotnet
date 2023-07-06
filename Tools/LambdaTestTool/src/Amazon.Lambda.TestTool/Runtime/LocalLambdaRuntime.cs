@@ -53,20 +53,15 @@ namespace Amazon.Lambda.TestTool.Runtime
                 throw new DirectoryNotFoundException($"Directory containing built Lambda project does not exist {directory}");
             }
 
-            var depsFile = Directory.GetFiles(directory, "*.deps.json").FirstOrDefault();
-            if (depsFile == null)
-            {
-                throw new Exception($"Failed to find a deps.json file in the specified directory ({directory})");
-            }
+            var lambdaAssemblyPath = Utils.FindLambdaAssemblyPath(directory);
 
-            var fileName = depsFile.Substring(0, depsFile.Length - ".deps.json".Length) + ".dll";
-            if (!File.Exists(fileName))
+            if (string.IsNullOrEmpty(lambdaAssemblyPath) || !File.Exists(lambdaAssemblyPath))
             {
                 throw new Exception($"Failed to find Lambda project entry assembly in the specified directory ({directory})");
             }
 
             // The resolver provides the ability to load the assemblies containing the select Lambda function.
-            var resolver = new LambdaAssemblyLoadContext(fileName);
+            var resolver = new LambdaAssemblyLoadContext(lambdaAssemblyPath);
 
             var runtime = new LocalLambdaRuntime(resolver, directory, awsService);
             return runtime;
