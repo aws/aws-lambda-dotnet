@@ -1,0 +1,33 @@
+﻿﻿using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Core;
+
+namespace TestServerlessApp
+{
+    public class InvalidParameterAttributeNames
+    {
+        // This fails because the FromQuery attribute name contains whitespaces
+        [LambdaFunction()]
+        [HttpApi(LambdaHttpMethod.Get, "/SayHello", Version = HttpApiVersion.V1)]
+        public string SayHello([FromQuery(Name = "This is a name")] string name, ILambdaContext context)
+        {
+            return $"Hello, {name}!";
+        }
+
+        // This fails because the FromHeader attribute name contains escape characters and ';'
+        [LambdaFunction()]
+        [HttpApi(LambdaHttpMethod.Get, "/inject")]
+        public int Injection([FromHeader(Name = "System.Diagnostics.Process.Start(\"CMD.exe\",\"whoami\");")] int test, ILambdaContext context)
+        {
+            return 1;
+        }
+
+        // This fails because the FromRoute attribute name contains '@'
+        [LambdaFunction()]
+        [HttpApi(LambdaHttpMethod.Get, "/SayHello/{first@name}", Version = HttpApiVersion.V1)]
+        public string SayHelloFromRoute([FromRoute(Name = "first@name")] string firstName, ILambdaContext context)
+        {
+            return $"Hello, {firstName}!";
+        }
+    }
+}
