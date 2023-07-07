@@ -1,6 +1,11 @@
 ; Shipped analyzer releases
 ; https://github.com/dotnet/roslyn-analyzers/blob/master/src/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md
 
+## Release 0.13.6.0
+Rule ID | Category | Severity | Notes
+--------|----------|----------|-------
+AWSLambda0110 | AWSLambdaCSharpGenerator | Error | Invalid Parameter Attribute Name
+
 ## Release 0.13.4.0
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
