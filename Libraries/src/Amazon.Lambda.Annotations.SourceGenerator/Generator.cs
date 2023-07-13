@@ -24,6 +24,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         // Only allow alphanumeric characters
         private readonly Regex _resourceNameRegex = new Regex("^[a-zA-Z0-9]+$");
 
+        // Regex for the 'Name' property for API Gateway attributes - https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html
+        private readonly Regex _parameterAttributeNameRegex = new Regex("^[a-zA-Z0-9._$-]+$");
+
         public Generator()
         {
 #if DEBUG
@@ -237,6 +240,39 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.UnsupportedMethodParamaterType, 
                             Location.Create(declarationSyntax.SyntaxTree, declarationSyntax.Span),
                             parameterKey, parameter.Type.FullName));
+                    }
+                }
+
+                foreach (var att in parameter.Attributes)
+                {
+                    var parameterAttributeName = string.Empty;
+                    switch (att.Type.FullName)
+                    {
+                        case TypeFullNames.FromQueryAttribute:
+                            var fromQueryAttribute = (AttributeModel<APIGateway.FromQueryAttribute>)att;
+                            parameterAttributeName = fromQueryAttribute.Data.Name;
+                            break;
+
+                        case TypeFullNames.FromRouteAttribute:
+                            var fromRouteAttribute = (AttributeModel<APIGateway.FromRouteAttribute>)att;
+                            parameterAttributeName = fromRouteAttribute.Data.Name;
+                            break;
+
+                        case TypeFullNames.FromHeaderAttribute:
+                            var fromHeaderAttribute = (AttributeModel<APIGateway.FromHeaderAttribute>)att;
+                            parameterAttributeName = fromHeaderAttribute.Data.Name;
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    if (!string.IsNullOrEmpty(parameterAttributeName) && !_parameterAttributeNameRegex.IsMatch(parameterAttributeName))
+                    {
+                        isValid = false;
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.InvalidParameterAttributeName,
+                            Location.Create(declarationSyntax.SyntaxTree, declarationSyntax.Span),
+                            parameterAttributeName, parameter.Name));
                     }
                 }
             }

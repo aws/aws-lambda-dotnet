@@ -80,5 +80,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidParameterAttributeName = new DiagnosticDescriptor(id: "AWSLambda0110",
+           title: "Invalid Parameter Attribute Name",
+           messageFormat: "Invalid parameter attribute name '{0}' for method parameter '{1}' encountered. Valid values can only contain uppercase and lowercase alphanumeric characters, periods (.), hyphens (-), underscores (_) and dollar signs ($).",
+           category: "AWSLambdaCSharpGenerator",
+           DiagnosticSeverity.Error,
+           isEnabledByDefault: true);
     }
 }
