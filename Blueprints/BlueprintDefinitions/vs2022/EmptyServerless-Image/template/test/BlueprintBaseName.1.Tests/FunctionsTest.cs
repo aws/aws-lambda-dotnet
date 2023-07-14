@@ -1,3 +1,5 @@
+using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestUtilities;
 using Xunit;
 
@@ -17,7 +19,10 @@ public class FunctionsTest
 
         var response = functions.Get(context);
 
-        Assert.Equal(200, response.StatusCode);
-        Assert.Equal("Hello AWS Serverless", response.Body);
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+
+        var serializationOptions = new HttpResultSerializationOptions { Format = HttpResultSerializationOptions.ProtocolFormat.RestApi };
+        var apiGatewayResponse = new StreamReader(response.Serialize(serializationOptions)).ReadToEnd();
+        Assert.Contains("Hello AWS Serverless", apiGatewayResponse);
     }
 }
