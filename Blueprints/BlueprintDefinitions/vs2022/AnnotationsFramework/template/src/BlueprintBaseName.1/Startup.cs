@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace BlueprintBaseName._1;
 
 [Amazon.Lambda.Annotations.LambdaStartup]
@@ -13,23 +15,13 @@ public class Startup
     /// </summary>
     public void ConfigureServices(IServiceCollection services)
     {
-        /// <summary>
-        /// Services for Lambda functions can be registered in the services dependency injection container in this method. 
-        ///
-        /// The services can be injected into the Lambda function through the containing type's constructor or as a
-        /// parameter in the Lambda function using the FromService attribute. Services injected for the constructor have
-        /// the lifetime of the Lambda compute container. Services injected as parameters are created within the scope
-        /// of the function invocation.
-        /// </summary>
-        public void ConfigureServices(IServiceCollection services)
-        {
-            // Here we'll add an instance of our calculator service that be used by each function
-            services.AddSingleton<ICalculatorService>(new CalculatorService());
+        // Here we'll add an instance of our calculator service that be used by each function
+        services.AddSingleton<ICalculatorService>(new CalculatorService());
 
-            //// Example of creating the IConfiguration object and
-            //// adding it to the dependency injection container.
-            //var builder = new ConfigurationBuilder()
-            //                    .AddJsonFile("appsettings.json", true);
+        //// Example of creating the IConfiguration object and
+        //// adding it to the dependency injection container.
+        //var builder = new ConfigurationBuilder()
+        //                    .AddJsonFile("appsettings.json", true);
 
         //// Add AWS Systems Manager as a potential provider for the configuration. This is 
         //// available with the Amazon.Extensions.Configuration.SystemsManager NuGet package.

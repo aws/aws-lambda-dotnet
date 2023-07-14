@@ -12,7 +12,7 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnetcore3.1",
+        "Runtime": "dotnet6",
         "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
@@ -26,8 +26,7 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/",
-              "Method": "GET",
-              "PayloadFormatVersion": "2.0"
+              "Method": "GET"
             }
           }
         }
@@ -42,7 +41,7 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnetcore3.1",
+        "Runtime": "dotnet6",
         "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
@@ -56,8 +55,7 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/add/{x}/{y}",
-              "Method": "GET",
-              "PayloadFormatVersion": "2.0"
+              "Method": "GET"
             }
           }
         }
@@ -72,7 +70,7 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnetcore3.1",
+        "Runtime": "dotnet6",
         "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
@@ -86,8 +84,7 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/subtract/{x}/{y}",
-              "Method": "GET",
-              "PayloadFormatVersion": "2.0"
+              "Method": "GET"
             }
           }
         }
@@ -102,7 +99,7 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnetcore3.1",
+        "Runtime": "dotnet6",
         "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
@@ -116,8 +113,7 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/multiply/{x}/{y}",
-              "Method": "GET",
-              "PayloadFormatVersion": "2.0"
+              "Method": "GET"
             }
           }
         }
@@ -132,7 +128,7 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnetcore3.1",
+        "Runtime": "dotnet6",
         "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
@@ -146,8 +142,7 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/divide/{x}/{y}",
-              "Method": "GET",
-              "PayloadFormatVersion": "2.0"
+              "Method": "GET"
             }
           }
         }
