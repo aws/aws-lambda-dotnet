@@ -5,7 +5,7 @@
     "Lambda",
     "Serverless"
   ],
-  "name": "Lambda Annotations Framework (Preview)",
+  "name": "Lambda Annotations Framework",
   "identity": "AWS.Lambda.Serverless.Annotations.CSharp",
   "groupIdentity": "AWS.Lambda.Serverless.Annotations",
   "shortName": "serverless.Annotations",

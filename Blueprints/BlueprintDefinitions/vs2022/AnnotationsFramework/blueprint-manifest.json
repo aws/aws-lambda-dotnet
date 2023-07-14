@@ -1,15 +1,13 @@
 {
-  "display-name": "Annotations Framework",
+  "display-name": "Annotations Framework Sample",
   "system-name": "Annotations",
-  "description": "(Preview) Use the .NET Lambda Annotations framework to write Lambda Functions.",
+  "description": "Use the .NET Lambda Annotations framework to write Lambda Functions. This is a sample application demonstrating usage of the annotations framework, as opposed to an empty project template.",
   "sort-order": 120,
   "hidden-tags": [
     "C#",
     "ServerlessProject"
   ],
   "tags": [
-    "Container",
-    "Annotations",
-    "Preview"
+    "Annotations"
   ]
 }
