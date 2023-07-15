@@ -17,6 +17,11 @@
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.1" />
     <PackageReference Include="Amazon.Lambda.Annotations" Version="1.0.0" />
   </ItemGroup>
+  <!-- 
+    The FrameworkReference is used reduce the deployment bundle size by not having to include 
+    dependencies like Microsoft.Extensions.DependencyInjection. The Microsoft.AspNetCore.App
+    which is available in the Managed .NET Lambda runtime already includes those assemblies.
+  -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>

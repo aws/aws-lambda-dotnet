@@ -5,11 +5,11 @@ using Moq;
 
 namespace BlueprintBaseName._1.Tests
 {
-    public class FunctionTest
+    public class FunctionsTest
     {
         ICalculatorService _mockCalculatorService;
 
-        public FunctionTest()
+        public FunctionsTest()
         {
             // This isn't an accurate calculator, but rather shows how the business logic
             // for our Lambda functions can be moved to a class that can be replaced by a
