@@ -65,6 +65,7 @@
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.image.AspNetCoreWebAPI;ProjectName=ImageAspNetCoreWebApiF;Lang=F#;Version=vs2022"/>		
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.image.EmptyServerless;ProjectName=ImageEmptyServerlessC;Lang=C#;Version=vs2022"/>
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.image.EmptyServerless;ProjectName=ImageEmptyServerlessF;Lang=F#;Version=vs2022"/>
+		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.Annotations;ProjectName=AnnotationsC;Lang=C#;Version=vs2022"/>
 
 		
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebApp;ProjectName=AspNetCoreWebAppC;Lang=C#;Version=vs2022"/>

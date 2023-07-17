@@ -1,6 +1,8 @@
 using System.Net;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -20,19 +22,24 @@ public class Functions
     /// <summary>
     /// A Lambda function to respond to HTTP Get methods from API Gateway
     /// </summary>
-    /// <param name="request"></param>
-    /// <returns>The API Gateway response.</returns>
-    public APIGatewayProxyResponse Get(APIGatewayProxyRequest request, ILambdaContext context)
+    /// <remarks>
+    /// This uses the <see href="https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.Annotations/README.md">Lambda Annotations</see> 
+    /// programming model to bridge the gap between the Lambda programming model and a more idiomatic .NET model.
+    /// 
+    /// This automatically handles reading parameters from an <see cref="APIGatewayProxyRequest"/>
+    /// as well as syncing the function definitions to serverless.template each time you build.
+    /// 
+    /// If you do not wish to use this model and need to manipulate the API Gateway 
+    /// objects directly, see the accompanying Readme.md for instructions.
+    /// </remarks>
+    /// <param name="context">Information about the invocation, function, and execution environment</param>
+    /// <returns>The response as an implicit <see cref="APIGatewayProxyResponse"/></returns>
+    [LambdaFunction(PackageType = LambdaPackageType.Image, Policies = "AWSLambdaBasicExecutionRole", MemorySize = 256, Timeout = 30)]
+    [RestApi(LambdaHttpMethod.Get, "/")]
+    public IHttpResult Get(ILambdaContext context)
     {
-        context.Logger.LogInformation("Get Request\n");
+        context.Logger.LogInformation("Handling the 'Get' Request");
 
-        var response = new APIGatewayProxyResponse
-        {
-            StatusCode = (int)HttpStatusCode.OK,
-            Body = "Hello AWS Serverless",
-            Headers = new Dictionary<string, string> { { "Content-Type", "text/plain" } }
-        };
-
-        return response;
+        return HttpResults.Ok("Hello AWS Serverless");
     }
 }
