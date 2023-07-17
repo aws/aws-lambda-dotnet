@@ -15,7 +15,7 @@ public class Startup
     /// </summary>
     public void ConfigureServices(IServiceCollection services)
     {
-        // Here we'll add an instance of our calculator service that be used by each function
+        // Here we'll add an instance of our calculator service that will be used by each function
         services.AddSingleton<ICalculatorService>(new CalculatorService());
 
         //// Example of creating the IConfiguration object and

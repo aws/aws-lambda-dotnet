@@ -26,7 +26,7 @@ public class Functions
     /// This uses the <see href="https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.Annotations/README.md">Lambda Annotations</see> 
     /// programming model to bridge the gap between the Lambda programming model and a more idiomatic .NET model.
     /// 
-    /// This automatically handles reading parameters from an APIGatewayProxyRequest
+    /// This automatically handles reading parameters from an <see cref="APIGatewayProxyRequest"/>
     /// as well as syncing the function definitions to serverless.template each time you build.
     /// 
     /// If you do not wish to use this model and need to manipulate the API Gateway 
