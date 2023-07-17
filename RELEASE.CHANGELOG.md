@@ -1,4 +1,13 @@
-### Release 2023-06-23
+### Release 2023-07-17
+* **Amazon.Lambda.Templates (6.14.0)**
+  * Update Annotations template to use 1.0.0 of Amazon.Lambda.Annotations, and convert the Lambda Empty Serverless and Lambda Empty Serverless (.NET 7 Container Image) templates to use Annotations.
+
+### Release 2023-07-14
+* **Amazon.Lambda.Annotations (1.0.0)**
+  * Update to version 1.0.0
+  * Diagnostic errors are now thrown when invalid attribute names are specified for `FromQuery`, `FromRoute`, and `FromHeader`
+
+  ### Release 2023-06-23
 * **Amazon.Lambda.Annotations (0.13.5)**
   * Fixed error thrown when template includes a CloudFormation short-hand intrinsic function
 
