@@ -3,22 +3,18 @@
   "Transform": "AWS::Serverless-2016-10-31",
   "Description": "An AWS Serverless Application.",
   "Resources": {
-    "Get": {
+    "BlueprintBaseName._1FunctionsGetGenerated": {
       "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
       "Properties": {
-        "PackageType": "Image",
-        "ImageConfig": {
-          "Command": [
-            "BlueprintBaseName.1::BlueprintBaseName._1.Functions::Get"
-          ]
-        },
-        "ImageUri": "",
         "MemorySize": 256,
         "Timeout": 30,
-        "Role": null,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
+        "PackageType": "Image",
         "Events": {
           "RootGet": {
             "Type": "Api",
@@ -27,12 +23,16 @@
               "Method": "GET"
             }
           }
-        }
-      },
-      "Metadata": {
-        "Dockerfile": "Dockerfile",
-        "DockerContext": ".",
-        "DockerTag": ""
+        },
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "BlueprintBaseName.1::BlueprintBaseName.1.Functions_Get_Generated::Get"
+          ]
+        },
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ]
       }
     }
   },

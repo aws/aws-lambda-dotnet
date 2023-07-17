@@ -3,21 +3,27 @@
   "Transform": "AWS::Serverless-2016-10-31",
   "Description": "An AWS Serverless Application.",
   "Resources": {
-    "Get": {
+    "BlueprintBaseName._1FunctionsGetGenerated": {
       "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
       "Properties": {
         "Architectures": [
           "x86_64"
         ],
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::Get",
         "Runtime": "dotnet6",
-        "CodeUri": "",
+        "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
-        "Role": null,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
+        "PackageType": "Zip",
         "Events": {
           "RootGet": {
             "Type": "Api",

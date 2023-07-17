@@ -1,8 +1,9 @@
+using Amazon.Lambda.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BlueprintBaseName._1;
 
-[Amazon.Lambda.Annotations.LambdaStartup]
+[LambdaStartup]
 public class Startup
 {
     /// <summary>
@@ -15,9 +16,6 @@ public class Startup
     /// </summary>
     public void ConfigureServices(IServiceCollection services)
     {
-        // Here we'll add an instance of our calculator service that will be used by each function
-        services.AddSingleton<ICalculatorService>(new CalculatorService());
-
         //// Example of creating the IConfiguration object and
         //// adding it to the dependency injection container.
         //var builder = new ConfigurationBuilder()
