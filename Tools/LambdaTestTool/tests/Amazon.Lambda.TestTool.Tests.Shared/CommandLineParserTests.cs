@@ -9,7 +9,7 @@ namespace Amazon.Lambda.TestTool.Tests
         {
             var options = CommandLineOptions.Parse(new string[] {"--help", "--host", "example.com", "--port", "1111", "--no-launch-window",
                                                                 "--path", "./foo", "--profile", "test", "--region", "special-region",
-                                                                "--no-ui", "--config-file", "test-config.json", "--payload", "myfile.json", "--pause-exit", "false" });
+                                                                "--no-ui", "--config-file", "test-config.json", "--payload", "myfile.json", "--pause-exit", "false", "--disable-logs" });
 
             Assert.True(options.ShowHelp);
             Assert.Equal("example.com", options.Host);
@@ -22,6 +22,7 @@ namespace Amazon.Lambda.TestTool.Tests
             Assert.Equal("test-config.json", options.ConfigFile);
             Assert.Equal("myfile.json", options.Payload);
             Assert.False(options.PauseExit);
+            Assert.True(options.DisableLogs);
         }
 
 

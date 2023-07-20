@@ -28,6 +28,8 @@ namespace Amazon.Lambda.TestTool
 
         public bool PauseExit { get; set; } = true;
 
+        public bool DisableLogs { get; set; } = false;
+
         public static CommandLineOptions Parse(string[] args)
         {
             var options = new CommandLineOptions();
@@ -92,6 +94,13 @@ namespace Amazon.Lambda.TestTool
                         break;
                     case "--pause-exit":
                         options.PauseExit = GetNextBoolValue(i, out skipAhead);
+                        if (skipAhead)
+                        {
+                            i++;
+                        }
+                        break;
+                    case "--disable-logs":
+                        options.DisableLogs = GetNextBoolValue(i, out skipAhead);
                         if (skipAhead)
                         {
                             i++;
@@ -172,6 +181,7 @@ namespace Amazon.Lambda.TestTool
             Console.WriteLine("\t--pause-exit <true or false>          If set to true the test tool will pause waiting for a key input before exiting. The is useful");
             Console.WriteLine("\t                                      when executing from an IDE so you can avoid having the output window immediately disappear after");
             Console.WriteLine("\t                                      executing the Lambda code. The default value is true.");
+            Console.WriteLine("\t--disable-logs                        Logs response only or any exceptions (switch is valid when using --no-ui).");
         }
     }
 

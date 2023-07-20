@@ -96,13 +96,23 @@ namespace Amazon.Lambda.TestTool.Tests
             Assert.Contains("No default AWS region configured. The --region switch can be used to configure an AWS Region.", runConfiguration.OutputWriter.ToString());
         }
 
+        [Fact]
+        public void DirectFunctionCallFromConfigWithDisableLogs()
+        {
+            var runConfiguration = CreateRunConfiguration();
+            var buildPath = TestUtils.GetLambdaFunctionBuildPath("ToUpperFunc");
+
+            TestToolStartup.Startup("Unit Tests", null, new string[] { "--path", buildPath, "--no-ui", "--payload", "\"hello WORLD\"", "--disable-logs" }, runConfiguration);
+            Assert.Equal("\"HELLO WORLD\"", runConfiguration.OutputWriter.ToString());
+        }
+
         private TestToolStartup.RunConfiguration CreateRunConfiguration()
         {
             return new TestToolStartup.RunConfiguration
             {
                 Mode = TestToolStartup.RunConfiguration.RunMode.Test,
                 OutputWriter = new StringWriter()
-            };            
+            };
         }
     }
 }

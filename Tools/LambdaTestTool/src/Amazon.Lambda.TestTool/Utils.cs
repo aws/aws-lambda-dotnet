@@ -123,7 +123,7 @@ namespace Amazon.Lambda.TestTool
             return FindLambdaProjectDirectory(Directory.GetParent(lambdaAssemblyDirectory)?.FullName);
         }
 
-        public static IList<string> SearchForConfigFiles(string lambdaFunctionDirectory)
+        public static IList<string> SearchForConfigFiles(string lambdaFunctionDirectory, bool disableLogging = false)
         {
             var configFiles = new List<string>();
 
@@ -143,7 +143,7 @@ namespace Amazon.Lambda.TestTool
 
                         if (!string.IsNullOrEmpty(configFile.DetermineHandler()))
                         {
-                            Console.WriteLine($"Found Lambda config file {file}");
+                            if (!disableLogging) Console.WriteLine($"Found Lambda config file {file}");
                             configFiles.Add(file);
                         }
                         else if (!string.IsNullOrEmpty(configFile.Template) && File.Exists(Path.Combine(lambdaFunctionDirectory, configFile.Template)))
@@ -151,14 +151,14 @@ namespace Amazon.Lambda.TestTool
                             var config = LambdaDefaultsConfigFileParser.LoadFromFile(configFile);
                             if (config.FunctionInfos?.Count > 0)
                             {
-                                Console.WriteLine($"Found Lambda config file {file}");
+                                if (!disableLogging) Console.WriteLine($"Found Lambda config file {file}");
                                 configFiles.Add(file);
                             }
                         }
                     }
                     catch
                     {
-                        Console.WriteLine($"Error parsing JSON file: {file}");
+                        if (!disableLogging) Console.WriteLine($"Error parsing JSON file: {file}");
                     }
                 }
 
@@ -240,7 +240,12 @@ namespace Amazon.Lambda.TestTool
             if (depsFile.Count == 0)
                 return debugDirectory;
 
-            return depsFile[0].Directory.FullName;            
+            return depsFile[0].Directory.FullName;
+        }
+
+        public static bool ShouldDisableLogs(CommandLineOptions commandOptions)
+        {
+            return commandOptions != null && commandOptions.DisableLogs && commandOptions.NoUI;
         }
 
         /// <summary>
