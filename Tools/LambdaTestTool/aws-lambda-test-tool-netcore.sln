@@ -46,6 +46,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SourceGeneratorExample", "t
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool.Tests.NET6", "tests\Amazon.Lambda.TestTool.Tests.NET6\Amazon.Lambda.TestTool.Tests.NET6.csproj", "{2C69BEB2-858E-43E3-9951-74E780FEB1BF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GreetingFunc", "tests\LambdaFunctions\net6\GreetingFunc\GreetingFunc.csproj", "{A88F4366-07FA-47B3-9DA1-F7A4C6C0EA09}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -104,6 +106,10 @@ Global
 		{2C69BEB2-858E-43E3-9951-74E780FEB1BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C69BEB2-858E-43E3-9951-74E780FEB1BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C69BEB2-858E-43E3-9951-74E780FEB1BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A88F4366-07FA-47B3-9DA1-F7A4C6C0EA09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A88F4366-07FA-47B3-9DA1-F7A4C6C0EA09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A88F4366-07FA-47B3-9DA1-F7A4C6C0EA09}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A88F4366-07FA-47B3-9DA1-F7A4C6C0EA09}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -126,6 +132,7 @@ Global
 		{F08BF489-BD05-4DC1-9772-AB5E137B87B8} = {BFD718DB-4526-4BED-B2B0-BB446EDFFEA1}
 		{9F8D7697-46FC-45E4-B795-11CCDA2B68B3} = {F08BF489-BD05-4DC1-9772-AB5E137B87B8}
 		{2C69BEB2-858E-43E3-9951-74E780FEB1BF} = {28C935E3-4FB4-4B09-A9DB-26A1EB04CDE0}
+		{A88F4366-07FA-47B3-9DA1-F7A4C6C0EA09} = {F08BF489-BD05-4DC1-9772-AB5E137B87B8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E6C77567-6F16-4EE3-8743-ADE6B68434FD}

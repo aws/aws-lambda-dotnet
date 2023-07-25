@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.Lambda" Version="3.7.105.19" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
@@ -20,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.TestTool.BlazorTester\Amazon.Lambda.TestTool.BlazorTester.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\net6\GreetingFunc\GreetingFunc.csproj" />
   </ItemGroup>
 
 </Project>
