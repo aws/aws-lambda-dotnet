@@ -53,7 +53,10 @@ namespace Amazon.Lambda.TestTool.Runtime
 
                 var context = new LocalLambdaContext()
                 {
-                    Logger = logger
+                    Logger = logger,
+                    AwsRequestId = Guid.NewGuid().ToString(),
+                    FunctionName = request.Function.FunctionInfo.Name,
+                    InvokedFunctionArn = string.Format("arn:aws:lambda:{0}::function:{1}", request.AWSRegion, request.Function.FunctionInfo.Name)
                 };
 
                 object instance = null;
