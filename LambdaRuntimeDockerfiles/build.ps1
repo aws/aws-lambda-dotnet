@@ -2,8 +2,8 @@ param(
     [ValidateSet('amd64','arm64')]
     [string]$Architecture = "amd64",
 
-    [ValidateSet('net5','net6','net7')]
-    [string]$TargetFramework = "net5"
+    [ValidateSet('net6','net7','net8')]
+    [string]$TargetFramework = "net6"
 )
 
 function Write-Status($string)
@@ -25,17 +25,17 @@ try
 
     if (Test-Path -Path (Join-Path $PWD -ChildPath '.\LambdaRuntimeDockerfiles\Images\' | Join-Path -ChildPath $TargetFramework | Join-Path -ChildPath  $Architecture | Join-Path -ChildPath 'Dockerfile') -PathType Leaf)
     {
-		if ($TargetFramework -eq "net7")
+		if ($TargetFramework -eq "net8")
+		{
+			$Tag = "dotnet8-runtime:base-image-$Architecture"
+		}
+		elseif($TargetFramework -eq "net7")
 		{
 			$Tag = "dotnet7-runtime:base-image-$Architecture"
 		}
 		elseif($TargetFramework -eq "net6")
 		{
 			$Tag = "dotnet6-runtime:base-image-$Architecture"
-		}
-		elseif($TargetFramework -eq "net5")
-		{
-			$Tag = "dotnet5.0-runtime:base-image-$Architecture"
 		}
 		else
 		{

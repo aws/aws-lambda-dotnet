@@ -1,8 +1,8 @@
 # Sample
-This sample demonstrates deployment process of a C# Console application as container image using a local .NET 5 image. 
+This sample demonstrates deployment process of a C# Console application as container image using a local .NET 6 image. 
 
 # Prerequisite
-- **Dockerfile** uses local version of base image, therefore, it is required to build AWS Lambda .NET 5 base image.
+- **Dockerfile** uses local version of base image, therefore, it is required to build AWS Lambda .NET 6 base image.
 ```
 ..\..\build.ps1
 ```

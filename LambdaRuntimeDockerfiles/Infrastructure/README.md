@@ -26,9 +26,9 @@ Infrastructure project allows to create pipeline to build and push .NET Lambda R
 -StageEcr "AccountId.dkr.ecr.us-west-2.amazonaws.com" `
 -BetaEcrs "AccountId.dkr.ecr.us-west-2.amazonaws.com;AccountId.dkr.ecr.us-west-2.amazonaws.com" `
 -ProdEcrs "AccountId.dkr.ecr.us-west-2.amazonaws.com;AccountId.dkr.ecr.us-west-2.amazonaws.com" `
--EcrRepositoryName "awslambda/dotnet5.0-runtime;awslambda/dotnet6.0-runtime" `
--TargetFramework "net5;net6" `
--DotnetChannel "5.0;6.0"
+-EcrRepositoryName "awslambda/dotnet6.0-runtime;awslambda/dotnet7-runtime;awslambda/dotnet8-runtime" `
+-TargetFramework "net6;net7;net8" `
+-DotnetChannel "6.0;7.0;8.0"
 ```
 
 #### Notes
