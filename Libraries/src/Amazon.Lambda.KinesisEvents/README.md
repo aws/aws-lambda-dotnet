@@ -36,3 +36,54 @@ public class Function
     }
 }
 ```
+
+The following is a sample class and Lambda function that receives Amazon Kinesis event when using time windows as an input and uses `KinesisTimeWindowResponse` object to demonstrates how to aggregate and then process the final state. (Note that by default anything written to Console will be logged as CloudWatch Logs events.)
+
+```csharp
+public class Function
+{
+    public KinesisTimeWindowResponse Handler(KinesisTimeWindowEvent kinesisTimeWindowEvent)
+    {
+        Console.WriteLine($"Incoming event, Source Arn: {kinesisTimeWindowEvent.EventSourceARN}, Shard Id: {kinesisTimeWindowEvent.ShardId}");
+        Console.WriteLine($"Incoming state: {string.Join(';', kinesisTimeWindowEvent.State.Select(s => s.Key + "=" + s.Value))}");
+
+        //Check if this is the end of the window to either aggregate or process.
+        if (kinesisTimeWindowEvent.IsFinalInvokeForWindow.HasValue && kinesisTimeWindowEvent.IsFinalInvokeForWindow.Value)
+        {
+            // Logic to handle final state of the window
+            Console.WriteLine("Destination invoke");
+        }
+        else
+        {
+            Console.WriteLine("Aggregate invoke");
+        }
+
+        //Check for early terminations
+        if (kinesisTimeWindowEvent.IsWindowTerminatedEarly.HasValue && kinesisTimeWindowEvent.IsWindowTerminatedEarly.Value)
+        {
+            Console.WriteLine("Window terminated early");
+        }
+
+        // Aggregation logic
+        var state = kinesisTimeWindowEvent.State;
+        foreach (var record in kinesisTimeWindowEvent.Records)
+        {
+            int id;
+            if (!state.ContainsKey(record.Kinesis.PartitionKey) || int.TryParse(record.Kinesis.PartitionKey, out id))
+            {
+                state[record.Kinesis.PartitionKey] = "1";
+            }
+            else
+            {
+                state[record.Kinesis.PartitionKey] = (id + 1).ToString();
+            }
+        }
+
+        Console.WriteLine($"Returning state: {string.Join(';', state.Select(s => s.Key + "=" + s.Value))}");
+        return new KinesisTimeWindowResponse()
+        {
+            State = state
+        };
+    }
+}
+```
