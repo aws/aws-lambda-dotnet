@@ -1,7 +1,8 @@
 ### Release 2023-08-02
 * **Amazon.Lambda.TestTool (0.14.0)**
   * Add new --disable-logs switch used with --no-ui to ensure the console does not include logs just the function's response.
-  * Set default values on the ILambdaContext for FunctionName, InvokedFunctionArn and AwsRequestId.
+  * Set default values on the ILambdaContext for `FunctionName`, `InvokedFunctionArn` and `AwsRequestId`.
+  * Fixed issue when a Lambda function build directory contains multiple `*.runtimeconfig.json` file causing the tool to pick the wrong file.
   * Pull Request [#1556](https://github.com/aws/aws-lambda-dotnet/pull/1556) add null check when traversing parent folders. Thanks [joshuA Seither](https://github.com/joshuaseither).
   * Pull Request [#1558](https://github.com/aws/aws-lambda-dotnet/pull/1558) fix casing issue with integ test. Thanks [joshuA Seither](https://github.com/joshuaseither).
 
