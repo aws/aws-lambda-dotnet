@@ -80,9 +80,9 @@ namespace Amazon.Lambda.TestTool.Tests
         public static string GetLambdaFunctionBuildPath(string projectName)
         {
 #if NETCORE_2_1
-            return Path.GetFullPath($"../../../../LambdaFunctions/netcore21/{projectName}/bin/debug/netcoreapp2.1");
+            return Path.GetFullPath($"../../../../LambdaFunctions/netcore21/{projectName}/bin/Debug/netcoreapp2.1");
 #elif NETCORE_3_1
-            return Path.GetFullPath($"../../../../LambdaFunctions/netcore31/{projectName}/bin/debug/netcoreapp3.1");
+            return Path.GetFullPath($"../../../../LambdaFunctions/netcore31/{projectName}/bin/Debug/netcoreapp3.1");
 #endif            
         }
     }
