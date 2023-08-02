@@ -1,3 +1,10 @@
+### Release 2023-08-02
+* **Amazon.Lambda.TestTool (0.14.0)**
+  * Add new --disable-logs switch used with --no-ui to ensure the console does not include logs just the function's response.
+  * Set default values on the ILambdaContext for FunctionName, InvokedFunctionArn and AwsRequestId.
+  * Pull Request [#1556](https://github.com/aws/aws-lambda-dotnet/pull/1556) add null check when traversing parent folders. Thanks [joshuA Seither](https://github.com/joshuaseither).
+  * Pull Request [#1558](https://github.com/aws/aws-lambda-dotnet/pull/1558) fix casing issue with integ test. Thanks [joshuA Seither](https://github.com/joshuaseither).
+
 ### Release 2023-07-17
 * **Amazon.Lambda.Templates (6.14.0)**
   * Update Annotations template to use 1.0.0 of Amazon.Lambda.Annotations, and convert the Lambda Empty Serverless and Lambda Empty Serverless (.NET 7 Container Image) templates to use Annotations.
