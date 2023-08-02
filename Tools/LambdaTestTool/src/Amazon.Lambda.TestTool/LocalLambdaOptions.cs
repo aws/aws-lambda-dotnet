@@ -63,7 +63,7 @@ namespace Amazon.Lambda.TestTool
             var currentDirectory = this.LambdaRuntime.LambdaAssemblyDirectory;
             while (currentDirectory != null && !Utils.IsProjectDirectory(currentDirectory))
             {
-                currentDirectory = Directory.GetParent(currentDirectory).FullName;
+                currentDirectory = Directory.GetParent(currentDirectory)?.FullName;
             }
 
             if (currentDirectory == null)
