@@ -5,6 +5,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.ApplicationLoadBalancerEvents;
     using Amazon.Lambda.CloudWatchEvents.BatchEvents;
     using Amazon.Lambda.CloudWatchEvents.ECSEvents;
+    using Amazon.Lambda.CloudWatchEvents.S3Events;
     using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
     using Amazon.Lambda.CloudWatchEvents.TranscribeEvents;
     using Amazon.Lambda.CloudWatchEvents.TranslateEvents;
@@ -19,14 +20,13 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.KinesisEvents;
     using Amazon.Lambda.KinesisFirehoseEvents;
     using Amazon.Lambda.LexEvents;
+    using Amazon.Lambda.LexV2Events;
     using Amazon.Lambda.MQEvents;
     using Amazon.Lambda.S3Events;
     using Amazon.Lambda.SimpleEmailEvents;
     using Amazon.Lambda.SNSEvents;
     using Amazon.Lambda.SQSEvents;
-    using Amazon.Lambda.LexV2Events;
-
-
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json.Serialization;
     using System;
@@ -35,10 +35,6 @@ namespace Amazon.Lambda.Tests
     using System.Linq;
     using System.Text;
     using Xunit;
-    using Newtonsoft.Json;
-    using Amazon.Lambda.CloudWatchEvents;
-    using Amazon.Lambda.CloudWatchEvents.S3Events;
-
     using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
 
     public class EventTest
@@ -338,6 +334,33 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void KinesisBatchItemFailuresTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-batchitemfailures-response.json"))
+            {
+                var kinesisStreamsEventResponse = serializer.Deserialize<KinesisEvents.StreamsEventResponse>(fileStream);
+
+                Assert.Equal(1, kinesisStreamsEventResponse.BatchItemFailures.Count);
+                Assert.Equal("1405400000000002063282832", kinesisStreamsEventResponse.BatchItemFailures[0].ItemIdentifier);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize(kinesisStreamsEventResponse, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("kinesis-batchitemfailures-response.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -458,7 +481,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -467,13 +490,13 @@ namespace Amazon.Lambda.Tests
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("dynamodb-batchitemfailures-response.json"))
             {
-                var dynamoDbStreamsEventResponse = serializer.Deserialize<StreamsEventResponse>(fileStream);
+                var dynamoDbStreamsEventResponse = serializer.Deserialize<DynamoDBEvents.StreamsEventResponse>(fileStream);
 
                 Assert.Equal(1, dynamoDbStreamsEventResponse.BatchItemFailures.Count);
                 Assert.Equal("1405400000000002063282832", dynamoDbStreamsEventResponse.BatchItemFailures[0].ItemIdentifier);
 
                 MemoryStream ms = new MemoryStream();
-                serializer.Serialize<StreamsEventResponse>(dynamoDbStreamsEventResponse, ms);
+                serializer.Serialize(dynamoDbStreamsEventResponse, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
 

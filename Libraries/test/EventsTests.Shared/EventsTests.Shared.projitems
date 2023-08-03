@@ -27,6 +27,7 @@
     <Content Include="$(MSBuildThisFileDirectory)cognito-presignup-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)config-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kinesis-batchitemfailures-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)dynamodb-batchitemfailures-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)dynamodb-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)ecs-container-state-change-event.json" />
