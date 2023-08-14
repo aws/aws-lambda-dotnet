@@ -45,8 +45,10 @@
                 }
             }
         </select>
-        <label class="col-xs-3 control-label" for="function-payload">Function Input:</label>
+        <label class="col-xs-3 control-label" for="function-name">Function Name:</label>
+        <input typ="text" class="form-control" style="margin: 5px" @bind="FunctionName" placeholder="Optionally the name of the Lambda Function to execute."/>
         <textarea class="form-control" style="margin: 5px" rows="20" @bind="FunctionInput" placeholder="JSON document as input to Lambda Function. Plain strings must be wrapped in quotes."></textarea>
+        <label class="col-xs-3 control-label" for="function-payload">Function Input:</label>
         <div class="col-sm form-group">
             <button class="btn btn-primary btn-sm" @onclick="OnAddEventClick">Queue Event</button>
         </div>
@@ -66,6 +68,10 @@
                       <p><b>Request ID:</b> @RuntimeApiModel.ActiveEvent.AwsRequestId</p>
                       <p><b>Status:</b> <span style="@GetStatusStyle(RuntimeApiModel.ActiveEvent.EventStatus)">@RuntimeApiModel.ActiveEvent.EventStatus</span></p>
                       <p><b>Last Updated:</b> @RuntimeApiModel.ActiveEvent.LastUpdated</p>
+                      @if (RuntimeApiModel.ActiveEvent.FunctionName != null)
+                      {
+                          <p><b>Function Name:</b> @RuntimeApiModel.ActiveEvent.FunctionName</p>
+                      }
                       <p><b>Event JSON:</b><span class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(RuntimeApiModel.ActiveEvent)">@CreateSnippet(RuntimeApiModel.ActiveEvent.EventJson)</span></span></p>
                       @if (RuntimeApiModel.ActiveEvent.EventStatus == IEventContainer.Status.Failure)
                       {
@@ -104,6 +110,12 @@
                             @((MarkupString)CLOSE_ICON)
                         </div>
                     </div>
+                    @if (evnt.FunctionName != null)
+                    {
+                        <div class="row" style="padding: 2px">
+                            <div class="event-label">Function Name:</div><div class="event-value">@evnt.FunctionName</div>
+                        </div>
+                    }
                     <div class="row" style="padding: 2px">
                         <div class="event-label">Event JSON:</div><div class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></div>
                     </div>
@@ -130,6 +142,12 @@
                             @((MarkupString)CLOSE_ICON)
                         </div>
                     </div>
+                    @if (evnt.FunctionName != null)
+                    {
+                        <div class="row" style="padding: 2px">
+                            <div class="event-label">Function Name:</div><div class="event-value">@evnt.FunctionName</div>
+                        </div>
+                    }
                     <div class="row" style="padding: 2px">
                         <div class="event-label">Event JSON:</div><div class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></div>
                     </div>
@@ -173,6 +191,7 @@
     private const string NO_SAMPLE_SELECTED_ID = "void-select-request";
 
     private string FunctionInput { get; set; }
+    private string FunctionName { get; set; }
 
     private IDictionary<string, IList<LambdaRequest>> SampleRequests { get; set; }
 
@@ -207,7 +226,7 @@
 
     void OnAddEventClick()
     {
-        RuntimeApiModel.QueueEvent(this.FunctionInput);
+        RuntimeApiModel.QueueEvent(FunctionName, this.FunctionInput);
         this.FunctionInput = "";
         this.SelectedSampleRequestName = NO_SAMPLE_SELECTED_ID;
         this.StateHasChanged();
@@ -240,7 +259,7 @@
         if (evnt == null)
             return;
 
-        this.RuntimeApiModel.QueueEvent(evnt.EventJson);
+        this.RuntimeApiModel.QueueEvent(evnt.FunctionName, evnt.EventJson);
         this.StateHasChanged();
     }
 

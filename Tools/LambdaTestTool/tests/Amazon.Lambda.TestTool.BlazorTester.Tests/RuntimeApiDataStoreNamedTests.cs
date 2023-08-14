@@ -5,22 +5,24 @@ using Xunit;
 
 namespace Amazon.Lambda.TestTool.BlazorTester.Tests
 {
-    public class RuntimeApiDataStoreTests
+    public class RuntimeApiDataStoreNamedTests
     {
+        const string FunctionName = "TestFunction";
+
         [Fact]
         public void ActivateEvents()
         {
             var dataStore = new RuntimeApiDataStore();
 
             IEventContainer evnt;
-            Assert.False(dataStore.TryActivateEvent(null, out evnt));
+            Assert.False(dataStore.TryActivateEvent(FunctionName, out evnt));
             Assert.Empty(dataStore.QueuedEvents);
 
-            dataStore.QueueEvent(null, "{}");
+            dataStore.QueueEvent(FunctionName, "{}");
             Assert.Single(dataStore.QueuedEvents);
             Assert.Equal(IEventContainer.Status.Queued, dataStore.QueuedEvents[0].EventStatus);
 
-            Assert.True(dataStore.TryActivateEvent(null, out evnt));
+            Assert.True(dataStore.TryActivateEvent(FunctionName, out evnt));
             Assert.Equal("{}", evnt.EventJson);
             Assert.Equal(evnt, dataStore.ActiveEvent);
             Assert.Equal(IEventContainer.Status.Executing, dataStore.ActiveEvent.EventStatus);
@@ -33,14 +35,14 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
             var dataStore = new RuntimeApiDataStore();
             for(int i = 0; i< 10; i++)
             {
-                dataStore.QueueEvent(null, "{}");
+                dataStore.QueueEvent(FunctionName, "{}");
             }
             Assert.Equal(10, dataStore.QueuedEvents.Count);
 
             var requestIds = new HashSet<string>();
             for(int i = 0;i < 10;i++)
             {
-                Assert.True(dataStore.TryActivateEvent(null, out var evnt));
+                Assert.True(dataStore.TryActivateEvent(FunctionName, out var evnt));
                 Assert.DoesNotContain(evnt.AwsRequestId, requestIds);
                 requestIds.Add(evnt.AwsRequestId);
             }
@@ -53,10 +55,10 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
         public void ReportSuccess()
         {
             var dataStore = new RuntimeApiDataStore();
-            dataStore.QueueEvent(null, "{}");
+            dataStore.QueueEvent(FunctionName, "{}");
             Assert.Equal(IEventContainer.Status.Queued, dataStore.QueuedEvents[0].EventStatus);
 
-            Assert.True(dataStore.TryActivateEvent(null, out var evnt));
+            Assert.True(dataStore.TryActivateEvent(FunctionName, out var evnt));
 
             dataStore.ReportSuccess(evnt.AwsRequestId, "\"Success\"");
 
@@ -68,10 +70,10 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
         public void ReportError()
         {
             var dataStore = new RuntimeApiDataStore();
-            dataStore.QueueEvent(null, "{}");
+            dataStore.QueueEvent(FunctionName, "{}");
             Assert.Equal(IEventContainer.Status.Queued, dataStore.QueuedEvents[0].EventStatus);
 
-            Assert.True(dataStore.TryActivateEvent(null, out var evnt));
+            Assert.True(dataStore.TryActivateEvent(FunctionName, out var evnt));
 
             dataStore.ReportError(evnt.AwsRequestId, "BadError", "\"YouFail\"");
 
@@ -86,7 +88,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
             var dataStore = new RuntimeApiDataStore();
             for (int i = 0; i < 10; i++)
             {
-                dataStore.QueueEvent(null, "{}");
+                dataStore.QueueEvent(FunctionName, "{}");
             }
             Assert.Equal(10, dataStore.QueuedEvents.Count);
 
@@ -100,13 +102,13 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
             var dataStore = new RuntimeApiDataStore();
             for (int i = 0; i < 10; i++)
             {
-                dataStore.QueueEvent(null, "{}");
+                dataStore.QueueEvent(FunctionName, "{}");
             }
             Assert.Equal(10, dataStore.QueuedEvents.Count);
 
             for (int i = 0; i < 10; i++)
             {
-                Assert.True(dataStore.TryActivateEvent(null, out _));
+                Assert.True(dataStore.TryActivateEvent(FunctionName, out _));
             }
 
             // This is 9 because the 10th event is the active event.
@@ -121,12 +123,12 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
             var dataStore = new RuntimeApiDataStore();
             for (int i = 0; i < 10; i++)
             {
-                dataStore.QueueEvent(null, "{}");
+                dataStore.QueueEvent(FunctionName, "{}");
             }
 
             for (int i = 0; i < 5; i++)
             {
-                Assert.True(dataStore.TryActivateEvent(null, out _));
+                Assert.True(dataStore.TryActivateEvent(FunctionName, out _));
             }
 
             Assert.Equal(5, dataStore.QueuedEvents.Count);
