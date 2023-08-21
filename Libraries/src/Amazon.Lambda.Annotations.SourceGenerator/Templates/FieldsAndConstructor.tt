@@ -8,18 +8,31 @@
     if (_model.LambdaMethod.UsingDependencyInjection)
     {
 #>
-        private readonly ServiceProvider serviceProvider;
+        private <#= _model.IsExecutable ? "static " : "" #>readonly ServiceProvider serviceProvider;
 <#
     }
     else
     {
 #>
-        private readonly <#= _model.LambdaMethod.ContainingType.Name #> <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>;
+        private <#= _model.IsExecutable ? "static " : "" #>readonly <#= _model.LambdaMethod.ContainingType.Name #> <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>;
 <#
     }
 #>
 
+<#
+    if (_model.IsExecutable)
+    {
+#>
+        static <#= _model.GeneratedMethod.ContainingType.Name #>()     
+<#
+    }
+    else
+    {
+#>
         public <#= _model.GeneratedMethod.ContainingType.Name #>()
+<#
+    }
+#>
         {
             SetExecutionEnvironment();
 <#

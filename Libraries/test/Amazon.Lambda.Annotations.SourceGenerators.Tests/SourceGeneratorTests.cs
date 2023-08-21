@@ -261,6 +261,119 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         }
 
         [Fact]
+        public async Task VerifyExecutableAssembly()
+        {
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template")).ToEnvironmentLineEndings();
+            var expectedSubNamespaceGenerated = File.ReadAllText(Path.Combine("Snapshots", "Functions_AsyncStartupToUpper_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedProgramGenerated = File.ReadAllText(Path.Combine("Snapshots", "Program.g.cs")).ToEnvironmentLineEndings();
+            
+            var test = new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestExecutableServerlessApp", "Sub1", "Functions.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "Sub1", "Functions.cs"))),
+                        (Path.Combine("TestExecutableServerlessApp", "Startup.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "Startup.cs"))),
+                        (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaOutputExecutableAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaOutputExecutableAttribute.cs"))),
+                        (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "Functions_ToUpper_Generated.g.cs",
+                            SourceText.From(expectedSubNamespaceGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "Program.g.cs",
+                            SourceText.From(expectedProgramGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Functions_ToUpper_Generated.g.cs", expectedSubNamespaceGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                }
+            };
+
+            foreach (var file in Directory.GetFiles(
+                         Path.Combine("Amazon.Lambda.RuntimeSupport"),
+                         "*.cs", SearchOption.AllDirectories))
+            {
+                test.TestState.Sources.Add((file, File.ReadAllText(file)));
+            }
+
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyExecutableAssemblyWithMultipleHandler()
+        {
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template")).ToEnvironmentLineEndings();
+            var expectedSayHello = File.ReadAllText(Path.Combine("Snapshots", "Greeter_SayHello_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedSayHelloAsync = File.ReadAllText(Path.Combine("Snapshots", "Greeter_SayHelloAsync_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedProgramGenerated = File.ReadAllText(Path.Combine("Snapshots", "ProgramMultiHandler.g.cs")).ToEnvironmentLineEndings();
+            
+            var test = new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestExecutableServerlessApp", "Greeter.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "Greeter.cs"))),
+                        (Path.Combine("TestExecutableServerlessApp", "Startup.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "Startup.cs"))),
+                        (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaOutputExecutableAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaOutputExecutableAttribute.cs"))),
+                        (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "Greeter_SayHello_Generated.g.cs",
+                            SourceText.From(expectedSayHello, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "Greeter_SayHelloAsync_Generated.g.cs",
+                            SourceText.From(expectedSayHelloAsync, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "Program.g.cs",
+                            SourceText.From(expectedProgramGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Greeter_SayHello_Generated.g.cs", expectedSayHello),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Greeter_SayHelloAsync_Generated.g.cs", expectedSayHelloAsync),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                }
+            };
+
+            foreach (var file in Directory.GetFiles(
+                         Path.Combine("Amazon.Lambda.RuntimeSupport"),
+                         "*.cs", SearchOption.AllDirectories))
+            {
+                test.TestState.Sources.Add((file, File.ReadAllText(file)));
+            }
+
+            await test.RunAsync();
+        }
+
+        [Fact]
         public async Task VerifyFunctionReturnVoid()
         {
             var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "voidexample.template")).ToEnvironmentLineEndings();

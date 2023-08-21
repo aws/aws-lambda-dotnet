@@ -30,6 +30,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// Gets or sets fully qualified name of the serializer used for serialization or deserialization.
         /// </summary>
         public string Serializer { get; set; }
+        
+        /// <summary>
+        /// Gets or sets if the output is an executable.
+        /// </summary>
+        public bool IsExecutable { get; set; }
 
         /// <inheritdoc />
         public string Handler => $"{LambdaMethod.ContainingAssembly}::{GeneratedMethod.ContainingType.FullName}::{LambdaMethod.Name}";

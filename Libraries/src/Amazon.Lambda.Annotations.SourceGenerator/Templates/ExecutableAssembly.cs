@@ -12,16 +12,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
+    using System.Threading.Tasks;
     using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
+    using Amazon.Lambda.Annotations.SourceGenerator.Validation;
+    using Amazon.Lambda.Annotations.SourceGenerator.Models;
+    using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+    #line 1 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "16.0.0.0")]
-    public partial class FieldsAndConstructor : FieldsAndConstructorBase
+    public partial class ExecutableAssembly : ExecutableAssemblyBase
     {
 #line hidden
         /// <summary>
@@ -29,166 +33,233 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
         /// </summary>
         public virtual string TransformText()
         {
+            this.Write("using System;\r\nusing System.Linq;\r\nusing System.Collections.Generic;\r\nusing System.Text;\r\nusing System.Threading.Tasks;\r\nusing Amazon.Lambda.Core;\r\n\r\nnamespace ");
             
-            #line 7 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 18 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(this._containingNamespace));
+            
+            #line default
+            #line hidden
+            this.Write(";\r\n\r\npublic class Program\r\n{\r\n    private static async Task Main(string[] args)\r\n    {\r\n");
+            
+            #line 24 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
 
-    if (_model.LambdaMethod.UsingDependencyInjection)
+    if (this._lambdaFunctions.Count == 1)
     {
 
             
             #line default
             #line hidden
-            this.Write("        private ");
+            this.Write("        Func<");
             
-            #line 11 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.IsExecutable ? "static " : ""));
+            #line 28 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(string.Join(", ", this._lambdaFunctions[0].GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}"))));
             
             #line default
             #line hidden
-            this.Write("readonly ServiceProvider serviceProvider;\r\n");
+            this.Write(", ");
             
-            #line 12 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 28 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(this._lambdaFunctions[0].GeneratedMethod.ReturnType.FullName));
+            
+            #line default
+            #line hidden
+            this.Write("> ");
+            
+            #line 28 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(this._lambdaFunctions[0].LambdaMethod.Name.ToLower()));
+            
+            #line default
+            #line hidden
+            this.Write(" = ");
+            
+            #line 28 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(this._lambdaFunctions[0].LambdaMethod.ContainingType.Name));
+            
+            #line default
+            #line hidden
+            this.Write("_");
+            
+            #line 28 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(this._lambdaFunctions[0].LambdaMethod.Name));
+            
+            #line default
+            #line hidden
+            this.Write("_Generated.");
+            
+            #line 28 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(this._lambdaFunctions[0].LambdaMethod.Name));
+            
+            #line default
+            #line hidden
+            this.Write(";\r\n        await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(");
+            
+            #line 29 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(this._lambdaFunctions[0].LambdaMethod.Name.ToLower()));
+            
+            #line default
+            #line hidden
+            this.Write(", new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();\r\n");
+            
+            #line 30 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
 
     }
     else
     {
+        
+            
+            #line default
+            #line hidden
+            this.Write("\r\n        switch (Environment.GetEnvironmentVariable(\"HANDLER\"))\r\n        {\r\n");
+            
+            #line 38 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+
+        foreach (var model in this._lambdaFunctions)
+        {
+            
+            
+            #line default
+            #line hidden
+            this.Write("            case \"");
+            
+            #line 42 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name));
+            
+            #line default
+            #line hidden
+            this.Write("\":\r\n");
+            
+            #line 43 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+
+            if (model.GeneratedMethod.ReturnType.FullName == "void")
+            {
 
             
             #line default
             #line hidden
-            this.Write("        private ");
+            this.Write("                Action<");
             
-            #line 17 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.IsExecutable ? "static " : ""));
-            
-            #line default
-            #line hidden
-            this.Write("readonly ");
-            
-            #line 17 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
+            #line 47 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}"))));
             
             #line default
             #line hidden
-            this.Write(" ");
+            this.Write("> ");
             
-            #line 17 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
+            #line 47 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name.ToLower()));
             
             #line default
             #line hidden
-            this.Write(";\r\n");
+            this.Write(" = ");
             
-            #line 18 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 47 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.ContainingType.Name));
+            
+            #line default
+            #line hidden
+            this.Write("_");
+            
+            #line 47 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name));
+            
+            #line default
+            #line hidden
+            this.Write("_Generated.");
+            
+            #line 47 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name));
+            
+            #line default
+            #line hidden
+            this.Write(";\r\n                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(");
+            
+            #line 48 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name.ToLower()));
+            
+            #line default
+            #line hidden
+            this.Write(", new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();\r\n                break;\r\n");
+            
+            #line 50 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+    
+            }
+            else
+            {
+
+            
+            #line default
+            #line hidden
+            this.Write("                Func<");
+            
+            #line 55 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}"))));
+            
+            #line default
+            #line hidden
+            this.Write(", ");
+            
+            #line 55 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.GeneratedMethod.ReturnType.FullName));
+            
+            #line default
+            #line hidden
+            this.Write("> ");
+            
+            #line 55 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name.ToLower()));
+            
+            #line default
+            #line hidden
+            this.Write(" = ");
+            
+            #line 55 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.ContainingType.Name));
+            
+            #line default
+            #line hidden
+            this.Write("_");
+            
+            #line 55 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name));
+            
+            #line default
+            #line hidden
+            this.Write("_Generated.");
+            
+            #line 55 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name));
+            
+            #line default
+            #line hidden
+            this.Write(";\r\n                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(");
+            
+            #line 56 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name.ToLower()));
+            
+            #line default
+            #line hidden
+            this.Write(", new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();\r\n                break;\r\n");
+            
+            #line 58 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+
+            }
+        }
+        
+            
+            #line default
+            #line hidden
+            this.Write("\r\n        }\r\n");
+            
+            #line 64 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+
 
     }
 
             
             #line default
             #line hidden
-            this.Write("\r\n");
-            
-            #line 22 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-
-    if (_model.IsExecutable)
-    {
-
-            
-            #line default
-            #line hidden
-            this.Write("        static ");
-            
-            #line 26 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ContainingType.Name));
-            
-            #line default
-            #line hidden
-            this.Write("()     \r\n");
-            
-            #line 27 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-
-    }
-    else
-    {
-
-            
-            #line default
-            #line hidden
-            this.Write("        public ");
-            
-            #line 32 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ContainingType.Name));
-            
-            #line default
-            #line hidden
-            this.Write("()\r\n");
-            
-            #line 33 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-
-    }
-
-            
-            #line default
-            #line hidden
-            this.Write("        {\r\n            SetExecutionEnvironment();\r\n");
-            
-            #line 38 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-
-    if (_model.LambdaMethod.UsingDependencyInjection)
-    {
-
-            
-            #line default
-            #line hidden
-            this.Write("            var services = new ServiceCollection();\r\n\r\n            // By default, Lambda function class is added to the service container using the singleton lifetime\r\n            // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.\r\n            services.AddSingleton<");
-            
-            #line 46 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
-            
-            #line default
-            #line hidden
-            this.Write(">();\r\n\r\n            var startup = new ");
-            
-            #line 48 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.StartupType.FullName));
-            
-            #line default
-            #line hidden
-            this.Write("();\r\n            startup.ConfigureServices(services);\r\n            serviceProvider = services.BuildServiceProvider();\r\n");
-            
-            #line 51 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-
-    }
-    else
-    {
-
-            
-            #line default
-            #line hidden
-            this.Write("            ");
-            
-            #line 56 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
-            
-            #line default
-            #line hidden
-            this.Write(" = new ");
-            
-            #line 56 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
-            
-            #line default
-            #line hidden
-            this.Write("();\r\n");
-            
-            #line 57 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
-
-    }
-
-            
-            #line default
-            #line hidden
-            this.Write("        }");
+            this.Write("    }\r\n}");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -200,7 +271,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "16.0.0.0")]
-    public class FieldsAndConstructorBase
+    public class ExecutableAssemblyBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;
