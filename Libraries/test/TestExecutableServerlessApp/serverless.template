@@ -22,70 +22,6 @@
     }
   },
   "Resources": {
-    "TestServerlessAppComplexCalculatorAddGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootPost"
-        ]
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Add_Generated::Add"
-          ]
-        },
-        "Events": {
-          "RootPost": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/ComplexCalculator/Add",
-              "Method": "POST"
-            }
-          }
-        }
-      }
-    },
-    "TestServerlessAppComplexCalculatorSubtractGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootPost"
-        ]
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.ComplexCalculator_Subtract_Generated::Subtract"
-          ]
-        },
-        "Events": {
-          "RootPost": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/ComplexCalculator/Subtract",
-              "Method": "POST"
-            }
-          }
-        }
-      }
-    },
     "TestServerlessAppDynamicExampleDynamicReturnGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -101,7 +37,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.DynamicExample_DynamicReturn_Generated::DynamicReturn"
+            "TestExecutableServerlessApp::TestServerlessApp.DynamicExample_DynamicReturn_Generated::DynamicReturn"
           ]
         }
       }
@@ -121,7 +57,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.DynamicExample_DynamicInput_Generated::DynamicInput"
+            "TestExecutableServerlessApp::TestServerlessApp.DynamicExample_DynamicInput_Generated::DynamicInput"
           ]
         }
       }
@@ -141,7 +77,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.TaskExample_TaskReturn_Generated::TaskReturn"
+            "TestExecutableServerlessApp::TestServerlessApp.TaskExample_TaskReturn_Generated::TaskReturn"
           ]
         }
       }
@@ -161,7 +97,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.VoidExample_VoidReturn_Generated::VoidReturn"
+            "TestExecutableServerlessApp::TestServerlessApp.VoidExample_VoidReturn_Generated::VoidReturn"
           ]
         }
       }
@@ -184,7 +120,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeader_Generated::OkResponseWithHeader"
+            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeader_Generated::OkResponseWithHeader"
           ]
         },
         "Events": {
@@ -216,7 +152,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated::OkResponseWithHeaderAsync"
+            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated::OkResponseWithHeaderAsync"
           ]
         },
         "Events": {
@@ -248,7 +184,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated::NotFoundResponseWithHeaderV2"
+            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated::NotFoundResponseWithHeaderV2"
           ]
         },
         "Events": {
@@ -280,7 +216,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated::NotFoundResponseWithHeaderV2Async"
+            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated::NotFoundResponseWithHeaderV2Async"
           ]
         },
         "Events": {
@@ -312,7 +248,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated::NotFoundResponseWithHeaderV1"
+            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated::NotFoundResponseWithHeaderV1"
           ]
         },
         "Events": {
@@ -345,7 +281,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated::NotFoundResponseWithHeaderV1Async"
+            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated::NotFoundResponseWithHeaderV1Async"
           ]
         },
         "Events": {
@@ -378,7 +314,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello"
+            "TestExecutableServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello"
           ]
         },
         "Events": {
@@ -411,7 +347,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync"
+            "TestExecutableServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync"
           ]
         },
         "Events": {
@@ -423,194 +359,6 @@
               "PayloadFormatVersion": "1.0"
             }
           }
-        }
-      }
-    },
-    "SimpleCalculatorAdd": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ]
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Add_Generated::Add"
-          ]
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "Api",
-            "Properties": {
-              "Path": "/SimpleCalculator/Add",
-              "Method": "GET"
-            }
-          }
-        }
-      }
-    },
-    "SimpleCalculatorSubtract": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ]
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Subtract_Generated::Subtract"
-          ]
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "Api",
-            "Properties": {
-              "Path": "/SimpleCalculator/Subtract",
-              "Method": "GET"
-            }
-          }
-        }
-      }
-    },
-    "SimpleCalculatorMultiply": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ]
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Multiply_Generated::Multiply"
-          ]
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "Api",
-            "Properties": {
-              "Path": "/SimpleCalculator/Multiply/{x}/{y}",
-              "Method": "GET"
-            }
-          }
-        }
-      }
-    },
-    "SimpleCalculatorDivideAsync": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ]
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_DivideAsync_Generated::DivideAsync"
-          ]
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "Api",
-            "Properties": {
-              "Path": "/SimpleCalculator/DivideAsync/{x}/{y}",
-              "Method": "GET"
-            }
-          }
-        }
-      }
-    },
-    "PI": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Pi_Generated::Pi"
-          ]
-        }
-      }
-    },
-    "Random": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Random_Generated::Random"
-          ]
-        }
-      }
-    },
-    "Randoms": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.SimpleCalculator_Randoms_Generated::Randoms"
-          ]
         }
       }
     },
@@ -629,7 +377,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.Sub1.Functions_ToUpper_Generated::ToUpper"
+            "TestExecutableServerlessApp::TestServerlessApp.Sub1.Functions_ToUpper_Generated::ToUpper"
           ]
         }
       }
@@ -652,7 +400,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.NullableReferenceTypeExample_NullableHeaderHttpApi_Generated::NullableHeaderHttpApi"
+            "TestExecutableServerlessApp::TestServerlessApp.NullableReferenceTypeExample_NullableHeaderHttpApi_Generated::NullableHeaderHttpApi"
           ]
         },
         "Events": {
@@ -663,59 +411,6 @@
               "Method": "GET"
             }
           }
-        }
-      }
-    },
-    "TestServerlessAppFromScratchNoApiGatewayEventsReferenceToUpperGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ]
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "Events": {
-          "RootGet": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/{text}",
-              "Method": "GET"
-            }
-          }
-        },
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.FromScratch.NoApiGatewayEventsReference_ToUpper_Generated::ToUpper"
-          ]
-        }
-      }
-    },
-    "TestServerlessAppFromScratchNoSerializerAttributeReferenceToUpperGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "MemorySize": 256,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "Events": {},
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.FromScratch.NoSerializerAttributeReference_ToUpper_Generated::ToUpper"
-          ]
         }
       }
     },
@@ -734,7 +429,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestServerlessApp::TestServerlessApp.IntrinsicExample_HasIntrinsic_Generated::HasIntrinsic"
+            "TestExecutableServerlessApp::TestServerlessApp.IntrinsicExample_HasIntrinsic_Generated::HasIntrinsic"
           ]
         }
       }

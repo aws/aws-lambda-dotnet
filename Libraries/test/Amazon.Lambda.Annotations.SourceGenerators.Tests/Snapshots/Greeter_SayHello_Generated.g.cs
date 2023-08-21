@@ -2,22 +2,37 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
-    public class Greeter_SayHello_Generated
+    public static class Greeter_SayHello_Generated
     {
-        private readonly Greeter greeter;
+        private static readonly ServiceProvider serviceProvider;
 
-        public Greeter_SayHello_Generated()
+        static Greeter_SayHello_Generated()     
         {
             SetExecutionEnvironment();
-            greeter = new Greeter();
+            var services = new ServiceCollection();
+
+            // By default, Lambda function class is added to the service container using the singleton lifetime
+            // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
+            services.AddSingleton<Greeter>();
+
+            var startup = new TestServerlessApp.Startup();
+            startup.ConfigureServices(services);
+            serviceProvider = services.BuildServiceProvider();
         }
 
-        public Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse SayHello(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
+        public static Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse SayHello(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
+            // Create a scope for every request,
+            // this allows creating scoped dependencies without creating a scope manually.
+            using var scope = serviceProvider.CreateScope();
+            var greeter = scope.ServiceProvider.GetRequiredService<Greeter>();
+
             var validationErrors = new List<string>();
 
             var firstNames = default(System.Collections.Generic.IEnumerable<string>);

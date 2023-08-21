@@ -1,6 +1,7 @@
 ﻿<#@ template language="C#" #>
 <#@ assembly name="System.Core" #>
 <#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Threading.Tasks" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
@@ -19,14 +20,14 @@ using <#= ns #>;
 
 namespace <#= _model.LambdaMethod.ContainingNamespace #>
 {
-    public class <#= _model.GeneratedMethod.ContainingType.Name #>
+    public <#= _model.IsExecutable ? "static " : "" #>class <#= _model.GeneratedMethod.ContainingType.Name #>
     {
 <#
 this.Write(new FieldsAndConstructor(_model).TransformText());
 #>
 
 
-        public <#= _model.LambdaMethod.ReturnsVoidOrGenericTask ? "async " : "" #><#= _model.GeneratedMethod.ReturnType.FullName #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
+        public <#= _model.IsExecutable ? "static " : "" #><#= _model.LambdaMethod.ReturnsVoidOrGenericTask ? "async " : "" #><#= _model.GeneratedMethod.ReturnType.FullName #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
         {
 <#
     if (_model.LambdaMethod.UsingDependencyInjection)

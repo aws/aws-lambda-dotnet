@@ -12,6 +12,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public List<MethodDeclarationSyntax> LambdaMethods { get; } = new List<MethodDeclarationSyntax>();
 
         public List<ClassDeclarationSyntax> StartupClasses { get; private set; } = new List<ClassDeclarationSyntax>();
+        
+        public bool IsExecutable { get; set; }
 
         /// <summary>
         /// Path to the directory containing the .csproj file
@@ -65,6 +67,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 if (methodSymbol.GetAttributes().Any(attr => attr.AttributeClass.Name == nameof(LambdaStartupAttribute)))
                 {
                     StartupClasses.Add(classDeclarationSyntax);
+                }
+
+                // If at least one class is annotated with the LambdaOutputExecutable annotations then set IsExecutable to be true.
+                if (methodSymbol.GetAttributes().Any(attr => attr.AttributeClass.Name == nameof(LambdaOutputExecutableAttribute)))
+                {
+                    IsExecutable = true;
                 }
             }
         }

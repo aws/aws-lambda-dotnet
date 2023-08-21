@@ -1,0 +1,69 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Threading.Tasks" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Validation" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes" #>
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+using Amazon.Lambda.Core;
+
+namespace <#= this._containingNamespace #>;
+
+public class Program
+{
+    private static async Task Main(string[] args)
+    {
+<#
+    if (this._lambdaFunctions.Count == 1)
+    {
+#>
+        Func<<#= string.Join(", ", this._lambdaFunctions[0].GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>, <#= this._lambdaFunctions[0].GeneratedMethod.ReturnType.FullName #>> <#=this._lambdaFunctions[0].LambdaMethod.Name.ToLower()#> = <#=this._lambdaFunctions[0].LambdaMethod.ContainingType.Name#>_<#=this._lambdaFunctions[0].LambdaMethod.Name#>_Generated.<#=this._lambdaFunctions[0].LambdaMethod.Name#>;
+        await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#=this._lambdaFunctions[0].LambdaMethod.Name.ToLower()#>, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
+<#
+    }
+    else
+    {
+        #>
+
+        switch (Environment.GetEnvironmentVariable("HANDLER"))
+        {
+<#
+        foreach (var model in this._lambdaFunctions)
+        {
+            #>
+            case "<#=model.LambdaMethod.Name#>":
+<#
+            if (model.GeneratedMethod.ReturnType.FullName == "void")
+            {
+#>
+                Action<<#= string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>> <#= model.LambdaMethod.Name.ToLower() #> = <#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated.<#= model.LambdaMethod.Name #>;
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.Name.ToLower() #>, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
+                break;
+<#    
+            }
+            else
+            {
+#>
+                Func<<#= string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>, <#= model.GeneratedMethod.ReturnType.FullName #>> <#= model.LambdaMethod.Name.ToLower() #> = <#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated.<#= model.LambdaMethod.Name #>;
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.Name.ToLower() #>, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
+                break;
+<#
+            }
+        }
+        #>
+
+        }
+<#
+
+    }
+#>
+    }
+}

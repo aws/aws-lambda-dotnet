@@ -56,6 +56,10 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>NoEventMethodBody.cs</LastGenOutput>
     </None>
+    <None Update="Templates\ExecutableAssembly.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ExecutableAssembly.cs</LastGenOutput>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -83,6 +87,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>NoEventMethodBody.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Templates\ExecutableAssembly.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ExecutableAssembly.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 

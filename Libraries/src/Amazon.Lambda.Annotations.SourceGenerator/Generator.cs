@@ -15,6 +15,8 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
+    using System.Collections.Generic;
+
     [Generator]
     public class Generator : ISourceGenerator
     {
@@ -87,6 +89,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var templateHandler = new CloudFormationTemplateHandler(_fileManager, _directoryManager);
 
                 bool foundFatalError = false;
+
+                var lambdaModels = new List<LambdaFunctionModel>();
+                
                 foreach (var lambdaMethod in receiver.LambdaMethods)
                 {
                     var lambdaMethodModel = semanticModelProvider.GetMethodSemanticModel(lambdaMethod);
@@ -116,7 +121,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         }
                     }
 
-                    var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context);
+                    var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, receiver.IsExecutable);
 
                     // If there are more than one event, report them as errors
                     if (model.LambdaMethod.Events.Count > 1)
@@ -175,7 +180,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     // report every generated file to build output
                     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.CodeGeneration, Location.None, $"{model.GeneratedMethod.ContainingType.Name}.g.cs", sourceText));
 
+                    lambdaModels.Add(model);
                     annotationReport.LambdaFunctions.Add(model);
+                }
+
+                if (receiver.IsExecutable)
+                {
+                    var executableAssembly = new ExecutableAssembly(lambdaModels, lambdaModels[0].LambdaMethod.ContainingNamespace);
+                    
+                    context.AddSource("Program.g.cs", SourceText.From(executableAssembly.TransformText(), Encoding.UTF8, SourceHashAlgorithm.Sha256));
                 }
 
                 // Run the CloudFormation sync if any LambdaMethods exists. Also run if no LambdaMethods exists but there is a

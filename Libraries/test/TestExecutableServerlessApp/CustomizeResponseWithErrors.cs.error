@@ -1,0 +1,23 @@
+﻿using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Core;
+using System.Threading.Tasks;
+
+// This class has a "error" extension because it fails to compile. It is used to make in unit tests to make sure
+// we get expected diagnostic error messages.
+
+namespace TestServerlessApp
+{
+    public class CustomizeResponseWithErrors
+    {
+        // Can not return IHttpResult for non API Gateway based function
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        public IHttpResult InvalidReturnTypeExample(int x, ILambdaContext context)
+        {
+            return HttpResults.Ok("All Good")
+                                .AddHeader("Single-Header", "Value")
+                                .AddHeader("Multi-Header", "Foo")
+                                .AddHeader("Multi-Header", "Bar");
+        }
+    }
+}

@@ -1,0 +1,19 @@
+{
+  "Information": [
+    "This file provides default values for the deployment wizard inside Visual Studio and the AWS Lambda commands added to the .NET Core CLI.",
+    "To learn more about the Lambda commands with the .NET Core CLI execute the following command at the command line in the project root directory.",
+    "dotnet lambda help",
+    "All the command line options for the Lambda command can be specified in this file."
+  ],
+  "profile": "default",
+  "region": "us-west-2",
+  "configuration": "Release",
+  "framework": "net6.0",
+  "s3-prefix": "TestServerlessApp/",
+  "template": "serverless.template",
+  "template-parameters": "",
+  "docker-host-build-output-dir": "./bin/Release/lambda-publish",
+"s3-bucket" : "test-serverless-app-81ae0673",
+"stack-name" : "test-serverless-app-81ae0673",
+"function-architecture" : "x86_64"
+}
