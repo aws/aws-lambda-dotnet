@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
@@ -120,8 +121,22 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                             continue;
                         }
                     }
+                    
+                    var lambdaAttribute = lambdaMethodModel.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.Name == nameof(LambdaFunctionAttribute));
 
-                    var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, receiver.IsExecutable);
+                    string serializerString = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
+                    
+                    if (lambdaAttribute != null)
+                    {
+                        var serializerValue = lambdaAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Serializer").Value;
+
+                        if (serializerValue.Value != null)
+                        {
+                            serializerString = serializerValue.Value.ToString();
+                        }
+                    }
+
+                    var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, receiver.IsExecutable, serializerString);
 
                     // If there are more than one event, report them as errors
                     if (model.LambdaMethod.Events.Count > 1)

@@ -26,7 +26,7 @@ public class Program
     {
 #>
         Func<<#= string.Join(", ", this._lambdaFunctions[0].GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>, <#= this._lambdaFunctions[0].GeneratedMethod.ReturnType.FullName #>> <#=this._lambdaFunctions[0].LambdaMethod.Name.ToLower()#> = <#=this._lambdaFunctions[0].LambdaMethod.ContainingType.Name#>_<#=this._lambdaFunctions[0].LambdaMethod.Name#>_Generated.<#=this._lambdaFunctions[0].LambdaMethod.Name#>;
-        await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#=this._lambdaFunctions[0].LambdaMethod.Name.ToLower()#>, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
+        await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#=this._lambdaFunctions[0].LambdaMethod.Name.ToLower()#>, new <#= this._lambdaFunctions[0].Serializer #>()).Build().RunAsync();
 <#
     }
     else
@@ -45,7 +45,7 @@ public class Program
             {
 #>
                 Action<<#= string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>> <#= model.LambdaMethod.Name.ToLower() #> = <#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated.<#= model.LambdaMethod.Name #>;
-                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.Name.ToLower() #>, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.Name.ToLower() #>, new <#= this._lambdaFunctions[0].Serializer #>()).Build().RunAsync();
                 break;
 <#    
             }
@@ -53,7 +53,7 @@ public class Program
             {
 #>
                 Func<<#= string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>, <#= model.GeneratedMethod.ReturnType.FullName #>> <#= model.LambdaMethod.Name.ToLower() #> = <#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated.<#= model.LambdaMethod.Name #>;
-                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.Name.ToLower() #>, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.Name.ToLower() #>, new <#= model.Serializer #>()).Build().RunAsync();
                 break;
 <#
             }

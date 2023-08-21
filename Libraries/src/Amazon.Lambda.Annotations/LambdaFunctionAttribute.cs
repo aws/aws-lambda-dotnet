@@ -9,6 +9,11 @@ namespace Amazon.Lambda.Annotations
     public class LambdaFunctionAttribute : Attribute
     {
         /// <summary>
+        /// The serializer to use.
+        /// </summary>
+        public string Serializer { get; set; }
+        
+        /// <summary>
         /// The name of the CloudFormation resource that is associated with the Lambda function.
         /// </summary>
         public string ResourceName { get; set; }
