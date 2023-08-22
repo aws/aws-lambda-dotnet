@@ -38,7 +38,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 "System.Linq",
                 "System.Collections.Generic",
                 "System.Text",
-                "System.Threading.Tasks"
+                "System.Threading.Tasks",
+                "System.IO"
             };
 
             if (configureMethodSymbol != null)

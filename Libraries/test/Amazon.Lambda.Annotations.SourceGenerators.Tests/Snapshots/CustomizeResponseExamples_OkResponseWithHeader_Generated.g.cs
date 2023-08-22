@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Annotations.APIGateway;
 
@@ -11,11 +12,13 @@ namespace TestServerlessApp
     public class CustomizeResponseExamples_OkResponseWithHeader_Generated
     {
         private readonly CustomizeResponseExamples customizeResponseExamples;
+        private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
         public CustomizeResponseExamples_OkResponseWithHeader_Generated()
         {
             SetExecutionEnvironment();
             customizeResponseExamples = new CustomizeResponseExamples();
+            serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
         public System.IO.Stream OkResponseWithHeader(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)

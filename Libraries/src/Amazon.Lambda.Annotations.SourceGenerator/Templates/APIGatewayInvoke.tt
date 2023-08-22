@@ -64,8 +64,13 @@
                 else
                 {
 #>
+            var memoryStream = new MemoryStream();
+            serializer.Serialize(response, memoryStream);
+            memoryStream.Position = 0;
 
-            var body = <#= _model.Serializer #>.Serialize(response);
+            // convert stream to string
+            StreamReader reader = new StreamReader( memoryStream );
+            var body = reader.ReadToEnd();
 <#
                 }
             }
