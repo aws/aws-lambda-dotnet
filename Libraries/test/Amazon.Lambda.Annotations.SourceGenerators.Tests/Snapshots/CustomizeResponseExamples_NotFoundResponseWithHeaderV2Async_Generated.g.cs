@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using System.IO;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Annotations.APIGateway;
 
@@ -10,11 +12,13 @@ namespace TestServerlessApp
     public class CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated
     {
         private readonly CustomizeResponseExamples customizeResponseExamples;
+        private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
         public CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated()
         {
             SetExecutionEnvironment();
             customizeResponseExamples = new CustomizeResponseExamples();
+            serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
         public async System.Threading.Tasks.Task<System.IO.Stream> NotFoundResponseWithHeaderV2Async(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)

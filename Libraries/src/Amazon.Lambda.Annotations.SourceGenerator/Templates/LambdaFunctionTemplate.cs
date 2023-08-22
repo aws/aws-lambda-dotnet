@@ -139,9 +139,16 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
             
             #line default
             #line hidden
+            this.Write(">();\r\n            var serializer = scope.ServiceProvider.GetRequiredService<");
+            
+            #line 41 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.Serializer));
+            
+            #line default
+            #line hidden
             this.Write(">();\r\n\r\n");
             
-            #line 42 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 43 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
     }
 
@@ -161,7 +168,7 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
             #line hidden
             this.Write("        }\r\n\r\n        private static void SetExecutionEnvironment()\r\n        {\r\n            const string envName = \"AWS_EXECUTION_ENV\";\r\n\r\n            var envValue = new StringBuilder();\r\n\r\n            // If there is an existing execution environment variable add the annotations package as a suffix.\r\n            if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envName)))\r\n            {\r\n                envValue.Append($\"{Environment.GetEnvironmentVariable(envName)}_\");\r\n            }\r\n\r\n            envValue.Append(\"amazon-lambda-annotations_");
             
-            #line 70 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 71 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.SourceGeneratorVersion));
             
             #line default

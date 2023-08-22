@@ -237,7 +237,10 @@
             var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
             try
             {
-                <#= parameter.Name #> = <#= _model.Serializer #>.Deserialize<<#= parameter.Type.FullName #>>(__request__.Body);
+                // convert string to stream
+                var byteArray = Encoding.ASCII.GetBytes(__request__.Body);
+                var stream = new MemoryStream(byteArray);
+                <#= parameter.Name #> = serializer.Deserialize<<#= parameter.Type.FullName #>>(stream);
             }
             catch (Exception e)
             {
