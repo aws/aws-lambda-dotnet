@@ -21,6 +21,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
     [Generator]
     public class Generator : ISourceGenerator
     {
+        private const string DEFAULT_LAMBDA_SERIALIZER = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
         private readonly IFileManager _fileManager = new FileManager();
         private readonly IDirectoryManager _directoryManager = new DirectoryManager();
 
@@ -83,6 +84,19 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     }
                 }
 
+                var isExecutable = false;
+                
+                var assemblyAttributes = context.Compilation.Assembly.GetAttributes();
+                
+                // Let's find the AssemblyTitleAttribute
+                var generateMainAttribute = assemblyAttributes
+                    .FirstOrDefault(attr => attr.AttributeClass.Name == nameof(LambdaGenerateMainAttribute));
+
+                if (generateMainAttribute != null)
+                {
+                    isExecutable = true;
+                }
+
                 var configureMethodModel = semanticModelProvider.GetConfigureMethodModel(receiver.StartupClasses.FirstOrDefault());
 
                 var annotationReport = new AnnotationReport();
@@ -122,21 +136,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         }
                     }
                     
-                    var lambdaAttribute = lambdaMethodModel.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.Name == nameof(LambdaFunctionAttribute));
+                    var serializerString = GetSerializerAttribute(context, lambdaMethodModel);
 
-                    string serializerString = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
-                    
-                    if (lambdaAttribute != null)
-                    {
-                        var serializerValue = lambdaAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Serializer").Value;
-
-                        if (serializerValue.Value != null)
-                        {
-                            serializerString = serializerValue.Value.ToString();
-                        }
-                    }
-
-                    var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, receiver.IsExecutable, serializerString);
+                    var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, isExecutable, serializerString);
 
                     // If there are more than one event, report them as errors
                     if (model.LambdaMethod.Events.Count > 1)
@@ -199,11 +201,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     annotationReport.LambdaFunctions.Add(model);
                 }
 
-                if (receiver.IsExecutable)
+                if (isExecutable)
                 {
-                    var executableAssembly = new ExecutableAssembly(lambdaModels, lambdaModels[0].LambdaMethod.ContainingNamespace);
-                    
-                    context.AddSource("Program.g.cs", SourceText.From(executableAssembly.TransformText(), Encoding.UTF8, SourceHashAlgorithm.Sha256));
+                    var executableAssembly = GenerateExecutableAssemblySource(
+                        context,
+                        diagnosticReporter,
+                        receiver,
+                        lambdaModels);
+
+                    if (executableAssembly == null)
+                    {
+                        foundFatalError = true;
+                        return;
+                    }
+
+                    context.AddSource("Program.g.cs", SourceText.From(executableAssembly.TransformText().ToEnvironmentLineEndings(), Encoding.UTF8, SourceHashAlgorithm.Sha256));
                 }
 
                 // Run the CloudFormation sync if any LambdaMethods exists. Also run if no LambdaMethods exists but there is a
@@ -240,9 +252,86 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             }
         }
 
+        private static ExecutableAssembly GenerateExecutableAssemblySource(
+            GeneratorExecutionContext context,
+            DiagnosticReporter diagnosticReporter,
+            SyntaxReceiver receiver,
+            List<LambdaFunctionModel> lambdaModels)
+        {
+            // Check 'Amazon.Lambda.RuntimeSupport' is referenced
+            if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.RuntimeSupport") == null)
+            {
+                diagnosticReporter.Report(
+                    Diagnostic.Create(
+                        DiagnosticDescriptors.MissingDependencies,
+                        Location.None,
+                        "Amazon.Lambda.RuntimeSupport"));
+                
+                return null;
+            }
+
+            foreach (var methodDeclaration in receiver.MethodDeclarations)
+            {
+                var model = context.Compilation.GetSemanticModel(methodDeclaration.SyntaxTree);
+                var symbol = model.GetDeclaredSymbol(methodDeclaration);
+
+                if (symbol.Name == "Main" && symbol.IsStatic && symbol.ContainingNamespace.Name == lambdaModels[0].LambdaMethod.ContainingAssembly)
+                {
+                    diagnosticReporter.Report(
+                        Diagnostic.Create(
+                            DiagnosticDescriptors.MainMethodExists,
+                            Location.None));
+                    
+                    return null;
+                }
+            }
+
+            return new ExecutableAssembly(
+                lambdaModels,
+                lambdaModels[0].LambdaMethod.ContainingNamespace);
+        }
+
         private bool HasSerializerAttribute(GeneratorExecutionContext context, IMethodSymbol methodModel)
         {
             return methodModel.ContainingAssembly.HasAttribute(context, TypeFullNames.LambdaSerializerAttribute);
+        }
+
+        private string GetSerializerAttribute(GeneratorExecutionContext context, IMethodSymbol methodModel)
+        {
+            var serializerString = DEFAULT_LAMBDA_SERIALIZER;
+
+            ISymbol symbol = null;
+            
+            // First check if method has the Lambda Serializer.
+            if (methodModel.HasAttribute(
+                    context,
+                    TypeFullNames.LambdaSerializerAttribute))
+            {
+                symbol = methodModel;
+            }
+            // Then check assembly
+            else if (methodModel.ContainingAssembly.HasAttribute(
+                    context,
+                    TypeFullNames.LambdaSerializerAttribute))
+            {
+                symbol = methodModel.ContainingAssembly;
+            }
+            // Else return the default serializer.
+            else
+            {
+                return serializerString;
+            }
+            
+            var attribute = symbol.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.Name == TypeFullNames.LambdaSerializerAttributeWithoutNamespace);
+                
+            var serializerValue = attribute.ConstructorArguments.FirstOrDefault(kvp => kvp.Type.Name == nameof(Type)).Value;
+
+            if (serializerValue != null)
+            {
+                serializerString = serializerValue.ToString();
+            }
+
+            return serializerString;
         }
 
         public void Initialize(GeneratorInitializationContext context)

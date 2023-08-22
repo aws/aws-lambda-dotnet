@@ -14,6 +14,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// </para>
         /// </summary>
         string Handler { get; }
+        
+        /// <summary>
+        /// <para>
+        /// The original method name.
+        /// </para>
+        /// </summary>
+        string MethodName { get; }
 
         /// <summary>
         /// The name of the CloudFormation resource that is associated with the Lambda function.
@@ -34,6 +41,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// The IAM Role assumed by the Lambda function during its execution.
         /// </summary>
         string Role { get; }
+        
+        /// <summary>
+        /// Gets or sets if the output is an executable.
+        /// </summary>
+        bool IsExecutable { get; }
 
         /// <summary>
         /// Resource based policies that grants permissions to access other AWS resources.

@@ -20,7 +20,7 @@ using <#= ns #>;
 
 namespace <#= _model.LambdaMethod.ContainingNamespace #>
 {
-    public <#= _model.IsExecutable ? "static " : "" #>class <#= _model.GeneratedMethod.ContainingType.Name #>
+    public class <#= _model.GeneratedMethod.ContainingType.Name #>
     {
 <#
 this.Write(new FieldsAndConstructor(_model).TransformText());

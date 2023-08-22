@@ -14,9 +14,9 @@ public class GeneratedProgram
 
         switch (Environment.GetEnvironmentVariable("ANNOTATIONS_HANDLER"))
         {
-            case "ToUpper":
-                Func<string, string> toupper = Functions_ToUpper_Generated.ToUpper;
-                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(toupper, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
+            case "ToLower":
+                Func<string, string> tolower = FunctionsZipOutput_ToLower_Generated.ToLower;
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(tolower, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
                 break;
 
         }

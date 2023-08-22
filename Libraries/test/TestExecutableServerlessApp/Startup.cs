@@ -9,7 +9,6 @@ using TestServerlessApp.Services;
 namespace TestServerlessApp
 {
     [LambdaStartup]
-    [LambdaOutputExecutable]
     public class Startup
     {
         public void ConfigureServices(IServiceCollection services)

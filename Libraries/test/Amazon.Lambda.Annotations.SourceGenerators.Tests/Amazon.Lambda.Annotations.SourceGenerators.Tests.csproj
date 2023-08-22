@@ -53,6 +53,22 @@
 		<Content Update="Snapshots\Functions_AsyncStartupToUpper_Generated.g.cs">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
+
+		<Content Update="Snapshots\ServerlessTemplates\subnamespace_executable.template">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\Functions_AsyncStartupToLower_Generated.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ProgramZipOutput.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ServerlessTemplates\subnamespace_executableimage.template">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
 	</ItemGroup>
 
     <ItemGroup>

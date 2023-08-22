@@ -167,6 +167,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 default:
                     throw new InvalidEnumArgumentException($"The {nameof(lambdaFunction.PackageType)} does not match any supported enums of type {nameof(LambdaPackageType)}");
             }
+
+            if (lambdaFunction.IsExecutable)
+            {
+                this._templateWriter.SetToken($"{propertiesPath}.Environment.Variables.ANNOTATIONS_HANDLER", lambdaFunction.MethodName);
+            }
         }
 
         /// <summary>

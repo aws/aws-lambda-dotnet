@@ -8,32 +8,32 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp.Sub1
 {
-    public class Functions_ToUpper_Generated
+    public class FunctionsZipOutput_ToLower_Generated
     {
         private static readonly ServiceProvider serviceProvider;
 
-        static Functions_ToUpper_Generated()     
+        static FunctionsZipOutput_ToLower_Generated()     
         {
             SetExecutionEnvironment();
             var services = new ServiceCollection();
 
             // By default, Lambda function class is added to the service container using the singleton lifetime
             // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
-            services.AddSingleton<Functions>();
+            services.AddSingleton<FunctionsZipOutput>();
 
             var startup = new TestServerlessApp.Startup();
             startup.ConfigureServices(services);
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public static string ToUpper(string text)
+        public static string ToLower(string text)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
-            var functions = scope.ServiceProvider.GetRequiredService<Functions>();
+            var functionsZipOutput = scope.ServiceProvider.GetRequiredService<FunctionsZipOutput>();
 
-            return functions.ToUpper(text);
+            return functionsZipOutput.ToLower(text);
         }
 
         private static void SetExecutionEnvironment()
