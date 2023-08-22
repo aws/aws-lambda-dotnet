@@ -3,11 +3,12 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
-    public static class Greeter_SayHello_Generated
+    public class Greeter_SayHello_Generated
     {
         private static readonly ServiceProvider serviceProvider;
 

@@ -37,8 +37,13 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.DynamicExample_DynamicReturn_Generated::DynamicReturn"
+            "TestExecutableServerlessApp"
           ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "DynamicReturn"
+          }
         }
       }
     },
@@ -57,8 +62,13 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.DynamicExample_DynamicInput_Generated::DynamicInput"
+            "TestExecutableServerlessApp"
           ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "DynamicInput"
+          }
         }
       }
     },
@@ -77,8 +87,13 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.TaskExample_TaskReturn_Generated::TaskReturn"
+            "TestExecutableServerlessApp"
           ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "TaskReturn"
+          }
         }
       }
     },
@@ -97,8 +112,13 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.VoidExample_VoidReturn_Generated::VoidReturn"
+            "TestExecutableServerlessApp"
           ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "VoidReturn"
+          }
         }
       }
     },
@@ -120,7 +140,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeader_Generated::OkResponseWithHeader"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -130,6 +150,11 @@
               "Path": "/okresponsewithheader/{x}",
               "Method": "GET"
             }
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "OkResponseWithHeader"
           }
         }
       }
@@ -152,7 +177,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated::OkResponseWithHeaderAsync"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -162,6 +187,11 @@
               "Path": "/okresponsewithheaderasync/{x}",
               "Method": "GET"
             }
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "OkResponseWithHeaderAsync"
           }
         }
       }
@@ -184,7 +214,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated::NotFoundResponseWithHeaderV2"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -194,6 +224,11 @@
               "Path": "/notfoundwithheaderv2/{x}",
               "Method": "GET"
             }
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "NotFoundResponseWithHeaderV2"
           }
         }
       }
@@ -216,7 +251,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated::NotFoundResponseWithHeaderV2Async"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -226,6 +261,11 @@
               "Path": "/notfoundwithheaderv2async/{x}",
               "Method": "GET"
             }
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "NotFoundResponseWithHeaderV2Async"
           }
         }
       }
@@ -248,7 +288,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated::NotFoundResponseWithHeaderV1"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -259,6 +299,11 @@
               "Method": "GET",
               "PayloadFormatVersion": "1.0"
             }
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "NotFoundResponseWithHeaderV1"
           }
         }
       }
@@ -281,7 +326,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated::NotFoundResponseWithHeaderV1Async"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -292,6 +337,11 @@
               "Method": "GET",
               "PayloadFormatVersion": "1.0"
             }
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "NotFoundResponseWithHeaderV1Async"
           }
         }
       }
@@ -314,7 +364,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -325,6 +375,11 @@
               "Method": "GET",
               "PayloadFormatVersion": "1.0"
             }
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "SayHello"
           }
         }
       }
@@ -347,7 +402,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -358,6 +413,11 @@
               "Method": "GET",
               "PayloadFormatVersion": "1.0"
             }
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "SayHelloAsync"
           }
         }
       }
@@ -377,8 +437,13 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.Sub1.Functions_ToUpper_Generated::ToUpper"
+            "TestExecutableServerlessApp"
           ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "ToUpper"
+          }
         }
       }
     },
@@ -400,7 +465,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.NullableReferenceTypeExample_NullableHeaderHttpApi_Generated::NullableHeaderHttpApi"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -410,6 +475,11 @@
               "Path": "/nullableheaderhttpapi",
               "Method": "GET"
             }
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "NullableHeaderHttpApi"
           }
         }
       }
@@ -429,8 +499,34 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.IntrinsicExample_HasIntrinsic_Generated::HasIntrinsic"
+            "TestExecutableServerlessApp"
           ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "HasIntrinsic"
+          }
+        }
+      }
+    },
+    "ToLower": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "CodeUri": ".",
+        "Handler": "TestExecutableServerlessApp",
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "ToLower"
+          }
         }
       }
     }

@@ -17,23 +17,12 @@ using Amazon.Lambda.Core;
 
 namespace <#= this._containingNamespace #>;
 
-public class Program
+public class GeneratedProgram
 {
     private static async Task Main(string[] args)
     {
-<#
-    if (this._lambdaFunctions.Count == 1)
-    {
-#>
-        Func<<#= string.Join(", ", this._lambdaFunctions[0].GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>, <#= this._lambdaFunctions[0].GeneratedMethod.ReturnType.FullName #>> <#=this._lambdaFunctions[0].LambdaMethod.Name.ToLower()#> = <#=this._lambdaFunctions[0].LambdaMethod.ContainingType.Name#>_<#=this._lambdaFunctions[0].LambdaMethod.Name#>_Generated.<#=this._lambdaFunctions[0].LambdaMethod.Name#>;
-        await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#=this._lambdaFunctions[0].LambdaMethod.Name.ToLower()#>, new <#= this._lambdaFunctions[0].Serializer #>()).Build().RunAsync();
-<#
-    }
-    else
-    {
-        #>
 
-        switch (Environment.GetEnvironmentVariable("HANDLER"))
+        switch (Environment.GetEnvironmentVariable("ANNOTATIONS_HANDLER"))
         {
 <#
         foreach (var model in this._lambdaFunctions)
@@ -62,8 +51,6 @@ public class Program
 
         }
 <#
-
-    }
 #>
     }
 }

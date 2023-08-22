@@ -822,7 +822,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 
         public class LambdaFunctionModelTest : ILambdaFunctionSerializable
         {
+            public string MethodName { get; set; }
             public string Handler { get; set; }
+            public bool IsExecutable { get; set; }
             public string ResourceName { get; set; }
             public uint? Timeout { get; set; }
             public uint? MemorySize { get; set; }

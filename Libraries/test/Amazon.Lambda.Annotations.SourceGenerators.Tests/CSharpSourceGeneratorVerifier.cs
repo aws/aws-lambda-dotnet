@@ -12,6 +12,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 {
+    using Amazon.Lambda.RuntimeSupport;
+
     /// <summary>
     /// Source: https://github.com/dotnet/roslyn/blob/main/docs/features/source-generators.cookbook.md
     /// </summary>
@@ -31,7 +33,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location));
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
                     });
 
                 }
@@ -44,7 +47,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location));
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
                     });
                 }
             }

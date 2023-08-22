@@ -8,7 +8,7 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
-    public static class Greeter_SayHelloAsync_Generated
+    public class Greeter_SayHelloAsync_Generated
     {
         private static readonly ServiceProvider serviceProvider;
 

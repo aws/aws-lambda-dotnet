@@ -21,8 +21,13 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestProject::TestServerlessApp.Greeter_SayHello_Generated::SayHello"
+            "TestProject"
           ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "SayHello"
+          }
         },
         "Events": {
           "RootGet": {
@@ -54,8 +59,13 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestProject::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync"
+            "TestProject"
           ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "SayHelloAsync"
+          }
         },
         "Events": {
           "RootGet": {

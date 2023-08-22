@@ -3,10 +3,10 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp.Sub1
 {
-    public class Functions
+    public class FunctionsZipOutput
     {
-        [LambdaFunction(ResourceName = "ToUpper", PackageType = LambdaPackageType.Image)]
-        public string ToUpper(string text)
+        [LambdaFunction(ResourceName = "ToLower")]
+        public string ToLower(string text)
         {
             return text.ToUpper();
         }

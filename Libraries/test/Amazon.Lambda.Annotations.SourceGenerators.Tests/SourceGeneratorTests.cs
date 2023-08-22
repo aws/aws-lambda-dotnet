@@ -250,7 +250,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Functions_ToUpper_Generated.g.cs", expectedSubNamespaceGenerated),
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
                     },
                     ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
@@ -261,9 +261,62 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         }
 
         [Fact]
+        public async Task VerifyExecutableAssemblyWithZipAndHandler()
+        {
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace_executable.template")).ToEnvironmentLineEndings();
+            var expectedSubNamespaceGenerated = File.ReadAllText(Path.Combine("Snapshots", "Functions_AsyncStartupToLower_Generated.g.cs")).ToEnvironmentLineEndings();
+            var expectedProgramGenerated = File.ReadAllText(Path.Combine("Snapshots", "ProgramZipOutput.g.cs")).ToEnvironmentLineEndings();
+            
+            var test = new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestExecutableServerlessApp", "Sub1", "FunctionsZipOutput.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "Sub1", "FunctionsZipOutput.cs"))),
+                        (Path.Combine("TestExecutableServerlessApp", "Startup.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "Startup.cs"))),
+                        (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"))),
+                        (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "FunctionsZipOutput_ToLower_Generated.g.cs",
+                            SourceText.From(expectedSubNamespaceGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "Program.g.cs",
+                            SourceText.From(expectedProgramGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("FunctionsZipOutput_ToLower_Generated.g.cs", expectedSubNamespaceGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                }
+            };
+
+            foreach (var file in Directory.GetFiles(
+                         Path.Combine("Amazon.Lambda.RuntimeSupport"),
+                         "*.cs", SearchOption.AllDirectories))
+            {
+                test.TestState.Sources.Add((file, File.ReadAllText(file)));
+            }
+
+            await test.RunAsync();
+        }
+
+        [Fact]
         public async Task VerifyExecutableAssembly()
         {
-            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template")).ToEnvironmentLineEndings();
+            var expectedTemplateContent = File.ReadAllText(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace_executableimage.template")).ToEnvironmentLineEndings();
             var expectedSubNamespaceGenerated = File.ReadAllText(Path.Combine("Snapshots", "Functions_AsyncStartupToUpper_Generated.g.cs")).ToEnvironmentLineEndings();
             var expectedProgramGenerated = File.ReadAllText(Path.Combine("Snapshots", "Program.g.cs")).ToEnvironmentLineEndings();
             
@@ -278,7 +331,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaOutputExecutableAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaOutputExecutableAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -332,7 +385,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaOutputExecutableAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaOutputExecutableAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =

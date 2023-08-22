@@ -7,12 +7,12 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp;
 
-public class Program
+public class GeneratedProgram
 {
     private static async Task Main(string[] args)
     {
 
-        switch (Environment.GetEnvironmentVariable("HANDLER"))
+        switch (Environment.GetEnvironmentVariable("ANNOTATIONS_HANDLER"))
         {
             case "SayHello":
                 Func<Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest, Amazon.Lambda.Core.ILambdaContext, Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse> sayhello = Greeter_SayHello_Generated.SayHello;

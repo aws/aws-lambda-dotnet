@@ -45,6 +45,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
+        public static readonly DiagnosticDescriptor MainMethodExists = new DiagnosticDescriptor(id: "AWSLambda0104",
+            title: "static Main method exists",
+            messageFormat: "Your project already defines a static Main method.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         public static readonly DiagnosticDescriptor HttpResultsOnNonApiFunction = new DiagnosticDescriptor(id: "AWSLambda0105",
             title: $"Invalid return type {nameof(IHttpResult)}",
             messageFormat: $"{nameof(IHttpResult)} is not a valid return type for LambdaFunctions without {nameof(HttpApiAttribute)} or {nameof(RestApiAttribute)} attributes",
