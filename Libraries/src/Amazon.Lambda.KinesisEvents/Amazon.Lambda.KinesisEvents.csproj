@@ -16,4 +16,12 @@
     <PackageReference Include="AWSSDK.Kinesis" Version="3.7.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Converters\DictionaryLongToStringJsonConverter.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.0' ">
+    <Compile Include="Converters\DictionaryLongToStringJsonConverter.cs" />
+  </ItemGroup>
+
 </Project>
