@@ -1,3 +1,10 @@
+### Release 2023-08-24
+* **Amazon.Lambda.TestTool (0.14.1)**
+  * Fixes an issue where using SSO profile was giving error while monitoring DLQ in Lambda Test Tool.
+* **Amazon.Lambda.MQEvents (2.0.0)**
+  * **Breaking Change:** Corrected the date type of RabbitMQMessage.BasicProperties.Priority to Nullable int in RabbitMQEvent class.
+
+
 ### Release 2023-08-02
 * **Amazon.Lambda.TestTool (0.14.0)**
   * Add new --disable-logs switch used with --no-ui to ensure the console does not include logs just the function's response.
