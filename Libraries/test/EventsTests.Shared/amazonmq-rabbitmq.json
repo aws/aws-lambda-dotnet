@@ -45,6 +45,27 @@
         },
         "redelivered": false,
         "data": "eyJ0aW1lb3V0IjowLCJkYXRhIjoiQ1pybWYwR3c4T3Y0YnFMUXhENEUifQ=="
+      },
+      {
+        "basicProperties": {
+          "contentType": null,
+          "contentEncoding": null,
+          "headers": {},
+          "deliveryMode": 1,
+          "priority": null,
+          "correlationId": null,
+          "replyTo": null,
+          "expiration": null,
+          "messageId": null,
+          "timestamp": null,
+          "type": null,
+          "userId": null,
+          "appId": null,
+          "clusterId": null,
+          "bodySize": 11
+        },
+        "redelivered": true,
+        "data": "SGVsbG8gV29ybGQ="
       }
     ]
   }

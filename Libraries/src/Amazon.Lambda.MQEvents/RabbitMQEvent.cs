@@ -74,7 +74,7 @@
             /// <summary>
             /// Priority
             /// </summary>
-            public int Priority { get; set; }
+            public int? Priority { get; set; }
 
             /// <summary>
             /// Correlation ID

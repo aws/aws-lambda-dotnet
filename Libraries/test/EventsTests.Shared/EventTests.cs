@@ -2823,26 +2823,47 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("arn:aws:mq:us-west-2:112556298976:broker:pizzaBroker:b-9bcfa592-423a-4942-879d-eb284b418fc8", rabbitmqEvent.EventSourceArn);
 
                 Assert.Equal(1, rabbitmqEvent.RmqMessagesByQueue.Count);
-                Assert.Equal(1, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"].Count);
-                Assert.NotNull(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties);
-                Assert.Equal("text/plain", rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ContentType);
-                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ContentEncoding);
-                Assert.Equal(3, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Headers.Count);
-                Assert.Equal(1, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.DeliveryMode);
-                Assert.Equal(34, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Priority);
-                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.CorrelationId);
-                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ReplyTo);
-                Assert.Equal("60000", rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Expiration);
-                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.MessageId);
-                Assert.NotNull(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Timestamp);
-                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.Type);
-                Assert.Equal("AIDACKCEVSQ6C2EXAMPLE", rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.UserId);
-                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.AppId);
-                Assert.Null(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.ClusterId);
-                Assert.Equal(80, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].BasicProperties.BodySize);
+                Assert.Equal(2, rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"].Count);
 
-                Assert.False(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].Redelivered);
-                Assert.Equal("{\"timeout\":0,\"data\":\"CZrmf0Gw8Ov4bqLQxD4E\"}", Encoding.UTF8.GetString(Convert.FromBase64String(rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0].Data)));
+                var firstMessage = rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][0];
+                Assert.NotNull(firstMessage.BasicProperties);
+                Assert.Equal("text/plain", firstMessage.BasicProperties.ContentType);
+                Assert.Null(firstMessage.BasicProperties.ContentEncoding);
+                Assert.Equal(3, firstMessage.BasicProperties.Headers.Count);
+                Assert.Equal(1, firstMessage.BasicProperties.DeliveryMode);
+                Assert.Equal(34, firstMessage.BasicProperties.Priority);
+                Assert.Null(firstMessage.BasicProperties.CorrelationId);
+                Assert.Null(firstMessage.BasicProperties.ReplyTo);
+                Assert.Equal("60000", firstMessage.BasicProperties.Expiration);
+                Assert.Null(firstMessage.BasicProperties.MessageId);
+                Assert.NotNull(firstMessage.BasicProperties.Timestamp);
+                Assert.Null(firstMessage.BasicProperties.Type);
+                Assert.Equal("AIDACKCEVSQ6C2EXAMPLE", firstMessage.BasicProperties.UserId);
+                Assert.Null(firstMessage.BasicProperties.AppId);
+                Assert.Null(firstMessage.BasicProperties.ClusterId);
+                Assert.Equal(80, firstMessage.BasicProperties.BodySize);
+                Assert.False(firstMessage.Redelivered);
+                Assert.Equal("{\"timeout\":0,\"data\":\"CZrmf0Gw8Ov4bqLQxD4E\"}", Encoding.UTF8.GetString(Convert.FromBase64String(firstMessage.Data)));
+
+                var secondMessage = rabbitmqEvent.RmqMessagesByQueue["pizzaQueue::/"][1];
+                Assert.NotNull(secondMessage.BasicProperties);
+                Assert.Null(secondMessage.BasicProperties.ContentType);
+                Assert.Null(secondMessage.BasicProperties.ContentEncoding);
+                Assert.Equal(0, secondMessage.BasicProperties.Headers.Count);
+                Assert.Equal(1, secondMessage.BasicProperties.DeliveryMode);
+                Assert.Null(secondMessage.BasicProperties.Priority);
+                Assert.Null(secondMessage.BasicProperties.CorrelationId);
+                Assert.Null(secondMessage.BasicProperties.ReplyTo);
+                Assert.Null(secondMessage.BasicProperties.Expiration);
+                Assert.Null(secondMessage.BasicProperties.MessageId);
+                Assert.Null(secondMessage.BasicProperties.Timestamp);
+                Assert.Null(secondMessage.BasicProperties.Type);
+                Assert.Null(secondMessage.BasicProperties.UserId);
+                Assert.Null(secondMessage.BasicProperties.AppId);
+                Assert.Null(secondMessage.BasicProperties.ClusterId);
+                Assert.Equal(11, secondMessage.BasicProperties.BodySize);
+                Assert.True(secondMessage.Redelivered);
+                Assert.Equal("Hello World", Encoding.UTF8.GetString(Convert.FromBase64String(secondMessage.Data)));
             }
         }
 
