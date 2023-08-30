@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
 
@@ -10,9 +11,9 @@ namespace TestServerlessApp.Sub1
 {
     public class FunctionsZipOutput_ToLower_Generated
     {
-        private static readonly ServiceProvider serviceProvider;
+        private readonly ServiceProvider serviceProvider;
 
-        static FunctionsZipOutput_ToLower_Generated()     
+        public FunctionsZipOutput_ToLower_Generated()
         {
             SetExecutionEnvironment();
             var services = new ServiceCollection();
@@ -20,18 +21,20 @@ namespace TestServerlessApp.Sub1
             // By default, Lambda function class is added to the service container using the singleton lifetime
             // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
             services.AddSingleton<FunctionsZipOutput>();
+            services.AddSingleton<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
             var startup = new TestServerlessApp.Startup();
             startup.ConfigureServices(services);
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public static string ToLower(string text)
+        public string ToLower(string text)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
             var functionsZipOutput = scope.ServiceProvider.GetRequiredService<FunctionsZipOutput>();
+            var serializer = scope.ServiceProvider.GetRequiredService<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
             return functionsZipOutput.ToLower(text);
         }

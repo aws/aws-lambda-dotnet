@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
@@ -10,11 +11,13 @@ namespace TestServerlessApp
     public class IntrinsicExample_HasIntrinsic_Generated
     {
         private readonly IntrinsicExample intrinsicExample;
+        private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
         public IntrinsicExample_HasIntrinsic_Generated()
         {
             SetExecutionEnvironment();
             intrinsicExample = new IntrinsicExample();
+            serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
         public void HasIntrinsic(string text, Amazon.Lambda.Core.ILambdaContext __context__)

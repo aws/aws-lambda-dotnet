@@ -15,7 +15,7 @@ public class GeneratedProgram
         switch (Environment.GetEnvironmentVariable("ANNOTATIONS_HANDLER"))
         {
             case "ToUpper":
-                Func<string, string> toupper = Functions_ToUpper_Generated.ToUpper;
+                Func<string, string> toupper = new TestServerlessApp.Sub1.Functions_ToUpper_Generated().ToUpper;
                 await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(toupper, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
                 break;
 

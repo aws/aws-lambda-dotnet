@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
 
@@ -20,6 +21,7 @@ namespace TestServerlessApp
             // By default, Lambda function class is added to the service container using the singleton lifetime
             // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
             services.AddSingleton<SimpleCalculator>();
+            services.AddSingleton<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
             var startup = new TestServerlessApp.Startup();
             startup.ConfigureServices(services);
@@ -32,6 +34,7 @@ namespace TestServerlessApp
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
+            var serializer = scope.ServiceProvider.GetRequiredService<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
             var validationErrors = new List<string>();
 

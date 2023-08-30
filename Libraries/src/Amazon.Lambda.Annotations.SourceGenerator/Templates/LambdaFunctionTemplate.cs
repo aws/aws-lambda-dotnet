@@ -85,12 +85,6 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
             this.Write("\r\n\r\n        public ");
             
             #line 30 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.IsExecutable ? "static " : ""));
-            
-            #line default
-            #line hidden
-            
-            #line 30 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ReturnsVoidOrGenericTask ? "async " : ""));
             
             #line default

@@ -27,7 +27,7 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
 #>
 
 
-        public <#= _model.IsExecutable ? "static " : "" #><#= _model.LambdaMethod.ReturnsVoidOrGenericTask ? "async " : "" #><#= _model.GeneratedMethod.ReturnType.FullName #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
+        public <#= _model.LambdaMethod.ReturnsVoidOrGenericTask ? "async " : "" #><#= _model.GeneratedMethod.ReturnType.FullName #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
         {
 <#
     if (_model.LambdaMethod.UsingDependencyInjection)
