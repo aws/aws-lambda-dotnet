@@ -273,17 +273,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             foreach (var methodDeclaration in receiver.MethodDeclarations)
             {
                 var model = context.Compilation.GetSemanticModel(methodDeclaration.SyntaxTree);
-                var symbol = model.GetDeclaredSymbol(methodDeclaration);
+                var symbol = model.GetDeclaredSymbol(methodDeclaration) as IMethodSymbol;
 
-                if (symbol.Name == "Main" && symbol.IsStatic && symbol.ContainingNamespace.Name == lambdaModels[0].LambdaMethod.ContainingAssembly)
-                {
-                    diagnosticReporter.Report(
-                        Diagnostic.Create(
-                            DiagnosticDescriptors.MainMethodExists,
-                            Location.None));
+                // Check to see if a static main method exists in the same namespace that has 0 or 1 parameters
+                if (symbol.Name != "Main" || !symbol.IsStatic || symbol.ContainingNamespace.Name != lambdaModels[0].LambdaMethod.ContainingAssembly || (symbol.Parameters.Length > 1)) 
+                    continue;
+                
+                diagnosticReporter.Report(
+                    Diagnostic.Create(
+                        DiagnosticDescriptors.MainMethodExists,
+                        Location.None));
                     
-                    return null;
-                }
+                return null;
             }
 
             return new ExecutableAssembly(
