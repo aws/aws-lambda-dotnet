@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using System.IO;
 using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
@@ -9,11 +11,13 @@ namespace TestServerlessApp
     public class DynamicExample_DynamicInput_Generated
     {
         private readonly DynamicExample dynamicExample;
+        private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
         public DynamicExample_DynamicInput_Generated()
         {
             SetExecutionEnvironment();
             dynamicExample = new DynamicExample();
+            serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
         public string DynamicInput(dynamic text, Amazon.Lambda.Core.ILambdaContext __context__)

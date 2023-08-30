@@ -9,18 +9,18 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
-    public class SimpleCalculator_Multiply_Generated
+    public class Greeter_SayHello_Generated
     {
         private readonly ServiceProvider serviceProvider;
 
-        public SimpleCalculator_Multiply_Generated()
+        public Greeter_SayHello_Generated()
         {
             SetExecutionEnvironment();
             var services = new ServiceCollection();
 
             // By default, Lambda function class is added to the service container using the singleton lifetime
             // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
-            services.AddSingleton<SimpleCalculator>();
+            services.AddSingleton<Greeter>();
             services.AddSingleton<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
             var startup = new TestServerlessApp.Startup();
@@ -28,40 +28,33 @@ namespace TestServerlessApp
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse Multiply(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
+        public Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse SayHello(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
-            var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
+            var greeter = scope.ServiceProvider.GetRequiredService<Greeter>();
             var serializer = scope.ServiceProvider.GetRequiredService<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
             var validationErrors = new List<string>();
 
-            var x = default(int);
-            if (__request__.PathParameters?.ContainsKey("x") == true)
+            var firstNames = default(System.Collections.Generic.IEnumerable<string>);
+            if (__request__.MultiValueQueryStringParameters?.ContainsKey("names") == true)
             {
-                try
-                {
-                    x = (int)Convert.ChangeType(__request__.PathParameters["x"], typeof(int));
-                }
-                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
-                {
-                    validationErrors.Add($"Value {__request__.PathParameters["x"]} at 'x' failed to satisfy constraint: {e.Message}");
-                }
-            }
-
-            var y = default(int);
-            if (__request__.PathParameters?.ContainsKey("y") == true)
-            {
-                try
-                {
-                    y = (int)Convert.ChangeType(__request__.PathParameters["y"], typeof(int));
-                }
-                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
-                {
-                    validationErrors.Add($"Value {__request__.PathParameters["y"]} at 'y' failed to satisfy constraint: {e.Message}");
-                }
+                firstNames = __request__.MultiValueQueryStringParameters["names"]
+                    .Select(q =>
+                    {
+                        try
+                        {
+                            return (string)Convert.ChangeType(q, typeof(string));
+                        }
+                        catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                        {
+                            validationErrors.Add($"Value {q} at 'names' failed to satisfy constraint: {e.Message}");
+                            return default;
+                        }
+                    })
+                    .ToList();
             }
 
             // return 400 Bad Request if there exists a validation error
@@ -80,15 +73,10 @@ namespace TestServerlessApp
                 return errorResult;
             }
 
-            var response = simpleCalculator.Multiply(x, y);
+            greeter.SayHello(firstNames, __request__, __context__);
 
             return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
             {
-                Body = response,
-                Headers = new Dictionary<string, string>
-                {
-                    {"Content-Type", "text/plain"}
-                },
                 StatusCode = 200
             };
         }

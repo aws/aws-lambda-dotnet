@@ -81,7 +81,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write(" = ");
+            this.Write(" = new ");
+            
+            #line 36 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.ContainingNamespace));
+            
+            #line default
+            #line hidden
+            this.Write(".");
             
             #line 36 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.ContainingType.Name));
@@ -95,7 +102,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write("_Generated.");
+            this.Write("_Generated().");
             
             #line 36 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name));
@@ -148,7 +155,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write(" = ");
+            this.Write(" = new ");
+            
+            #line 44 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.ContainingNamespace));
+            
+            #line default
+            #line hidden
+            this.Write(".");
             
             #line 44 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.ContainingType.Name));
@@ -162,7 +176,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write("_Generated.");
+            this.Write("_Generated().");
             
             #line 44 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(model.LambdaMethod.Name));
