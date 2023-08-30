@@ -67,9 +67,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             if (context.Node is ClassDeclarationSyntax classDeclarationSyntax && classDeclarationSyntax.AttributeLists.Count > 0)
             {
                 // Get the symbol being declared by the class, and keep it if its annotated
-                var methodSymbol = ModelExtensions.GetDeclaredSymbol(
-                    context.SemanticModel,
-                    classDeclarationSyntax);
+                var methodSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
+                
                 if (methodSymbol.GetAttributes().Any(attr => attr.AttributeClass.Name == nameof(LambdaStartupAttribute)))
                 {
                     StartupClasses.Add(classDeclarationSyntax);
