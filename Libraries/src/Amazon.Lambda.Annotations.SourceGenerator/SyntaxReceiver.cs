@@ -77,8 +77,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             
             if (context.Node is MethodDeclarationSyntax methodDeclaration)
             {
-                var model = ModelExtensions.GetDeclaredSymbol(
-                    context.SemanticModel,
+                var model = context.SemanticModel.GetDeclaredSymbol(
                     methodDeclaration);
 
                 if (model.Name == "Main" && model.IsStatic)
