@@ -1,6 +1,6 @@
 ﻿using Amazon.Lambda.AspNetCoreServer.Hosting;
-using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
+using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -66,6 +66,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 configure.Invoke(hostingOptions);
 
             services.TryAddSingleton<ILambdaSerializer>(hostingOptions.Serializer ?? new DefaultLambdaJsonSerializer());
+            services.TryAddSingleton<IEncodingOptions>(hostingOptions.EncodingOptions);
 
             var serverType = eventSource switch
             {

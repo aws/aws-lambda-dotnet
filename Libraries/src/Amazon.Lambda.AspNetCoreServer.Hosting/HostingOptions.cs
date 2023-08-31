@@ -1,4 +1,5 @@
-﻿using Amazon.Lambda.Core;
+﻿using Amazon.Lambda.AspNetCoreServer.Internal;
+using Amazon.Lambda.Core;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting;
 
@@ -12,4 +13,9 @@ public class HostingOptions
     /// back to JSON to return to Lambda.
     /// </summary>
     public ILambdaSerializer Serializer { get; set; }
+
+    /// <summary>
+    /// The encoding response options used by the Lambda
+    /// </summary>
+    public IEncodingOptions EncodingOptions { get; set; }
 }
