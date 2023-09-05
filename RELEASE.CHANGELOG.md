@@ -1,3 +1,10 @@
+### Release 2023-09-05
+* **Amazon.Lambda.DynamoDBEvents (2.2.0)**
+  * Added support for DynamoDBTimeWindowEvent.
+* **Amazon.Lambda.KinesisEvents (2.1.0)**
+  * Added support for KinesisTimeWindowEvent.
+  * Added new StreamsEventResponse class for reporting batch item failures when processing streams for KinesisEvent.
+
 ### Release 2023-08-24
 * **Amazon.Lambda.TestTool (0.14.1)**
   * Fixes an issue where using SSO profile was giving error while monitoring DLQ in Lambda Test Tool.
