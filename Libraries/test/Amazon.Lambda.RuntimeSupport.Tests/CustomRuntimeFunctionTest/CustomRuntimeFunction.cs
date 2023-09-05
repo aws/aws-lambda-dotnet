@@ -36,6 +36,9 @@ namespace CustomRuntimeFunctionTest
             {
                 switch (handler)
                 {
+                    case nameof(GetTotalAvailableMemoryBytes):
+                        bootstrap = new LambdaBootstrap(GetTotalAvailableMemoryBytes);
+                        break;
                     case nameof(ExceptionNonAsciiCharacterUnwrappedAsync):
                         bootstrap = new LambdaBootstrap(ExceptionNonAsciiCharacterUnwrappedAsync);
                         break;
@@ -424,6 +427,11 @@ namespace CustomRuntimeFunctionTest
         private static Task<InvocationResponse> GetTimezoneNameAsync(InvocationRequest invocation)
         {
             return Task.FromResult(GetInvocationResponse(nameof(GetTimezoneNameAsync), TimeZoneInfo.Local.Id));
+        }
+
+        private static async Task<InvocationResponse> GetTotalAvailableMemoryBytes(InvocationRequest invocation)
+        {
+            return GetInvocationResponse(nameof(GetTotalAvailableMemoryBytes), GC.GetGCMemoryInfo().TotalAvailableMemoryBytes.ToString());
         }
 
         #region Helpers

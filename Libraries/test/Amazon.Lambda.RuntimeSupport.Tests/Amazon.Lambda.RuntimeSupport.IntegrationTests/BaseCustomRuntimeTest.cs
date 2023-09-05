@@ -15,6 +15,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class BaseCustomRuntimeTest
     {
+        public const int FUNCTION_MEMORY_MB = 512;
+
         protected static readonly RegionEndpoint TestRegion = RegionEndpoint.USWest2;
         protected static readonly string LAMBDA_ASSUME_ROLE_POLICY =
         @"
@@ -240,7 +242,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     S3Key = DeploymentZipKey
                 },
                 Handler = this.Handler,
-                MemorySize = 512,
+                MemorySize = FUNCTION_MEMORY_MB,
                 Timeout = 30,
                 Runtime = Runtime.Dotnet6,
                 Role = ExecutionRoleArn
