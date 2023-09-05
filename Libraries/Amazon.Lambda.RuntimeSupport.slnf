@@ -1,0 +1,23 @@
+{
+  "solution": {
+    "path": "Libraries.sln",
+    "projects": [
+      "src\\Amazon.Lambda.APIGatewayEvents\\Amazon.Lambda.APIGatewayEvents.csproj",
+      "src\\Amazon.Lambda.ApplicationLoadBalancerEvents\\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj",
+      "src\\Amazon.Lambda.AspNetCoreServer.Hosting\\Amazon.Lambda.AspNetCoreServer.Hosting.csproj",
+      "src\\Amazon.Lambda.AspNetCoreServer\\Amazon.Lambda.AspNetCoreServer.csproj",
+      "src\\Amazon.Lambda.Core\\Amazon.Lambda.Core.csproj",
+      "src\\Amazon.Lambda.Logging.AspNetCore\\Amazon.Lambda.Logging.AspNetCore.csproj",
+      "src\\Amazon.Lambda.RuntimeSupport\\Amazon.Lambda.RuntimeSupport.csproj",
+      "src\\Amazon.Lambda.Serialization.Json\\Amazon.Lambda.Serialization.Json.csproj",
+      "src\\Amazon.Lambda.Serialization.SystemTextJson\\Amazon.Lambda.Serialization.SystemTextJson.csproj",
+      "test\\Amazon.Lambda.RuntimeSupport.Tests\\Amazon.Lambda.RuntimeSupport.IntegrationTests\\Amazon.Lambda.RuntimeSupport.IntegrationTests.csproj",
+      "test\\Amazon.Lambda.RuntimeSupport.Tests\\Amazon.Lambda.RuntimeSupport.UnitTests\\Amazon.Lambda.RuntimeSupport.UnitTests.csproj",
+      "test\\Amazon.Lambda.RuntimeSupport.Tests\\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.csproj",
+      "test\\Amazon.Lambda.RuntimeSupport.Tests\\CustomRuntimeAspNetCoreMinimalApiTest\\CustomRuntimeAspNetCoreMinimalApiTest.csproj",
+      "test\\Amazon.Lambda.RuntimeSupport.Tests\\CustomRuntimeFunctionTest\\CustomRuntimeFunctionTest.csproj",
+      "test\\HandlerTestNoSerializer\\HandlerTestNoSerializer.csproj",
+      "test\\HandlerTest\\HandlerTest.csproj"
+    ]
+  }
+}
