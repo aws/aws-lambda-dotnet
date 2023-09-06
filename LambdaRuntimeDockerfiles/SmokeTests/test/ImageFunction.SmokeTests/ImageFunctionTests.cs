@@ -41,7 +41,6 @@ namespace ImageFunction.SmokeTests
         private static readonly RegionEndpoint TestRegion = RegionEndpoint.USWest2;
         private readonly AmazonLambdaClient _lambdaClient;
         private readonly AmazonIdentityManagementServiceClient _iamClient;
-        private readonly string _executionRoleName;
         private string _executionRoleArn;
 
         private static readonly string LambdaAssumeRolePolicy =
@@ -67,7 +66,6 @@ namespace ImageFunction.SmokeTests
 
         public ImageFunctionTests()
         {
-            _executionRoleName = $"{TestIdentifier}-{Guid.NewGuid()}";
             _functionName = $"{TestIdentifier}-{Guid.NewGuid()}";
             var lambdaConfig = new AmazonLambdaConfig()
             {
@@ -75,8 +73,10 @@ namespace ImageFunction.SmokeTests
             };
             _lambdaClient = new AmazonLambdaClient(lambdaConfig);
             _iamClient = new AmazonIdentityManagementServiceClient(TestRegion);
+            _executionRoleArn = Environment.GetEnvironmentVariable("AWS_LAMBDA_SMOKETESTS_LAMBDA_ROLE");
             _imageUri = Environment.GetEnvironmentVariable("AWS_LAMBDA_IMAGE_URI");
 
+            Assert.NotNull(_executionRoleArn);
             Assert.NotNull(_imageUri);
 
             SetupAsync().GetAwaiter().GetResult();
@@ -166,7 +166,6 @@ namespace ImageFunction.SmokeTests
 
         private async Task SetupAsync()
         {
-            await CreateRoleAsync();
             await CreateFunctionAsync();
         }
 
@@ -227,29 +226,6 @@ namespace ImageFunction.SmokeTests
             }
         }
 
-        private async Task CreateRoleAsync()
-        {
-            var response = await _iamClient.CreateRoleAsync(new CreateRoleRequest
-            {
-                RoleName = _executionRoleName,
-                Description = $"Test role for {TestIdentifier}.",
-                AssumeRolePolicyDocument = LambdaAssumeRolePolicy
-            });
-            _executionRoleArn = response.Role.Arn;
-
-            // Wait  10 seconds to let execution role propagate
-            await Task.Delay(10000);
-
-            await _iamClient.AttachRolePolicyAsync(new AttachRolePolicyRequest
-            {
-                RoleName = _executionRoleName,
-                PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-            });
-
-            // Wait  10 seconds to let execution role propagate
-            await Task.Delay(10000);
-        }
-
         private static string GetArchitecture()
         {
             switch (RuntimeInformation.ProcessArchitecture)
@@ -297,7 +273,6 @@ namespace ImageFunction.SmokeTests
 
         private async Task TearDownAsync()
         {
-            await DeleteRoleIfExistsAsync();
             await DeleteFunctionIfExistsAsync();
         }
 
@@ -311,30 +286,6 @@ namespace ImageFunction.SmokeTests
                 });
             }
             catch (ResourceNotFoundException)
-            {
-                // No action required
-            }
-        }
-
-        private async Task DeleteRoleIfExistsAsync()
-        {
-            try
-            {
-                await _iamClient.DetachRolePolicyAsync(new DetachRolePolicyRequest
-                {
-                    RoleName = _executionRoleName,
-                    PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-                });
-
-                // Wait 10 seconds to let execution role propagate
-                await Task.Delay(10000);
-
-                await _iamClient.DeleteRoleAsync(new DeleteRoleRequest
-                {
-                    RoleName = _executionRoleName
-                });
-            }
-            catch (NoSuchEntityException)
             {
                 // No action required
             }
