@@ -1,5 +1,4 @@
-﻿using Amazon.Lambda.AspNetCoreServer.Internal;
-using Amazon.Lambda.Core;
+﻿using Amazon.Lambda.Core;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting;
 
@@ -15,7 +14,8 @@ public class HostingOptions
     public ILambdaSerializer Serializer { get; set; }
 
     /// <summary>
-    /// The encoding response options used by the Lambda
+    /// The encoding response options sent from the Lambda to the API Gateway.
+    /// Used to adjust what content types are sent to the API Gatway as binary data
     /// </summary>
     public IEncodingOptions EncodingOptions { get; set; }
 }
