@@ -25,6 +25,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         private readonly IFileManager _fileManager = new FileManager();
         private readonly IDirectoryManager _directoryManager = new DirectoryManager();
 
+        private readonly List<string> _allowdRuntimeValues = new List<string>(2)
+        {
+            "dotnet6",
+            "provided.al2"
+        };
+
         // Only allow alphanumeric characters
         private readonly Regex _resourceNameRegex = new Regex("^[a-zA-Z0-9]+$");
 
@@ -85,16 +91,38 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 }
 
                 var isExecutable = false;
+
+                bool foundFatalError = false;
                 
                 var assemblyAttributes = context.Compilation.Assembly.GetAttributes();
                 
                 // Let's find the AssemblyTitleAttribute
                 var generateMainAttribute = assemblyAttributes
-                    .FirstOrDefault(attr => attr.AttributeClass.Name == nameof(LambdaGenerateMainAttribute));
+                    .FirstOrDefault(attr => attr.AttributeClass.Name == nameof(LambdaGlobalPropertiesAttribute));
+
+                var defaultRuntime = "dotnet6";
 
                 if (generateMainAttribute != null)
                 {
-                    isExecutable = true;
+                    var generateMain = generateMainAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "GenerateMain").Value;
+                    var runtime = generateMainAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Runtime")
+                        .Value.Value.ToString();
+
+                    if (!_allowdRuntimeValues.Contains(runtime))
+                    {
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.InvalidRuntimeSelection, Location.None));
+                        return;
+                    }
+
+                    defaultRuntime = runtime;
+                    
+                    isExecutable = bool.Parse(generateMain.Value.ToString());
+                    
+                    // if (isExecutable && context.Compilation.Options.OutputKind != OutputKind.ConsoleApplication)
+                    // {
+                    //     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.SetOutputTypeExecutable, Location.None));
+                    //     return;
+                    // }
                 }
 
                 var configureMethodModel = semanticModelProvider.GetConfigureMethodModel(receiver.StartupClasses.FirstOrDefault());
@@ -102,8 +130,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var annotationReport = new AnnotationReport();
 
                 var templateHandler = new CloudFormationTemplateHandler(_fileManager, _directoryManager);
-
-                bool foundFatalError = false;
 
                 var lambdaModels = new List<LambdaFunctionModel>();
                 
@@ -138,7 +164,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     
                     var serializerString = GetSerializerAttribute(context, lambdaMethodModel);
 
-                    var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, isExecutable, serializerString);
+                    var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, isExecutable, serializerString, defaultRuntime);
 
                     // If there are more than one event, report them as errors
                     if (model.LambdaMethod.Events.Count > 1)

@@ -2,4 +2,4 @@
 using Amazon.Lambda.Core;
 
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-[assembly: LambdaGenerateMain]
+[assembly: LambdaGlobalProperties(GenerateMain = true, Runtime = "provided.al2")]

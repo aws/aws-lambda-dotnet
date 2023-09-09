@@ -830,6 +830,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public uint? MemorySize { get; set; }
             public string Role { get; set; }
             public string Policies { get; set; }
+            public string Runtime { get; set; }
             public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
             public string SourceGeneratorVersion { get; set; }
             public LambdaPackageType PackageType { get; set; } = LambdaPackageType.Zip;

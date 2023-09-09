@@ -48,6 +48,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         bool IsExecutable { get; }
 
         /// <summary>
+        /// Gets or sets the Lambda runtime to use..
+        /// </summary>
+        string Runtime { get; }
+
+        /// <summary>
         /// Resource based policies that grants permissions to access other AWS resources.
         /// </summary>
         string Policies { get; }

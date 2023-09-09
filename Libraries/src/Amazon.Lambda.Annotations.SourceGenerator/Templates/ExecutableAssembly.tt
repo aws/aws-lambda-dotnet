@@ -33,16 +33,16 @@ public class GeneratedProgram
             if (model.GeneratedMethod.ReturnType.FullName == "void")
             {
 #>
-                Action<<#= string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>> <#= model.LambdaMethod.Name.ToLower() #> = new <#= model.LambdaMethod.ContainingNamespace #>.<#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated().<#= model.LambdaMethod.Name #>;
-                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.Name.ToLower() #>, new <#= this._lambdaFunctions[0].Serializer #>()).Build().RunAsync();
+                Action<<#= string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>> <#= model.LambdaMethod.ExecutableAssemblyHandlerName #> = new <#= model.LambdaMethod.ContainingNamespace #>.<#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated().<#= model.LambdaMethod.Name #>;
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.ExecutableAssemblyHandlerName #>, new <#= this._lambdaFunctions[0].Serializer #>()).Build().RunAsync();
                 break;
 <#    
             }
             else
             {
 #>
-                Func<<#= string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>, <#= model.GeneratedMethod.ReturnType.FullName #>> <#= model.LambdaMethod.Name.ToLower() #> = new <#= model.LambdaMethod.ContainingNamespace #>.<#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated().<#= model.LambdaMethod.Name #>;
-                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.Name.ToLower() #>, new <#= model.Serializer #>()).Build().RunAsync();
+                Func<<#= string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>, <#= model.GeneratedMethod.ReturnType.FullName #>> <#= model.LambdaMethod.ExecutableAssemblyHandlerName #> = new <#= model.LambdaMethod.ContainingNamespace #>.<#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated().<#= model.LambdaMethod.Name #>;
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.ExecutableAssemblyHandlerName #>, new <#= model.Serializer #>()).Build().RunAsync();
                 break;
 <#
             }

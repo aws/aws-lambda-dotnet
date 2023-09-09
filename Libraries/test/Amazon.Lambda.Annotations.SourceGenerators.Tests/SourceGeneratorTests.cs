@@ -278,7 +278,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -331,7 +331,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -385,7 +385,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGenerateMainAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =

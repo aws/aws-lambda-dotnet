@@ -9,7 +9,7 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "provided.al2",
         "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,

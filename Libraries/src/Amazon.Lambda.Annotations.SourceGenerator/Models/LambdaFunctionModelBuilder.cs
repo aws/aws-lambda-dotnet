@@ -9,7 +9,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// </summary>
     public static class LambdaFunctionModelBuilder
     {
-        public static LambdaFunctionModel Build(IMethodSymbol lambdaMethodSymbol, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context, bool isExecutable, string serializer)
+        public static LambdaFunctionModel Build(IMethodSymbol lambdaMethodSymbol, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context, bool isExecutable, string serializer, string runtime)
         {
             var lambdaMethod = LambdaMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, context);
             var generatedMethod = GeneratedMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, lambdaMethod, context);
@@ -22,7 +22,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 SourceGeneratorVersion = context.Compilation
                     .ReferencedAssemblyNames.FirstOrDefault(x => string.Equals(x.Name, "Amazon.Lambda.Annotations"))
                     ?.Version.ToString(),
-                IsExecutable = isExecutable 
+                IsExecutable = isExecutable,
+                Runtime = runtime
             };
 
             return model;

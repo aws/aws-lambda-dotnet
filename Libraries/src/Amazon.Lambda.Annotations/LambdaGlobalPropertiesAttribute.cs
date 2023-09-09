@@ -9,7 +9,10 @@ namespace Amazon.Lambda.Annotations
     /// Deploying as an executable versus a class library is required when compiling functions with Native AOT. It can also be useful to deploy as an executable to include specific versions of `Amazon.Lambda.RuntimeSupport` the .NET Lambda runtime client.
     /// </summary>
     [AttributeUsage( AttributeTargets.Assembly)]
-    public class LambdaGenerateMainAttribute : Attribute
+    public class LambdaGlobalPropertiesAttribute : Attribute
     {
+        public bool GenerateMain { get; set; }
+        
+        public string Runtime { get; set; }
     }
 }
