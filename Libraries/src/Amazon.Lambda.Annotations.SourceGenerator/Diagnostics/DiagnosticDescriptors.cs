@@ -47,7 +47,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
 
         public static readonly DiagnosticDescriptor MainMethodExists = new DiagnosticDescriptor(id: "AWSLambda0104",
             title: "static Main method exists",
-            messageFormat: "Failed to generate Main method for LambdaGenerateMainAttribute because project already contains Main method. Existing Main methods must be removed when using LambdaGenerateMainAttribute  attribute.",
+            messageFormat: "Failed to generate Main method for LambdaGenerateMainAttribute because project already contains Main method. Existing Main methods must be removed when using LambdaGenerateMainAttribute attribute.",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -94,5 +94,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
            category: "AWSLambdaCSharpGenerator",
            DiagnosticSeverity.Error,
            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor SetOutputTypeExecutable = new DiagnosticDescriptor(id: "AWSLambda0111",
+            title: "Output Type is not an executable",
+            messageFormat: "AssemblyAttribute Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is configured to generate a static main method " + 
+                           "but the assembly itself is not configured to output an executable. Set the 'OutputType' property in the .csproj file to be 'exe'.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidRuntimeSelection = new DiagnosticDescriptor(id: "AWSLambda0112",
+            title: "Invalid runtime selection",
+            messageFormat: "The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value " + 
+                           "It should be set to either 'dotnet6' or 'provided.al2'.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

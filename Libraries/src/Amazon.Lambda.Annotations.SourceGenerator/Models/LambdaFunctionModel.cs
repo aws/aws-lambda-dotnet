@@ -41,6 +41,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// Gets or sets if the output is an executable.
         /// </summary>
         public bool IsExecutable { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the Lambda runtime to use.
+        /// </summary>
+        public string Runtime { get; set; }
 
         /// <inheritdoc />
         public string Handler => IsExecutable ? LambdaMethod.ContainingAssembly : $"{LambdaMethod.ContainingAssembly}::{GeneratedMethod.ContainingType.FullName}::{LambdaMethod.Name}";

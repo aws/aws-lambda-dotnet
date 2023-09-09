@@ -15,8 +15,8 @@ public class GeneratedProgram
         switch (Environment.GetEnvironmentVariable("ANNOTATIONS_HANDLER"))
         {
             case "ToLower":
-                Func<string, string> tolower = new TestServerlessApp.Sub1.FunctionsZipOutput_ToLower_Generated().ToLower;
-                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(tolower, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
+                Func<string, string> tolower_handler = new TestServerlessApp.Sub1.FunctionsZipOutput_ToLower_Generated().ToLower;
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(tolower_handler, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
                 break;
 
         }
