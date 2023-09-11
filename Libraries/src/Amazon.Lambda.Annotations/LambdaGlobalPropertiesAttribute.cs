@@ -11,8 +11,14 @@ namespace Amazon.Lambda.Annotations
     [AttributeUsage( AttributeTargets.Assembly)]
     public class LambdaGlobalPropertiesAttribute : Attribute
     {
+        /// <summary>
+        ///  Indicates whether the Lambda Annotations Framework will generate a static main method and the code to bootstrap the Lambda runtime.
+        /// </summary>
         public bool GenerateMain { get; set; }
         
+        /// <summary>
+        /// The runtime to set in the generated CloudFormation template. Either 'dotnet6' or 'provided.al2'.
+        /// </summary>
         public string Runtime { get; set; }
     }
 }

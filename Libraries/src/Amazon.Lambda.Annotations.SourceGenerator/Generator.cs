@@ -96,17 +96,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 
                 var assemblyAttributes = context.Compilation.Assembly.GetAttributes();
                 
-                // Let's find the AssemblyTitleAttribute
-                var generateMainAttribute = assemblyAttributes
+                var globalPropertiesAttribute = assemblyAttributes
                     .FirstOrDefault(attr => attr.AttributeClass.Name == nameof(LambdaGlobalPropertiesAttribute));
 
                 var defaultRuntime = "dotnet6";
 
-                if (generateMainAttribute != null)
+                if (globalPropertiesAttribute != null)
                 {
-                    var generateMain = generateMainAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "GenerateMain").Value;
-                    var runtime = generateMainAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Runtime")
-                        .Value.Value.ToString();
+                    var generateMain = globalPropertiesAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "GenerateMain").Value;
+                    var runtimeAttributeValue = globalPropertiesAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Runtime").Value;
+                    var runtime = runtimeAttributeValue.Value == null ? defaultRuntime : runtimeAttributeValue.Value.ToString();
 
                     if (!_allowdRuntimeValues.Contains(runtime))
                     {
@@ -115,9 +114,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     }
 
                     defaultRuntime = runtime;
-                    
-                    isExecutable = bool.Parse(generateMain.Value.ToString());
-                    
+
+                    isExecutable = generateMain.Value != null && bool.Parse(generateMain.Value.ToString());
+
                     // if (isExecutable && context.Compilation.Options.OutputKind != OutputKind.ConsoleApplication)
                     // {
                     //     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.SetOutputTypeExecutable, Location.None));
