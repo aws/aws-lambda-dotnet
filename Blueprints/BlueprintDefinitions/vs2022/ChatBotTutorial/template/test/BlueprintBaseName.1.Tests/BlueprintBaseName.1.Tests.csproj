@@ -3,6 +3,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable> 
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
     <None Update="commit-order-flowers-event.json">
