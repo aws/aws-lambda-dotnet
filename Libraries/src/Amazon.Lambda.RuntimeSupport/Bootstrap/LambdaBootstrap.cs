@@ -266,10 +266,10 @@ namespace Amazon.Lambda.RuntimeSupport
             try
             {
                 int lambdaMemoryInMb;
-                if (!int.TryParse(Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_MEMORY_SIZE"), out lambdaMemoryInMb))
+                if (!int.TryParse(Environment.GetEnvironmentVariable(LambdaEnvironment.EnvVarFunctionMemorySize), out lambdaMemoryInMb))
                     return;
 
-                ulong memoryInBytes = (ulong)lambdaMemoryInMb * 1048576;
+                ulong memoryInBytes = (ulong)lambdaMemoryInMb * LambdaEnvironment.OneMegabyte;
 
                 // If the user has already configured the hard heap limit to something lower then is available 
                 // then make no adjustments to honor the user's setting.
@@ -278,8 +278,6 @@ namespace Amazon.Lambda.RuntimeSupport
 
                 AppContext.SetData("GCHeapHardLimit", memoryInBytes);
 
-// The RefreshMemoryLimit API is currently marked as a preview feature. Disable the warning for now but this
-// feature can not be merged till the API is no longer marked as preview.
 #pragma warning disable CA2252
                 GC.RefreshMemoryLimit();
 #pragma warning disable CA2252

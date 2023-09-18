@@ -32,11 +32,14 @@ namespace Amazon.Lambda.RuntimeSupport
         internal const string EnvVarLogStreamName = "AWS_LAMBDA_LOG_STREAM_NAME";
         internal const string EnvVarServerHostAndPort = "AWS_LAMBDA_RUNTIME_API";
         internal const string EnvVarTraceId = "_X_AMZN_TRACE_ID";
+        internal const string EnvVarFunctionSize = "AWS_LAMBDA_FUNCTION_MEMORY_SIZE";
 
         internal const string AwsLambdaDotnetCustomRuntime = "AWS_Lambda_dotnet_custom";
         internal const string AmazonLambdaRuntimeSupportMarker = "amazonlambdaruntimesupport";
 
         private IEnvironmentVariables _environmentVariables;
+
+        internal const int OneMegabyte = 1024 * 1024;
 
         public LambdaEnvironment() : this(new SystemEnvironmentVariables()) { }
 
