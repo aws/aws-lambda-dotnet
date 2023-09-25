@@ -21,6 +21,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+
+#if NET6_0_OR_GREATER
+using Amazon.Lambda.RuntimeSupport.Helpers.Logging;
+#endif
+
 namespace Amazon.Lambda.RuntimeSupport.Helpers
 {
     /// <summary>
@@ -45,7 +50,17 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// </summary>
         /// <param name="level"></param>
         /// <param name="message"></param>
-        void FormattedWriteLine(string level, string message);
+        /// <param name="args"></param>
+        void FormattedWriteLine(string level, string message, params object[] args);
+
+        /// <summary>
+        /// Format message with given log level
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="exception"></param>
+        /// <param name="message"></param>
+        /// <param name="args"></param>
+        void FormattedWriteLine(string level, Exception exception, string message, params object[] args);
     }
 
     /// <summary>
@@ -89,9 +104,15 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             _writer.WriteLine(message);
         }
 
-        public void FormattedWriteLine(string level, string message)
+        public void FormattedWriteLine(string level, string message, params object[] args)
         {
             _writer.WriteLine(message);
+        }
+
+        public void FormattedWriteLine(string level, Exception exception, string message, params object[] args)
+        {
+            _writer.WriteLine(message);
+            _writer.WriteLine(exception.ToString());
         }
     }
 
@@ -107,7 +128,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// Amazon.Lambda.Core can not be relied on because the Lambda Function could be using
         /// an older version of Amazon.Lambda.Core before LogLevel existed in Amazon.Lambda.Core.
         /// </summary>
-        enum LogLevel
+        public enum LogLevel
         {
             /// <summary>
             /// Trace level logging
@@ -227,9 +248,14 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             _wrappedStdOutWriter.FormattedWriteLine(message);
         }
 
-        public void FormattedWriteLine(string level, string message)
+        public void FormattedWriteLine(string level, string message, params object[] args)
         {
-            _wrappedStdOutWriter.FormattedWriteLine(level, message);
+            _wrappedStdOutWriter.FormattedWriteLine(level, (Exception)null, message, args);
+        }
+
+        public void FormattedWriteLine(string level, Exception exception, string message, params object[] args)
+        {
+            _wrappedStdOutWriter.FormattedWriteLine(level, exception, message, args);
         }
 
 
@@ -243,14 +269,19 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             private readonly TextWriter _innerWriter;
             private string _defaultLogLevel;
 
-            const string LOG_LEVEL_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_LEVEL";
-            const string LOG_FORMAT_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_FORMAT";
+            const string NET_RIC_LOG_LEVEL_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_LEVEL";
+            const string NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_FORMAT";
+
+            const string LAMBDA_LOG_LEVEL_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_LOG_LEVEL";
+            const string LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_LOG_FORMAT";
 
             private LogLevel _minmumLogLevel = LogLevel.Information;
 
-            enum LogFormatType { Default, Unformatted }
+            enum LogFormatType { Default, Unformatted, Json }
 
             private LogFormatType _logFormatType = LogFormatType.Default;
+
+            private ILogMessageFormatter _logMessageFormatter;
 
             public string CurrentAwsRequestId { get; set; } = string.Empty;
 
@@ -267,16 +298,21 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 _innerWriter = innerWriter;
                 _defaultLogLevel = defaultLogLevel;
 
-                var envLogLevel = Environment.GetEnvironmentVariable(LOG_LEVEL_ENVIRONMENT_VARIABLE);
+                var envLogLevel = GetEnviromentVariable(NET_RIC_LOG_LEVEL_ENVIRONMENT_VARIABLE, LAMBDA_LOG_LEVEL_ENVIRONMENT_VARIABLE);
                 if (!string.IsNullOrEmpty(envLogLevel))
                 {
-                    if (Enum.TryParse<LogLevel>(envLogLevel, true, out var result))
+                    // Map Lambda's fatal logging level to the .NET RIC critical
+                    if(string.Equals(envLogLevel, "fatal", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        _minmumLogLevel = LogLevel.Critical;
+                    }
+                    else if (Enum.TryParse<LogLevel>(envLogLevel, true, out var result))
                     {
                         _minmumLogLevel = result;
                     }
                 }
 
-                var envLogFormat = Environment.GetEnvironmentVariable(LOG_FORMAT_ENVIRONMENT_VARIABLE);
+                var envLogFormat = GetEnviromentVariable(NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE, LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE);
                 if (!string.IsNullOrEmpty(envLogFormat))
                 {
                     if (Enum.TryParse<LogFormatType>(envLogFormat, true, out var result))
@@ -284,14 +320,34 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                         _logFormatType = result;
                     }
                 }
+
+                if(_logFormatType == LogFormatType.Json)
+                {
+                    _logMessageFormatter = new JsonLogMessageFormatter();
+                }
+                else
+                {
+                    _logMessageFormatter = new DefaultLogMessageFormatter(_logFormatType != LogFormatType.Unformatted);
+                }
+            }
+
+            private string GetEnviromentVariable(string envName, string fallbackEnvName)
+            {
+                var value = Environment.GetEnvironmentVariable(envName);
+                if(string.IsNullOrEmpty(value) && fallbackEnvName != null)
+                {
+                    value = Environment.GetEnvironmentVariable(fallbackEnvName);
+                }
+
+                return value;
             }
 
             internal void FormattedWriteLine(string message)
             {
-                FormattedWriteLine(_defaultLogLevel, message);
+                FormattedWriteLine(_defaultLogLevel, (Exception)null, message);
             }
 
-            internal void FormattedWriteLine(string level, string message)
+            internal void FormattedWriteLine(string level, Exception exeception, string messageTemplate, params object[] args)
             {
                 lock(LockObject)
                 {
@@ -300,28 +356,20 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     {
                         if (levelEnum < _minmumLogLevel)
                             return;
-
-                        displayLevel = ConvertLogLevelToLabel(levelEnum);
                     }
 
-                    if (_logFormatType == LogFormatType.Unformatted)
-                    {
-                        _innerWriter.WriteLine(message);
-                    }
-                    else
-                    {
-                        string line;
-                        if (!string.IsNullOrEmpty(displayLevel))
-                        {
-                            line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{displayLevel}\t{message ?? string.Empty}";
-                        }
-                        else
-                        {
-                            line = $"{DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")}\t{CurrentAwsRequestId}\t{message ?? string.Empty}";
-                        }
+                    var messageState = new MessageState();
 
-                        _innerWriter.WriteLine(line);
-                    }
+                    messageState.MessageTemplate = messageTemplate;
+                    messageState.MessageArguments = args;
+                    messageState.TimeStamp = DateTime.UtcNow;
+                    messageState.AwsRequestId = CurrentAwsRequestId;
+                    messageState.TraceId = Environment.GetEnvironmentVariable(LambdaEnvironment.EnvVarTraceId);
+                    messageState.Level = levelEnum;
+                    messageState.Exception = exeception;
+
+                    var message = _logMessageFormatter.FormatMessage(messageState);
+                    _innerWriter.WriteLine(message);
                 }
             }
 
@@ -329,32 +377,6 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             {
                 FormattedWriteLine(message);
                 return Task.CompletedTask;
-            }
-
-            /// <summary>
-            /// Convert LogLevel enums to the the same string label that console provider for Microsoft.Extensions.Logging.ILogger uses.
-            /// </summary>
-            /// <param name="level"></param>
-            /// <returns></returns>
-            private string ConvertLogLevelToLabel(LogLevel level)
-            {
-                switch (level)
-                {
-                    case LogLevel.Trace:
-                        return "trce";
-                    case LogLevel.Debug:
-                        return "dbug";
-                    case LogLevel.Information:
-                        return "info";
-                    case LogLevel.Warning:
-                        return "warn";
-                    case LogLevel.Error:
-                        return "fail";
-                    case LogLevel.Critical:
-                        return "crit";
-                }
-
-                return level.ToString();
             }
 
             #region WriteLine redirects to formatting
