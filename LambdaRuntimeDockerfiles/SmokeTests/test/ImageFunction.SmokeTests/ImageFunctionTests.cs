@@ -43,22 +43,6 @@ namespace ImageFunction.SmokeTests
         private readonly AmazonIdentityManagementServiceClient _iamClient;
         private string _executionRoleArn;
 
-        private static readonly string LambdaAssumeRolePolicy =
-            @"
-            {
-              ""Version"": ""2012-10-17"",
-              ""Statement"": [
-                {
-                  ""Sid"": """",
-                  ""Effect"": ""Allow"",
-                  ""Principal"": {
-                    ""Service"": ""lambda.amazonaws.com""
-                  },
-                  ""Action"": ""sts:AssumeRole""
-                }
-              ]
-            }".Trim();
-
         private readonly string _functionName;
         private readonly string _imageUri;
         private const string TestIdentifier = "image-function-tests";

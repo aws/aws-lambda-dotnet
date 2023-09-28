@@ -4,9 +4,11 @@ ARG ASPNET_VERSION=8.0.0-rc.1.23421.29
 ARG ASPNET_SHA512=d5f9e7bffbf2b48b26a317dd1d78bc866973b4a2cda448cd7a7ee64c0ffaf98fa3c4b8584d32528026674bdfd99f602f0fdac8242176815705e080df83825efa
 
 ARG LAMBDA_RUNTIME_NAME=dotnet8
-ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2
+ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023-preview
 
 FROM $AMAZON_LINUX AS base
+
+RUN dnf install libicu-67.1-7.amzn2023.0.3.x86_64 --assumeyes
 
 FROM base AS builder-net8
 ARG ASPNET_VERSION
@@ -15,7 +17,7 @@ ARG ASPNET_SHA512
 WORKDIR /dotnet
 
 # Install tar and gzip for unarchiving downloaded tar.gz
-RUN yum install tar gzip --assumeyes
+RUN dnf install tar gzip --assumeyes
 
 # Install the ASP.NET Core shared framework
 RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/$ASPNET_VERSION/aspnetcore-runtime-$ASPNET_VERSION-linux-x64.tar.gz \
