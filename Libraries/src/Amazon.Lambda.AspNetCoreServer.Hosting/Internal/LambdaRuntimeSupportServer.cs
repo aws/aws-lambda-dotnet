@@ -51,6 +51,34 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <param name="serviceProvider"></param>
         /// <returns></returns>
         protected abstract HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider);
+
+        /// <summary>
+        /// Registers encoding options for the given <see cref="AbstractAspNetCoreFunction{TREQUEST, TRESPONSE}"/>
+        /// </summary>
+        /// <typeparam name="TREQUEST"></typeparam>
+        /// <typeparam name="TRESPONSE"></typeparam>
+        /// <param name="aspNetCoreFunction"></param>
+        protected void RegisterEncodingOptions<TREQUEST, TRESPONSE>(AbstractAspNetCoreFunction<TREQUEST, TRESPONSE> aspNetCoreFunction)
+        {
+            if (EncodingOptions != null)
+            {
+                if (EncodingOptions.ResponseContentEncodingForContentType != null)
+                {
+                    foreach (var responseContentEncodingForContentType in EncodingOptions.ResponseContentEncodingForContentType)
+                    {
+                        aspNetCoreFunction.RegisterResponseContentEncodingForContentType(responseContentEncodingForContentType.Key, responseContentEncodingForContentType.Value);
+                    }
+                }
+
+                if (EncodingOptions.ResponseContentEncodingForContentEncoding != null)
+                {
+                    foreach (var responseContentEncodingForContentEncoding in EncodingOptions.ResponseContentEncodingForContentEncoding)
+                    {
+                        aspNetCoreFunction.RegisterResponseContentEncodingForContentEncoding(responseContentEncodingForContentEncoding.Key, responseContentEncodingForContentEncoding.Value);
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -74,7 +102,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new APIGatewayHttpApiV2MinimalApi(serviceProvider, this.EncodingOptions).FunctionHandlerAsync;
+            var apiGatewayHttpApiV2MinimalApi = new APIGatewayHttpApiV2MinimalApi(serviceProvider);
+            RegisterEncodingOptions(apiGatewayHttpApiV2MinimalApi);
+            var handler = apiGatewayHttpApiV2MinimalApi.FunctionHandlerAsync;
             return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
         }
 
@@ -87,28 +117,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             /// Create instances
             /// </summary>
             /// <param name="serviceProvider">The IServiceProvider created for the ASP.NET Core application</param>
-            /// <param name="encodingOptions">The encoding options to register</param>
-            public APIGatewayHttpApiV2MinimalApi(IServiceProvider serviceProvider, IEncodingOptions? encodingOptions = null)
+            public APIGatewayHttpApiV2MinimalApi(IServiceProvider serviceProvider)
                 : base(serviceProvider)
             {
-                if(encodingOptions != null)
-                {
-                    if (encodingOptions.ResponseContentEncodingForContentType != null)
-                    {
-                        foreach (var responseContentEncodingForContentType in encodingOptions.ResponseContentEncodingForContentType)
-                        {
-                            this.RegisterResponseContentEncodingForContentType(responseContentEncodingForContentType.Key, responseContentEncodingForContentType.Value);
-                        }
-                    }
-
-                    if (encodingOptions.ResponseContentEncodingForContentEncoding != null)
-                    {
-                        foreach (var responseContentEncodingForContentEncoding in encodingOptions.ResponseContentEncodingForContentEncoding)
-                        {
-                            this.RegisterResponseContentEncodingForContentEncoding(responseContentEncodingForContentEncoding.Key, responseContentEncodingForContentEncoding.Value);
-                        }
-                    }
-                }
             }
         }
     }
@@ -134,7 +145,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new APIGatewayRestApiMinimalApi(serviceProvider, this.EncodingOptions).FunctionHandlerAsync;
+            var apiGatewayRestApiMinimalApi = new APIGatewayRestApiMinimalApi(serviceProvider);
+            RegisterEncodingOptions(apiGatewayRestApiMinimalApi);
+            var handler = apiGatewayRestApiMinimalApi.FunctionHandlerAsync;
             return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
         }
 
@@ -147,28 +160,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             /// Create instances
             /// </summary>
             /// <param name="serviceProvider">The IServiceProvider created for the ASP.NET Core application</param>
-            /// /// <param name="encodingOptions">The encoding options to register</param>
-            public APIGatewayRestApiMinimalApi(IServiceProvider serviceProvider, IEncodingOptions? encodingOptions = null)
+            public APIGatewayRestApiMinimalApi(IServiceProvider serviceProvider)
                 : base(serviceProvider)
             {
-                if (encodingOptions != null)
-                {
-                    if (encodingOptions.ResponseContentEncodingForContentType != null)
-                    {
-                        foreach (var responseContentEncodingForContentType in encodingOptions.ResponseContentEncodingForContentType)
-                        {
-                            this.RegisterResponseContentEncodingForContentType(responseContentEncodingForContentType.Key, responseContentEncodingForContentType.Value);
-                        }
-                    }
-
-                    if (encodingOptions.ResponseContentEncodingForContentEncoding != null)
-                    {
-                        foreach (var responseContentEncodingForContentEncoding in encodingOptions.ResponseContentEncodingForContentEncoding)
-                        {
-                            this.RegisterResponseContentEncodingForContentEncoding(responseContentEncodingForContentEncoding.Key, responseContentEncodingForContentEncoding.Value);
-                        }
-                    }
-                }
             }
         }
     }
@@ -194,7 +188,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new ApplicationLoadBalancerMinimalApi(serviceProvider, this.EncodingOptions).FunctionHandlerAsync;
+            var applicationLoadBalancerMinimalApi = new ApplicationLoadBalancerMinimalApi(serviceProvider);
+            RegisterEncodingOptions(applicationLoadBalancerMinimalApi);
+            var handler = applicationLoadBalancerMinimalApi.FunctionHandlerAsync;
             return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
         }
 
@@ -207,28 +203,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             /// Create instances
             /// </summary>
             /// <param name="serviceProvider">The IServiceProvider created for the ASP.NET Core application</param>
-            /// <param name="encodingOptions">The encoding options to register</param>
-            public ApplicationLoadBalancerMinimalApi(IServiceProvider serviceProvider, IEncodingOptions? encodingOptions = null)
+            public ApplicationLoadBalancerMinimalApi(IServiceProvider serviceProvider)
                 : base(serviceProvider)
             {
-                if (encodingOptions != null)
-                {
-                    if (encodingOptions.ResponseContentEncodingForContentType != null)
-                    {
-                        foreach (var responseContentEncodingForContentType in encodingOptions.ResponseContentEncodingForContentType)
-                        {
-                            this.RegisterResponseContentEncodingForContentType(responseContentEncodingForContentType.Key, responseContentEncodingForContentType.Value);
-                        }
-                    }
-
-                    if (encodingOptions.ResponseContentEncodingForContentEncoding != null)
-                    {
-                        foreach (var responseContentEncodingForContentEncoding in encodingOptions.ResponseContentEncodingForContentEncoding)
-                        {
-                            this.RegisterResponseContentEncodingForContentEncoding(responseContentEncodingForContentEncoding.Key, responseContentEncodingForContentEncoding.Value);
-                        }
-                    }
-                }
             }
         }
     }
