@@ -117,11 +117,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
                     isExecutable = generateMain.Value != null && bool.Parse(generateMain.Value.ToString());
 
-                    // if (isExecutable && context.Compilation.Options.OutputKind != OutputKind.ConsoleApplication)
-                    // {
-                    //     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.SetOutputTypeExecutable, Location.None));
-                    //     return;
-                    // }
+                    if (isExecutable && context.Compilation.Options.OutputKind != OutputKind.ConsoleApplication)
+                    {
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.SetOutputTypeExecutable, Location.None));
+                        return;
+                    }
                 }
 
                 var configureMethodModel = semanticModelProvider.GetConfigureMethodModel(receiver.StartupClasses.FirstOrDefault());
