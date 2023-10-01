@@ -306,6 +306,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             {
                 TestState =
                 {
+                    OutputKind = OutputKind.ConsoleApplication,
                     Sources =
                     {
                         (Path.Combine("TestExecutableServerlessApp", "Sub1", "FunctionsZipOutput.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Sub1", "FunctionsZipOutput.cs"))),
@@ -342,6 +343,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                          Path.Combine("Amazon.Lambda.RuntimeSupport"),
                          "*.cs", SearchOption.AllDirectories))
             {
+                var content = await File.ReadAllTextAsync(file);
+
+                // Don't include RuntimeSupport's entry point.
+                if (file.EndsWith("Program.cs") && content.Contains("Task Main(string[] args)"))
+                    continue;
+                
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
@@ -359,6 +366,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             {
                 TestState =
                 {
+                    OutputKind = OutputKind.ConsoleApplication,
                     Sources =
                     {
                         (Path.Combine("TestExecutableServerlessApp", "Sub1", "Functions.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Sub1", "Functions.cs"))),
@@ -395,6 +403,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                          Path.Combine("Amazon.Lambda.RuntimeSupport"),
                          "*.cs", SearchOption.AllDirectories))
             {
+                var content = await File.ReadAllTextAsync(file);
+
+                // Don't include RuntimeSupport's entry point.
+                if (file.EndsWith("Program.cs") && content.Contains("Task Main(string[] args)"))
+                    continue;
+                
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
@@ -451,6 +465,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             {
                 TestState =
                 {
+                    OutputKind = OutputKind.ConsoleApplication,
                     Sources =
                     {
                         (Path.Combine("TestExecutableServerlessApp", "Greeter.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Greeter.cs"))),
@@ -493,6 +508,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                          Path.Combine("Amazon.Lambda.RuntimeSupport"),
                          "*.cs", SearchOption.AllDirectories))
             {
+                var content = await File.ReadAllTextAsync(file);
+
+                // Don't include RuntimeSupport's entry point.
+                if (file.EndsWith("Program.cs") && content.Contains("Task Main(string[] args)"))
+                    continue;
+                
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 
