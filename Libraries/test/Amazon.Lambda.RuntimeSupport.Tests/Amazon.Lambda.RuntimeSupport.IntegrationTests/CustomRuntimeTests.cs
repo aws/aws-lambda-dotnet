@@ -36,6 +36,16 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             : base("CustomRuntimeNET6FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET6)
         {
         }
+
+#if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
+        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
+#else
+        [Fact]
+#endif
+        public async Task TestAllNET6HandlersAsync()
+        {
+            await base.TestAllHandlersAsync();
+        }
     }
 
     public class CustomRuntimeNET8Tests : CustomRuntimeTests
@@ -43,6 +53,16 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         public CustomRuntimeNET8Tests()
             : base("CustomRuntimeNET8FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net8.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET8)
         {
+        }
+
+#if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
+        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
+#else
+        [Fact]
+#endif
+        public async Task TestAllNET8HandlersAsync()
+        {
+            await base.TestAllHandlersAsync();
         }
     }
 
@@ -58,12 +78,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             _targetFramework = targetFramework;
         }
 
-#if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
-        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
-#else
-        [Fact]
-#endif
-        public async Task TestAllHandlersAsync()
+        protected virtual async Task TestAllHandlersAsync()
         {
             // run all test cases in one test to ensure they run serially
             using (var lambdaClient = new AmazonLambdaClient(TestRegion))
