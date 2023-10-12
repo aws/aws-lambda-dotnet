@@ -26,14 +26,36 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using static Amazon.Lambda.RuntimeSupport.IntegrationTests.CustomRuntimeTests;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
+    public class CustomRuntimeNET6Tests : CustomRuntimeTests
+    {
+        public CustomRuntimeNET6Tests()
+            : base("CustomRuntimeNET6FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET6)
+        {
+        }
+    }
+
+    public class CustomRuntimeNET8Tests : CustomRuntimeTests
+    {
+        public CustomRuntimeNET8Tests()
+            : base("CustomRuntimeNET8FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net8.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET8)
+        {
+        }
+    }
+
     public class CustomRuntimeTests : BaseCustomRuntimeTest
     {
-        public CustomRuntimeTests() 
-            : base("CustomRuntimeFunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest")
+        public enum TargetFramework { NET6, NET8}
+
+        private TargetFramework _targetFramework;
+
+        public CustomRuntimeTests(string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler, TargetFramework targetFramework) 
+            : base(functionName, deploymentZipKey, deploymentPackageZipRelativePath, handler)
         {
+            _targetFramework = targetFramework;
         }
 
 #if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
@@ -53,6 +75,13 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 try
                 {
                     roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
+
+                    // .NET API to address setting memory constraint was added for .NET 8
+                    if(_targetFramework == TargetFramework.NET8)
+                    {
+                        await RunMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
+                        await RunMaxHeapMemoryCheckWithCustomMemorySettings(lambdaClient, "GetTotalAvailableMemoryBytes");
+                    }
 
                     await RunTestExceptionAsync(lambdaClient, "ExceptionNonAsciiCharacterUnwrappedAsync", "", "Exception", "Unhandled exception with non ASCII character: ♂");
                     await RunTestSuccessAsync(lambdaClient, "UnintendedDisposeTest", "not-used", "UnintendedDisposeTest-SUCCESS");
@@ -88,6 +117,40 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 {
                     await CleanUpTestResources(s3Client, lambdaClient, iamClient, roleAlreadyExisted);
                 }
+            }
+        }
+
+        private async Task RunMaxHeapMemoryCheck(AmazonLambdaClient lambdaClient, string handler)
+        {
+            await UpdateHandlerAsync(lambdaClient, handler);
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+            using (var responseStream = invokeResponse.Payload)
+            using (var sr = new StreamReader(responseStream))
+            {
+                string payloadStr = (await sr.ReadToEndAsync()).Replace("\"", "");
+                // Function payload response will have format {Handler}-{MemorySize}.
+                // To check memory split on the - and grab the second token representing the memory size.
+                var tokens = payloadStr.Split('-');
+                var memory = long.Parse(tokens[1]);
+                Assert.True(memory <= BaseCustomRuntimeTest.FUNCTION_MEMORY_MB * 1048576);
+            }
+        }
+
+        private async Task RunMaxHeapMemoryCheckWithCustomMemorySettings(AmazonLambdaClient lambdaClient, string handler)
+        {
+            // Set the .NET GC environment variable to say there is 256 MB of memory. The function is deployed with 512 but since the user set
+            // it to 256 Lambda should not make any adjustments.
+            await UpdateHandlerAsync(lambdaClient, handler, new Dictionary<string, string> { { "DOTNET_GCHeapHardLimit", "0x10000000" } });
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+            using (var responseStream = invokeResponse.Payload)
+            using (var sr = new StreamReader(responseStream))
+            {
+                string payloadStr = (await sr.ReadToEndAsync()).Replace("\"", "");
+                // Function payload response will have format {Handler}-{MemorySize}.
+                // To check memory split on the - and grab the second token representing the memory size.
+                var tokens = payloadStr.Split('-');
+                var memory = long.Parse(tokens[1]);
+                Assert.True(memory <= 256 * 1048576);
             }
         }
 
