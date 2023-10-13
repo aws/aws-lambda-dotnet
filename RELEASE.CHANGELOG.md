@@ -1,3 +1,8 @@
+### Release 2023-10-13
+* **Amazon.Lambda.RuntimeSupport (1.9.0)**
+  * Added .NET 8 target for the package.
+  * Pull Request [#1578](https://github.com/aws/aws-lambda-dotnet/pull/1578) using new .NET 8 APIs to inform the .NET runtime how much memory the Lambda environment is configured for. This helps the GC understand when nearing the memory limit and when it should be more aggressive collecting memory.
+
 ### Release 2023-09-05
 * **Amazon.Lambda.DynamoDBEvents (2.2.0)**
   * Added support for DynamoDBTimeWindowEvent.
