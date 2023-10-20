@@ -95,6 +95,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     if(_targetFramework == TargetFramework.NET8)
                     {
                         await RunMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
+                        await RunWithoutMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
                         await RunMaxHeapMemoryCheckWithCustomMemorySettings(lambdaClient, "GetTotalAvailableMemoryBytes");
                     }
 
@@ -148,6 +149,22 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 var tokens = payloadStr.Split('-');
                 var memory = long.Parse(tokens[1]);
                 Assert.True(memory <= BaseCustomRuntimeTest.FUNCTION_MEMORY_MB * 1048576);
+            }
+        }
+
+        private async Task RunWithoutMaxHeapMemoryCheck(AmazonLambdaClient lambdaClient, string handler)
+        {
+            await UpdateHandlerAsync(lambdaClient, handler, new Dictionary<string, string> { { "AWS_LAMBDA_DOTNET_DISABLE_MEMORY_LIMIT_CHECK", "true" } });
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+            using (var responseStream = invokeResponse.Payload)
+            using (var sr = new StreamReader(responseStream))
+            {
+                string payloadStr = (await sr.ReadToEndAsync()).Replace("\"", "");
+                // Function payload response will have format {Handler}-{MemorySize}.
+                // To check memory split on the - and grab the second token representing the memory size.
+                var tokens = payloadStr.Split('-');
+                var memory = long.Parse(tokens[1]);
+                Assert.False(memory <= BaseCustomRuntimeTest.FUNCTION_MEMORY_MB * 1048576);
             }
         }
 

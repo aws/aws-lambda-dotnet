@@ -24,6 +24,8 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         // variable should never be set when function is deployed to Lambda.
         internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE = "AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE";
 
+        internal const string ENVIRONMENT_VARIABLE_DISABLE_HEAP_MEMORY_LIMIT = "AWS_LAMBDA_DOTNET_DISABLE_MEMORY_LIMIT_CHECK";
+
         internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT = "AWS_LAMBDA_DOTNET_PREJIT";
         internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE = "AWS_LAMBDA_INITIALIZATION_TYPE";
         internal const string ENVIRONMENT_VARIABLE_LANG = "LANG";
