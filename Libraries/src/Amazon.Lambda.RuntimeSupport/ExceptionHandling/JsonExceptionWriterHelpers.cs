@@ -13,7 +13,7 @@
  * permissions and limitations under the License.
  */
 
-using System.Text.Json;
+using LitJson;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -29,9 +29,12 @@ namespace Amazon.Lambda.RuntimeSupport
             if (str == null)
                 return null;
 
-            string escapedString = JsonSerializer.Serialize(str);
+            // Create a JsonData object to hold the string
+            JsonData jsonData = new JsonData(str);
 
-            return escapedString.Trim('"');
+            // Serialize the JsonData object to a JSON string
+            string litjsonString = JsonMapper.ToJson(jsonData);
+            return litjsonString.Trim('"').Trim();
         }
     }
 }
