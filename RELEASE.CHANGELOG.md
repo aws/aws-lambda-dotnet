@@ -1,4 +1,8 @@
 ### Release 2023-10-13
+* **Amazon.Lambda.RuntimeSupport (1.9.1)**
+  * Added `AWS_LAMBDA_DOTNET_DISABLE_MEMORY_LIMIT_CHECK` environment variable that if set to `true` disables the logic to configure the max heap memory size for the .NET runtime.
+
+### Release 2023-10-13
 * **Amazon.Lambda.RuntimeSupport (1.9.0)**
   * Added .NET 8 target for the package.
   * Pull Request [#1578](https://github.com/aws/aws-lambda-dotnet/pull/1578) using new .NET 8 APIs to inform the .NET runtime how much memory the Lambda environment is configured for. This helps the GC understand when nearing the memory limit and when it should be more aggressive collecting memory.
