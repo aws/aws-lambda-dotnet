@@ -43,16 +43,20 @@
     <Exec Command="dotnet tool install -g Amazon.Lambda.Tools" IgnoreExitCode="true" />
 
 	<Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Command="dotnet restore" />
-    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release" />
-    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --function-architecture arm64" />
+    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release --framework net6.0" />
+    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --framework net6.0 --function-architecture arm64" />
+	  
+	<Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Command="dotnet restore" />
+    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release --framework net8.0" />
+    <Exec WorkingDirectory="..\CustomRuntimeFunctionTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --framework net8.0 --function-architecture arm64" />	  
 
 	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Command="dotnet restore" />
-	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release" />
-	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --function-architecture arm64" />
+	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release --framework net6.0" />
+	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --framework net6.0 --function-architecture arm64" />
 
 	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest" Command="dotnet restore" />
-	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release" />
-	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --function-architecture arm64" />	  
+	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest" Condition="'$(Architecture)'=='' or '$(Architecture)'=='x86'" Command="dotnet lambda package -c Release --framework net6.0" />
+	<Exec WorkingDirectory="..\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest" Condition="'$(Architecture)'=='arm64'" Command="dotnet lambda package -c Release --framework net6.0 --function-architecture arm64" />	  
   </Target>
 
 </Project>

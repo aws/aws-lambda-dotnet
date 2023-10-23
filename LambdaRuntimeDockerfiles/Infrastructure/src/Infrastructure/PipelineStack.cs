@@ -290,6 +290,13 @@ namespace Infrastructure
                 }
             });
 
+            var smokeTestsLambdaFunctionRole = new Role(this, "SmokeTestsLambdaFunctionRole", new RoleProps
+            {
+                RoleName = $"image-function-tests-{Guid.NewGuid()}",
+                ManagedPolicies = new IManagedPolicy[] { ManagedPolicy.FromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole") },
+                AssumedBy = new ServicePrincipal("lambda.amazonaws.com")
+            });
+
             // Smoke test AMD64 image
             var amd64SmokeTests = new Project(this, "SmokeTests-amd64", new ProjectProps
             {
@@ -314,24 +321,82 @@ namespace Infrastructure
                     {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
                     {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
                     {"AWS_LAMBDA_DOTNET_BUILD_IMAGE", new BuildEnvironmentVariable {Value = dockerBuildImage}},
-                    {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }}
-                }
+                    {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }},
+                    {"AWS_LAMBDA_SMOKETESTS_LAMBDA_ROLE", new BuildEnvironmentVariable {Value = smokeTestsLambdaFunctionRole.RoleArn}}
+                },
             });
 
-            var smokeTestsPolicy = new PolicyStatement(new PolicyStatementProps
+            var smokeTestsPolicies = new List<PolicyStatement>();
+
+            // ECR Policies
+            smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
             {
                 Effect = Effect.ALLOW,
                 Actions = new[]
                 {
-                    "sts:*",
-                    "iam:*",
-                    "ecr:*",
-                    "lambda:*"
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:BatchDeleteImage",
+                    "ecr:BatchGetImage",
+                    "ecr:CompleteLayerUpload",
+                    "ecr:CreateRepository",
+                    "ecr:DescribeRepositories",
+                    "ecr:GetAuthorizationToken",
+                    "ecr:GetDownloadUrlForLayer",
+                    "ecr:InitiateLayerUpload",
+                    "ecr:PutImage",
+                    "ecr:UploadLayerPart"
+                },
+                Resources = new[] { 
+                    $"arn:aws:ecr:{configuration.Region}:{configuration.AccountId}:repository/image-function-tests",
+                    $"arn:aws:ecr:{configuration.Region}:{configuration.AccountId}:repository/{ecrRepositoryName}"
+                }
+            }));
+
+            // The following ECR policy needs to specify * as the resource since that is what is explicitly stated by the following error:
+            // An error occurred (AccessDeniedException) when calling the GetAuthorizationToken operation:
+            // User: *** is not authorized to perform: ecr:GetAuthorizationToken on resource: * because no identity-based policy
+            // allows the ecr:GetAuthorizationToken action
+            smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
+            {
+                Effect = Effect.ALLOW,
+                Actions = new[]
+                {
+                    "ecr:GetAuthorizationToken"
                 },
                 Resources = new[] { "*" }
-            });
+            }));
 
-            amd64SmokeTests.AddToRolePolicy(smokeTestsPolicy);
+            // IAM Policies
+            smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
+            {
+                Effect = Effect.ALLOW,
+                Actions = new[]
+                {
+                    "iam:PassRole"
+                },
+                Resources = new[] { smokeTestsLambdaFunctionRole.RoleArn }
+            }));
+
+            // Lambda Policies
+            smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
+            {
+                Effect = Effect.ALLOW,
+                Actions = new[]
+                {
+                    "lambda:CreateFunction",
+                    "lambda:DeleteFunction",
+                    "lambda:GetFunction",
+                    "lambda:GetFunctionConfiguration",
+                    "lambda:InvokeFunction",
+                    "lambda:UpdateFunctionConfiguration"
+                },
+                Resources = new[] {
+                    $"arn:aws:lambda:{configuration.Region}:{configuration.AccountId}:function:image-function-tests-*"
+                }
+            }));
+
+            foreach (var policy in smokeTestsPolicies)
+                amd64SmokeTests.AddToRolePolicy(policy);
 
             var smokeTestsActions = new List<Action>();
             smokeTestsActions.Add(new CodeBuildAction(new CodeBuildActionProps
@@ -367,11 +432,13 @@ namespace Infrastructure
                         {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
                         {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
                         {"AWS_LAMBDA_DOTNET_BUILD_IMAGE", new BuildEnvironmentVariable {Value = dockerBuildImage}},
-                        {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }}
+                        {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }},
+                        {"AWS_LAMBDA_SMOKETESTS_LAMBDA_ROLE", new BuildEnvironmentVariable {Value = smokeTestsLambdaFunctionRole.RoleArn}}
                     }
                 });
 
-                arm64SmokeTests.AddToRolePolicy(smokeTestsPolicy);
+                foreach (var policy in smokeTestsPolicies)
+                    arm64SmokeTests.AddToRolePolicy(policy);
 
                 smokeTestsActions.Add(new CodeBuildAction(new CodeBuildActionProps
                 {
