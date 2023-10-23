@@ -265,6 +265,15 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             try
             {
+                // Check the environment variable to see if the user has opted out of RuntimeSupport adjusting 
+                // the heap memory limit to match the Lambda configured environment. This can be useful for situations
+                // where the Lambda environment is being emulated for testing and more then just single Lambda function
+                // is running in the process. For example running a test runner over a series of Lambda emulated invocations.
+                var value = Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_DISABLE_HEAP_MEMORY_LIMIT);
+                if (string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+                    return;
+
+
                 int lambdaMemoryInMb;
                 if (!int.TryParse(Environment.GetEnvironmentVariable(LambdaEnvironment.EnvVarFunctionMemorySize), out lambdaMemoryInMb))
                     return;
