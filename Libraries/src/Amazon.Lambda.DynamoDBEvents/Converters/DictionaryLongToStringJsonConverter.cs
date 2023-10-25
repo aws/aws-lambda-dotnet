@@ -48,6 +48,7 @@ namespace Amazon.Lambda.DynamoDBEvents.Converters
         public override void Write(Utf8JsonWriter writer, Dictionary<string, string> value, JsonSerializerOptions options)
         {
 #if NET8_0_OR_GREATER
+            // For .NET 8+ use source generation for serialization to be trimming complaint
             JsonSerializer.Serialize(writer, value, typeof(Dictionary<string, string>), new DictionaryStringStringJsonSerializerContext(options));
 #else
             // Use the built-in serializer, because it can handle dictionaries with string keys.

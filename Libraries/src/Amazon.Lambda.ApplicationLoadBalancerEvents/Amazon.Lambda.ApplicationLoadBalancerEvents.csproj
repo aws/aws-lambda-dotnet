@@ -15,5 +15,6 @@
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
 		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
 		<IsTrimmable>true</IsTrimmable>
+        <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
 	</PropertyGroup>	
 </Project>

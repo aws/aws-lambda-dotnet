@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - Amazon Connect package.</Description>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.ConnectEvents</AssemblyTitle>
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>1.1.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.ConnectEvents</AssemblyName>
     <PackageId>Amazon.Lambda.ConnectEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Connect</PackageTags>
@@ -15,5 +15,6 @@
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
 		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
 		<IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
 	</PropertyGroup>
 </Project>
