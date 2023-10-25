@@ -17,7 +17,7 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// The HTTP status code for the request
         /// </summary>
         [DataMember(Name = "statusCode")]
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
 #endif
         public int StatusCode { get; set; }
@@ -26,7 +26,7 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// The Http headers returned in the response. Multiple header values set for the the same header should be separate by a comma.
         /// </summary>
         [DataMember(Name = "headers")]
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("headers")]
 #endif
         public IDictionary<string, string> Headers { get; set; }
@@ -67,7 +67,7 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// The cookies returned in the response.
         /// </summary>
         [DataMember(Name = "cookies")]
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("cookies")]
 #endif
         public string[] Cookies { get; set; }
@@ -76,7 +76,7 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// The response body
         /// </summary>
         [DataMember(Name = "body")]
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("body")]
 #endif
         public string Body { get; set; }
@@ -85,7 +85,7 @@ namespace Amazon.Lambda.APIGatewayEvents
         /// Flag indicating whether the body should be treated as a base64-encoded string
         /// </summary>
         [DataMember(Name = "isBase64Encoded")]
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("isBase64Encoded")]
 #endif
         public bool IsBase64Encoded { get; set; }

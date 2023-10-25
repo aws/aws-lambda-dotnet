@@ -3,10 +3,10 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - KinesisEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.KinesisEvents</AssemblyTitle>
-    <VersionPrefix>2.1.0</VersionPrefix>
+    <VersionPrefix>2.2.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.KinesisEvents</AssemblyName>
     <PackageId>Amazon.Lambda.KinesisEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
@@ -24,4 +24,8 @@
     <Compile Include="Converters\DictionaryLongToStringJsonConverter.cs" />
   </ItemGroup>
 
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+		<IsTrimmable>true</IsTrimmable>
+	</PropertyGroup>
 </Project>

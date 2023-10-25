@@ -3,10 +3,10 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>    
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>    
     <Description>Amazon Lambda .NET Core support - API Gateway package.</Description>
     <AssemblyTitle>Amazon.Lambda.APIGatewayEvents</AssemblyTitle>
-    <VersionPrefix>2.6.0</VersionPrefix>
+    <VersionPrefix>2.7.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.APIGatewayEvents</AssemblyName>
     <PackageId>Amazon.Lambda.APIGatewayEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
@@ -17,9 +17,6 @@
     <DefineConstants>NETSTANDARD_2_0</DefineConstants>
   </PropertyGroup>
   
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <DefineConstants>NETCOREAPP_3_1</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
 	<None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>	
@@ -28,4 +25,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+		<IsTrimmable>true</IsTrimmable>
+	</PropertyGroup>
 </Project>

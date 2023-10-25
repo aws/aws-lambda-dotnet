@@ -9,13 +9,6 @@
   </PropertyGroup>
 
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp2.1'">
-    <DefineConstants>NETCOREAPP_2_1</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <DefineConstants>NETCOREAPP_3_1</DefineConstants>
-  </PropertyGroup>
-  
   <ItemGroup>
     <Content Include="../EventsTests.Shared/*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

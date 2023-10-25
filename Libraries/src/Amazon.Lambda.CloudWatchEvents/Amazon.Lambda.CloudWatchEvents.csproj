@@ -3,17 +3,17 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - CloudWatchEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.CloudWatchEvents</AssemblyTitle>
-    <VersionPrefix>4.3.0</VersionPrefix>
+    <VersionPrefix>4.4.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.CloudWatchEvents</AssemblyName>
     <PackageId>Amazon.Lambda.CloudWatchEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <DefineConstants>NETCOREAPP_3_1</DefineConstants>
-  </PropertyGroup>
-
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+		<IsTrimmable>true</IsTrimmable>
+	</PropertyGroup>
 </Project>

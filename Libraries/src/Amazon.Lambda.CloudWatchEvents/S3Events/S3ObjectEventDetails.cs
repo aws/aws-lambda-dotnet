@@ -30,7 +30,7 @@ namespace Amazon.Lambda.CloudWatchEvents.S3Events
         /// The ID of the API request.
         /// </summary>
         [DataMember(Name = "request-id")]
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("request-id")]
 #endif
         public string RequestId { get; set; }

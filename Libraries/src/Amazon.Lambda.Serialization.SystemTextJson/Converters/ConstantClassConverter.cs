@@ -41,10 +41,14 @@ namespace Amazon.Lambda.Serialization.SystemTextJson.Converters
         /// <param name="typeToConvert"></param>
         /// <param name="options"></param>
         /// <returns></returns>
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067",
+            Justification = "Constant classes are only used in the DynamoDB event referencing the SDK. S3 originally referenced the SDK but has been rewritten to no longer reference the SDK or ConstantClass. Suppressing this trim warning because we have marked the DynamoDB event as ")]
+#endif
         public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var value = reader.GetString();
-            return Activator.CreateInstance(typeToConvert, new object[] {value});
+            return Activator.CreateInstance(typeToConvert, new object[] { value });
         }
 
         /// <summary>

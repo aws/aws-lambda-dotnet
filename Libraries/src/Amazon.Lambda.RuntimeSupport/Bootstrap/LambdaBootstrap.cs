@@ -112,6 +112,11 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns>A Task that represents the operation.</returns>
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
+            Justification = "Unreferenced code paths are excluding when RuntimeFeature.IsDynamicCodeSupported is false.")]
+#endif
+
         public async Task RunAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
 #if NET8_0_OR_GREATER

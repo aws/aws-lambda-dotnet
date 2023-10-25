@@ -23,6 +23,9 @@ namespace Amazon.Lambda.RuntimeSupport
     /// <summary>
     /// RuntimeSupportInitializer class responsible for initializing the UserCodeLoader and LambdaBootstrap given a function handler.
     /// </summary>
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("RuntimeSupportInitializer does not support trimming and is meant to be used in class library based Lambda functions.")]
+#endif
     public class RuntimeSupportInitializer
     {
         private readonly string _handler;

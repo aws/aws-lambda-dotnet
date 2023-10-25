@@ -11,7 +11,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// Set to true if the user has successfully completed the challenge, or false otherwise.
         /// </summary>
         [DataMember(Name = "answerCorrect")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("answerCorrect")]
 #endif
         public bool AnswerCorrect { get; set; }

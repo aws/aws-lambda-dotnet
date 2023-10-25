@@ -140,6 +140,9 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             }
         }
 
+#if NET8_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("PreJitAssembly is not used for Native AOT")]
+#endif
         public static void PreJitAssembly(Assembly a)
         {
             // Storage to ensure not loading the same assembly twice and optimize calls to GetAssemblies()

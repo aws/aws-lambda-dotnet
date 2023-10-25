@@ -3,13 +3,17 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - ConfigEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.ConfigEvents</AssemblyTitle>
-    <VersionPrefix>2.0.0</VersionPrefix>
+    <VersionPrefix>2.1.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.ConfigEvents</AssemblyName>
     <PackageId>Amazon.Lambda.ConfigEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
 
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+		<IsTrimmable>true</IsTrimmable>
+	</PropertyGroup>	
 </Project>

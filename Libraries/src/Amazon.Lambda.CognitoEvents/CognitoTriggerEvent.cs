@@ -16,7 +16,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The version number of your Lambda function.
         /// </summary>
         [DataMember(Name = "version")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("version")]
 #endif
         public string Version { get; set; }
@@ -25,7 +25,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The AWS Region, as an AWSRegion instance.
         /// </summary>
         [DataMember(Name = "region")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("region")]
 #endif
         public string Region { get; set; }
@@ -34,7 +34,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The user pool ID for the user pool.
         /// </summary>
         [DataMember(Name = "userPoolId")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("userPoolId")]
 #endif
         public string UserPoolId { get; set; }
@@ -43,7 +43,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The username of the current user.
         /// </summary>
         [DataMember(Name = "userName")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("userName")]
 #endif
         public string UserName { get; set; }
@@ -52,7 +52,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The caller context
         /// </summary>
         [DataMember(Name = "callerContext")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("callerContext")]
 #endif
         public CognitoTriggerCallerContext CallerContext { get; set; } = new CognitoTriggerCallerContext();
@@ -61,7 +61,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The name of the event that triggered the Lambda function.For a description of each triggerSource see User pool Lambda trigger sources.
         /// </summary>
         [DataMember(Name = "triggerSource")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("triggerSource")]
 #endif
         public string TriggerSource { get; set; }
@@ -70,7 +70,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The request from the Amazon Cognito service
         /// </summary>
         [DataMember(Name = "request")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("request")]
 #endif
         public TRequest Request { get; set; } = new TRequest();
@@ -79,7 +79,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The response from your Lambda trigger.The return parameters in the response depend on the triggering event.
         /// </summary>
         [DataMember(Name = "response")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("response")]
 #endif
         public TResponse Response { get; set; } = new TResponse();

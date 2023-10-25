@@ -20,6 +20,11 @@ namespace Amazon.Lambda.RuntimeSupport
 {
     class Program
     {
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(
+            "The Main entry point is used in the managed runtime which loads Lambda functions as a class library. " + 
+            "The class library mode does not support Native AOT and trimming.")]
+#endif
         private static async Task Main(string[] args)
         {
             if (args.Length == 0)

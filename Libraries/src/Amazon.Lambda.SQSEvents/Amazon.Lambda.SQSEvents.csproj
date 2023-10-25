@@ -4,12 +4,16 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - SQSEvents package.</Description>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.SQSEvents</AssemblyTitle>
-    <VersionPrefix>2.1.0</VersionPrefix>
+    <VersionPrefix>2.2.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.SQSEvents</AssemblyName>
     <PackageId>Amazon.Lambda.SQSEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
 
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+		<IsTrimmable>true</IsTrimmable>
+	</PropertyGroup>
 </Project>

@@ -3,10 +3,10 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - Core package.</Description>
     <AssemblyTitle>Amazon.Lambda.Core</AssemblyTitle>
-    <VersionPrefix>2.1.0</VersionPrefix>
+    <VersionPrefix>2.2.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.Core</AssemblyName>
     <PackageId>Amazon.Lambda.Core</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
@@ -17,4 +17,8 @@
 	<None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>	
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>		
 </Project>

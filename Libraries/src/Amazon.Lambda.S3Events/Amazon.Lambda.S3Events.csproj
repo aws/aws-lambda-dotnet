@@ -4,12 +4,16 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - S3Events package.</Description>
-    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.S3Events</AssemblyTitle>
-    <VersionPrefix>3.0.1</VersionPrefix>
+    <VersionPrefix>3.1.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.S3Events</AssemblyName>
     <PackageId>Amazon.Lambda.S3Events</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
 
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+		<IsTrimmable>true</IsTrimmable>
+	</PropertyGroup>
 </Project>
