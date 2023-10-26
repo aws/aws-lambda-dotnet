@@ -152,6 +152,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 case LambdaPackageType.Zip:
                     _templateWriter.SetToken($"{propertiesPath}.CodeUri", relativeProjectUri);
                     _templateWriter.SetToken($"{propertiesPath}.Handler", lambdaFunction.Handler);
+                    _templateWriter.SetToken($"{propertiesPath}.Runtime", lambdaFunction.Runtime);
                     _templateWriter.RemoveToken($"{propertiesPath}.ImageUri");
                     _templateWriter.RemoveToken($"{propertiesPath}.ImageConfig");
                     break;
