@@ -13,7 +13,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// One or more pairs of user attribute names and values.Each pair is in the form "name": "value".
         /// </summary>
         [DataMember(Name = "userAttributes")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("userAttributes")]
 #endif
         public Dictionary<string, string> UserAttributes { get; set; } = new Dictionary<string, string>();

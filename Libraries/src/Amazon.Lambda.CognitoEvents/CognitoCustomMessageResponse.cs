@@ -11,7 +11,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The custom SMS message to be sent to your users. Must include the codeParameter value received in the request.
         /// </summary>
         [DataMember(Name = "smsMessage")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("smsMessage")]
 #endif
         public string SmsMessage { get; set; }
@@ -20,7 +20,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The custom email message to be sent to your users. Must include the codeParameter value received in the request.
         /// </summary>
         [DataMember(Name = "emailMessage")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("emailMessage")]
 #endif
         public string EmailMessage { get; set; }
@@ -29,7 +29,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The subject line for the custom message.
         /// </summary>
         [DataMember(Name = "emailSubject")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("emailSubject")]
 #endif
         public string EmailSubject { get; set; }

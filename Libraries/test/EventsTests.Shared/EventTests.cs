@@ -314,7 +314,13 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.EventSourceARN, "arn:aws:kinesis:us-east-1:123456789012:stream/simple-stream");
                 Assert.Equal(record.EventSource, "aws:kinesis");
                 Assert.Equal(record.AwsRegion, "us-east-1");
+#if NET8_0_OR_GREATER
+                // Starting with .NET 7 the precision of the underlying AddSeconds method was changed.
+                // https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/7.0/datetime-add-precision
+                Assert.Equal(636162383234769999, record.Kinesis.ApproximateArrivalTimestamp.ToUniversalTime().Ticks);
+#else
                 Assert.Equal(636162383234770000, record.Kinesis.ApproximateArrivalTimestamp.ToUniversalTime().Ticks);
+#endif
 
                 Handle(kinesisEvent);
             }
@@ -361,7 +367,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -421,7 +427,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -443,7 +449,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -600,7 +606,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -622,7 +628,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP_3_1        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -661,7 +667,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -703,7 +709,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -735,7 +741,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -769,7 +775,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -809,7 +815,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -860,7 +866,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -923,7 +929,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -968,7 +974,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1030,7 +1036,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1087,7 +1093,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1126,7 +1132,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1155,7 +1161,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1209,7 +1215,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1243,7 +1249,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1283,7 +1289,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1351,7 +1357,7 @@ namespace Amazon.Lambda.Tests
         }
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1374,7 +1380,7 @@ namespace Amazon.Lambda.Tests
         }
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1409,7 +1415,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1457,7 +1463,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1527,7 +1533,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1564,7 +1570,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1648,7 +1654,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1683,7 +1689,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1808,7 +1814,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1840,7 +1846,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1881,7 +1887,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1924,7 +1930,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1971,7 +1977,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2038,7 +2044,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2287,9 +2293,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2313,7 +2321,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2346,7 +2354,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2366,7 +2374,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2392,9 +2400,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2416,7 +2426,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2446,9 +2456,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2474,9 +2486,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2501,7 +2515,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2531,7 +2545,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2725,7 +2739,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2757,7 +2771,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2808,7 +2822,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2908,7 +2922,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2973,7 +2987,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -3016,7 +3030,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif

@@ -21,6 +21,9 @@ using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport.Bootstrap
 {
+#if NET8_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("UserCodeValidator does not support trimming and is meant to be used in class library based Lambda functions.")]
+#endif
     internal static class UserCodeValidator
     {
         /// <summary>

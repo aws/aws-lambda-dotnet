@@ -51,7 +51,7 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             /// The approximate time the record was sent to Kinesis Firehose as a Unix epoch.
             /// </summary>
             [DataMember(Name = "approximateArrivalTimestamp")]
-#if NETCOREAPP_3_1        
+#if NETCOREAPP3_1_OR_GREATER        
             [System.Text.Json.Serialization.JsonPropertyName("approximateArrivalTimestamp")]
 #endif
             public long ApproximateArrivalEpoch { get; set; }
@@ -60,7 +60,7 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             /// The approximate time the record was sent to Kinesis Firehose.
             /// </summary>
             [IgnoreDataMember]
-#if NETCOREAPP_3_1        
+#if NETCOREAPP3_1_OR_GREATER        
             [System.Text.Json.Serialization.JsonIgnore()]
 #endif            
             public DateTime ApproximateArrivalTimestamp
@@ -76,7 +76,7 @@ namespace Amazon.Lambda.KinesisFirehoseEvents
             /// The data sent through as a Kinesis Firehose record. The data is sent to the Lambda function base64 encoded.
             /// </summary>
             [DataMember(Name = "data")]
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("data")]
 #endif
             public string Base64EncodedData { get; set; }

@@ -11,7 +11,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The type of sender request.
         /// </summary>
         [DataMember(Name = "type")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("type")]
 # endif
         public string Type { get; set; }
@@ -20,7 +20,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The encrypted temporary authorization code.
         /// </summary>
         [DataMember(Name = "code")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("code")]
 #endif
         public string Code { get; set; }

@@ -11,7 +11,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// Pre token generation response parameters
         /// </summary>
         [DataMember(Name = "claimsOverrideDetails")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("claimsOverrideDetails")]
 # endif
         public ClaimOverrideDetails ClaimsOverrideDetails { get; set; } = new ClaimOverrideDetails();

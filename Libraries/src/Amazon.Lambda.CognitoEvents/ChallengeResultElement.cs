@@ -12,7 +12,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// The challenge type.One of: CUSTOM_CHALLENGE, SRP_A, PASSWORD_VERIFIER, SMS_MFA, DEVICE_SRP_AUTH, DEVICE_PASSWORD_VERIFIER, or ADMIN_NO_SRP_AUTH.
         /// </summary>
         [DataMember(Name = "challengeName")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("challengeName")]
 # endif
         public string ChallengeName { get; set; }
@@ -21,7 +21,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// Set to true if the user successfully completed the challenge, or false otherwise.
         /// </summary>
         [DataMember(Name = "challengeResult")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("challengeResult")]
 # endif
         public bool ChallengeResult { get; set; }
@@ -30,7 +30,7 @@ namespace Amazon.Lambda.CognitoEvents
         /// Your name for the custom challenge.Used only if challengeName is CUSTOM_CHALLENGE.
         /// </summary>
         [DataMember(Name = "challengeMetadata")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("challengeMetadata")]
 # endif
         public string ChallengeMetadata { get; set; }

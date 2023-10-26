@@ -12,7 +12,8 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-
+using System;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 using System.Diagnostics;
 
 namespace Amazon.Lambda.RuntimeSupport
@@ -26,23 +27,39 @@ namespace Amazon.Lambda.RuntimeSupport
             Label = label;
         }
 
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
+            Justification = "Constructor has defensive code in place in case the method for the stack frame has been trimmed.")]
+#endif
         public StackFrameInfo(StackFrame stackFrame)
         {
             Path = stackFrame.GetFileName();
             Line = stackFrame.GetFileLineNumber();
 
-            var method = stackFrame.GetMethod();
-            if (method != null)
+            try
             {
-                var methodTypeName = method.DeclaringType?.Name;
-                if (methodTypeName == null)
+                var method = stackFrame.GetMethod();
+                if (method != null)
                 {
-                    Label = method.Name;
+                    var methodTypeName = method?.DeclaringType?.Name;
+                    if (methodTypeName == null)
+                    {
+                        Label = method.Name;
+                    }
+                    else
+                    {
+                        Label = methodTypeName + "." + method.Name;
+                    }
                 }
-                else
-                {
-                    Label = methodTypeName + "." + method.Name;
-                }
+            }
+            catch(Exception ex)
+            {
+                InternalLogger.GetDefaultLogger().LogError(ex, "Failed to compute Label for stack frame method");
+            }
+
+            if(Label == null)
+            {
+                Label = "Method has been trimmed";
             }
         }
 
