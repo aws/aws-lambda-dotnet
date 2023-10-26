@@ -44,6 +44,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+        
+        public static readonly DiagnosticDescriptor ExecutableWithNoFunctions = new DiagnosticDescriptor(id: "AWSLambda0104",
+            title: "Executable output with no LambdaFunction annotations",
+            messageFormat: "Your project is configured to output an executable and generate a static Main method, but you have not configured any methods with the 'LambdaFunction' attribute.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
 
         public static readonly DiagnosticDescriptor MainMethodExists = new DiagnosticDescriptor(id: "AWSLambda0104",
             title: "static Main method exists",
