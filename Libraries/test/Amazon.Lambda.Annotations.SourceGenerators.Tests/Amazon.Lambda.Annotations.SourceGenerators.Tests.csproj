@@ -93,6 +93,18 @@
 		<Content Update="Snapshots\ServerlessTemplates\parameterless.template">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
+
+		<Content Update="Snapshots\ParameterlessMethodWithResponse_ToUpper_Generated.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ProgramParameterlessWithResponse.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ServerlessTemplates\parameterlesswithresponse.template">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
 	</ItemGroup>
 
     <ItemGroup>
