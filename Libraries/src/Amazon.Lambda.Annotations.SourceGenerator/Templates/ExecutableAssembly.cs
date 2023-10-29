@@ -137,7 +137,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("                Func<");
             
             #line 45 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}"))));
+            this.Write(this.ToStringHelper.ToStringWithCulture(model.GeneratedMethod.Parameters.Any() ? string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) : "Stream"));
             
             #line default
             #line hidden
