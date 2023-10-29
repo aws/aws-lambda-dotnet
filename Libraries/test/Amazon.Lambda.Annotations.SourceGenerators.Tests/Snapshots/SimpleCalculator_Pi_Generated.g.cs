@@ -28,7 +28,7 @@ namespace TestServerlessApp
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public double Pi()
+        public double Pi(Stream stream)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.

@@ -105,7 +105,7 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
             this.Write("(");
             
             #line 30 "C:\Users\jamesuk\source\github\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}"))));
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.Parameters.Any() ? string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) : "Stream stream"));
             
             #line default
             #line hidden
