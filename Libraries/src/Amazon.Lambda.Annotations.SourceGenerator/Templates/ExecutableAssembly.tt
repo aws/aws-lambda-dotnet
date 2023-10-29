@@ -13,6 +13,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using Amazon.Lambda.Core;
 
 namespace <#= this._containingNamespace #>;
@@ -33,7 +34,7 @@ public class GeneratedProgram
             if (model.GeneratedMethod.ReturnType.FullName == "void")
             {
 #>
-                Action<<#= string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) #>> <#= model.LambdaMethod.ExecutableAssemblyHandlerName #> = new <#= model.LambdaMethod.ContainingNamespace #>.<#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated().<#= model.LambdaMethod.Name #>;
+                Action<<#= model.GeneratedMethod.Parameters.Any() ? string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) : "Stream" #>> <#= model.LambdaMethod.ExecutableAssemblyHandlerName #> = new <#= model.LambdaMethod.ContainingNamespace #>.<#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated().<#= model.LambdaMethod.Name #>;
                 await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.ExecutableAssemblyHandlerName #>, new <#= this._lambdaFunctions[0].Serializer #>()).Build().RunAsync();
                 break;
 <#    

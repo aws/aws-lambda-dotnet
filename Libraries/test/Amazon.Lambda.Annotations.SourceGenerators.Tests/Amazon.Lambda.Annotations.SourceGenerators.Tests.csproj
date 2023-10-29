@@ -81,6 +81,18 @@
 		<Content Update="Snapshots\GreeterExecutable_SayHelloAsync_Generated.g.cs">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
+
+		<Content Update="Snapshots\ParameterlessMethods_ToUpper_Generated.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ProgramParameterless.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ServerlessTemplates\parameterless.template">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
 	</ItemGroup>
 
     <ItemGroup>

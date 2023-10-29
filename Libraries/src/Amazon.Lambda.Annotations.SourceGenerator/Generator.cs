@@ -312,6 +312,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 return null;
             }
 
+            if (lambdaModels.Count == 0)
+            {
+                diagnosticReporter.Report(
+                    Diagnostic.Create(
+                        DiagnosticDescriptors.ExecutableWithNoFunctions,
+                        Location.None,
+                        "Amazon.Lambda.Annotations"));
+
+                return null;
+            }
+
             return new ExecutableAssembly(
                 lambdaModels,
                 lambdaModels[0].LambdaMethod.ContainingNamespace);
