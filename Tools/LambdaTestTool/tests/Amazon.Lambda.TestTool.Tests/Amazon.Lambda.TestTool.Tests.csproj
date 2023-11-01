@@ -1,10 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -23,7 +21,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
-    <ProjectReference Include="..\LambdaFunctions\net6\SourceGeneratorExample\SourceGeneratorExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\AspNetCoreAPIExample\AspNetCoreAPIExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\FunctionSignatureExamples\FunctionSignatureExamples.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\S3EventFunction\S3EventFunction.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\ServerlessFunctionTemplateYamlExample\ServerlessFunctionTemplateYamlExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\ServerlessTemplateExample\ServerlessTemplateExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\ServerlessTemplateYamlExample\ServerlessTemplateYamlExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\SourceGeneratorExample\SourceGeneratorExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\ToUpperFunc\ToUpperFunc.csproj" />
   </ItemGroup>
 
   <ItemGroup>

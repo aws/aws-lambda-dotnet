@@ -70,20 +70,23 @@ namespace Amazon.Lambda.TestTool.Tests
 
         public static string GetLambdaFunctionSourceFile(string projectName, string fileName)
         {
-#if NETCORE_2_1
-            return Path.GetFullPath($"../../../../LambdaFunctions/netcore21/{projectName}/{fileName}");
-#elif NETCORE_3_1
-            return Path.GetFullPath($"../../../../LambdaFunctions/netcore31/{projectName}/{fileName}");
-#endif            
+            return Path.GetFullPath($"../../../../LambdaFunctions/{projectName}/{fileName}");
         }
 
         public static string GetLambdaFunctionBuildPath(string projectName)
         {
-#if NETCORE_2_1
-            return Path.GetFullPath($"../../../../LambdaFunctions/netcore21/{projectName}/bin/Debug/netcoreapp2.1");
-#elif NETCORE_3_1
-            return Path.GetFullPath($"../../../../LambdaFunctions/netcore31/{projectName}/bin/Debug/netcoreapp3.1");
-#endif            
+            return Path.GetFullPath($"../../../../LambdaFunctions/{projectName}/bin/Debug/{GetTargetFramework()}");
+        }
+
+        public static string GetTargetFramework()
+        {
+#if NET6_0
+            return "net6.0";
+#elif NET8_0
+            return "net8.0";
+#else
+            Compile error you need to add a new target framework
+#endif
         }
     }
 }

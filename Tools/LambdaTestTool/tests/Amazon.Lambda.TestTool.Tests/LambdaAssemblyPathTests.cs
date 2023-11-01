@@ -1,4 +1,4 @@
-﻿namespace Amazon.Lambda.TestTool.Tests.NET6
+﻿namespace Amazon.Lambda.TestTool.Tests
 {
     public class LambdaAssemblyPathTests
     {

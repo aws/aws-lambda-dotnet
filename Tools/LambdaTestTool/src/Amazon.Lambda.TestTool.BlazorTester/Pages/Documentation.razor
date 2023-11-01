@@ -84,8 +84,8 @@ JSON Lambda event document as the POST request's body.
 </p>
 
 <pre style="white-space: pre-wrap; background-color:lightgray;font-size:85%">
-&gt; dotnet lambda-test-tool-3.1 --help
-AWS .NET Core 3.1 Mock Lambda Test Tool (0.10.0)
+&gt; dotnet lambda-test-tool-6.0 --help
+AWS .NET Core 6.0 Mock Lambda Test Tool (0.14.0)
 
 The .NET Lambda Test Tool can be launched in 2 modes. The default mode is to launch a web interface to select the Lambda code
 to execute with in the Lambda test tool. The second mode skips using the web interface and the Lambda code is identified
@@ -144,8 +144,8 @@ These options are valid in the no web interface mode.
     "Mock Lambda Test Tool": {
       "commandName": "Executable",
       "commandLineArgs": "--no-ui --payload payload.json",
-      "workingDirectory": ".\\bin\\$(Configuration)\\netcoreapp3.1",
-      "executablePath": "C:\\Users\\%USERNAME%\\.dotnet\\tools\\dotnet-lambda-test-tool-3.1.exe"
+      "workingDirectory": ".\\bin\\$(Configuration)\\net6.0",
+      "executablePath": "C:\\Users\\%USERNAME%\\.dotnet\\tools\\dotnet-lambda-test-tool-6.0.exe"
     }
   }
 }
