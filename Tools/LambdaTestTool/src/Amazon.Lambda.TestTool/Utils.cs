@@ -32,7 +32,15 @@ namespace Amazon.Lambda.TestTool
                 // ignored
             }
 
-            return attribute?.InformationalVersion;
+            var version = attribute?.InformationalVersion;
+
+            // Check to see if the version has a git commit id suffix and if so remove it.
+            if (version == null && version.IndexOf('+') != -1)
+            {
+                version = version.Substring(0, version.IndexOf('+'));
+            }
+
+            return version;
         }
 
         /// <summary>
