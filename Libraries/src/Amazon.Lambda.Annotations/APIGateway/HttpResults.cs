@@ -68,7 +68,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
     }
 
     /// <summary>
-    /// If this inteface is returned for an API Gateway Lambda function it will serialize itself to the correct JSON format for the 
+    /// If this interface is returned for an API Gateway Lambda function it will serialize itself to the correct JSON format for the 
     /// configured event source's protocol format and version.
     /// 
     /// Users should use the implementation class HttpResults to construct an instance of IHttpResult with the configured, status code, response body and headers.
