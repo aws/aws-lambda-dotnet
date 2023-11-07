@@ -112,7 +112,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
     ///         <description>For string then returned as is.</description>
     ///     </item>
     ///     <item>
-    ///         <description>For Stream, byte[] or IList&lt;byte&gt; the data is consided binary and base 64 encoded.</description>
+    ///         <description>For Stream, byte[] or IList&lt;byte&gt; the data is considered binary and base 64 encoded.</description>
     ///     </item>
     ///     <item>
     ///         <description>Anything other type is serialized to JSON.</description>
