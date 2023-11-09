@@ -25,7 +25,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         private readonly IFileManager _fileManager = new FileManager();
         private readonly IDirectoryManager _directoryManager = new DirectoryManager();
 
-        private readonly List<string> _allowdRuntimeValues = new List<string>(2)
+        internal static readonly List<string> _allowdRuntimeValues = new List<string>(2)
         {
             "dotnet6",
             "provided.al2"
