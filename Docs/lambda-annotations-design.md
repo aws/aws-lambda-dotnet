@@ -332,7 +332,7 @@ public class LambdaFunctions
 
 ## Auto Generate Main
 
-A `LambdaGlobalProperties` attribute is available to set global settings that annotations framework uses when generated code at compile time. This simplifies the programming model when using custom runtimes or native ahead of time (AOT) compilation. It removes the need to manually bootstrap the Lambda runtime.
+A `LambdaGlobalProperties` attribute is available to set global settings that the annotations framework uses when generating code at compile time. This simplifies the programming model when using custom runtimes or native ahead of time (AOT) compilation. It removes the need to manually bootstrap the Lambda runtime.
 
 To auto-generate the `static Main` method, first ensure the `OutputType` in your `csproj` file is set to `exe`.
 ```xml
