@@ -76,7 +76,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     },
                     ExpectedDiagnostics =
                     {
-                        DiagnosticResult.CompilerError("AWSLambda0104")
+                        DiagnosticResult.CompilerError("AWSLambda0113")
                             .WithMessage("Your project is configured to output an executable and generate a static Main method, but you have not configured any methods with the 'LambdaFunction' attribute."),
                         DiagnosticResult.CompilerError("CS5001")
                             .WithMessage("Program does not contain a static 'Main' method suitable for an entry point"),
@@ -265,11 +265,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
-                        (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributesInvalidRuntime.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributesInvalidRuntime.cs"))),
+                        SourceText.From(InvalidAssemblyAttributeString),
                     },
                     ExpectedDiagnostics =
                     {
-                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value It should be set to either 'dotnet6' or 'provided.al2'."),
+                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. It should be set to one of dotnet6 or provided.al2."),
                     },
                     ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
@@ -574,7 +574,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestServerlessApp", "Sub1", "Functions.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "Sub1", "Functions.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributeNullValues.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributeNullValues.cs"))),
+                        SourceText.From(NullAssemblyAttributeString)
                     },
                     GeneratedSources =
                     {
@@ -1128,5 +1128,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             File.Delete(Path.Combine("TestServerlessApp", "serverless.template"));
         }
+
+        private static string InvalidAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
+                                                               "using Amazon.Lambda.Core;" +
+                                                               "[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]" +
+                                                               "[assembly: LambdaGlobalProperties(GenerateMain = true, Runtime = \"notavalidruntime\")]";
+
+        private static string NullAssemblyAttributeString = "using Amazon.Lambda.Annotations;" +
+                                                               "using Amazon.Lambda.Core;" +
+                                                               "[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]" +
+                                                               "[assembly: LambdaGlobalProperties(Runtime = null)]";
     }
 }
