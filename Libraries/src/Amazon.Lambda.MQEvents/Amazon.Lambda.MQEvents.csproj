@@ -3,14 +3,19 @@
   <Import Project="..\..\..\buildtools\common.props" />
 	
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - MQEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.MQEvents</AssemblyTitle>
-    <VersionPrefix>2.0.0</VersionPrefix>
+    <VersionPrefix>2.1.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.MQEvents</AssemblyName>
     <PackageId>Amazon.Lambda.MQEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Amazon MQ;Rabbit MQ;Apache Active MQ</PackageTags>
     <RootNamespace>Amazon.Lambda.MQEvents</RootNamespace>
   </PropertyGroup>
 
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+		<IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+	</PropertyGroup>
 </Project>

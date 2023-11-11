@@ -1,12 +1,14 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=8.0.0-preview.7.23375.9
-ARG ASPNET_SHA512=b8c8a5cd579a8ee1e082363a73a05a745499365445f784e6ff87547f9acdbe8b7ba525140ef10555bc2802c13af131c2d568ec6af020bd0dd2fdf82d4c258442
+ARG ASPNET_VERSION=8.0.0-rc.2.23480.2
+ARG ASPNET_SHA512=5d8d50498be52ee4c8ae83e9ca82ab947b187f27b56047cc8a09f6ca2ba6bb7532fdd30bc035d518ce636965371f2ed16c9f97398f04d836f4f67b11b5ce50a9
 
 ARG LAMBDA_RUNTIME_NAME=dotnet8
-ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2
+ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023-preview
 
 FROM $AMAZON_LINUX AS base
+
+RUN dnf install libicu-67.1-7.amzn2023.0.3.x86_64 --assumeyes
 
 FROM base AS builder-net8
 ARG ASPNET_VERSION
@@ -15,7 +17,7 @@ ARG ASPNET_SHA512
 WORKDIR /dotnet
 
 # Install tar and gzip for unarchiving downloaded tar.gz
-RUN yum install tar gzip --assumeyes
+RUN dnf install tar gzip --assumeyes
 
 # Install the ASP.NET Core shared framework
 RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/$ASPNET_VERSION/aspnetcore-runtime-$ASPNET_VERSION-linux-x64.tar.gz \

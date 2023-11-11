@@ -68,7 +68,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
     }
 
     /// <summary>
-    /// If this inteface is returned for an API Gateway Lambda function it will serialize itself to the correct JSON format for the 
+    /// If this interface is returned for an API Gateway Lambda function it will serialize itself to the correct JSON format for the 
     /// configured event source's protocol format and version.
     /// 
     /// Users should use the implementation class HttpResults to construct an instance of IHttpResult with the configured, status code, response body and headers.
@@ -112,7 +112,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
     ///         <description>For string then returned as is.</description>
     ///     </item>
     ///     <item>
-    ///         <description>For Stream, byte[] or IList&lt;byte&gt; the data is consided binary and base 64 encoded.</description>
+    ///         <description>For Stream, byte[] or IList&lt;byte&gt; the data is considered binary and base 64 encoded.</description>
     ///     </item>
     ///     <item>
     ///         <description>Anything other type is serialized to JSON.</description>

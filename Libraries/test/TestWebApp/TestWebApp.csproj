@@ -8,10 +8,6 @@
     <PackageId>TestWebApp</PackageId>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <DefineConstants>NETCOREAPP_3_1</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.AspNetCoreServer\Amazon.Lambda.AspNetCoreServer.csproj" />
   </ItemGroup>

@@ -85,7 +85,7 @@ namespace Amazon.Lambda.KinesisAnalyticsEvents
             /// The base64 encoded data.
             /// </value>
             [DataMember(Name = "data")]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
             [System.Text.Json.Serialization.JsonPropertyName("data")]
 #endif
             public string Base64EncodedData { get; set; }

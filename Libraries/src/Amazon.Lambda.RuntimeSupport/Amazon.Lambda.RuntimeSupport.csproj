@@ -3,10 +3,9 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net5.0;net6.0</TargetFrameworks>
-    <VersionPrefix>1.8.8</VersionPrefix>
+    <TargetFrameworks>netstandard2.0;net5.0;net6.0;net8.0</TargetFrameworks>
+    <VersionPrefix>1.10.0</VersionPrefix>
     <Description>Provides a bootstrap and Lambda Runtime API Client to help you to develop custom .NET Core Lambda Runtimes.</Description>
-    <Description>Provides a bootstrap and Lambda Runtime API Client to help you  to develop custom .NET Core Lambda Runtimes.</Description>
     <AssemblyTitle>Amazon.Lambda.RuntimeSupport</AssemblyTitle>
     <AssemblyName>Amazon.Lambda.RuntimeSupport</AssemblyName>
     <PackageId>Amazon.Lambda.RuntimeSupport</PackageId>
@@ -19,6 +18,13 @@
   <PropertyGroup Condition=" '$(ExecutableOutputType)'=='true' ">
     <OutputType>Exe</OutputType>
   </PropertyGroup>
+	
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+	<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>	
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />

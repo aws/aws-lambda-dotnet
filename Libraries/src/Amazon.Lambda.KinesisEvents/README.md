@@ -36,3 +36,86 @@ public class Function
     }
 }
 ```
+
+The following is a sample class and Lambda function that receives Amazon Kinesis event record data as an input and uses `StreamsEventResponse` object to return batch item failures, if any. (Note that by default anything written to Console will be logged as CloudWatch Logs events.)
+
+```csharp
+public class Function
+{
+    public StreamsEventResponse Handler(KinesisEvent kinesisEvent)
+    {
+        var batchItemFailures = new List<StreamsEventResponse.BatchItemFailure>();
+        string curRecordSequenceNumber = string.Empty;
+
+        foreach (var record in kinesisEvent.Records)
+        {
+            try
+            {
+                //Process your record
+                var kinesisRecord = record.Kinesis;
+                curRecordSequenceNumber = kinesisRecord.SequenceNumber;
+            }
+            catch (Exception e)
+            {
+                /* Since we are working with streams, we can return the failed item immediately.
+                   Lambda will immediately begin to retry processing from this failed item onwards. */
+                batchItemFailures.Add(new StreamsEventResponse.BatchItemFailure() { ItemIdentifier = curRecordSequenceNumber });
+                return new StreamsEventResponse() { BatchItemFailures = batchItemFailures };
+            }
+        }
+
+        return new StreamsEventResponse() { BatchItemFailures = batchItemFailures };
+    }
+}
+```
+
+The following is a sample class and Lambda function that receives Amazon Kinesis event when using time windows as an input and uses `KinesisTimeWindowResponse` object to demonstrate how to aggregate and then process the final state. (Note that by default anything written to Console will be logged as CloudWatch Logs events.)
+
+```csharp
+public class Function
+{
+    public KinesisTimeWindowResponse Handler(KinesisTimeWindowEvent kinesisTimeWindowEvent)
+    {
+        Console.WriteLine($"Incoming event, Source Arn: {kinesisTimeWindowEvent.EventSourceARN}, Shard Id: {kinesisTimeWindowEvent.ShardId}");
+        Console.WriteLine($"Incoming state: {string.Join(';', kinesisTimeWindowEvent.State.Select(s => s.Key + "=" + s.Value))}");
+
+        //Check if this is the end of the window to either aggregate or process.
+        if (kinesisTimeWindowEvent.IsFinalInvokeForWindow.HasValue && kinesisTimeWindowEvent.IsFinalInvokeForWindow.Value)
+        {
+            // Logic to handle final state of the window
+            Console.WriteLine("Destination invoke");
+        }
+        else
+        {
+            Console.WriteLine("Aggregate invoke");
+        }
+
+        //Check for early terminations
+        if (kinesisTimeWindowEvent.IsWindowTerminatedEarly.HasValue && kinesisTimeWindowEvent.IsWindowTerminatedEarly.Value)
+        {
+            Console.WriteLine("Window terminated early");
+        }
+
+        // Aggregation logic
+        var state = kinesisTimeWindowEvent.State;
+        foreach (var record in kinesisTimeWindowEvent.Records)
+        {
+            int id;
+            if (!state.ContainsKey(record.Kinesis.PartitionKey) || int.TryParse(record.Kinesis.PartitionKey, out id))
+            {
+                state[record.Kinesis.PartitionKey] = "1";
+            }
+            else
+            {
+                state[record.Kinesis.PartitionKey] = (id + 1).ToString();
+            }
+        }
+
+        Console.WriteLine($"Returning state: {string.Join(';', state.Select(s => s.Key + "=" + s.Value))}");
+        return new KinesisTimeWindowResponse()
+        {
+            State = state
+        };
+    }
+}
+```

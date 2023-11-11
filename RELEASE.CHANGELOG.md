@@ -1,3 +1,68 @@
+### Release 2023-10-26
+* **Amazon.Lambda.RuntimeSupport (1.10.0)**
+  * Marked as trimmable for .NET 8
+  * Applied the `RequiresUnreferencedCode` attribute to areas that caused trim warnings. These code paths are used by the managed runtime when running .NET Lambda functions from a class library. Code paths for an executable assembly Lambda function, used for Native AOT, will not trigger trim warnings with this release.
+* **Amazon.Lambda.Serialization.SystemTextJson (2.4.0)**
+  * Marked as trimmable for .NET 8
+  * For trimmed Lambda functions the `SourceGeneratorLambdaJsonSerializer` must be used. The other serializers have been marked with the `RequiresUnreferencedCode` attribute.
+  * Added new constructor for `SourceGeneratorLambdaJsonSerializer` that takes in the `JsonSerializerContext` as a parameter to remove the reflection call to create the isntance.  
+* **Amazon.Lambda.APIGatewayEvents (2.7.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.ApplicationLoadBalancerEvents (2.2.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.CloudWatchEvents (4.4.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.CloudWatchLogsEvents (2.2.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.CognitoEvents (2.2.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.ConfigEvents (2.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.ConnectEvents (1.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.Core (2.2.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.DynamoDBEvents (2.3.0)**
+  * Due to a dependency on the AWSSDK.DynamoDBv2 package the `DynamoDBEvent` event class is marked with the RequiresUnreferencedCode making it not safe for trimming.
+* **Amazon.Lambda.KafkaEvents (2.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.KinesisAnalyticsEvents (2.3.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.KinesisEvents (2.2.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.KinesisFirehoseEvents (2.3.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.LexEvents (3.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.LexV2Events (1.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.MQEvents (2.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.S3Events (3.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.SimpleEmailEvents (3.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.SNSEvents (2.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.SQSEvents (2.2.0)**
+  * Marked as trimmable for .NET 8
+
+### Release 2023-10-13
+* **Amazon.Lambda.RuntimeSupport (1.9.1)**
+  * Added `AWS_LAMBDA_DOTNET_DISABLE_MEMORY_LIMIT_CHECK` environment variable that if set to `true` disables the logic to configure the max heap memory size for the .NET runtime.
+
+### Release 2023-10-13
+* **Amazon.Lambda.RuntimeSupport (1.9.0)**
+  * Added .NET 8 target for the package.
+  * Pull Request [#1578](https://github.com/aws/aws-lambda-dotnet/pull/1578) using new .NET 8 APIs to inform the .NET runtime how much memory the Lambda environment is configured for. This helps the GC understand when nearing the memory limit and when it should be more aggressive collecting memory.
+
+### Release 2023-09-05
+* **Amazon.Lambda.DynamoDBEvents (2.2.0)**
+  * Added support for DynamoDBTimeWindowEvent.
+* **Amazon.Lambda.KinesisEvents (2.1.0)**
+  * Added support for KinesisTimeWindowEvent.
+  * Added new StreamsEventResponse class for reporting batch item failures when processing streams for KinesisEvent.
+
 ### Release 2023-08-24
 * **Amazon.Lambda.TestTool (0.14.1)**
   * Fixes an issue where using SSO profile was giving error while monitoring DLQ in Lambda Test Tool.

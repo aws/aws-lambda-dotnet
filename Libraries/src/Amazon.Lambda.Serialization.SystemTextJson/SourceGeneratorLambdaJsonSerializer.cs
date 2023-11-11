@@ -22,7 +22,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
     /// 
     /// Register the serializer with the LambdaSerializer attribute specifying the defined JsonSerializerContext
     /// 
-    /// [assembly: LambdaSerializer(typeof(SourceGeneratorLambdaJsonSerializer&ly;APIGatewayExampleImage.MyJsonContext&gt;))]
+    /// [assembly: LambdaSerializer(typeof(SourceGeneratorLambdaJsonSerializer&lt;APIGatewayExampleImage.MyJsonContext&gt;))]
     /// 
     /// When the class is compiled it will generate all of the JSON serialization code to convert between JSON and the list types. This
     /// will avoid any reflection based serialization.
@@ -86,6 +86,22 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
             }
 
             _jsonSerializerContext = constructor.Invoke(new object[] { this.SerializerOptions }) as TSGContext;
+        }
+
+        /// <summary>
+        /// Constructs instance of serializer with the option to customize the JsonWriterOptions after the 
+        /// Amazon.Lambda.Serialization.SystemTextJson's default settings have been applied.
+        /// </summary>
+        /// <param name="jsonSerializerContext"></param>
+        /// <param name="customizer"></param>
+        /// <param name="jsonWriterCustomizer"></param>
+        public SourceGeneratorLambdaJsonSerializer(TSGContext jsonSerializerContext, Action<JsonSerializerOptions> customizer = null, Action<JsonWriterOptions> jsonWriterCustomizer = null)
+            : base(jsonWriterCustomizer)
+        {
+            SerializerOptions = CreateDefaultJsonSerializationOptions();
+            customizer?.Invoke(this.SerializerOptions);
+
+            _jsonSerializerContext = jsonSerializerContext;
         }
 
 

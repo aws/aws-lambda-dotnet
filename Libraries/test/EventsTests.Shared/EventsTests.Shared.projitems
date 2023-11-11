@@ -27,10 +27,15 @@
     <Content Include="$(MSBuildThisFileDirectory)cognito-presignup-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)config-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kinesis-batchitemfailures-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)dynamodb-batchitemfailures-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)dynamodb-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)ecs-container-state-change-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)ecs-task-state-change-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)dynamodb-timewindow-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)dynamodb-timewindow-response.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kinesis-timewindow-response.json" />
+    <Content Include="$(MSBuildThisFileDirectory)kinesis-timewindow-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)websocket-api-connect-request.json" />
     <Content Include="$(MSBuildThisFileDirectory)custom-authorizer-v2-iam-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)custom-authorizer-v2-simple-response.json" />

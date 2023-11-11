@@ -5,6 +5,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.ApplicationLoadBalancerEvents;
     using Amazon.Lambda.CloudWatchEvents.BatchEvents;
     using Amazon.Lambda.CloudWatchEvents.ECSEvents;
+    using Amazon.Lambda.CloudWatchEvents.S3Events;
     using Amazon.Lambda.CloudWatchEvents.ScheduledEvents;
     using Amazon.Lambda.CloudWatchEvents.TranscribeEvents;
     using Amazon.Lambda.CloudWatchEvents.TranslateEvents;
@@ -19,14 +20,13 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.KinesisEvents;
     using Amazon.Lambda.KinesisFirehoseEvents;
     using Amazon.Lambda.LexEvents;
+    using Amazon.Lambda.LexV2Events;
     using Amazon.Lambda.MQEvents;
     using Amazon.Lambda.S3Events;
     using Amazon.Lambda.SimpleEmailEvents;
     using Amazon.Lambda.SNSEvents;
     using Amazon.Lambda.SQSEvents;
-    using Amazon.Lambda.LexV2Events;
-
-
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json.Serialization;
     using System;
@@ -35,10 +35,6 @@ namespace Amazon.Lambda.Tests
     using System.Linq;
     using System.Text;
     using Xunit;
-    using Newtonsoft.Json;
-    using Amazon.Lambda.CloudWatchEvents;
-    using Amazon.Lambda.CloudWatchEvents.S3Events;
-
     using JsonSerializer = Amazon.Lambda.Serialization.Json.JsonSerializer;
 
     public class EventTest
@@ -318,7 +314,13 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.EventSourceARN, "arn:aws:kinesis:us-east-1:123456789012:stream/simple-stream");
                 Assert.Equal(record.EventSource, "aws:kinesis");
                 Assert.Equal(record.AwsRegion, "us-east-1");
+#if NET8_0_OR_GREATER
+                // Starting with .NET 7 the precision of the underlying AddSeconds method was changed.
+                // https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/7.0/datetime-add-precision
+                Assert.Equal(636162383234769999, record.Kinesis.ApproximateArrivalTimestamp.ToUniversalTime().Ticks);
+#else
                 Assert.Equal(636162383234770000, record.Kinesis.ApproximateArrivalTimestamp.ToUniversalTime().Ticks);
+#endif
 
                 Handle(kinesisEvent);
             }
@@ -338,7 +340,116 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void KinesisBatchItemFailuresTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-batchitemfailures-response.json"))
+            {
+                var kinesisStreamsEventResponse = serializer.Deserialize<KinesisEvents.StreamsEventResponse>(fileStream);
+
+                Assert.Equal(1, kinesisStreamsEventResponse.BatchItemFailures.Count);
+                Assert.Equal("1405400000000002063282832", kinesisStreamsEventResponse.BatchItemFailures[0].ItemIdentifier);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize(kinesisStreamsEventResponse, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("kinesis-batchitemfailures-response.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void KinesisTimeWindowTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-timewindow-event.json"))
+            {
+                var kinesisTimeWindowEvent = serializer.Deserialize<KinesisTimeWindowEvent>(fileStream);
+
+                Assert.Equal(kinesisTimeWindowEvent.ShardId, "shardId-000000000006");
+                Assert.Equal(kinesisTimeWindowEvent.EventSourceARN, "arn:aws:kinesis:us-east-1:123456789012:stream/lambda-stream");
+                Assert.False(kinesisTimeWindowEvent.IsFinalInvokeForWindow);
+                Assert.False(kinesisTimeWindowEvent.IsWindowTerminatedEarly);
+                Assert.Equal(kinesisTimeWindowEvent.State.Count, 2);
+                Assert.True(kinesisTimeWindowEvent.State.ContainsKey("1"));
+                Assert.Equal(kinesisTimeWindowEvent.State["1"], "282");
+                Assert.True(kinesisTimeWindowEvent.State.ContainsKey("2"));
+                Assert.Equal(kinesisTimeWindowEvent.State["2"], "715");
+                Assert.NotNull(kinesisTimeWindowEvent.Window);
+                Assert.Equal(637430942400000000, kinesisTimeWindowEvent.Window.Start.Ticks);
+                Assert.Equal(637430943600000000, kinesisTimeWindowEvent.Window.End.Ticks);
+
+                Assert.Equal(kinesisTimeWindowEvent.Records.Count, 1);
+                var record = kinesisTimeWindowEvent.Records[0];
+                Assert.Equal(record.EventId, "shardId-000000000006:49590338271490256608559692538361571095921575989136588898");
+                Assert.Equal(record.EventName, "aws:kinesis:record");
+                Assert.Equal(record.EventVersion, "1.0");
+                Assert.Equal(record.EventSource, "aws:kinesis");
+                Assert.Equal(record.InvokeIdentityArn, "arn:aws:iam::123456789012:role/lambda-kinesis-role");
+                Assert.Equal(record.AwsRegion, "us-east-1");
+                Assert.Equal(record.EventSourceARN, "arn:aws:kinesis:us-east-1:123456789012:stream/lambda-stream");
+
+                Assert.Equal(record.Kinesis.KinesisSchemaVersion, "1.0");
+                Assert.Equal(record.Kinesis.PartitionKey, "1");
+                Assert.Equal(record.Kinesis.SequenceNumber, "49590338271490256608559692538361571095921575989136588898");
+                var dataBytes = record.Kinesis.Data.ToArray();
+                Assert.Equal(Convert.ToBase64String(dataBytes), "SGVsbG8sIHRoaXMgaXMgYSB0ZXN0Lg==");
+                Assert.Equal(Encoding.UTF8.GetString(dataBytes), "Hello, this is a test.");
+                Assert.Equal(637430942750000000, record.Kinesis.ApproximateArrivalTimestamp.ToUniversalTime().Ticks);
+
+                Handle(kinesisTimeWindowEvent);
+            }
+        }
+
+        private void Handle(KinesisTimeWindowEvent kinesisTimeWindowEvent)
+        {
+            foreach (var record in kinesisTimeWindowEvent.Records)
+            {
+                var kinesisRecord = record.Kinesis;
+                var dataBytes = kinesisRecord.Data.ToArray();
+                var dataText = Encoding.UTF8.GetString(dataBytes);
+                Assert.Equal("Hello, this is a test.", dataText);
+                Console.WriteLine($"[{record.EventName}] Data = '{dataText}'.");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void KinesisTimeWindowResponseTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("kinesis-timewindow-response.json"))
+            {
+                var kinesisTimeWindowResponse = serializer.Deserialize<KinesisTimeWindowResponse>(fileStream);
+
+                Assert.Equal(kinesisTimeWindowResponse.State.Count, 2);
+                Assert.True(kinesisTimeWindowResponse.State.ContainsKey("1"));
+                Assert.Equal(kinesisTimeWindowResponse.State["1"], "282");
+                Assert.True(kinesisTimeWindowResponse.State.ContainsKey("2"));
+                Assert.Equal(kinesisTimeWindowResponse.State["2"], "715");
+                Assert.Equal(kinesisTimeWindowResponse.BatchItemFailures.Count, 0);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -376,7 +487,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -385,13 +496,13 @@ namespace Amazon.Lambda.Tests
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("dynamodb-batchitemfailures-response.json"))
             {
-                var dynamoDbStreamsEventResponse = serializer.Deserialize<StreamsEventResponse>(fileStream);
+                var dynamoDbStreamsEventResponse = serializer.Deserialize<DynamoDBEvents.StreamsEventResponse>(fileStream);
 
                 Assert.Equal(1, dynamoDbStreamsEventResponse.BatchItemFailures.Count);
                 Assert.Equal("1405400000000002063282832", dynamoDbStreamsEventResponse.BatchItemFailures[0].ItemIdentifier);
 
                 MemoryStream ms = new MemoryStream();
-                serializer.Serialize<StreamsEventResponse>(dynamoDbStreamsEventResponse, ms);
+                serializer.Serialize(dynamoDbStreamsEventResponse, ms);
                 ms.Position = 0;
                 var json = new StreamReader(ms).ReadToEnd();
 
@@ -414,7 +525,110 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP_3_1        
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void DynamoDBTimeWindowTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("dynamodb-timewindow-event.json"))
+            {
+                var dynamoDBTimeWindowEvent = serializer.Deserialize<DynamoDBTimeWindowEvent>(fileStream);
+
+                Assert.Equal(dynamoDBTimeWindowEvent.ShardId, "shard123456789");
+                Assert.Equal(dynamoDBTimeWindowEvent.EventSourceArn, "stream-ARN");
+                Assert.False(dynamoDBTimeWindowEvent.IsFinalInvokeForWindow);
+                Assert.False(dynamoDBTimeWindowEvent.IsWindowTerminatedEarly);
+                Assert.Equal(dynamoDBTimeWindowEvent.State.Count, 1);
+                Assert.True(dynamoDBTimeWindowEvent.State.ContainsKey("1"));
+                Assert.Equal(dynamoDBTimeWindowEvent.State["1"], "state1");
+                Assert.NotNull(dynamoDBTimeWindowEvent.Window);
+                Assert.Equal(637317252000000000, dynamoDBTimeWindowEvent.Window.Start.Ticks);
+                Assert.Equal(637317255000000000, dynamoDBTimeWindowEvent.Window.End.Ticks);
+
+                Assert.Equal(dynamoDBTimeWindowEvent.Records.Count, 3);
+
+                var record1 = dynamoDBTimeWindowEvent.Records[0];
+                Assert.Equal(record1.EventID, "1");
+                Assert.Equal(record1.EventName, "INSERT");
+                Assert.Equal(record1.EventVersion, "1.0");
+                Assert.Equal(record1.EventSource, "aws:dynamodb");
+                Assert.Equal(record1.AwsRegion, "us-east-1");
+                Assert.Equal(record1.EventSourceArn, "stream-ARN");
+                Assert.Equal(record1.Dynamodb.Keys.Count, 1);
+                Assert.Equal(record1.Dynamodb.Keys["Id"].N, "101");
+                Assert.Equal(record1.Dynamodb.SequenceNumber, "111");
+                Assert.Equal(record1.Dynamodb.SizeBytes, 26);
+                Assert.Equal(record1.Dynamodb.StreamViewType, "NEW_IMAGE");
+                Assert.Equal(record1.Dynamodb.NewImage.Count, 2);
+                Assert.Equal(record1.Dynamodb.NewImage["Message"].S, "New item!");
+                Assert.Equal(record1.Dynamodb.NewImage["Id"].N, "101");
+                Assert.Equal(record1.Dynamodb.OldImage.Count, 0);
+
+                var record2 = dynamoDBTimeWindowEvent.Records[1];
+                Assert.Equal(record2.EventID, "2");
+                Assert.Equal(record2.EventName, "MODIFY");
+                Assert.Equal(record2.EventVersion, "1.0");
+                Assert.Equal(record2.EventSource, "aws:dynamodb");
+                Assert.Equal(record2.AwsRegion, "us-east-1");
+                Assert.Equal(record2.EventSourceArn, "stream-ARN");
+                Assert.Equal(record2.Dynamodb.Keys.Count, 1);
+                Assert.Equal(record2.Dynamodb.Keys["Id"].N, "101");
+                Assert.Equal(record2.Dynamodb.SequenceNumber, "222");
+                Assert.Equal(record2.Dynamodb.SizeBytes, 59);
+                Assert.Equal(record2.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
+                Assert.Equal(record2.Dynamodb.NewImage.Count, 2);
+                Assert.Equal(record2.Dynamodb.NewImage["Message"].S, "This item has changed");
+                Assert.Equal(record2.Dynamodb.NewImage["Id"].N, "101");
+                Assert.Equal(record2.Dynamodb.OldImage.Count, 2);
+                Assert.Equal(record2.Dynamodb.OldImage["Message"].S, "New item!");
+                Assert.Equal(record2.Dynamodb.OldImage["Id"].N, "101");
+
+                var record3 = dynamoDBTimeWindowEvent.Records[2];
+                Assert.Equal(record3.EventID, "3");
+                Assert.Equal(record3.EventName, "REMOVE");
+                Assert.Equal(record3.EventVersion, "1.0");
+                Assert.Equal(record3.EventSource, "aws:dynamodb");
+                Assert.Equal(record3.AwsRegion, "us-east-1");
+                Assert.Equal(record3.EventSourceArn, "stream-ARN");
+                Assert.Equal(record3.Dynamodb.Keys.Count, 1);
+                Assert.Equal(record3.Dynamodb.Keys["Id"].N, "101");
+                Assert.Equal(record3.Dynamodb.SequenceNumber, "333");
+                Assert.Equal(record3.Dynamodb.SizeBytes, 38);
+                Assert.Equal(record3.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
+                Assert.Equal(record3.Dynamodb.NewImage.Count, 0);
+                Assert.Equal(record3.Dynamodb.OldImage.Count, 2);
+                Assert.Equal(record3.Dynamodb.OldImage["Message"].S, "This item has changed");
+                Assert.Equal(record3.Dynamodb.OldImage["Id"].N, "101");
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void DynamoDBTimeWindowResponseTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("dynamodb-timewindow-response.json"))
+            {
+                var dynamoDBTimeWindowResponse = serializer.Deserialize<DynamoDBTimeWindowResponse>(fileStream);
+
+                Assert.Equal(dynamoDBTimeWindowResponse.State.Count, 2);
+                Assert.True(dynamoDBTimeWindowResponse.State.ContainsKey("1"));
+                Assert.Equal(dynamoDBTimeWindowResponse.State["1"], "282");
+                Assert.True(dynamoDBTimeWindowResponse.State.ContainsKey("2"));
+                Assert.Equal(dynamoDBTimeWindowResponse.State["2"], "715");
+                Assert.Equal(dynamoDBTimeWindowResponse.BatchItemFailures.Count, 0);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -453,7 +667,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -495,7 +709,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -527,7 +741,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -561,7 +775,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -601,7 +815,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -652,7 +866,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -715,7 +929,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -760,7 +974,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -822,7 +1036,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -879,7 +1093,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -918,7 +1132,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -947,7 +1161,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1001,7 +1215,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1035,7 +1249,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1075,7 +1289,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1143,7 +1357,7 @@ namespace Amazon.Lambda.Tests
         }
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1166,7 +1380,7 @@ namespace Amazon.Lambda.Tests
         }
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1201,7 +1415,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1249,7 +1463,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1319,7 +1533,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1356,7 +1570,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1440,7 +1654,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1475,7 +1689,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1600,7 +1814,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1632,7 +1846,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1673,7 +1887,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1716,7 +1930,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1763,7 +1977,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1830,7 +2044,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2079,9 +2293,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2105,7 +2321,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2138,7 +2354,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2158,7 +2374,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2184,9 +2400,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2208,7 +2426,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2238,9 +2456,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2266,9 +2486,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2293,7 +2515,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2323,7 +2545,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2517,7 +2739,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2549,7 +2771,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2600,7 +2822,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2700,7 +2922,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2765,7 +2987,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2808,7 +3030,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif

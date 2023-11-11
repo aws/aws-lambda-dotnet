@@ -17,6 +17,10 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
     /// in from Lambda and being sent back to Lambda will be logged.
     /// </para>
     /// </summary>    
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("DefaultLambdaJsonSerializer does not support trimming. " +
+            "For trimmed Lambda functions SourceGeneratorLambdaJsonSerializer passing in JsonSerializerContext should be used instead.")]
+#endif
     public class DefaultLambdaJsonSerializer : AbstractLambdaJsonSerializer, ILambdaSerializer
     {
         /// <summary>

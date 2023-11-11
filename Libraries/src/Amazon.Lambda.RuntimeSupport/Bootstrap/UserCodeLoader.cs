@@ -28,6 +28,9 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
     /// <summary>
     /// Loads user code and prepares to invoke it.
     /// </summary>
+#if NET8_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("UserCodeLoader does not support trimming and is meant to be used in class library based Lambda functions.")]
+#endif
     internal class UserCodeLoader
     {
         private const string UserInvokeException = "An exception occurred while invoking customer handler.";

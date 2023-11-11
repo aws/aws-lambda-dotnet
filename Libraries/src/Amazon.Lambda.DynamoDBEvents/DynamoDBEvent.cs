@@ -9,6 +9,9 @@ namespace Amazon.Lambda.DynamoDBEvents
     /// http://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html
     /// http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html#eventsources-ddb-update
     /// </summary>
+#if NET8_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("DynamoDBEvent has a reference to the AWS SDK for .NET. The ConstantClass used to represent enums in the SDK is not supported in the Lambda serializer SourceGeneratorLambdaJsonSerializer for trimming scenarios.")]
+#endif
     public class DynamoDBEvent
     {
         /// <summary>

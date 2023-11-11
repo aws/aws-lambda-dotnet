@@ -56,3 +56,54 @@ public class Function
     }
 }
 ```
+
+The following is a sample class and Lambda function that receives Amazon DynamoDB event when using time windows as an input and uses `DynamoDBTimeWindowResponse` object to demonstrate how to aggregate and then process the final state. (Note that by default anything written to Console will be logged as CloudWatch Logs events.)
+
+```csharp
+public class Function
+{
+    public DynamoDBTimeWindowResponse Handler(DynamoDBTimeWindowEvent ddbTimeWindowEvent)
+    {
+        Console.WriteLine($"Incoming event, Source Arn: {ddbTimeWindowEvent.EventSourceArn}, Shard Id: {ddbTimeWindowEvent.ShardId}");
+        Console.WriteLine($"Incoming state: {string.Join(';', ddbTimeWindowEvent.State.Select(s => s.Key + "=" + s.Value))}");
+
+        //Check if this is the end of the window to either aggregate or process.
+        if (ddbTimeWindowEvent.IsFinalInvokeForWindow.HasValue && ddbTimeWindowEvent.IsFinalInvokeForWindow.Value)
+        {
+            // Logic to handle final state of the window
+            Console.WriteLine("Destination invoke");
+        }
+        else
+        {
+            Console.WriteLine("Aggregate invoke");
+        }
+
+        //Check for early terminations
+        if (ddbTimeWindowEvent.IsWindowTerminatedEarly.HasValue && ddbTimeWindowEvent.IsWindowTerminatedEarly.Value)
+        {
+            Console.WriteLine("Window terminated early");
+        }
+
+        // Aggregation logic
+        var state = ddbTimeWindowEvent.State;
+        foreach (var record in ddbTimeWindowEvent.Records)
+        {
+            int id;
+            if (!state.ContainsKey(record.Dynamodb.NewImage["Id"].N) || int.TryParse(record.Dynamodb.NewImage["Id"].N, out id))
+            {
+                state[record.Dynamodb.NewImage["Id"].N] = "1";
+            }
+            else
+            {
+                state[record.Dynamodb.NewImage["Id"].N] = (id + 1).ToString();
+            }
+        }
+
+        Console.WriteLine($"Returning state: {string.Join(';', state.Select(s => s.Key + "=" + s.Value))}");
+        return new DynamoDBTimeWindowResponse()
+        {
+            State = state
+        };
+    }
+}
+```

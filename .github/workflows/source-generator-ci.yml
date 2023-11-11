@@ -22,6 +22,10 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 6.0.x
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 8.0.100-rc.2.23502.2
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
@@ -73,6 +77,10 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 6.0.x
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 8.0.100-rc.2.23502.2        
     - name: Restore dependencies
       run: dotnet restore Libraries/test/TestServerlessApp/TestServerlessApp.csproj
     - name: Build

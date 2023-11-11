@@ -2,16 +2,18 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - Amazon Kinesis Firehose package.</Description>
     <AssemblyTitle>Amazon.Lambda.KinesisFirehoseEvents</AssemblyTitle>
-    <VersionPrefix>2.2.0</VersionPrefix>
+    <VersionPrefix>2.3.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.KinesisFirehoseEvents</AssemblyName>
     <PackageId>Amazon.Lambda.KinesisFirehoseEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;KinesisFirehose</PackageTags>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <DefineConstants>NETCOREAPP_3_1</DefineConstants>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+		<IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+	</PropertyGroup>
 </Project>

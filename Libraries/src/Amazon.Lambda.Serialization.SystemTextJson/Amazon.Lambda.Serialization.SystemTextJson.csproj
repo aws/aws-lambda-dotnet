@@ -3,13 +3,13 @@
     <Import Project="..\..\..\buildtools\common.props" />    
 
     <PropertyGroup>
-        <TargetFrameworks>netcoreapp3.1;net6</TargetFrameworks>
+        <TargetFrameworks>netcoreapp3.1;net6;net8.0</TargetFrameworks>
         <Description>Amazon Lambda .NET Core support - Serialization.Json with System.Text.Json.</Description>
         <AssemblyTitle>Amazon.Lambda.Serialization.SystemTextJson</AssemblyTitle>
         <AssemblyName>Amazon.Lambda.Serialization.SystemTextJson</AssemblyName>
         <PackageId>Amazon.Lambda.Serialization.SystemTextJson</PackageId>
         <PackageTags>AWS;Amazon;Lambda</PackageTags>
-        <VersionPrefix>2.3.1</VersionPrefix>
+        <VersionPrefix>2.4.0</VersionPrefix>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 	<ItemGroup>
@@ -19,5 +19,11 @@
     <ItemGroup>
         <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
     </ItemGroup>
+
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+		<IsTrimmable>true</IsTrimmable>
+		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+	</PropertyGroup>
 
 </Project>

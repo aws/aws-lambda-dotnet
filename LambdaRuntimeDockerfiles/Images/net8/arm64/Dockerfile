@@ -1,42 +1,14 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=8.0.0-preview.7.23375.9
-ARG ASPNET_SHA512=8c4b4b36083d2b9c50e7f000d925f8a1cf0eb863367724892a12332970a6988afaf6a070efb97dfa3919039b780bb3a235fc51902c3762a4b5cd918f3082490c
-
-ARG ICU_VERSION=68.1
-ARG ICU_MD5=6a99b541ea01f271257b121a4433c7c0
+ARG ASPNET_VERSION=8.0.0-rc.2.23480.2
+ARG ASPNET_SHA512=a539170e9f0cc07801142b4f301554bbb76f22c3bc8dc4c421ca5c9be4dad93931acbb5a1d516f5fca57d739d33d10bccd33a480eb9e0d40e0f7594c38e405ea
 
 ARG LAMBDA_RUNTIME_NAME=dotnet8
-ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2
+ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023-preview
 
 FROM $AMAZON_LINUX AS base
 
-FROM base AS builder-libicu
-WORKDIR /
-
-# Install depedencies to extract and build ICU library
-RUN yum install -d1 -y \
-    tar \
-    gzip \
-    make \
-    gcc-c++
-
-# Download, validate and extract ICU library
-# https://github.com/unicode-org/icu/releases/tag/release-68-1
-ARG ICU_VERSION
-ARG ICU_MD5
-RUN curl -SL https://github.com/unicode-org/icu/releases/download/release-${ICU_VERSION//./-}/icu4c-${ICU_VERSION//./_}-src.tgz -o icu-src.tgz \
-    && echo "$ICU_MD5  icu-src.tgz" | md5sum -c - \
-    && tar -xzf icu-src.tgz \
-    && rm icu-src.tgz
-
-# Build ICU library
-RUN mkdir /libicu
-WORKDIR /icu/source/
-RUN ./configure --prefix=/libicu \
-    && make \
-    && make install
-
+RUN dnf install libicu-67.1-7.amzn2023.0.3.aarch64 --assumeyes
 
 FROM base AS builder-net8
 ARG ASPNET_VERSION
@@ -45,7 +17,7 @@ ARG ASPNET_SHA512
 WORKDIR /dotnet
 
 # Install tar and gzip for unarchiving downloaded tar.gz
-RUN yum install tar gzip --assumeyes
+RUN dnf install tar gzip --assumeyes
 
 # Install the ASP.NET Core shared framework
 RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/$ASPNET_VERSION/aspnetcore-runtime-$ASPNET_VERSION-linux-arm64.tar.gz \
@@ -71,9 +43,6 @@ RUN apt-get update && apt-get install -y dos2unix
 RUN dos2unix /app/publish/bootstrap.sh && \
     mv /app/publish/bootstrap.sh /app/publish/bootstrap && \
     chmod +x /app/publish/bootstrap
-
-# Copy native dependencies
-COPY --from=builder-libicu  /libicu         /app/publish
 
 
 FROM base
