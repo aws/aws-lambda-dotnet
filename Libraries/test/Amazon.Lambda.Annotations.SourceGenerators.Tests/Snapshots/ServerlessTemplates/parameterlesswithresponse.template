@@ -3,7 +3,7 @@
   "Transform": "AWS::Serverless-2016-10-31",
   "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.0.0.0).",
   "Resources": {
-    "TestServerlessAppParameterlessMethodWithResponseNoParameterGenerated": {
+    "TestServerlessAppParameterlessMethodWithResponseNoParameterWithResponseGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"
@@ -20,7 +20,7 @@
         "Handler": "TestProject",
         "Environment": {
           "Variables": {
-            "ANNOTATIONS_HANDLER": "NoParameter"
+            "ANNOTATIONS_HANDLER": "NoParameterWithResponse"
           }
         }
       }

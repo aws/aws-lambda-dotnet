@@ -8,21 +8,21 @@ using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
 {
-    public class ParameterlessMethodWithResponse_NoParameter_Generated
+    public class ParameterlessMethodWithResponse_NoParameterWithResponse_Generated
     {
         private readonly ParameterlessMethodWithResponse parameterlessMethodWithResponse;
         private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
-        public ParameterlessMethodWithResponse_NoParameter_Generated()
+        public ParameterlessMethodWithResponse_NoParameterWithResponse_Generated()
         {
             SetExecutionEnvironment();
             parameterlessMethodWithResponse = new ParameterlessMethodWithResponse();
             serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
-        public string NoParameter(Stream stream)
+        public string NoParameterWithResponse(Stream stream)
         {
-            return parameterlessMethodWithResponse.NoParameter();
+            return parameterlessMethodWithResponse.NoParameterWithResponse();
         }
 
         private static void SetExecutionEnvironment()

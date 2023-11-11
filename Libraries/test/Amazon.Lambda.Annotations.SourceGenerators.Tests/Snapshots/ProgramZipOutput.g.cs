@@ -10,7 +10,7 @@ namespace TestServerlessApp.Sub1;
 
 public class GeneratedProgram
 {
-    private static async Task Main(string[] args)
+    public static async Task Main(string[] args)
     {
 
         switch (Environment.GetEnvironmentVariable("ANNOTATIONS_HANDLER"))
