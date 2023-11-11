@@ -524,7 +524,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (
                             typeof(SourceGenerator.Generator),
-                            "ParameterlessMethodWithResponse_NoParameter_Generated.g.cs",
+                            "ParameterlessMethodWithResponse_NoParameterWithResponse_Generated.g.cs",
                             SourceText.From(expectedSubNamespaceGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         ),
                         (
@@ -535,7 +535,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     },
                     ExpectedDiagnostics =
                     {
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ParameterlessMethodWithResponse_NoParameter_Generated.g.cs", expectedSubNamespaceGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ParameterlessMethodWithResponse_NoParameterWithResponse_Generated.g.cs", expectedSubNamespaceGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
                     },
                     ReferenceAssemblies = ReferenceAssemblies.Net.Net60

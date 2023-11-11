@@ -12,7 +12,7 @@ namespace TestServerlessApp
     public class ParameterlessMethodWithResponse
     {
         [LambdaFunction]
-        public string NoParameter()
+        public string NoParameterWithResponse()
         {
             return "OK";
         }

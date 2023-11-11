@@ -37,7 +37,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.DynamicExample_DynamicReturn_Generated::DynamicReturn"
+            "TestExecutableServerlessApp"
           ]
         },
         "Environment": {
@@ -62,7 +62,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.DynamicExample_DynamicInput_Generated::DynamicInput"
+            "TestExecutableServerlessApp"
           ]
         },
         "Environment": {
@@ -87,7 +87,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.TaskExample_TaskReturn_Generated::TaskReturn"
+            "TestExecutableServerlessApp"
           ]
         },
         "Environment": {
@@ -112,7 +112,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.VoidExample_VoidReturn_Generated::VoidReturn"
+            "TestExecutableServerlessApp"
           ]
         },
         "Environment": {
@@ -140,7 +140,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeader_Generated::OkResponseWithHeader"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -177,7 +177,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated::OkResponseWithHeaderAsync"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -214,7 +214,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated::NotFoundResponseWithHeaderV2"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -251,7 +251,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated::NotFoundResponseWithHeaderV2Async"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -288,7 +288,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated::NotFoundResponseWithHeaderV1"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -326,7 +326,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated::NotFoundResponseWithHeaderV1Async"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -364,7 +364,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.Greeter_SayHello_Generated::SayHello"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -402,7 +402,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.Greeter_SayHelloAsync_Generated::SayHelloAsync"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -437,7 +437,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.Sub1.Functions_ToUpper_Generated::ToUpper"
+            "TestExecutableServerlessApp"
           ]
         },
         "Environment": {
@@ -465,7 +465,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.NullableReferenceTypeExample_NullableHeaderHttpApi_Generated::NullableHeaderHttpApi"
+            "TestExecutableServerlessApp"
           ]
         },
         "Events": {
@@ -499,7 +499,7 @@
         "ImageUri": ".",
         "ImageConfig": {
           "Command": [
-            "TestExecutableServerlessApp::TestServerlessApp.IntrinsicExample_HasIntrinsic_Generated::HasIntrinsic"
+            "TestExecutableServerlessApp"
           ]
         },
         "Environment": {
@@ -522,13 +522,13 @@
         ],
         "PackageType": "Zip",
         "CodeUri": ".",
-        "Handler": "TestExecutableServerlessApp::TestServerlessApp.Sub1.FunctionsZipOutput_ToLower_Generated::ToLower",
+        "Handler": "TestExecutableServerlessApp",
         "Environment": {
           "Variables": {
             "ANNOTATIONS_HANDLER": "ToLower"
           }
         },
-        "Runtime": "dotnet6"
+        "Runtime": "provided.al2"
       }
     },
     "TestServerlessAppParameterlessMethodsNoParameterGenerated": {
@@ -537,7 +537,7 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "provided.al2",
         "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
@@ -545,16 +545,21 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestExecutableServerlessApp::TestServerlessApp.ParameterlessMethods_NoParameter_Generated::NoParameter"
+        "Handler": "TestExecutableServerlessApp",
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "NoParameter"
+          }
+        }
       }
     },
-    "TestServerlessAppParameterlessMethodWithResponseNoParameterGenerated": {
+    "TestServerlessAppParameterlessMethodWithResponseNoParameterWithResponseGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "provided.al2",
         "CodeUri": ".",
         "MemorySize": 256,
         "Timeout": 30,
@@ -562,7 +567,12 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestExecutableServerlessApp::TestServerlessApp.ParameterlessMethodWithResponse_NoParameter_Generated::NoParameter"
+        "Handler": "TestExecutableServerlessApp",
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "NoParameterWithResponse"
+          }
+        }
       }
     }
   },
