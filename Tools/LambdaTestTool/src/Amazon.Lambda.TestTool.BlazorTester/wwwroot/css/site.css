@@ -167,6 +167,10 @@ app {
         position: sticky;
         top: 0;
     }
+    
+    .main {
+        width: calc(100% - 250px);
+    }
 
     .main .top-row {
         position: sticky;
