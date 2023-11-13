@@ -28,7 +28,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         internal static readonly List<string> _allowdRuntimeValues = new List<string>(2)
         {
             "dotnet6",
-            "provided.al2"
+            "provided.al2",
+            "provided.al2023"
         };
 
         // Only allow alphanumeric characters
