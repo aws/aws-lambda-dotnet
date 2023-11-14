@@ -15,9 +15,9 @@ namespace Amazon.Lambda.Annotations
         /// Deploying as an executable versus a class library is required when compiling functions with Native AOT. It can also be useful to deploy as an executable to include specific versions of `Amazon.Lambda.RuntimeSupport` the .NET Lambda runtime client.
         /// </summary>
         public bool GenerateMain { get; set; }
-        
+
         /// <summary>
-        /// The runtime to set in the generated CloudFormation template. Either 'dotnet6' or 'provided.al2'.
+        /// The runtime to set in the generated CloudFormation template. Either 'dotnet6', 'provided.al2' or 'provided.al2023'.
         /// </summary>
         public string Runtime { get; set; }
     }

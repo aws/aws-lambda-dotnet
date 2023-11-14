@@ -99,14 +99,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly DiagnosticDescriptor InvalidRuntimeSelection = new DiagnosticDescriptor(id: "AWSLambda0112",
             title: "Invalid runtime selection",
             messageFormat: "The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. " + 
-                           $"It should be set to one of {string.Join(" or ", Generator._allowdRuntimeValues.ToArray())}.",
+                           $"The valid values are: {string.Join(", ", Generator._allowdRuntimeValues.ToArray())}",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
         
         public static readonly DiagnosticDescriptor ExecutableWithNoFunctions = new DiagnosticDescriptor(id: "AWSLambda0113",
             title: "Executable output with no LambdaFunction annotations",
-            messageFormat: "Your project is configured to output an executable and generate a static Main method, but you have not configured any methods with the 'LambdaFunction' attribute.",
+            messageFormat: "Your project is configured to output an executable and generate a static Main method, but you have not configured any methods with the 'LambdaFunction' attribute",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
