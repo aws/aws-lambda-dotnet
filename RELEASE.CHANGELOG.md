@@ -1,3 +1,11 @@
+### Release 2023-11-13
+* **Amazon.Lambda.AspNetCoreServer (8.1.1)**
+  * Pull Request [#1599](https://github.com/aws/aws-lambda-dotnet/pull/1599) adding `application/x-protobuf` to list of content types that should be base 64 encoded. Thanks [yuriygavriluk](https://github.com/yuriygavriluk)
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.6.1)**
+  * Updated dependency Amazon.Lambda.AspNetCoreServer to 8.1.1
+* **Amazon.Lambda.Templates (6.15.0)**
+  * Update custom runtime templates to use provided.al2023 and .NET 8
+
 ### Release 2023-10-26
 * **Amazon.Lambda.RuntimeSupport (1.10.0)**
   * Marked as trimmable for .NET 8
