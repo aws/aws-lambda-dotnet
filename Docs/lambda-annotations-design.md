@@ -368,3 +368,27 @@ Here is a preliminary list of .NET attributes that will tell the source generato
     * Map method parameter to HTTP request body. If parameter is a complex type then request body will be assumed to be JSON and deserialized into the type.
 * FromServices
     * Map method parameter to registered service in IServiceProvider
+ 
+Here is a list of features that are supported/planned in no particular priority order. The list will grow as we get deeper into implementation.
+- [x] LambdaFunction attribute triggers source generator and syncs with the CloudFormation template
+- [x] LambdaStartup attribute identifies the type that will be used to configure DI  
+- [x] DI can be used to create an instance of the class that contains the Lambda functions
+- [x] HttpApi & RestApi attributes can be used to configure API Gateway as the event source for the Lambda function
+- [x] FromHeader attribute maps method parameter to HTTP header value
+- [x] FromQuery attribute maps method parameter to HTTP query string value
+- [x] FromBody attribute maps method parameter to HTTP request body
+- [x] FromRoute attribute maps method parameter to HTTP resource path segment
+- [x] FromService attribute maps method parameter to services registered with DI. Services will be created from DI using scope for the method invocation.
+- [x] Return 400 bad request for `Convert.ChangeType` failures
+- [x] Add opt-in diagnostic information to help troubleshoot
+- [x] Add YAML support
+- [x] Add support for image based Lambda functions
+- [ ] Determine Lambda runtime based on `TargetFramework` of the project
+- [ ] Add ability to specify a custom path for the generated CloudFormation template 
+- [ ] Add S3 event support
+- [ ] Add DynamoDB event support
+- [ ] Add SQS event support
+- [ ] Add ScheduleTask support
+- [ ] Disable CloudFormation sync
+- [ ] Modify the source generator to collect and save the Lambda function metadata in a JSON file inside the `obj` folder. This metadata can be used by third party tools to identify the correct function handler string.
+
