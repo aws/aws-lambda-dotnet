@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using System.IO;
 using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
@@ -9,11 +11,13 @@ namespace TestServerlessApp
     public class NullableReferenceTypeExample_NullableHeaderHttpApi_Generated
     {
         private readonly NullableReferenceTypeExample nullableReferenceTypeExample;
+        private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
         public NullableReferenceTypeExample_NullableHeaderHttpApi_Generated()
         {
             SetExecutionEnvironment();
             nullableReferenceTypeExample = new NullableReferenceTypeExample();
+            serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
         public Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse NullableHeaderHttpApi(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
@@ -69,7 +73,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_1.0.0.0");
+            envValue.Append("amazon-lambda-annotations_1.1.0.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

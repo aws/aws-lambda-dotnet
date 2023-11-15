@@ -1,0 +1,57 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Threading.Tasks" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Validation" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes" #>
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+using System.IO;
+using Amazon.Lambda.Core;
+
+namespace <#= this._containingNamespace #>;
+
+public class GeneratedProgram
+{
+    public static async Task Main(string[] args)
+    {
+
+        switch (Environment.GetEnvironmentVariable("ANNOTATIONS_HANDLER"))
+        {
+<#
+        foreach (var model in this._lambdaFunctions)
+        {
+            #>
+            case "<#=model.LambdaMethod.Name#>":
+<#
+            if (model.GeneratedMethod.ReturnType.FullName == "void")
+            {
+#>
+                Action<<#= model.GeneratedMethod.Parameters.Any() ? string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) : "Stream" #>> <#= model.LambdaMethod.ExecutableAssemblyHandlerName #> = new <#= model.LambdaMethod.ContainingNamespace #>.<#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated().<#= model.LambdaMethod.Name #>;
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.ExecutableAssemblyHandlerName #>, new <#= this._lambdaFunctions[0].SerializerInfo.SerializerName #>()).Build().RunAsync();
+                break;
+<#    
+            }
+            else
+            {
+#>
+                Func<<#= model.GeneratedMethod.Parameters.Any() ? string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) : "Stream" #>, <#= model.GeneratedMethod.ReturnType.FullName #>> <#= model.LambdaMethod.ExecutableAssemblyHandlerName #> = new <#= model.LambdaMethod.ContainingNamespace #>.<#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated().<#= model.LambdaMethod.Name #>;
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.ExecutableAssemblyHandlerName #>, new <#= model.SerializerInfo.SerializerName #>()).Build().RunAsync();
+                break;
+<#
+            }
+        }
+        #>
+
+        }
+<#
+#>
+    }
+}

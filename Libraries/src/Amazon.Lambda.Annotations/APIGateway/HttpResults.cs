@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using Amazon.Lambda.Core;
 #if NET6_0_OR_GREATER
 using System.Buffers;
 using System.Text.Json;
@@ -65,6 +66,17 @@ namespace Amazon.Lambda.Annotations.APIGateway
         ///     V2 -> HttpApi either implicit or explicit set to V2
         /// </summary>
         public ProtocolVersion Version { get; set; }
+
+#if !NETSTANDARD2_0
+
+        /// <summary>
+        /// The JsonSerializerContext used for serializing response body using .NET's source generator serializer.
+        /// This is set when the SourceGeneratorLambdaJsonSerializer serializer is registered taking the JsonSerializerContext
+        /// assigned with it. If SourceGeneratorLambdaJsonSerializer is not used then the reflection based 
+        /// JsonSerializer.Serialize method is used.
+        /// </summary>
+        public JsonSerializerContext JsonContext { get; set; }
+#endif
     }
 
     /// <summary>
@@ -131,16 +143,13 @@ namespace Amazon.Lambda.Annotations.APIGateway
         private const string CONTENT_TYPE_TEXT_PLAIN = "text/plain";
         private const string CONTENT_TYPE_APPLICATION_OCTET_STREAM = "application/octet-stream";
 
-        private string _body;
+        private object _rawBody;
         private IDictionary<string, IList<string>> _headers;
-        private bool _isBase64Encoded;
-        private string _defaultContentType;
 
         private HttpResults(HttpStatusCode statusCode, object body = null)
         {
             StatusCode = statusCode;
-
-            FormatBody(body);
+            _rawBody = body;
         }
 
         /// <inheritdoc/>
@@ -172,7 +181,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
         {
             return new HttpResults(HttpStatusCode.Accepted, body);
         }
-        
+
         /// <summary>
         /// Creates an IHttpResult for a Bad Gateway (502) status code.
         /// </summary>
@@ -228,7 +237,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
         {
             return new HttpResults(HttpStatusCode.Forbidden, body);
         }
-        
+
         /// <summary>
         /// Creates an IHttpResult for an Internal Server Error (500) status code.
         /// </summary>
@@ -299,7 +308,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
 
             return result;
         }
-        
+
         /// <summary>
         /// Creates an IHttpResult for a Service Unavailable (503) status code.
         /// </summary>
@@ -312,7 +321,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
             {
                 result.AddHeader("Retry-After", delaySeconds.ToString());
             }
-            
+
             return result;
         }
 
@@ -337,34 +346,34 @@ namespace Amazon.Lambda.Annotations.APIGateway
         }
 
 
-    #region Serialization
+        #region Serialization
 
+
+#if !NETSTANDARD2_0
         // See comment in class documentation on the rules for serializing. If any changes are made in this method be sure to update
         // the comment above.
-        private void FormatBody(object body)
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
+            Justification = "When using this library with the Native AOT the SourceGeneratorLambdaJsonSerializer has to be registered which will provide the information needed for JsonSerializerContext and avoid the reflection based JsonSerializer.Serialize call")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050",
+            Justification = "When using this library with the Native AOT the SourceGeneratorLambdaJsonSerializer has to be registered which will provide the information needed for JsonSerializerContext and avoid the reflection based JsonSerializer.Serialize call")]
+        private static (string body, string contentType, bool base64Encoded) FormatBody(object body, JsonSerializerContext context)
         {
-        // See comment at the top about .NET Standard 2.0
-#if NETSTANDARD2_0
-            throw new NotImplementedException();
-#else
-
             if (body == null)
-                return;
+                return new (null, null, false);
 
             if (body is string str)
             {
-                _defaultContentType = CONTENT_TYPE_TEXT_PLAIN;
-                _body = str;
+                return new (str, CONTENT_TYPE_TEXT_PLAIN, false);
             }
             else if (body is Stream stream)
             {
-                _defaultContentType = CONTENT_TYPE_APPLICATION_OCTET_STREAM;
-                _isBase64Encoded = true;
                 var buffer = ArrayPool<byte>.Shared.Rent((int)stream.Length);
                 try
                 {
                     var readLength = stream.Read(buffer, 0, buffer.Length);
-                    _body = Convert.ToBase64String(buffer, 0, readLength);
+                    var serializedBody = Convert.ToBase64String(buffer, 0, readLength);
+
+                    return new(serializedBody, CONTENT_TYPE_APPLICATION_OCTET_STREAM, true);
                 }
                 finally
                 {
@@ -373,23 +382,30 @@ namespace Amazon.Lambda.Annotations.APIGateway
             }
             else if (body is byte[] binaryData)
             {
-                _defaultContentType = CONTENT_TYPE_APPLICATION_OCTET_STREAM;
-                _isBase64Encoded = true;
-                _body = Convert.ToBase64String(binaryData, 0, binaryData.Length);
+                var serializedBody = Convert.ToBase64String(binaryData, 0, binaryData.Length);
+                return new(serializedBody, CONTENT_TYPE_APPLICATION_OCTET_STREAM, true);
             }
             else if (body is IList<byte> listBinaryData)
             {
-                _defaultContentType = CONTENT_TYPE_APPLICATION_OCTET_STREAM;
-                _isBase64Encoded = true;
-                _body = Convert.ToBase64String(listBinaryData.ToArray(), 0, listBinaryData.Count);
+                var serializedBody = Convert.ToBase64String(listBinaryData.ToArray(), 0, listBinaryData.Count);
+                return new(serializedBody, CONTENT_TYPE_APPLICATION_OCTET_STREAM, true);
             }
             else
             {
-                _defaultContentType = CONTENT_TYPE_APPLICATION_JSON;
-                _body = JsonSerializer.Serialize(body);
+                string serializedBody;
+                if (context != null)
+                {
+                    serializedBody = JsonSerializer.Serialize(body, body.GetType(), context);
+                }
+                else
+                {
+                    serializedBody = JsonSerializer.Serialize(body);
+                }
+
+                return new(serializedBody, CONTENT_TYPE_APPLICATION_JSON, false);
             }
-#endif
         }
+#endif
 
         /// <inheritdoc/>
         public HttpStatusCode StatusCode { get; }
@@ -401,42 +417,48 @@ namespace Amazon.Lambda.Annotations.APIGateway
         /// <returns></returns>
         public Stream Serialize(HttpResultSerializationOptions options)
         {
-        // See comment at the top about .NET Standard 2.0
 #if NETSTANDARD2_0
             throw new NotImplementedException();
 #else
+
+            var (serializedBody, defaultContentType, isBase64Encoded) = FormatBody(_rawBody, options.JsonContext);
+
             // If the user didn't explicit set the content type then default to application/json
-            if(!string.IsNullOrEmpty(_body) && (_headers == null || !_headers.ContainsKey(HEADER_NAME_CONTENT_TYPE)))
+            if (!string.IsNullOrEmpty(serializedBody) && (_headers == null || !_headers.ContainsKey(HEADER_NAME_CONTENT_TYPE)))
             {
-                AddHeader(HEADER_NAME_CONTENT_TYPE, _defaultContentType);
+                AddHeader(HEADER_NAME_CONTENT_TYPE, defaultContentType);
             }
 
             var stream = new MemoryStream();
+            object response;
+            Type responseType;
             if (options.Format == HttpResultSerializationOptions.ProtocolFormat.RestApi ||
                 (options.Format == HttpResultSerializationOptions.ProtocolFormat.HttpApi && options.Version == HttpResultSerializationOptions.ProtocolVersion.V1))
             {
-                var response = new APIGatewayV1Response
+                response = new APIGatewayV1Response
                 {
                     StatusCode = (int)StatusCode,
-                    Body = _body,
+                    Body = serializedBody,
                     MultiValueHeaders = _headers,
-                    IsBase64Encoded = _isBase64Encoded
+                    IsBase64Encoded = isBase64Encoded
                 };
 
-                JsonSerializer.Serialize(stream, response);
+                responseType = typeof(APIGatewayV1Response);
             }
             else
             {
-                var response = new APIGatewayV2Response
+                response = new APIGatewayV2Response
                 {
                     StatusCode = (int)StatusCode,
-                    Body = _body,
+                    Body = serializedBody,
                     Headers = ConvertToV2MultiValueHeaders(_headers),
-                    IsBase64Encoded = _isBase64Encoded
+                    IsBase64Encoded = isBase64Encoded
                 };
 
-                JsonSerializer.Serialize(stream, response);
+                responseType = typeof(APIGatewayV2Response);
             }
+
+            JsonSerializer.Serialize(stream, response, responseType, AnnotationsResponseJsonSerializerContext.Default);
 
             stream.Position = 0;
             return stream;
@@ -468,7 +490,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
 #if !NETSTANDARD2_0
         // Class representing the V1 API Gateway response. Very similiar to Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse but this library can
         // not take a dependency on Amazon.Lambda.APIGatewayEvents so it has to have its own version.
-        private class APIGatewayV1Response
+        internal class APIGatewayV1Response
         {
             [JsonPropertyName("statusCode")]
             public int StatusCode { get; set; }
@@ -485,7 +507,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
 
         // Class representing the V2 API Gateway response. Very similiar to Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse but this library can
         // not take a dependency on Amazon.Lambda.APIGatewayEvents so it has to have its own version.
-        private class APIGatewayV2Response
+        internal class APIGatewayV2Response
         {
             [JsonPropertyName("statusCode")]
             public int StatusCode { get; set; }
@@ -502,6 +524,15 @@ namespace Amazon.Lambda.Annotations.APIGateway
             public bool IsBase64Encoded { get; set; }
         }
 #endif
-#endregion
+        #endregion
     }
+
+#if !NETSTANDARD2_0
+    [JsonSerializable(typeof(HttpResults.APIGatewayV1Response))]
+    [JsonSerializable(typeof(HttpResults.APIGatewayV2Response))]
+    internal partial class AnnotationsResponseJsonSerializerContext : JsonSerializerContext
+    {
+    }
+
+#endif
 }

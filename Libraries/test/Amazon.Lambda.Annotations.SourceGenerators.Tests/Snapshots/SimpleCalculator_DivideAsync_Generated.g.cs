@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
 
@@ -19,6 +21,7 @@ namespace TestServerlessApp
             // By default, Lambda function class is added to the service container using the singleton lifetime
             // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
             services.AddSingleton<SimpleCalculator>();
+            services.AddSingleton<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
             var startup = new TestServerlessApp.Startup();
             startup.ConfigureServices(services);
@@ -31,6 +34,7 @@ namespace TestServerlessApp
             // this allows creating scoped dependencies without creating a scope manually.
             using var scope = serviceProvider.CreateScope();
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
+            var serializer = scope.ServiceProvider.GetRequiredService<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
             var validationErrors = new List<string>();
 
@@ -77,8 +81,13 @@ namespace TestServerlessApp
             }
 
             var response = await simpleCalculator.DivideAsync(first, second);
+            var memoryStream = new MemoryStream();
+            serializer.Serialize(response, memoryStream);
+            memoryStream.Position = 0;
 
-            var body = System.Text.Json.JsonSerializer.Serialize(response);
+            // convert stream to string
+            StreamReader reader = new StreamReader( memoryStream );
+            var body = reader.ReadToEnd();
 
             return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
             {
@@ -103,7 +112,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_1.0.0.0");
+            envValue.Append("amazon-lambda-annotations_1.1.0.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

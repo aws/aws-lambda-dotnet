@@ -130,6 +130,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.LexV2Events",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest", "test\Amazon.Lambda.RuntimeSupport.Tests\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.csproj", "{0BD83939-458C-4EF5-8663-7098AD1200F2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestExecutableServerlessApp", "test\TestExecutableServerlessApp\TestExecutableServerlessApp.csproj", "{DD378063-C54A-44C7-9A6F-32A6A1AE94B3}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		test\EventsTests.Shared\EventsTests.Shared.projitems*{44e9d925-b61d-4234-97b7-61424c963ba6}*SharedItemsImports = 5
@@ -353,6 +355,10 @@ Global
 		{0BD83939-458C-4EF5-8663-7098AD1200F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0BD83939-458C-4EF5-8663-7098AD1200F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0BD83939-458C-4EF5-8663-7098AD1200F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD378063-C54A-44C7-9A6F-32A6A1AE94B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD378063-C54A-44C7-9A6F-32A6A1AE94B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD378063-C54A-44C7-9A6F-32A6A1AE94B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD378063-C54A-44C7-9A6F-32A6A1AE94B3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -415,6 +421,7 @@ Global
 		{BF85932E-2DFF-41CD-8090-A672468B8FBB} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{0BD83939-458C-4EF5-8663-7098AD1200F2} = {B5BD0336-7D08-492C-8489-42C987E29B39}
+		{DD378063-C54A-44C7-9A6F-32A6A1AE94B3} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}

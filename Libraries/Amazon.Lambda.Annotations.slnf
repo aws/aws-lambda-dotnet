@@ -2,13 +2,15 @@
   "solution": {
     "path": "Libraries.sln",
     "projects": [
-      "src\\Amazon.Lambda.APIGatewayEvents\\Amazon.Lambda.APIGatewayEvents.csproj",
       "src\\Amazon.Lambda.Annotations.SourceGenerator\\Amazon.Lambda.Annotations.SourceGenerator.csproj",
       "src\\Amazon.Lambda.Annotations\\Amazon.Lambda.Annotations.csproj",
+      "src\\Amazon.Lambda.APIGatewayEvents\\Amazon.Lambda.APIGatewayEvents.csproj",
+      "src\\Amazon.Lambda.RuntimeSupport\\Amazon.Lambda.RuntimeSupport.csproj",
       "src\\Amazon.Lambda.Core\\Amazon.Lambda.Core.csproj",
       "src\\Amazon.Lambda.Serialization.SystemTextJson\\Amazon.Lambda.Serialization.SystemTextJson.csproj",
       "test\\Amazon.Lambda.Annotations.SourceGenerators.Tests\\Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj",
       "test\\TestServerlessApp.IntegrationTests\\TestServerlessApp.IntegrationTests.csproj",
+      "test\\TestExecutableServerlessApp\\TestExecutableServerlessApp.csproj",
       "test\\TestServerlessApp\\TestServerlessApp.csproj"
     ]
   }

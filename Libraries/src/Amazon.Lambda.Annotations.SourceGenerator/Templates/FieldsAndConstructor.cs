@@ -63,9 +63,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write(";\r\n");
+            this.Write(";\r\n        private readonly ");
             
             #line 18 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.SerializerInfo.SerializerName));
+            
+            #line default
+            #line hidden
+            this.Write(" serializer;\r\n");
+            
+            #line 19 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
 
     }
 
@@ -74,14 +81,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("\r\n        public ");
             
-            #line 22 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 23 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ContainingType.Name));
             
             #line default
             #line hidden
             this.Write("()\r\n        {\r\n            SetExecutionEnvironment();\r\n");
             
-            #line 25 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 26 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
 
     if (_model.LambdaMethod.UsingDependencyInjection)
     {
@@ -95,14 +102,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
             services.AddSingleton<");
             
-            #line 33 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 34 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
+            
+            #line default
+            #line hidden
+            this.Write(">();\r\n            services.AddSingleton<");
+            
+            #line 35 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.SerializerInfo.SerializerName));
             
             #line default
             #line hidden
             this.Write(">();\r\n\r\n            var startup = new ");
             
-            #line 35 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 37 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.StartupType.FullName));
             
             #line default
@@ -110,7 +124,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("();\r\n            startup.ConfigureServices(services);\r\n            serviceProvide" +
                     "r = services.BuildServiceProvider();\r\n");
             
-            #line 38 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 40 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
 
     }
     else
@@ -121,21 +135,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            ");
             
-            #line 43 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 45 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
             this.Write(" = new ");
             
-            #line 43 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 45 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
+            
+            #line default
+            #line hidden
+            this.Write("();\r\n            serializer = new ");
+            
+            #line 46 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.SerializerInfo.SerializerName));
             
             #line default
             #line hidden
             this.Write("();\r\n");
             
-            #line 44 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 47 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
 
     }
 
@@ -168,7 +189,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
         /// <summary>
         /// The string builder that generation-time code is using to assemble generated output
         /// </summary>
-        protected System.Text.StringBuilder GenerationEnvironment
+        public System.Text.StringBuilder GenerationEnvironment
         {
             get
             {

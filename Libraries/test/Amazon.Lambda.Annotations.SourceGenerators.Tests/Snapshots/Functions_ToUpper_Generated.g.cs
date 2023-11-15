@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using System.IO;
 using Amazon.Lambda.Core;
 
 namespace TestServerlessApp.Sub1
@@ -9,11 +11,13 @@ namespace TestServerlessApp.Sub1
     public class Functions_ToUpper_Generated
     {
         private readonly Functions functions;
+        private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
         public Functions_ToUpper_Generated()
         {
             SetExecutionEnvironment();
             functions = new Functions();
+            serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
         public string ToUpper(string text)
@@ -33,7 +37,7 @@ namespace TestServerlessApp.Sub1
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_1.0.0.0");
+            envValue.Append("amazon-lambda-annotations_1.1.0.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

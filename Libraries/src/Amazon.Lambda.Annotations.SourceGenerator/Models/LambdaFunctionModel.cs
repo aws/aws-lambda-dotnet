@@ -27,12 +27,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public TypeModel StartupType { get; set; }
 
         /// <summary>
+        /// The original method name.
+        /// </summary>
+        public string MethodName => LambdaMethod.Name;
+
+        /// <summary>
         /// Gets or sets fully qualified name of the serializer used for serialization or deserialization.
         /// </summary>
-        public string Serializer { get; set; }
+        public LambdaSerializerInfo SerializerInfo { get; set; } =
+            new LambdaSerializerInfo("Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer", null);
+        
+        /// <summary>
+        /// Gets or sets if the output is an executable.
+        /// </summary>
+        public bool IsExecutable { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the Lambda runtime to use.
+        /// </summary>
+        public string Runtime { get; set; }
 
         /// <inheritdoc />
-        public string Handler => $"{LambdaMethod.ContainingAssembly}::{GeneratedMethod.ContainingType.FullName}::{LambdaMethod.Name}";
+        public string Handler => IsExecutable ? LambdaMethod.ContainingAssembly : $"{LambdaMethod.ContainingAssembly}::{GeneratedMethod.ContainingType.FullName}::{LambdaMethod.Name}";
 
         /// <inheritdoc />
         public string ResourceName => LambdaMethod.LambdaFunctionAttribute.Data.ResourceName ??

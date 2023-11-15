@@ -104,7 +104,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var propertiesPath = $"{lambdaFunctionPath}.Properties";
 
             if (!_templateWriter.Exists(lambdaFunctionPath))
-                ApplyLambdaFunctionDefaults(lambdaFunctionPath, propertiesPath);
+                ApplyLambdaFunctionDefaults(lambdaFunctionPath, propertiesPath, lambdaFunction.Runtime);
 
             ProcessLambdaFunctionProperties(lambdaFunction, propertiesPath, relativeProjectUri);
             ProcessLambdaFunctionEventAttributes(lambdaFunction);
@@ -152,6 +152,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 case LambdaPackageType.Zip:
                     _templateWriter.SetToken($"{propertiesPath}.CodeUri", relativeProjectUri);
                     _templateWriter.SetToken($"{propertiesPath}.Handler", lambdaFunction.Handler);
+                    _templateWriter.SetToken($"{propertiesPath}.Runtime", lambdaFunction.Runtime);
                     _templateWriter.RemoveToken($"{propertiesPath}.ImageUri");
                     _templateWriter.RemoveToken($"{propertiesPath}.ImageConfig");
                     break;
@@ -166,6 +167,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
                 default:
                     throw new InvalidEnumArgumentException($"The {nameof(lambdaFunction.PackageType)} does not match any supported enums of type {nameof(LambdaPackageType)}");
+            }
+
+            if (lambdaFunction.IsExecutable)
+            {
+                this._templateWriter.SetToken($"{propertiesPath}.Environment.Variables.ANNOTATIONS_HANDLER", lambdaFunction.MethodName);
             }
         }
 
@@ -251,12 +257,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// <summary>
         /// Writes the default values for the Lambda function's metadata and properties.
         /// </summary>
-        private void ApplyLambdaFunctionDefaults(string lambdaFunctionPath, string propertiesPath)
+        private void ApplyLambdaFunctionDefaults(string lambdaFunctionPath, string propertiesPath, string runtime)
         {
             _templateWriter.SetToken($"{lambdaFunctionPath}.Type", "AWS::Serverless::Function");
             _templateWriter.SetToken($"{lambdaFunctionPath}.Metadata.Tool", CREATION_TOOL);
 
-            _templateWriter.SetToken($"{propertiesPath}.Runtime", "dotnet6");
+            _templateWriter.SetToken($"{propertiesPath}.Runtime", runtime);
             _templateWriter.SetToken($"{propertiesPath}.CodeUri", "");
             _templateWriter.SetToken($"{propertiesPath}.MemorySize", 256);
             _templateWriter.SetToken($"{propertiesPath}.Timeout", 30);

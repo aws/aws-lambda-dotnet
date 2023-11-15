@@ -1,6 +1,7 @@
 ﻿<#@ template language="C#" #>
 <#@ assembly name="System.Core" #>
 <#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Threading.Tasks" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
@@ -26,7 +27,7 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
 #>
 
 
-        public <#= _model.LambdaMethod.ReturnsVoidOrGenericTask ? "async " : "" #><#= _model.GeneratedMethod.ReturnType.FullName #> <#= _model.LambdaMethod.Name #>(<#= string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) #>)
+        public <#= _model.LambdaMethod.ReturnsVoidOrGenericTask ? "async " : "" #><#= _model.GeneratedMethod.ReturnType.FullName #> <#= _model.LambdaMethod.Name #>(<#= _model.GeneratedMethod.Parameters.Any() ? string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) : "Stream stream" #>)
         {
 <#
     if (_model.LambdaMethod.UsingDependencyInjection)
@@ -37,6 +38,7 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
             using var scope = serviceProvider.CreateScope();
             var <#=
                 _model.LambdaMethod.ContainingType.Name.ToCamelCase() #> = scope.ServiceProvider.GetRequiredService<<#= _model.LambdaMethod.ContainingType.Name #>>();
+            var serializer = scope.ServiceProvider.GetRequiredService<<#= _model.SerializerInfo.SerializerName #>>();
 
 <#
     }

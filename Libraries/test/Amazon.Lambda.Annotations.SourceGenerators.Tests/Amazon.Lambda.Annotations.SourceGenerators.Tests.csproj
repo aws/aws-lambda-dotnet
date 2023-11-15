@@ -33,12 +33,88 @@
         <Content Remove="..\TestServerlessApp\obj\**" />
         <Content Remove="..\TestServerlessApp\bin\**" />
         <Content Remove="..\TestServerlessApp\serverless.template" />
+        <Content Include="..\TestExecutableServerlessApp\**">
+            <Link>TestExecutableServerlessApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Remove="..\TestExecutableServerlessApp\obj\**" />
+        <Content Remove="..\TestExecutableServerlessApp\bin\**" />
+        <Content Remove="..\TestExecutableServerlessApp\serverless.template" />
 
 		<Content Include="..\NonCompilableCodeFile.cs">
 			<Link>NonCompilableCodeFile.cs</Link>
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
+
+		<Content Update="Snapshots\Program.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\Functions_AsyncStartupToUpper_Generated.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ServerlessTemplates\subnamespace_executable.template">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\Functions_AsyncStartupToLower_Generated.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ProgramZipOutput.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ServerlessTemplates\subnamespace_executableimage.template">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ServerlessTemplates\greeter_executable.template">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\GreeterExecutable_SayHello_Generated.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\GreeterExecutable_SayHelloAsync_Generated.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ParameterlessMethods_ToUpper_Generated.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ProgramParameterless.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ServerlessTemplates\parameterless.template">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ParameterlessMethodWithResponse_ToUpper_Generated.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ProgramParameterlessWithResponse.g.cs">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+
+		<Content Update="Snapshots\ServerlessTemplates\parameterlesswithresponse.template">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
 	</ItemGroup>
+
+    <ItemGroup>
+        <Content Include="..\..\src\Amazon.Lambda.RuntimeSupport\**">
+            <Link>Amazon.Lambda.RuntimeSupport\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Remove="..\..\src\Amazon.Lambda.RuntimeSupport\obj\**" />
+        <Content Remove="..\..\src\Amazon.Lambda.RuntimeSupport\bin\**" />
+    </ItemGroup>
 
     <ItemGroup>
         <Content Include="..\..\src\Amazon.Lambda.Annotations\**">
@@ -62,9 +138,10 @@
       <None Remove="Snapshots\ServerlessTemplates\dynamicexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\intrinsicexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\nullreferenceexample.template" />
+      <None Remove="Snapshots\ServerlessTemplates\sourcegeneratorserializationexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
       <None Remove="Snapshots\ServerlessTemplates\taskexample.template" />
-      <None Remove="Snapshots\ServerlessTemplates\voidexample.template" />
+      <None Remove="Snapshots\ServerlessTemplates\voidexample - Copy.template" />
       <None Update="WriterTests\snapshot.yaml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
@@ -88,6 +165,7 @@
 		about using newer versions of System.Runtime then it can handle. This is not an issue in a end user scenario.
 	  -->
       <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" AdditionalProperties="TargetFramework=netstandard2.0" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
     </ItemGroup>
 

@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using System.IO;
 using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
@@ -9,11 +11,13 @@ namespace TestServerlessApp
     public class DynamicExample_DynamicReturn_Generated
     {
         private readonly DynamicExample dynamicExample;
+        private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
         public DynamicExample_DynamicReturn_Generated()
         {
             SetExecutionEnvironment();
             dynamicExample = new DynamicExample();
+            serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
         public dynamic DynamicReturn(string text, Amazon.Lambda.Core.ILambdaContext __context__)
@@ -33,7 +37,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_1.0.0.0");
+            envValue.Append("amazon-lambda-annotations_1.1.0.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

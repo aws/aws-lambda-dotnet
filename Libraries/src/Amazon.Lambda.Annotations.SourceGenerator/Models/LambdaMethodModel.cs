@@ -76,6 +76,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public string Name { get; set; }
 
         /// <summary>
+        /// Gets or sets name of the original method.
+        /// </summary>
+        public string ExecutableAssemblyHandlerName => $"{this.Name.ToLower()}_handler";
+
+        /// <summary>
         /// Returns true if original method uses dependency injection.
         /// </summary>
         public bool UsingDependencyInjection { get; set; }

@@ -17,7 +17,8 @@
             var httpResults = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
             HttpResultSerializationOptions.ProtocolFormat serializationFormat = <#= restApiAttribute != null ? "HttpResultSerializationOptions.ProtocolFormat.RestApi" : "HttpResultSerializationOptions.ProtocolFormat.HttpApi"#>;
             HttpResultSerializationOptions.ProtocolVersion serializationVersion = <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "HttpResultSerializationOptions.ProtocolVersion.V1" : "HttpResultSerializationOptions.ProtocolVersion.V2"#>;
-            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion };
+            System.Text.Json.Serialization.JsonSerializerContext jsonContext = <#= _model.SerializerInfo.SerializerJsonContextName != null ? _model.SerializerInfo.SerializerJsonContextName + ".Default" : "null"#>;
+            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion, JsonContext = jsonContext };
             var response = httpResults.Serialize(serializationOptions);
 <#
         }
@@ -64,8 +65,13 @@
                 else
                 {
 #>
+            var memoryStream = new MemoryStream();
+            serializer.Serialize(response, memoryStream);
+            memoryStream.Position = 0;
 
-            var body = <#= _model.Serializer #>.Serialize(response);
+            // convert stream to string
+            StreamReader reader = new StreamReader( memoryStream );
+            var body = reader.ReadToEnd();
 <#
                 }
             }
