@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v1.0.0.0).",
+  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v0.13.3.0).",
   "Parameters": {
     "ArchitectureTypeParameter": {
       "Type": "String",
@@ -715,6 +715,90 @@
         "ImageConfig": {
           "Command": [
             "TestServerlessApp::TestServerlessApp.FromScratch.NoSerializerAttributeReference_ToUpper_Generated::ToUpper"
+          ]
+        }
+      }
+    },
+    "RestAuthorizerTest": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
+      "Properties": {
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.CustomAuthorizerRestExample_RestAuthorizer_Generated::RestAuthorizer"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/rest/authorizer",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "HttpApiAuthorizerTest": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
+      "Properties": {
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.CustomAuthorizerHttpApiExample_HttpApiAuthorizer_Generated::HttpApiAuthorizer"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/api/authorizer",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppIntrinsicExampleHasIntrinsicGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.IntrinsicExample_HasIntrinsic_Generated::HasIntrinsic"
           ]
         }
       }
