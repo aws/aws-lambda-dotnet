@@ -59,7 +59,8 @@ namespace TestServerlessApp
             var httpResults = await customizeResponseExamples.OkResponseWithHeaderAsync(x, __context__);
             HttpResultSerializationOptions.ProtocolFormat serializationFormat = HttpResultSerializationOptions.ProtocolFormat.RestApi;
             HttpResultSerializationOptions.ProtocolVersion serializationVersion = HttpResultSerializationOptions.ProtocolVersion.V1;
-            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion };
+            System.Text.Json.Serialization.JsonSerializerContext jsonContext = null;
+            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion, JsonContext = jsonContext };
             var response = httpResults.Serialize(serializationOptions);
             return response;
         }

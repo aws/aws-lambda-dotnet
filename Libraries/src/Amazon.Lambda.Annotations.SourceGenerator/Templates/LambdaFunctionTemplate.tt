@@ -38,7 +38,7 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
             using var scope = serviceProvider.CreateScope();
             var <#=
                 _model.LambdaMethod.ContainingType.Name.ToCamelCase() #> = scope.ServiceProvider.GetRequiredService<<#= _model.LambdaMethod.ContainingType.Name #>>();
-            var serializer = scope.ServiceProvider.GetRequiredService<<#= _model.Serializer #>>();
+            var serializer = scope.ServiceProvider.GetRequiredService<<#= _model.SerializerInfo.SerializerName #>>();
 
 <#
     }

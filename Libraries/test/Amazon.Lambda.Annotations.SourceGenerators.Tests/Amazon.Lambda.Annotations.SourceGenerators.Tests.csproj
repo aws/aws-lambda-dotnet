@@ -138,9 +138,10 @@
       <None Remove="Snapshots\ServerlessTemplates\dynamicexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\intrinsicexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\nullreferenceexample.template" />
+      <None Remove="Snapshots\ServerlessTemplates\sourcegeneratorserializationexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
       <None Remove="Snapshots\ServerlessTemplates\taskexample.template" />
-      <None Remove="Snapshots\ServerlessTemplates\voidexample.template" />
+      <None Remove="Snapshots\ServerlessTemplates\voidexample - Copy.template" />
       <None Update="WriterTests\snapshot.yaml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>

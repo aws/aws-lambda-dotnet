@@ -59,7 +59,8 @@ namespace TestServerlessApp
             var httpResults = customizeResponseExamples.NotFoundResponseWithHeaderV2(x, __context__);
             HttpResultSerializationOptions.ProtocolFormat serializationFormat = HttpResultSerializationOptions.ProtocolFormat.HttpApi;
             HttpResultSerializationOptions.ProtocolVersion serializationVersion = HttpResultSerializationOptions.ProtocolVersion.V2;
-            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion };
+            System.Text.Json.Serialization.JsonSerializerContext jsonContext = null;
+            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion, JsonContext = jsonContext };
             var response = httpResults.Serialize(serializationOptions);
             return response;
         }

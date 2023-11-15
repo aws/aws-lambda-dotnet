@@ -77,7 +77,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         DiagnosticResult.CompilerError("AWSLambda0113")
-                            .WithMessage("Your project is configured to output an executable and generate a static Main method, but you have not configured any methods with the 'LambdaFunction' attribute."),
+                            .WithMessage("Your project is configured to output an executable and generate a static Main method, but you have not configured any methods with the 'LambdaFunction' attribute"),
                         DiagnosticResult.CompilerError("CS5001")
                             .WithMessage("Program does not contain a static 'Main' method suitable for an entry point"),
                     },
@@ -658,6 +658,71 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 if (file.EndsWith("Program.cs") && content.Contains("Task Main(string[] args)"))
                     continue;
                 
+                test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
+            }
+
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifySourceGeneratorSerializerWithHttpResultsBody()
+        {
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "sourcegeneratorserializationexample.template"))).ToEnvironmentLineEndings();
+            var expectedFunctionContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SourceGenerationSerializationExample_GetPerson_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramSourceGeneratorSerializationExample.g.cs"))).ToEnvironmentLineEndings();
+
+            var test = new VerifyCS.Test
+            {
+                TestState =
+                {
+                    OutputKind = OutputKind.ConsoleApplication,
+                    Sources =
+                    {
+                        (Path.Combine("TestExecutableServerlessApp", "SourceGenerationSerializationExample.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "SourceGenerationSerializationExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
+                        (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "SourceGenerationSerializationExample_GetPerson_Generated.g.cs",
+                            SourceText.From(expectedFunctionContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "Program.g.cs",
+                            SourceText.From(expectedProgramGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("SourceGenerationSerializationExample_GetPerson_Generated.g.cs", expectedFunctionContent),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+
+                        // The test framework doesn't appear to also execute the System.Text.Json source generator so Annotations generated code relying on the generated System.Text.Json code does not exist
+                        // so we get compile errors. In an real world scenario they are both run and the applicaton compiles correctly.
+                        DiagnosticResult.CompilerError("CS0117").WithSpan($"Amazon.Lambda.Annotations.SourceGenerator{Path.DirectorySeparatorChar}Amazon.Lambda.Annotations.SourceGenerator.Generator{Path.DirectorySeparatorChar}SourceGenerationSerializationExample_GetPerson_Generated.g.cs", 29, 137, 29, 144).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "Default"),
+                        DiagnosticResult.CompilerError("CS0534").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 28, 26, 28, 54).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "System.Text.Json.Serialization.JsonSerializerContext.GeneratedSerializerOptions.get"),
+                        DiagnosticResult.CompilerError("CS0534").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 28, 26, 28, 54).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "System.Text.Json.Serialization.JsonSerializerContext.GetTypeInfo(System.Type)"),
+                        DiagnosticResult.CompilerError("CS7036").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 28, 26, 28, 54).WithArguments("options", "System.Text.Json.Serialization.JsonSerializerContext.JsonSerializerContext(System.Text.Json.JsonSerializerOptions?)"),
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                }
+            };
+
+            foreach (var file in Directory.GetFiles(
+                         Path.Combine("Amazon.Lambda.RuntimeSupport"),
+                         "*.cs", SearchOption.AllDirectories))
+            {
+                var content = await File.ReadAllTextAsync(file);
+
+                // Don't include RuntimeSupport's entry point.
+                if (file.EndsWith("Program.cs") && content.Contains("Task Main(string[] args)"))
+                    continue;
+
                 test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
             }
 

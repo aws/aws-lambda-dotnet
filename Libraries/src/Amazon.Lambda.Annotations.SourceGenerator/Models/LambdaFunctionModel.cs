@@ -34,8 +34,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// <summary>
         /// Gets or sets fully qualified name of the serializer used for serialization or deserialization.
         /// </summary>
-        public string Serializer { get; set; } =
-            "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
+        public LambdaSerializerInfo SerializerInfo { get; set; } =
+            new LambdaSerializerInfo("Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer", null);
         
         /// <summary>
         /// Gets or sets if the output is an executable.

@@ -35,7 +35,7 @@ public class GeneratedProgram
             {
 #>
                 Action<<#= model.GeneratedMethod.Parameters.Any() ? string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) : "Stream" #>> <#= model.LambdaMethod.ExecutableAssemblyHandlerName #> = new <#= model.LambdaMethod.ContainingNamespace #>.<#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated().<#= model.LambdaMethod.Name #>;
-                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.ExecutableAssemblyHandlerName #>, new <#= this._lambdaFunctions[0].Serializer #>()).Build().RunAsync();
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.ExecutableAssemblyHandlerName #>, new <#= this._lambdaFunctions[0].SerializerInfo.SerializerName #>()).Build().RunAsync();
                 break;
 <#    
             }
@@ -43,7 +43,7 @@ public class GeneratedProgram
             {
 #>
                 Func<<#= model.GeneratedMethod.Parameters.Any() ? string.Join(", ", model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName}")) : "Stream" #>, <#= model.GeneratedMethod.ReturnType.FullName #>> <#= model.LambdaMethod.ExecutableAssemblyHandlerName #> = new <#= model.LambdaMethod.ContainingNamespace #>.<#= model.LambdaMethod.ContainingType.Name #>_<#= model.LambdaMethod.Name #>_Generated().<#= model.LambdaMethod.Name #>;
-                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.ExecutableAssemblyHandlerName #>, new <#= model.Serializer #>()).Build().RunAsync();
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(<#= model.LambdaMethod.ExecutableAssemblyHandlerName #>, new <#= model.SerializerInfo.SerializerName #>()).Build().RunAsync();
                 break;
 <#
             }

@@ -15,7 +15,7 @@
     {
 #>
         private readonly <#= _model.LambdaMethod.ContainingType.Name #> <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>;
-        private readonly <#= _model.Serializer #> serializer;
+        private readonly <#= _model.SerializerInfo.SerializerName #> serializer;
 <#
     }
 #>
@@ -32,7 +32,7 @@
             // By default, Lambda function class is added to the service container using the singleton lifetime
             // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
             services.AddSingleton<<#= _model.LambdaMethod.ContainingType.Name #>>();
-            services.AddSingleton<<#= _model.Serializer #>>();
+            services.AddSingleton<<#= _model.SerializerInfo.SerializerName #>>();
 
             var startup = new <#= _model.StartupType.FullName #>();
             startup.ConfigureServices(services);
@@ -43,7 +43,7 @@
     {
 #>
             <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #> = new <#= _model.LambdaMethod.ContainingType.Name #>();
-            serializer = new <#= _model.Serializer #>();
+            serializer = new <#= _model.SerializerInfo.SerializerName #>();
 <#
     }
 #>
