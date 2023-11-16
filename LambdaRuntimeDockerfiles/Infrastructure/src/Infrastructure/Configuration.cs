@@ -34,7 +34,7 @@ namespace Infrastructure
         // The default behavior is to specify a channel and that installs the latest version in that channel
         // By specifying a specific .NET SDK version, you override the default channel behavior
         public readonly Dictionary<string, string> DotnetSdkVersions = new Dictionary<string, string> { };
-        public readonly Dictionary<string, string> DockerBuildImages = new Dictionary<string, string> { {"net6", "6.0-bullseye-slim"}, {"net7", "7.0-bullseye-slim"}, {"net8", "8.0-preview-bookworm-slim"} };
+        public readonly Dictionary<string, string> DockerBuildImages = new Dictionary<string, string> { {"net6", "6.0-bullseye-slim"}, {"net7", "7.0-bullseye-slim"}, {"net8", "8.0-bookworm-slim"} };
         public readonly Dictionary<string, string> BaseImageAMD64Tags = new Dictionary<string, string> { { "net6", "contributed-base-image-x86_64" }, { "net7", "contributed-base-image-x86_64" }, { "net8", "contributed-base-image-x86_64" } };
         public readonly Dictionary<string, string> BaseImageARM64Tags = new Dictionary<string, string> { { "net6", "contributed-base-image-arm64" }, { "net7", "contributed-base-image-arm64" }, { "net8", "contributed-base-image-arm64" } };
         public readonly string[] Frameworks = Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION")?.Split(";");
