@@ -1,3 +1,8 @@
+### Release 2023-11-15
+* **Amazon.Lambda.Annotations (1.1.0)**
+  * Added support for deploying as an executable assembly and targeting provided.al2 and provided.al2023. This allows support for deploying .NET 8 AOT Lambda functions.
+  * Addressed AOT trim warnings.
+
 ### Release 2023-11-13
 * **Amazon.Lambda.AspNetCoreServer (8.1.1)**
   * Pull Request [#1599](https://github.com/aws/aws-lambda-dotnet/pull/1599) adding `application/x-protobuf` to list of content types that should be base 64 encoded. Thanks [yuriygavriluk](https://github.com/yuriygavriluk)
