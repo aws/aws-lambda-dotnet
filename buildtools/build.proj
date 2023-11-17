@@ -168,11 +168,10 @@
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
     </Target>
     <Target Name="build-lambda-test-tool-package" DependsOnTargets="init">
-        <Exec Command="dotnet msbuild aws-lambda-test-tool-netcore.sln /t:Rebuild /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Tools\LambdaTestTool"/>
-        <Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester31-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>
-		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester50-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>		
+        <Exec Command="dotnet msbuild aws-lambda-test-tool-netcore.sln /t:Rebuild /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Tools\LambdaTestTool"/>	
 		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester60-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>		
-		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester70-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>	
+		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester70-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>
+		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester80-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>		
     </Target>
     <Target Name="build-lambda-test-tool-package-cicd" DependsOnTargets="init">
         <Exec Command="dotnet msbuild -restore /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Tools\LambdaTestTool"/>
@@ -181,17 +180,17 @@
         <PropertyGroup>
             <Command>dotnet test</Command>
         </PropertyGroup>
-		<Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests.NETCore31"/>
+		<Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests"/>
     </Target>
         <Target Name="test-lambda-test-tool-cicd" DependsOnTargets="build-lambda-test-tool-package-cicd">
         <PropertyGroup>
             <Command>dotnet test</Command>
         </PropertyGroup>
-		<Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests.NETCore31"/>
+		<Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests"/>
     </Target>
     <Target Name="install-lambda-test-tool" DependsOnTargets="build-lambda-test-tool-package">
-        <Exec Command="dotnet tool uninstall -g Amazon.Lambda.TestTool-3.1" IgnoreExitCode="true"/>
-        <Exec Command="dotnet tool install --add-source . -g Amazon.Lambda.TestTool-3.1" WorkingDirectory="../Deployment"/>
+        <Exec Command="dotnet tool uninstall -g Amazon.Lambda.TestTool-8.0" IgnoreExitCode="true"/>
+        <Exec Command="dotnet tool install --add-source . -g Amazon.Lambda.TestTool-8.0" WorkingDirectory="../Deployment"/>
 	</Target>
     <Target Name="build-project-packages">
         <Exec Command="dotnet msbuild -restore /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>

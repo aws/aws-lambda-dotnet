@@ -1,4 +1,4 @@
-namespace Amazon.Lambda.TestTool.Tests.NET6
+namespace Amazon.Lambda.TestTool.Tests
 {
     public class SourceGeneratorTests
     {
@@ -10,7 +10,7 @@ namespace Amazon.Lambda.TestTool.Tests.NET6
                 Mode = TestToolStartup.RunConfiguration.RunMode.Test,
                 OutputWriter = new StringWriter()
             };
-            var buildPath = Path.GetFullPath($"../../../../LambdaFunctions/net6/SourceGeneratorExample/bin/Debug/net6.0");
+            var buildPath = Path.GetFullPath($"../../../../LambdaFunctions/SourceGeneratorExample/bin/Debug/{TestUtils.GetTargetFramework()}");
 
             TestToolStartup.Startup("Unit Tests", null, new string[] { "--path", buildPath, "--no-ui", "--payload", "{\"Name\" : \"FooBar\"}", "--config-file", "SourceGeneratorInputAndOutput.json" }, runConfiguration);
             Assert.Contains("Response = FooBar", runConfiguration.OutputWriter.ToString());
@@ -24,7 +24,7 @@ namespace Amazon.Lambda.TestTool.Tests.NET6
                 Mode = TestToolStartup.RunConfiguration.RunMode.Test,
                 OutputWriter = new StringWriter()
             };
-            var buildPath = Path.GetFullPath($"../../../../LambdaFunctions/net6/SourceGeneratorExample/bin/Debug/net6.0");
+            var buildPath = Path.GetFullPath($"../../../../LambdaFunctions/SourceGeneratorExample/bin/Debug/{TestUtils.GetTargetFramework()}");
 
             TestToolStartup.Startup("Unit Tests", null, new string[] { "--path", buildPath, "--no-ui", "--payload", "{\"Name\" : \"FooBar\"}", "--config-file", "SourceGeneratorAsyncInputOnly.json" }, runConfiguration);
             Assert.Contains("Calling function with:", runConfiguration.OutputWriter.ToString());
