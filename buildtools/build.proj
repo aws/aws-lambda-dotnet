@@ -9,7 +9,7 @@
         <PackCommand>dotnet pack --no-build -c $(Configuration) -o $(MSBuildThisFileDirectory)/../Deployment/nuget-packages</PackCommand>
 		<PackWithConfigurationCommand>dotnet pack --no-build -o $(MSBuildThisFileDirectory)/../Deployment/nuget-packages</PackWithConfigurationCommand>
         <SignAssembly Condition=" '$(SignAssembly)' == '' ">true</SignAssembly>
-        <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
+        <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)/public.snk</AssemblyOriginatorKeyFile>
         <BlueprintPackagerArguments Condition="'$(UpdateBlueprintPackageVersions)'=='true'">--updateVersions</BlueprintPackagerArguments>
         <Cicd Condition="'$(Cicd)' == ''">false</Cicd>
     </PropertyGroup>
