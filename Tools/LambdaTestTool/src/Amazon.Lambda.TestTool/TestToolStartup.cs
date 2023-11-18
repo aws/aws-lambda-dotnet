@@ -62,6 +62,8 @@ namespace Amazon.Lambda.TestTool
                 var targetFramework = "net6.0";
 #elif NET7_0
                 var targetFramework = "net7.0";
+#elif NET8_0
+                var targetFramework = "net8.0";
 #endif
 
                 // Check to see if running in debug mode from this project's directory which means the test tool is being debugged.

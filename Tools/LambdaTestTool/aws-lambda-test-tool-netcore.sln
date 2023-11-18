@@ -44,7 +44,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "net6", "net6", "{F08BF489-B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SourceGeneratorExample", "tests\LambdaFunctions\net6\SourceGeneratorExample\SourceGeneratorExample.csproj", "{9F8D7697-46FC-45E4-B795-11CCDA2B68B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool.Tests.NET6", "tests\Amazon.Lambda.TestTool.Tests.NET6\Amazon.Lambda.TestTool.Tests.NET6.csproj", "{2C69BEB2-858E-43E3-9951-74E780FEB1BF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.TestTool.Tests.NET6", "tests\Amazon.Lambda.TestTool.Tests.NET6\Amazon.Lambda.TestTool.Tests.NET6.csproj", "{2C69BEB2-858E-43E3-9951-74E780FEB1BF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "net8", "net8", "{58A7CCF8-3EE7-40E6-A405-7BEF5BBFCDFA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SourceGeneratorExampleNET8", "tests\LambdaFunctions\net8\SourceGeneratorExampleNET8\SourceGeneratorExampleNET8.csproj", "{C42AADC5-0924-42DD-897A-0F1F1FF9DDFA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -104,6 +108,10 @@ Global
 		{2C69BEB2-858E-43E3-9951-74E780FEB1BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C69BEB2-858E-43E3-9951-74E780FEB1BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C69BEB2-858E-43E3-9951-74E780FEB1BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C42AADC5-0924-42DD-897A-0F1F1FF9DDFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C42AADC5-0924-42DD-897A-0F1F1FF9DDFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C42AADC5-0924-42DD-897A-0F1F1FF9DDFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C42AADC5-0924-42DD-897A-0F1F1FF9DDFA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -126,6 +134,8 @@ Global
 		{F08BF489-BD05-4DC1-9772-AB5E137B87B8} = {BFD718DB-4526-4BED-B2B0-BB446EDFFEA1}
 		{9F8D7697-46FC-45E4-B795-11CCDA2B68B3} = {F08BF489-BD05-4DC1-9772-AB5E137B87B8}
 		{2C69BEB2-858E-43E3-9951-74E780FEB1BF} = {28C935E3-4FB4-4B09-A9DB-26A1EB04CDE0}
+		{58A7CCF8-3EE7-40E6-A405-7BEF5BBFCDFA} = {BFD718DB-4526-4BED-B2B0-BB446EDFFEA1}
+		{C42AADC5-0924-42DD-897A-0F1F1FF9DDFA} = {58A7CCF8-3EE7-40E6-A405-7BEF5BBFCDFA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E6C77567-6F16-4EE3-8743-ADE6B68434FD}
