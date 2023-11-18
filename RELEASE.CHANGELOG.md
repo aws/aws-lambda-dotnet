@@ -1,3 +1,9 @@
+### Release 2023-11-17
+* **Amazon.Lambda.TestTool (0.15.0)**
+  * Released .NET 8 version as NuGet package Amazon.Lambda.TestTool-8.0
+  * Pull Request [#1598](https://github.com/aws/aws-lambda-dotnet/pull/1598) Add width to .main to prevent window overflow. Thanks [mleziva](https://github.com/mleziva)
+  * Deprecated the .NET Core 3.1 and .NET 5 version. No new versions targeting those frameworks will be released.
+
 ### Release 2023-11-15
 * **Amazon.Lambda.Annotations (1.1.0)**
   * Added support for deploying as an executable assembly and targeting provided.al2 and provided.al2023. This allows support for deploying .NET 8 AOT Lambda functions.
