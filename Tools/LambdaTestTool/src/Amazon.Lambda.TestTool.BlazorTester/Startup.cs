@@ -100,13 +100,8 @@ namespace Amazon.Lambda.TestTool.BlazorTester
                 {
                     var fileProvider = new ManifestEmbeddedFileProvider(typeof(Startup).Assembly, "wwwroot");
 
-                    var f1 = fileProvider.GetFileInfo("_framework/blazor.server.js");
-
                     // Make sure we don't remove the existing file providers (blazor needs this)
-                    o.FileProvider = new CompositeFileProvider(fileProvider);
-
-                    var f = o.FileProvider.GetFileInfo("_framework/blazor.server.js");
-                    Console.WriteLine(f.Name);
+                    o.FileProvider = new CompositeFileProvider(o.FileProvider, fileProvider);
                 });
 #endif
         }
