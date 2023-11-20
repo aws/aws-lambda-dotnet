@@ -1,3 +1,7 @@
+### Release 2023-11-20
+* **Amazon.Lambda.TestTool (0.15.1)**
+  * Fixed issue with getting a 404 for "_framework/blazor.server.js" when the UI started up for .NET 6 and 7.
+   
 ### Release 2023-11-17
 * **Amazon.Lambda.TestTool (0.15.0)**
   * Released .NET 8 version as NuGet package Amazon.Lambda.TestTool-8.0
