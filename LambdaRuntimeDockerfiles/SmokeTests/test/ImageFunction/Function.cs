@@ -116,6 +116,18 @@ namespace ImageFunction
             return GetResponse(true);
         }
 
+        // .NET on Linux uses the tzdata system package to get time zone information.
+        // If TzData is not installed/available in the Linux environment the 
+        // TimeZoneInfo.GetSystemTimeZones() will return an empty collection.
+        // For futher information: https://github.com/aws/aws-lambda-dotnet/issues/1620
+        public string VerifyTzData(ILambdaContext lambdaContext)
+        {
+            AssertTrue(TimeZoneInfo.GetSystemTimeZones().Count > 0, "No time zones were found");
+            AssertNotNull(TimeZoneInfo.FindSystemTimeZoneById("Europe/London"), "Failed to find Europe/London timezone");
+
+            return SuccessResult;
+        }
+
         #endregion
 
         #region Private methods
