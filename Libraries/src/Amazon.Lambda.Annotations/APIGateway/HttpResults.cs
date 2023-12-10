@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using Amazon.Lambda.Core;
 #if NET6_0_OR_GREATER
 using System.Buffers;
 using System.Text.Json;
@@ -21,7 +20,7 @@ using System.Text.Json.Serialization;
 namespace Amazon.Lambda.Annotations.APIGateway
 {
     /// <summary>
-    /// The options used by the IHttpResult to serialize into the required format for the event source of the Lambda funtion.
+    /// The options used by the IHttpResult to serialize into the required format for the event source of the Lambda function.
     /// </summary>
     public class HttpResultSerializationOptions
     {
@@ -55,7 +54,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
 
         /// <summary>
         /// The API Gateway protocol used as the event source. 
-        ///     RestApi -> RestApiAttrbute
+        ///     RestApi -> RestApiAttribute
         ///     HttpApi -> HttpApiAttribute
         /// </summary>
         public ProtocolFormat Format { get; set; }
@@ -272,11 +271,11 @@ namespace Amazon.Lambda.Annotations.APIGateway
         /// Creates an IHttpResult for redirect responses.
         /// </summary>
         /// <remarks>
-        /// This method uses the same logic for determing the the Http status code as the Microsoft.AspNetCore.Http.TypedResults.Redirect uses.
+        /// This method uses the same logic for determining the the Http status code as the Microsoft.AspNetCore.Http.TypedResults.Redirect uses.
         /// https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.http.typedresults.redirect
         /// </remarks>
         /// <param name="uri">The URI to redirect to. The value will be set in the location header.</param>
-        /// <param name="permanent">Whether the redirect should be a permanet (301) or temporary (302) redirect.</param>
+        /// <param name="permanent">Whether the redirect should be a permanent (301) or temporary (302) redirect.</param>
         /// <param name="preserveMethod">Whether the request method should be preserved. If set to true use 308 for permanent or 307 for temporary redirects.</param>
         /// <returns></returns>
         public static IHttpResult Redirect(string uri, bool permanent = false, bool preserveMethod = false)
@@ -317,7 +316,8 @@ namespace Amazon.Lambda.Annotations.APIGateway
         public static IHttpResult ServiceUnavailable(int? delaySeconds = null)
         {
             var result = new HttpResults(HttpStatusCode.ServiceUnavailable);
-            if (delaySeconds != null && delaySeconds > 0)
+
+            if (delaySeconds > 0)
             {
                 result.AddHeader("Retry-After", delaySeconds.ToString());
             }
@@ -488,7 +488,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
 
         // See comment at the top about .NET Standard 2.0
 #if !NETSTANDARD2_0
-        // Class representing the V1 API Gateway response. Very similiar to Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse but this library can
+        // Class representing the V1 API Gateway response. Similar to Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse but this library can
         // not take a dependency on Amazon.Lambda.APIGatewayEvents so it has to have its own version.
         internal class APIGatewayV1Response
         {
@@ -505,7 +505,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
             public bool IsBase64Encoded { get; set; }
         }
 
-        // Class representing the V2 API Gateway response. Very similiar to Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse but this library can
+        // Class representing the V2 API Gateway response. Similar to Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse but this library can
         // not take a dependency on Amazon.Lambda.APIGatewayEvents so it has to have its own version.
         internal class APIGatewayV2Response
         {
