@@ -200,7 +200,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         continue;
                     }
 
-                    if (!AreLambdaMethodParamatersValid(lambdaMethod, model, diagnosticReporter))
+                    if (!AreLambdaMethodParametersValid(lambdaMethod, model, diagnosticReporter))
                     {
                         foundFatalError = true;
                         continue;
@@ -384,7 +384,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             context.RegisterForSyntaxNotifications(() => new SyntaxReceiver(_fileManager, _directoryManager));
         }
 
-        private bool AreLambdaMethodParamatersValid(MethodDeclarationSyntax declarationSyntax, LambdaFunctionModel model, DiagnosticReporter diagnosticReporter)
+        private bool AreLambdaMethodParametersValid(MethodDeclarationSyntax declarationSyntax, LambdaFunctionModel model, DiagnosticReporter diagnosticReporter)
         {
             var isValid = true;
             foreach (var parameter in model.LambdaMethod.Parameters)
@@ -398,7 +398,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     if (!parameter.Type.IsPrimitiveType() && !parameter.Type.IsPrimitiveEnumerableType())
                     {
                         isValid = false;
-                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.UnsupportedMethodParamaterType, 
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.UnsupportedMethodParameterType, 
                             Location.Create(declarationSyntax.SyntaxTree, declarationSyntax.Span),
                             parameterKey, parameter.Type.FullName));
                     }
