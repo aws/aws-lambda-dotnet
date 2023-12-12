@@ -19,7 +19,6 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
         }
 
         [HttpPost("/runtime/test-event")]
-        [HttpPost("/2015-03-31/functions/function/invocations")]
         public async Task<IActionResult> PostTestEvent()
         {
             using var reader = new StreamReader(Request.Body);
@@ -27,6 +26,41 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
             _runtimeApiDataStore.QueueEvent(testEvent);
 
             return Accepted();
+        }
+
+        [HttpPost("/2015-03-31/functions/{functionName}/invocations")]
+        public async Task<IActionResult> PostTestInvokeEvent(string functionName)
+        {
+            using var reader = new StreamReader(Request.Body);
+            var testEvent = await reader.ReadToEndAsync();
+            var eventContainer = _runtimeApiDataStore.QueueEvent(testEvent);
+
+            // Need a task completion source so we can block until the event is executed.
+            var tcs = new TaskCompletionSource();
+
+            eventContainer.OnSuccess += () =>
+            {
+                tcs.SetResult();
+            };
+            
+            eventContainer.OnError += () =>
+            {
+                tcs.SetResult();
+            };
+
+            // Wait for our event to process
+            await tcs.Task;
+
+            var response = new 
+            {
+                StatusCode = 200, // Accepted
+                // FunctionError = null, // TODO: Set this if there was an error
+                // LogResult = null, // TODO: Set this to the base64-encoded last 4 KB of log data produced by the function
+                Payload = eventContainer.Response, // Set this to the response from the function
+                // ExecutedVersion = null // TODO: Set this to the version of the function that was executed
+            };
+
+            return Ok(response);
         }
         
         [HttpPost("/2018-06-01/runtime/init/error")]

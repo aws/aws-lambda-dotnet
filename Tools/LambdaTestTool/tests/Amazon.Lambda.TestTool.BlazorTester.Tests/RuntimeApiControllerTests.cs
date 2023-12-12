@@ -151,7 +151,8 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Tests
                 var uriString = Utils.DetermineLaunchUrl(session.Host, session.Port, Constants.DEFAULT_HOST);
                 session.Client = new HttpClient()
                 {
-                    BaseAddress = new Uri(uriString)
+                    BaseAddress = new Uri(uriString),
+                    Timeout = TimeSpan.FromMinutes(15)
                 };
 
                 session.Store = session.WebHost.Services.GetService<IRuntimeApiDataStore>();

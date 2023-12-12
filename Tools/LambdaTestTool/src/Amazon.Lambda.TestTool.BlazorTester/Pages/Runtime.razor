@@ -75,6 +75,13 @@
                               <pre class="form-control" style="@Constants.ResponseErrorStyleSizeConstraint" >@RuntimeApiModel.ActiveEvent.ErrorResponse</pre>
                           </p>
                       }
+                      else if (RuntimeApiModel.ActiveEvent.Response == null)
+                      {
+                            <p>
+                                <b>Response:</b>
+                                <pre class="form-control" style="@Constants.ResponseErrorStyleSizeConstraint" >No Response Received</pre>
+                            </p>
+                      }
                       else
                       {
                           <p>

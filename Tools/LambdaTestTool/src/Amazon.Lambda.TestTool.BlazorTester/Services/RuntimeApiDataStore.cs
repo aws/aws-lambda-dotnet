@@ -213,7 +213,10 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
 
     public class EventContainer : IEventContainer
     {
-        
+        public Action OnSuccess { get; set; }
+
+        public Action OnError { get; set; }
+
         private const string defaultFunctionArn = "arn:aws:lambda:us-west-2:123412341234:function:Function";
         public string AwsRequestId { get; }
         public string EventJson { get; }
@@ -255,6 +258,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
             LastUpdated = DateTime.Now;
             this.Response = response;
             this.EventStatus = IEventContainer.Status.Success;
+            OnSuccess?.Invoke();
             _dataStore.RaiseStateChanged();
         }
         
@@ -264,6 +268,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
             this.ErrorType = errorType;
             this.ErrorResponse = errorBody;
             this.EventStatus = IEventContainer.Status.Failure;
+            OnError?.Invoke();
             _dataStore.RaiseStateChanged();
         }
     }
