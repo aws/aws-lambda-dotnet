@@ -1147,7 +1147,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                          DiagnosticResult.CompilerError("AWSLambda0109").WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ComplexQueryParameter.cs", 11, 9, 16, 10)
-                                            .WithMessage("Unsupported query paramter 'person' of type 'TestServerlessApp.Person' encountered. Only primitive .NET types and their corresponding enumerables can be used as query parameters.")
+                                            .WithMessage("Unsupported query parameter 'person' of type 'TestServerlessApp.Person' encountered. Only primitive .NET types and their corresponding enumerable can be used as query parameters.")
                     },
                     ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
