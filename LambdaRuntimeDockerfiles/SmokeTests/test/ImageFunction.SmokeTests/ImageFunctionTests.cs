@@ -71,6 +71,7 @@ namespace ImageFunction.SmokeTests
         [InlineData("ImageFunction::ImageFunction.Function::Ping", "ping", "pong")]
         [InlineData("ImageFunction::ImageFunction.Function::HttpsWorksAsync", "", "SUCCESS")]
         [InlineData("ImageFunction::ImageFunction.Function::VerifyLambdaContext", "", "SUCCESS")]
+        [InlineData("ImageFunction::ImageFunction.Function::VerifyTzData", "", "SUCCESS")]
         public async Task SuccessfulTests(string handler, string input, string expectedResponse)
         {
             await UpdateHandlerAsync(handler);
@@ -170,6 +171,7 @@ namespace ImageFunction.SmokeTests
                         MemorySize = 512,
                         Role = _executionRoleArn,
                         PackageType = PackageType.Image,
+                        Timeout = 30,
                         Architectures = new List<string> {GetArchitecture()}
                     });
                     break;
