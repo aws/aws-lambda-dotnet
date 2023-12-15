@@ -1,3 +1,7 @@
+### Release 2023-12-15
+* **Amazon.Lambda.Templates (6.15.1)**
+  * Update Powertools dependencies in relevant Lambda templates.
+
 ### Release 2023-11-20
 * **Amazon.Lambda.TestTool (0.15.1)**
   * Fixed issue with getting a 404 for "_framework/blazor.server.js" when the UI started up for .NET 6 and 7.
