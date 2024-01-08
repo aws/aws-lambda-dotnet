@@ -14,6 +14,6 @@ namespace Amazon.Lambda.CognitoEvents
 #if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("answerCorrect")]
 #endif
-        public bool AnswerCorrect { get; set; }
+        public bool? AnswerCorrect { get; set; }
     }
 }

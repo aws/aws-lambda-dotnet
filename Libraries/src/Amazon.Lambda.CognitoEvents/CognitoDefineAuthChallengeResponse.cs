@@ -23,7 +23,7 @@ namespace Amazon.Lambda.CognitoEvents
 #if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("issueTokens")]
 #endif
-        public bool IssueTokens { get; set; }
+        public bool? IssueTokens { get; set; }
 
         /// <summary>
         /// Set to true if you want to terminate the current authentication process, or false otherwise.
@@ -32,6 +32,6 @@ namespace Amazon.Lambda.CognitoEvents
 #if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("failAuthentication")]
 #endif
-        public bool FailAuthentication { get; set; }
+        public bool? FailAuthentication { get; set; }
     }
 }
