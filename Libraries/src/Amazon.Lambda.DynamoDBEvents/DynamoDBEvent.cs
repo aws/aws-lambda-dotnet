@@ -226,7 +226,7 @@ namespace Amazon.Lambda.DynamoDBEvents
             ///  <c>"BOOL": true</c>
             /// </para>
             /// </summary>
-            public bool BOOL { get; set; }
+            public bool? BOOL { get; set; }
 
             /// <summary>
             /// <para>
@@ -304,7 +304,7 @@ namespace Amazon.Lambda.DynamoDBEvents
             ///  <c>"NULL": true</c> 
             /// </para>
             /// </summary>
-            public bool NULL { get; set; }
+            public bool? NULL { get; set; }
 
             /// <summary>
             /// <para>

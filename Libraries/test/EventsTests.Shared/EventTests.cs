@@ -466,8 +466,17 @@ namespace Amazon.Lambda.Tests
             Assert.Equal(record.Dynamodb.Keys.Count, 2);
             Assert.Equal(record.Dynamodb.Keys["key"].S, "binary");
             Assert.Equal(record.Dynamodb.Keys["val"].S, "data");
+            Assert.Null(record.UserIdentity);
+            Assert.Null(record.Dynamodb.OldImage);
             Assert.Equal(record.Dynamodb.NewImage["val"].S, "data");
             Assert.Equal(record.Dynamodb.NewImage["key"].S, "binary");
+            Assert.Null(record.Dynamodb.NewImage["key"].BOOL);
+            Assert.Null(record.Dynamodb.NewImage["key"].L);
+            Assert.Null(record.Dynamodb.NewImage["key"].M);
+            Assert.Null(record.Dynamodb.NewImage["key"].N);
+            Assert.Null(record.Dynamodb.NewImage["key"].NS);
+            Assert.Null(record.Dynamodb.NewImage["key"].NULL);
+            Assert.Null(record.Dynamodb.NewImage["key"].SS);
             Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf1"].B), "AAEqQQ==");
             Assert.Equal(record.Dynamodb.NewImage["asdf2"].BS.Count, 2);
             Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[0]), "AAEqQQ==");
@@ -498,6 +507,15 @@ namespace Amazon.Lambda.Tests
             Assert.NotNull(secondRecord.UserIdentity);
             Assert.Equal("dynamodb.amazonaws.com", secondRecord.UserIdentity.PrincipalId);
             Assert.Equal("Service", secondRecord.UserIdentity.Type);
+            Assert.Null(secondRecord.Dynamodb.NewImage);
+            Assert.NotNull(secondRecord.Dynamodb.OldImage["asdf1"].B);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].S);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].L);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].M);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].N);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].NS);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].NULL);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].SS);
 
             Handle(dynamodbEvent);
         }
