@@ -1,3 +1,9 @@
+### Release 2024-01-12
+* **Amazon.Lambda.DynamoDBEvents (3.0.0)**
+  * Removed `AWSSDK.DynamoDBv2` dependency from `DynamoDBEvent` and related classes.
+* **Amazon.Lambda.Serialization.Json (2.2.0)**
+	* Updated contract resolvers to be compatible with the latest version of the `Amazon.Lambda.DynamoDBEvents` package. 
+
 ### Release 2023-12-15
 * **Amazon.Lambda.Templates (6.15.1)**
   * Update Powertools dependencies in relevant Lambda templates.
