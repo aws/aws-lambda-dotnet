@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +14,8 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
     {
         private const string HEADER_BREAK = "-----------------------------------";
         private readonly IRuntimeApiDataStore _runtimeApiDataStore;
+
+        private static readonly ConcurrentDictionary<string, string> _registeredExtensions = new ();
 
         public RuntimeApiController(IRuntimeApiDataStore runtimeApiDataStore)
         {
@@ -28,6 +32,33 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
             return Accepted();
         }
 
+        [HttpPost("/2020-01-01/extension/register")]
+        public async Task<IActionResult> PostRegisterExtension()
+        {
+            using var reader = new StreamReader(Request.Body);
+            // Read and discard - do not need the body
+            await reader.ReadToEndAsync();
+
+            var extensionId = Guid.NewGuid().ToString();
+            var extensionName = Request.Headers["Lambda-Extension-Name"];
+            _registeredExtensions.TryAdd(extensionId, extensionName);
+
+            Response.Headers["Lambda-Extension-Identifier"] = extensionId;
+            return Ok();
+        }
+
+        [HttpGet("/2020-01-01/extension/event/next")]
+        public async Task<IActionResult> GetNextExtensionEvent()
+        {
+            var extensionId = Request.Headers["Lambda-Extension-Identifier"];
+            if (_registeredExtensions.ContainsKey(extensionId)) {
+                await Task.Delay(TimeSpan.FromSeconds(15));
+                return NoContent();
+            } else {
+                return NotFound();
+            }
+        }
+
         [HttpPost("/2015-03-31/functions/{functionName}/invocations")]
         public async Task<IActionResult> PostTestInvokeEvent(string functionName)
         {
@@ -40,12 +71,22 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
 
             eventContainer.OnSuccess += () =>
             {
-                tcs.SetResult();
+                try {
+                    tcs.SetResult();
+                } catch (InvalidOperationException) {
+                    // This can happen if both OnSuccess and OnError are called
+                    // Oddly, this does happen 1 time in 50 million requests
+                    // We can't check a variable because it's a race condition
+                }
             };
             
             eventContainer.OnError += () =>
             {
-                tcs.SetResult();
+                try {
+                    tcs.SetResult();
+                } catch (InvalidOperationException) {
+                    // See note above
+                }
             };
 
             // Wait for our event to process
@@ -84,6 +125,8 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
             Console.WriteLine(HEADER_BREAK);
             Console.WriteLine($"Next invocation returned: {activeEvent.AwsRequestId}");
             
+            // Set Deadline to 5 minutes from now in unix epoch ms
+            Response.Headers["Lambda-Runtime-Deadline-Ms"] = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeMilliseconds().ToString();
             Response.Headers["Lambda-Runtime-Aws-Request-Id"] = activeEvent.AwsRequestId;
             Response.Headers["Lambda-Runtime-Trace-Id"] = Guid.NewGuid().ToString();
             Response.Headers["Lambda-Runtime-Invoked-Function-Arn"] = activeEvent.FunctionArn;
