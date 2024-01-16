@@ -315,7 +315,7 @@ To auto-generate the `static Main` method, first ensure the `OutputType` in your
 </PropertyGroup>
 ```
 
-Once the output type is set to executable, add the `LambdaGlobalProperties` assembly attribute and set the `GenerateMain` property to true. You can also configure the `Runtime` in the generated CloudFormation template.
+Once the output type is set to executable, add the `LambdaGlobalProperties` assembly attribute and set the `GenerateMain` property to true. If `Runtime` is not specified in the global attribute, Lambda Annotations will attempt to determine it from your project file. You can also configure the `Runtime` in the generated CloudFormation template. 
 
 To allow for multiple Lambda functions in the same executable an Environment Variable is used to determine which handler is executed. When using the `GenerateMain` attribute, ensure you also set the `ANNOTATIONS_HANDLER` environment variable on the deployed Lambda function.
 

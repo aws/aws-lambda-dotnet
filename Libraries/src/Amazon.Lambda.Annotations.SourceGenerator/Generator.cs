@@ -1,9 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
-using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
+﻿using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
@@ -13,11 +8,14 @@ using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
-    using System.Collections.Generic;
-
     [Generator]
     public class Generator : ISourceGenerator
     {
@@ -25,11 +23,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         private readonly IFileManager _fileManager = new FileManager();
         private readonly IDirectoryManager _directoryManager = new DirectoryManager();
 
-        internal static readonly List<string> _allowdRuntimeValues = new List<string>(2)
+        /// <summary>
+        /// Maps .NET TargetFramework values to the corresponding Lambda runtime CloudFormation value
+        /// </summary>
+        internal static readonly Dictionary<string, string> _targetFrameworksToRuntimes = new Dictionary<string, string>(2)
+        {
+            { "net6.0", "dotnet6" },
+            { "net8.0", "dotnet8" }
+        };
+
+        internal static readonly List<string> _allowedRuntimeValues = new List<string>(4)
         {
             "dotnet6",
             "provided.al2",
-            "provided.al2023"
+            "provided.al2023",
+            "dotnet8"
         };
 
         // Only allow alphanumeric characters
@@ -102,13 +110,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
                 var defaultRuntime = "dotnet6";
 
+                // Try to determine the TFM -> defaultRuntime from the project file, in case it's newer than our current default
+                if (ProjectFileHandler.TryDetermineTargetFramework(receiver.ProjectPath, out var parsedRuntime))
+                {
+                    if (_targetFrameworksToRuntimes.ContainsKey(parsedRuntime))
+                    {
+                        defaultRuntime = _targetFrameworksToRuntimes[parsedRuntime];
+                    }
+                }
+                
+                // The runtime specified in the global property has precedence over the one we parsed from the project file
                 if (globalPropertiesAttribute != null)
                 {
                     var generateMain = globalPropertiesAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "GenerateMain").Value;
                     var runtimeAttributeValue = globalPropertiesAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Runtime").Value;
                     var runtime = runtimeAttributeValue.Value == null ? defaultRuntime : runtimeAttributeValue.Value.ToString();
 
-                    if (!_allowdRuntimeValues.Contains(runtime))
+                    if (!_allowedRuntimeValues.Contains(runtime))
                     {
                         diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.InvalidRuntimeSelection, Location.None));
                         return;

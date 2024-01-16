@@ -269,7 +269,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     },
                     ExpectedDiagnostics =
                     {
-                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. The valid values are: dotnet6, provided.al2, provided.al2023"),
+                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. The valid values are: dotnet6, provided.al2, provided.al2023, dotnet8"),
                     },
                     ReferenceAssemblies = ReferenceAssemblies.Net.Net60
                 }
@@ -1187,6 +1187,44 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 }
 
             }.RunAsync();
+        }
+
+        /// <summary>
+        /// Verifies that we set 'dotnet8' in the CFN Lambda runtime for a project targeting .NET 8
+        /// </summary>
+        [Fact]
+        public async Task ToUpper_Net8()
+        {
+            var expectedFunctionContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated_NET8.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "net8.template"))).ToEnvironmentLineEndings();
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp.NET8", "Functions.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp.NET8", "Functions.cs"))),
+                        (Path.Combine("TestServerlessApp.NET8", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp.NET8", "AssemblyAttributes.cs"))),
+
+                    },
+                    GeneratedSources =
+                    {
+                        (typeof(SourceGenerator.Generator),
+                            "Functions_ToUpper_Generated.g.cs",
+                            SourceText.From(expectedFunctionContent, Encoding.UTF8, SourceHashAlgorithm.Sha256))
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("Functions_ToUpper_Generated.g.cs", expectedFunctionContent),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp.NET8{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                    ReferenceAssemblies = new ReferenceAssemblies("net8.0", new PackageIdentity("Microsoft.NETCore.App.Ref","8.0.0"), Path.Combine("ref", "net8.0"))
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = await File.ReadAllTextAsync(Path.Combine("TestServerlessApp.NET8", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
 
         public void Dispose()

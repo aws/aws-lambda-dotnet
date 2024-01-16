@@ -99,7 +99,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly DiagnosticDescriptor InvalidRuntimeSelection = new DiagnosticDescriptor(id: "AWSLambda0112",
             title: "Invalid runtime selection",
             messageFormat: "The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. " + 
-                           $"The valid values are: {string.Join(", ", Generator._allowdRuntimeValues.ToArray())}",
+                           $"The valid values are: {string.Join(", ", Generator._allowedRuntimeValues.ToArray())}",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

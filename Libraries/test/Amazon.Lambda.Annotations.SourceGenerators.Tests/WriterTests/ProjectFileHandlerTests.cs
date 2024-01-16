@@ -1,6 +1,7 @@
 ﻿using Amazon.Lambda.Annotations.SourceGenerator;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Moq;
+using System.IO;
 using Xunit;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
@@ -95,6 +96,144 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             mockFileManager.Setup(m => m.ReadAllText(It.IsAny<string>())).Returns(csprojContent);
 
             Assert.False(ProjectFileHandler.IsTelemetrySuppressed(csprojContent, mockFileManager.Object));
+        }
+
+        /// <summary>
+        /// Asserts that parsing a csproj with a single TargetFramework property works
+        /// </summary>
+        [Fact]
+        public void TryDetermineTargetFramework_Single_Success()
+        {
+            var tempFile = Path.GetTempFileName();
+            var csprojContent = @"<Project Sdk=""Microsoft.NET.Sdk"">
+                                    <PropertyGroup>
+                                        <TargetFramework>net8.0</TargetFramework>
+                                    </PropertyGroup>
+                                </Project>";
+
+            try
+            {
+                File.WriteAllText(tempFile, csprojContent);
+
+                var result = ProjectFileHandler.TryDetermineTargetFramework(tempFile, out var targetFramework);
+
+                Assert.True(result);
+                Assert.Equal("net8.0", targetFramework);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        /// <summary>
+        /// Asserts that parsing a csproj without TargetFramework(s) fails
+        /// </summary>
+        [Fact]
+        public void TryDetermineTargetFramework_Missing_Failure()
+        {
+            var tempFile = Path.GetTempFileName();
+            var csprojContent = @"<Project Sdk=""Microsoft.NET.Sdk"">
+                                    <PropertyGroup>
+                                    </PropertyGroup>
+                                </Project>";
+
+            try
+            { 
+                File.WriteAllText(tempFile, csprojContent);
+
+                var result = ProjectFileHandler.TryDetermineTargetFramework(tempFile, out var targetFramework);
+
+                Assert.False(result);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        /// <summary>
+        /// Asserts that parsing a csproj with a single TargetFramework trumps the plural TargetFrameworks
+        /// </summary>
+        [Fact]
+        public void TryDetermineTargetFramework_SingleAndMultiple_Success()
+        {
+            var tempFile = Path.GetTempFileName();
+            var csprojContent = @"<Project Sdk=""Microsoft.NET.Sdk"">
+                                    <PropertyGroup>
+                                        <TargetFramework>net8.0</TargetFramework>
+                                        <TargetFrameworks>net7.0</TargetFrameworks>
+                                    </PropertyGroup>
+                                </Project>";
+
+            try 
+            { 
+                File.WriteAllText(tempFile, csprojContent);
+
+                var result = ProjectFileHandler.TryDetermineTargetFramework(tempFile, out var targetFramework);
+
+                Assert.True(result);
+                Assert.Equal("net8.0", targetFramework); // "TargetFramework" should trump "TargetFrameworks
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        /// <summary>
+        /// Asserts that parsing a csproj with a single value in the plural TargetFrameworks property works
+        /// </summary>
+        [Fact]
+        public void TryDetermineTargetFramework_Multiple_Success()
+        {
+            var tempFile = Path.GetTempFileName();
+            var csprojContent = @"<Project Sdk=""Microsoft.NET.Sdk"">
+                                    <PropertyGroup>
+                                        <TargetFrameworks>net7.0</TargetFrameworks>
+                                    </PropertyGroup>
+                                </Project>";
+
+            try
+            {
+                File.WriteAllText(tempFile, csprojContent);
+
+                var result = ProjectFileHandler.TryDetermineTargetFramework(tempFile, out var targetFramework);
+
+                Assert.True(result);
+                Assert.Equal("net7.0", targetFramework);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        /// <summary>
+        /// Asserts that parsing a csproj with a multiple values in the plural TargetFrameworks property fails
+        /// </summary>
+        [Fact]
+        public void TryDetermineTargetFramework_Multiple_Failure()
+        {
+            var tempFile = Path.GetTempFileName();
+            var csprojContent = @"<Project Sdk=""Microsoft.NET.Sdk"">
+                                    <PropertyGroup>
+                                        <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+                                    </PropertyGroup>
+                                </Project>";
+
+            try
+            {
+                File.WriteAllText(tempFile, csprojContent);
+
+                var result = ProjectFileHandler.TryDetermineTargetFramework(tempFile, out var targetFramework);
+
+                Assert.False(result);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
         }
     }
 }
