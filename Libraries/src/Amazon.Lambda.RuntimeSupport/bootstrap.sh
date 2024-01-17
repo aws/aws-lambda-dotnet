@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# .NET on Linux uses OpenSSL to handle certificates. The .NET runtime will load the certs by first reading
+# the default cert bundle file which can be overriden by the SSL_CERT_FILE env var. Then it will load the
+# certs in the default cert directory which can be overriden by the SSL_CERT_DIR env var. On AL2023
+# The default cert bundle file, via symbolic links, resolves to being in a file under the default cert directory.
+# This means the default cert bundle file is double loaded causing a cold start performance hit. This logic
+# sets the SSL_CERT_FILE to a noop file if detected running on AL2023 and the SSL_CERT_FILE hasn't been explicitly
+# set. This avoid the double load of the default cert bundle file.
+if [ -z "${SSL_CERT_FILE}"] && [ -f "/etc/os-release" ]; then
+  if grep -Fq "platform:al2023" /etc/os-release; then
+    export SSL_CERT_FILE="/tmp/noop"
+  fi
+fi
+
 # This script is used to locate 2 files in the /var/task folder, where the end-user assembly is located
 # The 2 files are <assembly name>.deps.json and <assembly name>.runtimeconfig.json
 # These files are used to add the end-user assembly into context and make the code reachable to the dotnet process
