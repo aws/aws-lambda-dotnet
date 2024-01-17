@@ -1020,7 +1020,7 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
-        public void CognitoVerifyAuthChallengeEventTestWithNullValues(Type serializerType)
+        public void CognitoVerifyAuthChallengeEventWithNullValuesTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("cognito-verifyauthchallenge-event-with-null-values.json"))
