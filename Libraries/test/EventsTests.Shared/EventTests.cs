@@ -870,6 +870,47 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
+        public void CognitoDefineAuthChallengeEventWithNullValuesTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-defineauthchallenge-event-with-null-values.json"))
+            {
+                var cognitoDefineAuthChallengeEvent = serializer.Deserialize<CognitoDefineAuthChallengeEvent>(fileStream);
+
+                AssertBaseClass(cognitoDefineAuthChallengeEvent);
+
+                Assert.Equal(2, cognitoDefineAuthChallengeEvent.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoDefineAuthChallengeEvent.Request.Session.Count);
+
+                var session0 = cognitoDefineAuthChallengeEvent.Request.Session[0];
+                Assert.Equal("challenge1", session0.ChallengeName);
+                Assert.True(session0.ChallengeResult);
+                Assert.Null(session0.ChallengeMetadata);
+
+                var session1 = cognitoDefineAuthChallengeEvent.Request.Session[1];
+                Assert.Equal("challenge2", session1.ChallengeName);
+                Assert.False(session1.ChallengeResult);
+                Assert.Null(session1.ChallengeMetadata);
+
+                Assert.True(cognitoDefineAuthChallengeEvent.Request.UserNotFound);
+
+                Assert.Null(cognitoDefineAuthChallengeEvent.Response.ChallengeName);
+                Assert.Null(cognitoDefineAuthChallengeEvent.Response.IssueTokens);
+                Assert.Null(cognitoDefineAuthChallengeEvent.Response.FailAuthentication);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
         public void CognitoCreateAuthChallengeEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -969,6 +1010,38 @@ namespace Amazon.Lambda.Tests
                 var original = JObject.Parse(File.ReadAllText("cognito-verifyauthchallenge-event.json"));
                 var serialized = JObject.Parse(json);
                 Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoVerifyAuthChallengeEventTestWithNullValues(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-verifyauthchallenge-event-with-null-values.json"))
+            {
+                var cognitoVerifyAuthChallengeEvent = serializer.Deserialize<CognitoVerifyAuthChallengeEvent>(fileStream);
+
+                AssertBaseClass(cognitoVerifyAuthChallengeEvent);
+
+                Assert.Equal("answer_value", cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer);
+
+                Assert.Null(cognitoVerifyAuthChallengeEvent.Request.ClientMetadata);
+
+                Assert.Equal(2, cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.Count);
+                Assert.Equal("private_1", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[0].Key);
+                Assert.Equal("private_value_1", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[0].Value);
+                Assert.Equal("private_2", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[1].Key);
+                Assert.Equal("private_value_2", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[1].Value);
+
+                Assert.True(cognitoVerifyAuthChallengeEvent.Request.UserNotFound);
+
+                Assert.Null(cognitoVerifyAuthChallengeEvent.Response.AnswerCorrect);
             }
         }
 

@@ -1,0 +1,27 @@
+﻿{
+  "version": "1",
+  "region": "us-east-1",
+  "userPoolId": "us-east-1_id",
+  "userName": "username_uuid",
+  "callerContext": {
+    "awsSdkVersion": "version",
+    "clientId": "client_id"
+  },
+  "triggerSource": "trigger_source",
+  "request": {
+    "userAttributes": {
+      "attribute_1": "attribute_value_1",
+      "attribute_2": "attribute_value_2"
+    },
+    "privateChallengeParameters": {
+      "private_1": "private_value_1",
+      "private_2": "private_value_2"
+    },
+    "challengeAnswer": "answer_value",
+    "clientMetadata": null,
+    "userNotFound": true
+  },
+  "response": {
+    "answerCorrect": null
+  }
+}
