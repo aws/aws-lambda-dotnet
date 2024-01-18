@@ -17,8 +17,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestProject::TestServerlessApp.NET8.Functions_ToUpper_Generated::ToUpper",
-        "Events": {}
+        "Handler": "TestProject::TestServerlessApp.NET8.Functions_ToUpper_Generated::ToUpper"
       }
     }
   }
