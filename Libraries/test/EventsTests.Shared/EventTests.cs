@@ -1075,6 +1075,92 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
+        public void CognitoPreTokenGenerationV2EventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-pretokengenerationv2-event.json"))
+            {
+                var cognitoPreTokenGenerationV2Event = serializer.Deserialize<CognitoPreTokenGenerationV2Event>(fileStream);
+
+                AssertBaseClass(cognitoPreTokenGenerationV2Event, eventVersion: "2");
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.GroupsToOverride.Count);
+                Assert.Equal("group1", cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.GroupsToOverride[0]);
+                Assert.Equal("group2", cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.GroupsToOverride[1]);
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.IamRolesToOverride.Count);
+                Assert.Equal("role1", cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.IamRolesToOverride[0]);
+                Assert.Equal("role2", cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.IamRolesToOverride[1]);
+
+                Assert.Equal("role", cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.PreferredRole);
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoPreTokenGenerationV2Event.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoPreTokenGenerationV2Event.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoPreTokenGenerationV2Event.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoPreTokenGenerationV2Event.Request.ClientMetadata.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.UserAttributes.Count);
+                Assert.Equal("attribute_1", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[0].Key);
+                Assert.Equal("attribute_value_1", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[0].Value);
+                Assert.Equal("attribute_2", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[1].Key);
+                Assert.Equal("attribute_value_2", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[1].Value);
+                
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.Scopes.Count);
+                Assert.Equal("scope_1", cognitoPreTokenGenerationV2Event.Request.Scopes.ToArray()[0]);
+                Assert.Equal("scope_2", cognitoPreTokenGenerationV2Event.Request.Scopes.ToArray()[1]);
+                
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.Count);
+                Assert.Equal("claim_1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[0].Key);
+                Assert.Equal("claim_1_value_1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[0].Value);
+                Assert.Equal("claim_2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[1].Key);
+                Assert.Equal("claim_1_value_2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[1].Value);
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress.Count);
+                Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress[0]);
+                Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress[1]);
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.Count);
+                Assert.Equal("claim_1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[0].Key);
+                Assert.Equal("claim_1_value_1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[0].Value);
+                Assert.Equal("claim_2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[1].Key);
+                Assert.Equal("claim_1_value_2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[1].Value);
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress.Count);
+                Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress[0]);
+                Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress[1]);
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToAdd.Count);
+                Assert.Equal("add1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToAdd[0]);
+                Assert.Equal("add2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToAdd[1]);
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress.Count);
+                Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress[0]);
+                Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress[1]);
+                
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride.Count);
+                Assert.Equal("group1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride[0]);
+                Assert.Equal("group2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride[1]);
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.IamRolesToOverride.Count);
+                Assert.Equal("role1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.IamRolesToOverride[0]);
+                Assert.Equal("role2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.IamRolesToOverride[1]);
+
+                Assert.Equal("role", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.PreferredRole);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoPreTokenGenerationV2Event>(cognitoPreTokenGenerationV2Event, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-pretokengenerationv2-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+        
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
         public void CognitoMigrateUserEventTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -1223,11 +1309,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        private static void AssertBaseClass<TRequest, TResponse>(CognitoTriggerEvent<TRequest, TResponse> cognitoTriggerEvent)
+        private static void AssertBaseClass<TRequest, TResponse>(CognitoTriggerEvent<TRequest, TResponse> cognitoTriggerEvent, string eventVersion = "1")
             where TRequest : CognitoTriggerRequest, new()
             where TResponse : CognitoTriggerResponse, new()
         {
-            Assert.Equal("1", cognitoTriggerEvent.Version);
+            Assert.Equal(eventVersion, cognitoTriggerEvent.Version);
             Assert.Equal("us-east-1", cognitoTriggerEvent.Region);
             Assert.Equal("us-east-1_id", cognitoTriggerEvent.UserPoolId);
             Assert.Equal("username_uuid", cognitoTriggerEvent.UserName);
