@@ -21,6 +21,7 @@
     <Content Include="$(MSBuildThisFileDirectory)cognito-migrateuser-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-pretokengeneration-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-verifyauthchallenge-event-with-null-values.json" />
+    <Content Include="$(MSBuildThisFileDirectory)cognito-pretokengenerationv2-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-verifyauthchallenge-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-postconfirmation-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-postauthentication-event.json" />

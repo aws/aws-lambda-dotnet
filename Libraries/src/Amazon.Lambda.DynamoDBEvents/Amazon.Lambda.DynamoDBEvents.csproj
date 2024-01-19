@@ -3,18 +3,14 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - DynamoDBEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.DynamoDBEvents</AssemblyTitle>
-    <VersionPrefix>2.3.0</VersionPrefix>
+    <VersionPrefix>3.0.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.DynamoDBEvents</AssemblyName>
     <PackageId>Amazon.Lambda.DynamoDBEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.3.24" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="Converters\DictionaryLongToStringJsonConverter.cs" />
@@ -23,10 +19,10 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.0' ">
     <Compile Include="Converters\DictionaryLongToStringJsonConverter.cs" />
   </ItemGroup>
-	
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
-		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
-		<IsTrimmable>true</IsTrimmable>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+    <IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-	</PropertyGroup>
+  </PropertyGroup>
 </Project>
