@@ -1,3 +1,8 @@
+### Release 2024-01-18
+* **Amazon.Lambda.CognitoEvents (3.0.0)**
+  * Pull Request [#1656](https://github.com/aws/aws-lambda-dotnet/pull/1656) Add contracts for cognito pre token generation v2. Thanks [Ernest Folch](https://github.com/ernest-folch-fleksy)
+  * Pull Request [#1646](https://github.com/aws/aws-lambda-dotnet/pull/1646) Fixed the JSON deserialization error in Cognito triggered. Thanks [Ankush Jain](https://github.com/ankushjain358)
+
 ### Release 2024-01-12
 * **Amazon.Lambda.DynamoDBEvents (3.0.0)**
   * Removed `AWSSDK.DynamoDBv2` dependency from `DynamoDBEvent` and related classes.
