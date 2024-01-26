@@ -5,10 +5,10 @@
 # certs in the default cert directory which can be overriden by the SSL_CERT_DIR env var. On AL2023
 # The default cert bundle file, via symbolic links, resolves to being in a file under the default cert directory.
 # This means the default cert bundle file is double loaded causing a cold start performance hit. This logic
-# sets the SSL_CERT_FILE to a noop file if SSL_CERT_FILE hasn't been explicitly
+# sets the SSL_CERT_FILE to an empty file if SSL_CERT_FILE hasn't been explicitly
 # set. This avoid the double load of the default cert bundle file.
 if [ -z "${SSL_CERT_FILE}"]; then
-  export SSL_CERT_FILE="/tmp/noop"
+  export SSL_CERT_FILE="/var/runtime/empty-certificates.crt"
 fi
 
 # This script is used to locate 2 files in the /var/task folder, where the end-user assembly is located

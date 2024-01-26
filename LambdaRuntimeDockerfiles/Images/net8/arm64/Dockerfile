@@ -43,6 +43,7 @@ RUN apt-get update && apt-get install -y dos2unix
 RUN dos2unix /app/publish/bootstrap-al2023.sh && \
     mv /app/publish/bootstrap-al2023.sh /app/publish/bootstrap && \
     chmod +x /app/publish/bootstrap
+RUN touch /app/publish/empty-certificates.crt
 
 
 FROM base
