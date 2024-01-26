@@ -45,5 +45,8 @@
     <None Update="bootstrap.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="bootstrap-al2023.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>	  
   </ItemGroup>
 </Project>

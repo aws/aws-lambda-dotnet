@@ -128,6 +128,11 @@ namespace ImageFunction
             return SuccessResult;
         }
 
+        public string GetEnvironmentVariable(string  name)
+        {
+            return Environment.GetEnvironmentVariable(name) ?? string.Empty;
+        }
+
         #endregion
 
         #region Private methods
