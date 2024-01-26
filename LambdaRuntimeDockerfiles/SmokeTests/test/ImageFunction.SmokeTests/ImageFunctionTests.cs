@@ -124,7 +124,7 @@ namespace ImageFunction.SmokeTests
         /// <returns></returns>
         [Theory]
 #if NET8_0_OR_GREATER
-        [InlineData("SSL_CERT_FILE", "\"/tmp/noop\"", null)]
+        [InlineData("SSL_CERT_FILE", "\"/var/runtime/empty-certificates.crt\"", null)]
         [InlineData("SSL_CERT_FILE", "\"/tmp/my-bundle\"", "/tmp/my-bundle")]
 #else
         [InlineData("SSL_CERT_FILE", "", null)]
