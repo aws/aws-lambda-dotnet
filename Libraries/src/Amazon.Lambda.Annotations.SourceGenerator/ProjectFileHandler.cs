@@ -14,7 +14,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         /// <summary>
         /// Timeout for the `dotnet msbuild -getProperty` command we use to determine target framework
         /// </summary>
-        private const int dotnetMsbuildTimeoutMs = 5000;
+        private const int DotnetMsbuildTimeoutMs = 5000;
 
         /// <summary>
         /// MSBuild property to determine if the project has opted out of the CFN template description
@@ -79,7 +79,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
                 process.Start();
                 var outputJson = process.StandardOutput.ReadToEnd();
-                var hasExited = process.WaitForExit(dotnetMsbuildTimeoutMs);
+                var hasExited = process.WaitForExit(DotnetMsbuildTimeoutMs);
 
                 // If it hasn't completed in the specified timeout, stop the process and give up
                 if (!hasExited) 
@@ -101,7 +101,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
                 parsedJson = JObject.Parse(outputJson);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // swallow any exceptions related to `dotnet msbuild`, Generator
                 // will fall back to allowing the user to specify the target framework
@@ -115,31 +115,27 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 return false;
             }
 
-            // If <TargetFramework> (singular) is specified, that takes precendece over <TargetFrameworks> (plural)
-            if (parsedJson["Properties"]["TargetFramework"] != null)
-            {
-                var targetFramework = parsedJson["Properties"]["TargetFramework"].ToString();
+            // If <TargetFramework> (singular) is specified, that takes precedence over <TargetFrameworks> (plural)
+            var targetFramework = parsedJson["Properties"]?["TargetFramework"]?.ToString();
 
-                if (!string.IsNullOrEmpty(targetFramework))
-                {
-                    outTargetFramework = targetFramework;
-                    return true;
-                }
+            if (!string.IsNullOrEmpty(targetFramework))
+            {
+                outTargetFramework = targetFramework;
+                return true;
             }
             
+            
             // Otherwise fallback to <TargetFrameworks> (plural)
-            if (parsedJson["Properties"]["TargetFrameworks"] != null)
-            {
-                var possibleList = parsedJson["Properties"]["TargetFrameworks"].ToString();
+            var possibleList = parsedJson["Properties"]?["TargetFrameworks"]?.ToString();
 
-                // But only use it if it contains a single entry,
-                // otherwise we don't know at this point which entry is being built 
-                if (!string.IsNullOrEmpty(possibleList) && !possibleList.Contains(";"))
-                {
-                    outTargetFramework = possibleList;
-                    return true;
-                }
+            // But only use it if it contains a single entry,
+            // otherwise we don't know at this point which entry is being built 
+            if (!string.IsNullOrEmpty(possibleList) && !possibleList.Contains(";"))
+            {
+                outTargetFramework = possibleList;
+                return true;
             }
+            
             return false;
         }
     }
