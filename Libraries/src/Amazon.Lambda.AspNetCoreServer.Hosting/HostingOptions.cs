@@ -12,4 +12,10 @@ public class HostingOptions
     /// back to JSON to return to Lambda.
     /// </summary>
     public ILambdaSerializer Serializer { get; set; }
+
+    /// <summary>
+    /// The encoding response options sent from the Lambda to the API Gateway.
+    /// Used to adjust what content types are sent to the API Gatway as binary data
+    /// </summary>
+    public IEncodingOptions EncodingOptions { get; set; }
 }

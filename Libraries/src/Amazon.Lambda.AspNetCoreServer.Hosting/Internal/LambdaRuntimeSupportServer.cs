@@ -1,9 +1,7 @@
 ﻿using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
-using Amazon.Lambda.Serialization.SystemTextJson;
 using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
@@ -18,6 +16,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
     {
         IServiceProvider _serviceProvider;
         internal ILambdaSerializer Serializer;
+        internal IEncodingOptions EncodingOptions;
 
         /// <summary>
         /// Creates an instance on the LambdaRuntimeSupportServer
@@ -27,6 +26,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         {
             _serviceProvider = serviceProvider;
             Serializer = serviceProvider.GetRequiredService<ILambdaSerializer>();
+            EncodingOptions = serviceProvider.GetRequiredService<IEncodingOptions>();
         }
 
         /// <summary>
@@ -51,6 +51,34 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <param name="serviceProvider"></param>
         /// <returns></returns>
         protected abstract HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider);
+
+        /// <summary>
+        /// Registers encoding options for the given <see cref="AbstractAspNetCoreFunction{TREQUEST, TRESPONSE}"/>
+        /// </summary>
+        /// <typeparam name="TREQUEST"></typeparam>
+        /// <typeparam name="TRESPONSE"></typeparam>
+        /// <param name="aspNetCoreFunction"></param>
+        protected void RegisterEncodingOptions<TREQUEST, TRESPONSE>(AbstractAspNetCoreFunction<TREQUEST, TRESPONSE> aspNetCoreFunction)
+        {
+            if (EncodingOptions != null)
+            {
+                if (EncodingOptions.ResponseContentEncodingForContentType != null)
+                {
+                    foreach (var responseContentEncodingForContentType in EncodingOptions.ResponseContentEncodingForContentType)
+                    {
+                        aspNetCoreFunction.RegisterResponseContentEncodingForContentType(responseContentEncodingForContentType.Key, responseContentEncodingForContentType.Value);
+                    }
+                }
+
+                if (EncodingOptions.ResponseContentEncodingForContentEncoding != null)
+                {
+                    foreach (var responseContentEncodingForContentEncoding in EncodingOptions.ResponseContentEncodingForContentEncoding)
+                    {
+                        aspNetCoreFunction.RegisterResponseContentEncodingForContentEncoding(responseContentEncodingForContentEncoding.Key, responseContentEncodingForContentEncoding.Value);
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -74,7 +102,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new APIGatewayHttpApiV2MinimalApi(serviceProvider).FunctionHandlerAsync;
+            var apiGatewayHttpApiV2MinimalApi = new APIGatewayHttpApiV2MinimalApi(serviceProvider);
+            RegisterEncodingOptions(apiGatewayHttpApiV2MinimalApi);
+            var handler = apiGatewayHttpApiV2MinimalApi.FunctionHandlerAsync;
             return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
         }
 
@@ -115,7 +145,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new APIGatewayRestApiMinimalApi(serviceProvider).FunctionHandlerAsync;
+            var apiGatewayRestApiMinimalApi = new APIGatewayRestApiMinimalApi(serviceProvider);
+            RegisterEncodingOptions(apiGatewayRestApiMinimalApi);
+            var handler = apiGatewayRestApiMinimalApi.FunctionHandlerAsync;
             return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
         }
 
@@ -156,7 +188,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new ApplicationLoadBalancerMinimalApi(serviceProvider).FunctionHandlerAsync;
+            var applicationLoadBalancerMinimalApi = new ApplicationLoadBalancerMinimalApi(serviceProvider);
+            RegisterEncodingOptions(applicationLoadBalancerMinimalApi);
+            var handler = applicationLoadBalancerMinimalApi.FunctionHandlerAsync;
             return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
         }
 
