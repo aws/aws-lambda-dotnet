@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Hosting;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Amazon.Lambda.AspNetCoreServer
 {
@@ -8,7 +9,7 @@ namespace Amazon.Lambda.AspNetCoreServer
     /// the Lambda function will point to this base class FunctionHandlerAsync method.
     /// </summary>
     /// <typeparam name ="TStartup">The type containing the startup methods for the application.</typeparam>
-    public abstract class APIGatewayHttpApiV2ProxyFunction<TStartup> : APIGatewayHttpApiV2ProxyFunction where TStartup : class
+    public abstract class APIGatewayHttpApiV2ProxyFunction<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)] TStartup> : APIGatewayHttpApiV2ProxyFunction where TStartup : class
     {
         /// <summary>
         /// Default Constructor. The ASP.NET Core Framework will be initialized as part of the construction.

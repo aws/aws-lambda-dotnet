@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Amazon.Lambda.AspNetCoreServer.Internal
 {
@@ -22,12 +23,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
     /// </summary>
     public static class Utilities
     {
+        /// <summary>
+        /// Method to make sure the Lambda implementation is the only registered implementaiton of IServer for ASP.NET Core runtime.
+        /// </summary>
+        /// <param name="services"></param>
         public static void EnsureLambdaServerRegistered(IServiceCollection services)
         {
             EnsureLambdaServerRegistered(services, typeof(LambdaServer));
         }
 
-        public static void EnsureLambdaServerRegistered(IServiceCollection services, Type serverType)
+        /// <summary>
+        /// Method to make sure the Lambda implementation is the only registered implementaiton of IServer for ASP.NET Core runtime.
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="serverType"></param>
+        public static void EnsureLambdaServerRegistered(IServiceCollection services, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serverType)
         {
             IList<ServiceDescriptor> toRemove = new List<ServiceDescriptor>();
             var serviceDescriptions = services.Where(x => x.ServiceType == typeof(IServer));
