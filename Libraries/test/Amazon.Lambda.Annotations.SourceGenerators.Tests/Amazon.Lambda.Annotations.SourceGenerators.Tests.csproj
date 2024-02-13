@@ -34,14 +34,14 @@
         <Content Remove="..\TestServerlessApp\bin\**" />
         <Content Remove="..\TestServerlessApp\serverless.template" />
 
-		<Content Include="..\TestServerlessApp.NET8\**">
-			<Link>TestServerlessApp.NET8\%(RecursiveDir)/%(FileName)%(Extension)</Link>
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</Content>
-		<Content Remove="..\TestServerlessApp.NET8\obj\**" />
-		<Content Remove="..\TestServerlessApp.NET8\bin\**" />
-		<Content Remove="..\TestServerlessApp.NET8\serverless.template" />
-		
+        <Content Include="..\TestServerlessApp.NET8\**">
+            <Link>TestServerlessApp.NET8\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Remove="..\TestServerlessApp.NET8\obj\**" />
+        <Content Remove="..\TestServerlessApp.NET8\bin\**" />
+        <Content Remove="..\TestServerlessApp.NET8\serverless.template" />
+
         <Content Include="..\TestExecutableServerlessApp\**">
             <Link>TestExecutableServerlessApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>

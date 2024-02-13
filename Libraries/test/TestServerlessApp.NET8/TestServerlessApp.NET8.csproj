@@ -12,10 +12,11 @@
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
-    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.0" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.0" />
-    <PackageReference Include="Amazon.Lambda.Annotations" Version="1.0.0" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations.SourceGenerator\Amazon.Lambda.Annotations.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
   </ItemGroup>
   <!-- 
     The FrameworkReference is used to reduce the deployment bundle size by not having to include 

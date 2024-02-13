@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -49,10 +50,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public Generator()
         {
 #if DEBUG
-            //if (!Debugger.IsAttached)
-            //{
-            //    Debugger.Launch();
-            //}
+          //  if (!Debugger.IsAttached)
+          //  {
+          //      Debugger.Launch();
+          //  }
 #endif
         }
 
@@ -71,7 +72,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 // Check to see if any of the current syntax trees has any error diagnostics. If so
                 // Skip generation. We only want to sync the CloudFormation template if the project
                 // can compile.
-                foreach(var syntaxTree in context.Compilation.SyntaxTrees)
+                foreach (var syntaxTree in context.Compilation.SyntaxTrees)
                 {
                     if(syntaxTree.GetDiagnostics().Any(x => x.Severity == DiagnosticSeverity.Error))
                     {
@@ -110,16 +111,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
                 var defaultRuntime = "dotnet6";
 
-                // Try to determine the TFM -> defaultRuntime from the project file, in case it's newer than our current default
-                if (ProjectFileHandler.TryDetermineTargetFramework(receiver.ProjectPath, out var parsedRuntime))
+                // Try to determine the target framework from the source generator context
+                if (context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("build_property.TargetFramework", out var targetFramework))
                 {
-                    if (_targetFrameworksToRuntimes.ContainsKey(parsedRuntime))
+                    if (_targetFrameworksToRuntimes.ContainsKey(targetFramework))
                     {
-                        defaultRuntime = _targetFrameworksToRuntimes[parsedRuntime];
+                        defaultRuntime = _targetFrameworksToRuntimes[targetFramework];
                     }
                 }
                 
-                // The runtime specified in the global property has precedence over the one we parsed from the project file
+                // The runtime specified in the global property has precedence over the one we determined from the TFM (if we did)
                 if (globalPropertiesAttribute != null)
                 {
                     var generateMain = globalPropertiesAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "GenerateMain").Value;
