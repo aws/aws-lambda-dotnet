@@ -130,14 +130,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.LexV2Events",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest", "test\Amazon.Lambda.RuntimeSupport.Tests\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.csproj", "{0BD83939-458C-4EF5-8663-7098AD1200F2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestExecutableServerlessApp", "test\TestExecutableServerlessApp\TestExecutableServerlessApp.csproj", "{DD378063-C54A-44C7-9A6F-32A6A1AE94B3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestExecutableServerlessApp", "test\TestExecutableServerlessApp\TestExecutableServerlessApp.csproj", "{DD378063-C54A-44C7-9A6F-32A6A1AE94B3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestServerlessApp.NET8", "test\TestServerlessApp.NET8\TestServerlessApp.NET8.csproj", "{7300983D-8FCE-42EA-9B9E-B1C5347D15D8}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		test\EventsTests.Shared\EventsTests.Shared.projitems*{44e9d925-b61d-4234-97b7-61424c963ba6}*SharedItemsImports = 5
-		test\EventsTests.Shared\EventsTests.Shared.projitems*{a2cb78bb-e54f-48ca-bbfb-9553d27ef23d}*SharedItemsImports = 13
-		test\EventsTests.Shared\EventsTests.Shared.projitems*{c1bb30d2-3237-4cfc-ba93-627471148ec2}*SharedItemsImports = 5
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -359,6 +356,10 @@ Global
 		{DD378063-C54A-44C7-9A6F-32A6A1AE94B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DD378063-C54A-44C7-9A6F-32A6A1AE94B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DD378063-C54A-44C7-9A6F-32A6A1AE94B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7300983D-8FCE-42EA-9B9E-B1C5347D15D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7300983D-8FCE-42EA-9B9E-B1C5347D15D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7300983D-8FCE-42EA-9B9E-B1C5347D15D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7300983D-8FCE-42EA-9B9E-B1C5347D15D8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -422,8 +423,14 @@ Global
 		{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{0BD83939-458C-4EF5-8663-7098AD1200F2} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{DD378063-C54A-44C7-9A6F-32A6A1AE94B3} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{7300983D-8FCE-42EA-9B9E-B1C5347D15D8} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		test\EventsTests.Shared\EventsTests.Shared.projitems*{44e9d925-b61d-4234-97b7-61424c963ba6}*SharedItemsImports = 5
+		test\EventsTests.Shared\EventsTests.Shared.projitems*{a2cb78bb-e54f-48ca-bbfb-9553d27ef23d}*SharedItemsImports = 13
+		test\EventsTests.Shared\EventsTests.Shared.projitems*{c1bb30d2-3237-4cfc-ba93-627471148ec2}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

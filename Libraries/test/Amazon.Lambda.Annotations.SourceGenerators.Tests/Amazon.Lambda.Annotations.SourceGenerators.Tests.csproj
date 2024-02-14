@@ -33,6 +33,15 @@
         <Content Remove="..\TestServerlessApp\obj\**" />
         <Content Remove="..\TestServerlessApp\bin\**" />
         <Content Remove="..\TestServerlessApp\serverless.template" />
+
+        <Content Include="..\TestServerlessApp.NET8\**">
+            <Link>TestServerlessApp.NET8\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Remove="..\TestServerlessApp.NET8\obj\**" />
+        <Content Remove="..\TestServerlessApp.NET8\bin\**" />
+        <Content Remove="..\TestServerlessApp.NET8\serverless.template" />
+
         <Content Include="..\TestExecutableServerlessApp\**">
             <Link>TestExecutableServerlessApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -137,6 +146,7 @@
       <None Remove="Snapshots\ServerlessTemplates\customizeResponse.template" />
       <None Remove="Snapshots\ServerlessTemplates\dynamicexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\intrinsicexample.template" />
+      <None Remove="Snapshots\ServerlessTemplates\net8.template" />
       <None Remove="Snapshots\ServerlessTemplates\nullreferenceexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\sourcegeneratorserializationexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
