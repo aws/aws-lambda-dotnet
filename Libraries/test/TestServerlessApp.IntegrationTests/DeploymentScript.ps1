@@ -38,7 +38,7 @@ try
     $content = Get-Content .\aws-lambda-tools-defaults.json
     $content | ForEach-Object {$_ -replace $line, "`"function-architecture`" : `"$arch`""} | Set-Content .\aws-lambda-tools-defaults.json
 
-    dotnet tool install -g Amazon.Lambda.Tools
+    dotnet tool install -g Amazon.Lambda.Tools --version 5.9.0
     Write-Host "Creating S3 Bucket $identifier"
     aws s3 mb s3://$identifier
     if (!$?)
