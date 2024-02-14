@@ -17,7 +17,7 @@ namespace Amazon.Lambda.Annotations
         public bool GenerateMain { get; set; }
 
         /// <summary>
-        /// The runtime to set in the generated CloudFormation template. Either 'dotnet6', 'provided.al2' or 'provided.al2023'.
+        /// The runtime to set in the generated CloudFormation template. Either 'dotnet6', 'provided.al2', 'provided.al2023'. or 'dotnet8'.
         /// </summary>
         public string Runtime { get; set; }
     }
