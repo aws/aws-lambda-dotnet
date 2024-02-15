@@ -51,7 +51,7 @@ namespace TestServerlessApp.Sub1
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_1.1.0.0");
+            envValue.Append("amazon-lambda-annotations_1.2.0.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }
