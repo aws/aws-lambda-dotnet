@@ -24,7 +24,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
     public static class Utilities
     {
         /// <summary>
-        /// Method to make sure the Lambda implementation is the only registered implementaiton of IServer for ASP.NET Core runtime.
+        /// Method to make sure the Lambda implementation is the only registered implementation of IServer for ASP.NET Core runtime.
         /// </summary>
         /// <param name="services"></param>
         public static void EnsureLambdaServerRegistered(IServiceCollection services)
@@ -33,7 +33,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         }
 
         /// <summary>
-        /// Method to make sure the Lambda implementation is the only registered implementaiton of IServer for ASP.NET Core runtime.
+        /// Method to make sure the Lambda implementation is the only registered implementation of IServer for ASP.NET Core runtime.
         /// </summary>
         /// <param name="services"></param>
         /// <param name="serverType"></param>

@@ -95,7 +95,9 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         /// <param name="jsonSerializerContext"></param>
         /// <param name="customizer"></param>
         /// <param name="jsonWriterCustomizer"></param>
-        [Obsolete("The method is marked obsolete because the jsonSerializerContext parameter is unlikely to be created with the required JsonSerializerOptions for Lambda serialization. This will trigger confusing NullReferenceException.")]
+        [Obsolete("The method is marked obsolete because the jsonSerializerContext parameter is unlikely to be created with the required JsonSerializerOptions for Lambda serialization. " + 
+            "This will trigger confusing NullReferenceException. The constructors that don't take an instance of jsonSerializerContext can be used for Native AOT because the reflection " + 
+            "calls have been annotated to make them Native AOT compatible.")]
         public SourceGeneratorLambdaJsonSerializer(TSGContext jsonSerializerContext, Action<JsonSerializerOptions> customizer = null, Action<JsonWriterOptions> jsonWriterCustomizer = null)
             : base(jsonWriterCustomizer)
         {
