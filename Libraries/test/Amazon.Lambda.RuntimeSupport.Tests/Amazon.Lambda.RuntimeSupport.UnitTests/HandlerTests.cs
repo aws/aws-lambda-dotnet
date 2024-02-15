@@ -383,9 +383,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             using (var actionWriter = new StringWriter())
             {
                 var testRuntimeApiClient = new TestRuntimeApiClient(_environmentVariables, _headers);
-                var loggerAction = actionWriter.ToLoggingAction();
-                var assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName(UserCodeLoader.LambdaCoreAssemblyName));
-                UserCodeLoader.SetCustomerLoggerLogAction(assembly, loggerAction, _internalLogger);
+
 
                 var userCodeLoader = new UserCodeLoader(handler, _internalLogger);
                 var handlerWrapper = HandlerWrapper.GetHandlerWrapper(userCodeLoader.Invoke);
@@ -395,16 +393,20 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                     Client = testRuntimeApiClient
                 };
 
+                var loggerAction = actionWriter.ToLoggingAction();
+                var assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName(UserCodeLoader.LambdaCoreAssemblyName));
+                UserCodeLoader.SetCustomerLoggerLogAction(assembly, loggerAction, _internalLogger);
+
                 if (assertLoggedByInitialize != null)
                 {
-                    Assert.False(actionWriter.ToString().Contains($"^^[{assertLoggedByInitialize}]^^"));
+                    Assert.DoesNotContain($"^^[{assertLoggedByInitialize}]^^", actionWriter.ToString());
                 }
 
                 await bootstrap.InitializeAsync();
 
                 if (assertLoggedByInitialize != null)
                 {
-                    Assert.True(actionWriter.ToString().Contains($"^^[{assertLoggedByInitialize}]^^"));
+                    Assert.Contains($"^^[{assertLoggedByInitialize}]^^", actionWriter.ToString());
                 }
 
                 var dataOut = await InvokeAsync(bootstrap, dataIn, testRuntimeApiClient);

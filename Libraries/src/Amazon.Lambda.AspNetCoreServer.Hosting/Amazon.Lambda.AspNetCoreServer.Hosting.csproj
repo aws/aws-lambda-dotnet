@@ -4,20 +4,25 @@
 
   <PropertyGroup>
 	<Description>Package for running ASP.NET Core applications using the Minimal API style as a AWS Lambda function.</Description>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<Version>1.6.1</Version>
+	<Version>1.7.0</Version>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
     <AssemblyName>Amazon.Lambda.AspNetCoreServer.Hosting</AssemblyName>
     <PackageId>Amazon.Lambda.AspNetCoreServer.Hosting</PackageId>	  
+
+    <WarningsAsErrors>IL2104,IL2026,IL2067,IL2075</WarningsAsErrors>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\"/>		
   </ItemGroup>
 
-  <ItemGroup>
+
+   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />	  
     <ProjectReference Include="..\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
     <ProjectReference Include="..\Amazon.Lambda.AspNetCoreServer\Amazon.Lambda.AspNetCoreServer.csproj" />
