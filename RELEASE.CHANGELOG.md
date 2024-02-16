@@ -1,3 +1,20 @@
+### Release 2024-02-15
+* **Amazon.Lambda.Annotations (1.2.0)**
+  * Added support for detecting TargetFramework is .NET 8 and configuring the runtime to dotnet8.
+* **Amazon.Lambda.AspNetCoreServer (9.0.0)**
+  * Breaking Change: Removed support for .NET Core 3.1.
+  * Breaking Change: Removed AbstractAspNetCoreFunction.CreateWebHostBuilder method that was overloaded for .NET Core 3.1 and earlier functions for configuring IWebHostBuilder.
+  * Added .NET 8 target.
+  * Addressed trim warnings and marked assembly as trimmable for Native AOT Lambda functions;
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.7.0)**  
+  * Update version of Amazon.Lambda.AspNetCoreServer to 9.0.0.
+  * Added new AddAWSLambdaHosting overload that has a parameter for SourceGeneratorLambdaJsonSerializer<T> to force source generator serialization.
+  * Addressed trim warnings and marked assembly as trimmable for Native AOT Lambda functions.
+* **Amazon.Lambda.Serialization.SystemTextJson (2.4.1)**  
+  * Marked SourceGeneratorLambdaJsonSerializer<T> constructor that took in an instance of JsonSerializerContext as Obsolete. This was due to the JsonSerializerContext instance unlikely to have the correct JsonSerializerOptions for Lambda serialization.
+
+
+
 ### Release 2024-01-18
 * **Amazon.Lambda.CognitoEvents (3.0.0)**
   * Pull Request [#1656](https://github.com/aws/aws-lambda-dotnet/pull/1656) Add contracts for cognito pre token generation v2. Thanks [Ernest Folch](https://github.com/ernest-folch-fleksy)
