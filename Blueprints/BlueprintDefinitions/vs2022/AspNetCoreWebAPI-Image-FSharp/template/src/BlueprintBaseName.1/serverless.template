@@ -14,7 +14,7 @@
           ]
         },
         "ImageUri": "",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Role": null,
         "Policies": [

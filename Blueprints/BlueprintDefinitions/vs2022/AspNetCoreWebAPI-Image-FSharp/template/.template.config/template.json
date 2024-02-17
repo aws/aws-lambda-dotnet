@@ -6,7 +6,7 @@
     "Lambda",
     "Serverless"
   ],
-  "name": "Lambda ASP.NET Core Web API (.NET 6 Container Image)",
+  "name": "Lambda ASP.NET Core Web API (.NET 8 Container Image)",
   "identity": "AWS.Lambda.Serverless.Image.AspNetCoreWebAPI.FSharp",
   "groupIdentity": "AWS.Lambda.Serverless.Image.AspNetCoreWebAPI",
   "shortName": "serverless.image.AspNetCoreWebAPI",

@@ -9,7 +9,7 @@
   "region": "DefaultRegion",
   "configuration": "Release",
   "function-runtime": "provided.al2023",
-  "function-memory-size": 256,
+  "function-memory-size": 512,
   "function-timeout": 30,
   "function-handler": "bootstrap",
   "function-name": "BlueprintBaseName.1",

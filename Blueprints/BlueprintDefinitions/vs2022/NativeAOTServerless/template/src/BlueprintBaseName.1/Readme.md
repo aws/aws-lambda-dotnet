@@ -3,19 +3,26 @@
 This starter project consists of:
 * serverless.template - an AWS CloudFormation Serverless Application Model template file for declaring your Serverless functions and other AWS resources.
 * Function.cs - contains a class with a `Main` method that starts the bootstrap and a single function handler method.
+* Startup.cs - When using dependency injection the services can be registered in the ConfigureServices of this type.
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS.
 
 You may also have a test project depending on the options selected.
 
-The `Main` function is called once during the Lambda init phase. It initializes the .NET Lambda runtime client passing in the function 
-handler to invoke for each Lambda event and the JSON serializer to use for converting Lambda JSON format to the .NET types. 
+This project uses the [Amazon.Lambda.Annotations](https://www.nuget.org/packages/Amazon.Lambda.Annotations) library
+that uses .NET attributes to generate the boiler plate code needed for Lambda functions. It will also synchronize the CloudFormation template
+with the .NET methods marked with the LambdaAttribute.
 
-The function handler responds to events from API Gateway. The API Gateway and integration with the Lambda function are defined in 
-the `serverless.template` file.
+For Native AOT Lambda functions the project must be deployed as an executable and bootstrap the Lambda runtime client. Lambda Annotations
+will automatically generate the `Main` by using the `GenerateMain` property of `LambdaGlobalProperties` attribute to true. The generated
+`Main` method uses the environment variable `ANNOTATIONS_HANDLER` to switch to the correct function handler for the executable. Lambda
+Annotations will automatically set the `ANNOTATIONS_HANDLER` environment variable when synchronize the CloudFormation template. If deploying
+the project with a tool besides CloudFormation then the `ANNOTATIONS_HANDLER` must be manually set to the .NET method name that should be invoked.
+
+For more information about Amazon.Lambda.Annotations library visit the docs in GitHub for the library. https://github.com/aws/aws-lambda-dotnet/tree/master/Libraries/src/Amazon.Lambda.Annotations
 
 ## Native AOT
 
-Native AOT is a feature of .NET 7 that compiles .NET assemblies into a single native executable. By using the native executable the .NET runtime 
+Native AOT is a feature that compiles .NET assemblies into a single native executable. By using the native executable the .NET runtime 
 is not required to be installed on the target platform. Native AOT can significantly improve Lambda cold starts for .NET Lambda functions. 
 This project enables Native AOT by setting the .NET `PublishAot` property in the .NET project file to `true`. The `StripSymbols` property is also
 set to `true` to strip debugging symbols from the deployed executable to reduce the executable's size.
@@ -23,9 +30,9 @@ set to `true` to strip debugging symbols from the deployed executable to reduce 
 ### Building Native AOT
 
 When publishing with Native AOT the build OS and Architecture must match the target platform that the application will run. For AWS Lambda that target
-platform is Amazon Linux 2. The AWS tooling for Lambda like the AWS Toolkit for Visual Studio, .NET Global Tool Amazon.Lambda.Tools and SAM CLI will 
-perform a container build using a .NET 7 Amazon Linux 2 build image when `PublishAot` is set to `true`. This means **docker is a requirement**
-when packaging .NET Native AOT Lambda functions on non-Amazon Linux 2 build environments. To install docker go to https://www.docker.com/.
+platform is Amazon Linux 2023. The AWS tooling for Lambda like the AWS Toolkit for Visual Studio, .NET Global Tool Amazon.Lambda.Tools and SAM CLI will 
+perform a container build using a .NET 8 Amazon Linux 2023 build image when `PublishAot` is set to `true`. This means **docker is a requirement**
+when packaging .NET Native AOT Lambda functions on non-Amazon Linux 2023 build environments. To install docker go to https://www.docker.com/.
 
 ### Trimming
 
@@ -40,7 +47,7 @@ For information about trimming see the documentation: <https://learn.microsoft.c
 
 ## Docker requirement
 
-Docker is required to be installed and running when building .NET Native AOT Lambda functions on any platform besides Amazon Linux 2. Information on how acquire Docker can be found here: https://docs.docker.com/get-docker/
+Docker is required to be installed and running when building .NET Native AOT Lambda functions on any platform besides Amazon Linux 2023. Information on how acquire Docker can be found here: https://docs.docker.com/get-docker/
 
 ## Here are some steps to follow from Visual Studio:
 

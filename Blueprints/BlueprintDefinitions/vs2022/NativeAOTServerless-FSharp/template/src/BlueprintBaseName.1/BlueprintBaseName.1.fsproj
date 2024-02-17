@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <AWSProjectType>Lambda</AWSProjectType>
-    <AssemblyName>bootstrap</AssemblyName>
     <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- Generate Native AOT image during publishing to improve cold start time. -->
@@ -21,18 +20,10 @@
   <ItemGroup>
     <Content Include="aws-lambda-tools-defaults.json" />
   </ItemGroup>
-  <!-- 
-  When publishing Lambda functions for ARM64 to the provided.al2 runtime a newer version of libicu needs to be included
-  in the deployment bundle because .NET requires a newer version of libicu then is preinstalled with Amazon Linux 2.
-  -->
-  <ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-arm64'">
-    <RuntimeHostConfigurationOption Include="System.Globalization.AppLocalIcu" Value="68.2.0.9" />
-    <PackageReference Include="Microsoft.ICU.ICU4C.Runtime" Version="68.2.0.9" />
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
     <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.10.0" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.1" />
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.0" />
   </ItemGroup>
   <ItemGroup>

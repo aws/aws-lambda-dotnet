@@ -13,7 +13,7 @@ The function handler is a simple method accepting a string argument that returns
 
 ## Native AOT
 
-Native AOT is a feature of .NET 7 that compiles .NET assemblies into a single native executable. By using the native executable the .NET runtime 
+Native AOT is a feature that compiles .NET assemblies into a single native executable. By using the native executable the .NET runtime 
 is not required to be installed on the target platform. Native AOT can significantly improve Lambda cold starts for .NET Lambda functions. 
 This project enables Native AOT by setting the .NET `PublishAot` property in the .NET project file to `true`. The `StripSymbols` property is also
 set to `true` to strip debugging symbols from the deployed executable to reduce the executable's size.
@@ -21,9 +21,9 @@ set to `true` to strip debugging symbols from the deployed executable to reduce 
 ### Building Native AOT
 
 When publishing with Native AOT the build OS and Architecture must match the target platform that the application will run. For AWS Lambda that target
-platform is Amazon Linux 2. The AWS tooling for Lambda like the AWS Toolkit for Visual Studio, .NET Global Tool Amazon.Lambda.Tools and SAM CLI will 
-perform a container build using a .NET 7 Amazon Linux 2 build image when `PublishAot` is set to `true`. This means **docker is a requirement**
-when packaging .NET Native AOT Lambda functions on non-Amazon Linux 2 build environments. To install docker go to https://www.docker.com/.
+platform is Amazon Linux 2023. The AWS tooling for Lambda like the AWS Toolkit for Visual Studio, .NET Global Tool Amazon.Lambda.Tools and SAM CLI will 
+perform a container build using a .NET 8 Amazon Linux 2023 build image when `PublishAot` is set to `true`. This means **docker is a requirement**
+when packaging .NET Native AOT Lambda functions on non-Amazon Linux 2023 build environments. To install docker go to https://www.docker.com/.
 
 ### Trimming
 
@@ -38,7 +38,7 @@ For information about trimming see the documentation: <https://learn.microsoft.c
 
 ## Docker requirement
 
-Docker is required to be installed and running when building .NET Native AOT Lambda functions on any platform besides Amazon Linux 2. Information on how acquire Docker can be found here: https://docs.docker.com/get-docker/
+Docker is required to be installed and running when building .NET Native AOT Lambda functions on any platform besides Amazon Linux 2023. Information on how acquire Docker can be found here: https://docs.docker.com/get-docker/
 
 ## Here are some steps to follow from Visual Studio:
 
@@ -80,8 +80,3 @@ Deploy function to AWS Lambda
     cd "BlueprintBaseName.1/src/BlueprintBaseName.1"
     dotnet lambda deploy-function
 ```
-
-## Arm64
-
-.NET 7 ARM requires a newer version of GLIBC than is available in the `provided.al2` Lambda runtime. .NET 7 functions that are deployed using
-the Arm64 architecture will fail to start with a runtime error stating the GLIBC version is below the required version for .NET 7.

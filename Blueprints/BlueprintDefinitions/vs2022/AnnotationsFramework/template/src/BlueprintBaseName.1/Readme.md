@@ -226,7 +226,7 @@ remove the `Tool` metadata property.
         ]
     },
     "Properties": {
-    "Runtime": "dotnet6",
+    "Runtime": "dotnet8",
     "CodeUri": ".",
 
   ...
@@ -271,7 +271,7 @@ public class Functions
         ]
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
 
 ...
         "Role": {
@@ -424,9 +424,9 @@ The `HttpApi` attribute also adds the API Gateway event source.
         ]
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": ".",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "PackageType": "Zip",
         "Handler": "CloudCalculator::CloudCalculator.Functions_Add_Generated::Add",
@@ -615,7 +615,7 @@ In this example the function is modified to define the event source in this case
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": ".",
         "MemorySize": 1024,
         "Timeout": 120,

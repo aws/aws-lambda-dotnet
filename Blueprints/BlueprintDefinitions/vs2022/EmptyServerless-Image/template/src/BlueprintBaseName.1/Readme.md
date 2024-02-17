@@ -96,7 +96,7 @@ It also generates the function resources in a JSON or YAML CloudFormation templa
 ### Using Annotations without API Gateway
 You can still use Lambda Annotations without integrating with API Gateway. For example, this Lambda function processes messages from an Amazon Simple Queue Service (Amazon SQS) queue:
 ```
-[LambdaFunction(PackageType = LambdaPackageType.Image, Policies = "AWSLambdaSQSQueueExecutionRole", MemorySize = 256, Timeout = 30)]
+[LambdaFunction(PackageType = LambdaPackageType.Image, Policies = "AWSLambdaSQSQueueExecutionRole", MemorySize = 512, Timeout = 30)]
 public async Task FunctionHandler(SQSEvent evnt, ILambdaContext context) 
 { 
     foreach(var message in evnt.Records) 
@@ -136,7 +136,7 @@ You must also replace the function resource in `serverless.template` with:
           ]
         },
         "ImageUri": "",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Role": null,
         "Policies": [
