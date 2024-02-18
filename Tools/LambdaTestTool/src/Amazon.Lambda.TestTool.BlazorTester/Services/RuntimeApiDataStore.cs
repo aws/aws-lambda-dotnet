@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Amazon.Lambda.TestTool.BlazorTester.Services
 {
@@ -47,6 +48,23 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
             {
                 _queuedEvents.Add(evnt);
             }
+
+            // Start a task that will cancel the event after a timeout or dispatch
+            Task.Run(async () => {
+                // Wait for the event to be dispatched or timeout
+                try {
+                    await evnt.DispatchedTCS.Task.WaitAsync(evnt.TimedOutCTS.Token);
+                } catch (TaskCanceledException) {
+                    // If the event was cancelled then it timed out
+                    lock(_lock) {
+                        _queuedEvents.Remove(evnt);
+                    }
+                    evnt.Cancel("Lambda throttled response error");
+                    return;
+                }
+
+                // If the event was not cancelled then it was dispatched, and we're good
+            });
             
             RaiseStateChanged();
             return evnt;
@@ -57,22 +75,28 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
             activeEvent = null;
             lock(_lock)
             {
-                if (!_queuedEvents.Any())
-                {
-                    return false;
-                }
+                while (true) {
+                    if (!_queuedEvents.Any())
+                    {
+                        return false;
+                    }
 
-                var evnt = _queuedEvents[0];
-                _queuedEvents.RemoveAt(0);
-                evnt.EventStatus = IEventContainer.Status.Executing;
-                if (ActiveEvent != null)
-                {
-                    _executedEvents.Add(ActiveEvent as EventContainer);
+                    var evnt = _queuedEvents[0];
+                    _queuedEvents.RemoveAt(0);
+                    if (evnt.MarkExecuting()) {
+                        if (ActiveEvent != null)
+                        {
+                            _executedEvents.Add(ActiveEvent as EventContainer);
+                        }
+                        ActiveEvent = evnt;
+                        activeEvent = ActiveEvent;
+                        RaiseStateChanged();
+                        return true;
+                    }
+
+                    // If we get here there was an event but it was already failed (timed out)
+                    // Loop around and check if there are more events
                 }
-                ActiveEvent = evnt;
-                activeEvent = ActiveEvent;
-                RaiseStateChanged();
-                return true;
             }
         }
         
@@ -226,13 +250,32 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
         
         public string Response { get; private set; }
         
+        public bool MarkExecuting()
+        {
+            lock(_statusLock){
+                if (EventStatus == IEventContainer.Status.Queued)
+                {
+                    EventStatus = IEventContainer.Status.Executing;
+
+                    // Mark that the event has been dispatched
+                    DispatchedTCS.TrySetResult();
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public DateTime LastUpdated { get; private set; }
 
+        public Task TimeoutTask { get; set; }
+        public TaskCompletionSource DispatchedTCS { get; private set; } = new ();
+        public CancellationTokenSource TimedOutCTS { get; private set; } = new (1000);
+        private readonly object _statusLock = new();
         private IEventContainer.Status _status = IEventContainer.Status.Queued;
         public IEventContainer.Status EventStatus
         {
             get => _status;
-            set
+            private set
             {
                 _status = value;
                 LastUpdated = DateTime.Now;
@@ -256,20 +299,38 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
         public void ReportSuccessResponse(string response)
         {
             LastUpdated = DateTime.Now;
-            this.Response = response;
-            this.EventStatus = IEventContainer.Status.Success;
-            OnSuccess?.Invoke();
-            _dataStore.RaiseStateChanged();
+            lock (_statusLock) {
+                if (this.EventStatus == IEventContainer.Status.Executing) {
+                    this.EventStatus = IEventContainer.Status.Success;
+                    this.Response = response;
+                    OnSuccess?.Invoke();
+                    _dataStore.RaiseStateChanged();
+                }
+            }
         }
         
         public void ReportErrorResponse(string errorType, string errorBody)
         {
             LastUpdated = DateTime.Now;
-            this.ErrorType = errorType;
-            this.ErrorResponse = errorBody;
-            this.EventStatus = IEventContainer.Status.Failure;
-            OnError?.Invoke();
-            _dataStore.RaiseStateChanged();
+            lock(_statusLock) {
+                if (EventStatus == IEventContainer.Status.Queued || this.EventStatus == IEventContainer.Status.Executing) {
+                    this.ErrorType = errorType;
+                    this.ErrorResponse = errorBody;
+                    this.EventStatus = IEventContainer.Status.Failure;
+                    OnError?.Invoke();
+                    _dataStore.RaiseStateChanged();
+                }
+            }
+        }
+
+        public void Cancel(string errorBody)
+        {
+            lock(_statusLock) {
+                if (EventStatus == IEventContainer.Status.Queued)
+                {
+                    ReportErrorResponse("Throttled", errorBody);
+                }
+            }
         }
     }
 }

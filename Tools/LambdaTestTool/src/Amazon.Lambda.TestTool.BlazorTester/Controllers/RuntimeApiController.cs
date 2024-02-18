@@ -53,8 +53,12 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
             var extensionId = Request.Headers["Lambda-Extension-Identifier"];
             if (_registeredExtensions.ContainsKey(extensionId)) {
                 await Task.Delay(TimeSpan.FromSeconds(15));
+                Console.WriteLine(HEADER_BREAK);
+                Console.WriteLine($"Extension ID: {extensionId} - Returning NoContent");
                 return NoContent();
             } else {
+                Console.WriteLine(HEADER_BREAK);
+                Console.Error.WriteLine($"Extension ID: {extensionId} - Was not found - Returning 404 - ");
                 return NotFound();
             }
         }
@@ -91,6 +95,25 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
 
             // Wait for our event to process
             await tcs.Task;
+
+            if (eventContainer.ErrorResponse != null)
+            {
+                if (eventContainer.ErrorType == "Throttled")
+                {
+                    return Ok(new {
+                        StatusCode = 429,
+                        FunctionError = "Throttled",
+                        ExecutedVersion = "$LATEST",
+                        Payload = "{\"errorMessage\":\"Rate Exceeded.\"}"
+                    });
+                }
+                return Ok(new {
+                    StatusCode = 200,
+                    FunctionError = "Unhandled",
+                    ExecutedVersion = "$LATEST",
+                    Payload = "{\"errorMessage\":\"An error occurred.\",\"errorType\":\"Error\"}"
+                });
+            }
 
             var response = new 
             {
