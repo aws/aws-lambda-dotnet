@@ -32,7 +32,7 @@ when packaging .NET Native AOT Lambda functions on non-Amazon Linux 2023 build e
 As part of the Native AOT compilation, .NET assemblies will be trimmed removing types and methods that the compiler does not find a reference to. This is important
 to keep the native executable size small. When types are used through reflection this can go undetected by the compiler causing necessary types and methods to
 be removed. When testing Native AOT Lambda functions in Lambda if a runtime error occurs about missing types or methods the most likely solution will
-be to remove references to trim-unsafe code or configure [trimming options](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options?pivots=dotnet-7-0).
+be to remove references to trim-unsafe code or configure [trimming options](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options?pivots=dotnet-8-0).
 This sample defaults to partial TrimMode because currently the AWS SDK for .NET does not support trimming. This will result in a larger executable size, and still does not
 guarantee runtime trimming errors won't be hit.
 
