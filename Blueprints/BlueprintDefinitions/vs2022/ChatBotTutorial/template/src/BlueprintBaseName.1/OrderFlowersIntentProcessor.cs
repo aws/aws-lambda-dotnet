@@ -20,8 +20,8 @@ public class OrderFlowersIntentProcessor : AbstractIntentProcessor
     /// 1) Use of elicitSlot in slot validation and re-prompting
     /// 2) Use of sessionAttributes to pass information that can be used to guide the conversation
     /// </summary>
-    /// <param name="lexEvent"></param>
-    /// <param name="context"></param>
+    /// <param name="lexEvent">The event coming from the Lex service.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     public override LexResponse Process(LexEvent lexEvent, ILambdaContext context)
     {
@@ -103,7 +103,7 @@ public class OrderFlowersIntentProcessor : AbstractIntentProcessor
     /// <summary>
     /// Verifies that any values for slots in the intent are valid.
     /// </summary>
-    /// <param name="order"></param>
+    /// <param name="order">The FlowerOrder to validate.</param>
     /// <returns></returns>
     private ValidationResult Validate(FlowerOrder order)
     {
@@ -147,7 +147,7 @@ public class OrderFlowersIntentProcessor : AbstractIntentProcessor
     /// <summary>
     /// Verifies that any values for flower type slot in the intent is valid.
     /// </summary>
-    /// <param name="flowertypeString"></param>
+    /// <param name="flowertypeString">The flower type to validate.</param>
     /// <returns></returns>
     private ValidationResult ValidateFlowerType(string? flowerTypeString)
     {

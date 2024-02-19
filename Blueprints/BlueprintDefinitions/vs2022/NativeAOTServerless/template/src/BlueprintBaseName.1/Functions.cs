@@ -37,12 +37,10 @@ public record ProductDTO(string ID, string Name, string Description);
 
 public class Functions
 {
-
-
     /// <summary>
     /// A Lambda function to respond to HTTP Get methods from API Gateway.
     /// </summary>
-    /// <param name="context"></param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     [LambdaFunction(MemorySize = 512)]
     [RestApi(LambdaHttpMethod.Get, "/")]
@@ -57,8 +55,8 @@ public class Functions
     /// <summary>
     /// A Lambda function to respond to HTTP POST methods from API Gateway
     /// </summary>
-    /// <param name="request"></param>
-    /// <param name="context"></param>
+    /// <param name="product">The new product to post to the system.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     [LambdaFunction(MemorySize = 512)]
     [RestApi(LambdaHttpMethod.Post, "/")]
@@ -75,8 +73,8 @@ public class Functions
 
     /// <summary>
     /// This method demonstrates methods being exposed as Lambda functions using Amazon.Lambda.Annotations without API Gateway attributes.
-    /// The event source for the Lambda function can be configured in the serverless.template. The method can also Lambda function can     
-    /// be invoked manually using the AWS SDKs.
+    /// The event source for the Lambda function can be configured in the serverless.template. The Lambda function can be invoked manually
+    /// using the AWS SDKs.
     /// </summary>
     /// <returns></returns>
     [LambdaFunction(MemorySize = 512)]

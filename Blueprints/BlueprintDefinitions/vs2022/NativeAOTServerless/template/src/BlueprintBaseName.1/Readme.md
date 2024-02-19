@@ -15,8 +15,9 @@ with the .NET methods marked with the LambdaAttribute.
 For Native AOT Lambda functions the project must be deployed as an executable and bootstrap the Lambda runtime client. Lambda Annotations
 will automatically generate the `Main` by using the `GenerateMain` property of `LambdaGlobalProperties` attribute to true. The generated
 `Main` method uses the environment variable `ANNOTATIONS_HANDLER` to switch to the correct function handler for the executable. Lambda
-Annotations will automatically set the `ANNOTATIONS_HANDLER` environment variable when synchronize the CloudFormation template. If deploying
-the project with a tool besides CloudFormation then the `ANNOTATIONS_HANDLER` must be manually set to the .NET method name that should be invoked.
+Annotations will automatically set the `ANNOTATIONS_HANDLER` environment variable when synchronizing the CloudFormation template. If deploying
+the project with a tool besides CloudFormation then the `ANNOTATIONS_HANDLER` environment variable must be manually set to the .NET method name 
+that should be invoked.
 
 For more information about Amazon.Lambda.Annotations library visit the docs in GitHub for the library. https://github.com/aws/aws-lambda-dotnet/tree/master/Libraries/src/Amazon.Lambda.Annotations
 

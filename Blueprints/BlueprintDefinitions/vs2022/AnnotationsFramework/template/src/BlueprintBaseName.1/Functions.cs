@@ -49,8 +49,8 @@ You can make the following requests to invoke other Lambda functions perform cal
     /// <summary>
     /// Perform x + y
     /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
+    /// <param name="x">Left hand operand of the arithmetic operation.</param>
+    /// <param name="y">Right hand operand of the arithmetic operation.</param>
     /// <returns>Sum of x and y.</returns>
     [LambdaFunction()]
     [HttpApi(LambdaHttpMethod.Get, "/add/{x}/{y}")]
@@ -65,8 +65,8 @@ You can make the following requests to invoke other Lambda functions perform cal
     /// <summary>
     /// Perform x - y.
     /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
+    /// <param name="x">Left hand operand of the arithmetic operation.</param>
+    /// <param name="y">Right hand operand of the arithmetic operation.</param>
     /// <returns>x subtract y</returns>
     [LambdaFunction()]
     [HttpApi(LambdaHttpMethod.Get, "/subtract/{x}/{y}")]
@@ -81,8 +81,8 @@ You can make the following requests to invoke other Lambda functions perform cal
     /// <summary>
     /// Perform x * y.
     /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
+    /// <param name="x">Left hand operand of the arithmetic operation.</param>
+    /// <param name="y">Right hand operand of the arithmetic operation.</param>
     /// <returns>x multiply y</returns>
     [LambdaFunction()]
     [HttpApi(LambdaHttpMethod.Get, "/multiply/{x}/{y}")]
@@ -97,8 +97,8 @@ You can make the following requests to invoke other Lambda functions perform cal
     /// <summary>
     /// Perform x / y.
     /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
+    /// <param name="x">Left hand operand of the arithmetic operation.</param>
+    /// <param name="y">Right hand operand of the arithmetic operation.</param>
     /// <returns>x divide y</returns>
     [LambdaFunction()]
     [HttpApi(LambdaHttpMethod.Get, "/divide/{x}/{y}")]

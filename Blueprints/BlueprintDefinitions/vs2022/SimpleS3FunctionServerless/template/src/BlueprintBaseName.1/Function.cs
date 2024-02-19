@@ -25,7 +25,7 @@ public class Function
     /// <summary>
     /// Constructs an instance with a preconfigured S3 client. This can be used for testing the outside of the Lambda environment.
     /// </summary>
-    /// <param name="s3Client"></param>
+    /// <param name="s3Client">The service client to access Amazon S3.</param>
     public Function(IAmazonS3 s3Client)
     {
         this.S3Client = s3Client;
@@ -35,8 +35,8 @@ public class Function
     /// This method is called for every Lambda invocation. This method takes in an S3 event object and can be used 
     /// to respond to S3 notifications.
     /// </summary>
-    /// <param name="evnt"></param>
-    /// <param name="context"></param>
+    /// <param name="evntThe event for the Lambda function handler to process.
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     public async Task<string?> FunctionHandler(S3Event evnt, ILambdaContext context)
     {

@@ -17,8 +17,8 @@ type Function() =
     /// <summary>
     /// A simple function to print out the DynamoDB stream event
     /// </summary>
-    /// <param name="dynamoEvent"></param>
-    /// <param name="context"></param>
+    /// <param name="dynamoEvent">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     member __.FunctionHandler (dynamoEvent: DynamoDBEvent) (context: ILambdaContext) =
         sprintf "Beginning to process %i records..." dynamoEvent.Records.Count

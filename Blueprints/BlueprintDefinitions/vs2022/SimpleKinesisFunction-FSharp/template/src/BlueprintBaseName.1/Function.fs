@@ -17,8 +17,8 @@ type Function() =
     /// <summary>
     /// A function to process Kinesis events
     /// </summary>
-    /// <param name="kinesisEvent"></param>
-    /// <param name="context"></param>
+    /// <param name="kinesisEvent">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     member __.FunctionHandler (kinesisEvent: KinesisEvent) (context: ILambdaContext) =
         sprintf "Beginning to process % i records..." kinesisEvent.Records.Count

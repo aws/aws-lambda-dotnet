@@ -21,7 +21,8 @@ public class Functions
     /// <summary>
     /// A Lambda function to respond to HTTP Get methods from API Gateway
     /// </summary>
-    /// <param name="request"></param>
+    /// <param name="request">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns>The API Gateway response.</returns>
     [Logging(LogEvent = true, CorrelationIdPath = CorrelationIdPaths.ApiGatewayRest)]
     [Metrics(CaptureColdStart = true)]

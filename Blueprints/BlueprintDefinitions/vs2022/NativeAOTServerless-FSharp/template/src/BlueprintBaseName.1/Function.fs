@@ -26,8 +26,8 @@ module Function =
     // guarantee runtime trimming errors won't be hit. 
 
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="context"></param>
+    /// <param name="input">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     let GetFunctionHandler (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         sprintf "Request: %s" request.Path
@@ -46,7 +46,7 @@ module Function =
     /// the JSON serializer to use for converting Lambda JSON format to the .NET types. 
     ///
     /// </summary>
-    /// <param name="args"></param>
+    /// <param name="args">The command line arguments.</param>
     [<EntryPoint>]
     let main _args =
     
