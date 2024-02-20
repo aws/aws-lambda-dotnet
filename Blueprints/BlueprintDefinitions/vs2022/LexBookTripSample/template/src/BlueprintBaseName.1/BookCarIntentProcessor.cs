@@ -22,7 +22,8 @@ public class BookCarIntentProcessor : AbstractIntentProcessor
     /// 1) Use of elicitSlot in slot validation and re-prompting
     /// 2) Use of sessionAttributes to pass information that can be used to guide the conversation
     /// </summary>
-    /// <param name="lexEvent"></param>
+    /// <param name="lexEvent">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param> 
     /// <returns></returns>
     public override LexResponse Process(LexEvent lexEvent, ILambdaContext context)
     {
@@ -215,7 +216,7 @@ public class BookCarIntentProcessor : AbstractIntentProcessor
     /// <summary>
     /// Verifies that any values for slots in the intent are valid.
     /// </summary>
-    /// <param name="reservation"></param>
+    /// <param name="reservation">The reservation to validate.</param>
     /// <returns></returns>
     private ValidationResult Validate(Reservation reservation)
     {
@@ -295,7 +296,7 @@ public class BookCarIntentProcessor : AbstractIntentProcessor
     /// Generates a number within a reasonable range that might be expected for a flight.
     /// The price is fixed for a given pair of locations.
     /// </summary>
-    /// <param name="reservation"></param>
+    /// <param name="reservation">The reservation to generate a price for.</param>
     /// <returns></returns>
     private double GeneratePrice(Reservation reservation)
     {

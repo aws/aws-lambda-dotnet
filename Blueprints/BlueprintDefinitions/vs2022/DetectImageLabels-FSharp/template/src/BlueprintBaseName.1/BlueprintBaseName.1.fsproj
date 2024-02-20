@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AWSProjectType>Lambda</AWSProjectType>
     <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
@@ -9,10 +9,10 @@
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.300.0" />
-    <PackageReference Include="AWSSDK.Rekognition" Version="3.7.300.0" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.305.28" />
+    <PackageReference Include="AWSSDK.Rekognition" Version="3.7.301.15" />
     <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.1" />
     <PackageReference Include="Amazon.Lambda.S3Events" Version="3.1.0" />
   </ItemGroup>
   <ItemGroup>

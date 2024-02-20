@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "An AWS Serverless Application.",
+  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v1.2.0.0).",
   "Resources": {
     "BlueprintBaseName._1FunctionsGetGenerated": {
       "Type": "AWS::Serverless::Function",
@@ -16,14 +16,43 @@
           "x86_64"
         ],
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::Get",
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": ".",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "BlueprintBaseName1FunctionsGetGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet8",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions_Get_Generated::Get",
         "Events": {
           "RootGet": {
             "Type": "Api",

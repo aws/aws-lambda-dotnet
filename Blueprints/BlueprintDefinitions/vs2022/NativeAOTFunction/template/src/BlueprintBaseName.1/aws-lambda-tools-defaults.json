@@ -8,9 +8,9 @@
   "profile": "DefaultProfile",
   "region": "DefaultRegion",
   "configuration": "Release",
-  "function-runtime": "provided.al2",
-  "function-memory-size": 256,
+  "function-runtime": "dotnet8",
+  "function-memory-size": 512,
   "function-timeout": 30,
-  "function-handler": "bootstrap",
+  "function-handler": "BlueprintBaseName.1",
   "msbuild-parameters": "--self-contained true"
 }

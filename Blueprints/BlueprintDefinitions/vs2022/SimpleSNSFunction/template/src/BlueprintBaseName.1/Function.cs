@@ -24,8 +24,8 @@ public class Function
     /// This method is called for every Lambda invocation. This method takes in an SNS event object and can be used 
     /// to respond to SNS messages.
     /// </summary>
-    /// <param name="evnt"></param>
-    /// <param name="context"></param>
+    /// <param name="evnt">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     public async Task FunctionHandler(SNSEvent evnt, ILambdaContext context)
     {

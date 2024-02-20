@@ -1,27 +1,20 @@
 using Xunit;
-using Amazon.Lambda.Core;
 using Amazon.Lambda.TestUtilities;
-using Amazon.Lambda.APIGatewayEvents;
-
+using System.Net;
 
 namespace BlueprintBaseName._1.Tests;
 
 public class FunctionsTest
 {
     [Fact]
-    public void TestGetMethod()
+    public async Task TestGetMethod()
     {
-        TestLambdaContext context;
-        APIGatewayProxyRequest request;
-        APIGatewayProxyResponse response;
-
         Functions functions = new Functions();
+        var context = new TestLambdaContext();
 
 
-        request = new APIGatewayProxyRequest();
-        context = new TestLambdaContext();
-        response = functions.GetFunctionHandler(request, context);
-        Assert.Equal(200, response.StatusCode);
-        Assert.Equal("Hello AWS Serverless", response.Body);
+        var ip = await functions.GetCallingIPAsync(context);
+
+        Assert.True(IPAddress.TryParse(ip, out var _));
     }
 }

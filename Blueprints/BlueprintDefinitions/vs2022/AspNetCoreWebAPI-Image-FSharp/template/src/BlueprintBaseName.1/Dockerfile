@@ -1,5 +1,4 @@
-FROM public.ecr.aws/lambda/dotnet:7
-
+FROM public.ecr.aws/lambda/dotnet:8
 WORKDIR /var/task
 
 # This COPY command copies the .NET Lambda project's build artifacts from the host machine into the image. 

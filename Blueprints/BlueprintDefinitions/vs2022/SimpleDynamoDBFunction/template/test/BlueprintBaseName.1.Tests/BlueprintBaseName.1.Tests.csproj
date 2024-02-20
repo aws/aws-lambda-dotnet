@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
@@ -8,8 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
     <PackageReference Include="Amazon.Lambda.TestUtilities" Version="2.0.0" />
-    <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="2.3.0" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.300.0" />
+    <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="3.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" />

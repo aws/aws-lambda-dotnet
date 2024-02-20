@@ -14,8 +14,8 @@ public class Function
     /// Then entry point for the Lambda function that looks at the current intent and calls 
     /// the appropriate intent process.
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="context"></param>
+    /// <param name="lexEvent">The event coming from the Lex service.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     public LexResponse FunctionHandler(LexEvent lexEvent, ILambdaContext context)
     {

@@ -5,7 +5,7 @@
     "Lambda",
     "Function"
   ],
-  "name": "Lambda Function project configured for deployment using .NET 7's Native AOT feature.",
+  "name": "Lambda Function project configured for deployment using .NET 8's Native AOT feature.",
   "identity": "AWS.Lambda.Function.NativeAot.FSharp",
   "groupIdentity": "AWS.Lambda.Function.NativeAOT",
   "shortName": "lambda.NativeAOT",

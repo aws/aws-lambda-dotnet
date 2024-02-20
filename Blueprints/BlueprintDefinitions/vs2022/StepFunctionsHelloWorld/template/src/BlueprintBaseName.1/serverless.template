@@ -13,8 +13,8 @@
             "Arn"
           ]
         },
-        "Runtime": "dotnet6",
-        "MemorySize": 256,
+        "Runtime": "dotnet8",
+        "MemorySize": 512,
         "Timeout": 30,
         "Code": {
           "S3Bucket": "",
@@ -32,8 +32,8 @@
             "Arn"
           ]
         },
-        "Runtime": "dotnet6",
-        "MemorySize": 256,
+        "Runtime": "dotnet8",
+        "MemorySize": 512,
         "Timeout": 30,
         "Code": {
           "S3Bucket": "",

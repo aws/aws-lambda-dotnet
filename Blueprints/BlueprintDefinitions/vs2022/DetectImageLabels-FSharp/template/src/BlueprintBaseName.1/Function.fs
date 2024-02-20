@@ -39,8 +39,8 @@ type Function(s3Client: IAmazonS3, rekognitionClient: IAmazonRekognition, minCon
     /// A function for responding to S3 create events. It will determine if the object is an image
     /// and use Amazon Rekognition to detect labels and add the labels as tags on the S3 object.
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="context"></param>
+    /// <param name="input">The S3 event to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     member __.FunctionHandler (input: S3Event) (context: ILambdaContext) = task {
 

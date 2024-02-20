@@ -38,9 +38,9 @@
       "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::OnConnectHandler",
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": "",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Role": null,
         "Policies": [
@@ -65,9 +65,9 @@
       "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::OnDisconnectHandler",
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": "",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Role": null,
         "Policies": [
@@ -92,9 +92,9 @@
       "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::SendMessageHandler",
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": "",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Role": null,
         "Policies": [

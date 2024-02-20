@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
@@ -12,8 +12,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.0" />
-    <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="2.3.0" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.300.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.1" />
+    <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="3.0.0" />
   </ItemGroup>
 </Project>

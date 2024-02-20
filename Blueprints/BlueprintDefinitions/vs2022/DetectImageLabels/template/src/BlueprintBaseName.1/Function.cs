@@ -69,9 +69,9 @@ public class Function
     /// <summary>
     /// Constructor used for testing which will pass in the already configured service clients.
     /// </summary>
-    /// <param name="s3Client"></param>
-    /// <param name="rekognitionClient"></param>
-    /// <param name="minConfidence"></param>
+    /// <param name="s3Client">Service client for accessing Amazon S3.</param>
+    /// <param name="rekognitionClient">Service client for accessing Amazon Rekognition.</param>
+    /// <param name="minConfidence">The min confidence for accepting a label from Amazon Rekognition.</param>
     public Function(IAmazonS3 s3Client, IAmazonRekognition rekognitionClient, float minConfidence)
     {
         this.S3Client = s3Client;
@@ -83,8 +83,8 @@ public class Function
     /// A function for responding to S3 create events. It will determine if the object is an image and use Amazon Rekognition
     /// to detect labels and add the labels as tags on the S3 object.
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="context"></param>
+    /// <param name="input">The S3 event to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     public async Task FunctionHandler(S3Event input, ILambdaContext context)
     {
