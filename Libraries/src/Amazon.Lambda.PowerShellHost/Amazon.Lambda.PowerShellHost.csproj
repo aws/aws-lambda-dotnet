@@ -3,20 +3,20 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <Description>AWS Lambda PowerShell Host.</Description>
     <AssemblyTitle>Amazon.Lambda.PowerShellHost</AssemblyTitle>
-    <VersionPrefix>2.2.0</VersionPrefix>
+    <VersionPrefix>3.0.0</VersionPrefix>
     <AssemblyName>Amazon.Lambda.PowerShellHost</AssemblyName>
     <PackageId>Amazon.Lambda.PowerShellHost</PackageId>
     <PackageTags>AWS;Amazon;Lambda;PowerShell</PackageTags>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.1'">
-    <PackageReference Include="Microsoft.PowerShell.SDK" Version="6.0.4" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.18" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.0.0" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />

@@ -9,19 +9,19 @@ Before we get started developing PowerShell based Lambda functions, let's set up
 development environment.
 
 First, we need to set up the correct version of PowerShell. AWS Lambda support 
-for PowerShell is based on the cross-platform PowerShell Core 6.0 release. This means 
+for PowerShell is based on the cross-platform PowerShell release. This means 
 you can develop your Lambda functions for PowerShell on Windows, Linux, or Mac. If you don't 
-have this version of PowerShell installed, you can find instructions [here](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.2).
+have this version of PowerShell installed, you can find instructions [here](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.4).
 
 If you are using Visual Studio Code on Windows as your IDE, you need to ensure it's 
 configured for PowerShell Core. To learn how to configure Visual Studio Code for 
-PowerShell Core, see the following: https://learn.microsoft.com/en-us/powershell/scripting/dev-cross-plat/vscode/using-vscode?view=powershell-7.2
+PowerShell Core, see the following: https://learn.microsoft.com/en-us/powershell/scripting/dev-cross-plat/vscode/using-vscode?view=powershell-7.4
 
-Next, we need to install the .NET 6 SDK. Because PowerShell Core is built on top of 
-.NET Core, the Lambda support for PowerShell uses the same .NET 6 Lambda runtime for 
-both .NET Core and PowerShell based Lambda functions. The .NET 6 SDK is used by 
+Next, we need to install the .NET 8 SDK. Because PowerShell Core is built on top of 
+.NET Core, the Lambda support for PowerShell uses the same .NET 8 Lambda runtime for 
+both .NET Core and PowerShell based Lambda functions. The .NET 8 SDK is used by 
 the new PowerShell publishing cmdlets for Lambda to create the Lambda deployment 
-package. You can find the .NET 6 SDK [here]( https://www.microsoft.com/net/download). Be 
+package. You can find the .NET 8 SDK [here]( https://www.microsoft.com/net/download). Be 
 sure to install the SDK, not the runtime installation.
 
 The last component we need for the development environment is the 
