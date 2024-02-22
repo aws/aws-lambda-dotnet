@@ -1,3 +1,14 @@
+### Release 2024-02-22
+* **Amazon.Lambda.Templates (7.0.0)**
+  * Updated templates to target .NET 8
+  * Updated the serverless Native AOT template to use Amazon.Lambda.Anotations
+  * Updated the DynamoDB blueprint for changes with the new major version bump of Amazon.Lambda.DynamoDBEvents
+  * Updated all AWS dependencies in templates
+* **AWSLambdaPSCore PowerShell Module (4.0.0)**
+  * Updated to target the .NET 8 Lambda runtime
+* **Amazon.Lambda.PowerShellHost (3.0.0)**
+  * Updated to target .NET 8
+  
 ### Release 2024-02-15
 * **Amazon.Lambda.Annotations (1.2.0)**
   * Added support for detecting TargetFramework is .NET 8 and configuring the runtime to dotnet8.
