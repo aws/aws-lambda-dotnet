@@ -3,7 +3,6 @@
 This starter project consists of:
 * Function.cs - contains a class with a `Main` method that starts the bootstrap and a single function handler method.
 * aws-lambda-tools-defaults.json - default argument settings for use with Visual Studio and command line deployment tools for AWS.
-* rd.xml - Runtime directives configuration file used to tell the Native AOT compiler what code to not trim out of .NET assemblies.
 
 You may also have a test project depending on the options selected.
 
