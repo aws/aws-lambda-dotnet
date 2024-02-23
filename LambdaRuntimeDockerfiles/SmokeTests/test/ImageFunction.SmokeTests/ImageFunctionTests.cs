@@ -127,8 +127,8 @@ namespace ImageFunction.SmokeTests
         [InlineData("SSL_CERT_FILE", "\"/var/runtime/empty-certificates.crt\"", null)]
         [InlineData("SSL_CERT_FILE", "\"/tmp/my-bundle\"", "/tmp/my-bundle")]
 #else
-        [InlineData("SSL_CERT_FILE", "", null)]
-        [InlineData("SSL_CERT_FILE", "/tmp/my-bundle", "/tmp/my-bundle")]
+        [InlineData("SSL_CERT_FILE", "\"\"", null)]
+        [InlineData("SSL_CERT_FILE", "\"/tmp/my-bundle\"", "/tmp/my-bundle")]
 #endif
         public async Task CheckEnvironmentVariable(string envName, string expectedValue, string setValue)
         {
