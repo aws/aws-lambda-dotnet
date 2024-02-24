@@ -52,7 +52,7 @@ have the .NET project built inside the container. Below is an example of buildin
 
 ```dockerfile
 FROM public.ecr.aws/lambda/dotnet:8
-FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim as build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 as build
 WORKDIR /src
 COPY ["BlueprintBaseName.1.csproj", "BlueprintBaseName.1/"]
 RUN dotnet restore "BlueprintBaseName.1/BlueprintBaseName.1.csproj"
