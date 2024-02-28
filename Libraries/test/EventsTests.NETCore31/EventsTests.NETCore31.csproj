@@ -6,6 +6,7 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <RuntimeIdentifiers>win7-x64;win7-x86</RuntimeIdentifiers>
     <RootNamespace>EventsTests31</RootNamespace>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
 
@@ -54,10 +55,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.301.14" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
     <PackageReference Include="xunit" Version="2.2.0" />
-    <PackageReference Include="AWSSDK.Core" Version="3.7.10.9" />
+    <PackageReference Include="AWSSDK.Core" Version="3.7.302.13" />
   </ItemGroup>
 
   <ItemGroup>
