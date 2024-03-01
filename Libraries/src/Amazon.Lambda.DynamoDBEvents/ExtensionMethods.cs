@@ -16,7 +16,6 @@ namespace Amazon.Lambda.DynamoDBEvents
         /// This may be useful when casting a DynamoDB Lambda event to the AWS SDK's 
         /// higher-level document and object persistence classes.
         /// </summary>
-        /// <remarks></remarks>
         /// <param name="item">Dictionary representing a DynamoDB item</param>
         /// <returns>Unformatted JSON string representing the DynamoDB item</returns>
         public static string ToJson(this Dictionary<string, AttributeValue> item)
@@ -29,7 +28,6 @@ namespace Amazon.Lambda.DynamoDBEvents
         /// This may be useful when casting a DynamoDB Lambda event to the AWS SDK's 
         /// higher-level document and object persistence classes.
         /// </summary>
-        /// <remarks></remarks>
         /// <param name="item">Dictionary representing a DynamoDB item</param>
         /// <returns>Formatted JSON string representing the DynamoDB item</returns>
         public static string ToJsonPretty(this Dictionary<string, AttributeValue> item)
@@ -50,8 +48,8 @@ namespace Amazon.Lambda.DynamoDBEvents
                 return "{}";
             }
 
-            var stream = new MemoryStream();
-            var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = prettyPrint});
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = prettyPrint});
 
             WriteJson(writer, item);
 
@@ -91,10 +89,8 @@ namespace Amazon.Lambda.DynamoDBEvents
             else if (attribute.N != null)
             {
 #if NETCOREAPP3_1  // WriteRawValue was added in .NET 6, but we need to write out Number values without quotes
-                using (var document = JsonDocument.Parse(attribute.N))
-                {
-                    document.WriteTo(writer);
-                }
+                using var document = JsonDocument.Parse(attribute.N);
+                document.WriteTo(writer);
 #else
                 writer.WriteRawValue(attribute.N);
 #endif
@@ -139,10 +135,8 @@ namespace Amazon.Lambda.DynamoDBEvents
                 foreach (var item in attribute.NS)
                 {
 #if NETCOREAPP3_1  // WriteRawValue was added in .NET 6, but we need to write out Number values without quotes
-                    using (var document = JsonDocument.Parse(item))
-                    {
-                        document.WriteTo(writer);
-                    }
+                    using var document = JsonDocument.Parse(item);
+                    document.WriteTo(writer);
 #else
                     writer.WriteRawValue(item);
 #endif
