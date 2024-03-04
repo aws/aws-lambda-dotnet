@@ -75,5 +75,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)EventTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamoDBEventJsonTests.cs" />
   </ItemGroup>
 </Project>
