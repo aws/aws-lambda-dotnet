@@ -1,3 +1,6 @@
+### Release 2024-03-04
+* **Amazon.Lambda.DynamoDBEvents (3.1.0)**
+  * Added `ToJson` which can be used to convert `DynamoDBEvent` objects to the higher-level document and object persistence classes in the AWS SDK.
 ### Release 2024-02-22
 * **Amazon.Lambda.Templates (7.0.0)**
   * Updated templates to target .NET 8
