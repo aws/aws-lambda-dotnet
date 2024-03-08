@@ -152,6 +152,10 @@ namespace Amazon.Lambda.DynamoDBEvents
                 }
                 writer.WriteEndArray();
             }
+            else
+            {
+                writer.WriteNullValue();
+            }
         }
     }
 }
