@@ -441,5 +441,58 @@ namespace Amazon.Lambda.Tests
             Assert.Equal("hello world", Encoding.UTF8.GetString(list[0].AsByteArray()));
             Assert.Equal("hello world!", Encoding.UTF8.GetString(list[1].AsByteArray()));
         }
+
+        [Fact]
+        public void NullAttributes_ToJson()
+        {
+            var evnt = PrepareEvent(new Dictionary<string, AttributeValue>()
+            {
+                { "Null", new AttributeValue {NULL = null } },
+                { "Empty", new AttributeValue() }
+            });
+
+            var json = evnt.Records[0].Dynamodb.NewImage.ToJson();
+
+            Assert.Equal("{\"Null\":null,\"Empty\":null}", json);
+        }
+
+        [Fact]
+        public void NullAttributes_ToDocument()
+        {
+            var evnt = PrepareEvent(new Dictionary<string, AttributeValue>()
+            {
+                { "Null", new AttributeValue {NULL = null } },
+                { "Empty", new AttributeValue() }
+            });
+
+            // Convert the event from the Lambda package to the SDK type
+            var json = evnt.Records[0].Dynamodb.NewImage.ToJson();
+            var document = Document.FromJson(json);
+
+            Assert.Equal(DynamoDBNull.Null, document["Null"].AsDynamoDBNull());
+            Assert.Equal(DynamoDBNull.Null, document["Empty"].AsDynamoDBNull());
+        }
+
+        [Fact]
+        public void NoAttributes_ToJson()
+        {
+            var evnt = PrepareEvent(new Dictionary<string, AttributeValue>());
+
+            var json = evnt.Records[0].Dynamodb.NewImage.ToJson();
+
+            Assert.Equal("{}", json);
+        }
+
+        [Fact]
+        public void NoAttributes_ToDocument()
+        {
+            var evnt = PrepareEvent(new Dictionary<string, AttributeValue>());
+
+            // Convert the event from the Lambda package to the SDK type
+            var json = evnt.Records[0].Dynamodb.NewImage.ToJson();
+            var document = Document.FromJson(json);
+
+            Assert.Equal(0, document.Count);
+        }
     }
 }
