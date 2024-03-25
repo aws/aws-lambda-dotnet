@@ -1,0 +1,14 @@
+{
+  "display-name": "Message Processing Framework Sample",
+  "system-name": "MessageProcessingFramework",
+  "description": "Sample application demonstrating how to use the AWS Message Processing Framework for .NET.",
+  "sort-order": 125,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "SQS",
+    "MessageProcessingFramework"
+  ]
+}

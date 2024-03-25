@@ -66,8 +66,7 @@
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.image.EmptyServerless;ProjectName=ImageEmptyServerlessC;Lang=C#;Version=vs2022"/>
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.image.EmptyServerless;ProjectName=ImageEmptyServerlessF;Lang=F#;Version=vs2022"/>
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.Annotations;ProjectName=AnnotationsC;Lang=C#;Version=vs2022"/>
-
-		
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.Messaging;ProjectName=MessagingC;Lang=C#;Version=vs2022"/>
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebApp;ProjectName=AspNetCoreWebAppC;Lang=C#;Version=vs2022"/>
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.WebSocketAPI;ProjectName=WebSocketAPIC;Lang=C#;Version=vs2022"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SimpleApplicationLoadBalancerFunction;ProjectName=SimpleApplicationLoadBalancerFunctionC;Lang=C#;Version=vs2022"/>
