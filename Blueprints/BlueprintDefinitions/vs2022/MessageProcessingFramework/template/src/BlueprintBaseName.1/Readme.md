@@ -1,10 +1,11 @@
 # AWS Message Processing Framework for .NET Template
 
 This starter project consists of:
-* Functions.cs - class file containing a class with a two Lambda function handlers, one for sending mesages, one for processing them
+* Functions.cs - class file containing a class with a two Lambda function handlers, one for sending messages, one for processing them
 * Startup.cs - default argument settings for use with Visual Studio and command line deployment tools for AWS
-* GreetingMessage.cs* - Represents a single message
-* serverless.template - A CloudFormation template to deploy both functions. It also creates a new SQS queue that will the functions will send to and recieve messages from. 
+* GreetingMessage.cs - Represents a single message
+* GreetingMessageHandler.cs - Business logic for handling messages
+* serverless.template - A CloudFormation template to deploy both functions. It also creates a new SQS queue that the functions will send to and receive messages from. 
 
 You may also have a test project depending on the options selected.
 
@@ -16,6 +17,8 @@ The framework reduces the amount of boiler-plate code developers need to write, 
 * [Readme](https://github.com/awslabs/aws-dotnet-messaging/blob/main/README.md)
 * [Developer Guide](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/msg-proc-fw.html)
 * [API Reference](https://awslabs.github.io/aws-dotnet-messaging/api/AWS.Messaging.html)
+
+The framework supports Open Telemetry via the [AWS.Messaging.Telemetry.OpenTelemetry](https://www.nuget.org/packages/AWS.Messaging.Telemetry.OpenTelemetry/) package. Refer to its [README](https://github.com/awslabs/aws-dotnet-messaging/blob/main/src/AWS.Messaging.Telemetry.OpenTelemetry/README.md) to enable instrumentation.
 
 ## Testing Locally
 

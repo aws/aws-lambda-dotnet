@@ -1,14 +1,14 @@
 {
-  "display-name": "Message Processing Framework Sample",
+  "display-name": "Message Processing",
   "system-name": "MessageProcessingFramework",
-  "description": "Sample application demonstrating how to use the AWS Message Processing Framework for .NET.",
+  "description": "Build a messaging application using AWS Message Processing Framework",
   "sort-order": 125,
   "hidden-tags": [
     "C#",
-    "LambdaProject"
+    "ServerlessProject"
   ],
   "tags": [
     "SQS",
-    "MessageProcessingFramework"
+    "MPF"
   ]
 }

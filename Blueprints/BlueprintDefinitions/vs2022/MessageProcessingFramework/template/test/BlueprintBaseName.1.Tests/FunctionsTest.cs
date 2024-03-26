@@ -1,5 +1,5 @@
+using Amazon.Lambda.TestUtilities;
 using AWS.Messaging;
-using BlueprintBaseName._1;
 using Xunit;
 
 namespace BlueprintBaseName._1.Tests;
@@ -13,7 +13,7 @@ public class FunctionsTest
     [Fact]
     public async void Handler_ValidMessage_Success()
     {
-        var handler = new GreetingMessageHandler();
+        var handler = new GreetingMessageHandler(new TestLambdaContext());
 
         var envelope = new MessageEnvelope<GreetingMessage>()
         {
@@ -36,7 +36,7 @@ public class FunctionsTest
     [Fact]
     public async void Hander_InvalidMesssage_Failed()
     {
-        var handler = new GreetingMessageHandler();
+        var handler = new GreetingMessageHandler(new TestLambdaContext());
 
         var envelope = new MessageEnvelope<GreetingMessage>()
         {
@@ -50,5 +50,4 @@ public class FunctionsTest
 
         Assert.Equal(MessageProcessStatus.Failed(), result);
     }
-    
 }
