@@ -6,7 +6,7 @@
     "MessageProcessingFrameworkDemoQueue": {
       "Type": "AWS::SQS::Queue"
     },
-    "BlueprintBaseName1HandlerGenerated": {
+    "BlueprintBaseName._1FunctionsHandlerGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"
@@ -27,7 +27,7 @@
             "Properties": {
               "Queue": {
                 "Fn::GetAtt": [
-                  "MessageProcessingFrameworkDemoQueue", 
+                  "MessageProcessingFrameworkDemoQueue",
                   "Arn"
                 ]
               }
@@ -36,7 +36,7 @@
         }
       }
     },
-    "BlueprintBaseName1FunctionsSenderGenerated": {
+    "BlueprintBaseName._1FunctionsSenderGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"

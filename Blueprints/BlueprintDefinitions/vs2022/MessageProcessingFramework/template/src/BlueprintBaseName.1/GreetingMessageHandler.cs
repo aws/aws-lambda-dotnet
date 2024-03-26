@@ -24,7 +24,7 @@ public class GreetingMessageHandler : IMessageHandler<GreetingMessage>
     /// </summary>
     /// <param name="messageEnvelope">Envelope that wraps the actual message with metadata used by the framework</param>
     /// <param name="token">Cancellation token</param>
-    /// <returns>The appropriate MessageProcessStatus based on whether the message was processed successfully</returns>
+    /// <returns>The appropriate <see cref="MessageProcessStatus"> based on whether the message was processed successfully</returns>
     public Task<MessageProcessStatus> HandleAsync(MessageEnvelope<GreetingMessage> messageEnvelope, CancellationToken token = default)
     {
         // The outer envelope contains metadata, and its Message property contains the actual message content
@@ -38,7 +38,7 @@ public class GreetingMessageHandler : IMessageHandler<GreetingMessage>
             return Task.FromResult(MessageProcessStatus.Failed());
         }
 
-        _context.Logger.LogLine($"Received '{greetingMessage.Greeting}' from '{greetingMessage.SenderName}'");
+        _context.Logger.LogInformation($"Received '{greetingMessage.Greeting}' from '{greetingMessage.SenderName}'");
 
         return Task.FromResult(MessageProcessStatus.Success());
     }

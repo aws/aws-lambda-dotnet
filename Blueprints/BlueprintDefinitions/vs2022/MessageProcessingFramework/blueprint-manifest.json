@@ -1,14 +1,14 @@
 {
   "display-name": "Message Processing",
   "system-name": "MessageProcessingFramework",
-  "description": "Build a messaging application using AWS Message Processing Framework",
+  "description": "Build a messaging application using the AWS Message Processing Framework for .NET.",
   "sort-order": 125,
   "hidden-tags": [
     "C#",
     "ServerlessProject"
   ],
   "tags": [
-    "SQS",
-    "MPF"
+    "Messaging",
+    "SQS"
   ]
 }

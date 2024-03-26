@@ -1,7 +1,7 @@
 # AWS Message Processing Framework for .NET Template
 
 This starter project consists of:
-* Functions.cs - class file containing a class with a two Lambda function handlers, one for sending messages, one for processing them
+* Functions.cs - class file containing a class with two Lambda functions, one for sending messages and one for processing them
 * Startup.cs - default argument settings for use with Visual Studio and command line deployment tools for AWS
 * GreetingMessage.cs - Represents a single message
 * GreetingMessageHandler.cs - Business logic for handling messages
@@ -28,7 +28,7 @@ The project includes two sample payloads, one for each function handler.
 1. "Sender Sample Request" can be used to invoke the Sender function. Note that this will send an SQS message to the queue configured in `launchSettings.json` 
 2. "Handler Sample Request" can be used to invoke the Handler function. This mocks the SQS message, and does not require an actual queue.
 
-## Deploying and Testing from Visual Studio:
+## Deploying and Testing from Visual Studio
 
 To deploy your functions to AWS Lambda, right click the project in Solution Explorer and select *Publish to AWS Lambda* and then follow the wizard.
 

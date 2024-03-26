@@ -43,7 +43,7 @@ public class Functions
             return;
         }
 
-        context.Logger.LogLine($"Received {message.Greeting} from {message.SenderName}, will send to SQS");
+        context.Logger.LogInformation($"Received {message.Greeting} from {message.SenderName}, will send to SQS");
 
         // Publish the message to the queue configured in Startup.cs
         await publisher.PublishAsync(message);
