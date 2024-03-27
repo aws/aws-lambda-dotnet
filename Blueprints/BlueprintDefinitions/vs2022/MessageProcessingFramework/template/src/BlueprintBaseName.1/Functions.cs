@@ -54,10 +54,11 @@ public class Functions
     /// </summary>
     /// <param name="evnt">SQS event</param>
     /// <param name="context">Lambda execution context</param>
+    /// <returns>Set of messages whose handler invocations failed, only these will be reprocessed</returns>
     [LambdaFunction(Policies = "AWSLambdaSQSQueueExecutionRole")]
-    public async Task Handler(SQSEvent evnt, ILambdaContext context)
+    public async Task<SQSBatchResponse> Handler(SQSEvent evnt, ILambdaContext context)
     {
         // Pass the SQSEvent into the framework
-        await _lambdaMessaging.ProcessLambdaEventWithBatchResponseAsync(evnt, context);
+         return await _lambdaMessaging.ProcessLambdaEventWithBatchResponseAsync(evnt, context);
     }
 }
