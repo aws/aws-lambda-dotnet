@@ -1,3 +1,8 @@
+### Release 2024-03-27
+* **Amazon.Lambda.Templates (7.1.0)**
+  * Add new template using the AWS Message Processing Framework for .NET
+  * Update versions of AWS.Lambda.Powertools dependencies in relevant templates
+
 ### Release 2024-03-12
 * **Amazon.Lambda.DynamoDBEvents (3.1.1)**
   * Better handle empty `AttributeValue` objects when serializing `DynamoDBEvent` objects to JSON.
