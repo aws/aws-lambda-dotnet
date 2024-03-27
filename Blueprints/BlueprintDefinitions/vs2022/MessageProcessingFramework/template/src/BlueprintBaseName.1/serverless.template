@@ -25,6 +25,9 @@
           "SQSEvent": {
             "Type": "SQS",
             "Properties": {
+              "FunctionResponseTypes": [
+                "ReportBatchItemFailures"
+              ],
               "Queue": {
                 "Fn::GetAtt": [
                   "MessageProcessingFrameworkDemoQueue",

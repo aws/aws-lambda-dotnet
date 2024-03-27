@@ -58,6 +58,6 @@ public class Functions
     public async Task Handler(SQSEvent evnt, ILambdaContext context)
     {
         // Pass the SQSEvent into the framework
-        await _lambdaMessaging.ProcessLambdaEventAsync(evnt, context);
+        await _lambdaMessaging.ProcessLambdaEventWithBatchResponseAsync(evnt, context);
     }
 }
