@@ -12,6 +12,7 @@ namespace Amazon.Lambda.Serialization.Json
     /// </summary>
     internal class JsonNumberToDateTimeDataConverter : JsonConverter
     {
+        private const long YEAR_5000_IN_SECONDS = 157753180800;
         private static readonly TypeInfo DATETIME_TYPEINFO = typeof(DateTime).GetTypeInfo();
         private static readonly DateTime EPOCH_DATETIME = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
@@ -38,7 +39,20 @@ namespace Amazon.Lambda.Serialization.Json
                     break;
             }
 
-            var result = EPOCH_DATETIME.AddSeconds(seconds);
+            object result;
+
+            // If the time is in seconds is greater then the year 5000 it is safe to assume
+            // this is the special case of Kinesis sending the data which actually sends the time in milliseconds.
+            // https://github.com/aws/aws-lambda-dotnet/issues/839
+            if (seconds > YEAR_5000_IN_SECONDS)
+            {
+                result = EPOCH_DATETIME.AddMilliseconds(seconds);
+            }
+            else
+            {
+                result = EPOCH_DATETIME.AddSeconds(seconds);
+            }
+
             return result;
         }
 
