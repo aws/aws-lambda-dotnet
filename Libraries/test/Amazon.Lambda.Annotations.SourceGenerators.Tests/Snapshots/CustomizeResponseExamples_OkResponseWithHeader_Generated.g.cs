@@ -52,7 +52,8 @@ namespace TestServerlessApp
                     StatusCode = 400
                 };
                 var errorStream = new System.IO.MemoryStream();
-                System.Text.Json.JsonSerializer.Serialize(errorStream, errorResult);
+                serializer.Serialize(errorResult, errorStream);
+                errorStream.Position = 0;
                 return errorStream;
             }
 
