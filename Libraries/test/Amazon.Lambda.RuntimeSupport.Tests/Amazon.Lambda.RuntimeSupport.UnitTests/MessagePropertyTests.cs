@@ -13,7 +13,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var property = new MessageProperty("name");
             Assert.Equal(MessageProperty.Directive.Default, property.FormatDirective);
             Assert.Equal("name", property.Name);
-            Assert.Equal("name", property.MessageToken);
+            Assert.Equal("{name}", property.MessageToken);
             Assert.Null(property.FormatArgument);
         }
 
@@ -23,7 +23,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var property = new MessageProperty("count:000");
             Assert.Equal(MessageProperty.Directive.Default, property.FormatDirective);
             Assert.Equal("count", property.Name);
-            Assert.Equal("count:000", property.MessageToken);
+            Assert.Equal("{count:000}", property.MessageToken);
             Assert.Equal("000", property.FormatArgument);
         }
 
@@ -33,7 +33,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var property = new MessageProperty("@user");
             Assert.Equal(MessageProperty.Directive.JsonSerialization, property.FormatDirective);
             Assert.Equal("user", property.Name);
-            Assert.Equal("@user", property.MessageToken);
+            Assert.Equal("{@user}", property.MessageToken);
             Assert.Null(property.FormatArgument);
         }
 
@@ -43,7 +43,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var property = new MessageProperty("@user:000");
             Assert.Equal(MessageProperty.Directive.JsonSerialization, property.FormatDirective);
             Assert.Equal("user", property.Name);
-            Assert.Equal("@user:000", property.MessageToken);
+            Assert.Equal("{@user:000}", property.MessageToken);
             Assert.Equal("000", property.FormatArgument);
         }
 
@@ -53,7 +53,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var property = new MessageProperty("count:");
             Assert.Equal(MessageProperty.Directive.Default, property.FormatDirective);
             Assert.Equal("count", property.Name);
-            Assert.Equal("count:", property.MessageToken);
+            Assert.Equal("{count:}", property.MessageToken);
             Assert.Null(property.FormatArgument);
         }
 
@@ -63,7 +63,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var property = new MessageProperty(" first last ");
             Assert.Equal(MessageProperty.Directive.Default, property.FormatDirective);
             Assert.Equal("first last", property.Name);
-            Assert.Equal(" first last ", property.MessageToken);
+            Assert.Equal("{ first last }", property.MessageToken);
             Assert.Null(property.FormatArgument);
         }
 
@@ -73,7 +73,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var property = new MessageProperty(" first last : 000 ");
             Assert.Equal(MessageProperty.Directive.Default, property.FormatDirective);
             Assert.Equal("first last", property.Name);
-            Assert.Equal(" first last : 000 ", property.MessageToken);
+            Assert.Equal("{ first last : 000 }", property.MessageToken);
             Assert.Equal("000", property.FormatArgument);
         }
 

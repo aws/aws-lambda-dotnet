@@ -31,8 +31,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         /// <summary>
         /// Parse the message template for all message properties.
         /// </summary>
-        /// <param name="messageTemplate"></param>
-        /// <returns></returns>
+        /// <param name="messageTemplate">The message template users passed in as the log message.</param>
+        /// <returns>List of MessageProperty objects detected by parsing the message template.</returns>
         public virtual IReadOnlyList<MessageProperty> ParseProperties(string messageTemplate)
         {
             // Check to see if this message template has already been parsed before.
@@ -101,17 +101,21 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         /// <summary>
         /// Subclasses to implement to format the message given the requirements of the subclass.
         /// </summary>
-        /// <param name="state"></param>
-        /// <returns></returns>
+        /// <param name="state">The state of the message to log.</param>
+        /// <returns>The full log message to send to CloudWatch Logs.</returns>
         public abstract string FormatMessage(MessageState state);
 
         internal const string DateFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
 
+        internal const string DateOnlyFormat = "yyyy-MM-dd";
+
+        internal const string TimeOnlyFormat = "HH:mm:ss.fff";
+
         /// <summary>
         /// Format the timestamp of the log message in format Lambda service prefers.
         /// </summary>
-        /// <param name="state"></param>
-        /// <returns></returns>
+        /// <param name="state">The state of the message to log.</param>
+        /// <returns>Timestamp formatted for logging.</returns>
         protected string FormatTimestamp(MessageState state)
         {
             return state.TimeStamp.ToString(DateFormat, CultureInfo.InvariantCulture);
@@ -123,7 +127,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         /// <param name="messageTemplate"></param>
         /// <param name="messageProperties"></param>
         /// <param name="messageArguments"></param>
-        /// <returns></returns>
+        /// <returns>The log message with logging arguments replaced with the values.</returns>
         public string ApplyMessageProperties(string messageTemplate, IReadOnlyList<MessageProperty> messageProperties, object[] messageArguments)
         {
             if(messageProperties.Count == 0)
@@ -243,7 +247,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         ///     Formatted Message: "Lewis 15 Washington"
         /// </summary>
         /// <param name="messageProperties"></param>
-        /// <returns></returns>
+        /// <returns>True of the logging arguments are positional</returns>
         public bool UsingPositionalArguments(IReadOnlyList<MessageProperty> messageProperties)
         {
             var min = int.MaxValue;
@@ -251,6 +255,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
             HashSet<int> positions = new HashSet<int>();
             foreach(var property in messageProperties)
             {
+                // If any logging arguments use non-numeric identifier then they are not using positional arguments.
                 if (!int.TryParse(property.Name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var position))
                 {
                     return false;
@@ -267,6 +272,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
                 }
             }
 
+            // At this point the HashSet is the collection of all of the int logging arguments.
+            // If there are no gaps or duplicates in the logging statement then the smallest value 
+            // in the hashset should be 0 and the max value equals the count of the hashset. If
+            // either of those conditions are not true then it can't be positional arguments.
             if(positions.Count != (max + 1) || min != 0) 
             {
                 return false;

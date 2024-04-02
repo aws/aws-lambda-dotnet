@@ -109,69 +109,71 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
             // "User bought {0} of {1}" is positional as opposed to "User bought {count} of {product"}.
             var usePositional = UsingPositionalArguments(messageProperties);
 
-            if (messageProperties != null)
+            if (messageProperties == null)
             {
-                for (var i = 0; i < messageProperties.Count; i++)
+                return;
+            }
+
+            for (var i = 0; i < messageProperties.Count; i++)
+            {
+                object messageArgument;
+                if(usePositional)
                 {
-                    object messageArgument;
-                    if(usePositional)
+                    // If usePositional is true then we have confirmed the `Name` property is an int.
+                    var index = int.Parse(messageProperties[i].Name, CultureInfo.InvariantCulture);
+                    if (index < state.MessageArguments.Length)
                     {
-                        // If usePositional is true then we have confirmed the `Name` property is an int.
-                        var index = int.Parse(messageProperties[i].Name, CultureInfo.InvariantCulture);
-                        if (index < state.MessageArguments.Length)
-                        {
-                            // Don't include null JSON properties
-                            if (state.MessageArguments[index] == null)
-                                continue;
-
-                            messageArgument = state.MessageArguments[index];
-                        }
-                        else
-                        {
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        // There are more message properties in the template then values for the properties. Skip 
-                        // adding anymore JSON properties since there are no more values.
-                        if (state.MessageArguments.Length <= i)
-                            break;
-
                         // Don't include null JSON properties
-                        if (state.MessageArguments[i] == null)
+                        if (state.MessageArguments[index] == null)
                             continue;
 
-                        messageArgument = state.MessageArguments[i];
-
-                    }
-
-                    writer.WritePropertyName(messageProperties[i].Name);
-
-                    if (messageArgument is IList && messageArgument is not IList<byte>)
-                    {
-                        writer.WriteStartArray();
-                        foreach (var item in ((IList)messageArgument))
-                        {
-                            FormatJsonValue(writer, item, messageProperties[i].FormatArgument, messageProperties[i].FormatDirective);
-                        }
-                        writer.WriteEndArray();
-                    }
-                    else if (messageArgument is IDictionary)
-                    {
-                        writer.WriteStartObject();
-                        foreach (DictionaryEntry entry in ((IDictionary)messageArgument))
-                        {
-                            writer.WritePropertyName(entry.Key.ToString());
-
-                            FormatJsonValue(writer, entry.Value, messageProperties[i].FormatArgument, messageProperties[i].FormatDirective);
-                        }
-                        writer.WriteEndObject();
+                        messageArgument = state.MessageArguments[index];
                     }
                     else
                     {
-                        FormatJsonValue(writer, messageArgument, messageProperties[i].FormatArgument, messageProperties[i].FormatDirective);
+                        continue;
                     }
+                }
+                else
+                {
+                    // There are more message properties in the template then values for the properties. Skip 
+                    // adding anymore JSON properties since there are no more values.
+                    if (state.MessageArguments.Length <= i)
+                        break;
+
+                    // Don't include null JSON properties
+                    if (state.MessageArguments[i] == null)
+                        continue;
+
+                    messageArgument = state.MessageArguments[i];
+
+                }
+
+                writer.WritePropertyName(messageProperties[i].Name);
+
+                if (messageArgument is IList && messageArgument is not IList<byte>)
+                {
+                    writer.WriteStartArray();
+                    foreach (var item in ((IList)messageArgument))
+                    {
+                        FormatJsonValue(writer, item, messageProperties[i].FormatArgument, messageProperties[i].FormatDirective);
+                    }
+                    writer.WriteEndArray();
+                }
+                else if (messageArgument is IDictionary)
+                {
+                    writer.WriteStartObject();
+                    foreach (DictionaryEntry entry in ((IDictionary)messageArgument))
+                    {
+                        writer.WritePropertyName(entry.Key.ToString());
+
+                        FormatJsonValue(writer, entry.Value, messageProperties[i].FormatArgument, messageProperties[i].FormatDirective);
+                    }
+                    writer.WriteEndObject();
+                }
+                else
+                {
+                    FormatJsonValue(writer, messageArgument, messageProperties[i].FormatArgument, messageProperties[i].FormatDirective);
                 }
             }
         }
@@ -270,6 +272,12 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
                         break;
                     case DateTimeOffset dateTimeOffsetValue:
                         writer.WriteStringValue(dateTimeOffsetValue.ToString(DateFormat, CultureInfo.InvariantCulture));
+                        break;
+                    case DateOnly dateOnly:
+                        writer.WriteStringValue(dateOnly.ToString(DateOnlyFormat, CultureInfo.InvariantCulture));
+                        break;
+                    case TimeOnly timeOnly:
+                        writer.WriteStringValue(timeOnly.ToString(TimeOnlyFormat, CultureInfo.InvariantCulture));
                         break;
                     case byte[] byteArrayValue:
                         writer.WriteStringValue(MessageProperty.FormatByteArray(byteArrayValue));

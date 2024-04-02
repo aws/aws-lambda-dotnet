@@ -16,7 +16,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         private static readonly char[] PARAM_FORMAT_DELIMITERS = { ':' };
 
         /// <summary>
-        /// Parse the string string representation of the message property without the brackets 
+        /// Parse the string representation of the message property without the brackets 
         /// to construct the MessageProperty. 
         /// </summary>
         /// <param name="messageToken"></param>
@@ -57,7 +57,19 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         /// </summary>
         public string MessageToken { get; private set; }
 
-        public enum Directive { Default, JsonSerialization };
+        /// <summary>
+        /// Enum for controlling the formatting of complex logging arguments.
+        /// </summary>
+        public enum Directive {
+            /// <summary>
+            /// Perform a string formatting for the logging argument.
+            /// </summary>
+            Default, 
+            /// <summary>
+            /// Perform a JSON serialization on the logging argument.
+            /// </summary>
+            JsonSerialization 
+        };
 
         /// <summary>
         /// The Name of the message property.
@@ -109,6 +121,14 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
             if (value is DateTimeOffset dto)
             {
                 return dto.ToString(AbstractLogMessageFormatter.DateFormat, CultureInfo.InvariantCulture);
+            }
+            if (value is DateOnly dateOnly)
+            {
+                return dateOnly.ToString(AbstractLogMessageFormatter.DateOnlyFormat, CultureInfo.InvariantCulture);
+            }
+            if (value is TimeOnly timeOnly)
+            {
+                return timeOnly.ToString(AbstractLogMessageFormatter.TimeOnlyFormat, CultureInfo.InvariantCulture);
             }
 
             return value.ToString();

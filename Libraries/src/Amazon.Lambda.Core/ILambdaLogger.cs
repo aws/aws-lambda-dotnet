@@ -150,8 +150,8 @@ namespace Amazon.Lambda.Core
         private const string ParameterizedPreviewMessage =
             "Parameterized logging is in preview till a new version of .NET Lambda runtime client that supports parameterized logging " +
             "has been deployed to the .NET Lambda managed runtime. Till deployment has been made the feature can be used by deploying as an " +
-            "executable including the latest version of Amazon.Lambda.RuntimeSupport and setting the \"LangVersion\" in the Lambda " +
-            "project file to \"preview\"";
+            "executable including the latest version of Amazon.Lambda.RuntimeSupport and setting the \"EnablePreviewFeatures\" in the Lambda " +
+            "project file to \"true\"";
 
         /// <summary>
         /// Log message catagorized by the given log level
@@ -164,7 +164,7 @@ namespace Amazon.Lambda.Core
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
         [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
-        void Log(string level, string message, params object[] args) => Log(level, message);
+        void Log(string level, string message, params object[] args) => Log(level, message, args);
 
         /// <summary>
         /// Log message catagorized by the given log level
@@ -177,11 +177,11 @@ namespace Amazon.Lambda.Core
         /// <param name="exception">Exception to include with the logging.</param>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures("Parameterized logging is in preview till new version of .NET Lambda runtime client is deployed to the .NET Lambda managed runtime.")]
+        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void Log(string level, Exception exception, string message, params object[] args)
         {
-            Log(level, message);
-            Log(level, exception.ToString());
+            Log(level, message, args);
+            Log(level, exception.ToString(), args);
         }
 
         /// <summary>

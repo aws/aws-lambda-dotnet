@@ -36,30 +36,30 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// <summary>
         /// The current aws request id
         /// </summary>
-        /// <param name="awsRequestId"></param>
+        /// <param name="awsRequestId">The AWS request id for the function invocation added to each log message.</param>
         void SetCurrentAwsRequestId(string awsRequestId);
 
         /// <summary>
         /// Format message with default log level
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="message">Message to log.</param>
         void FormattedWriteLine(string message);
 
         /// <summary>
         /// Format message with given log level
         /// </summary>
-        /// <param name="level"></param>
-        /// <param name="message"></param>
-        /// <param name="args"></param>
+        /// <param name="level">The level of the log message.</param>
+        /// <param name="message">Message to log.</param>
+        /// <param name="args">Arguments to be applied to the log message.</param>
         void FormattedWriteLine(string level, string message, params object[] args);
 
         /// <summary>
         /// Format message with given log level
         /// </summary>
-        /// <param name="level"></param>
-        /// <param name="exception"></param>
-        /// <param name="message"></param>
-        /// <param name="args"></param>
+        /// <param name="level">The level of the log message.</param>
+        /// <param name="exception">Exception to log.</param>
+        /// <param name="message">Message to log.</param>
+        /// <param name="args">Arguments to be applied to the log message.</param>
         void FormattedWriteLine(string level, Exception exception, string message, params object[] args);
     }
 
@@ -112,7 +112,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         public void FormattedWriteLine(string level, Exception exception, string message, params object[] args)
         {
             _writer.WriteLine(message);
-            _writer.WriteLine(exception.ToString());
+            if (exception != null)
+            {
+                _writer.WriteLine(exception.ToString());
+            }
         }
     }
 
@@ -309,6 +312,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     else if (Enum.TryParse<LogLevel>(envLogLevel, true, out var result))
                     {
                         _minmumLogLevel = result;
+                    }
+                    else
+                    {
+                        InternalLogger.GetDefaultLogger().LogInformation($"Failed to parse log level enum value: {envLogLevel}");
                     }
                 }
 

@@ -105,6 +105,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void FormatJsonWithAllPossibleTypes()
         {
+            var dateOnly = new DateOnly(2024, 2, 18);
+            var timeOnly = new TimeOnly(15, 19, 45, 545);
             var timestamp = DateTime.UtcNow;
             var formattedTimestamp = timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
@@ -117,8 +119,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 Level = Helpers.LogLevelLoggerWriter.LogLevel.Warning,
                 MessageTemplate = "bool: {bool}, byte: {byte}, char: {char}, decimal: {decimal}, double: {double}, float: {float}, " + 
                                   "int: {int}, uint: {uint}, long: {long}, ulong: {ulong}, short: {short}, ushort: {ushort}, null: {null}, " + 
-                                  "DateTime: {DateTime}, DateTimeOffset: {DateTimeOffset}, default: {default}",
-                MessageArguments = new object[] {true, (byte)1, 'a', (decimal)4.5, (double)5.6, (float)7.7, (int)-10, (uint)10, (long)-100, (ulong)100, (short)-50, (ushort)50, null, timestamp, timestamp, product},
+                                  "DateTime: {DateTime}, DateTimeOffset: {DateTimeOffset}, default: {default}, DateOnly {DateOnly}, TimeOnly: {TimeOnly}",
+                MessageArguments = new object[] {true, (byte)1, 'a', (decimal)4.5, (double)5.6, (float)7.7, (int)-10, (uint)10, (long)-100, (ulong)100, (short)-50, (ushort)50, null, timestamp, timestamp, product, dateOnly, timeOnly},
                 TimeStamp = timestamp
             };
 
@@ -127,7 +129,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             Assert.Equal("bool: True, byte: 1, char: a, decimal: 4.5, double: 5.6, float: 7.7, " +
                         "int: -10, uint: 10, long: -100, ulong: 100, short: -50, ushort: 50, null: {null}, " +
-                        $"DateTime: {formattedTimestamp}, DateTimeOffset: {formattedTimestamp}, default: Widget 100", 
+                        $"DateTime: {formattedTimestamp}, DateTimeOffset: {formattedTimestamp}, default: Widget 100, DateOnly 2024-02-18, TimeOnly: 15:19:45.545", 
                         doc.RootElement.GetProperty("message").GetString());
 
             Assert.True(doc.RootElement.GetProperty("bool").GetBoolean());
@@ -146,6 +148,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Equal(formattedTimestamp, doc.RootElement.GetProperty("DateTime").GetString());
             Assert.Equal(formattedTimestamp, doc.RootElement.GetProperty("DateTimeOffset").GetString());
             Assert.Equal("Widget 100", doc.RootElement.GetProperty("default").GetString());
+            Assert.Equal("2024-02-18", doc.RootElement.GetProperty("DateOnly").GetString());
+            Assert.Equal("15:19:45.545", doc.RootElement.GetProperty("TimeOnly").GetString());
         }
 
         [Fact]
