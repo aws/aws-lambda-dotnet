@@ -11,7 +11,7 @@
       "Properties": {
         "Runtime": "provided.al2",
         "CodeUri": ".",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"

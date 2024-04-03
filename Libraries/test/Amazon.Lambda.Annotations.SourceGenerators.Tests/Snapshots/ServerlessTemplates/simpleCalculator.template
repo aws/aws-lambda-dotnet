@@ -12,7 +12,7 @@
         ]
       },
       "Properties": {
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -44,7 +44,7 @@
         ]
       },
       "Properties": {
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -76,7 +76,7 @@
         ]
       },
       "Properties": {
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -108,7 +108,7 @@
         ]
       },
       "Properties": {
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -137,7 +137,7 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -157,7 +157,7 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -177,7 +177,7 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
