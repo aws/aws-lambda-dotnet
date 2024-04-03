@@ -9,6 +9,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson.Converters
     /// </summary>
     public class DateTimeConverter : JsonConverter<DateTime>
     {
+        // The number of seconds from DateTime.MinValue to year 5000.
         private const long YEAR_5000_IN_SECONDS = 157753180800;
 
         /// <summary>

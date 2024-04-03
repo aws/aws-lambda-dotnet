@@ -12,6 +12,7 @@ namespace Amazon.Lambda.Serialization.Json
     /// </summary>
     internal class JsonNumberToDateTimeDataConverter : JsonConverter
     {
+        // The number of seconds from DateTime.MinValue to year 5000.
         private const long YEAR_5000_IN_SECONDS = 157753180800;
         private static readonly TypeInfo DATETIME_TYPEINFO = typeof(DateTime).GetTypeInfo();
         private static readonly DateTime EPOCH_DATETIME = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
