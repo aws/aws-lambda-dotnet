@@ -1,11 +1,9 @@
 using Xunit;
 
-using Amazon;
-using Amazon.Lambda.Core;
+
 using Amazon.Lambda.DynamoDBEvents;
 using Amazon.Lambda.TestUtilities;
-using Amazon.DynamoDBv2;
-using Amazon.DynamoDBv2.Model;
+
 
 
 
@@ -23,18 +21,17 @@ public class FunctionTest
                 new DynamoDBEvent.DynamodbStreamRecord
                 {
                     AwsRegion = "us-west-2",
-                    Dynamodb = new StreamRecord
+                    Dynamodb = new DynamoDBEvent.StreamRecord
                     {
                         ApproximateCreationDateTime = DateTime.Now,
-                        Keys = new Dictionary<string, AttributeValue> { {"id", new AttributeValue { S = "MyId" } } },
-                        NewImage = new Dictionary<string, AttributeValue> { { "field1", new AttributeValue { S = "NewValue" } }, { "field2", new AttributeValue { S = "AnotherNewValue" } } },
-                        OldImage = new Dictionary<string, AttributeValue> { { "field1", new AttributeValue { S = "OldValue" } }, { "field2", new AttributeValue { S = "AnotherOldValue" } } },
-                        StreamViewType = StreamViewType.NEW_AND_OLD_IMAGES
+                        Keys = new Dictionary<string, DynamoDBEvent.AttributeValue> { {"id", new DynamoDBEvent.AttributeValue { S = "MyId" } } },
+                        NewImage = new Dictionary<string, DynamoDBEvent.AttributeValue> { { "field1", new DynamoDBEvent.AttributeValue { S = "NewValue" } }, { "field2", new DynamoDBEvent.AttributeValue { S = "AnotherNewValue" } } },
+                        OldImage = new Dictionary<string, DynamoDBEvent.AttributeValue> { { "field1", new DynamoDBEvent.AttributeValue { S = "OldValue" } }, { "field2", new DynamoDBEvent.AttributeValue { S = "AnotherOldValue" } } },
+                        StreamViewType = "NEW_AND_OLD_IMAGES"
                     }
                 }
             }
         };
-
 
         var context = new TestLambdaContext();
         var function = new Function();

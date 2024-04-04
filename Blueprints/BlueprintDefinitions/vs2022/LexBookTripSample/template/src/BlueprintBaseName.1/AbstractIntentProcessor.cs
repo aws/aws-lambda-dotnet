@@ -19,8 +19,8 @@ public abstract class AbstractIntentProcessor : IIntentProcessor
     /// <summary>
     /// Main method for proccessing the lex event for the intent.
     /// </summary>
-    /// <param name="lexEvent"></param>
-    /// <param name="context"></param>
+    /// <param name="lexEvent">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     public abstract LexResponse Process(LexEvent lexEvent, ILambdaContext context);
 

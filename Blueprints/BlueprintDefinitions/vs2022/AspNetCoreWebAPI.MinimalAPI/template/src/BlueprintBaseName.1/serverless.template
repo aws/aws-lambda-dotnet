@@ -9,9 +9,9 @@
       "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1",
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": "",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Role": null,
         "Policies": [

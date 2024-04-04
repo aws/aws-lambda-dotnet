@@ -1,42 +1,14 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=8.0.0-rc.1.23421.29
-ARG ASPNET_SHA512=ba8035da535cb3bffa720e962e6f9e0f88b36e1221b588f2a126ee4b43c02e4d8c27958017d29e5ab68121fab6a564fe0a27099c4103ee3d527f8554b4ab495e
-
-ARG ICU_VERSION=68.1
-ARG ICU_MD5=6a99b541ea01f271257b121a4433c7c0
+ARG ASPNET_VERSION=8.0.3
+ARG ASPNET_SHA512=2ddf440be273febae8049df9b2837fe9b9d95d43a31898b915dbf39aedaf15a291ff28711e983fe099ab22a291ad244813256d57ebb6ef1fb94f04d712a96435
 
 ARG LAMBDA_RUNTIME_NAME=dotnet8
-ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2
+ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
 
 FROM $AMAZON_LINUX AS base
 
-FROM base AS builder-libicu
-WORKDIR /
-
-# Install depedencies to extract and build ICU library
-RUN yum install -d1 -y \
-    tar \
-    gzip \
-    make \
-    gcc-c++
-
-# Download, validate and extract ICU library
-# https://github.com/unicode-org/icu/releases/tag/release-68-1
-ARG ICU_VERSION
-ARG ICU_MD5
-RUN curl -SL https://github.com/unicode-org/icu/releases/download/release-${ICU_VERSION//./-}/icu4c-${ICU_VERSION//./_}-src.tgz -o icu-src.tgz \
-    && echo "$ICU_MD5  icu-src.tgz" | md5sum -c - \
-    && tar -xzf icu-src.tgz \
-    && rm icu-src.tgz
-
-# Build ICU library
-RUN mkdir /libicu
-WORKDIR /icu/source/
-RUN ./configure --prefix=/libicu \
-    && make \
-    && make install
-
+RUN dnf install libicu-67.1-7.amzn2023.0.3.aarch64 --assumeyes
 
 FROM base AS builder-net8
 ARG ASPNET_VERSION
@@ -45,7 +17,7 @@ ARG ASPNET_SHA512
 WORKDIR /dotnet
 
 # Install tar and gzip for unarchiving downloaded tar.gz
-RUN yum install tar gzip --assumeyes
+RUN dnf install tar gzip --assumeyes
 
 # Install the ASP.NET Core shared framework
 RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/$ASPNET_VERSION/aspnetcore-runtime-$ASPNET_VERSION-linux-arm64.tar.gz \
@@ -55,7 +27,7 @@ RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/a
     && rm aspnetcore.tar.gz
 
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0-preview-bookworm-slim AS builder
+FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS builder
 WORKDIR /src
 COPY ["Libraries/src/Amazon.Lambda.RuntimeSupport", "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/"]
 COPY ["Libraries/src/Amazon.Lambda.Core", "Repo/Libraries/src/Amazon.Lambda.Core/"]
@@ -68,12 +40,10 @@ RUN dotnet build "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=t
 FROM builder AS publish
 RUN dotnet publish "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net8.0 -f net8.0 --runtime linux-arm64 --self-contained false -p:PublishReadyToRun=true -c Release -o /app/publish
 RUN apt-get update && apt-get install -y dos2unix
-RUN dos2unix /app/publish/bootstrap.sh && \
-    mv /app/publish/bootstrap.sh /app/publish/bootstrap && \
+RUN dos2unix /app/publish/bootstrap-al2023.sh && \
+    mv /app/publish/bootstrap-al2023.sh /app/publish/bootstrap && \
     chmod +x /app/publish/bootstrap
-
-# Copy native dependencies
-COPY --from=builder-libicu  /libicu         /app/publish
+RUN touch /app/publish/empty-certificates.crt
 
 
 FROM base

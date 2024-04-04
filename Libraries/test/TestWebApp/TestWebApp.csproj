@@ -1,15 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <AssemblyName>TestWebApp</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>TestWebApp</PackageId>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
-    <DefineConstants>NETCOREAPP_3_1</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

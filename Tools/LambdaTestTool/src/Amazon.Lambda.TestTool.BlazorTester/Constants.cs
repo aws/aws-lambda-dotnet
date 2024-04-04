@@ -5,14 +5,12 @@ namespace Amazon.Lambda.TestTool.BlazorTester
         public const int DEFAULT_PORT = 5050;
         public const string DEFAULT_HOST = "localhost";
 
-#if NETCOREAPP3_1
-        public const string PRODUCT_NAME = "AWS .NET Core 3.1 Mock Lambda Test Tool";
-#elif NET5_0
-        public const string PRODUCT_NAME = "AWS .NET Core 5.0 Mock Lambda Test Tool";
-#elif NET6_0
-        public const string PRODUCT_NAME = "AWS .NET Core 6.0 Mock Lambda Test Tool";
+#if NET6_0
+        public const string PRODUCT_NAME = "AWS .NET 6.0 Mock Lambda Test Tool";
 #elif NET7_0
-        public const string PRODUCT_NAME = "AWS .NET Core 7.0 Mock Lambda Test Tool";
+        public const string PRODUCT_NAME = "AWS .NET 7.0 Mock Lambda Test Tool";
+#elif NET8_0
+        public const string PRODUCT_NAME = "AWS .NET 8.0 Mock Lambda Test Tool";
 #else
         Update for new target framework!!!
 #endif

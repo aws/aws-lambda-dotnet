@@ -37,8 +37,8 @@ public class Function
     // SDK for .NET does not support trimming. This will result in a larger executable size, and still does not 
     // guarantee runtime trimming errors won't be hit. 
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="context"></param>
+    /// <param name="input">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     public static string FunctionHandler(string input, ILambdaContext context)
     {

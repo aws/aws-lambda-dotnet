@@ -1,12 +1,14 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=8.0.0-rc.1.23421.29
-ARG ASPNET_SHA512=d5f9e7bffbf2b48b26a317dd1d78bc866973b4a2cda448cd7a7ee64c0ffaf98fa3c4b8584d32528026674bdfd99f602f0fdac8242176815705e080df83825efa
+ARG ASPNET_VERSION=8.0.3
+ARG ASPNET_SHA512=73a16e08402989f25ca780acc981c2ae3a41ef39b4bb6b6b4962053144b6eda7c175fdd5ee3c25bcd0c86a27d1a83d4f8b9b2f69f37d4e3972f5901a9e0600b6
 
 ARG LAMBDA_RUNTIME_NAME=dotnet8
-ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2
+ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
 
 FROM $AMAZON_LINUX AS base
+
+RUN dnf install libicu-67.1-7.amzn2023.0.3.x86_64 --assumeyes
 
 FROM base AS builder-net8
 ARG ASPNET_VERSION
@@ -15,7 +17,7 @@ ARG ASPNET_SHA512
 WORKDIR /dotnet
 
 # Install tar and gzip for unarchiving downloaded tar.gz
-RUN yum install tar gzip --assumeyes
+RUN dnf install tar gzip --assumeyes
 
 # Install the ASP.NET Core shared framework
 RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/$ASPNET_VERSION/aspnetcore-runtime-$ASPNET_VERSION-linux-x64.tar.gz \
@@ -25,7 +27,7 @@ RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/a
     && rm aspnetcore.tar.gz
 
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0-preview-bookworm-slim AS builder
+FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS builder
 WORKDIR /src
 COPY ["Libraries/src/Amazon.Lambda.RuntimeSupport", "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/"]
 COPY ["Libraries/src/Amazon.Lambda.Core", "Repo/Libraries/src/Amazon.Lambda.Core/"]
@@ -38,9 +40,10 @@ RUN dotnet build "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=t
 FROM builder AS publish
 RUN dotnet publish "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net8.0 -f net8.0 --runtime linux-x64 --self-contained false -p:PublishReadyToRun=true -c Release -o /app/publish
 RUN apt-get update && apt-get install -y dos2unix
-RUN dos2unix /app/publish/bootstrap.sh && \
-    mv /app/publish/bootstrap.sh /app/publish/bootstrap && \
+RUN dos2unix /app/publish/bootstrap-al2023.sh && \
+    mv /app/publish/bootstrap-al2023.sh /app/publish/bootstrap && \
     chmod +x /app/publish/bootstrap
+RUN touch /app/publish/empty-certificates.crt
 
 
 FROM base

@@ -9,7 +9,7 @@
         <PackCommand>dotnet pack --no-build -c $(Configuration) -o $(MSBuildThisFileDirectory)/../Deployment/nuget-packages</PackCommand>
 		<PackWithConfigurationCommand>dotnet pack --no-build -o $(MSBuildThisFileDirectory)/../Deployment/nuget-packages</PackWithConfigurationCommand>
         <SignAssembly Condition=" '$(SignAssembly)' == '' ">true</SignAssembly>
-        <AssemblyOriginatorKeyFile Condition=" '$(AssemblyOriginatorKeyFile)' == '' ">$(MSBuildThisFileDirectory)local-development.snk</AssemblyOriginatorKeyFile>
+        <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)/public.snk</AssemblyOriginatorKeyFile>
         <BlueprintPackagerArguments Condition="'$(UpdateBlueprintPackageVersions)'=='true'">--updateVersions</BlueprintPackagerArguments>
         <Cicd Condition="'$(Cicd)' == ''">false</Cicd>
     </PropertyGroup>
@@ -66,8 +66,7 @@
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.image.EmptyServerless;ProjectName=ImageEmptyServerlessC;Lang=C#;Version=vs2022"/>
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.image.EmptyServerless;ProjectName=ImageEmptyServerlessF;Lang=F#;Version=vs2022"/>
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.Annotations;ProjectName=AnnotationsC;Lang=C#;Version=vs2022"/>
-
-		
+        <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.Messaging;ProjectName=MessagingC;Lang=C#;Version=vs2022"/>
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.AspNetCoreWebApp;ProjectName=AspNetCoreWebAppC;Lang=C#;Version=vs2022"/>
 		<MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=serverless.WebSocketAPI;ProjectName=WebSocketAPIC;Lang=C#;Version=vs2022"/>
         <MSBuild Projects="$(MSBuildProjectFile)" Targets="run-blueprint-dotnetnew" Properties="TemplateName=lambda.SimpleApplicationLoadBalancerFunction;ProjectName=SimpleApplicationLoadBalancerFunctionC;Lang=C#;Version=vs2022"/>
@@ -168,11 +167,10 @@
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
     </Target>
     <Target Name="build-lambda-test-tool-package" DependsOnTargets="init">
-        <Exec Command="dotnet msbuild aws-lambda-test-tool-netcore.sln /t:Rebuild /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Tools\LambdaTestTool"/>
-        <Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester31-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>
-		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester50-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>		
+        <Exec Command="dotnet msbuild aws-lambda-test-tool-netcore.sln /t:Rebuild /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Tools\LambdaTestTool"/>	
 		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester60-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>		
-		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester70-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>	
+		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester70-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>
+		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester80-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>		
     </Target>
     <Target Name="build-lambda-test-tool-package-cicd" DependsOnTargets="init">
         <Exec Command="dotnet msbuild -restore /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Tools\LambdaTestTool"/>
@@ -181,17 +179,17 @@
         <PropertyGroup>
             <Command>dotnet test</Command>
         </PropertyGroup>
-		<Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests.NETCore31"/>
+		<Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests"/>
     </Target>
         <Target Name="test-lambda-test-tool-cicd" DependsOnTargets="build-lambda-test-tool-package-cicd">
         <PropertyGroup>
             <Command>dotnet test</Command>
         </PropertyGroup>
-		<Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests.NETCore31"/>
+		<Exec Command="$(Command)" WorkingDirectory="..\Tools\LambdaTestTool\tests\Amazon.Lambda.TestTool.Tests"/>
     </Target>
     <Target Name="install-lambda-test-tool" DependsOnTargets="build-lambda-test-tool-package">
-        <Exec Command="dotnet tool uninstall -g Amazon.Lambda.TestTool-3.1" IgnoreExitCode="true"/>
-        <Exec Command="dotnet tool install --add-source . -g Amazon.Lambda.TestTool-3.1" WorkingDirectory="../Deployment"/>
+        <Exec Command="dotnet tool uninstall -g Amazon.Lambda.TestTool-8.0" IgnoreExitCode="true"/>
+        <Exec Command="dotnet tool install --add-source . -g Amazon.Lambda.TestTool-8.0" WorkingDirectory="../Deployment"/>
 	</Target>
     <Target Name="build-project-packages">
         <Exec Command="dotnet msbuild -restore /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>

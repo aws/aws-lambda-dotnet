@@ -1,12 +1,9 @@
 ﻿namespace BlueprintBaseName._1.Tests
 
-
 open Xunit
 open Amazon.Lambda.TestUtilities
 
 open Amazon.Lambda.DynamoDBEvents
-open Amazon.DynamoDBv2
-open Amazon.DynamoDBv2.Model
 
 open System
 open System.Collections.Generic
@@ -17,22 +14,22 @@ open BlueprintBaseName._1
 module FunctionTest =
     [<Fact>]
     let ``Test Reading DynamoDB Stream Event``() =
-        let keys = dict [ ("id", AttributeValue(S = "MyId")) ]
+        let keys = dict [ ("id", DynamoDBEvent.AttributeValue(S = "MyId")) ]
 
         let newImage = dict [
-                            ("field1", AttributeValue(S = "NewValue"))
-                            ("field2", AttributeValue(S = "AnotherNewValue"))
+                            ("field1", DynamoDBEvent.AttributeValue(S = "NewValue"))
+                            ("field2", DynamoDBEvent.AttributeValue(S = "AnotherNewValue"))
                         ]
 
         let oldImages = dict [
-                            ("field1", AttributeValue(S = "OldValue"))
-                            ("field2", AttributeValue(S = "AnotherOldValue"))
+                            ("field1", DynamoDBEvent.AttributeValue(S = "OldValue"))
+                            ("field2", DynamoDBEvent.AttributeValue(S = "AnotherOldValue"))
                         ]
 
         let streamRecord =
-            StreamRecord(
+            DynamoDBEvent.StreamRecord(
                 ApproximateCreationDateTime = DateTime.Now,
-                StreamViewType = StreamViewType.NEW_AND_OLD_IMAGES,
+                StreamViewType = "NEW_AND_OLD_IMAGES",
                 Keys = Dictionary(keys),
                 NewImage = Dictionary(newImage),
                 OldImage = Dictionary(oldImages)
@@ -41,7 +38,7 @@ module FunctionTest =
         let ddbStreamRecords = [
             DynamoDBEvent.DynamodbStreamRecord(
                 EventID = "id-foo",
-                EventName = OperationType.INSERT,
+                EventName = "INSERT",
                 AwsRegion = "us-west-2",
                 Dynamodb = streamRecord
             )

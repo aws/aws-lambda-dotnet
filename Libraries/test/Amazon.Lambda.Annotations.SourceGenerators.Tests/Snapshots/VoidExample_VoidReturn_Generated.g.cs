@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using System.IO;
 using Amazon.Lambda.Core;
 
 namespace TestServerlessApp
@@ -9,11 +11,13 @@ namespace TestServerlessApp
     public class VoidExample_VoidReturn_Generated
     {
         private readonly VoidExample voidExample;
+        private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
         public VoidExample_VoidReturn_Generated()
         {
             SetExecutionEnvironment();
             voidExample = new VoidExample();
+            serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
         public void VoidReturn(string text, Amazon.Lambda.Core.ILambdaContext __context__)
@@ -33,7 +37,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_1.0.0.0");
+            envValue.Append("amazon-lambda-annotations_1.3.0.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

@@ -330,7 +330,69 @@ public class LambdaFunctions
 }
 ```
 
+## Auto Generate Main
 
+A `LambdaGlobalProperties` attribute is available to set global settings that the annotations framework uses when generating code at compile time. This simplifies the programming model when using custom runtimes or native ahead of time (AOT) compilation. It removes the need to manually bootstrap the Lambda runtime.
+
+To auto-generate the `static Main` method, first ensure the `OutputType` in your `csproj` file is set to `exe`.
+```xml
+<PropertyGroup>
+    <!--Removed for brevity..-->
+    <OutputType>exe</OutputType>
+</PropertyGroup>
+```
+
+Once the output type is set to executable, add the `LambdaGlobalProperties` assembly attribute and set the `GenerateMain` property to true. You can also configure the `Runtime` in the generated CloudFormation template.
+
+```c#
+[assembly: LambdaGlobalProperties(GenerateMain = true, Runtime = "provided.al2")]
+```
+
+### Behind The Scenes
+
+Assuming the below Lambda function handler:
+
+```c#
+public class Greeter
+{
+    [LambdaFunction(ResourceName = "GreeterSayHello", MemorySize = 1024, PackageType = LambdaPackageType.Image)]
+    [HttpApi(LambdaHttpMethod.Get, "/Greeter/SayHello", Version = HttpApiVersion.V1)]
+    public void SayHello([FromQuery(Name = "names")]IEnumerable<string> firstNames, APIGatewayProxyRequest request, ILambdaContext context)
+    {
+        context.Logger.LogLine($"Request {JsonSerializer.Serialize(request)}");
+
+        if (firstNames == null)
+        {
+            return;
+        }
+
+        foreach (var firstName in firstNames)
+        {
+            Console.WriteLine($"Hello {firstName}");
+        }
+    }
+}
+```
+
+The generated `static Main` method would look like the below. To allow for multiple Lambda functions in the same executable an Environment variable is used to determine which handler is executed. When using the `GenerateMain` attribute, ensure you also set the `ANNOTATIONS_HANDLER` environment variable on the deployed resource.
+
+The auto-generated CloudFormation template will include this as a default. 
+
+```c#
+public class GeneratedProgram
+{
+    private static async Task Main(string[] args)
+    {
+        switch (Environment.GetEnvironmentVariable("ANNOTATIONS_HANDLER"))
+        {
+            case "ToUpper":
+                Func<string, string> toupper_handler = new TestServerlessApp.Sub1.Functions_ToUpper_Generated().ToUpper;
+                await Amazon.Lambda.RuntimeSupport.LambdaBootstrapBuilder.Create(toupper_handler, new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer()).Build().RunAsync();
+                break;
+        }
+    }
+}
+```
 
 ## Lambda .NET Attributes
 
@@ -368,3 +430,33 @@ Here is a preliminary list of .NET attributes that will tell the source generato
     * Map method parameter to HTTP request body. If parameter is a complex type then request body will be assumed to be JSON and deserialized into the type.
 * FromServices
     * Map method parameter to registered service in IServiceProvider
+
+### Global Attributes    
+* GenerateMain
+    * Generates a `static Program` class and a `static Main` method that bootstraps the Lambda runtime. Simplifies the programming model when building on a custom runtime or using native ahead of time (AOT) compilation.
+* Runtime
+    * Set the runtime in the generated CloudFormation template. Set to either `dotnet6` or `provided.al2`
+ 
+Here is a list of features that are supported/planned in no particular priority order. The list will grow as we get deeper into implementation.
+- [x] LambdaFunction attribute triggers source generator and syncs with the CloudFormation template
+- [x] LambdaStartup attribute identifies the type that will be used to configure DI  
+- [x] DI can be used to create an instance of the class that contains the Lambda functions
+- [x] HttpApi & RestApi attributes can be used to configure API Gateway as the event source for the Lambda function
+- [x] FromHeader attribute maps method parameter to HTTP header value
+- [x] FromQuery attribute maps method parameter to HTTP query string value
+- [x] FromBody attribute maps method parameter to HTTP request body
+- [x] FromRoute attribute maps method parameter to HTTP resource path segment
+- [x] FromService attribute maps method parameter to services registered with DI. Services will be created from DI using scope for the method invocation.
+- [x] Return 400 bad request for `Convert.ChangeType` failures
+- [x] Add opt-in diagnostic information to help troubleshoot
+- [x] Add YAML support
+- [x] Add support for image based Lambda functions
+- [ ] Determine Lambda runtime based on `TargetFramework` of the project
+- [ ] Add ability to specify a custom path for the generated CloudFormation template 
+- [ ] Add S3 event support
+- [ ] Add DynamoDB event support
+- [ ] Add SQS event support
+- [ ] Add ScheduleTask support
+- [ ] Disable CloudFormation sync
+- [ ] Modify the source generator to collect and save the Lambda function metadata in a JSON file inside the `obj` folder. This metadata can be used by third party tools to identify the correct function handler string.
+

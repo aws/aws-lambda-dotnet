@@ -16,8 +16,8 @@ public class Function
     /// on the ApplicationLoadBalancerRequest and ApplicationLoadBalancerResponse objects. If "Multi value headers" is enabled then
     /// use MultiValueHeaders and MultiValueQueryStringParameters properties.
     /// </summary>
-    /// <param name="request"></param>
-    /// <param name="context"></param>
+    /// <param name="request">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     public ApplicationLoadBalancerResponse FunctionHandler(ApplicationLoadBalancerRequest request, ILambdaContext context)
     {

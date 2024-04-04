@@ -1,29 +1,31 @@
-name: Source Generator CI
+name: Lambda Annotations CI
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - feature/annotations
+      - dev
   pull_request:
 
 jobs:
-  source-generator-build-pack-test:
+  lambda-annotations-build-pack-test:
     runs-on: ubuntu-latest
-
     steps:
-
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Setup .NET 3.1
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 3.1.x
     - name: Setup .NET 6.0
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 6.0.x
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 #v4
       with:
         aws-access-key-id: ${{ secrets.CI_AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.CI_AWS_ACCESS_KEY_SECRET }}
@@ -45,9 +47,9 @@ jobs:
     - name: Pack
       run: dotnet pack Libraries/src/Amazon.Lambda.Annotations/Amazon.Lambda.Annotations.csproj -p:NuspecFile=../Amazon.Lambda.Annotations.nuspec --no-build --configuration Release --output "PackResults"
     - name: Upload pack results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name: source-generator-nuget-package
+        name: lambda-annotations-nuget-package
         path: PackResults
       # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
@@ -56,29 +58,31 @@ jobs:
         dotnet test Libraries/test/Amazon.Lambda.Annotations.SourceGenerators.Tests/Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj --no-build --configuration Release --verbosity normal --logger trx --results-directory "TestResults"
         dotnet test Libraries/test/TestServerlessApp.IntegrationTests/TestServerlessApp.IntegrationTests.csproj --no-build --configuration Release --verbosity normal --logger trx --results-directory "TestResults"
     - name: Upload test results
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name: source-generator-test-result
+        name: lambda-annotations-test-result
         path: TestResults
       # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
 
   test-app-build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Setup .NET 6.0
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 6.0.x
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x  
     - name: Restore dependencies
       run: dotnet restore Libraries/test/TestServerlessApp/TestServerlessApp.csproj
     - name: Build
       run: dotnet build Libraries/test/TestServerlessApp/TestServerlessApp.csproj --no-restore --configuration Release --verbosity detailed
     - name: Upload built assemblies
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: test-app-build-result
-        path: Libraries/test/TestServerlessApp/bin/Debug/netcoreapp3.1
+        path: Libraries/test/TestServerlessApp/bin/Release/net6.0

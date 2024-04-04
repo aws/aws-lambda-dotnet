@@ -17,8 +17,11 @@
     <Content Include="$(MSBuildThisFileDirectory)cognito-customsmssender-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-customemailsender-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-custommessage-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)cognito-defineauthchallenge-event-with-null-values.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-migrateuser-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-pretokengeneration-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)cognito-verifyauthchallenge-event-with-null-values.json" />
+    <Content Include="$(MSBuildThisFileDirectory)cognito-pretokengenerationv2-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-verifyauthchallenge-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-postconfirmation-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-postauthentication-event.json" />
@@ -27,6 +30,7 @@
     <Content Include="$(MSBuildThisFileDirectory)cognito-presignup-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)cognito-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)config-event.json" />
+    <Content Include="$(MSBuildThisFileDirectory)dynamodb-with-ms-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)kinesis-batchitemfailures-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)dynamodb-batchitemfailures-response.json" />
     <Content Include="$(MSBuildThisFileDirectory)dynamodb-event.json" />
@@ -72,5 +76,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)EventTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DynamoDBEventJsonTests.cs" />
   </ItemGroup>
 </Project>

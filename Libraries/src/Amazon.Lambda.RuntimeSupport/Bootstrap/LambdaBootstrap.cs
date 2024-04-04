@@ -112,9 +112,18 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns>A Task that represents the operation.</returns>
+#if NET8_0_OR_GREATER
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
+            Justification = "Unreferenced code paths are excluded when RuntimeFeature.IsDynamicCodeSupported is false.")]
+#endif
+
         public async Task RunAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            if(UserCodeInit.IsCallPreJit())
+#if NET8_0_OR_GREATER
+            AdjustMemorySettings();
+#endif
+
+            if (UserCodeInit.IsCallPreJit())
             {
                 this._logger.LogInformation("PreJit: CultureInfo");
                 UserCodeInit.LoadStringCultureInfo();
@@ -247,6 +256,52 @@ namespace Amazon.Lambda.RuntimeSupport
             // will take care of writing to the function's log stream.
             Console.Error.WriteLine(exception);
         }
+
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// The .NET runtime does not recognize the memory limits placed by Lambda via Lambda's cgroups. This method is run during startup to inform the
+        /// .NET runtime the max memory configured for Lambda function. The max memory can be determined using the AWS_LAMBDA_FUNCTION_MEMORY_SIZE environment variable
+        /// which has the memory in MB.
+        /// 
+        /// For additional context on setting the heap size refer to this GitHub issue:
+        /// https://github.com/dotnet/runtime/issues/70601
+        /// </summary>
+        private void AdjustMemorySettings()
+        {
+            try
+            {
+                // Check the environment variable to see if the user has opted out of RuntimeSupport adjusting 
+                // the heap memory limit to match the Lambda configured environment. This can be useful for situations
+                // where the Lambda environment is being emulated for testing and more then just single Lambda function
+                // is running in the process. For example running a test runner over a series of Lambda emulated invocations.
+                var value = Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_DISABLE_HEAP_MEMORY_LIMIT);
+                if (string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+                    return;
+
+
+                int lambdaMemoryInMb;
+                if (!int.TryParse(Environment.GetEnvironmentVariable(LambdaEnvironment.EnvVarFunctionMemorySize), out lambdaMemoryInMb))
+                    return;
+
+                ulong memoryInBytes = (ulong)lambdaMemoryInMb * LambdaEnvironment.OneMegabyte;
+
+                // If the user has already configured the hard heap limit to something lower then is available 
+                // then make no adjustments to honor the user's setting.
+                if ((ulong)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes < memoryInBytes)
+                    return;
+
+                AppContext.SetData("GCHeapHardLimit", memoryInBytes);
+
+#pragma warning disable CA2252
+                GC.RefreshMemoryLimit();
+#pragma warning disable CA2252
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Failed to communicate to the .NET runtime the amount of memory configured for the Lambda function via the AWS_LAMBDA_FUNCTION_MEMORY_SIZE environment variable.");
+            }
+        }
+#endif
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

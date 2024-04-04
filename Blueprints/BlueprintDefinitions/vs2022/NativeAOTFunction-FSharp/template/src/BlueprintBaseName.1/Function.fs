@@ -23,8 +23,8 @@ module Function =
     // SDK for .NET does not support trimming. This will result in a larger executable size, and still does not 
     // guarantee runtime trimming errors won't be hit. 
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="context"></param>
+    /// <param name="input">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     let functionHandler (input: string) (_: ILambdaContext) =
         match input with
@@ -37,7 +37,7 @@ module Function =
     /// initializes the .NET Lambda runtime client passing in the function handler to invoke for each Lambda event and
     /// the JSON serializer to use for converting Lambda JSON format to the .NET types.
     /// </summary>
-    /// <param name="args"></param>
+    /// <param name="args">The command line arguments.</param>
     [<EntryPoint>]
     let main _args =
     

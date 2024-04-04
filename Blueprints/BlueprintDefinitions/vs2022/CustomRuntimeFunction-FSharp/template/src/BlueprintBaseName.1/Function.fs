@@ -16,8 +16,8 @@ module Function =
     /// https://github.com/aws/aws-lambda-dotnet#events
     /// and change the string input parameter to the desired event type.
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="context"></param>
+    /// <param name="input">Input to the Lambda function handler.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     let functionHandler (input: string) (_: ILambdaContext) =
         match input with

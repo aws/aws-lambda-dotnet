@@ -14,7 +14,7 @@
         /// Gets or sets authorization result.
         /// </summary>
         [DataMember(Name = "isAuthorized")]
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("isAuthorized")]
 #endif
         public bool IsAuthorized { get; set; }
@@ -23,7 +23,7 @@
         /// Gets or sets the <see cref="APIGatewayCustomAuthorizerContext"/> property.
         /// </summary>
         [DataMember(Name = "context")]
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("context")]
 #endif
         public Dictionary<string, object> Context { get; set; }

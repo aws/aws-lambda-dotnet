@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.0.0.0).",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.3.0.0).",
   "Resources": {
     "TestServerlessAppTaskExampleTaskReturnGenerated": {
       "Type": "AWS::Serverless::Function",
@@ -9,7 +9,7 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"

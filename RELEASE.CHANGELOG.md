@@ -1,3 +1,140 @@
+### Release 2024-03-27
+* **Amazon.Lambda.Templates (7.1.0)**
+  * Add new template using the AWS Message Processing Framework for .NET
+  * Update versions of AWS.Lambda.Powertools dependencies in relevant templates
+
+### Release 2024-03-12
+* **Amazon.Lambda.DynamoDBEvents (3.1.1)**
+  * Better handle empty `AttributeValue` objects when serializing `DynamoDBEvent` objects to JSON.
+
+### Release 2024-03-04
+* **Amazon.Lambda.DynamoDBEvents (3.1.0)**
+  * Added `ToJson` which can be used to convert `DynamoDBEvent` objects to the higher-level document and object persistence classes in the AWS SDK.
+
+### Release 2024-02-22
+* **Amazon.Lambda.Templates (7.0.0)**
+  * Updated templates to target .NET 8
+  * Updated the serverless Native AOT template to use Amazon.Lambda.Anotations
+  * Updated the DynamoDB blueprint for changes with the new major version bump of Amazon.Lambda.DynamoDBEvents
+  * Updated all AWS dependencies in templates
+* **AWSLambdaPSCore PowerShell Module (4.0.0)**
+  * Updated to target the .NET 8 Lambda runtime
+* **Amazon.Lambda.PowerShellHost (3.0.0)**
+  * Updated to target .NET 8
+  
+### Release 2024-02-15
+* **Amazon.Lambda.Annotations (1.2.0)**
+  * Added support for detecting TargetFramework is .NET 8 and configuring the runtime to dotnet8.
+* **Amazon.Lambda.AspNetCoreServer (9.0.0)**
+  * Breaking Change: Removed support for .NET Core 3.1.
+  * Breaking Change: Removed AbstractAspNetCoreFunction.CreateWebHostBuilder method that was overloaded for .NET Core 3.1 and earlier functions for configuring IWebHostBuilder.
+  * Added .NET 8 target.
+  * Addressed trim warnings and marked assembly as trimmable for Native AOT Lambda functions;
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.7.0)**  
+  * Update version of Amazon.Lambda.AspNetCoreServer to 9.0.0.
+  * Added new AddAWSLambdaHosting overload that has a parameter for SourceGeneratorLambdaJsonSerializer<T> to force source generator serialization.
+  * Addressed trim warnings and marked assembly as trimmable for Native AOT Lambda functions.
+* **Amazon.Lambda.Serialization.SystemTextJson (2.4.1)**  
+  * Marked SourceGeneratorLambdaJsonSerializer<T> constructor that took in an instance of JsonSerializerContext as Obsolete. This was due to the JsonSerializerContext instance unlikely to have the correct JsonSerializerOptions for Lambda serialization.
+
+
+
+### Release 2024-01-18
+* **Amazon.Lambda.CognitoEvents (3.0.0)**
+  * Pull Request [#1656](https://github.com/aws/aws-lambda-dotnet/pull/1656) Add contracts for cognito pre token generation v2. Thanks [Ernest Folch](https://github.com/ernest-folch-fleksy)
+  * Pull Request [#1646](https://github.com/aws/aws-lambda-dotnet/pull/1646) Fixed the JSON deserialization error in Cognito triggered. Thanks [Ankush Jain](https://github.com/ankushjain358)
+
+### Release 2024-01-12
+* **Amazon.Lambda.DynamoDBEvents (3.0.0)**
+  * Removed `AWSSDK.DynamoDBv2` dependency from `DynamoDBEvent` and related classes.
+* **Amazon.Lambda.Serialization.Json (2.2.0)**
+	* Updated contract resolvers to be compatible with the latest version of the `Amazon.Lambda.DynamoDBEvents` package. 
+
+### Release 2023-12-15
+* **Amazon.Lambda.Templates (6.15.1)**
+  * Update Powertools dependencies in relevant Lambda templates.
+
+### Release 2023-11-20
+* **Amazon.Lambda.TestTool (0.15.1)**
+  * Fixed issue with getting a 404 for "_framework/blazor.server.js" when the UI started up for .NET 6 and 7.
+   
+### Release 2023-11-17
+* **Amazon.Lambda.TestTool (0.15.0)**
+  * Released .NET 8 version as NuGet package Amazon.Lambda.TestTool-8.0
+  * Pull Request [#1598](https://github.com/aws/aws-lambda-dotnet/pull/1598) Add width to .main to prevent window overflow. Thanks [mleziva](https://github.com/mleziva)
+  * Deprecated the .NET Core 3.1 and .NET 5 version. No new versions targeting those frameworks will be released.
+
+### Release 2023-11-15
+* **Amazon.Lambda.Annotations (1.1.0)**
+  * Added support for deploying as an executable assembly and targeting provided.al2 and provided.al2023. This allows support for deploying .NET 8 AOT Lambda functions.
+  * Addressed AOT trim warnings.
+
+### Release 2023-11-13
+* **Amazon.Lambda.AspNetCoreServer (8.1.1)**
+  * Pull Request [#1599](https://github.com/aws/aws-lambda-dotnet/pull/1599) adding `application/x-protobuf` to list of content types that should be base 64 encoded. Thanks [yuriygavriluk](https://github.com/yuriygavriluk)
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.6.1)**
+  * Updated dependency Amazon.Lambda.AspNetCoreServer to 8.1.1
+* **Amazon.Lambda.Templates (6.15.0)**
+  * Update custom runtime templates to use provided.al2023 and .NET 8
+
+### Release 2023-10-26
+* **Amazon.Lambda.RuntimeSupport (1.10.0)**
+  * Marked as trimmable for .NET 8
+  * Applied the `RequiresUnreferencedCode` attribute to areas that caused trim warnings. These code paths are used by the managed runtime when running .NET Lambda functions from a class library. Code paths for an executable assembly Lambda function, used for Native AOT, will not trigger trim warnings with this release.
+* **Amazon.Lambda.Serialization.SystemTextJson (2.4.0)**
+  * Marked as trimmable for .NET 8
+  * For trimmed Lambda functions the `SourceGeneratorLambdaJsonSerializer` must be used. The other serializers have been marked with the `RequiresUnreferencedCode` attribute.
+  * Added new constructor for `SourceGeneratorLambdaJsonSerializer` that takes in the `JsonSerializerContext` as a parameter to remove the reflection call to create the isntance.  
+* **Amazon.Lambda.APIGatewayEvents (2.7.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.ApplicationLoadBalancerEvents (2.2.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.CloudWatchEvents (4.4.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.CloudWatchLogsEvents (2.2.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.CognitoEvents (2.2.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.ConfigEvents (2.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.ConnectEvents (1.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.Core (2.2.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.DynamoDBEvents (2.3.0)**
+  * Due to a dependency on the AWSSDK.DynamoDBv2 package the `DynamoDBEvent` event class is marked with the RequiresUnreferencedCode making it not safe for trimming.
+* **Amazon.Lambda.KafkaEvents (2.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.KinesisAnalyticsEvents (2.3.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.KinesisEvents (2.2.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.KinesisFirehoseEvents (2.3.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.LexEvents (3.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.LexV2Events (1.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.MQEvents (2.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.S3Events (3.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.SimpleEmailEvents (3.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.SNSEvents (2.1.0)**
+  * Marked as trimmable for .NET 8
+* **Amazon.Lambda.SQSEvents (2.2.0)**
+  * Marked as trimmable for .NET 8
+
+### Release 2023-10-13
+* **Amazon.Lambda.RuntimeSupport (1.9.1)**
+  * Added `AWS_LAMBDA_DOTNET_DISABLE_MEMORY_LIMIT_CHECK` environment variable that if set to `true` disables the logic to configure the max heap memory size for the .NET runtime.
+
+### Release 2023-10-13
+* **Amazon.Lambda.RuntimeSupport (1.9.0)**
+  * Added .NET 8 target for the package.
+  * Pull Request [#1578](https://github.com/aws/aws-lambda-dotnet/pull/1578) using new .NET 8 APIs to inform the .NET runtime how much memory the Lambda environment is configured for. This helps the GC understand when nearing the memory limit and when it should be more aggressive collecting memory.
+
 ### Release 2023-09-05
 * **Amazon.Lambda.DynamoDBEvents (2.2.0)**
   * Added support for DynamoDBTimeWindowEvent.

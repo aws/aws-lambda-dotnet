@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
+﻿using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
@@ -12,14 +8,38 @@ using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
     [Generator]
     public class Generator : ISourceGenerator
     {
+        private const string DEFAULT_LAMBDA_SERIALIZER = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
         private readonly IFileManager _fileManager = new FileManager();
         private readonly IDirectoryManager _directoryManager = new DirectoryManager();
+
+        /// <summary>
+        /// Maps .NET TargetFramework values to the corresponding Lambda runtime CloudFormation value
+        /// </summary>
+        internal static readonly Dictionary<string, string> _targetFrameworksToRuntimes = new Dictionary<string, string>(2)
+        {
+            { "net6.0", "dotnet6" },
+            { "net8.0", "dotnet8" }
+        };
+
+        internal static readonly List<string> _allowedRuntimeValues = new List<string>(4)
+        {
+            "dotnet6",
+            "provided.al2",
+            "provided.al2023",
+            "dotnet8"
+        };
 
         // Only allow alphanumeric characters
         private readonly Regex _resourceNameRegex = new Regex("^[a-zA-Z0-9]+$");
@@ -30,10 +50,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public Generator()
         {
 #if DEBUG
-            //if (!Debugger.IsAttached)
-            //{
-            //    Debugger.Launch();
-            //}
+          //  if (!Debugger.IsAttached)
+          //  {
+          //      Debugger.Launch();
+          //  }
 #endif
         }
 
@@ -52,7 +72,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 // Check to see if any of the current syntax trees has any error diagnostics. If so
                 // Skip generation. We only want to sync the CloudFormation template if the project
                 // can compile.
-                foreach(var syntaxTree in context.Compilation.SyntaxTrees)
+                foreach (var syntaxTree in context.Compilation.SyntaxTrees)
                 {
                     if(syntaxTree.GetDiagnostics().Any(x => x.Severity == DiagnosticSeverity.Error))
                     {
@@ -80,13 +100,58 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     }
                 }
 
+                var isExecutable = false;
+
+                bool foundFatalError = false;
+                
+                var assemblyAttributes = context.Compilation.Assembly.GetAttributes();
+                
+                var globalPropertiesAttribute = assemblyAttributes
+                    .FirstOrDefault(attr => attr.AttributeClass.Name == nameof(LambdaGlobalPropertiesAttribute));
+
+                var defaultRuntime = "dotnet6";
+
+                // Try to determine the target framework from the source generator context
+                if (context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("build_property.TargetFramework", out var targetFramework))
+                {
+                    if (_targetFrameworksToRuntimes.ContainsKey(targetFramework))
+                    {
+                        defaultRuntime = _targetFrameworksToRuntimes[targetFramework];
+                    }
+                }
+                
+                // The runtime specified in the global property has precedence over the one we determined from the TFM (if we did)
+                if (globalPropertiesAttribute != null)
+                {
+                    var generateMain = globalPropertiesAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "GenerateMain").Value;
+                    var runtimeAttributeValue = globalPropertiesAttribute.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Runtime").Value;
+                    var runtime = runtimeAttributeValue.Value == null ? defaultRuntime : runtimeAttributeValue.Value.ToString();
+
+                    if (!_allowedRuntimeValues.Contains(runtime))
+                    {
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.InvalidRuntimeSelection, Location.None));
+                        return;
+                    }
+
+                    defaultRuntime = runtime;
+
+                    isExecutable = generateMain.Value != null && bool.Parse(generateMain.Value.ToString());
+
+                    if (isExecutable && context.Compilation.Options.OutputKind != OutputKind.ConsoleApplication)
+                    {
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.SetOutputTypeExecutable, Location.None));
+                        return;
+                    }
+                }
+
                 var configureMethodModel = semanticModelProvider.GetConfigureMethodModel(receiver.StartupClasses.FirstOrDefault());
 
                 var annotationReport = new AnnotationReport();
 
                 var templateHandler = new CloudFormationTemplateHandler(_fileManager, _directoryManager);
 
-                bool foundFatalError = false;
+                var lambdaModels = new List<LambdaFunctionModel>();
+                
                 foreach (var lambdaMethod in receiver.LambdaMethods)
                 {
                     var lambdaMethodModel = semanticModelProvider.GetMethodSemanticModel(lambdaMethod);
@@ -115,8 +180,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                             continue;
                         }
                     }
+                    
+                    var serializerInfo = GetSerializerInfoAttribute(context, lambdaMethodModel);
 
-                    var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context);
+                    var model = LambdaFunctionModelBuilder.Build(lambdaMethodModel, configureMethodModel, context, isExecutable, serializerInfo, defaultRuntime);
 
                     // If there are more than one event, report them as errors
                     if (model.LambdaMethod.Events.Count > 1)
@@ -152,7 +219,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         continue;
                     }
 
-                    if (!AreLambdaMethodParamatersValid(lambdaMethod, model, diagnosticReporter))
+                    if (!AreLambdaMethodParametersValid(lambdaMethod, model, diagnosticReporter))
                     {
                         foundFatalError = true;
                         continue;
@@ -175,7 +242,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     // report every generated file to build output
                     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.CodeGeneration, Location.None, $"{model.GeneratedMethod.ContainingType.Name}.g.cs", sourceText));
 
+                    lambdaModels.Add(model);
                     annotationReport.LambdaFunctions.Add(model);
+                }
+
+                if (isExecutable)
+                {
+                    var executableAssembly = GenerateExecutableAssemblySource(
+                        context,
+                        diagnosticReporter,
+                        receiver,
+                        lambdaModels);
+
+                    if (executableAssembly == null)
+                    {
+                        foundFatalError = true;
+                        return;
+                    }
+
+                    context.AddSource("Program.g.cs", SourceText.From(executableAssembly.TransformText().ToEnvironmentLineEndings(), Encoding.UTF8, SourceHashAlgorithm.Sha256));
                 }
 
                 // Run the CloudFormation sync if any LambdaMethods exists. Also run if no LambdaMethods exists but there is a
@@ -212,9 +297,104 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             }
         }
 
+        private static ExecutableAssembly GenerateExecutableAssemblySource(
+            GeneratorExecutionContext context,
+            DiagnosticReporter diagnosticReporter,
+            SyntaxReceiver receiver,
+            List<LambdaFunctionModel> lambdaModels)
+        {
+            // Check 'Amazon.Lambda.RuntimeSupport' is referenced
+            if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.RuntimeSupport") == null)
+            {
+                diagnosticReporter.Report(
+                    Diagnostic.Create(
+                        DiagnosticDescriptors.MissingDependencies,
+                        Location.None,
+                        "Amazon.Lambda.RuntimeSupport"));
+                
+                return null;
+            }
+
+            foreach (var methodDeclaration in receiver.MethodDeclarations)
+            {
+                var model = context.Compilation.GetSemanticModel(methodDeclaration.SyntaxTree);
+                var symbol = model.GetDeclaredSymbol(methodDeclaration) as IMethodSymbol;
+
+                // Check to see if a static main method exists in the same namespace that has 0 or 1 parameters
+                if (symbol.Name != "Main" || !symbol.IsStatic || symbol.ContainingNamespace.Name != lambdaModels[0].LambdaMethod.ContainingAssembly || (symbol.Parameters.Length > 1)) 
+                    continue;
+                
+                diagnosticReporter.Report(
+                    Diagnostic.Create(
+                        DiagnosticDescriptors.MainMethodExists,
+                        Location.None));
+                    
+                return null;
+            }
+
+            if (lambdaModels.Count == 0)
+            {
+                diagnosticReporter.Report(
+                    Diagnostic.Create(
+                        DiagnosticDescriptors.ExecutableWithNoFunctions,
+                        Location.None,
+                        "Amazon.Lambda.Annotations"));
+
+                return null;
+            }
+
+            return new ExecutableAssembly(
+                lambdaModels,
+                lambdaModels[0].LambdaMethod.ContainingNamespace);
+        }
+
         private bool HasSerializerAttribute(GeneratorExecutionContext context, IMethodSymbol methodModel)
         {
             return methodModel.ContainingAssembly.HasAttribute(context, TypeFullNames.LambdaSerializerAttribute);
+        }
+
+        private LambdaSerializerInfo GetSerializerInfoAttribute(GeneratorExecutionContext context, IMethodSymbol methodModel)
+        {
+            var serializerString = DEFAULT_LAMBDA_SERIALIZER;
+            string serializerJsonContext = null;
+
+            ISymbol symbol = null;
+            
+            // First check if method has the Lambda Serializer.
+            if (methodModel.HasAttribute(
+                    context,
+                    TypeFullNames.LambdaSerializerAttribute))
+            {
+                symbol = methodModel;
+            }
+            // Then check assembly
+            else if (methodModel.ContainingAssembly.HasAttribute(
+                    context,
+                    TypeFullNames.LambdaSerializerAttribute))
+            {
+                symbol = methodModel.ContainingAssembly;
+            }
+            // Else return the default serializer.
+            else
+            {
+                return new LambdaSerializerInfo(serializerString, serializerJsonContext);
+            }
+            
+            var attribute = symbol.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.Name == TypeFullNames.LambdaSerializerAttributeWithoutNamespace);
+                
+            var serializerValue = attribute.ConstructorArguments.FirstOrDefault(kvp => kvp.Type.Name == nameof(Type)).Value;
+
+            if(serializerValue is INamedTypeSymbol typeSymbol && typeSymbol.Name.Contains("SourceGeneratorLambdaJsonSerializer") && typeSymbol.TypeArguments.Length == 1)
+            {
+                serializerJsonContext = typeSymbol.TypeArguments[0].ToString();
+            }
+
+            if (serializerValue != null)
+            {
+                serializerString = serializerValue.ToString();
+            }
+
+            return new LambdaSerializerInfo(serializerString, serializerJsonContext);
         }
 
         public void Initialize(GeneratorInitializationContext context)
@@ -223,7 +403,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             context.RegisterForSyntaxNotifications(() => new SyntaxReceiver(_fileManager, _directoryManager));
         }
 
-        private bool AreLambdaMethodParamatersValid(MethodDeclarationSyntax declarationSyntax, LambdaFunctionModel model, DiagnosticReporter diagnosticReporter)
+        private bool AreLambdaMethodParametersValid(MethodDeclarationSyntax declarationSyntax, LambdaFunctionModel model, DiagnosticReporter diagnosticReporter)
         {
             var isValid = true;
             foreach (var parameter in model.LambdaMethod.Parameters)
@@ -237,7 +417,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     if (!parameter.Type.IsPrimitiveType() && !parameter.Type.IsPrimitiveEnumerableType())
                     {
                         isValid = false;
-                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.UnsupportedMethodParamaterType, 
+                        diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.UnsupportedMethodParameterType, 
                             Location.Create(declarationSyntax.SyntaxTree, declarationSyntax.Span),
                             parameterKey, parameter.Type.FullName));
                     }

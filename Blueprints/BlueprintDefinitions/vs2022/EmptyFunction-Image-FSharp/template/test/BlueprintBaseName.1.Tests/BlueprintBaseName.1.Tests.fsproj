@@ -2,13 +2,13 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <IsPackable>false</IsPackable>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FunctionTest.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
     <PackageReference Include="Amazon.Lambda.TestUtilities" Version="2.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
     <PackageReference Include="xunit" Version="2.4.2" />

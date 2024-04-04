@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
-using System.Text;
 
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
@@ -13,7 +12,6 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 using Microsoft.AspNetCore.Http.Features.Authentication;
 using System.Globalization;
-using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 

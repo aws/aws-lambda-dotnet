@@ -207,6 +207,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         /// <param name="value"></param>
         /// <param name="formatArguments"></param>
         /// <param name="directive"></param>
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
+            Justification = "If formatting an object using JSON serialization this will do its best attempt. If the object has trim errors formatting will fall back to ToString for the object.")]
         private void FormatJsonValue(Utf8JsonWriter writer, object value, string formatArguments, MessageProperty.Directive directive)
         {
             if(value == null)
@@ -215,7 +217,16 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
             }
             else if (directive == MessageProperty.Directive.JsonSerialization)
             {
-                writer.WriteRawValue(JsonSerializer.Serialize(value, _jsonSerializationOptions));
+                try
+                {
+                    writer.WriteRawValue(JsonSerializer.Serialize(value, _jsonSerializationOptions));
+                }
+                catch
+                {
+                    // If running in an AOT environment where the code is trimmed it is possible the reflection based serialization might fail due to code being trimmed.
+                    // In that case fallback to writing the ToString version of the object.
+                    writer.WriteStringValue(value.ToString());
+                }
             }
             else if (!string.IsNullOrEmpty(formatArguments))
             {

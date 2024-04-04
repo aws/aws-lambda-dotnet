@@ -13,7 +13,7 @@ namespace Amazon.Lambda.LexEvents
         /// The length of time or number of turns in the conversation with the user that the context remains active.
         /// </summary>
         [DataMember(Name = "timeToLive", EmitDefaultValue = false)]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("timeToLive")]
 #endif
         public TimeToLive TimeToLive { get; set; }
@@ -22,7 +22,7 @@ namespace Amazon.Lambda.LexEvents
         /// The name of the context.
         /// </summary>
         [DataMember(Name = "name", EmitDefaultValue = false)]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("name")]
 #endif
         public string Name { get; set; }
@@ -31,7 +31,7 @@ namespace Amazon.Lambda.LexEvents
         /// A list of key/value pairs the contains the name and value of the slots from the intent that activated the context.
         /// </summary>
         [DataMember(Name = "parameters", EmitDefaultValue = false)]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("parameters")]
 #endif
         public IDictionary<string, string> Parameters { get; set; }
@@ -47,7 +47,7 @@ namespace Amazon.Lambda.LexEvents
         /// The length of time that the context remains active.
         /// </summary>
         [DataMember(Name = "timeToLiveInSeconds", EmitDefaultValue = false)]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("timeToLiveInSeconds")]
 #endif
         public int TimeToLiveInSeconds { get; set; }
@@ -56,7 +56,7 @@ namespace Amazon.Lambda.LexEvents
         /// The number of turns in the conversation with the user that the context remains active.
         /// </summary>
         [DataMember(Name = "turnsToLive", EmitDefaultValue = false)]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("turnsToLive")]
 #endif
         public int TurnsToLive { get; set; }

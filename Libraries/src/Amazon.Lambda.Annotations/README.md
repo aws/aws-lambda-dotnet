@@ -303,6 +303,24 @@ If you do not want AWS to track the usage of the library, please set the followi
 </PropertyGroup>
 ```
 
+## Lambda Global Properties
+
+A `LambdaGlobalProperties` attribute is available to set global settings that the annotations framework uses when generating code at compile time. This simplifies the programming model when using custom runtimes or native ahead of time (AOT) compilation. It removes the need to manually bootstrap the Lambda runtime.
+
+To auto-generate the `static Main` method, first ensure the `OutputType` in your `csproj` file is set to `exe`.
+```xml
+<PropertyGroup>
+    <!--Removed for brevity..-->
+    <OutputType>exe</OutputType>
+</PropertyGroup>
+```
+
+Once the output type is set to executable, add the `LambdaGlobalProperties` assembly attribute and set the `GenerateMain` property to true. If `Runtime` is not specified in the global attribute, Lambda Annotations will attempt to determine it from your project file. You can also configure the `Runtime` in the generated CloudFormation template. 
+
+To allow for multiple Lambda functions in the same executable an Environment Variable is used to determine which handler is executed. When using the `GenerateMain` attribute, ensure you also set the `ANNOTATIONS_HANDLER` environment variable on the deployed Lambda function.
+
+The auto-generated CloudFormation template will include this as a default.
+
 ## Amazon API Gateway example
 
 This example creates a REST API through Amazon API Gateway that exposes the common arithmetic operations. 

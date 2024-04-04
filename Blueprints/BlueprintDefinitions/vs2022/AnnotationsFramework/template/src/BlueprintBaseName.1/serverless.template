@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "An AWS Serverless Application.",
+  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v1.2.0.0).",
   "Resources": {
     "BlueprintBaseName1FunctionsDefaultGenerated": {
       "Type": "AWS::Serverless::Function",
@@ -12,9 +12,9 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": ".",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -41,9 +41,9 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": ".",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -70,9 +70,9 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": ".",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -99,9 +99,9 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": ".",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
@@ -128,9 +128,9 @@
         ]
       },
       "Properties": {
-        "Runtime": "dotnet6",
+        "Runtime": "dotnet8",
         "CodeUri": ".",
-        "MemorySize": 256,
+        "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"

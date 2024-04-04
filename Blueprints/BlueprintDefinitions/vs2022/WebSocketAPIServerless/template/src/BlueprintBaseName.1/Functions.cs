@@ -65,9 +65,9 @@ public class Functions
     /// <summary>
     /// Constructor used for testing allow tests to pass in moq versions of the service clients.
     /// </summary>
-    /// <param name="ddbClient"></param>
-    /// <param name="apiGatewayManagementApiClientFactory"></param>
-    /// <param name="connectionMappingTable"></param>
+    /// <param name="ddbClient">The service client for accessing Amazon DynamoDB.</param>
+    /// <param name="apiGatewayManagementApiClientFactory">The service client for accessing Amazon API Gateway.</param>
+    /// <param name="connectionMappingTable">Name of the DynamoDB table to store websocket connection mappings.</param>
     public Functions(IAmazonDynamoDB ddbClient, Func<string, IAmazonApiGatewayManagementApi> apiGatewayManagementApiClientFactory, string connectionMappingTable)
     {
         this.DDBClient = ddbClient;

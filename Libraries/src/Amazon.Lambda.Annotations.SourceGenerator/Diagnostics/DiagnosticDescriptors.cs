@@ -74,9 +74,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static readonly DiagnosticDescriptor UnsupportedMethodParamaterType = new DiagnosticDescriptor(id: "AWSLambda0109",
-            title: "Unsupported Method Paramater Type",
-            messageFormat: "Unsupported query paramter '{0}' of type '{1}' encountered. Only primitive .NET types and their corresponding enumerables can be used as query parameters.",
+        public static readonly DiagnosticDescriptor UnsupportedMethodParameterType = new DiagnosticDescriptor(id: "AWSLambda0109",
+            title: "Unsupported Method Parameter Type",
+            messageFormat: "Unsupported query parameter '{0}' of type '{1}' encountered. Only primitive .NET types and their corresponding enumerable can be used as query parameters.",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -87,5 +87,35 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
            category: "AWSLambdaCSharpGenerator",
            DiagnosticSeverity.Error,
            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor SetOutputTypeExecutable = new DiagnosticDescriptor(id: "AWSLambda0111",
+            title: "Output Type is not an executable",
+            messageFormat: "AssemblyAttribute Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is configured to generate a static main method " + 
+                           "but the assembly itself is not configured to output an executable. Set the 'OutputType' property in the .csproj file to be 'exe'.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidRuntimeSelection = new DiagnosticDescriptor(id: "AWSLambda0112",
+            title: "Invalid runtime selection",
+            messageFormat: "The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. " + 
+                           $"The valid values are: {string.Join(", ", Generator._allowedRuntimeValues.ToArray())}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+        
+        public static readonly DiagnosticDescriptor ExecutableWithNoFunctions = new DiagnosticDescriptor(id: "AWSLambda0113",
+            title: "Executable output with no LambdaFunction annotations",
+            messageFormat: "Your project is configured to output an executable and generate a static Main method, but you have not configured any methods with the 'LambdaFunction' attribute",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor MainMethodExists = new DiagnosticDescriptor(id: "AWSLambda0114",
+            title: "static Main method exists",
+            messageFormat: "Failed to generate Main method for LambdaGenerateMainAttribute because project already contains Main method. Existing Main methods must be removed when using LambdaGenerateMainAttribute attribute.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

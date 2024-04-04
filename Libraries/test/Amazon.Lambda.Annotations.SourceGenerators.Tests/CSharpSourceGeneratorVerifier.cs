@@ -1,14 +1,18 @@
-﻿using System;
-using System.Collections.Immutable;
-using Amazon.Lambda.Annotations.APIGateway;
+﻿using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
+using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Testing.Verifiers;
+using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Immutable;
+using System.IO;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 {
@@ -21,7 +25,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public class Test : CSharpSourceGeneratorTest<TSourceGenerator, XUnitVerifier>
         {
             public enum ReferencesMode {All, NoApiGatewayEvents}
-            public Test(ReferencesMode referencesMode = ReferencesMode.All)
+
+            public enum TargetFramework { Net60, Net80 }
+
+            public Test(ReferencesMode referencesMode = ReferencesMode.All, TargetFramework targetFramework = TargetFramework.Net60)
             {
                 if(referencesMode == ReferencesMode.NoApiGatewayEvents)
                 {
@@ -31,7 +38,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location));
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
                     });
 
                 }
@@ -44,8 +52,42 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
-                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location));
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
                     });
+                }
+
+                // Set up the target framework moniker and reference assemblies 
+                if (targetFramework == TargetFramework.Net60)
+                {
+                    SolutionTransforms.Add((solution, projectId) => 
+                    {
+                        return solution.AddAnalyzerConfigDocument(
+                            DocumentId.CreateNewId(projectId), 
+                            "TargetFrameworkConfig.editorconfig", 
+                            SourceText.From("""
+                                                is_global = true
+                                                build_property.TargetFramework = net6.0
+                                            """),
+                            filePath: "/TargetFrameworkConfig.editorconfig");
+                    });
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60;
+                }
+                else if (targetFramework == TargetFramework.Net80) 
+                {
+                    SolutionTransforms.Add((solution, projectId) =>
+                    {
+                        return solution.AddAnalyzerConfigDocument(
+                            DocumentId.CreateNewId(projectId),
+                            "TargetFrameworkConfig.editorconfig", 
+                            SourceText.From("""
+                                                is_global = true
+                                                build_property.TargetFramework = net8.0
+                                            """),
+                            filePath: "/TargetFrameworkConfig.editorconfig");
+                    });
+                    // There isn't a static .NET 8 yet
+                    ReferenceAssemblies = new ReferenceAssemblies("net8.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "8.0.0"), Path.Combine("ref", "net8.0"));
                 }
             }
 

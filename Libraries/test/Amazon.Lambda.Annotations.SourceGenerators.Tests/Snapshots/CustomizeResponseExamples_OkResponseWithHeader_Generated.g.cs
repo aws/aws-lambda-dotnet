@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using System.IO;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Annotations.APIGateway;
 
@@ -10,11 +12,13 @@ namespace TestServerlessApp
     public class CustomizeResponseExamples_OkResponseWithHeader_Generated
     {
         private readonly CustomizeResponseExamples customizeResponseExamples;
+        private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
         public CustomizeResponseExamples_OkResponseWithHeader_Generated()
         {
             SetExecutionEnvironment();
             customizeResponseExamples = new CustomizeResponseExamples();
+            serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
         public System.IO.Stream OkResponseWithHeader(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
@@ -48,14 +52,16 @@ namespace TestServerlessApp
                     StatusCode = 400
                 };
                 var errorStream = new System.IO.MemoryStream();
-                System.Text.Json.JsonSerializer.Serialize(errorStream, errorResult);
+                serializer.Serialize(errorResult, errorStream);
+                errorStream.Position = 0;
                 return errorStream;
             }
 
             var httpResults = customizeResponseExamples.OkResponseWithHeader(x, __context__);
             HttpResultSerializationOptions.ProtocolFormat serializationFormat = HttpResultSerializationOptions.ProtocolFormat.RestApi;
             HttpResultSerializationOptions.ProtocolVersion serializationVersion = HttpResultSerializationOptions.ProtocolVersion.V1;
-            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion };
+            System.Text.Json.Serialization.JsonSerializerContext jsonContext = null;
+            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion, JsonContext = jsonContext };
             var response = httpResults.Serialize(serializationOptions);
             return response;
         }
@@ -72,7 +78,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_1.0.0.0");
+            envValue.Append("amazon-lambda-annotations_1.3.0.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

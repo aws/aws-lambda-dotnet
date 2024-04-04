@@ -7,11 +7,15 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
+    using Microsoft.CodeAnalysis.CSharp;
+
     internal class SyntaxReceiver : ISyntaxContextReceiver
     {
         public List<MethodDeclarationSyntax> LambdaMethods { get; } = new List<MethodDeclarationSyntax>();
 
         public List<ClassDeclarationSyntax> StartupClasses { get; private set; } = new List<ClassDeclarationSyntax>();
+        
+        public List<MethodDeclarationSyntax> MethodDeclarations { get; } = new List<MethodDeclarationSyntax>();
 
         /// <summary>
         /// Path to the directory containing the .csproj file
@@ -50,7 +54,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             if (context.Node is MethodDeclarationSyntax methodDeclarationSyntax && methodDeclarationSyntax.AttributeLists.Count > 0)
             {
                 // Get the symbol being declared by the method, and keep it if its annotated
-                var methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDeclarationSyntax);
+                var methodSymbol = ModelExtensions.GetDeclaredSymbol(
+                    context.SemanticModel,
+                    methodDeclarationSyntax);
                 if (methodSymbol.GetAttributes().Any(attr => attr.AttributeClass.Name == nameof(LambdaFunctionAttribute)))
                 {
                     LambdaMethods.Add(methodDeclarationSyntax);
@@ -62,9 +68,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             {
                 // Get the symbol being declared by the class, and keep it if its annotated
                 var methodSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
+                
                 if (methodSymbol.GetAttributes().Any(attr => attr.AttributeClass.Name == nameof(LambdaStartupAttribute)))
                 {
                     StartupClasses.Add(classDeclarationSyntax);
+                }
+            }
+            
+            if (context.Node is MethodDeclarationSyntax methodDeclaration)
+            {
+                var model = context.SemanticModel.GetDeclaredSymbol(
+                    methodDeclaration);
+
+                if (model.Name == "Main" && model.IsStatic)
+                {
+                    MethodDeclarations.Add(methodDeclaration);   
                 }
             }
         }

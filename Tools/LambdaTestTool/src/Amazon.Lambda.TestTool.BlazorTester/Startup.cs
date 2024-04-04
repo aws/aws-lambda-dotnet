@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -84,6 +85,16 @@ namespace Amazon.Lambda.TestTool.BlazorTester
 
             services.AddBlazoredModal();
 
+#if NET8_0_OR_GREATER
+            // Starting with .NET 8 how the IFileProvider is configured for Blazor
+            // to serve the Blazor embedded content was changed. The previous version
+            // of using the PostConfigure no longer works because the "o.FileProvider" is null.
+            // Using this IPostConfigureOptions<StaticFileOptions> service approach does not
+            // work in .NET versions before .NET 8.
+            // For further context checkout this GitHub issue.
+            // https://github.com/dotnet/aspnetcore/issues/51794
+            services.AddTransient<IPostConfigureOptions<StaticFileOptions>, ConfigureStaticFilesOptions>();
+#else
             services.AddOptions<StaticFileOptions>()
                 .PostConfigure(o =>
                 {
@@ -92,6 +103,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester
                     // Make sure we don't remove the existing file providers (blazor needs this)
                     o.FileProvider = new CompositeFileProvider(o.FileProvider, fileProvider);
                 });
+#endif
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -114,5 +126,31 @@ namespace Amazon.Lambda.TestTool.BlazorTester
                 endpoints.MapFallbackToPage("/_Host");
             });
         }
+
+#if NET8_0_OR_GREATER
+        internal class ConfigureStaticFilesOptions : IPostConfigureOptions<StaticFileOptions>
+        {
+            public ConfigureStaticFilesOptions(IWebHostEnvironment environment)
+            {
+                Environment = environment;
+            }
+
+            public IWebHostEnvironment Environment { get; }
+
+            public void PostConfigure(string name, StaticFileOptions options)
+            {
+                name = name ?? throw new ArgumentNullException(nameof(name));
+                options = options ?? throw new ArgumentNullException(nameof(options));
+
+                if (name != Options.DefaultName)
+                {
+                    return;
+                }
+
+                var fileProvider = new ManifestEmbeddedFileProvider(typeof(Startup).Assembly, "wwwroot");
+                Environment.WebRootFileProvider = fileProvider;
+            }
+        }
+#endif
     }
 }

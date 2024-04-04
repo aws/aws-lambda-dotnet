@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="3.1.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\AspNetCoreAPIExample\AspNetCoreAPIExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\FunctionSignatureExamples\FunctionSignatureExamples.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\S3EventFunction\S3EventFunction.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\ServerlessFunctionTemplateYamlExample\ServerlessFunctionTemplateYamlExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\ServerlessTemplateExample\ServerlessTemplateExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\ServerlessTemplateYamlExample\ServerlessTemplateYamlExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\SourceGeneratorExample\SourceGeneratorExample.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\ToUpperFunc\ToUpperFunc.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="TestFiles\**">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

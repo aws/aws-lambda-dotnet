@@ -54,28 +54,16 @@ namespace Amazon.Lambda.TestTool
 
                 var lambdaAssemblyDirectory = commandOptions.Path ?? Directory.GetCurrentDirectory();
 
-#if NETCOREAPP3_1
-                var targetFramework = "netcoreapp3.1";
-#elif NET5_0
-                var targetFramework = "net5.0";
-#elif NET6_0
+#if NET6_0
                 var targetFramework = "net6.0";
 #elif NET7_0
                 var targetFramework = "net7.0";
+#elif NET8_0
+                var targetFramework = "net8.0";
 #endif
 
-                // Check to see if running in debug mode from this project's directory which means the test tool is being debugged.
-                // To make debugging easier pick one of the test Lambda projects.
-                if (lambdaAssemblyDirectory.EndsWith("Amazon.Lambda.TestTool.WebTester21"))
-                {
-                    lambdaAssemblyDirectory = Path.Combine(lambdaAssemblyDirectory, $"../../tests/LambdaFunctions/netcore21/S3EventFunction/bin/Debug/{targetFramework}");
-                }
-                else if (lambdaAssemblyDirectory.EndsWith("Amazon.Lambda.TestTool.WebTester31"))
-                {
-                    lambdaAssemblyDirectory = Path.Combine(lambdaAssemblyDirectory, $"../../tests/LambdaFunctions/netcore31/S3EventFunction/bin/Debug/{targetFramework}");
-                }
                 // If running in the project directory select the build directory so the deps.json file can be found.
-                else if (Utils.IsProjectDirectory(lambdaAssemblyDirectory))
+                if (Utils.IsProjectDirectory(lambdaAssemblyDirectory))
                 {
                     lambdaAssemblyDirectory = Path.Combine(lambdaAssemblyDirectory, $"bin/Debug/{targetFramework}");
                 }

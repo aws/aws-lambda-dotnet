@@ -16,8 +16,8 @@ type Functions() =
     /// <summary>
     /// A Lambda function to respond to HTTP Get methods from API Gateway
     /// </summary>
-    /// <param name="request"></param>
-    /// <param name="context"></param>
+    /// <param name="request">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     member __.Get (request: APIGatewayProxyRequest) (context: ILambdaContext) =
         sprintf "Request: %s" request.Path

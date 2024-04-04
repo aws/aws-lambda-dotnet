@@ -6,23 +6,14 @@
     <OutputType>Exe</OutputType>
     <Description>A tool to help debug and test your .NET Core AWS Lambda functions locally.</Description>
     <LangVersion>Latest</LangVersion>
-    <VersionPrefix>0.14.1</VersionPrefix>
+    <VersionPrefix>0.15.1</VersionPrefix>
     <Product>AWS .NET Lambda Test Tool</Product>
     <Copyright>Apache 2</Copyright>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
     <NoWarn>1701;1702;1591;1587;3021;NU5100;CS1591</NoWarn>
     <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
-	<TargetFrameworks>netcoreapp3.1;net5.0;net6.0;net7.0</TargetFrameworks>
+	<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
   </PropertyGroup>  
-
-
-    <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="3.1.0" />
-    </ItemGroup>
-
-    <ItemGroup Condition=" '$(TargetFramework)' == 'net5.0' ">
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="5.0.0" />
-    </ItemGroup>
 	
     <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
 		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="6.0.0" />
@@ -30,9 +21,13 @@
 
     <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
 		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="7.0.0" />
-    </ItemGroup>		
+    </ItemGroup>
 
-  <ItemGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="8.0.0-rc.2.23480.2" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <PackageReference Include="Blazored.Modal" Version="3.1.2" />
 	  <ProjectReference Include="..\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
   </ItemGroup>

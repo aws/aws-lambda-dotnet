@@ -1,6 +1,7 @@
 ﻿using Amazon.Lambda.Annotations.SourceGenerator;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Moq;
+using System.IO;
 using Xunit;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests

@@ -118,7 +118,7 @@ jobs:
           git add "**/*Dockerfile"
           git commit -m "chore: ASP.NET Core version update in Dockerfiles"
           git push origin $branch
-          echo "::set-output name=BRANCH::$branch"
+          echo "BRANCH=$branch" >> $GITHUB_OUTPUT
 
       # Create a Pull Request from the pushed branch
       - name: Pull Request

@@ -20,8 +20,8 @@ type Function(s3Client: IAmazonS3) =
     /// This method is called for every Lambda invocation. This method takes in an S3 event object and can be used
     /// to respond to S3 notifications.
     /// </summary>
-    /// <param name="event"></param>
-    /// <param name="context"></param>
+    /// <param name="event">The event for the Lambda function handler to process.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     member __.FunctionHandler (event: S3Event) (context: ILambdaContext) = task {
 

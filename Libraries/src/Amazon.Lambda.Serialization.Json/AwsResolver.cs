@@ -86,7 +86,10 @@ namespace Amazon.Lambda.Serialization.Json
                     }
                 }
             }
-            else if (type.FullName.Equals("Amazon.DynamoDBv2.Model.StreamRecord", StringComparison.Ordinal))
+            else if (
+                type.FullName.Equals("Amazon.Lambda.DynamoDBEvents.DynamoDBEvent+StreamRecord", StringComparison.Ordinal) ||
+                type.FullName.Equals("Amazon.DynamoDBv2.Model.StreamRecord", StringComparison.Ordinal)
+            )
             {
                 foreach (JsonProperty property in properties)
                 {
@@ -96,7 +99,10 @@ namespace Amazon.Lambda.Serialization.Json
                     }
                 }
             }
-            else if (type.FullName.Equals("Amazon.DynamoDBv2.Model.AttributeValue", StringComparison.Ordinal))
+            else if (
+                type.FullName.Equals("Amazon.Lambda.DynamoDBEvents.DynamoDBEvent+AttributeValue", StringComparison.Ordinal) ||
+                type.FullName.Equals("Amazon.DynamoDBv2.Model.AttributeValue", StringComparison.Ordinal)
+            )
             {
                 foreach (JsonProperty property in properties)
                 {

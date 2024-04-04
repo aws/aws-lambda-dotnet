@@ -314,7 +314,13 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.EventSourceARN, "arn:aws:kinesis:us-east-1:123456789012:stream/simple-stream");
                 Assert.Equal(record.EventSource, "aws:kinesis");
                 Assert.Equal(record.AwsRegion, "us-east-1");
+#if NET8_0_OR_GREATER
+                // Starting with .NET 7 the precision of the underlying AddSeconds method was changed.
+                // https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/7.0/datetime-add-precision
+                Assert.Equal(636162383234769999, record.Kinesis.ApproximateArrivalTimestamp.ToUniversalTime().Ticks);
+#else
                 Assert.Equal(636162383234770000, record.Kinesis.ApproximateArrivalTimestamp.ToUniversalTime().Ticks);
+#endif
 
                 Handle(kinesisEvent);
             }
@@ -361,7 +367,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -421,7 +427,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -443,7 +449,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -460,8 +466,17 @@ namespace Amazon.Lambda.Tests
             Assert.Equal(record.Dynamodb.Keys.Count, 2);
             Assert.Equal(record.Dynamodb.Keys["key"].S, "binary");
             Assert.Equal(record.Dynamodb.Keys["val"].S, "data");
+            Assert.Null(record.UserIdentity);
+            Assert.Null(record.Dynamodb.OldImage);
             Assert.Equal(record.Dynamodb.NewImage["val"].S, "data");
             Assert.Equal(record.Dynamodb.NewImage["key"].S, "binary");
+            Assert.Null(record.Dynamodb.NewImage["key"].BOOL);
+            Assert.Null(record.Dynamodb.NewImage["key"].L);
+            Assert.Null(record.Dynamodb.NewImage["key"].M);
+            Assert.Null(record.Dynamodb.NewImage["key"].N);
+            Assert.Null(record.Dynamodb.NewImage["key"].NS);
+            Assert.Null(record.Dynamodb.NewImage["key"].NULL);
+            Assert.Null(record.Dynamodb.NewImage["key"].SS);
             Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf1"].B), "AAEqQQ==");
             Assert.Equal(record.Dynamodb.NewImage["asdf2"].BS.Count, 2);
             Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[0]), "AAEqQQ==");
@@ -475,6 +490,105 @@ namespace Amazon.Lambda.Tests
             Assert.Equal(record.EventSource, "aws:dynamodb");
             var recordDateTime = record.Dynamodb.ApproximateCreationDateTime;
             Assert.Equal(recordDateTime.Ticks, 636162388200000000);
+
+            var topLevelList = record.Dynamodb.NewImage["misc1"].L;
+            Assert.Equal(0, topLevelList.Count);
+
+            var nestedMap = record.Dynamodb.NewImage["misc2"].M;
+            Assert.NotNull(nestedMap);
+            Assert.Equal(0, nestedMap["ItemsEmpty"].L.Count);
+            Assert.Equal(3, nestedMap["ItemsNonEmpty"].L.Count);
+            Assert.False(nestedMap["ItemBoolean"].BOOL);
+            Assert.True(nestedMap["ItemNull"].NULL);
+            Assert.Equal(3, nestedMap["ItemNumberSet"].NS.Count);
+            Assert.Equal(2, nestedMap["ItemStringSet"].SS.Count);
+
+            var secondRecord = dynamodbEvent.Records[1];
+            Assert.NotNull(secondRecord.UserIdentity);
+            Assert.Equal("dynamodb.amazonaws.com", secondRecord.UserIdentity.PrincipalId);
+            Assert.Equal("Service", secondRecord.UserIdentity.Type);
+            Assert.Null(secondRecord.Dynamodb.NewImage);
+            Assert.NotNull(secondRecord.Dynamodb.OldImage["asdf1"].B);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].S);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].L);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].M);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].N);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].NS);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].NULL);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].SS);
+
+            Handle(dynamodbEvent);
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void DynamoDbWithMillisecondsTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            Stream json = LoadJsonTestFile("dynamodb-with-ms-event.json");
+            var dynamodbEvent = serializer.Deserialize<DynamoDBEvent>(json);
+            Assert.Equal(dynamodbEvent.Records.Count, 2);
+
+            var record = dynamodbEvent.Records[0];
+            Assert.Equal(record.EventID, "f07f8ca4b0b26cb9c4e5e77e69f274ee");
+            Assert.Equal(record.EventVersion, "1.1");
+            Assert.Equal(record.Dynamodb.Keys.Count, 2);
+            Assert.Equal(record.Dynamodb.Keys["key"].S, "binary");
+            Assert.Equal(record.Dynamodb.Keys["val"].S, "data");
+            Assert.Null(record.UserIdentity);
+            Assert.Null(record.Dynamodb.OldImage);
+            Assert.Equal(record.Dynamodb.NewImage["val"].S, "data");
+            Assert.Equal(record.Dynamodb.NewImage["key"].S, "binary");
+            Assert.Null(record.Dynamodb.NewImage["key"].BOOL);
+            Assert.Null(record.Dynamodb.NewImage["key"].L);
+            Assert.Null(record.Dynamodb.NewImage["key"].M);
+            Assert.Null(record.Dynamodb.NewImage["key"].N);
+            Assert.Null(record.Dynamodb.NewImage["key"].NS);
+            Assert.Null(record.Dynamodb.NewImage["key"].NULL);
+            Assert.Null(record.Dynamodb.NewImage["key"].SS);
+            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf1"].B), "AAEqQQ==");
+            Assert.Equal(record.Dynamodb.NewImage["asdf2"].BS.Count, 2);
+            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[0]), "AAEqQQ==");
+            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[1]), "QSoBAA==");
+            Assert.Equal(record.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
+            Assert.Equal(record.Dynamodb.SequenceNumber, "1405400000000002063282832");
+            Assert.Equal(record.Dynamodb.SizeBytes, 54);
+            Assert.Equal(record.AwsRegion, "us-east-1");
+            Assert.Equal(record.EventName, "INSERT");
+            Assert.Equal(record.EventSourceArn, "arn:aws:dynamodb:us-east-1:123456789012:table/Example-Table/stream/2016-12-01T00:00:00.000");
+            Assert.Equal(record.EventSource, "aws:dynamodb");
+            var recordDateTime = record.Dynamodb.ApproximateCreationDateTime;
+            Assert.Equal(recordDateTime.Ticks, 636162388200000000);
+
+            var topLevelList = record.Dynamodb.NewImage["misc1"].L;
+            Assert.Equal(0, topLevelList.Count);
+
+            var nestedMap = record.Dynamodb.NewImage["misc2"].M;
+            Assert.NotNull(nestedMap);
+            Assert.Equal(0, nestedMap["ItemsEmpty"].L.Count);
+            Assert.Equal(3, nestedMap["ItemsNonEmpty"].L.Count);
+            Assert.False(nestedMap["ItemBoolean"].BOOL);
+            Assert.True(nestedMap["ItemNull"].NULL);
+            Assert.Equal(3, nestedMap["ItemNumberSet"].NS.Count);
+            Assert.Equal(2, nestedMap["ItemStringSet"].SS.Count);
+
+            var secondRecord = dynamodbEvent.Records[1];
+            Assert.NotNull(secondRecord.UserIdentity);
+            Assert.Equal("dynamodb.amazonaws.com", secondRecord.UserIdentity.PrincipalId);
+            Assert.Equal("Service", secondRecord.UserIdentity.Type);
+            Assert.Null(secondRecord.Dynamodb.NewImage);
+            Assert.NotNull(secondRecord.Dynamodb.OldImage["asdf1"].B);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].S);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].L);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].M);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].N);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].NS);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].NULL);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].SS);
 
             Handle(dynamodbEvent);
         }
@@ -558,7 +672,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record1.Dynamodb.NewImage.Count, 2);
                 Assert.Equal(record1.Dynamodb.NewImage["Message"].S, "New item!");
                 Assert.Equal(record1.Dynamodb.NewImage["Id"].N, "101");
-                Assert.Equal(record1.Dynamodb.OldImage.Count, 0);
+                Assert.Null(record1.Dynamodb.OldImage);
 
                 var record2 = dynamoDBTimeWindowEvent.Records[1];
                 Assert.Equal(record2.EventID, "2");
@@ -591,7 +705,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record3.Dynamodb.SequenceNumber, "333");
                 Assert.Equal(record3.Dynamodb.SizeBytes, 38);
                 Assert.Equal(record3.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
-                Assert.Equal(record3.Dynamodb.NewImage.Count, 0);
+                Assert.Null(record3.Dynamodb.NewImage);
                 Assert.Equal(record3.Dynamodb.OldImage.Count, 2);
                 Assert.Equal(record3.Dynamodb.OldImage["Message"].S, "This item has changed");
                 Assert.Equal(record3.Dynamodb.OldImage["Id"].N, "101");
@@ -600,7 +714,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -622,7 +736,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP_3_1        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -661,7 +775,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -703,7 +817,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -735,7 +849,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -769,7 +883,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -809,7 +923,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -860,7 +974,48 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoDefineAuthChallengeEventWithNullValuesTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-defineauthchallenge-event-with-null-values.json"))
+            {
+                var cognitoDefineAuthChallengeEvent = serializer.Deserialize<CognitoDefineAuthChallengeEvent>(fileStream);
+
+                AssertBaseClass(cognitoDefineAuthChallengeEvent);
+
+                Assert.Equal(2, cognitoDefineAuthChallengeEvent.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoDefineAuthChallengeEvent.Request.ClientMetadata.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoDefineAuthChallengeEvent.Request.Session.Count);
+
+                var session0 = cognitoDefineAuthChallengeEvent.Request.Session[0];
+                Assert.Equal("challenge1", session0.ChallengeName);
+                Assert.True(session0.ChallengeResult);
+                Assert.Null(session0.ChallengeMetadata);
+
+                var session1 = cognitoDefineAuthChallengeEvent.Request.Session[1];
+                Assert.Equal("challenge2", session1.ChallengeName);
+                Assert.False(session1.ChallengeResult);
+                Assert.Null(session1.ChallengeMetadata);
+
+                Assert.True(cognitoDefineAuthChallengeEvent.Request.UserNotFound);
+
+                Assert.Null(cognitoDefineAuthChallengeEvent.Response.ChallengeName);
+                Assert.Null(cognitoDefineAuthChallengeEvent.Response.IssueTokens);
+                Assert.Null(cognitoDefineAuthChallengeEvent.Response.FailAuthentication);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -923,7 +1078,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -966,9 +1121,41 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoVerifyAuthChallengeEventWithNullValuesTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-verifyauthchallenge-event-with-null-values.json"))
+            {
+                var cognitoVerifyAuthChallengeEvent = serializer.Deserialize<CognitoVerifyAuthChallengeEvent>(fileStream);
+
+                AssertBaseClass(cognitoVerifyAuthChallengeEvent);
+
+                Assert.Equal("answer_value", cognitoVerifyAuthChallengeEvent.Request.ChallengeAnswer);
+
+                Assert.Null(cognitoVerifyAuthChallengeEvent.Request.ClientMetadata);
+
+                Assert.Equal(2, cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.Count);
+                Assert.Equal("private_1", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[0].Key);
+                Assert.Equal("private_value_1", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[0].Value);
+                Assert.Equal("private_2", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[1].Key);
+                Assert.Equal("private_value_2", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[1].Value);
+
+                Assert.True(cognitoVerifyAuthChallengeEvent.Request.UserNotFound);
+
+                Assert.Null(cognitoVerifyAuthChallengeEvent.Response.AnswerCorrect);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1030,7 +1217,93 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void CognitoPreTokenGenerationV2EventTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("cognito-pretokengenerationv2-event.json"))
+            {
+                var cognitoPreTokenGenerationV2Event = serializer.Deserialize<CognitoPreTokenGenerationV2Event>(fileStream);
+
+                AssertBaseClass(cognitoPreTokenGenerationV2Event, eventVersion: "2");
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.GroupsToOverride.Count);
+                Assert.Equal("group1", cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.GroupsToOverride[0]);
+                Assert.Equal("group2", cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.GroupsToOverride[1]);
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.IamRolesToOverride.Count);
+                Assert.Equal("role1", cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.IamRolesToOverride[0]);
+                Assert.Equal("role2", cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.IamRolesToOverride[1]);
+
+                Assert.Equal("role", cognitoPreTokenGenerationV2Event.Request.GroupConfiguration.PreferredRole);
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.ClientMetadata.Count);
+                Assert.Equal("metadata_1", cognitoPreTokenGenerationV2Event.Request.ClientMetadata.ToArray()[0].Key);
+                Assert.Equal("metadata_value_1", cognitoPreTokenGenerationV2Event.Request.ClientMetadata.ToArray()[0].Value);
+                Assert.Equal("metadata_2", cognitoPreTokenGenerationV2Event.Request.ClientMetadata.ToArray()[1].Key);
+                Assert.Equal("metadata_value_2", cognitoPreTokenGenerationV2Event.Request.ClientMetadata.ToArray()[1].Value);
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.UserAttributes.Count);
+                Assert.Equal("attribute_1", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[0].Key);
+                Assert.Equal("attribute_value_1", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[0].Value);
+                Assert.Equal("attribute_2", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[1].Key);
+                Assert.Equal("attribute_value_2", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[1].Value);
+                
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.Scopes.Count);
+                Assert.Equal("scope_1", cognitoPreTokenGenerationV2Event.Request.Scopes.ToArray()[0]);
+                Assert.Equal("scope_2", cognitoPreTokenGenerationV2Event.Request.Scopes.ToArray()[1]);
+                
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.Count);
+                Assert.Equal("claim_1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[0].Key);
+                Assert.Equal("claim_1_value_1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[0].Value);
+                Assert.Equal("claim_2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[1].Key);
+                Assert.Equal("claim_1_value_2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[1].Value);
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress.Count);
+                Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress[0]);
+                Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress[1]);
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.Count);
+                Assert.Equal("claim_1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[0].Key);
+                Assert.Equal("claim_1_value_1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[0].Value);
+                Assert.Equal("claim_2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[1].Key);
+                Assert.Equal("claim_1_value_2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[1].Value);
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress.Count);
+                Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress[0]);
+                Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress[1]);
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToAdd.Count);
+                Assert.Equal("add1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToAdd[0]);
+                Assert.Equal("add2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToAdd[1]);
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress.Count);
+                Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress[0]);
+                Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress[1]);
+                
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride.Count);
+                Assert.Equal("group1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride[0]);
+                Assert.Equal("group2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride[1]);
+
+                Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.IamRolesToOverride.Count);
+                Assert.Equal("role1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.IamRolesToOverride[0]);
+                Assert.Equal("role2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.IamRolesToOverride[1]);
+
+                Assert.Equal("role", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.PreferredRole);
+
+                MemoryStream ms = new MemoryStream();
+                serializer.Serialize<CognitoPreTokenGenerationV2Event>(cognitoPreTokenGenerationV2Event, ms);
+                ms.Position = 0;
+                var json = new StreamReader(ms).ReadToEnd();
+
+                var original = JObject.Parse(File.ReadAllText("cognito-pretokengenerationv2-event.json"));
+                var serialized = JObject.Parse(json);
+                Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
+            }
+        }
+        
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1087,7 +1360,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1126,7 +1399,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1155,7 +1428,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1182,11 +1455,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-        private static void AssertBaseClass<TRequest, TResponse>(CognitoTriggerEvent<TRequest, TResponse> cognitoTriggerEvent)
+        private static void AssertBaseClass<TRequest, TResponse>(CognitoTriggerEvent<TRequest, TResponse> cognitoTriggerEvent, string eventVersion = "1")
             where TRequest : CognitoTriggerRequest, new()
             where TResponse : CognitoTriggerResponse, new()
         {
-            Assert.Equal("1", cognitoTriggerEvent.Version);
+            Assert.Equal(eventVersion, cognitoTriggerEvent.Version);
             Assert.Equal("us-east-1", cognitoTriggerEvent.Region);
             Assert.Equal("us-east-1_id", cognitoTriggerEvent.UserPoolId);
             Assert.Equal("username_uuid", cognitoTriggerEvent.UserName);
@@ -1209,7 +1482,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1243,7 +1516,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1283,7 +1556,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1351,7 +1624,7 @@ namespace Amazon.Lambda.Tests
         }
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1374,7 +1647,7 @@ namespace Amazon.Lambda.Tests
         }
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1409,7 +1682,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1457,7 +1730,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1527,7 +1800,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1564,7 +1837,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1648,7 +1921,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1683,7 +1956,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1808,7 +2081,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1840,7 +2113,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1881,7 +2154,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1924,7 +2197,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -1971,7 +2244,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2038,7 +2311,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2287,9 +2560,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2313,7 +2588,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2346,7 +2621,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2366,7 +2641,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2392,9 +2667,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2416,7 +2693,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2446,9 +2723,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2474,9 +2753,11 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        // Test is temporary disabled due to a bug in .NET 8 RC2
+        // https://github.com/dotnet/runtime/issues/93903
+#if !NET8_0
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2501,7 +2782,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2531,7 +2812,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2725,7 +3006,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2757,7 +3038,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2808,7 +3089,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2908,7 +3189,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -2973,7 +3254,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -3016,7 +3297,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif

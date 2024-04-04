@@ -9,7 +9,7 @@ public class Function
     /// <summary>
     /// The main entry point for the custom runtime.
     /// </summary>
-    /// <param name="args"></param>
+    /// <param name="args">Command line arguments.</param>
     private static async Task Main(string[] args)
     {
         Func<string, ILambdaContext, string> handler = FunctionHandler;
@@ -25,8 +25,8 @@ public class Function
     /// https://github.com/aws/aws-lambda-dotnet#events
     /// and change the string input parameter to the desired event type.
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="context"></param>
+    /// <param name="input">The input to the Lambda function handler.</param>
+    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
     public static string FunctionHandler(string input, ILambdaContext context)
     {

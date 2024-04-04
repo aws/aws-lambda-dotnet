@@ -35,6 +35,7 @@ that the Lambda function will be run in. Below is the list of published versions
 | .NET 5.0 (Deprecated) | Amazon.Lambda.TestTool-5.0 | dotnet-lambda-test-tool-5.0.exe |
 | .NET 6.0 | Amazon.Lambda.TestTool-6.0 | dotnet-lambda-test-tool-6.0.exe |
 | .NET 7.0 | Amazon.Lambda.TestTool-7.0 | dotnet-lambda-test-tool-7.0.exe |
+| .NET 8.0 | Amazon.Lambda.TestTool-8.0 | dotnet-lambda-test-tool-8.0.exe |
 
 ## AWS Credentials
 

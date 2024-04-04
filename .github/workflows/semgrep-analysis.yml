@@ -1,30 +1,41 @@
-# This workflow file requires a free account on Semgrep.dev to
-# manage rules, file ignores, notifications, and more.
-#
-# See https://semgrep.dev/docs
-
 name: Semgrep
 
 on:
-  push:
-    branches:
-      - feature/annotations
+  # Scan changed files in PRs, block on new issues only (existing issues ignored)
   pull_request:
+
+  push:
+    branches: ["dev", "main"]
+
   schedule:
     - cron: '23 20 * * 1'
+
+  # Manually trigger the workflow
+  workflow_dispatch:
 
 jobs:
   semgrep:
     name: Scan
+    permissions:
+      security-events: write
     runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
     # Skip any PR created by dependabot to avoid permission issues
     if: (github.actor != 'dependabot[bot]')
     steps:
       # Fetch project source
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - uses: returntocorp/semgrep-action@v1
-        with:
-          config: >- # more at semgrep.dev/explore
+      - run: semgrep ci --sarif > semgrep.sarif
+        env:
+          SEMGREP_RULES: >- # more at semgrep.dev/explore
             p/security-audit
             p/secrets
+            p/owasp-top-ten
+
+      - name: Upload SARIF file for GitHub Advanced Security Dashboard
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: semgrep.sarif
+        if: always()

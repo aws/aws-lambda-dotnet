@@ -75,6 +75,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             ["image/x-icon"] = ResponseContentEncoding.Base64,
             ["application/zip"] = ResponseContentEncoding.Base64,
             ["application/pdf"] = ResponseContentEncoding.Base64,
+            ["application/x-protobuf"] = ResponseContentEncoding.Base64,
         };
 
         // Defines a mapping from registered content encodings to the response encoding format
@@ -205,60 +206,6 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="builder"></param>
         protected virtual void Init(IWebHostBuilder builder) { }
 
-        /// <summary>
-        /// Creates the IWebHostBuilder similar to WebHost.CreateDefaultBuilder but replacing the registration of the Kestrel web server with a 
-        /// registration for Lambda.
-        /// </summary>
-        /// <returns></returns>
-        [Obsolete("Functions should migrate to CreateHostBuilder and use IHostBuilder to setup their ASP.NET Core application. In a future major version update of this library support for IWebHostBuilder will be removed for non .NET Core 2.1 Lambda functions.")]
-        protected virtual IWebHostBuilder CreateWebHostBuilder()
-        {
-            var builder = new WebHostBuilder()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .ConfigureAppConfiguration((hostingContext, config) =>
-                {
-                    var env = hostingContext.HostingEnvironment;
-
-                    config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                          .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
-
-                    if (env.IsDevelopment())
-                    {
-                        var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
-                        if (appAssembly != null)
-                        {
-                            config.AddUserSecrets(appAssembly, optional: true);
-                        }
-                    }
-
-                    config.AddEnvironmentVariables();
-                })
-                .ConfigureLogging((hostingContext, logging) =>
-                {
-                    logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-
-                    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LAMBDA_TASK_ROOT")))
-                    {
-                        logging.AddConsole();
-                        logging.AddDebug();
-                    }
-                    else
-                    {
-                        logging.AddLambdaLogger(hostingContext.Configuration, "Logging");
-                    }
-                })
-                .UseDefaultServiceProvider((hostingContext, options) =>
-                {
-                    options.ValidateScopes = hostingContext.HostingEnvironment.IsDevelopment();
-                });
-
-            Init(builder);
-
-            // Swap out Kestrel as the webserver and use our implementation of IServer
-            builder.UseLambdaServer();
-
-            return builder;
-        }
 
         /// <summary>
         /// Method to initialize the host builder before starting the host. In a typical Web API this is similar to the main function. 
@@ -316,34 +263,17 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         protected void Start()
         {
-            // For .NET Core 3.1 and above use the IHostBuilder instead of IWebHostBuilder used in .NET Core 2.1. If the user overrode CreateWebHostBuilder
-            // then fallback to the original .NET Core 2.1 behavior.
-            if (this.GetType().GetMethod("CreateWebHostBuilder", BindingFlags.NonPublic | BindingFlags.Instance).DeclaringType.FullName.StartsWith("Amazon.Lambda.AspNetCoreServer.AbstractAspNetCoreFunction"))
+            var builder = CreateHostBuilder();
+            builder.ConfigureServices(services =>
             {
-                var builder = CreateHostBuilder();
-                builder.ConfigureServices(services =>
-                {
-                    Utilities.EnsureLambdaServerRegistered(services);
-                });                
+                Utilities.EnsureLambdaServerRegistered(services);
+            });
 
-                var host = builder.Build();
-                PostCreateHost(host);
+            var host = builder.Build();
+            PostCreateHost(host);
 
-                host.Start();
-                this._hostServices = host.Services;
-            }
-            else
-            {
-#pragma warning disable 618
-                var builder = CreateWebHostBuilder();
-#pragma warning restore 618
-
-                var host = builder.Build();
-                PostCreateWebHost(host);
-
-                host.Start();
-                this._hostServices = host.Services;
-            }
+            host.Start();
+            this._hostServices = host.Services;
 
             _server = this._hostServices.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
             if (_server == null)

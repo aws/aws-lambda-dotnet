@@ -12,7 +12,7 @@ namespace Amazon.Lambda.CloudWatchEvents.S3Events
         /// The time when the temporary copy of the object will be deleted from S3.
         /// </summary>
         [DataMember(Name = "restore-expiry-time")]
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("restore-expiry-time")]
 #endif
         public string RestoreExpiryTime { get; set; }
@@ -21,7 +21,7 @@ namespace Amazon.Lambda.CloudWatchEvents.S3Events
         /// The storage class of the object being restored.
         /// </summary>
         [DataMember(Name = "source-storage-class")]
-#if NETCOREAPP_3_1
+#if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("source-storage-class")]
 #endif
         public string SourceStorageClass { get; set; }

@@ -14,7 +14,7 @@ namespace Packager
     public class UpdatePackageReferenceVersions
     {
         const string MicrosoftAspNetCoreAppVersion = "2.1.4";
-        const string AWSSDK_VERSION_MANIFEST = "https://raw.githubusercontent.com/aws/aws-sdk-net/master/generator/ServiceModels/_sdk-versions.json";
+        const string AWSSDK_VERSION_MANIFEST = "https://raw.githubusercontent.com/aws/aws-sdk-net/main/generator/ServiceModels/_sdk-versions.json";
 
         string BlueprintRoot { get; }
 

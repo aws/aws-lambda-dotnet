@@ -9,7 +9,7 @@
   "region": "DefaultRegion",
   "configuration": "Release",
   "package-type": "image",
-  "function-memory-size": 256,
+  "function-memory-size": 512,
   "function-timeout": 30,
   "image-command": "BlueprintBaseName.1::BlueprintBaseName._1.Function::FunctionHandler",
   "docker-host-build-output-dir": "./bin/Release/lambda-publish"
