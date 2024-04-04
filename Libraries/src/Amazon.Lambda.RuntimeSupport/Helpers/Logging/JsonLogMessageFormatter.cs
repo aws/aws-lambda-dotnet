@@ -19,14 +19,14 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         private static readonly UTF8Encoding UTF8NoBomNoThrow = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
         // Options used when serializing any message property values as a JSON to be added to the structured log message.
-        private JsonSerializerOptions _jsonSerialiazationOptions;
+        private JsonSerializerOptions _jsonSerializationOptions;
 
         /// <summary>
         /// Constructs an instance of JsonLogMessageFormatter.
         /// </summary>
         public JsonLogMessageFormatter()
         {
-            _jsonSerialiazationOptions = new JsonSerializerOptions
+            _jsonSerializationOptions = new JsonSerializerOptions
             {
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
                 WriteIndented = false
@@ -165,7 +165,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
                     writer.WriteStartObject();
                     foreach (DictionaryEntry entry in ((IDictionary)messageArgument))
                     {
-                        writer.WritePropertyName(entry.Key.ToString());
+                        writer.WritePropertyName(entry.Key.ToString() ?? string.Empty);
 
                         FormatJsonValue(writer, entry.Value, messageProperties[i].FormatArgument, messageProperties[i].FormatDirective);
                     }
@@ -215,7 +215,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
             }
             else if (directive == MessageProperty.Directive.JsonSerialization)
             {
-                writer.WriteRawValue(JsonSerializer.Serialize(value, _jsonSerialiazationOptions));
+                writer.WriteRawValue(JsonSerializer.Serialize(value, _jsonSerializationOptions));
             }
             else if (!string.IsNullOrEmpty(formatArguments))
             {

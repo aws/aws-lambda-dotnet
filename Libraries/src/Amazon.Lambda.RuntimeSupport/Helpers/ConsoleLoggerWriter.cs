@@ -70,6 +70,9 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
     {
         TextWriter _writer;
 
+        /// <summary>
+        /// Default Constructor
+        /// </summary>
         public SimpleLoggerWriter()
         {
             // Look to see if Lambda's telemetry log file descriptor is available. If so use that for logging.
@@ -95,20 +98,24 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             }
         }
 
+        /// <inheritdoc/>
         public void SetCurrentAwsRequestId(string awsRequestId)
         {
         }
 
+        /// <inheritdoc/>
         public void FormattedWriteLine(string message)
         {
             _writer.WriteLine(message);
         }
 
+        /// <inheritdoc/>
         public void FormattedWriteLine(string level, string message, params object[] args)
         {
             _writer.WriteLine(message);
         }
 
+        /// <inheritdoc/>
         public void FormattedWriteLine(string level, Exception exception, string message, params object[] args)
         {
             _writer.WriteLine(message);
@@ -210,6 +217,11 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             ConfigureLoggingActionField();
         }
 
+        /// <summary>
+        /// Construct an instance wrapping std out and std error.
+        /// </summary>
+        /// <param name="stdOutWriter"></param>
+        /// <param name="stdErrorWriter"></param>
         public LogLevelLoggerWriter(TextWriter stdOutWriter, TextWriter stdErrorWriter)
         {
             Initialize(stdOutWriter, stdErrorWriter);
@@ -240,22 +252,26 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             loggingActionField.SetValue(null, callback);
         }
 
+        /// <inheritdoc/>
         public void SetCurrentAwsRequestId(string awsRequestId)
         {
             _wrappedStdOutWriter.CurrentAwsRequestId = awsRequestId;
             _wrappedStdErrorWriter.CurrentAwsRequestId = awsRequestId;
         }
 
+        /// <inheritdoc/>
         public void FormattedWriteLine(string message)
         {
             _wrappedStdOutWriter.FormattedWriteLine(message);
         }
 
+        /// <inheritdoc/>
         public void FormattedWriteLine(string level, string message, params object[] args)
         {
             _wrappedStdOutWriter.FormattedWriteLine(level, (Exception)null, message, args);
         }
 
+        /// <inheritdoc/>
         public void FormattedWriteLine(string level, Exception exception, string message, params object[] args)
         {
             _wrappedStdOutWriter.FormattedWriteLine(level, exception, message, args);
@@ -296,6 +312,11 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             /// </summary>
             internal object LockObject { get; set; } = new object();
 
+            /// <summary>
+            /// Create an instance
+            /// </summary>
+            /// <param name="innerWriter"></param>
+            /// <param name="defaultLogLevel"></param>
             public WrapperTextWriter(TextWriter innerWriter, string defaultLogLevel)
             {
                 _innerWriter = innerWriter;

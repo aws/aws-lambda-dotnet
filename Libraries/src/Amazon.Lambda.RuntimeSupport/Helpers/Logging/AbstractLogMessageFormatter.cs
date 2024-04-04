@@ -130,7 +130,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         /// <returns>The log message with logging arguments replaced with the values.</returns>
         public string ApplyMessageProperties(string messageTemplate, IReadOnlyList<MessageProperty> messageProperties, object[] messageArguments)
         {
-            if(messageProperties.Count == 0)
+            if(messageProperties.Count == 0 || messageArguments == null || messageArguments.Length == 0)
             {
                 return messageTemplate;
             }
@@ -158,7 +158,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
 
                 // If not using positional properties and we have hit the point there are more message properties then arguments
                 // then just add the rest of the message template onto the messageBuilder.
-                if (!usePositional && (messageProperties.Count <= propertyIndex || messageArguments?.Length <= propertyIndex))
+                if (!usePositional && (messageProperties.Count <= propertyIndex || messageArguments.Length <= propertyIndex))
                 {
                     messageBuilder.Append(c);
                     continue;

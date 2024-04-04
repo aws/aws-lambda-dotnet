@@ -65,7 +65,7 @@ namespace Amazon.Lambda.Core
 #if NET6_0_OR_GREATER
 
         /// <summary>
-        /// Log message catagorized by the given log level
+        /// Log message categorized by the given log level
         /// <para>
         /// To configure the minimum log level set the AWS_LAMBDA_HANDLER_LOG_LEVEL environment variable. The value should be set
         /// to one of the values in the LogLevel enumeration. The default minimum log level is "Information".
@@ -76,7 +76,7 @@ namespace Amazon.Lambda.Core
         void Log(string level, string message) => LogLine(message);
 
         /// <summary>
-        /// Log message catagorized by the given log level
+        /// Log message categorized by the given log level
         /// <para>
         /// To configure the minimum log level set the AWS_LAMBDA_HANDLER_LOG_LEVEL environment variable. The value should be set
         /// to one of the values in the LogLevel enumeration. The default minimum log level is "Information".
@@ -154,7 +154,7 @@ namespace Amazon.Lambda.Core
             "project file to \"true\"";
 
         /// <summary>
-        /// Log message catagorized by the given log level
+        /// Log message categorized by the given log level
         /// <para>
         /// To configure the minimum log level set the AWS_LAMBDA_HANDLER_LOG_LEVEL environment variable. The value should be set
         /// to one of the values in the LogLevel enumeration. The default minimum log level is "Information".
@@ -167,7 +167,7 @@ namespace Amazon.Lambda.Core
         void Log(string level, string message, params object[] args) => Log(level, message, args);
 
         /// <summary>
-        /// Log message catagorized by the given log level
+        /// Log message categorized by the given log level
         /// <para>
         /// To configure the minimum log level set the AWS_LAMBDA_HANDLER_LOG_LEVEL environment variable. The value should be set
         /// to one of the values in the LogLevel enumeration. The default minimum log level is "Information".
@@ -185,7 +185,7 @@ namespace Amazon.Lambda.Core
         }
 
         /// <summary>
-        /// Log message catagorized by the given log level
+        /// Log message categorized by the given log level
         /// <para>
         /// To configure the minimum log level set the AWS_LAMBDA_HANDLER_LOG_LEVEL environment variable. The value should be set
         /// to one of the values in the LogLevel enumeration. The default minimum log level is "Information".
@@ -198,7 +198,7 @@ namespace Amazon.Lambda.Core
         void Log(LogLevel level, string message, params object[] args) => Log(level.ToString(), message, args);
 
         /// <summary>
-        /// Log message catagorized by the given log level
+        /// Log message categorized by the given log level
         /// <para>
         /// To configure the minimum log level set the AWS_LAMBDA_HANDLER_LOG_LEVEL environment variable. The value should be set
         /// to one of the values in the LogLevel enumeration. The default minimum log level is "Information".

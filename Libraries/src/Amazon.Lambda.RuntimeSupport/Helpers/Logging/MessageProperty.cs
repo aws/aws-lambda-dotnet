@@ -150,8 +150,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
 
             try
             {
-                var formatedValue = string.Format("{0:" + formatArgument + "}", value);
-                return formatedValue;
+                var formattedValue = string.Format("{0:" + formatArgument + "}", value);
+                return formattedValue;
             }
             catch(FormatException ex)
             {
