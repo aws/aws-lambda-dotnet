@@ -526,6 +526,79 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
+        public void DynamoDbWithMillisecondsTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            Stream json = LoadJsonTestFile("dynamodb-with-ms-event.json");
+            var dynamodbEvent = serializer.Deserialize<DynamoDBEvent>(json);
+            Assert.Equal(dynamodbEvent.Records.Count, 2);
+
+            var record = dynamodbEvent.Records[0];
+            Assert.Equal(record.EventID, "f07f8ca4b0b26cb9c4e5e77e69f274ee");
+            Assert.Equal(record.EventVersion, "1.1");
+            Assert.Equal(record.Dynamodb.Keys.Count, 2);
+            Assert.Equal(record.Dynamodb.Keys["key"].S, "binary");
+            Assert.Equal(record.Dynamodb.Keys["val"].S, "data");
+            Assert.Null(record.UserIdentity);
+            Assert.Null(record.Dynamodb.OldImage);
+            Assert.Equal(record.Dynamodb.NewImage["val"].S, "data");
+            Assert.Equal(record.Dynamodb.NewImage["key"].S, "binary");
+            Assert.Null(record.Dynamodb.NewImage["key"].BOOL);
+            Assert.Null(record.Dynamodb.NewImage["key"].L);
+            Assert.Null(record.Dynamodb.NewImage["key"].M);
+            Assert.Null(record.Dynamodb.NewImage["key"].N);
+            Assert.Null(record.Dynamodb.NewImage["key"].NS);
+            Assert.Null(record.Dynamodb.NewImage["key"].NULL);
+            Assert.Null(record.Dynamodb.NewImage["key"].SS);
+            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf1"].B), "AAEqQQ==");
+            Assert.Equal(record.Dynamodb.NewImage["asdf2"].BS.Count, 2);
+            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[0]), "AAEqQQ==");
+            Assert.Equal(MemoryStreamToBase64String(record.Dynamodb.NewImage["asdf2"].BS[1]), "QSoBAA==");
+            Assert.Equal(record.Dynamodb.StreamViewType, "NEW_AND_OLD_IMAGES");
+            Assert.Equal(record.Dynamodb.SequenceNumber, "1405400000000002063282832");
+            Assert.Equal(record.Dynamodb.SizeBytes, 54);
+            Assert.Equal(record.AwsRegion, "us-east-1");
+            Assert.Equal(record.EventName, "INSERT");
+            Assert.Equal(record.EventSourceArn, "arn:aws:dynamodb:us-east-1:123456789012:table/Example-Table/stream/2016-12-01T00:00:00.000");
+            Assert.Equal(record.EventSource, "aws:dynamodb");
+            var recordDateTime = record.Dynamodb.ApproximateCreationDateTime;
+            Assert.Equal(recordDateTime.Ticks, 636162388200000000);
+
+            var topLevelList = record.Dynamodb.NewImage["misc1"].L;
+            Assert.Equal(0, topLevelList.Count);
+
+            var nestedMap = record.Dynamodb.NewImage["misc2"].M;
+            Assert.NotNull(nestedMap);
+            Assert.Equal(0, nestedMap["ItemsEmpty"].L.Count);
+            Assert.Equal(3, nestedMap["ItemsNonEmpty"].L.Count);
+            Assert.False(nestedMap["ItemBoolean"].BOOL);
+            Assert.True(nestedMap["ItemNull"].NULL);
+            Assert.Equal(3, nestedMap["ItemNumberSet"].NS.Count);
+            Assert.Equal(2, nestedMap["ItemStringSet"].SS.Count);
+
+            var secondRecord = dynamodbEvent.Records[1];
+            Assert.NotNull(secondRecord.UserIdentity);
+            Assert.Equal("dynamodb.amazonaws.com", secondRecord.UserIdentity.PrincipalId);
+            Assert.Equal("Service", secondRecord.UserIdentity.Type);
+            Assert.Null(secondRecord.Dynamodb.NewImage);
+            Assert.NotNull(secondRecord.Dynamodb.OldImage["asdf1"].B);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].S);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].L);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].M);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].N);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].NS);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].NULL);
+            Assert.Null(secondRecord.Dynamodb.OldImage["asdf1"].SS);
+
+            Handle(dynamodbEvent);
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
         public void DynamoDbBatchItemFailuresTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
