@@ -25,6 +25,40 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         [Theory]
         [InlineData(CloudFormationTemplateFormat.Json)]
         [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void ApplyLambdaFunctionDefaultProperties(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "TestMethod", 0, 0, null, null);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable>() { lambdaFunctionModel });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            const string functionPath = "Resources.TestMethod";
+            const string propertiesPath = "Resources.TestMethod.Properties";
+
+            Assert.Equal("AWS::Serverless::Function", templateWriter.GetToken<string>($"{functionPath}.Type"));
+            Assert.Equal("Amazon.Lambda.Annotations", templateWriter.GetToken<string>($"{functionPath}.Metadata.Tool"));
+
+            Assert.Equal("MyAssembly::MyNamespace.MyType::Handler", templateWriter.GetToken<string>($"{propertiesPath}.Handler"));
+            Assert.Equal(512, templateWriter.GetToken<int>($"{propertiesPath}.MemorySize"));
+            Assert.Equal(30, templateWriter.GetToken<int>($"{propertiesPath}.Timeout"));
+            Assert.Equal(new List<string> { "AWSLambdaBasicExecutionRole" }, templateWriter.GetToken<List<string>>($"{propertiesPath}.Policies"));
+            Assert.Equal("Zip", templateWriter.GetToken<string>($"{propertiesPath}.PackageType"));
+            Assert.Equal(".", templateWriter.GetToken<string>($"{propertiesPath}.CodeUri"));
+            Assert.False(templateWriter.Exists("ImageUri"));
+            Assert.False(templateWriter.Exists("ImageConfig"));
+        }
+
+            [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
         public void AddSingletonFunctionToEmptyTemplate(CloudFormationTemplateFormat templateFormat)
         {
             // ARRANGE

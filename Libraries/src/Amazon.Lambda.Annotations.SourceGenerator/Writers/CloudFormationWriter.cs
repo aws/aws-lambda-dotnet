@@ -264,7 +264,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             _templateWriter.SetToken($"{propertiesPath}.Runtime", runtime);
             _templateWriter.SetToken($"{propertiesPath}.CodeUri", "");
-            _templateWriter.SetToken($"{propertiesPath}.MemorySize", 256);
+            _templateWriter.SetToken($"{propertiesPath}.MemorySize", 512);
             _templateWriter.SetToken($"{propertiesPath}.Timeout", 30);
             _templateWriter.SetToken($"{propertiesPath}.Policies", new List<string>{"AWSLambdaBasicExecutionRole"}, TokenType.List);
         }
