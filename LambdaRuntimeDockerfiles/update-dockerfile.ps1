@@ -26,7 +26,8 @@ function Update-Dockerfile ([string]$DockerfilePath, [string]$NextVersion) {
 
     # This allows checksumring the $DockerfilePath variable between steps
     # which is needed to update the description of the PR
-    Write-Host "::set-output name=${DockerfilePath}::- Updated ${DockerfilePath} to ${NextVersion}<br> - Artifact: ${artifact}<br> - Checksum Source: ${checksumUri}"
+    $message = "- Updated ${DockerfilePath} to ${NextVersion}<br> - Artifact: ${artifact}<br> - Checksum Source: ${checksumUri}"
+    Add-Content -Path $env:GITHUB_OUTPUT -Value "MESSAGE=$message"
 }
 
 # Returns Checksum of given ASP.NET Core version from the give Checksum file
