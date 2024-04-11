@@ -1,3 +1,7 @@
+### Release 2024-04-11
+* **Amazon.Lambda.Templates (7.1.1)**
+  * Update templates to use Amazon.Lambda.Annotations v1.3.0
+
 ### Release 2024-04-05
 * **Amazon.Lambda.Annotations (1.3.0)**
   * Update default memory size from 256 MB to 512 MB.
