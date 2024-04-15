@@ -68,7 +68,7 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("amazon-lambda-annotations_<#= _model.SourceGeneratorVersion #>");
+            envValue.Append("lib/amazon-lambda-annotations#<#= _model.SourceGeneratorVersion #>");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }
