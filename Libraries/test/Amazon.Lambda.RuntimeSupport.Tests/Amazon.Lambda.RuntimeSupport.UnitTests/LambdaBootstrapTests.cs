@@ -197,23 +197,21 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public void VerifyUserAgentStringSet()
         {
             var client = LambdaBootstrap.ConstructHttpClient();
-            var values = client.DefaultRequestHeaders.GetValues("User-Agent");
-            Assert.Single(values);
+            var values = client.DefaultRequestHeaders.GetValues("User-Agent").ToList();
 
-            var userAgent = values.First();
-            Assert.StartsWith("aws-lambda-dotnet", userAgent);
+            // The .NET HTTP client splits the User-Agent header value into list entries based on the whitespace character.
+            // This is the expected behavior - https://stackoverflow.com/questions/43215527/c-sharp-httpclient-adding-user-agent-header-shows-up-as-several-different-head
+            // However, its value will be sent as a single string during the outgoing HTTP request.
+            // UA string - $"lib/amazon-lambda-runtime-support#{assemblyVersion} md/dotnet-runtime-version#{dotnetRuntimeVersion}"
+            Assert.Equal(2, values.Count);
 
-            var topLevelTokens = userAgent.Split('/');
-            Assert.Equal(2, topLevelTokens.Length);
+            var assemblyVersion = Version.Parse(values[0].Split("#")[1]);
+            Assert.StartsWith("lib/amazon-lambda-runtime-support", values[0]);
+            Assert.True(Version.Parse("1.0.0") <= assemblyVersion);
 
-            var versions = topLevelTokens[1].Split('-');
-            Assert.Equal(2, versions.Length);
-
-            var dotnetVersion = Version.Parse(versions[0]);
+            var dotnetVersion = Version.Parse(values[1].Split("#")[1]);
+            Assert.StartsWith("md/dotnet-runtime-version", values[1]);
             Assert.True(Version.Parse("2.0.0") < dotnetVersion);
-
-            var runtimeLambdaSupportVersion = Version.Parse(versions[1]);
-            Assert.True(Version.Parse("1.0.0") <= runtimeLambdaSupportVersion);
         }
 
         [Fact]

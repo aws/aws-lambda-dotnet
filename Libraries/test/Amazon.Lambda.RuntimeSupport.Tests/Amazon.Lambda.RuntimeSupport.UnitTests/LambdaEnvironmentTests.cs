@@ -30,19 +30,17 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void SetsExecutionEnvironmentButNotTwice()
         {
-            var expectedValueRegex = new Regex($"{LambdaExecutionEnvironment}_amazonlambdaruntimesupport_[0-9]+\\.[0-9]+\\.[0-9]+");
+            var expectedValueRegex = new Regex($"{LambdaExecutionEnvironment}_lib/amazon-lambda-runtime-support#[0-9]+\\.[0-9]+\\.[0-9]+");
             _environmentVariables.SetEnvironmentVariable(LambdaEnvironment.EnvVarExecutionEnvironment, LambdaExecutionEnvironment);
 
             var lambdaEnvironment = new LambdaEnvironment(_environmentVariables);
-            Assert.True(expectedValueRegex.IsMatch(lambdaEnvironment.ExecutionEnvironment));
-            Assert.True(expectedValueRegex.IsMatch(_environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarExecutionEnvironment)));
+            Assert.Matches(expectedValueRegex, lambdaEnvironment.ExecutionEnvironment);
+            Assert.Matches(expectedValueRegex, _environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarExecutionEnvironment));
 
             // Make sure that creating another LambdaEnvironment instance won't change the value.
             lambdaEnvironment = new LambdaEnvironment(_environmentVariables);
-            Assert.True(expectedValueRegex.IsMatch(lambdaEnvironment.ExecutionEnvironment));
-            Assert.True(expectedValueRegex.IsMatch(_environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarExecutionEnvironment)));
-
+            Assert.Matches(expectedValueRegex, lambdaEnvironment.ExecutionEnvironment);
+            Assert.Matches(expectedValueRegex, _environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarExecutionEnvironment));
         }
-
     }
 }

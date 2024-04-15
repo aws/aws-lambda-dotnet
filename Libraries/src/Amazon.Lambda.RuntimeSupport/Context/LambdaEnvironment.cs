@@ -35,7 +35,7 @@ namespace Amazon.Lambda.RuntimeSupport
         internal const string EnvVarFunctionSize = "AWS_LAMBDA_FUNCTION_MEMORY_SIZE";
 
         internal const string AwsLambdaDotnetCustomRuntime = "AWS_Lambda_dotnet_custom";
-        internal const string AmazonLambdaRuntimeSupportMarker = "amazonlambdaruntimesupport";
+        internal const string AmazonLambdaRuntimeSupportMarker = "lib/amazon-lambda-runtime-support";
 
         private IEnvironmentVariables _environmentVariables;
 
@@ -70,7 +70,7 @@ namespace Amazon.Lambda.RuntimeSupport
                     as AssemblyInformationalVersionAttribute;
 
                 _environmentVariables.SetEnvironmentVariable(EnvVarExecutionEnvironment,
-                    $"{envValue}_{AmazonLambdaRuntimeSupportMarker}_{assemblyVersion?.InformationalVersion}");
+                    $"{envValue}_{AmazonLambdaRuntimeSupportMarker}#{assemblyVersion?.InformationalVersion}");
             }
         }
 

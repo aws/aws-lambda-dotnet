@@ -222,12 +222,6 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns></returns>
         public static HttpClient ConstructHttpClient()
         {
-            var dotnetRuntimeVersion = new DirectoryInfo(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory()).Name;
-            if (dotnetRuntimeVersion == "/")
-            {
-                dotnetRuntimeVersion = "unknown";
-            }
-            var amazonLambdaRuntimeSupport = typeof(LambdaBootstrap).Assembly.GetName().Version;
 
 #if NET6_0_OR_GREATER
             // Create the SocketsHttpHandler directly to avoid spending cold start time creating the wrapper HttpClientHandler
@@ -237,17 +231,32 @@ namespace Amazon.Lambda.RuntimeSupport
                 RequestHeaderEncodingSelector = delegate { return System.Text.Encoding.UTF8; }
             };
 
-            // If we are running in an AOT environment, mark it as such.
-            var userAgentString = NativeAotHelper.IsRunningNativeAot() ? $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}-aot"
-                : $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}";
-
             var client = new HttpClient(handler);
 #else
-            var userAgentString = $"aws-lambda-dotnet/{dotnetRuntimeVersion}-{amazonLambdaRuntimeSupport}";
             var client = new HttpClient();
 #endif
-            client.DefaultRequestHeaders.Add("User-Agent", userAgentString);
+            client.DefaultRequestHeaders.Add("User-Agent", GetUserAgentString());
             return client;
+        }
+
+        private static string GetUserAgentString()
+        {
+            var dotnetRuntimeVersion = new DirectoryInfo(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory()).Name;
+            if (dotnetRuntimeVersion == "/")
+            {
+                dotnetRuntimeVersion = "unknown";
+            }
+            var assemblyVersion = typeof(LambdaBootstrap).Assembly.GetName().Version.ToString();
+            var userAgentString = $"lib/amazon-lambda-runtime-support#{assemblyVersion} md/dotnet-runtime-version#{dotnetRuntimeVersion}";
+
+#if NET6_0_OR_GREATER
+            // If we are running in an AOT environment, mark it as such.
+            if (NativeAotHelper.IsRunningNativeAot())
+            {
+                userAgentString = $"{userAgentString} ft/aot"; 
+            }
+#endif
+            return userAgentString;
         }
 
         private void WriteUnhandledExceptionToLog(Exception exception)
