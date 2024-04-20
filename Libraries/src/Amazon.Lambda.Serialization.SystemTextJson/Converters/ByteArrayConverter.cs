@@ -18,6 +18,11 @@ namespace Amazon.Lambda.Serialization.SystemTextJson.Converters
                 return null;
             }
 
+            if (reader.TokenType == JsonTokenType.String)
+            {
+                return reader.GetBytesFromBase64();
+            }
+
             var byteList = new List<byte>();
 
             while (reader.Read())
