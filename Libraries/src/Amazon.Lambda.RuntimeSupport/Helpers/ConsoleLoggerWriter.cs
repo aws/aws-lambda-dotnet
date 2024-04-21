@@ -288,12 +288,6 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             private readonly TextWriter _innerWriter;
             private string _defaultLogLevel;
 
-            const string NET_RIC_LOG_LEVEL_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_LEVEL";
-            const string NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_FORMAT";
-
-            const string LAMBDA_LOG_LEVEL_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_LOG_LEVEL";
-            const string LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_LOG_FORMAT";
-
             private LogLevel _minmumLogLevel = LogLevel.Information;
 
             enum LogFormatType { Default, Unformatted, Json }
@@ -322,7 +316,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 _innerWriter = innerWriter;
                 _defaultLogLevel = defaultLogLevel;
 
-                var envLogLevel = GetEnviromentVariable(NET_RIC_LOG_LEVEL_ENVIRONMENT_VARIABLE, LAMBDA_LOG_LEVEL_ENVIRONMENT_VARIABLE);
+                var envLogLevel = GetEnvironmentVariable(Constants.NET_RIC_LOG_LEVEL_ENVIRONMENT_VARIABLE, Constants.LAMBDA_LOG_LEVEL_ENVIRONMENT_VARIABLE);
                 if (!string.IsNullOrEmpty(envLogLevel))
                 {
                     // Map Lambda's fatal logging level to the .NET RIC critical
@@ -340,7 +334,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     }
                 }
 
-                var envLogFormat = GetEnviromentVariable(NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE, LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE);
+                var envLogFormat = GetEnvironmentVariable(Constants.NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE, Constants.LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE);
                 if (!string.IsNullOrEmpty(envLogFormat))
                 {
                     if (Enum.TryParse<LogFormatType>(envLogFormat, true, out var result))
@@ -359,7 +353,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 }
             }
 
-            private string GetEnviromentVariable(string envName, string fallbackEnvName)
+            private string GetEnvironmentVariable(string envName, string fallbackEnvName)
             {
                 var value = Environment.GetEnvironmentVariable(envName);
                 if(string.IsNullOrEmpty(value) && fallbackEnvName != null)
