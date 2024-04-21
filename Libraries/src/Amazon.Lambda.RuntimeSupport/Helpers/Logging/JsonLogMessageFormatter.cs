@@ -191,11 +191,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
                 writer.WriteString("errorMessage", state.Exception.Message);
                 writer.WritePropertyName("stackTrace");
                 writer.WriteStartArray();
-
-                // TODO: Right now for stack trace we are just using a single array element doing a ToString to get the
-                // inner excepions. Working with the Lambda team to figure out how they want to handle inner exceptions with 
-                // stackTrace array.
-                writer.WriteStringValue(state.Exception.ToString());
+                foreach(var line in state.Exception.ToString().Split('\n'))
+                {
+                    writer.WriteStringValue(line.Trim());
+                }
                 writer.WriteEndArray();
             }
         }
