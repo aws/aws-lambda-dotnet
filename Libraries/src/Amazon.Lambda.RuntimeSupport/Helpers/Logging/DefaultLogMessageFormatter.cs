@@ -60,12 +60,6 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
                                     5 // Padding for tabs
                                     );
 
-            if (!AddPrefix)
-            {
-                return message;
-            }
-
-
             if (AddPrefix)
             {
                 sb.Append(FormatTimestamp(state));
