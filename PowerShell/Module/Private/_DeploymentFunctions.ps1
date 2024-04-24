@@ -199,10 +199,14 @@ function _deployProject
         if ($module) {
             $moduleVersion = $module.Version.ToString()
         }
-        # The leading whitespace is intentional
-        $userAgent = " lib/AWSLambdaPSCore#$moduleVersion"
+        
+        $userAgent = "AWSLambdaPSCore lib/AWSLambdaPSCore#$moduleVersion"
+        if ($env:AWS_EXECUTION_ENV) {
+            $env:AWS_EXECUTION_ENV += " $userAgent"
+        } else {
+            $env:AWS_EXECUTION_ENV = $userAgent
+        }
 
-        $env:AWS_EXECUTION_ENV=$userAgent
         try
         {
             if ($DisableInteractive)
