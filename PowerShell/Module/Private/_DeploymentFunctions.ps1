@@ -200,11 +200,11 @@ function _deployProject
             $moduleVersion = $module.Version.ToString()
         }
         
-        $userAgent = "AWSLambdaPSCore lib/AWSLambdaPSCore#$moduleVersion"
+        $userAgent = "lib/AWSLambdaPSCore#$moduleVersion"
         if ($env:AWS_EXECUTION_ENV) {
             $env:AWS_EXECUTION_ENV += " $userAgent"
-        } else {
-            $env:AWS_EXECUTION_ENV = $userAgent
+        } else { 
+            $env:AWS_EXECUTION_ENV = "AWSLambdaPSCore $userAgent"
         }
 
         try
