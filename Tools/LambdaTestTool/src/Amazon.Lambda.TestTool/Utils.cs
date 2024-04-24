@@ -25,7 +25,7 @@ namespace Amazon.Lambda.TestTool
                 var assembly = Assembly.GetEntryAssembly();
                 if (assembly == null)
                     return null;
-                attribute = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+                attribute = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
             }
             catch (Exception)
             {
@@ -35,7 +35,7 @@ namespace Amazon.Lambda.TestTool
             var version = attribute?.InformationalVersion;
 
             // Check to see if the version has a git commit id suffix and if so remove it.
-            if (version == null && version.IndexOf('+') != -1)
+            if (version != null && version.IndexOf('+') != -1)
             {
                 version = version.Substring(0, version.IndexOf('+'));
             }
