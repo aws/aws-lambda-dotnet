@@ -9,7 +9,7 @@
         <AssemblyName>Amazon.Lambda.Serialization.SystemTextJson</AssemblyName>
         <PackageId>Amazon.Lambda.Serialization.SystemTextJson</PackageId>
         <PackageTags>AWS;Amazon;Lambda</PackageTags>
-        <VersionPrefix>2.4.2</VersionPrefix>
+        <VersionPrefix>2.4.3</VersionPrefix>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 	<ItemGroup>
