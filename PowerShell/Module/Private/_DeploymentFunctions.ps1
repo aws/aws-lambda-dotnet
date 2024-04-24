@@ -194,7 +194,15 @@ function _deployProject
 
         $amazonLambdaToolsPath = _configureAmazonLambdaTools
 
-        $env:AWS_EXECUTION_ENV="AWSLambdaPSCore"
+        $moduleVersion = "Unknown"
+        $module = $MyInvocation.MyCommand.Module
+        if ($module) {
+            $moduleVersion = $module.Version.ToString()
+        }
+        # The leading whitespace is intentional
+        $userAgent = " lib/AWSLambdaPSCore#$moduleVersion"
+
+        $env:AWS_EXECUTION_ENV=$userAgent
         try
         {
             if ($DisableInteractive)
