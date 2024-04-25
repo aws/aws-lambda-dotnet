@@ -194,7 +194,19 @@ function _deployProject
 
         $amazonLambdaToolsPath = _configureAmazonLambdaTools
 
-        $env:AWS_EXECUTION_ENV="AWSLambdaPSCore"
+        $moduleVersion = "Unknown"
+        $module = $MyInvocation.MyCommand.Module
+        if ($module) {
+            $moduleVersion = $module.Version.ToString()
+        }
+        
+        $userAgent = "lib/AWSLambdaPSCore#$moduleVersion"
+        if ($env:AWS_EXECUTION_ENV) {
+            $env:AWS_EXECUTION_ENV += " $userAgent"
+        } else { 
+            $env:AWS_EXECUTION_ENV = "AWSLambdaPSCore $userAgent"
+        }
+
         try
         {
             if ($DisableInteractive)

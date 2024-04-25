@@ -1,3 +1,16 @@
+### Release 2024-04-11
+* **Amazon.Lambda.Templates (7.1.1)**
+  * Update templates to use Amazon.Lambda.Annotations v1.3.0
+
+### Release 2024-04-05
+* **Amazon.Lambda.Annotations (1.3.0)**
+  * Update default memory size from 256 MB to 512 MB.
+  * Use JSON serializer extracted from the DI container to serialize error responses.
+* **Amazon.Lambda.Serialization.Json (2.2.1)**
+  * Correctly handle Lambda events with dates set as Unix epoch in milliseconds.
+* **Amazon.Lambda.Serialization.SystemTextJson (2.4.2)**
+  * Correctly handle Lambda events with dates set as Unix epoch in milliseconds.
+
 ### Release 2024-03-27
 * **Amazon.Lambda.Templates (7.1.0)**
   * Add new template using the AWS Message Processing Framework for .NET

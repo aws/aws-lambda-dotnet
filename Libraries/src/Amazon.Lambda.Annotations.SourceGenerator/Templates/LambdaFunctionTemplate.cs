@@ -24,7 +24,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+    #line 1 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
     public partial class LambdaFunctionTemplate : LambdaFunctionTemplateBase
     {
@@ -35,7 +35,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
         public virtual string TransformText()
         {
             
-            #line 12 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 12 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
     foreach (var ns in _model.GeneratedMethod.Usings)
     {
@@ -45,14 +45,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("using ");
             
-            #line 16 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 16 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ns));
             
             #line default
             #line hidden
             this.Write(";\r\n");
             
-            #line 17 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 17 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
     }
 
@@ -61,21 +61,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("\r\nnamespace ");
             
-            #line 21 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 21 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingNamespace));
             
             #line default
             #line hidden
             this.Write("\r\n{\r\n    public class ");
             
-            #line 23 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 23 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ContainingType.Name));
             
             #line default
             #line hidden
             this.Write("\r\n    {\r\n");
             
-            #line 25 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 25 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
 this.Write(new FieldsAndConstructor(_model).TransformText());
 
@@ -84,34 +84,34 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
             #line hidden
             this.Write("\r\n\r\n        public ");
             
-            #line 30 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 30 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ReturnsVoidOrGenericTask ? "async " : ""));
             
             #line default
             #line hidden
             
-            #line 30 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 30 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ReturnType.FullName));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 30 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 30 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.Name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 30 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 30 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.Parameters.Any() ? string.Join(", ", _model.GeneratedMethod.Parameters.Select(p => $"{p.Type.FullName} {p.Name}")) : "Stream stream"));
             
             #line default
             #line hidden
             this.Write(")\r\n        {\r\n");
             
-            #line 32 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 32 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
     if (_model.LambdaMethod.UsingDependencyInjection)
     {
@@ -123,28 +123,28 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
                     "ting scoped dependencies without creating a scope manually.\r\n            using v" +
                     "ar scope = serviceProvider.CreateScope();\r\n            var ");
             
-            #line 39 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 39 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
             this.Write(" = scope.ServiceProvider.GetRequiredService<");
             
-            #line 40 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 40 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
             
             #line default
             #line hidden
             this.Write(">();\r\n            var serializer = scope.ServiceProvider.GetRequiredService<");
             
-            #line 41 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 41 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.SerializerInfo.SerializerName));
             
             #line default
             #line hidden
             this.Write(">();\r\n\r\n");
             
-            #line 43 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 43 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
 
     }
 
@@ -176,9 +176,9 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
                 envValue.Append($""{Environment.GetEnvironmentVariable(envName)}_"");
             }
 
-            envValue.Append(""amazon-lambda-annotations_");
+            envValue.Append(""lib/amazon-lambda-annotations#");
             
-            #line 71 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 71 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.SourceGeneratorVersion));
             
             #line default

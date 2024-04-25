@@ -42,7 +42,7 @@ public class Functions
     /// </summary>
     /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
-    [LambdaFunction(MemorySize = 512)]
+    [LambdaFunction]
     [RestApi(LambdaHttpMethod.Get, "/")]
     public IHttpResult GetFunctionHandler(ILambdaContext context)
     {
@@ -58,7 +58,7 @@ public class Functions
     /// <param name="product">The new product to post to the system.</param>
     /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
-    [LambdaFunction(MemorySize = 512)]
+    [LambdaFunction]
     [RestApi(LambdaHttpMethod.Post, "/")]
     public IHttpResult PostFunctionHandler([FromBody] NewProductDTO product, ILambdaContext context)
     {
@@ -77,7 +77,7 @@ public class Functions
     /// using the AWS SDKs.
     /// </summary>
     /// <returns></returns>
-    [LambdaFunction(MemorySize = 512)]
+    [LambdaFunction]
     public async Task<string> GetCallingIPAsync(ILambdaContext context)
     {
         context.Logger.LogInformation("Checking IP address");

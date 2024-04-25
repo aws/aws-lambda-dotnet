@@ -34,7 +34,7 @@ public class Functions
     /// </remarks>
     /// <param name="context">Information about the invocation, function, and execution environment</param>
     /// <returns>The response as an implicit <see cref="APIGatewayProxyResponse"/></returns>
-    [LambdaFunction(Policies = "AWSLambdaBasicExecutionRole", MemorySize = 512, Timeout = 30)]
+    [LambdaFunction]
     [RestApi(LambdaHttpMethod.Get, "/")]
     public IHttpResult Get(ILambdaContext context)
     {

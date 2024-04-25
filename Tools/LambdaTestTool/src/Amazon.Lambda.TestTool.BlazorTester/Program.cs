@@ -15,7 +15,11 @@ namespace Amazon.Lambda.TestTool.BlazorTester
     {
         public static void Main(string[] args)
         {
-            Environment.SetEnvironmentVariable("AWS_EXECUTION_ENV", "AWS_DOTNET_LAMDBA_TEST_TOOL_BLAZOR_" + Utils.DetermineToolVersion());
+            var version = Utils.DetermineToolVersion();
+            // The leading and trailing whitespaces are intentional
+            var userAgent = $" lib/AWS_DOTNET_LAMDBA_TEST_TOOL_BLAZOR#{version} ";
+
+            Environment.SetEnvironmentVariable("AWS_EXECUTION_ENV", userAgent);
             TestToolStartup.Startup(Constants.PRODUCT_NAME, (options, showUI) => Startup.LaunchWebTester(options, showUI), args);
         }
     }
