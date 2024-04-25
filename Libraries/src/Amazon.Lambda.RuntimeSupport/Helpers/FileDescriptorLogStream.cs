@@ -19,6 +19,7 @@ using System.Buffers;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Concurrent;
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
 
 namespace Amazon.Lambda.RuntimeSupport.Helpers
 {
@@ -33,7 +34,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         // max cloudwatch log event size, 256k - 26 bytes of overhead.
         internal const int MaxCloudWatchLogEventSize = 256 * 1024 - 26;
         internal const int LambdaTelemetryLogHeaderLength = 16;
-        internal const uint LambdaTelemetryLogHeaderFrameType = 0xa55a0003;
+        internal const uint LambdaTelemetryLogHeaderFrameTypeText = 0xa55a0003;
+        internal const uint LambdaTelemetryLogHeaderFrameTypeJson = 0xa55a0002;
         internal static readonly DateTimeOffset UnixEpoch = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         /// <summary>
@@ -84,12 +86,19 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         {
             private readonly Stream _fileDescriptorStream;
             private readonly byte[] _frameTypeBytes;
+            private readonly uint _frameType;
 
             public FileDescriptorLogStream(Stream logStream)
             {
+                var logFormat = Environment.GetEnvironmentVariable(Constants.LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE);
+                _frameType = string.Equals(logFormat, Constants.LAMBDA_LOG_FORMAT_JSON, StringComparison.InvariantCultureIgnoreCase) 
+                                ? LambdaTelemetryLogHeaderFrameTypeJson : LambdaTelemetryLogHeaderFrameTypeText;
+
+                InternalLogger.GetDefaultLogger().LogDebug("FileDescriptorLogStream FrameType: " + _frameType);
+
                 _fileDescriptorStream = logStream;
 
-                _frameTypeBytes = BitConverter.GetBytes(LambdaTelemetryLogHeaderFrameType);
+                _frameTypeBytes = BitConverter.GetBytes(_frameType);
                 if (BitConverter.IsLittleEndian)
                 {
                     Array.Reverse(_frameTypeBytes);

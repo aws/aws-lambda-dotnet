@@ -1,5 +1,7 @@
 ﻿#if NET6_0_OR_GREATER
 
+using System.Text;
+
 namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
 {
     /// <summary>
@@ -48,21 +50,47 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
                 message = ApplyMessageProperties(state.MessageTemplate, messageProperties, state.MessageArguments);
             }
 
-            if (!AddPrefix)
-            {
-                return message;
-            }
-
             var displayLevel = state.Level != null ? ConvertLogLevelToLabel(state.Level.Value) : null;
 
-            if (!string.IsNullOrEmpty(displayLevel))
+            var sb = new StringBuilder(
+                                    25 + // Length for timestamp
+                                    (state.AwsRequestId?.Length).GetValueOrDefault() +
+                                    displayLevel.Length +
+                                    (message?.Length).GetValueOrDefault() +
+                                    5 // Padding for tabs
+                                    );
+
+            if (AddPrefix)
             {
-                return $"{FormatTimestamp(state)}\t{state.AwsRequestId}\t{displayLevel}\t{message ?? string.Empty}";
+                sb.Append(FormatTimestamp(state));
+                sb.Append('\t');
+                sb.Append(state.AwsRequestId);
+
+                if (!string.IsNullOrEmpty(displayLevel))
+                {
+                    sb.Append('\t');
+                    sb.Append(displayLevel);
+                }
+
+                sb.Append('\t');
             }
-            else
+
+
+            if (!string.IsNullOrEmpty(message))
             {
-                return $"{FormatTimestamp(state)}\t{state.AwsRequestId}\t{message ?? string.Empty}";
+                sb.Append(message);
             }
+
+            if (state.Exception != null)
+            {
+                if (!string.IsNullOrEmpty(message))
+                {
+                    sb.Append('\n');
+                }
+                sb.Append(state.Exception.ToString());
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>

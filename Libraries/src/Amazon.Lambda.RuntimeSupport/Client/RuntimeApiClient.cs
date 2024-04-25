@@ -39,6 +39,9 @@ namespace Amazon.Lambda.RuntimeSupport
         internal Func<Exception, ExceptionInfo> ExceptionConverter { get;  set; }
         internal LambdaEnvironment LambdaEnvironment { get; set; }
 
+        /// <inheritdoc/>
+        public IConsoleLoggerWriter ConsoleLogger => _consoleLoggerRedirector;
+
         /// <summary>
         /// Create a new RuntimeApiClient
         /// </summary>

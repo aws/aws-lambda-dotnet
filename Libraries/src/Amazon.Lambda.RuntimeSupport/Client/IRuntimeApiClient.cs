@@ -13,6 +13,7 @@
  * permissions and limitations under the License.
  */
 
+using Amazon.Lambda.RuntimeSupport.Helpers;
 using System;
 using System.IO;
 using System.Threading;
@@ -25,6 +26,11 @@ namespace Amazon.Lambda.RuntimeSupport
     /// </summary>
     public interface IRuntimeApiClient
     {
+        /// <summary>
+        /// Logger used for formatting log messages into the user's CloudWatch Log stream.
+        /// </summary>
+        IConsoleLoggerWriter ConsoleLogger { get; }
+
         /// <summary>
         /// Report an initialization error as an asynchronous operation.
         /// </summary>

@@ -3,6 +3,7 @@ using Amazon.Lambda.RuntimeSupport.Helpers.Logging;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Text.Json;
 using Xunit;
@@ -470,10 +471,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 Assert.Equal("This Will Fail", doc.RootElement.GetProperty("errorMessage").GetString());
                 Assert.Equal("System.ApplicationException", doc.RootElement.GetProperty("errorType").GetString());
                 Assert.Equal(JsonValueKind.Array, doc.RootElement.GetProperty("stackTrace").ValueKind);
-                Assert.Equal(ex.ToString(), doc.RootElement.GetProperty("stackTrace")[0].GetString());
 
-                // Confirm inner exceptions are being captured
-                Assert.Contains("System.NullReferenceException", doc.RootElement.GetProperty("stackTrace")[0].GetString());
+                var stackLines = ex.ToString().Split('\n').Select(x => x.Trim()).ToList();
+                var jsonExArray = doc.RootElement.GetProperty("stackTrace");
+                Assert.Equal(stackLines.Count, jsonExArray.GetArrayLength());
+                for(var i =  0; i < stackLines.Count; i++)
+                {
+                    Assert.Equal(stackLines[i], jsonExArray[i].GetString());
+                }
             }
         }
 

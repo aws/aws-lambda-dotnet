@@ -12,6 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+using Amazon.Lambda.RuntimeSupport.Helpers;
 using Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
     {
         private IEnvironmentVariables _environmentVariables;
         private Dictionary<string, IEnumerable<string>> _headers;
+
+        public IConsoleLoggerWriter ConsoleLogger { get; } = new LogLevelLoggerWriter();
 
         public TestRuntimeApiClient(IEnvironmentVariables environmentVariables, Dictionary<string, IEnumerable<string>> headers)
         {

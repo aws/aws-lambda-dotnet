@@ -18,6 +18,7 @@ using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 
@@ -252,9 +253,11 @@ namespace Amazon.Lambda.RuntimeSupport
 
         private void WriteUnhandledExceptionToLog(Exception exception)
         {
-            // Console.Error.WriteLine are redirected to the IConsoleLoggerWriter which
-            // will take care of writing to the function's log stream.
+#if NET6_0_OR_GREATER
+            Client.ConsoleLogger.FormattedWriteLine(LogLevel.Error.ToString(), exception, null);
+#else
             Console.Error.WriteLine(exception);
+#endif
         }
 
 #if NET8_0_OR_GREATER
