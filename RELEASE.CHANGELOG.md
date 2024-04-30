@@ -1,3 +1,13 @@
+### Release 2024-04-25
+* **Amazon.Lambda.Annotations (1.3.1)**
+  * Update User-Agent string
+* **Amazon.Lambda.TestTool (0.15.2)**
+  * Update User-Agent string
+* **AWSLambdaPSCore PowerShell Module (4.0.1.0)**
+  * Update User-Agent string
+* **Amazon.Lambda.Serialization.SystemTextJson (2.4.3)**
+  * Pull Request [#1736](https://github.com/aws/aws-lambda-dotnet/pull/1736) Update ByteArrayConverter to support base64 deserialization of byte[]. Thanks [brendonparker](https://github.com/brendonparker)
+
 ### Release 2024-04-11
 * **Amazon.Lambda.Templates (7.1.1)**
   * Update templates to use Amazon.Lambda.Annotations v1.3.0
