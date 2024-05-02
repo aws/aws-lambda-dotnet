@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      dotnet: 8.x
+    commands:
+      # The tests need .NET 3.1, 6 and 8. .NET6 is installed by default. .NET8 is added in the runtime-versions. .NET 3.1 is installed manually.
+      - curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 3.1
+      # Mono is needed to run the unit tests on Linux
+      - curl https://download.mono-project.com/repo/centos8-stable.repo | tee /etc/yum.repos.d/mono-stable.repo
+      - dnf install -y mono-complete mono-devel
+  build:
+    commands:
+      - dotnet msbuild buildtools/build.proj /t:unit-tests /p:Cicd=true 
+      - dotnet msbuild buildtools/build.proj /t:integ-tests /p:Cicd=true
