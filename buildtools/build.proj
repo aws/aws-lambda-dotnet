@@ -38,9 +38,11 @@
         <Exec Command="dotnet restore BlueprintPackager.sln" WorkingDirectory="..\Blueprints\BlueprintPackager"/>
     </Target>
     <Target Name="package-blueprints" DependsOnTargets="init;run-blueprint-packager">
-        <Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2022"/>
-		
-		<Exec Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2019"/>
+        <Exec Condition=" '$(OS)' != 'Windows_NT' " Command="mono $(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2022"/>
+		<Exec Condition=" '$(OS)' != 'Windows_NT' " Command="mono $(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2019"/>
+
+        <Exec Condition=" '$(OS)' == 'Windows_NT' " Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2022"/>
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2019"/>
     </Target>
     <Target Name="run-blueprint-packager">
         <Exec Command="dotnet run -c $(Configuration) $(BlueprintPackagerArguments)" WorkingDirectory="..\Blueprints\BlueprintPackager"/>
