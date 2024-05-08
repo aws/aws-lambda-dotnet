@@ -744,41 +744,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     },
                     StatusCode = 400
                 };
+
+                var errorStream = new System.IO.MemoryStream();
+                serializer.Serialize(errorResult, errorStream);
+                errorStream.Position = 0;
+                return errorStream;
+            }
 ");
             
-            #line 297 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
-
-                if(_model.LambdaMethod.ReturnsIHttpResults)
-                {
-
-            
-            #line default
-            #line hidden
-            this.Write("                var errorStream = new System.IO.MemoryStream();\r\n                " +
-                    "serializer.Serialize(errorResult, errorStream);\r\n                errorStream.Pos" +
-                    "ition = 0;\r\n                return errorStream;\r\n");
-            
-            #line 305 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
-
-                }
-                else
-                {
-
-            
-            #line default
-            #line hidden
-            this.Write("                return errorResult;\r\n");
-            
-            #line 311 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
-
-                }
-
-            
-            #line default
-            #line hidden
-            this.Write("            }\r\n\r\n");
-            
-            #line 316 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 303 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
         }
 

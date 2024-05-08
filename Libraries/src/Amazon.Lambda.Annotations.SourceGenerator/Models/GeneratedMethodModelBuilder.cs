@@ -53,6 +53,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             {
                 namespaces.Add("Amazon.Lambda.Annotations.APIGateway");
             }
+            if (lambdaMethodModel.Events.Contains(EventType.API))
+            {
+                namespaces.Add("System.Text.Json");
+            }
 
             return namespaces;
         }
@@ -60,54 +64,33 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         private static TypeModel BuildResponseType(IMethodSymbol lambdaMethodSymbol,
             LambdaMethodModel lambdaMethodModel, GeneratorExecutionContext context)
         {
-            var task = context.Compilation.GetTypeByMetadataName(TypeFullNames.Task1);
-
-            if (lambdaMethodModel.ReturnsIHttpResults)
+            if (lambdaMethodModel.Events.Contains(EventType.API))
             {
-                var typeStream = context.Compilation.GetTypeByMetadataName(TypeFullNames.Stream);
-                if (lambdaMethodModel.ReturnsGenericTask)
+                if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute))
                 {
-                    var genericTask = task.Construct(typeStream);
-                    return TypeModelBuilder.Build(genericTask, context);
-                }
-                return TypeModelBuilder.Build(typeStream, context);
-            }
-
-            
-            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute))
-            {
-                var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
-                    task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse)):
-                    context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse);
-                return TypeModelBuilder.Build(symbol, context);
-            }
-            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute))
-            {
-                var version = GetHttpApiVersion(lambdaMethodSymbol, context);
-                switch (version)
-                {
-                    case HttpApiVersion.V1:
+                    var version = GetHttpApiVersion(lambdaMethodSymbol, context);
+                    if (version != HttpApiVersion.V1 && version != HttpApiVersion.V2)
                     {
-                        var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
-                            task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse)):
-                            context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayProxyResponse);
-                        return TypeModelBuilder.Build(symbol, context);
-                    }
-                    case HttpApiVersion.V2:
-                    {
-                        var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
-                            task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse)):
-                            context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse);
-                        return TypeModelBuilder.Build(symbol, context);
-                    }
-                    default:
                         throw new ArgumentOutOfRangeException();
+                    };
                 }
+
+                return CreateStreamTypeModel(context, lambdaMethodModel);
             }
-            else
+
+            return lambdaMethodModel.ReturnType;
+        }
+
+        private static TypeModel CreateStreamTypeModel(GeneratorExecutionContext context, LambdaMethodModel lambdaMethodModel)
+        {
+            var task = context.Compilation.GetTypeByMetadataName(TypeFullNames.Task1);
+            var typeStream = context.Compilation.GetTypeByMetadataName(TypeFullNames.Stream);
+            if (lambdaMethodModel.ReturnsVoidOrGenericTask)
             {
-                return lambdaMethodModel.ReturnType;
+                var genericTask = task.Construct(typeStream);
+                return TypeModelBuilder.Build(genericTask, context);
             }
+            return TypeModelBuilder.Build(typeStream, context);
         }
 
         private static HttpApiVersion GetHttpApiVersion(IMethodSymbol lambdaMethodSymbol, GeneratorExecutionContext context)

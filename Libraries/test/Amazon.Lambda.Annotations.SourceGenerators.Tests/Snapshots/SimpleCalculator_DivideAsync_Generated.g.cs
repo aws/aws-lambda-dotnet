@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
+using System.Text.Json;
 
 namespace TestServerlessApp
 {
@@ -28,7 +29,7 @@ namespace TestServerlessApp
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public async System.Threading.Tasks.Task<Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse> DivideAsync(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
+        public async System.Threading.Tasks.Task<System.IO.Stream> DivideAsync(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
@@ -77,27 +78,34 @@ namespace TestServerlessApp
                     },
                     StatusCode = 400
                 };
-                return errorResult;
-            }
 
-            var response = await simpleCalculator.DivideAsync(first, second);
+                var errorStream = new System.IO.MemoryStream();
+                serializer.Serialize(errorResult, errorStream);
+                errorStream.Position = 0;
+                return errorStream;
+            }
+            var result = await simpleCalculator.DivideAsync(first, second);
             var memoryStream = new MemoryStream();
-            serializer.Serialize(response, memoryStream);
+            serializer.Serialize(result, memoryStream);
             memoryStream.Position = 0;
 
             // convert stream to string
-            StreamReader reader = new StreamReader( memoryStream );
+            StreamReader reader = new StreamReader(memoryStream);
             var body = reader.ReadToEnd();
-
-            return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
+            var response = new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
             {
                 Body = body,
+                StatusCode = 200,
                 Headers = new Dictionary<string, string>
                 {
                     {"Content-Type", "application/json"}
-                },
-                StatusCode = 200
+                }
             };
+
+            var responseStream = new MemoryStream();
+            JsonSerializer.Serialize(responseStream, response, typeof(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse));
+            responseStream.Position = 0;
+            return responseStream;
         }
 
         private static void SetExecutionEnvironment()
@@ -107,7 +115,7 @@ namespace TestServerlessApp
             var envValue = new StringBuilder();
 
             // If there is an existing execution environment variable add the annotations package as a suffix.
-            if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envName)))
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envName)))
             {
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }

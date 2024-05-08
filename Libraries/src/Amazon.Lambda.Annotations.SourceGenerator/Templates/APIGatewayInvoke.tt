@@ -10,6 +10,8 @@
 <#
         var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.RestApiAttribute>;
         var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.HttpApiAttribute>;
+        var useHttpV2Response = httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V2;
+        var apiGatewayResponseType = useHttpV2Response ? TypeFullNames.APIGatewayHttpApiV2ProxyResponse : TypeFullNames.APIGatewayProxyResponse;
 
         if (_model.LambdaMethod.ReturnsIHttpResults)
         {
@@ -20,79 +22,75 @@
             System.Text.Json.Serialization.JsonSerializerContext jsonContext = <#= _model.SerializerInfo.SerializerJsonContextName != null ? _model.SerializerInfo.SerializerJsonContextName + ".Default" : "null"#>;
             var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion, JsonContext = jsonContext };
             var response = httpResults.Serialize(serializationOptions);
-<#
+            return response;
+<#          return this.GenerationEnvironment.ToString();
         }
-        else if (_model.LambdaMethod.ReturnsVoid)
+
+        if (_model.LambdaMethod.ReturnsVoid || _model.LambdaMethod.ReturnsVoidTask)
         {
 #>
-            <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
-<#
+            <#= _model.LambdaMethod.ReturnsVoidTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+            var response = new <#= apiGatewayResponseType #>
+            {
+                StatusCode = 200
+            };
+
+            var responseStream = new MemoryStream();
+            JsonSerializer.Serialize(responseStream, response, typeof(<#= apiGatewayResponseType #>));
+            responseStream.Position = 0;
+            return responseStream;
+<#          return this.GenerationEnvironment.ToString();
         }
-        else if (_model.LambdaMethod.ReturnsVoidTask)
-        {
-#>
-            await <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
-<#
-        }
-        else
-        {
+
+        if (_model.LambdaMethod.ReturnsApiGatewayResponse)
+        { 
+            // If the customer's Lambda method returns an APIGateway response type 
+            // we just use the JsonSerializer to convert it to a stream and return it.
 #>
             var response = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
-<#
+            var responseStream = new MemoryStream();
+            JsonSerializer.Serialize(responseStream, response, typeof(<#= apiGatewayResponseType #>));
+            responseStream.Position = 0;
+            return responseStream;
+<#          return this.GenerationEnvironment.ToString();
         }
-
-        if (_model.GeneratedMethod.ReturnType.FullName == _model.LambdaMethod.ReturnType.FullName || _model.LambdaMethod.ReturnsIHttpResults)
+#>
+            var result = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
+<#
+        if (_model.LambdaMethod.ReturnType.IsValueType)
         {
 #>
-            return response;
+            var body = result.ToString();
 <#
+        }
+        else if (_model.LambdaMethod.ReturnType.IsString())
+        {
+            // no action
         }
         else
         {
-            if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsVoidTask)
-            {
-                if (_model.LambdaMethod.ReturnType.IsValueType)
-                {
-#>
-
-            var body = response.ToString();
-<#
-                }
-                else if (_model.LambdaMethod.ReturnType.IsString())
-                {
-                    // no action
-                }
-                else
-                {
 #>
             var memoryStream = new MemoryStream();
-            serializer.Serialize(response, memoryStream);
+            serializer.Serialize(result, memoryStream);
             memoryStream.Position = 0;
 
             // convert stream to string
             StreamReader reader = new StreamReader( memoryStream );
             var body = reader.ReadToEnd();
 <#
-                }
-            }
+        }
 #>
-
-            return new <#= _model.LambdaMethod.ReturnsVoidOrGenericTask ? _model.GeneratedMethod.ReturnType.TaskTypeArgument : _model.GeneratedMethod.ReturnType.FullName #>
+            var response = new <#= apiGatewayResponseType #>
             {
-<#
-            if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsVoidTask)
-            {
-#>
-                Body = <#= _model.LambdaMethod.ReturnType.IsString() ? "response" : "body" #>,
+                Body = <#= _model.LambdaMethod.ReturnType.IsString() ? "result" : "body" #>,
+                StatusCode = 200,
                 Headers = new Dictionary<string, string>
                 {
                     {"Content-Type", <#= _model.LambdaMethod.ReturnType.IsString() ? "\"text/plain\"" : "\"application/json\"" #>}
-                },
-<#
-            }
-#>
-                StatusCode = 200
+                }
             };
-<#
-        }
-#>
+
+            var responseStream = new MemoryStream();
+            JsonSerializer.Serialize(responseStream, response, typeof(<#= apiGatewayResponseType #>));
+            responseStream.Position = 0;
+            return responseStream;

@@ -294,25 +294,12 @@
                     },
                     StatusCode = 400
                 };
-<#
-                if(_model.LambdaMethod.ReturnsIHttpResults)
-                {
-#>
+
                 var errorStream = new System.IO.MemoryStream();
                 serializer.Serialize(errorResult, errorStream);
                 errorStream.Position = 0;
                 return errorStream;
-<#
-                }
-                else
-                {
-#>
-                return errorResult;
-<#
-                }
-#>
             }
-
 <#
         }
 #>

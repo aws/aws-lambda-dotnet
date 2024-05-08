@@ -54,11 +54,34 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 {
                     return true;
                 }
-                if(ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.IHttpResult) 
+
+                return ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.IHttpResult;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the Lambda function returns either of the following types 
+        /// 1. APIGatewayProxyResponse or Task<APIGatewayProxyResponse>
+        /// 2. APIGatewayHttpApiV2ProxyResponse or Task<APIGatewayHttpApiV2ProxyResponse>
+        /// </summary>
+        public bool ReturnsApiGatewayResponse
+        {
+            get
+            {
+                if(ReturnsVoid)
+                {
+                    return false;
+                }
+
+                if(ReturnType.FullName == TypeFullNames.APIGatewayProxyResponse || ReturnType.FullName == TypeFullNames.APIGatewayHttpApiV2ProxyResponse)
                 {
                     return true;
                 }
-
+                if(ReturnsGenericTask && ReturnType.TypeArguments.Count == 1)
+                {
+                    return ReturnType.TypeArguments[0].FullName == TypeFullNames.APIGatewayProxyResponse 
+                        || ReturnType.TypeArguments[0].FullName == TypeFullNames.APIGatewayHttpApiV2ProxyResponse;
+                }
 
                 return false;
             }
