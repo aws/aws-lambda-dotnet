@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Amazon.Lambda.Core;
+using System.Text.Json;
 
 namespace TestServerlessApp
 {
@@ -28,7 +29,7 @@ namespace TestServerlessApp
             serviceProvider = services.BuildServiceProvider();
         }
 
-        public Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse SayHello(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
+        public System.IO.Stream SayHello(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
@@ -70,15 +71,22 @@ namespace TestServerlessApp
                     },
                     StatusCode = 400
                 };
-                return errorResult;
+
+                var errorStream = new MemoryStream();
+                JsonSerializer.Serialize(errorStream, errorResult, typeof(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse));
+                errorStream.Position = 0;
+                return errorStream;
             }
-
             greeter.SayHello(firstNames, __request__, __context__);
-
-            return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
+            var response = new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
             {
                 StatusCode = 200
             };
+
+            var responseStream = new MemoryStream();
+            JsonSerializer.Serialize(responseStream, response, typeof(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse));
+            responseStream.Position = 0;
+            return responseStream;
         }
 
         private static void SetExecutionEnvironment()
