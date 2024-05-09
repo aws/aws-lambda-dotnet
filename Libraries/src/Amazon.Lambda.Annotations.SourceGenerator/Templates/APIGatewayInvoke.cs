@@ -273,7 +273,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             memoryStream.Position = 0;
 
             // convert stream to string
-            StreamReader reader = new StreamReader( memoryStream );
+            StreamReader reader = new StreamReader(memoryStream);
             var body = reader.ReadToEnd();
 ");
             

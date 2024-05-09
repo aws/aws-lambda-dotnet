@@ -27,6 +27,8 @@
             }));
         var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.RestApiAttribute>;
         var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.HttpApiAttribute>;
+        var useHttpV2Response = httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V2;
+        var apiGatewayResponseType = useHttpV2Response ? TypeFullNames.APIGatewayHttpApiV2ProxyResponse : TypeFullNames.APIGatewayProxyResponse;
 
         if (restApiAttribute != null && httpApiAttribute != null)
         {
@@ -284,7 +286,7 @@
             // return 400 Bad Request if there exists a validation error
             if (validationErrors.Any())
             {
-                var errorResult = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                var errorResult = new <#= apiGatewayResponseType #>
                 {
                     Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
                     Headers = new Dictionary<string, string>
@@ -295,8 +297,8 @@
                     StatusCode = 400
                 };
 
-                var errorStream = new System.IO.MemoryStream();
-                serializer.Serialize(errorResult, errorStream);
+                var errorStream = new MemoryStream();
+                JsonSerializer.Serialize(errorStream, response, typeof(<#= apiGatewayResponseType #>));
                 errorStream.Position = 0;
                 return errorStream;
             }

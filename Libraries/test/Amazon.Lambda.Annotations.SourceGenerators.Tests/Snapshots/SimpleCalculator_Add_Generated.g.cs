@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
@@ -79,8 +79,8 @@ namespace TestServerlessApp
                     StatusCode = 400
                 };
 
-                var errorStream = new System.IO.MemoryStream();
-                serializer.Serialize(errorResult, errorStream);
+                var errorStream = new MemoryStream();
+                JsonSerializer.Serialize(errorStream, response, typeof(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse));
                 errorStream.Position = 0;
                 return errorStream;
             }
@@ -109,7 +109,7 @@ namespace TestServerlessApp
             var envValue = new StringBuilder();
 
             // If there is an existing execution environment variable add the annotations package as a suffix.
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envName)))
+            if(!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envName)))
             {
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
