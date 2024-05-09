@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Annotations.APIGateway;
+using System.Text.Json;
 
 namespace TestExecutableServerlessApp
 {

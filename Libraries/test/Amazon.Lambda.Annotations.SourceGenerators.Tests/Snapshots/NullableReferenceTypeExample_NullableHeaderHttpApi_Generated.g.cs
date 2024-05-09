@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Amazon.Lambda.Core;
+using System.Text.Json;
 
 namespace TestServerlessApp
 {
@@ -20,7 +21,7 @@ namespace TestServerlessApp
             serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
-        public Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse NullableHeaderHttpApi(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
+        public System.IO.Stream NullableHeaderHttpApi(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             var validationErrors = new List<string>();
 
@@ -50,15 +51,22 @@ namespace TestServerlessApp
                     },
                     StatusCode = 400
                 };
-                return errorResult;
+
+                var errorStream = new MemoryStream();
+                JsonSerializer.Serialize(errorStream, errorResult, typeof(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse));
+                errorStream.Position = 0;
+                return errorStream;
             }
-
             nullableReferenceTypeExample.NullableHeaderHttpApi(text, __context__);
-
-            return new Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse
+            var response = new Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse
             {
                 StatusCode = 200
             };
+
+            var responseStream = new MemoryStream();
+            JsonSerializer.Serialize(responseStream, response, typeof(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse));
+            responseStream.Position = 0;
+            return responseStream;
         }
 
         private static void SetExecutionEnvironment()

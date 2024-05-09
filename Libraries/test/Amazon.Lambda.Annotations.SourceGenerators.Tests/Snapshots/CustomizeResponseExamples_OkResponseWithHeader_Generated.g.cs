@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Annotations.APIGateway;
+using System.Text.Json;
 
 namespace TestServerlessApp
 {
@@ -51,12 +52,12 @@ namespace TestServerlessApp
                     },
                     StatusCode = 400
                 };
-                var errorStream = new System.IO.MemoryStream();
-                serializer.Serialize(errorResult, errorStream);
+
+                var errorStream = new MemoryStream();
+                JsonSerializer.Serialize(errorStream, errorResult, typeof(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse));
                 errorStream.Position = 0;
                 return errorStream;
             }
-
             var httpResults = customizeResponseExamples.OkResponseWithHeader(x, __context__);
             HttpResultSerializationOptions.ProtocolFormat serializationFormat = HttpResultSerializationOptions.ProtocolFormat.RestApi;
             HttpResultSerializationOptions.ProtocolVersion serializationVersion = HttpResultSerializationOptions.ProtocolVersion.V1;
