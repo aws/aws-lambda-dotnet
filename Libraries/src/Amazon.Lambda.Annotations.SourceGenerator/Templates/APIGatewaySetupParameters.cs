@@ -748,7 +748,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 };
 
                 var errorStream = new MemoryStream();
-                JsonSerializer.Serialize(errorStream, response, typeof(");
+                JsonSerializer.Serialize(errorStream, errorResult, typeof(");
             
             #line 301 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(apiGatewayResponseType));

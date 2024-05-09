@@ -80,7 +80,7 @@ namespace TestServerlessApp
                 };
 
                 var errorStream = new MemoryStream();
-                JsonSerializer.Serialize(errorStream, response, typeof(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse));
+                JsonSerializer.Serialize(errorStream, errorResult, typeof(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse));
                 errorStream.Position = 0;
                 return errorStream;
             }

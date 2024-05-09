@@ -53,7 +53,7 @@ namespace TestServerlessApp
                 };
 
                 var errorStream = new MemoryStream();
-                JsonSerializer.Serialize(errorStream, response, typeof(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse));
+                JsonSerializer.Serialize(errorStream, errorResult, typeof(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse));
                 errorStream.Position = 0;
                 return errorStream;
             }

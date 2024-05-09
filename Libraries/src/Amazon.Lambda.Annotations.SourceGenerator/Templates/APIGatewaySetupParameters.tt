@@ -298,7 +298,7 @@
                 };
 
                 var errorStream = new MemoryStream();
-                JsonSerializer.Serialize(errorStream, response, typeof(<#= apiGatewayResponseType #>));
+                JsonSerializer.Serialize(errorStream, errorResult, typeof(<#= apiGatewayResponseType #>));
                 errorStream.Position = 0;
                 return errorStream;
             }
