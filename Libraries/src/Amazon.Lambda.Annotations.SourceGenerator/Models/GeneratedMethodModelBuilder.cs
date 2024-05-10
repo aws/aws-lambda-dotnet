@@ -148,7 +148,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 Type = new TypeModel
                 {
                     FullName = TypeFullNames.ILambdaContext
-                }
+                },
+                Documentation = "The ILambdaContext that provides methods for logging and describing the Lambda environment."
             };
 
             if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute))
@@ -158,7 +159,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 var requestParameter = new ParameterModel
                 {
                     Name = "__request__",
-                    Type = type
+                    Type = type,
+                    Documentation = "The API Gateway request object that will be processed by the Lambda function handler."
                 };
                 parameters.Add(requestParameter);
                 parameters.Add(contextParameter);
@@ -188,7 +190,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 var requestParameter = new ParameterModel
                 {
                     Name = "__request__",
-                    Type = type
+                    Type = type,
+                    Documentation = "The API Gateway request object that will be processed by the Lambda function handler."
                 };
                 parameters.Add(requestParameter);
                 parameters.Add(contextParameter);
@@ -208,6 +211,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                     else if(param.Type.FullName == TypeFullNames.ILambdaContext)
                     {
                         param.Name = "__context__";
+                        param.Documentation = "The ILambdaContext that provides methods for logging and describing the Lambda environment.";
+                    }
+                    else
+                    {
+                        param.Documentation = "The request object that will be processed by the Lambda function handler.";
                     }
 
                     parameters.Add(param);

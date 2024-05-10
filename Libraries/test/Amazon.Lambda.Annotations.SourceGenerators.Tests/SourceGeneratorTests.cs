@@ -284,7 +284,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template"))).ToEnvironmentLineEndings();
             var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Program.g.cs"))).ToEnvironmentLineEndings();
 
             await new VerifyCS.Test
             {
@@ -552,7 +551,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template"))).ToEnvironmentLineEndings();
             var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Program.g.cs"))).ToEnvironmentLineEndings();
 
             await new VerifyCS.Test
             {
@@ -691,7 +689,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
                         // The test framework doesn't appear to also execute the System.Text.Json source generator so Annotations generated code relying on the generated System.Text.Json code does not exist
                         // so we get compile errors. In an real world scenario they are both run and the applicaton compiles correctly.
-                        DiagnosticResult.CompilerError("CS0117").WithSpan($"Amazon.Lambda.Annotations.SourceGenerator{Path.DirectorySeparatorChar}Amazon.Lambda.Annotations.SourceGenerator.Generator{Path.DirectorySeparatorChar}SourceGenerationSerializationExample_GetPerson_Generated.g.cs", 29, 137, 29, 144).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "Default"),
+                        DiagnosticResult.CompilerError("CS0117").WithSpan($"Amazon.Lambda.Annotations.SourceGenerator{Path.DirectorySeparatorChar}Amazon.Lambda.Annotations.SourceGenerator.Generator{Path.DirectorySeparatorChar}SourceGenerationSerializationExample_GetPerson_Generated.g.cs", 42, 137, 42, 144).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "Default"),
                         DiagnosticResult.CompilerError("CS0534").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 28, 26, 28, 54).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "System.Text.Json.Serialization.JsonSerializerContext.GeneratedSerializerOptions.get"),
                         DiagnosticResult.CompilerError("CS0534").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 28, 26, 28, 54).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "System.Text.Json.Serialization.JsonSerializerContext.GetTypeInfo(System.Type)"),
                         DiagnosticResult.CompilerError("CS7036").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 28, 26, 28, 54).WithArguments("options", "System.Text.Json.Serialization.JsonSerializerContext.JsonSerializerContext(System.Text.Json.JsonSerializerOptions?)"),
