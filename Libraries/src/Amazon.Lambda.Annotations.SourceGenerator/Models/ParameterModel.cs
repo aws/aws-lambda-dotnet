@@ -23,5 +23,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// an empty list.
         /// </summary>
         public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
+
+        /// <summary>
+        /// Gets or sets the documentation of parameter.
+        /// </summary>
+        public string Documentation { get; set; }
     }
 }

@@ -56,7 +56,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.False(templateWriter.Exists("ImageConfig"));
         }
 
-            [Theory]
+        [Theory]
         [InlineData(CloudFormationTemplateFormat.Json)]
         [InlineData(CloudFormationTemplateFormat.Yaml)]
         public void AddSingletonFunctionToEmptyTemplate(CloudFormationTemplateFormat templateFormat)
