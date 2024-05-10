@@ -1,0 +1,26 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Threading.Tasks" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Microsoft.CodeAnalysis" #>
+
+using System.Text.Json.Serialization;
+
+namespace <#= _containingNamespace #>
+{
+#if !NETSTANDARD2_0
+<#
+    foreach (var serializableType in _serializableTypes)
+    {
+#>
+    [JsonSerializable(typeof(<#= serializableType #>))]
+<#
+    }
+#>
+    internal partial class ApiGatewayResponseJsonSerializerContext : JsonSerializerContext
+    {
+    }
+#endif
+}

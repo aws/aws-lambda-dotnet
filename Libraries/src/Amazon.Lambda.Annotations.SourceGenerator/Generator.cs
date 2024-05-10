@@ -11,7 +11,9 @@ using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -50,16 +52,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public Generator()
         {
 #if DEBUG
-          //  if (!Debugger.IsAttached)
-          //  {
-          //      Debugger.Launch();
-          //  }
+            //if (!Debugger.IsAttached)
+            //{
+            //    Debugger.Launch();
+            //}
 #endif
         }
 
         public void Execute(GeneratorExecutionContext context)
         {
             var diagnosticReporter = new DiagnosticReporter(context);
+            var sourceGeneratedSerializableTypes = new HashSet<string>();
 
             try
             {
@@ -225,12 +228,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         continue;
                     }
 
+
                     var template = new LambdaFunctionTemplate(model);
 
                     string sourceText;
                     try
                     {
                         sourceText = template.TransformText().ToEnvironmentLineEndings();
+                        var filePath = $"C:\\codebase\\V3\\snapshots\\{model.GeneratedMethod.ContainingType.Name}.g.cs";
+                        using (StreamWriter writer = new StreamWriter(filePath))
+                        {
+                            writer.Write(sourceText);
+                        }
                         context.AddSource($"{model.GeneratedMethod.ContainingType.Name}.g.cs", SourceText.From(sourceText, Encoding.UTF8, SourceHashAlgorithm.Sha256));
                     }
                     catch (Exception e) when (e is NotSupportedException || e is InvalidOperationException)  
@@ -242,8 +251,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     // report every generated file to build output
                     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.CodeGeneration, Location.None, $"{model.GeneratedMethod.ContainingType.Name}.g.cs", sourceText));
 
+                    AddSourceGeneratedSerializableTypes(sourceGeneratedSerializableTypes, model);
                     lambdaModels.Add(model);
                     annotationReport.LambdaFunctions.Add(model);
+                }
+
+                if (sourceGeneratedSerializableTypes.Any())
+                {
+                    var jsonSerializerContextTemplate = new JsonSerializerContextTemplate(context.Compilation.AssemblyName, sourceGeneratedSerializableTypes);
+                    var sourceText = jsonSerializerContextTemplate.TransformText().ToEnvironmentLineEndings();
+                    context.AddSource("ApiGatewayResponseJsonSerializerContext.g.cs", SourceText.From(sourceText, Encoding.UTF8, SourceHashAlgorithm.Sha256));
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.CodeGeneration, Location.None, "ApiGatewayResponseJsonSerializerContext.g.cs", sourceText));
+                    Execute(context);
                 }
 
                 if (isExecutable)
@@ -295,6 +314,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 throw;
 #endif
             }
+        }
+
+        private static void AddSourceGeneratedSerializableTypes(HashSet<string> sourceGeneratedSerializableTypes, LambdaFunctionModel model)
+        {
+            var restApiAttribute = model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute) as AttributeModel<APIGateway.RestApiAttribute>;
+            var httpApiAttribute = model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<APIGateway.HttpApiAttribute>;
+
+            if (restApiAttribute is null && httpApiAttribute is null)
+            {
+                return;
+            }
+            if (model.LambdaMethod.ReturnsIHttpResults)
+            {
+                return;
+            }
+
+            var useHttpV2Response = httpApiAttribute?.Data.Version == APIGateway.HttpApiVersion.V2;
+            var apiGatewayResponseType = useHttpV2Response ? TypeFullNames.APIGatewayHttpApiV2ProxyResponse : TypeFullNames.APIGatewayProxyResponse;
+            sourceGeneratedSerializableTypes.Add(apiGatewayResponseType);
         }
 
         private static ExecutableAssembly GenerateExecutableAssemblySource(

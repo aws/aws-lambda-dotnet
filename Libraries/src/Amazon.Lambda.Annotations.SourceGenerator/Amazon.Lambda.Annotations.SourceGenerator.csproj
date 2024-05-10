@@ -48,6 +48,10 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>FieldsAndConstructor.cs</LastGenOutput>
     </None>
+    <None Update="Templates\JsonSerializerContextTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>JsonSerializerContextTemplate.cs</LastGenOutput>
+    </None>
     <None Update="Templates\LambdaFunctionTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>LambdaFunctionTemplate.cs</LastGenOutput>
@@ -77,6 +81,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>FieldsAndConstructor.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Templates\JsonSerializerContextTemplate.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>JsonSerializerContextTemplate.tt</DependentUpon>
     </Compile>
     <Compile Update="Templates\LambdaFunctionTemplate.cs">
       <DependentUpon>LambdaFunctionTemplate.tt</DependentUpon>
