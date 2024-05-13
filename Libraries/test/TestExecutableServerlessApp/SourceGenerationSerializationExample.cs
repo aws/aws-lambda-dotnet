@@ -22,8 +22,6 @@ namespace TestExecutableServerlessApp
         }
     }
 
-    [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyRequest))]
-    [JsonSerializable(typeof(APIGatewayHttpApiV2ProxyResponse))]
     [JsonSerializable(typeof(Person))]
     public partial class HttpApiJsonSerializerContext : JsonSerializerContext
     {

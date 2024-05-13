@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 {
-    public class HtttpResultsStatusCodeUsage
+    public class HttpResultsStatusCodeUsage
     {
         [Fact]
         public void UsageOfIHttpResultStatusCode()

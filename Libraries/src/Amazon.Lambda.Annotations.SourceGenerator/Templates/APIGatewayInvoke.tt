@@ -17,8 +17,7 @@
             var httpResults = <#= _model.LambdaMethod.ReturnsGenericTask ? "await " : "" #><#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #>.<#= _model.LambdaMethod.Name #>(<#= _parameterSignature #>);
             HttpResultSerializationOptions.ProtocolFormat serializationFormat = <#= restApiAttribute != null ? "HttpResultSerializationOptions.ProtocolFormat.RestApi" : "HttpResultSerializationOptions.ProtocolFormat.HttpApi"#>;
             HttpResultSerializationOptions.ProtocolVersion serializationVersion = <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "HttpResultSerializationOptions.ProtocolVersion.V1" : "HttpResultSerializationOptions.ProtocolVersion.V2"#>;
-            System.Text.Json.Serialization.JsonSerializerContext jsonContext = <#= _model.SerializerInfo.SerializerJsonContextName != null ? _model.SerializerInfo.SerializerJsonContextName + ".Default" : "null"#>;
-            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion, JsonContext = jsonContext };
+            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion, Serializer = serializer };
             var response = httpResults.Serialize(serializationOptions);
 <#
         }
