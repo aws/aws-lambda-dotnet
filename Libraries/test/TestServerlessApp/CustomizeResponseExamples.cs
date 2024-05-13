@@ -1,6 +1,10 @@
 ﻿using Amazon.Lambda.Annotations;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.Serialization.SystemTextJson;
+using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace TestServerlessApp
@@ -65,6 +69,35 @@ namespace TestServerlessApp
                                 .AddHeader("Single-Header", "Value")
                                 .AddHeader("Multi-Header", "Foo")
                                 .AddHeader("Multi-Header", "Bar"));
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [HttpApi(LambdaHttpMethod.Get, "/okresponsewithcustomserializerasync/{firstName}/{lastName}", Version = HttpApiVersion.V1)]
+        [LambdaSerializer(typeof(PersonSerializer))]
+        public Task<IHttpResult> OkResponseWithCustomSerializer(string firstName, string lastName, ILambdaContext context)
+        {
+            return Task.FromResult(HttpResults.Ok(new Person { FirstName = firstName, LastName = lastName }));
+        }
+    }
+
+    public class Person
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+    }
+
+    public class PersonSerializer : DefaultLambdaJsonSerializer
+    {
+        public PersonSerializer()
+        : base(CreateCustomizer())
+        { }
+
+        private static Action<JsonSerializerOptions> CreateCustomizer()
+        {
+            return (JsonSerializerOptions options) =>
+            {
+                options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseUpper;
+            };
         }
     }
 }

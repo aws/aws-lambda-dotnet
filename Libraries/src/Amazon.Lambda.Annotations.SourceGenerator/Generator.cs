@@ -356,7 +356,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         private LambdaSerializerInfo GetSerializerInfoAttribute(GeneratorExecutionContext context, IMethodSymbol methodModel)
         {
             var serializerString = DEFAULT_LAMBDA_SERIALIZER;
-            string serializerJsonContext = null;
 
             ISymbol symbol = null;
             
@@ -377,24 +376,19 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             // Else return the default serializer.
             else
             {
-                return new LambdaSerializerInfo(serializerString, serializerJsonContext);
+                return new LambdaSerializerInfo(serializerString);
             }
             
             var attribute = symbol.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.Name == TypeFullNames.LambdaSerializerAttributeWithoutNamespace);
                 
             var serializerValue = attribute.ConstructorArguments.FirstOrDefault(kvp => kvp.Type.Name == nameof(Type)).Value;
 
-            if(serializerValue is INamedTypeSymbol typeSymbol && typeSymbol.Name.Contains("SourceGeneratorLambdaJsonSerializer") && typeSymbol.TypeArguments.Length == 1)
-            {
-                serializerJsonContext = typeSymbol.TypeArguments[0].ToString();
-            }
-
             if (serializerValue != null)
             {
                 serializerString = serializerValue.ToString();
             }
 
-            return new LambdaSerializerInfo(serializerString, serializerJsonContext);
+            return new LambdaSerializerInfo(serializerString);
         }
 
         public void Initialize(GeneratorInitializationContext context)

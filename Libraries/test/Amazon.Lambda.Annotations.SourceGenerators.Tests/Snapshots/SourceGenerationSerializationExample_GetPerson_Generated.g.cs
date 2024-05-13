@@ -39,8 +39,7 @@ namespace TestExecutableServerlessApp
             var httpResults = sourceGenerationSerializationExample.GetPerson(__context__);
             HttpResultSerializationOptions.ProtocolFormat serializationFormat = HttpResultSerializationOptions.ProtocolFormat.RestApi;
             HttpResultSerializationOptions.ProtocolVersion serializationVersion = HttpResultSerializationOptions.ProtocolVersion.V1;
-            System.Text.Json.Serialization.JsonSerializerContext jsonContext = TestExecutableServerlessApp.HttpApiJsonSerializerContext.Default;
-            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion, JsonContext = jsonContext };
+            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion, Serializer = serializer };
             var response = httpResults.Serialize(serializationOptions);
             return response;
         }

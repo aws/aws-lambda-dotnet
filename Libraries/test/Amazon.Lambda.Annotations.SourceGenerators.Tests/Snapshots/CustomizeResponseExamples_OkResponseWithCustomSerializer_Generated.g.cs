@@ -11,43 +11,56 @@ using Amazon.Lambda.Annotations.APIGateway;
 
 namespace TestServerlessApp
 {
-    public class CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated
+    public class CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated
     {
         private readonly CustomizeResponseExamples customizeResponseExamples;
-        private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
+        private readonly TestServerlessApp.PersonSerializer serializer;
 
         /// <summary>
         /// Default constructor. This constructor is used by Lambda to construct the instance. When invoked in a Lambda environment
         /// the AWS credentials will come from the IAM role associated with the function and the AWS region will be set to the
         /// region the Lambda function is executed in.
         /// </summary>
-        public CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated()
+        public CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated()
         {
             SetExecutionEnvironment();
             customizeResponseExamples = new CustomizeResponseExamples();
-            serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
+            serializer = new TestServerlessApp.PersonSerializer();
         }
 
         /// <summary>
-        /// The generated Lambda function handler for <see cref="NotFoundResponseWithHeaderV1(int, Amazon.Lambda.Core.ILambdaContext)"/>
+        /// The generated Lambda function handler for <see cref="OkResponseWithCustomSerializer(string, string, Amazon.Lambda.Core.ILambdaContext)"/>
         /// </summary>
         /// <param name="__request__">The API Gateway request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public System.IO.Stream NotFoundResponseWithHeaderV1(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
+        public async System.Threading.Tasks.Task<System.IO.Stream> OkResponseWithCustomSerializer(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             var validationErrors = new List<string>();
 
-            var x = default(int);
-            if (__request__.PathParameters?.ContainsKey("x") == true)
+            var firstName = default(string);
+            if (__request__.PathParameters?.ContainsKey("firstName") == true)
             {
                 try
                 {
-                    x = (int)Convert.ChangeType(__request__.PathParameters["x"], typeof(int));
+                    firstName = (string)Convert.ChangeType(__request__.PathParameters["firstName"], typeof(string));
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    validationErrors.Add($"Value {__request__.PathParameters["x"]} at 'x' failed to satisfy constraint: {e.Message}");
+                    validationErrors.Add($"Value {__request__.PathParameters["firstName"]} at 'firstName' failed to satisfy constraint: {e.Message}");
+                }
+            }
+
+            var lastName = default(string);
+            if (__request__.PathParameters?.ContainsKey("lastName") == true)
+            {
+                try
+                {
+                    lastName = (string)Convert.ChangeType(__request__.PathParameters["lastName"], typeof(string));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {__request__.PathParameters["lastName"]} at 'lastName' failed to satisfy constraint: {e.Message}");
                 }
             }
 
@@ -70,7 +83,7 @@ namespace TestServerlessApp
                 return errorStream;
             }
 
-            var httpResults = customizeResponseExamples.NotFoundResponseWithHeaderV1(x, __context__);
+            var httpResults = await customizeResponseExamples.OkResponseWithCustomSerializer(firstName, lastName, __context__);
             HttpResultSerializationOptions.ProtocolFormat serializationFormat = HttpResultSerializationOptions.ProtocolFormat.HttpApi;
             HttpResultSerializationOptions.ProtocolVersion serializationVersion = HttpResultSerializationOptions.ProtocolVersion.V1;
             var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion, Serializer = serializer };

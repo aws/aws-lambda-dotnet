@@ -14,20 +14,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// </summary>
         /// <param name="serializerName"></param>
         /// <param name="serializerJsonContextName"></param>
-        public LambdaSerializerInfo(string serializerName, string serializerJsonContextName)
+        public LambdaSerializerInfo(string serializerName)
         {
             SerializerName = serializerName;
-            SerializerJsonContextName = serializerJsonContextName;
         }
 
         /// <summary>
         /// The full name of the type registered as the ILambdaSerializer.
         /// </summary>
         public string SerializerName { get; }
-
-        /// <summary>
-        /// The full name of the type used as the generic parameter of the SourceGeneratorLambdaJsonSerializer.
-        /// </summary>
-        public string SerializerJsonContextName { get; }   
     }
 }

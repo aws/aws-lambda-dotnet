@@ -689,10 +689,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
                         // The test framework doesn't appear to also execute the System.Text.Json source generator so Annotations generated code relying on the generated System.Text.Json code does not exist
                         // so we get compile errors. In an real world scenario they are both run and the applicaton compiles correctly.
-                        DiagnosticResult.CompilerError("CS0117").WithSpan($"Amazon.Lambda.Annotations.SourceGenerator{Path.DirectorySeparatorChar}Amazon.Lambda.Annotations.SourceGenerator.Generator{Path.DirectorySeparatorChar}SourceGenerationSerializationExample_GetPerson_Generated.g.cs", 42, 137, 42, 144).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "Default"),
-                        DiagnosticResult.CompilerError("CS0534").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 28, 26, 28, 54).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "System.Text.Json.Serialization.JsonSerializerContext.GeneratedSerializerOptions.get"),
-                        DiagnosticResult.CompilerError("CS0534").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 28, 26, 28, 54).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "System.Text.Json.Serialization.JsonSerializerContext.GetTypeInfo(System.Type)"),
-                        DiagnosticResult.CompilerError("CS7036").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 28, 26, 28, 54).WithArguments("options", "System.Text.Json.Serialization.JsonSerializerContext.JsonSerializerContext(System.Text.Json.JsonSerializerOptions?)"),
+                        DiagnosticResult.CompilerError("CS0534").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 26, 26, 26, 54).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "System.Text.Json.Serialization.JsonSerializerContext.GeneratedSerializerOptions.get"),
+                        DiagnosticResult.CompilerError("CS0534").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 26, 26, 26, 54).WithArguments("TestExecutableServerlessApp.HttpApiJsonSerializerContext", "System.Text.Json.Serialization.JsonSerializerContext.GetTypeInfo(System.Type)"),
+                        DiagnosticResult.CompilerError("CS7036").WithSpan($"TestExecutableServerlessApp{Path.DirectorySeparatorChar}SourceGenerationSerializationExample.cs", 26, 26, 26, 54).WithArguments("options", "System.Text.Json.Serialization.JsonSerializerContext.JsonSerializerContext(System.Text.Json.JsonSerializerOptions?)"),
                     }
                 }
             };
@@ -880,6 +879,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var expectedOkResponseWithHeaderAsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated.g.cs"))).ToEnvironmentLineEndings();
             var expectedNotFoundResponseWithHeaderV2AsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated.g.cs"))).ToEnvironmentLineEndings();
             var expectedNotFoundResponseWithHeaderV1AsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedOkResponseWithCustomSerializerGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated.g.cs"))).ToEnvironmentLineEndings();
 
             await new VerifyCS.Test
             {
@@ -925,6 +925,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             typeof(SourceGenerator.Generator),
                             "CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs",
                             SourceText.From(expectedNotFoundResponseWithHeaderV1AsyncGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated.g.cs",
+                            SourceText.From(expectedOkResponseWithCustomSerializerGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         )
                     },
                     ExpectedDiagnostics =
@@ -934,9 +939,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated.g.cs", expectedNotFoundResponseWithHeaderV2Generated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated.g.cs", expectedNotFoundResponseWithHeaderV2AsyncGenerated),
-                        
+
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated.g.cs", expectedNotFoundResponseWithHeaderV1Generated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs", expectedNotFoundResponseWithHeaderV1AsyncGenerated),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated.g.cs", expectedOkResponseWithCustomSerializerGenerated),
+                        // The test framework doesn't appear to also execute the System.Text.Json source generator so Annotations generated code relying on the generated System.Text.Json code does not exist
+                        // so we get compile errors. In an real world scenario they are both run and the applicaton compiles correctly.
+                        DiagnosticResult.CompilerError("CS0117").WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}CustomizeResponseExamples.cs", 99, 65, 99, 79).WithArguments("System.Text.Json.JsonNamingPolicy", "SnakeCaseUpper"),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
                     }
