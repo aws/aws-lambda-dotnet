@@ -1,0 +1,87 @@
+﻿using System;
+
+namespace Amazon.Lambda.Annotations.SQS
+{
+    /// <summary>
+    /// This attribute defines the SQS event source configuration for a Lambda function.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    public class SQSEventAttribute : Attribute
+    {
+        /// <summary>
+        /// The SQS queue that will act as the event trigger for the Lambda function.
+        /// This can either be the queue ARN or reference to the SQS queue resource that is already defined in the serverless template.
+        /// To reference a SQS queue resource in the serverless template, prefix the resource name with "@" symbol.
+        /// </summary>
+        public string Queue { get; set; }
+
+        /// <summary>
+        /// If set to false, the event source mapping will be disabled and message polling will be paused.
+        /// Default value is true.
+        /// </summary>
+        public bool Enabled
+        {
+            get => enabled.GetValueOrDefault();
+            set => enabled = value;
+        }
+        private bool? enabled { get; set; }
+        internal bool IsEnabledSet => enabled.HasValue;
+
+        /// <summary>
+        /// The maximum number of messages that will be sent for processing in a single batch. 
+        /// This value must be between 1 to 10000. Default value is 10.
+        /// </summary>
+        public uint BatchSize
+        {
+            get => batchSize.GetValueOrDefault();
+            set => batchSize = value;
+        }
+        private uint? batchSize { get; set; }
+        internal bool IsBatchSizeSet => batchSize.HasValue;
+
+        /// <summary>
+        /// The maximum amount of time, in seconds, to gather records before invoking the function. 
+        /// This value must be between 0 to 300. Default value is 0.
+        /// </summary>
+        public uint MaximumBatchingWindowInSeconds 
+        {
+            get => maximumBatchingWindowInSeconds.GetValueOrDefault();
+            set => maximumBatchingWindowInSeconds = value;
+        }
+        private uint? maximumBatchingWindowInSeconds { get; set; }
+        internal bool IsMaximumBatchingWindowInSecondsSet => maximumBatchingWindowInSeconds.HasValue;
+
+        /// <summary>
+        /// A collection of semicolon (;) separated strings where each string denotes a pattern. 
+        /// Only those SQS messages that conform to at least 1 pattern will be forwarded to the Lambda function for processing. 
+        /// </summary>
+        public string Filters
+        {
+            get => filters ?? string.Empty;
+            set => filters = value;
+        }
+        private string? filters { get; set; }
+        internal bool IsFiltersSet => filters is not null;
+
+        /// <summary>
+        /// The maximum number of concurrent Lambda invocations that the SQS queue can trigger.
+        /// This value must be between 2 to 1000. The default value is 1000.
+        /// </summary>
+        public uint MaximumConcurrency
+        { 
+            get => maximumConcurrency.GetValueOrDefault();
+            set => maximumConcurrency = value;
+        }
+        private uint? maximumConcurrency { get; set; }
+        internal bool IsMaximumConcurrencySet => maximumConcurrency.HasValue;
+
+        /// <summary>
+        /// Creates an instance of the <see cref="SQSEventAttribute"/> class.
+        /// </summary>
+        /// <param name="queue"><see cref="Queue"/> property"/></param>
+        public SQSEventAttribute(string queue)
+        {
+            Queue = queue;
+        }
+    }
+}

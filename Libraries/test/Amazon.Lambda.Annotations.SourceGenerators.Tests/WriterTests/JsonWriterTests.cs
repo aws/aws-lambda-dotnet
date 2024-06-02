@@ -128,6 +128,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             jsonWriter.SetToken("Person.PhoneNumbers", new List<int> { 1, 2, 3 }, TokenType.List);
             jsonWriter.SetToken("Person.Address", new Dictionary<string, string> { { "City", "AmazingCity" }, { "State", "AmazingState" } }, TokenType.KeyVal);
             jsonWriter.SetToken("Person.IsAlive", true);
+            jsonWriter.SetToken("Person.Aliases", new List<Dictionary<string, string>>
+            {
+                new Dictionary<string, string> { {"Alias", "Johnny" } },
+                new Dictionary<string, string> { {"Alias", "Johnny Boy" } }
+            });
 
             // ACT
             var actualSnapshot = jsonWriter.GetContent();

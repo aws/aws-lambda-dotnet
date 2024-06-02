@@ -1,0 +1,89 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.4.0.0).",
+  "Resources": {
+    "TestServerlessAppSQSEventExamplesValidSQSEventsProcessMessagesGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "queue1",
+          "queue2"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestProject::TestServerlessApp.SQSEventExamples.ValidSQSEvents_ProcessMessages_Generated::ProcessMessages",
+        "Events": {
+          "queue1": {
+            "Type": "SQS",
+            "Properties": {
+              "Queue": "arn:aws:sqs:us-east-2:444455556666:queue1",
+              "BatchSize": 50,
+              "FilterCriteria": {
+                "Filters": [
+                  {
+                    "Pattern": "My-Filter-1"
+                  },
+                  {
+                    "Pattern": "My-Filter-2"
+                  }
+                ]
+              },
+              "ScalingConfig": {
+                "MaximumConcurrency": 30
+              }
+            }
+          },
+          "queue2": {
+            "Type": "SQS",
+            "Properties": {
+              "Queue": "arn:aws:sqs:us-east-2:444455556666:queue2",
+              "Enabled": false,
+              "MaximumBatchingWindowInSeconds": 5
+            }
+          }
+        }
+      }
+    },
+    "TestServerlessAppSQSEventExamplesValidSQSEventsProcessMessagesWithBatchFailureReportingGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "queue3"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestProject::TestServerlessApp.SQSEventExamples.ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated::ProcessMessagesWithBatchFailureReporting",
+        "Events": {
+          "queue3": {
+            "Type": "SQS",
+            "Properties": {
+              "Queue": "arn:aws:sqs:us-east-2:444455556666:queue3",
+              "FunctionResponseTypes": [
+                "ReportBatchItemFailures"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

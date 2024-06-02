@@ -4,8 +4,13 @@
     <AssemblyVersion>1.4.0</AssemblyVersion>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>	
-	
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Nullable>annotations</Nullable>
+    <LangVersion>10.0</LangVersion>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <WarningsAsErrors>IL2026,IL2067,IL2075,IL3050</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>
@@ -14,5 +19,14 @@
 	
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
-  </ItemGroup>		
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Amazon.Lambda.Annotations.SourceGenerator</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Amazon.Lambda.Annotations.SourceGenerators.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>

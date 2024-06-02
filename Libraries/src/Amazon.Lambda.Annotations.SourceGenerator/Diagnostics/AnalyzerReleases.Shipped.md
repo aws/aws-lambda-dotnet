@@ -1,6 +1,15 @@
 ; Shipped analyzer releases
 ; https://github.com/dotnet/roslyn-analyzers/blob/master/src/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md
 
+## Release 1.5.0
+### New Rules
+
+Rule ID | Category | Severity | Notes
+--------|----------|----------|-------
+AWSLambda0115 | AWSLambdaCSharpGenerator | Error | Invalid Usage of API Parameters
+AWSLambda0116 | AWSLambdaCSharpGenerator | Error | Invalid SQSEventAttribute encountered
+AWSLambda0117 | AWSLambdaCSharpGenerator | Error | Invalid Lambda Method Signature
+
 ## Release 1.1.0
 ### New Rules
 

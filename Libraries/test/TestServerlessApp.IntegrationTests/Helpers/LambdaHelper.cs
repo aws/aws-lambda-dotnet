@@ -46,6 +46,15 @@ namespace TestServerlessApp.IntegrationTests.Helpers
             return await _lambdaClient.InvokeAsync(request);
         }
 
+        public async Task<ListEventSourceMappingsResponse> ListEventSourceMappingsAsync(string functionName, string eventSourceArn)
+        {
+            return await _lambdaClient.ListEventSourceMappingsAsync(new ListEventSourceMappingsRequest 
+            {
+                FunctionName = functionName, 
+                EventSourceArn = eventSourceArn
+            });
+        }
+
         public async Task WaitTillNotPending(List<string> functions)
         {
             foreach(var function in functions)

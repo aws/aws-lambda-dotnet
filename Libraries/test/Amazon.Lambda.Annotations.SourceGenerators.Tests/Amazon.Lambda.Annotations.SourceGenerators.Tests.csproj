@@ -150,6 +150,7 @@
       <None Remove="Snapshots\ServerlessTemplates\net8.template" />
       <None Remove="Snapshots\ServerlessTemplates\nullreferenceexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\sourcegeneratorserializationexample.template" />
+      <None Remove="Snapshots\ServerlessTemplates\sqsEvents.template" />
       <None Remove="Snapshots\ServerlessTemplates\subnamespace.template" />
       <None Remove="Snapshots\ServerlessTemplates\taskexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\voidexample - Copy.template" />
@@ -171,6 +172,7 @@
       <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations.SourceGenerator\Amazon.Lambda.Annotations.SourceGenerator.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj" />
       <!-- 
 	    We need to force using the .NET Standard 2.0 version because the source generator test framework will complain
 		about using newer versions of System.Runtime then it can handle. This is not an issue in a end user scenario.

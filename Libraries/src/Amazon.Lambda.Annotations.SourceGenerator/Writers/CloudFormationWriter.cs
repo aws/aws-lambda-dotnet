@@ -3,11 +3,11 @@ using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
+using Amazon.Lambda.Annotations.SQS;
 using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -197,6 +197,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         eventName = ProcessRestApiAttribute(lambdaFunction, restApiAttributeModel.Data);
                         currentSyncedEvents.Add(eventName);
                         break;
+                    case AttributeModel<SQSEventAttribute> sqsAttributeModel:
+                        eventName = ProcessSqsAttribute(lambdaFunction, sqsAttributeModel.Data);
+                        currentSyncedEvents.Add(eventName);
+                        break;
                 }
             }
 
@@ -253,6 +257,85 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             return $"Root{methodName}";
         }
+
+        /// <summary>
+        /// Writes all properties associated with <see cref="SQSEventAttribute"/> to the serverless template.
+        /// </summary>
+        private string ProcessSqsAttribute(ILambdaFunctionSerializable lambdaFunction, SQSEventAttribute att)
+        {
+            var eventName = att.Queue.StartsWith("@") ? att.Queue.Substring(1) : GetResourceNameFromArn(att.Queue);
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
+
+            // Set event type - https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-eventsource.html#sam-function-eventsource-type
+            _templateWriter.SetToken($"{eventPath}.Type", "SQS");
+
+            // Get properties path - https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-eventsource.html#sam-function-eventsource-properties
+            var eventPropertiesPath = $"{eventPath}.Properties";
+
+            // Since the entire event source configuration can be specified by the SQSEventAttribute, remove everything that was set previously.
+            _templateWriter.RemoveToken(eventPropertiesPath);
+
+            // Set SQS properties - https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-sqs.html
+
+            // Queue
+            if (att.Queue.StartsWith("@"))
+            {
+                _templateWriter.SetToken($"{eventPropertiesPath}.Queue.{GET_ATTRIBUTE}", new List<string> { att.Queue.Substring(1), "Arn" }, TokenType.List);
+            }
+            else
+            {
+                _templateWriter.SetToken($"{eventPropertiesPath}.Queue", att.Queue);
+            }
+            
+            // BatchSize
+            if (att.IsBatchSizeSet)
+            {
+                _templateWriter.SetToken($"{eventPropertiesPath}.BatchSize", att.BatchSize);
+            }
+
+            // Enabled
+            if (att.IsEnabledSet)
+            {
+                _templateWriter.SetToken($"{eventPropertiesPath}.Enabled", att.Enabled);
+            }
+
+            // FilterCriteria
+            if (att.IsFiltersSet)
+            {
+                const char SEPERATOR = ';';
+                var filters = att.Filters.Split(SEPERATOR).Select(x => x.Trim()).ToList();
+                var filterList = new List<Dictionary<string, string>>();
+                foreach (var filter in filters)
+                {
+                   filterList.Add(new Dictionary<string, string> { { "Pattern", filter } });
+                }
+                _templateWriter.SetToken($"{eventPropertiesPath}.FilterCriteria.Filters", filterList, TokenType.List);
+            }
+
+            // FunctionResponseTypes
+            if (lambdaFunction.ReturnTypeFullName.Contains(TypeFullNames.SQSBatchResponse))
+            {
+                _templateWriter.SetToken($"{eventPropertiesPath}.FunctionResponseTypes", new List<string> { "ReportBatchItemFailures" }, TokenType.List);
+            }
+
+            // MaximumBatchingWindowInSeconds
+            if (att.IsMaximumBatchingWindowInSecondsSet)
+            {
+                _templateWriter.SetToken($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds", att.MaximumBatchingWindowInSeconds);
+            }
+
+            // ScalingConfig
+            if (att.IsMaximumConcurrencySet)
+            {
+                _templateWriter.SetToken($"{eventPropertiesPath}.ScalingConfig.MaximumConcurrency", att.MaximumConcurrency);
+            }
+
+            return eventName;
+        }
+
+        /// <summary>
+        /// Writes all properties associated with <see cref="LambdaFunctionRoleAttribute"/> to the serverless template.
+        /// </summary>
 
         /// <summary>
         /// Writes the default values for the Lambda function's metadata and properties.
@@ -461,6 +544,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             return string.Empty;
+        }
+
+        private string GetResourceNameFromArn(string arn)
+        {
+            const string malformedErrorMessage = "ARN is in incorrect format. ARN format is: arn:<partition>:<service>:<region>:<account-id>:<resource>";
+            var tokens = arn.Split(new char[] { ':' }, 6);
+            if (tokens.Length != 6)
+            {
+                throw new ArgumentException(malformedErrorMessage);
+            }
+            return tokens[5];
         }
     }
 }

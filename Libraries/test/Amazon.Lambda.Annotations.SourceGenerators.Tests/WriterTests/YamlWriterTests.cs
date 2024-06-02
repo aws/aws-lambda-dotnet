@@ -135,6 +135,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             yamlWriter.SetToken("Person.PhoneNumbers", new List<int> { 1, 2, 3 }, TokenType.List);
             yamlWriter.SetToken("Person.Address", new Dictionary<string, string> { { "City", "AmazingCity" }, { "State", "AmazingState" } }, TokenType.KeyVal);
             yamlWriter.SetToken("Person.IsAlive", true);
+            yamlWriter.SetToken("Person.Aliases", new List<Dictionary<string, string>>
+            {
+                new Dictionary<string, string> { {"Alias", "Johnny" } },
+                new Dictionary<string, string> { {"Alias", "Johnny Boy" } }
+            }, TokenType.List);
 
             // ACT
             var actualSnapshot = yamlWriter.GetContent();

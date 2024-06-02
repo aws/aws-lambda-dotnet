@@ -1,0 +1,41 @@
+﻿using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Annotations.SQS;
+using Amazon.Lambda.SQSEvents;
+using System;
+
+namespace TestServerlessApp.SQSEventExamples
+{
+    public class InvalidSQSEvents
+    {
+        [LambdaFunction]
+        [SQSEvent("test-queue", BatchSize = 0, MaximumBatchingWindowInSeconds = 302, MaximumConcurrency = 1)]
+        public void ProcessMessageWithInvalidSQSEventAttributes(SQSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction]
+        [SQSEvent("test-queue")]
+        public void ProcessMessageWithInvalidParameters(SQSEvent evnt, bool invalidParameter1, int invalidParameter2)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction]
+        [SQSEvent("test-queue")]
+        public bool ProcessMessageWithInvalidReturnType(SQSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+            return true;
+        }
+
+        [LambdaFunction]
+        [RestApi(LambdaHttpMethod.Get, "/")]
+        [SQSEvent("test-queue")]
+        public void ProcessMessageWithMultipleEventTypes(SQSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+    }
+}

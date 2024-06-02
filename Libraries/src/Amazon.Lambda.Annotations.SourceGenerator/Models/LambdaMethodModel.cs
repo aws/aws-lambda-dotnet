@@ -65,6 +65,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         }
 
         /// <summary>
+        /// Returns true if the Lambda function returns either void, Task, SQSBatchResponse or Task<SQSBatchResponse>
+        /// </summary>
+        public bool ReturnsVoidTaskOrSqsBatchResponse
+        {
+            get
+            {
+                if (ReturnsVoid || ReturnsVoidTask || ReturnType.FullName == TypeFullNames.SQSBatchResponse)
+                {
+                    return true;
+                }
+                return ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.SQSBatchResponse;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the parameters of original method. If this method has no parameters, returns
         /// an empty list.
         /// </summary>
@@ -99,7 +114,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// <summary>
         /// Gets or sets type of Lambda event
         /// </summary>
-        public List<EventType> Events { get; set; }
+        public HashSet<EventType> Events { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="TypeModel"/> for the containing type. Returns null if the

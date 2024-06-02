@@ -1,7 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.IO;
+using System.Linq;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
@@ -9,6 +8,7 @@ using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
+using Amazon.Lambda.Annotations.SQS;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -533,6 +533,91 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal("serverlessApp", templateWriter.GetToken<string>($"{propertiesPath}.CodeUri"));
         }
 
+        [Theory]
+        [ClassData(typeof(SqsEventsTestData))]
+        public void SqsEventsTest(CloudFormationTemplateFormat templateFormat, List<SQSEventAttribute> sqsEventAttribute, string lambdaReturnType)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel();
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+            lambdaFunctionModel.ReturnTypeFullName = lambdaReturnType;
+            foreach (var att in sqsEventAttribute)
+            {
+                lambdaFunctionModel.Attributes.Add(new AttributeModel<SQSEventAttribute> { Data = att });
+            }
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport([lambdaFunctionModel]);
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            foreach (var att in sqsEventAttribute)
+            {
+                var eventName = att.Queue.StartsWith("@") ? att.Queue.Substring(1) : att.Queue.Split(':').ToList()[5];
+                var eventPath = $"Resources.{lambdaFunctionModel.ResourceName}.Properties.Events.{eventName}";
+                var eventPropertiesPath = $"{eventPath}.Properties";
+
+                Assert.True(templateWriter.Exists(eventPath));
+                Assert.Equal("SQS", templateWriter.GetToken<string>($"{eventPath}.Type"));
+
+                if (!att.Queue.StartsWith("@"))
+                {
+                    Assert.Equal(att.Queue, templateWriter.GetToken<string>($"{eventPropertiesPath}.Queue"));
+                }
+                else
+                {
+                    Assert.Equal([att.Queue.Substring(1), "Arn"], templateWriter.GetToken<List<string>>($"{eventPropertiesPath}.Queue.Fn::GetAtt"));
+                }
+
+                Assert.Equal(att.IsBatchSizeSet, templateWriter.Exists($"{eventPropertiesPath}.BatchSize"));
+                if (att.IsBatchSizeSet)
+                {
+                    Assert.Equal(att.BatchSize, templateWriter.GetToken<uint>($"{eventPropertiesPath}.BatchSize"));
+                }
+
+                Assert.Equal(att.IsEnabledSet, templateWriter.Exists($"{eventPropertiesPath}.Enabled"));
+                if (att.IsEnabledSet)
+                {
+                    Assert.Equal(att.Enabled, templateWriter.GetToken<bool>($"{eventPropertiesPath}.Enabled"));
+                }
+
+                Assert.Equal(att.IsFiltersSet, templateWriter.Exists($"{eventPropertiesPath}.FilterCriteria"));
+                if (att.IsFiltersSet)
+                {
+                    var filtersList = templateWriter.GetToken<List<Dictionary<string, string>>>($"{eventPropertiesPath}.FilterCriteria.Filters");
+                    var index = 0;
+                    foreach (var filter in att.Filters.Split(';').Select(x => x.Trim()))
+                    {
+                        Assert.Equal(filter, filtersList[index]["Pattern"]);
+                        index++;
+                    }
+                }
+
+                Assert.Equal(lambdaReturnType.Contains(TypeFullNames.SQSBatchResponse), templateWriter.Exists($"{eventPropertiesPath}.FunctionResponseTypes"));
+                if (lambdaReturnType.Contains(TypeFullNames.SQSBatchResponse))
+                {
+                    Assert.Equal(["ReportBatchItemFailures"], templateWriter.GetToken<List<string>>($"{eventPropertiesPath}.FunctionResponseTypes"));
+                }
+
+                Assert.Equal(att.IsMaximumBatchingWindowInSecondsSet, templateWriter.Exists($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds"));
+                if (att.IsMaximumBatchingWindowInSecondsSet)
+                {
+                    Assert.Equal(att.MaximumBatchingWindowInSeconds, templateWriter.GetToken<uint>($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds"));
+                }
+
+                Assert.Equal(att.IsMaximumConcurrencySet, templateWriter.Exists($"{eventPropertiesPath}.ScalingConfig"));
+                if (att.IsMaximumConcurrencySet)
+                {
+                    Assert.Equal(att.MaximumConcurrency, templateWriter.GetToken<uint>($"{eventPropertiesPath}.ScalingConfig.MaximumConcurrency"));
+                }
+            }
+        }
+
         #region CloudFormation template description
 
         /// <summary>
@@ -817,8 +902,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             mockFileManager.WriteAllText(ServerlessTemplateFilePath, originalContent);
             return mockFileManager;
         }
-        private LambdaFunctionModelTest GetLambdaFunctionModel(string handler, string resourceName, uint? timeout,
-            uint? memorySize, string role, string policies)
+
+        private LambdaFunctionModelTest GetLambdaFunctionModel(string handler = "MyAssembly::MyNamespace.MyType::Handler", 
+            string resourceName = "TestMethod",
+            uint timeout = 30,
+            uint memorySize = 512, 
+            string? role = null, 
+            string? policies = "AWSLambdaBasicExecutionRole")
         {
             return new LambdaFunctionModelTest
             {
@@ -854,6 +944,48 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             return new CloudFormationWriter(fileManager, directoryManager, templateWriter, diagnosticReporter);
         }
 
+        public class SqsEventsTestData : TheoryData<CloudFormationTemplateFormat, List<SQSEventAttribute>, string>
+        {
+            const string queueArn1 = "arn:aws:sqs:us-east-2:444455556666:queue1";
+            const string queueArn2 = "arn:aws:sqs:us-east-2:444455556666:queue2";
+
+            public SqsEventsTestData()
+            {
+                foreach (var templateFormat in new List<CloudFormationTemplateFormat> { CloudFormationTemplateFormat.Json, CloudFormationTemplateFormat.Yaml })
+                {
+                    // Simple attribute
+                    Add(templateFormat, [new(queueArn1)], "void");
+
+                    // Report batch failure items.
+                    Add(templateFormat, [new(queueArn1)], TypeFullNames.SQSBatchResponse);
+
+                    // Mutliple SQSEvent attributes
+                    Add(templateFormat, [new(queueArn1), new(queueArn2)], TypeFullNames.SQSBatchResponse);
+
+                    // Use queue reference
+                    Add(templateFormat, [new("@MyQueue")], TypeFullNames.SQSBatchResponse);
+
+                    // Use both ARN and queue reference
+                    Add(templateFormat, [new(queueArn1), new("@MyQueue")], "void");
+
+                    // Specify filters
+                    Add(templateFormat, [new(queueArn1) { Filters = "SOME-FILTER1; SOME-FILTER2"}, ], "void");
+
+                    // Explicitly specify all properties
+                    Add(templateFormat, 
+                        [new(queueArn1) 
+                        {
+                            BatchSize = 10,
+                            MaximumConcurrency = 30,
+                            Filters = "SOME-FILTER1; SOME-FILTER2",
+                            MaximumBatchingWindowInSeconds = 15,
+                            Enabled = false
+                        }],
+                        TypeFullNames.SQSBatchResponse);
+                }
+            }
+        }
+
         public class LambdaFunctionModelTest : ILambdaFunctionSerializable
         {
             public string MethodName { get; set; }
@@ -868,6 +1000,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
             public string SourceGeneratorVersion { get; set; }
             public LambdaPackageType PackageType { get; set; } = LambdaPackageType.Zip;
+            public string ReturnTypeFullName { get; set; } = "void";
         }
     }
 }

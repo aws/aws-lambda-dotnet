@@ -60,7 +60,7 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
         this.Write(apiParameters.TransformText());
         this.Write(new APIGatewayInvoke(_model, apiParameters.ParameterSignature).TransformText());
     }
-    else if (_model.LambdaMethod.Events.Count == 0)
+    else
     {
         this.Write(new NoEventMethodBody(_model).TransformText());
     }

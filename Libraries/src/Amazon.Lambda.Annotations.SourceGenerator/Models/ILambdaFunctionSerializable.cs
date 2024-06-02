@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
@@ -68,6 +67,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// There always exists <see cref="Annotations.LambdaFunctionAttribute"/> in the list.
         /// </summary>
         IList<AttributeModel> Attributes { get; }
+
+        /// <summary>
+        /// The fully qualified name of the return type of the Lambda method written by the user.
+        /// </summary>
+        string ReturnTypeFullName { get; }
 
         /// <summary>
         /// The assembly version of the Amazon.Lambda.Annotations.SourceGenerator package.

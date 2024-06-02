@@ -32,8 +32,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string FromBodyAttribute = "Amazon.Lambda.Annotations.APIGateway.FromBodyAttribute";
         public const string FromRouteAttribute = "Amazon.Lambda.Annotations.APIGateway.FromRouteAttribute";
 
+        public const string SQSEvent = "Amazon.Lambda.SQSEvents.SQSEvent";
+        public const string SQSBatchResponse = "Amazon.Lambda.SQSEvents.SQSBatchResponse";
+        public const string SQSEventAttribute = "Amazon.Lambda.Annotations.SQS.SQSEventAttribute";
+
         public const string LambdaSerializerAttribute = "Amazon.Lambda.Core.LambdaSerializerAttribute";
-        
+        public const string DefaultLambdaSerializer = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
+
         public const string LambdaSerializerAttributeWithoutNamespace = "LambdaSerializerAttribute";
 
         public static HashSet<string> Requests = new HashSet<string>
@@ -45,7 +50,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public static HashSet<string> Events = new HashSet<string>
         {
             RestApiAttribute,
-            HttpApiAttribute
+            HttpApiAttribute,
+            SQSEventAttribute
         };
     }
 }
