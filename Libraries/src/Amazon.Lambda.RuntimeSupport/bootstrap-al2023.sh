@@ -7,7 +7,7 @@
 # This means the default cert bundle file is double loaded causing a cold start performance hit. This logic
 # sets the SSL_CERT_FILE to an empty file if SSL_CERT_FILE hasn't been explicitly
 # set. This avoid the double load of the default cert bundle file.
-if [ -z "${SSL_CERT_FILE}"]; then
+if [ -z "${SSL_CERT_FILE}" ]; then
   export SSL_CERT_FILE="/var/runtime/empty-certificates.crt"
 fi
 
