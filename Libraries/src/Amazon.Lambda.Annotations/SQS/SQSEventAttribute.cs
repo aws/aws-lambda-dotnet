@@ -60,8 +60,8 @@ namespace Amazon.Lambda.Annotations.SQS
             get => filters ?? string.Empty;
             set => filters = value;
         }
-        private string? filters { get; set; }
-        internal bool IsFiltersSet => filters is not null;
+        private string filters { get; set; } = null;
+        internal bool IsFiltersSet => filters != null;
 
         /// <summary>
         /// The maximum number of concurrent Lambda invocations that the SQS queue can trigger.

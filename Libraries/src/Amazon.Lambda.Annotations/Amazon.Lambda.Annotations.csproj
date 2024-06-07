@@ -8,11 +8,6 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <Nullable>annotations</Nullable>
-    <LangVersion>10.0</LangVersion>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <WarningsAsErrors>IL2026,IL2067,IL2075,IL3050</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>
