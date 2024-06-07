@@ -1,11 +1,14 @@
 ﻿using Amazon.Lambda.Annotations.SourceGenerator;
+using Amazon.Lambda.Annotations.SQS;
 using System.Collections.Generic;
 using Xunit;
-using static Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests.SqsEventsTestData;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
-    public class SqsEventsTestData : TheoryData<CloudFormationTemplateFormat, IEnumerable<SqsEventAttributeModelTest>, string>
+    /// <summary>
+    /// This class provides the test data for <see cref="CloudFormationWriterTests.SqsEventsTest(CloudFormationTemplateFormat, IEnumerable{SQSEventAttribute}, string)"/>
+    /// </summary>
+    public class SqsEventsTestData : TheoryData<CloudFormationTemplateFormat, IEnumerable<SQSEventAttribute>, string>
     {
         const string queueArn1 = "arn:aws:sqs:us-east-2:444455556666:queue1";
         const string queueArn2 = "arn:aws:sqs:us-east-2:444455556666:queue2";
@@ -44,16 +47,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                         }],
                     TypeFullNames.SQSBatchResponse);
             }
-        }
-
-        public class SqsEventAttributeModelTest(string queue)
-        {
-            public string Queue { get; init; } = queue;
-            public bool? Enabled { get; init; }
-            public uint? MaximumConcurrency { get; init; }
-            public uint? BatchSize { get; init; }
-            public uint? MaximumBatchingWindowInSeconds { get; init; }
-            public string? Filters { get; init; }
         }
     }
 }

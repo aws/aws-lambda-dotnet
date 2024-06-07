@@ -4,7 +4,12 @@
         <TargetFramework>net6.0</TargetFramework>
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
         <LangVersion>latest</LangVersion>
-    </PropertyGroup>
+
+        <!--This assembly needs to access internal methods inside the Amazon.Lambda.Annotations assembly.
+    Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
+        <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
+        <SignAssembly>true</SignAssembly>
+	</PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />

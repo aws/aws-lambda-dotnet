@@ -12,7 +12,6 @@ using Amazon.Lambda.Annotations.SQS;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using static Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests.SqsEventsTestData;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
@@ -534,37 +533,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal("serverlessApp", templateWriter.GetToken<string>($"{propertiesPath}.CodeUri"));
         }
 
-        /// <summary>
-        /// This test takes an enumerable of <see cref="SqsEventAttributeModelTest"/> and converts each attribute model to the actual <see cref="SQSEventAttribute"/>.
-        /// Each <see cref="SQSEventAttribute"/> is then added to the list of attributes in the <see cref="ILambdaFunctionSerializable"/> and a CloudFormation template is generated.
-        /// </summary>
-        /// <param name="templateFormat">Specifies whether <see cref="JsonWriter"/> or <see cref="YamlWriter"/> should be used to write the CF template.</param>
-        /// <param name="attModels">This is a replica of the actual <see cref="SQSEventAttribute"/> but has nullable properties</param>
-        /// <param name="lambdaReturnType">The return type of the Lambda function written by the user</param>
         [Theory]
         [ClassData(typeof(SqsEventsTestData))]
-        public void SqsEventsTest(CloudFormationTemplateFormat templateFormat, IEnumerable<SqsEventAttributeModelTest> attModels, string lambdaReturnType)
+        public void SqsEventsTest(CloudFormationTemplateFormat templateFormat, IEnumerable<SQSEventAttribute> sqsEventAttributes, string lambdaReturnType)
         {
             // ARRANGE
             var mockFileManager = GetMockFileManager(string.Empty);
             var lambdaFunctionModel = GetLambdaFunctionModel();
             lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
             lambdaFunctionModel.ReturnTypeFullName = lambdaReturnType;
-            foreach (var attModel in attModels)
+            foreach (var att in sqsEventAttributes)
             {
-                var sqsEventAttribute = new SQSEventAttribute(attModel.Queue);
-                if (attModel.BatchSize is not null)
-                    sqsEventAttribute.BatchSize = attModel.BatchSize.Value;
-                if (attModel.Enabled is not null)
-                    sqsEventAttribute.Enabled = attModel.Enabled.Value;
-                if (attModel.MaximumBatchingWindowInSeconds is not null)
-                    sqsEventAttribute.MaximumBatchingWindowInSeconds = attModel.MaximumBatchingWindowInSeconds.Value;
-                if (attModel.MaximumConcurrency is not null)
-                    sqsEventAttribute.MaximumConcurrency = attModel.MaximumConcurrency.Value;
-                if (attModel.Filters is not null)
-                    sqsEventAttribute.Filters = attModel.Filters;
-
-                lambdaFunctionModel.Attributes.Add(new AttributeModel<SQSEventAttribute> { Data = sqsEventAttribute });
+                lambdaFunctionModel.Attributes.Add(new AttributeModel<SQSEventAttribute> { Data = att });
             }
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport([lambdaFunctionModel]);
@@ -576,42 +556,42 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
             templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
 
-            foreach (var attModel in attModels)
+            foreach (var att in sqsEventAttributes)
             {
-                var eventName = attModel.Queue.StartsWith("@") ? attModel.Queue.Substring(1) : attModel.Queue.Split(':').ToList()[5];
+                var eventName = att.Queue.StartsWith("@") ? att.Queue.Substring(1) : att.Queue.Split(':').ToList()[5];
                 var eventPath = $"Resources.{lambdaFunctionModel.ResourceName}.Properties.Events.{eventName}";
                 var eventPropertiesPath = $"{eventPath}.Properties";
 
                 Assert.True(templateWriter.Exists(eventPath));
                 Assert.Equal("SQS", templateWriter.GetToken<string>($"{eventPath}.Type"));
 
-                if (!attModel.Queue.StartsWith("@"))
+                if (!att.Queue.StartsWith("@"))
                 {
-                    Assert.Equal(attModel.Queue, templateWriter.GetToken<string>($"{eventPropertiesPath}.Queue"));
+                    Assert.Equal(att.Queue, templateWriter.GetToken<string>($"{eventPropertiesPath}.Queue"));
                 }
                 else
                 {
-                    Assert.Equal([attModel.Queue.Substring(1), "Arn"], templateWriter.GetToken<List<string>>($"{eventPropertiesPath}.Queue.Fn::GetAtt"));
+                    Assert.Equal([att.Queue.Substring(1), "Arn"], templateWriter.GetToken<List<string>>($"{eventPropertiesPath}.Queue.Fn::GetAtt"));
                 }
 
-                Assert.Equal(attModel.BatchSize is not null, templateWriter.Exists($"{eventPropertiesPath}.BatchSize"));
-                if (attModel.BatchSize is not null)
+                Assert.Equal(att.IsBatchSizeSet, templateWriter.Exists($"{eventPropertiesPath}.BatchSize"));
+                if (att.IsBatchSizeSet)
                 {
-                    Assert.Equal(attModel.BatchSize, templateWriter.GetToken<uint>($"{eventPropertiesPath}.BatchSize"));
+                    Assert.Equal(att.BatchSize, templateWriter.GetToken<uint>($"{eventPropertiesPath}.BatchSize"));
                 }
 
-                Assert.Equal(attModel.Enabled is not null, templateWriter.Exists($"{eventPropertiesPath}.Enabled"));
-                if (attModel.Enabled is not null)
+                Assert.Equal(att.IsBatchSizeSet, templateWriter.Exists($"{eventPropertiesPath}.Enabled"));
+                if (att.IsEnabledSet)
                 {
-                    Assert.Equal(attModel.Enabled, templateWriter.GetToken<bool>($"{eventPropertiesPath}.Enabled"));
+                    Assert.Equal(att.Enabled, templateWriter.GetToken<bool>($"{eventPropertiesPath}.Enabled"));
                 }
 
-                Assert.Equal(attModel.Filters is not null, templateWriter.Exists($"{eventPropertiesPath}.FilterCriteria"));
-                if (attModel.Filters is not null)
+                Assert.Equal(att.IsFiltersSet, templateWriter.Exists($"{eventPropertiesPath}.FilterCriteria"));
+                if (att.IsFiltersSet)
                 {
                     var filtersList = templateWriter.GetToken<List<Dictionary<string, string>>>($"{eventPropertiesPath}.FilterCriteria.Filters");
                     var index = 0;
-                    foreach (var filter in attModel.Filters.Split(';').Select(x => x.Trim()))
+                    foreach (var filter in att.Filters.Split(';').Select(x => x.Trim()))
                     {
                         Assert.Equal(filter, filtersList[index]["Pattern"]);
                         index++;
@@ -624,16 +604,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                     Assert.Equal(["ReportBatchItemFailures"], templateWriter.GetToken<List<string>>($"{eventPropertiesPath}.FunctionResponseTypes"));
                 }
 
-                Assert.Equal(attModel.MaximumBatchingWindowInSeconds is not null, templateWriter.Exists($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds"));
-                if (attModel.MaximumBatchingWindowInSeconds is not null)
+                Assert.Equal(att.IsMaximumBatchingWindowInSecondsSet, templateWriter.Exists($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds"));
+                if (att.IsMaximumBatchingWindowInSecondsSet)
                 {
-                    Assert.Equal(attModel.MaximumBatchingWindowInSeconds, templateWriter.GetToken<uint>($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds"));
+                    Assert.Equal(att.MaximumBatchingWindowInSeconds, templateWriter.GetToken<uint>($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds"));
                 }
 
-                Assert.Equal(attModel.MaximumConcurrency is not null, templateWriter.Exists($"{eventPropertiesPath}.ScalingConfig"));
-                if (attModel.MaximumConcurrency is not null)
+                Assert.Equal(att.IsMaximumConcurrencySet, templateWriter.Exists($"{eventPropertiesPath}.ScalingConfig"));
+                if (att.IsMaximumConcurrencySet)
                 {
-                    Assert.Equal(attModel.MaximumConcurrency, templateWriter.GetToken<uint>($"{eventPropertiesPath}.ScalingConfig.MaximumConcurrency"));
+                    Assert.Equal(att.MaximumConcurrency, templateWriter.GetToken<uint>($"{eventPropertiesPath}.ScalingConfig.MaximumConcurrency"));
                 }
             }
         }
@@ -927,8 +907,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             string resourceName = "TestMethod",
             uint timeout = 30,
             uint memorySize = 512, 
-            string? role = null, 
-            string? policies = "AWSLambdaBasicExecutionRole")
+            string role = null, 
+            string policies = "AWSLambdaBasicExecutionRole")
         {
             return new LambdaFunctionModelTest
             {

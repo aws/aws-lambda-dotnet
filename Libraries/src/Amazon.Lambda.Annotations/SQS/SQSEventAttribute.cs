@@ -59,13 +59,8 @@ namespace Amazon.Lambda.Annotations.SQS
         /// A collection of semicolon (;) separated strings where each string denotes a pattern. 
         /// Only those SQS messages that conform to at least 1 pattern will be forwarded to the Lambda function for processing. 
         /// </summary>
-        public string Filters
-        {
-            get => filters ?? string.Empty;
-            set => filters = value;
-        }
-        private string filters { get; set; } = null;
-        internal bool IsFiltersSet => filters != null;
+        public string Filters { get; set; } = null;
+        internal bool IsFiltersSet  => Filters != null;
 
         /// <summary>
         /// The maximum number of concurrent Lambda invocations that the SQS queue can trigger.
