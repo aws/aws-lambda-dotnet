@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Amazon.Lambda.Annotations.SQS
 {
@@ -81,6 +82,26 @@ namespace Amazon.Lambda.Annotations.SQS
         public SQSEventAttribute(string queue)
         {
             Queue = queue;
+        }
+
+        internal List<string> Validate()
+        {
+            var validationErrors = new List<string>();
+
+            if (IsBatchSizeSet && (BatchSize < 1 || BatchSize > 10000))
+            {
+                validationErrors.Add($"{nameof(SQSEventAttribute.BatchSize)} = {BatchSize}. It must be between 1 and 10000");
+            }
+            if (IsMaximumConcurrencySet && (MaximumConcurrency < 2 || MaximumConcurrency > 1000))
+            {
+                validationErrors.Add($"{nameof(SQSEventAttribute.MaximumConcurrency)} = {MaximumConcurrency}. It must be between 2 and 1000");
+            }
+            if (IsMaximumBatchingWindowInSecondsSet && (MaximumBatchingWindowInSeconds < 0 || MaximumBatchingWindowInSeconds > 300))
+            {
+                validationErrors.Add($"{nameof(SQSEventAttribute.MaximumBatchingWindowInSeconds)} = {MaximumBatchingWindowInSeconds}. It must be between 0 and 300");
+            }
+
+            return validationErrors;
         }
     }
 }

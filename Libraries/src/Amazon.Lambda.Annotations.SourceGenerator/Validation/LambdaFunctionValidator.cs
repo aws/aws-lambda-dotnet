@@ -165,23 +165,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 if (att.Type.FullName != TypeFullNames.SQSEventAttribute)
                     continue;
 
-                var data = ((AttributeModel<SQSEventAttribute>)att).Data;
-
-                if (data.IsBatchSizeSet && (data.BatchSize < 1 || data.BatchSize > 10000))
-                {
-                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidSqsEventAttribute, methodLocation, 
-                        $"{nameof(SQSEventAttribute.BatchSize)} = {data.BatchSize}. It must be between 1 and 10000"));
-                }
-                if (data.IsMaximumConcurrencySet && (data.MaximumConcurrency < 2 || data.MaximumConcurrency > 1000))
-                {
-                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidSqsEventAttribute, methodLocation, 
-                        $"{nameof(SQSEventAttribute.MaximumConcurrency)} = {data.MaximumConcurrency}. It must be between 2 and 1000"));
-                }
-                if (data.IsMaximumBatchingWindowInSecondsSet && (data.MaximumBatchingWindowInSeconds < 0 || data.MaximumBatchingWindowInSeconds > 300))
-                {
-                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidSqsEventAttribute, methodLocation, 
-                        $"{nameof(SQSEventAttribute.MaximumBatchingWindowInSeconds)} = {data.MaximumBatchingWindowInSeconds}. It must be between 0 and 300"));
-                }
+                var sqsEventAttribute = ((AttributeModel<SQSEventAttribute>)att).Data;
+                var validationErrors = sqsEventAttribute.Validate();
+                validationErrors.ForEach(errorMessage => diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidSqsEventAttribute, methodLocation, errorMessage)));
             }
 
             // Validate method parameters - When using SQSEventAttribute, the method signature must be (SQSEvent sqsEvent) or (SQSEvent sqsEvent, ILambdaContext context)
