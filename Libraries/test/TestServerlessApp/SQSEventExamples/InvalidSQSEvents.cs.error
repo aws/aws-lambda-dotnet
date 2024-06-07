@@ -6,6 +6,10 @@ using System;
 
 namespace TestServerlessApp.SQSEventExamples
 {
+    // This file represents invalid usage of the SQSEventAttribute. 
+    // This file is sent as input to the source generator unit tests and we assert that compilation errors are thrown with the appropriate diagnostic message.
+    // Refer to the VerifyInvalidSQSEvents_ThrowsCompilationErrors unit test.
+
     public class InvalidSQSEvents
     {
         [LambdaFunction]

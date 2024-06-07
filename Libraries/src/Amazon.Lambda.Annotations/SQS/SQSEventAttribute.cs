@@ -8,6 +8,10 @@ namespace Amazon.Lambda.Annotations.SQS
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class SQSEventAttribute : Attribute
     {
+        // Except for Queue all other properties are optional.
+        // .NET attributes cannot be nullable. To work around this, we have added nullable backing fields to all optional properties and added an internal Is<PropertyName>Set method to identify which properties were explicitly set the customer.
+        // These internal methods are used by the CloudFormationWriter while deciding which properties to write in the CF template.
+
         /// <summary>
         /// The SQS queue that will act as the event trigger for the Lambda function.
         /// This can either be the queue ARN or reference to the SQS queue resource that is already defined in the serverless template.

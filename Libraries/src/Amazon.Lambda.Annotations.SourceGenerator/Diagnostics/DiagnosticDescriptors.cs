@@ -120,7 +120,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
 
         public static readonly DiagnosticDescriptor ApiParametersOnNonApiFunction = new DiagnosticDescriptor(id: "AWSLambda0115",
             title: "Invalid Usage of API Parameters",
-            messageFormat: "The lambda function parameters are annotated with HTTP API attributes but the lambda function itself is not annotated with an HTTP API attribute",
+            messageFormat: "The Lambda function parameters are annotated with HTTP API attributes but the Lambda function itself is not annotated with an HTTP API attribute",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

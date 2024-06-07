@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 
 namespace TestServerlessApp.SQSEventExamples
 {
+    // This file represents valid usage of the SQSEventAttribute. This is added as .txt file since we do not want to deploy these functions during our integration tests. 
+    // This file is only sent as input to the source generator unit tests. 
+    // Refer to VerifyValidSQSEvents unit test.
+
     public class ValidSQSEvents
     {
         [LambdaFunction]

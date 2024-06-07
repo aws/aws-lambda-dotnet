@@ -1224,31 +1224,31 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 11, 9, 16, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
                             .WithArguments("BatchSize = 0. It must be between 1 and 10000"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 11, 9, 16, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
                             .WithArguments("MaximumBatchingWindowInSeconds = 302. It must be between 0 and 300"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 11, 9, 16, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
                             .WithArguments("MaximumConcurrency = 1. It must be between 2 and 1000"),
 
                         DiagnosticResult.CompilerError("AWSLambda0117")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 18, 9, 23, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 22, 9, 27, 10)
                             .WithArguments("When using the SQSEventAttribute, the Lambda method can accept at most 2 parameters. " +
                             "The first parameter is required and must be of type Amazon.Lambda.SQSEvents.SQSEvent. " +
                             "The second parameter is optional and must be of type Amazon.Lambda.Core.ILambdaContext."),
 
                         DiagnosticResult.CompilerError("AWSLambda0117")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 25, 9, 31, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 29, 9, 35, 10)
                             .WithArguments("When using the SQSEventAttribute, the Lambda method can return either " +
                             "void, System.Threading.Tasks.Task, Amazon.Lambda.SQSEvents.SQSBatchResponse or Task<Amazon.Lambda.SQSEvents.SQSBatchResponse>"),
 
                         DiagnosticResult
                             .CompilerError("AWSLambda0102")
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 33, 9, 39, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 37, 9, 43, 10)
                             .WithMessage("Multiple event attributes on LambdaFunction are not supported")
                     }
                 }
