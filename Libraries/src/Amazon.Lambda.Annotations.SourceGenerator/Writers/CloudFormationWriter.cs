@@ -263,8 +263,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// </summary>
         private string ProcessSqsAttribute(ILambdaFunctionSerializable lambdaFunction, SQSEventAttribute att)
         {
-            var eventName = att.Queue.StartsWith("@") ? att.Queue.Substring(1) : GetResourceNameFromArn(att.Queue);
-            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{att.ResourceName}";
 
             // Set event type - https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-eventsource.html#sam-function-eventsource-type
             _templateWriter.SetToken($"{eventPath}.Type", "SQS");
@@ -330,7 +329,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _templateWriter.SetToken($"{eventPropertiesPath}.ScalingConfig.MaximumConcurrency", att.MaximumConcurrency);
             }
 
-            return eventName;
+            return att.ResourceName;
         }
 
         /// <summary>
@@ -544,17 +543,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             return string.Empty;
-        }
-
-        private string GetResourceNameFromArn(string arn)
-        {
-            const string malformedErrorMessage = "ARN is in incorrect format. ARN format is: arn:<partition>:<service>:<region>:<account-id>:<resource>";
-            var tokens = arn.Split(new char[] { ':' }, 6);
-            if (tokens.Length != 6)
-            {
-                throw new ArgumentException(malformedErrorMessage);
-            }
-            return tokens[5];
         }
     }
 }

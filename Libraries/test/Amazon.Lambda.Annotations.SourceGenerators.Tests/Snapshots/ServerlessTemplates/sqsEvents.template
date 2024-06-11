@@ -9,7 +9,9 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "queue1",
-          "queue2"
+          "queue2",
+          "myqueue",
+          "testQueueEvent"
         ]
       },
       "Properties": {
@@ -49,6 +51,23 @@
               "Queue": "arn:aws:sqs:us-east-2:444455556666:queue2",
               "Enabled": false,
               "MaximumBatchingWindowInSeconds": 5
+            }
+          },
+          "myqueue": {
+            "Type": "SQS",
+            "Properties": {
+              "Queue": "arn:aws:sqs:us-east-2:444455556666:my-queue"
+            }
+          },
+          "testQueueEvent": {
+            "Type": "SQS",
+            "Properties": {
+              "Queue": {
+                "Fn::GetAtt": [
+                  "testQueue",
+                  "Arn"
+                ]
+              }
             }
           }
         }

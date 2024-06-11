@@ -1249,7 +1249,19 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         DiagnosticResult
                             .CompilerError("AWSLambda0102")
                             .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 37, 9, 43, 10)
-                            .WithMessage("Multiple event attributes on LambdaFunction are not supported")
+                            .WithMessage("Multiple event attributes on LambdaFunction are not supported"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 45, 9, 50, 10)
+                            .WithArguments("Queue = test-queue. The SQS queue ARN is invalid. The ARN format is 'arn:<partition>:sqs:<region>:<account-id>:<queue-name>'"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 52, 9, 57, 10)
+                            .WithArguments("ResourceName = sqs-event-source. It must only contain alphanumeric characters and must not be an empty string"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 59, 9, 64, 10)
+                            .WithArguments("ResourceName = . It must only contain alphanumeric characters and must not be an empty string"),
                     }
                 }
             }.RunAsync();

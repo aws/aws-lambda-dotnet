@@ -20,6 +20,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
 
             foreach (var pair in att.NamedArguments)
             {
+                if (pair.Key == nameof(data.ResourceName) && pair.Value.Value is string resourceName)
+                {
+                    data.ResourceName = resourceName;
+                }
                 if (pair.Key == nameof(data.BatchSize) && pair.Value.Value is uint batchSize)
                 {
                     data.BatchSize = batchSize;

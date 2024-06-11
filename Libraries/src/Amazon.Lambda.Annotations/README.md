@@ -727,6 +727,7 @@ This example shows how users can use the `SQSEvent` attribute to set up event so
 
 The `SQSEvent` attribute contains the following properties:
 * **Queue** (Required) - The SQS queue that will act as the event trigger for the Lambda function. This can either be the queue ARN or reference to the SQS queue resource that is already defined in the serverless template. To reference a SQS queue resource in the serverless template, prefix the resource name with "@" symbol.
+* **ResourceName** (Optional) - The CloudFormation resource name for the SQS event source mapping. By default this is set to the SQS queue name if `Queue` is set to an SQS queue ARN. If `Queue` is set to an existing CloudFormation resource, than that is used as the default value without the "@" prefix.
 * **Enabled** (Optional) - If set to false, the event source mapping will be disabled and message polling will be paused. Default value is true.
 * **BatchSize** (Optional) - The maximum number of messages that will be sent for processing in a single batch.  This value must be between 1 to 10000. Default value is 10.
 * **MaximumBatchingWindowInSeconds** (Optional) - The maximum amount of time, in seconds, to gather records before invoking the function. This value must be between 0 to 300. Default value is 0.
@@ -746,10 +747,10 @@ report `ReportBatchItemFailures`
 ```csharp
 
 [LambdaFunction(ResourceName = "SQSMessageHandler", Policies = "AWSLambdaSQSQueueExecutionRole", PackageType = LambdaPackageType.Image)]
-[SQSEvent("@TestQueue", BatchSize = 50, MaximumConcurrency = 5, MaximumBatchingWindowInSeconds = 5, Filters = "{ \"body\" : { \"RequestCode\" : [ \"BBBB\" ] } }")]
+[SQSEvent("@TestQueue", ResourceName = "TestQueueEvent", BatchSize = 50, MaximumConcurrency = 5, MaximumBatchingWindowInSeconds = 5, Filters = "{ \"body\" : { \"RequestCode\" : [ \"BBBB\" ] } }")]
 public SQSBatchResponse HandleMessage(SQSEvent evnt, ILambdaContext lambdaContext)
 {
-	lambdaContext.Logger.Log($"Received {evnt.Records.Count} messages");
+    lambdaContext.Logger.Log($"Received {evnt.Records.Count} messages");
     return new SQSBatchResponse();
 }
 ```
@@ -763,7 +764,7 @@ The following SQS event source mapping will be generated for the `SQSMessageHand
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestQueue"
+          "TestQueueEvent"
         ]
       },
       "Properties": {
@@ -780,7 +781,7 @@ The following SQS event source mapping will be generated for the `SQSMessageHand
           ]
         },
         "Events": {
-          "TestQueue": {
+          "TestQueueEvent": {
             "Type": "SQS",
             "Properties": {
               "Queue": {

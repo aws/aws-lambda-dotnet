@@ -13,21 +13,21 @@ namespace TestServerlessApp.SQSEventExamples
     public class InvalidSQSEvents
     {
         [LambdaFunction]
-        [SQSEvent("test-queue", BatchSize = 0, MaximumBatchingWindowInSeconds = 302, MaximumConcurrency = 1)]
+        [SQSEvent("@testQueue", BatchSize = 0, MaximumBatchingWindowInSeconds = 302, MaximumConcurrency = 1)]
         public void ProcessMessageWithInvalidSQSEventAttributes(SQSEvent evnt)
         {
             Console.WriteLine($"Event processed: {evnt}");
         }
 
         [LambdaFunction]
-        [SQSEvent("test-queue")]
+        [SQSEvent("@testQueue")]
         public void ProcessMessageWithInvalidParameters(SQSEvent evnt, bool invalidParameter1, int invalidParameter2)
         {
             Console.WriteLine($"Event processed: {evnt}");
         }
 
         [LambdaFunction]
-        [SQSEvent("test-queue")]
+        [SQSEvent("@testQueue")]
         public bool ProcessMessageWithInvalidReturnType(SQSEvent evnt)
         {
             Console.WriteLine($"Event processed: {evnt}");
@@ -36,8 +36,29 @@ namespace TestServerlessApp.SQSEventExamples
 
         [LambdaFunction]
         [RestApi(LambdaHttpMethod.Get, "/")]
-        [SQSEvent("test-queue")]
+        [SQSEvent("@testQueue")]
         public void ProcessMessageWithMultipleEventTypes(SQSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction]
+        [SQSEvent("test-queue")]
+        public void ProcessMessageWithInvalidQueueArn(SQSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction]
+        [SQSEvent("@testQueue", ResourceName = "sqs-event-source")]
+        public void ProcessMessageWithInvalidResourceName(SQSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction]
+        [SQSEvent("@testQueue", ResourceName = "")]
+        public void ProcessMessageWithEmptyResourceName(SQSEvent evnt)
         {
             Console.WriteLine($"Event processed: {evnt}");
         }

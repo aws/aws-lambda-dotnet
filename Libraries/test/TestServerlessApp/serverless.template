@@ -776,7 +776,7 @@
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
-          "TestQueue"
+          "TestQueueEvent"
         ]
       },
       "Properties": {
@@ -793,7 +793,7 @@
           ]
         },
         "Events": {
-          "TestQueue": {
+          "TestQueueEvent": {
             "Type": "SQS",
             "Properties": {
               "Queue": {
