@@ -76,5 +76,12 @@ namespace TestServerlessApp.SQSEventExamples
         {
             Console.WriteLine($"Event processed: {evnt}");
         }
+
+        [LambdaFunction]
+        [SQSEvent("arn:aws:sqs:us-east-2:444455556666:test-queue.fifo", BatchSize = 100, MaximumBatchingWindowInSeconds = 5)]
+        public void ProcessMessageWithFifoQueue(SQSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
     }
 }

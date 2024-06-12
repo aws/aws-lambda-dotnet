@@ -141,6 +141,21 @@ namespace Amazon.Lambda.Annotations.SQS
                 validationErrors.Add($"{nameof(SQSEventAttribute.MaximumBatchingWindowInSeconds)} is not set or set to a value less than 1. " +
                     $"It must be set to atleast 1 when {nameof(SQSEventAttribute.BatchSize)} is greater than 10");
             }
+
+            // The queue is FIFO if the queue ARN ends in ".fifo"
+            var isFifo = !Queue.StartsWith("@") && Queue.EndsWith(".fifo");
+            if (isFifo)
+            {
+                if (IsMaximumBatchingWindowInSecondsSet)
+                {
+                    validationErrors.Add($"{nameof(SQSEventAttribute.MaximumBatchingWindowInSeconds)} must not be set when the event source mapping is for a FIFO queue");
+                }
+                if (IsBatchSizeSet && BatchSize > 10)
+                {
+                    validationErrors.Add($"{nameof(SQSEventAttribute.BatchSize)} = {BatchSize}. It must be less than or equal to 10 when the event source mapping is for a FIFO queue");
+                }
+            }
+
             if (!Queue.StartsWith("@"))
             {
                 var arnTokens = Queue.Split(new char[] { ':' }, 6);
