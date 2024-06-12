@@ -68,7 +68,7 @@ namespace Amazon.Lambda.Annotations.SQS
 
         /// <summary>
         /// The maximum number of messages that will be sent for processing in a single batch. 
-        /// This value must be between 1 to 10000. Default value is 10.
+        /// This value must be between 1 to 10000. For FIFO queues the maximum allowed value is 10. Default value is 10.
         /// </summary>
         public uint BatchSize
         {
@@ -80,7 +80,9 @@ namespace Amazon.Lambda.Annotations.SQS
 
         /// <summary>
         /// The maximum amount of time, in seconds, to gather records before invoking the function. 
-        /// This value must be between 0 to 300. Default value is 0.
+        /// This value must be between 0 to 300. Default value is 0. 
+        /// When <see cref="BatchSize"/> is set to a value greater than 10 <see cref="MaximumBatchingWindowInSeconds"/> must be set to at least 1. 
+        /// This property must not be set if the event source mapping is being created for a FIFO queue.
         /// </summary>
         public uint MaximumBatchingWindowInSeconds 
         {
@@ -133,6 +135,11 @@ namespace Amazon.Lambda.Annotations.SQS
             if (IsMaximumBatchingWindowInSecondsSet && (MaximumBatchingWindowInSeconds < 0 || MaximumBatchingWindowInSeconds > 300))
             {
                 validationErrors.Add($"{nameof(SQSEventAttribute.MaximumBatchingWindowInSeconds)} = {MaximumBatchingWindowInSeconds}. It must be between 0 and 300");
+            }
+            if (IsBatchSizeSet && BatchSize > 10 && (!IsMaximumBatchingWindowInSecondsSet || MaximumBatchingWindowInSeconds < 1))
+            {
+                validationErrors.Add($"{nameof(SQSEventAttribute.MaximumBatchingWindowInSeconds)} is not set or set to a value less than 1. " +
+                    $"It must be set to atleast 1 when {nameof(SQSEventAttribute.BatchSize)} is greater than 10");
             }
             if (!Queue.StartsWith("@"))
             {

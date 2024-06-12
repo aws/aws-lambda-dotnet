@@ -62,5 +62,19 @@ namespace TestServerlessApp.SQSEventExamples
         {
             Console.WriteLine($"Event processed: {evnt}");
         }
+
+        [LambdaFunction]
+        [SQSEvent("@testQueue", BatchSize = 100)]
+        public void ProcessMessageWithMaximumBatchingWindowInSecondsNotSpecified(SQSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction]
+        [SQSEvent("@testQueue", BatchSize = 100, MaximumBatchingWindowInSeconds = 0)]
+        public void ProcessMessageWithMaximumBatchingWindowInSecondsLessThanOne(SQSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
     }
 }

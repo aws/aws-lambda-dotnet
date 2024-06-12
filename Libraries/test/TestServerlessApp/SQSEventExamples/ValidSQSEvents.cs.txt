@@ -13,7 +13,7 @@ namespace TestServerlessApp.SQSEventExamples
     public class ValidSQSEvents
     {
         [LambdaFunction]
-        [SQSEvent("arn:aws:sqs:us-east-2:444455556666:queue1", BatchSize = 50, MaximumConcurrency = 30, Filters = "My-Filter-1; My-Filter-2")]
+        [SQSEvent("arn:aws:sqs:us-east-2:444455556666:queue1", BatchSize = 50, MaximumBatchingWindowInSeconds = 2, MaximumConcurrency = 30, Filters = "My-Filter-1; My-Filter-2")]
         [SQSEvent("arn:aws:sqs:us-east-2:444455556666:queue2", MaximumBatchingWindowInSeconds = 5, Enabled = false)]
         [SQSEvent("arn:aws:sqs:us-east-2:444455556666:my-queue")]
         [SQSEvent("@testQueue", ResourceName = "testQueueEvent")]
