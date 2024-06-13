@@ -741,8 +741,7 @@ The Lambda method must conform to the following rules when it is tagged with the
  1. It must have at least 1 argument and can have at most 2 arguments.
 	 - The first argument is required and must be of type `SQSEvent` defined in the [Amazon.Lambda.SQSEvents](https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.SQSEvents/SQSEvent.cs) package. 
 	 - The second argument is optional and must be of type `ILambdaContext` defined in the [Amazon.Lambda.Core](https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.Core/ILambdaContext.cs) package.
- 2. The method return type must be one of `void`, `Task`, `SQSBatchResponse` or `Task<SQSBatchResponse>`. The `SQSBatchResponse` type is defined in the [Amazon.Lambda.SQSEvents](https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.SQSEvents/SQSBatchResponse.cs) package. If the return type is `SQSBatchResponse` or `Task<SQSBatchResponse>`, then the [FunctionResponseTypes](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-sqs.html#sam-function-sqs-functionresponsetypes) in the event source mapping is set to 
-report `ReportBatchItemFailures`
+ 2. The method return type must be one of `void`, `Task`, `SQSBatchResponse` or `Task<SQSBatchResponse>`. The `SQSBatchResponse` type is defined in the [Amazon.Lambda.SQSEvents](https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.SQSEvents/SQSBatchResponse.cs) package. If the return type is `SQSBatchResponse` or `Task<SQSBatchResponse>`, then the [FunctionResponseTypes](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-sqs.html#sam-function-sqs-functionresponsetypes) in the event source mapping is set to report `ReportBatchItemFailures`
 
 ```csharp
 
@@ -759,7 +758,7 @@ In the above example `TestQueue` refers to an existing SQS queue resource in the
 The following SQS event source mapping will be generated for the `SQSMessageHandler` Lambda function
 
 ```json
-	"SQSMessageHandler": {
+    "SQSMessageHandler": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
