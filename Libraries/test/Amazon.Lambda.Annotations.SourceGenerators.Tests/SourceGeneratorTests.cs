@@ -1265,11 +1265,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
                             .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 66, 9, 71, 10)
-                            .WithArguments("MaximumBatchingWindowInSeconds is not set or set to a value less than 1. It must be set to atleast 1 when BatchSize is greater than 10"),
+                            .WithArguments("MaximumBatchingWindowInSeconds is not set or set to a value less than 1. It must be set to at least 1 when BatchSize is greater than 10"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
                             .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 73, 9, 78, 10)
-                            .WithArguments("MaximumBatchingWindowInSeconds is not set or set to a value less than 1. It must be set to atleast 1 when BatchSize is greater than 10"),
+                            .WithArguments("MaximumBatchingWindowInSeconds is not set or set to a value less than 1. It must be set to at least 1 when BatchSize is greater than 10"),
 
                         DiagnosticResult.CompilerError("AWSLambda0116")
                             .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 80, 9, 85, 10)

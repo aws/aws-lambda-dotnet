@@ -108,7 +108,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -140,7 +146,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -172,7 +184,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -204,7 +222,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -236,7 +260,14 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -269,7 +300,14 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -322,7 +360,14 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 1024,
@@ -355,7 +400,14 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -388,7 +440,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootPost"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootPost": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -420,7 +478,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootPost"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootPost": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -452,7 +516,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -484,7 +554,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -516,7 +592,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -548,7 +630,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -580,7 +668,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -692,7 +786,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -744,7 +844,14 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -777,7 +884,17 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "TestQueueEvent"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "TestQueueEvent": [
+            "Queue.Fn::GetAtt",
+            "BatchSize",
+            "FilterCriteria.Filters",
+            "FunctionResponseTypes",
+            "MaximumBatchingWindowInSeconds",
+            "ScalingConfig.MaximumConcurrency"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,

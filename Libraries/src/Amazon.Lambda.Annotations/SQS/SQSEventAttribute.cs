@@ -139,7 +139,7 @@ namespace Amazon.Lambda.Annotations.SQS
             if (IsBatchSizeSet && BatchSize > 10 && (!IsMaximumBatchingWindowInSecondsSet || MaximumBatchingWindowInSeconds < 1))
             {
                 validationErrors.Add($"{nameof(SQSEventAttribute.MaximumBatchingWindowInSeconds)} is not set or set to a value less than 1. " +
-                    $"It must be set to atleast 1 when {nameof(SQSEventAttribute.BatchSize)} is greater than 10");
+                    $"It must be set to at least 1 when {nameof(SQSEventAttribute.BatchSize)} is greater than 10");
             }
 
             // The queue is FIFO if the queue ARN ends in ".fifo"

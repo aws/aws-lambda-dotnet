@@ -42,6 +42,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.False(yamlWriter.Exists("Person.FirstName"));
             Assert.False(yamlWriter.Exists("Person.DOB"));
             Assert.False(yamlWriter.Exists("Person.Name.MiddleName"));
+            Assert.False(yamlWriter.Exists("Person.Gender.IsMale"));
 
             Assert.Throws<InvalidDataException>(() => yamlWriter.Exists("Person..Name.FirstName"));
             Assert.Throws<InvalidDataException>(() => yamlWriter.Exists("  "));
@@ -122,6 +123,40 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.False(yamlWriter.Exists("Person.Age"));
             Assert.True(yamlWriter.Exists("Person.Name"));
             Assert.True(yamlWriter.Exists("Person.Name.FirstName"));
+        }
+
+        [Fact]
+        public void RemoveTokenIfNullOrEmpty()
+        {
+            var yamlContent = @"
+                        Description: !Sub '${AWS::Region}'
+                        Person:
+                          Name:
+                            FirstName: John
+                            LastName: Smith
+                          Gender: male
+                          Age: null
+                          Address: 
+                        ";
+
+            // ARRANGE
+            ITemplateWriter yamlWriter = new YamlWriter();
+            yamlWriter.Parse(yamlContent);
+
+            // ACT
+            yamlWriter.RemoveTokenIfNullOrEmpty("Person.Age"); // Should be deleted
+            yamlWriter.RemoveTokenIfNullOrEmpty("Person.Address"); // Should be deleted
+
+            yamlWriter.RemoveTokenIfNullOrEmpty("Person.Name"); // Should not be deleted
+            yamlWriter.RemoveTokenIfNullOrEmpty("Person.Gender"); // Should not be deleted
+
+            // ASSERT
+            Assert.False(yamlWriter.Exists("Person.Age"));
+            Assert.False(yamlWriter.Exists("Person.Address"));
+            Assert.True(yamlWriter.Exists("Person.Name"));
+            Assert.Equal("John", yamlWriter.GetToken<string>("Person.Name.FirstName"));
+            Assert.Equal("Smith", yamlWriter.GetToken<string>("Person.Name.LastName"));
+            Assert.Equal("male", yamlWriter.GetToken<string>("Person.Gender"));
         }
 
         [Fact]

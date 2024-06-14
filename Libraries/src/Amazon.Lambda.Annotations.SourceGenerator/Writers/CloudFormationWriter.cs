@@ -183,6 +183,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         private void ProcessLambdaFunctionEventAttributes(ILambdaFunctionSerializable lambdaFunction)
         {
             var currentSyncedEvents = new List<string>();
+            var currentSyncedEventProperties = new Dictionary<string, List<string>>();
 
             foreach (var attributeModel in lambdaFunction.Attributes)
             {
@@ -190,112 +191,95 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 switch (attributeModel)
                 {
                     case AttributeModel<HttpApiAttribute> httpApiAttributeModel:
-                        eventName = ProcessHttpApiAttribute(lambdaFunction, httpApiAttributeModel.Data);
+                        eventName = ProcessHttpApiAttribute(lambdaFunction, httpApiAttributeModel.Data, currentSyncedEventProperties);
                         currentSyncedEvents.Add(eventName);
                         break;
                     case AttributeModel<RestApiAttribute> restApiAttributeModel:
-                        eventName = ProcessRestApiAttribute(lambdaFunction, restApiAttributeModel.Data);
+                        eventName = ProcessRestApiAttribute(lambdaFunction, restApiAttributeModel.Data, currentSyncedEventProperties);
                         currentSyncedEvents.Add(eventName);
                         break;
                     case AttributeModel<SQSEventAttribute> sqsAttributeModel:
-                        eventName = ProcessSqsAttribute(lambdaFunction, sqsAttributeModel.Data);
+                        eventName = ProcessSqsAttribute(lambdaFunction, sqsAttributeModel.Data, currentSyncedEventProperties);
                         currentSyncedEvents.Add(eventName);
                         break;
                 }
             }
 
-            var eventsPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events";
-            var syncedEventsMetadataPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedEvents";
-            var previousSyncedEvents = _templateWriter.GetToken<List<string>>(syncedEventsMetadataPath, new List<string>());
-
-            // Remove all events that exist in the serverless template but were not encountered during the current source generation pass.
-            foreach (var previousEventName in previousSyncedEvents)
-            {
-                if (!currentSyncedEvents.Contains(previousEventName))
-                    _templateWriter.RemoveToken($"{eventsPath}.{previousEventName}");
-            }
-
-            if (currentSyncedEvents.Any())
-                _templateWriter.SetToken(syncedEventsMetadataPath, currentSyncedEvents, TokenType.List);
-            else
-                _templateWriter.RemoveToken(syncedEventsMetadataPath);
+            SynchronizeEventsAndProperties(currentSyncedEvents, currentSyncedEventProperties, lambdaFunction);
         }
 
         /// <summary>
         /// Writes all properties associated with <see cref="RestApiAttribute"/> to the serverless template.
         /// </summary>
-        private string ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute)
+        private string ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute, Dictionary<string, List<string>> syncedEventProperties)
         {
-            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events";
-            var methodName = restApiAttribute.Method.ToString();
-            var methodPath = $"{eventPath}.Root{methodName}";
+            var eventName = $"Root{restApiAttribute.Method}";
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
 
-            _templateWriter.SetToken($"{methodPath}.Type", "Api");
-            _templateWriter.SetToken($"{methodPath}.Properties.Path", restApiAttribute.Template);
-            _templateWriter.SetToken($"{methodPath}.Properties.Method", methodName.ToUpper());
+            _templateWriter.SetToken($"{eventPath}.Type", "Api");
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Path", restApiAttribute.Template);
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Method", restApiAttribute.Method.ToString().ToUpper());
 
-            return $"Root{methodName}";
+            return eventName;
         }
 
         /// <summary>
         /// Writes all properties associated with <see cref="HttpApiAttribute"/> to the serverless template.
         /// </summary>
-        private string ProcessHttpApiAttribute(ILambdaFunctionSerializable lambdaFunction, HttpApiAttribute httpApiAttribute)
+        private string ProcessHttpApiAttribute(ILambdaFunctionSerializable lambdaFunction, HttpApiAttribute httpApiAttribute, Dictionary<string, List<string>> syncedEventProperties)
         {
-            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events";
-            var methodName = httpApiAttribute.Method.ToString();
-            var methodPath = $"{eventPath}.Root{methodName}";
+            var eventName = $"Root{httpApiAttribute.Method}";
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
 
-            _templateWriter.SetToken($"{methodPath}.Type", "HttpApi");
-            _templateWriter.SetToken($"{methodPath}.Properties.Path", httpApiAttribute.Template);
-            _templateWriter.SetToken($"{methodPath}.Properties.Method", methodName.ToUpper());
+            _templateWriter.SetToken($"{eventPath}.Type", "HttpApi");
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Path", httpApiAttribute.Template);
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Method", httpApiAttribute.Method.ToString().ToUpper());
 
             // Only set the PayloadFormatVersion for 1.0.
             // If no PayloadFormatVersion is specified then by default 2.0 is used.
             if (httpApiAttribute.Version == HttpApiVersion.V1)
-                _templateWriter.SetToken($"{methodPath}.Properties.PayloadFormatVersion", "1.0");
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "PayloadFormatVersion", "1.0");
 
-            return $"Root{methodName}";
+            return eventName;
         }
 
         /// <summary>
         /// Writes all properties associated with <see cref="SQSEventAttribute"/> to the serverless template.
         /// </summary>
-        private string ProcessSqsAttribute(ILambdaFunctionSerializable lambdaFunction, SQSEventAttribute att)
+        private string ProcessSqsAttribute(ILambdaFunctionSerializable lambdaFunction, SQSEventAttribute att, Dictionary<string, List<string>> syncedEventProperties)
         {
-            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{att.ResourceName}";
+            var eventName = att.ResourceName;
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
 
             // Set event type - https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-eventsource.html#sam-function-eventsource-type
             _templateWriter.SetToken($"{eventPath}.Type", "SQS");
 
-            // Get properties path - https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-eventsource.html#sam-function-eventsource-properties
-            var eventPropertiesPath = $"{eventPath}.Properties";
-
-            // Since the entire event source configuration can be specified by the SQSEventAttribute, remove everything that was set previously.
-            _templateWriter.RemoveToken(eventPropertiesPath);
-
             // Set SQS properties - https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-sqs.html
 
             // Queue
-            if (att.Queue.StartsWith("@"))
+            if (!att.Queue.StartsWith("@"))
             {
-                _templateWriter.SetToken($"{eventPropertiesPath}.Queue.{GET_ATTRIBUTE}", new List<string> { att.Queue.Substring(1), "Arn" }, TokenType.List);
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Queue", att.Queue);
             }
             else
             {
-                _templateWriter.SetToken($"{eventPropertiesPath}.Queue", att.Queue);
+                var queue = att.Queue.Substring(1);
+                if (_templateWriter.Exists($"{PARAMETERS}.{queue}"))
+                    SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"Queue.{REF}", queue);
+                else
+                    SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"Queue.{GET_ATTRIBUTE}", new List<string> { queue, "Arn" }, TokenType.List);
             }
             
             // BatchSize
             if (att.IsBatchSizeSet)
             {
-                _templateWriter.SetToken($"{eventPropertiesPath}.BatchSize", att.BatchSize);
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "BatchSize", att.BatchSize);
             }
 
             // Enabled
             if (att.IsEnabledSet)
             {
-                _templateWriter.SetToken($"{eventPropertiesPath}.Enabled", att.Enabled);
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Enabled", att.Enabled); 
             }
 
             // FilterCriteria
@@ -308,25 +292,25 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 {
                    filterList.Add(new Dictionary<string, string> { { "Pattern", filter } });
                 }
-                _templateWriter.SetToken($"{eventPropertiesPath}.FilterCriteria.Filters", filterList, TokenType.List);
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "FilterCriteria.Filters", filterList, TokenType.List);
             }
 
             // FunctionResponseTypes
             if (lambdaFunction.ReturnTypeFullName.Contains(TypeFullNames.SQSBatchResponse))
             {
-                _templateWriter.SetToken($"{eventPropertiesPath}.FunctionResponseTypes", new List<string> { "ReportBatchItemFailures" }, TokenType.List);
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "FunctionResponseTypes", new List<string> { "ReportBatchItemFailures" }, TokenType.List);
             }
 
             // MaximumBatchingWindowInSeconds
             if (att.IsMaximumBatchingWindowInSecondsSet)
             {
-                _templateWriter.SetToken($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds", att.MaximumBatchingWindowInSeconds);
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "MaximumBatchingWindowInSeconds", att.MaximumBatchingWindowInSeconds);
             }
 
             // ScalingConfig
             if (att.IsMaximumConcurrencySet)
             {
-                _templateWriter.SetToken($"{eventPropertiesPath}.ScalingConfig.MaximumConcurrency", att.MaximumConcurrency);
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "ScalingConfig.MaximumConcurrency", att.MaximumConcurrency);
             }
 
             return att.ResourceName;
@@ -543,6 +527,83 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             return string.Empty;
+        }
+
+        /// <summary>
+        /// This sets the event property for a given event and property path.
+        /// It also keeps track of which properties have been set for each event so that we can remove any orphaned properties later.
+        /// </summary>
+        private void SetEventProperty(Dictionary<string, List<string>> syncedEventProperties, string lambdaResourceName, string eventResourceName, string propertyPath, object value, TokenType tokenType = TokenType.Other)
+        {
+            _templateWriter.SetToken($"Resources.{lambdaResourceName}.Properties.Events.{eventResourceName}.Properties.{propertyPath}", value, tokenType);
+            if (!syncedEventProperties.ContainsKey(eventResourceName))
+            {
+                syncedEventProperties[eventResourceName] = new List<string>();
+            }
+            syncedEventProperties[eventResourceName].Add(propertyPath);
+        }
+
+        /// <summary>
+        /// Synchronizes events and their properties for a given lambda function in its CloudFormation metadata.
+        /// </summary>
+        /// <param name="syncedEvents">List of events to synchronize.</param>
+        /// <param name="syncedEventProperties">Dictionary containing event properties to synchronize.</param>
+        /// <param name="lambdaFunction">The lambda function for which to synchronize events and properties.</param>
+        private void SynchronizeEventsAndProperties(List<string> syncedEvents, Dictionary<string, List<string>> syncedEventProperties, ILambdaFunctionSerializable lambdaFunction)
+        {
+            // Construct paths for synced events in the resource template.
+            var eventsPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events";
+            var syncedEventsPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedEvents";
+
+            // Get previously synced events.
+            var previousSyncedEvents = _templateWriter.GetToken<List<string>>(syncedEventsPath, new List<string>());
+
+            // Remove orphaned events.
+            var orphanedEvents = previousSyncedEvents.Except(syncedEvents).ToList();
+            orphanedEvents.ForEach(eventName => _templateWriter.RemoveToken($"{eventsPath}.{eventName}"));
+
+            // Update synced events in the template.
+            _templateWriter.RemoveToken(syncedEventsPath);
+            if (syncedEvents.Any())
+                _templateWriter.SetToken(syncedEventsPath, syncedEvents, TokenType.List);
+
+            // Construct path for synced event properties in the resource template.
+            var syncedEventPropertiesPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedEventProperties";
+
+            // Get previously synced event properties.
+            var previousSyncedEventProperties = _templateWriter.GetToken<Dictionary<string, List<string>>>(syncedEventPropertiesPath, new Dictionary<string, List<string>>());
+
+            // Remove orphaned event properties.
+            foreach (var eventName in previousSyncedEventProperties.Keys.Intersect(syncedEventProperties.Keys))
+            {
+                var orphanedEventProperties = previousSyncedEventProperties[eventName].Except(syncedEventProperties[eventName]).ToList();
+                orphanedEventProperties.ForEach(propertyPath =>
+                {
+                    _templateWriter.RemoveToken($"{eventsPath}.{eventName}.Properties.{propertyPath}");
+
+                    // Remove the terminal property and parent properties if they're now empty.
+                    // Consider the following example:
+                    // {
+                    //   "A": {
+                    //     "B": {
+                    //       "C": "D"
+                    //      }
+                    //   }
+                    // }
+                    // If A.B.C is removed, then A.B and A must also be removed since they're now empty because of the cascading effects.
+                    var propertyPathList = propertyPath.Split('.').ToList();
+                    while (propertyPathList.Any())
+                    {
+                        _templateWriter.RemoveTokenIfNullOrEmpty($"{eventsPath}.{eventName}.Properties.{string.Join(".", propertyPathList)}");
+                        propertyPathList.RemoveAt(propertyPathList.Count - 1);
+                    }
+                });
+            }
+
+            // Update synced event properties in the template.
+            _templateWriter.RemoveToken(syncedEventPropertiesPath);
+            if (syncedEventProperties.Any())
+                _templateWriter.SetToken(syncedEventPropertiesPath, syncedEventProperties, TokenType.KeyVal);
         }
     }
 }

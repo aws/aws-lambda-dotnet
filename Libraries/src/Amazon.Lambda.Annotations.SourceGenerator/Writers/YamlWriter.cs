@@ -38,7 +38,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             YamlNode currentNode = _rootNode;
             foreach (var property in yamlPath.Split('.'))
             {
-                if (currentNode == null)
+                if (currentNode == null || currentNode.NodeType != YamlNodeType.Mapping)
                 {
                     return false;
                 }
@@ -211,6 +211,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             var terminalNode = (YamlMappingNode)currentNode;
             terminalNode.Children.Remove(lastProperty);
+        }
+
+        /// <inheritdoc/>
+        public void RemoveTokenIfNullOrEmpty(string yamlPath)
+        {
+            if (!Exists(yamlPath))
+            {
+                return;
+            }
+
+            YamlNode currentNode = _rootNode;
+            foreach (var property in yamlPath.Split('.'))
+            {
+                currentNode = currentNode[property];
+            }
+
+            if (currentNode is YamlScalarNode scalarNode && (scalarNode.Value == "null" || scalarNode.Value == string.Empty))
+            {
+                RemoveToken(yamlPath);
+            }
         }
 
         /// <summary>

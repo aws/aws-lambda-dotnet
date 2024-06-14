@@ -15,7 +15,7 @@ using Xunit;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
-    public class CloudFormationWriterTests
+    public partial class CloudFormationWriterTests
     {
         private readonly IDirectoryManager _directoryManager = new DirectoryManager();
         private readonly IDiagnosticReporter _diagnosticReporter = new Mock<IDiagnosticReporter>().Object;
@@ -531,91 +531,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             // ASSERT - CodeUri is relative to CloudFormation template directory
             templateWriter.Parse(mockFileManager.ReadAllText(cloudFormationTemplatePath));
             Assert.Equal("serverlessApp", templateWriter.GetToken<string>($"{propertiesPath}.CodeUri"));
-        }
-
-        [Theory]
-        [ClassData(typeof(SqsEventsTestData))]
-        public void SqsEventsTest(CloudFormationTemplateFormat templateFormat, IEnumerable<SQSEventAttribute> sqsEventAttributes, string lambdaReturnType)
-        {
-            // ARRANGE
-            var mockFileManager = GetMockFileManager(string.Empty);
-            var lambdaFunctionModel = GetLambdaFunctionModel();
-            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
-            lambdaFunctionModel.ReturnTypeFullName = lambdaReturnType;
-            foreach (var att in sqsEventAttributes)
-            {
-                lambdaFunctionModel.Attributes.Add(new AttributeModel<SQSEventAttribute> { Data = att });
-            }
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
-            var report = GetAnnotationReport([lambdaFunctionModel]);
-
-            // ACT
-            cloudFormationWriter.ApplyReport(report);
-
-            // ASSERT
-            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
-            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
-
-            foreach (var att in sqsEventAttributes)
-            {
-                var eventName = att.Queue.StartsWith("@") ? att.Queue.Substring(1) : att.Queue.Split(':').ToList()[5];
-                var eventPath = $"Resources.{lambdaFunctionModel.ResourceName}.Properties.Events.{eventName}";
-                var eventPropertiesPath = $"{eventPath}.Properties";
-
-                Assert.True(templateWriter.Exists(eventPath));
-                Assert.Equal("SQS", templateWriter.GetToken<string>($"{eventPath}.Type"));
-
-                if (!att.Queue.StartsWith("@"))
-                {
-                    Assert.Equal(att.Queue, templateWriter.GetToken<string>($"{eventPropertiesPath}.Queue"));
-                }
-                else
-                {
-                    Assert.Equal([att.Queue.Substring(1), "Arn"], templateWriter.GetToken<List<string>>($"{eventPropertiesPath}.Queue.Fn::GetAtt"));
-                }
-
-                Assert.Equal(att.IsBatchSizeSet, templateWriter.Exists($"{eventPropertiesPath}.BatchSize"));
-                if (att.IsBatchSizeSet)
-                {
-                    Assert.Equal(att.BatchSize, templateWriter.GetToken<uint>($"{eventPropertiesPath}.BatchSize"));
-                }
-
-                Assert.Equal(att.IsBatchSizeSet, templateWriter.Exists($"{eventPropertiesPath}.Enabled"));
-                if (att.IsEnabledSet)
-                {
-                    Assert.Equal(att.Enabled, templateWriter.GetToken<bool>($"{eventPropertiesPath}.Enabled"));
-                }
-
-                Assert.Equal(att.IsFiltersSet, templateWriter.Exists($"{eventPropertiesPath}.FilterCriteria"));
-                if (att.IsFiltersSet)
-                {
-                    var filtersList = templateWriter.GetToken<List<Dictionary<string, string>>>($"{eventPropertiesPath}.FilterCriteria.Filters");
-                    var index = 0;
-                    foreach (var filter in att.Filters.Split(';').Select(x => x.Trim()))
-                    {
-                        Assert.Equal(filter, filtersList[index]["Pattern"]);
-                        index++;
-                    }
-                }
-
-                Assert.Equal(lambdaReturnType.Contains(TypeFullNames.SQSBatchResponse), templateWriter.Exists($"{eventPropertiesPath}.FunctionResponseTypes"));
-                if (lambdaReturnType.Contains(TypeFullNames.SQSBatchResponse))
-                {
-                    Assert.Equal(["ReportBatchItemFailures"], templateWriter.GetToken<List<string>>($"{eventPropertiesPath}.FunctionResponseTypes"));
-                }
-
-                Assert.Equal(att.IsMaximumBatchingWindowInSecondsSet, templateWriter.Exists($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds"));
-                if (att.IsMaximumBatchingWindowInSecondsSet)
-                {
-                    Assert.Equal(att.MaximumBatchingWindowInSeconds, templateWriter.GetToken<uint>($"{eventPropertiesPath}.MaximumBatchingWindowInSeconds"));
-                }
-
-                Assert.Equal(att.IsMaximumConcurrencySet, templateWriter.Exists($"{eventPropertiesPath}.ScalingConfig"));
-                if (att.IsMaximumConcurrencySet)
-                {
-                    Assert.Equal(att.MaximumConcurrency, templateWriter.GetToken<uint>($"{eventPropertiesPath}.ScalingConfig.MaximumConcurrency"));
-                }
-            }
         }
 
         #region CloudFormation template description

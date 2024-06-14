@@ -9,7 +9,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,

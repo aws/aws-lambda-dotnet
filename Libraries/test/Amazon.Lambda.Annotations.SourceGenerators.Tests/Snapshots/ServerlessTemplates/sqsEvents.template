@@ -12,7 +12,27 @@
           "queue2",
           "myqueue",
           "testQueueEvent"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "queue1": [
+            "Queue",
+            "BatchSize",
+            "FilterCriteria.Filters",
+            "MaximumBatchingWindowInSeconds",
+            "ScalingConfig.MaximumConcurrency"
+          ],
+          "queue2": [
+            "Queue",
+            "Enabled",
+            "MaximumBatchingWindowInSeconds"
+          ],
+          "myqueue": [
+            "Queue"
+          ],
+          "testQueueEvent": [
+            "Queue.Fn::GetAtt"
+          ]
+        }
       },
       "Properties": {
         "Runtime": "dotnet6",
@@ -80,7 +100,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "queue3"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "queue3": [
+            "Queue",
+            "FunctionResponseTypes"
+          ]
+        }
       },
       "Properties": {
         "Runtime": "dotnet6",
