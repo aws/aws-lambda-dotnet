@@ -231,6 +231,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             {
                 RemoveToken(yamlPath);
             }
+            else if (currentNode is YamlMappingNode mappingNode && mappingNode.Children.Count == 0)
+            {
+                RemoveToken(yamlPath);
+            }
         }
 
         /// <summary>

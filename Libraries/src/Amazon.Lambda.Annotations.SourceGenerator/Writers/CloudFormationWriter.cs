@@ -257,6 +257,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             // Set SQS properties - https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-sqs.html
 
             // Queue
+            // Remove Queue if set previously
+            _templateWriter.RemoveToken($"{eventPath}.Properties.Queue");
             if (!att.Queue.StartsWith("@"))
             {
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Queue", att.Queue);
@@ -579,6 +581,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 var orphanedEventProperties = previousSyncedEventProperties[eventName].Except(syncedEventProperties[eventName]).ToList();
                 orphanedEventProperties.ForEach(propertyPath =>
                 {
+                    // If previously a property existed as a terminal property but now exists as complex property then do not delete it.
+                    // This can happen when a property was previously added as an ARN by is now being added as a Ref.
+                    if (syncedEventProperties[eventName].Any(p => p.StartsWith(propertyPath)))
+                    {
+                        return;
+                    }
+
                     _templateWriter.RemoveToken($"{eventsPath}.{eventName}.Properties.{propertyPath}");
 
                     // Remove the terminal property and parent properties if they're now empty.

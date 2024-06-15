@@ -5,6 +5,7 @@ using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Amazon.Lambda.Annotations.SQS;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Json;
 using Xunit;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
@@ -120,7 +121,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 MaximumConcurrency = 30
             };
             lambdaFunctionModel.Attributes = [new AttributeModel<SQSEventAttribute> { Data = initialAttribute }];
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Json, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport([lambdaFunctionModel]);
 
             // ACT
@@ -200,7 +201,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 BatchSize = 20
             };
             lambdaFunctionModel.Attributes = [new AttributeModel<SQSEventAttribute> { Data = initialAttribute }];
-            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, CloudFormationTemplateFormat.Json, _diagnosticReporter);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport([lambdaFunctionModel]);
 
             // ACT
@@ -304,6 +305,53 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             syncedEventProperties = templateWriter.GetToken<Dictionary<string, List<string>>>($"{syncedEventPropertiesPath}");
             Assert.Single(syncedEventProperties[eventResourceName]);
             Assert.Equal("Queue", syncedEventProperties[eventResourceName][0]);
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void SwitchBetweenArnAndRef_ForQueue(CloudFormationTemplateFormat templateFormat)
+        {
+            // Arrange
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+
+            var lambdaFunctionModel = GetLambdaFunctionModel();
+            var eventResourceName = "MySQSEvent";
+
+            var syncedEventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Metadata.SyncedEventProperties";
+            var sqsEventPropertiesPath = $"Resources.{lambdaFunctionModel.ResourceName}.Properties.Events.{eventResourceName}.Properties";
+
+            // Start with Queue ARN
+            var sqsEventAttribute = new SQSEventAttribute(queueArn1) { ResourceName = eventResourceName };
+            lambdaFunctionModel.Attributes = [new AttributeModel<SQSEventAttribute> { Data = sqsEventAttribute }];
+            
+            // Act
+            var report = GetAnnotationReport([lambdaFunctionModel]);
+            cloudFormationWriter.ApplyReport(report);
+
+            // Assert - Check that Queue property exists as an ARN
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            var syncedEventProperties = templateWriter.GetToken<Dictionary<string, List<string>>>($"{syncedEventPropertiesPath}");
+
+            Assert.Equal(queueArn1, templateWriter.GetToken<string>($"{sqsEventPropertiesPath}.Queue"));
+            Assert.False(templateWriter.Exists($"{sqsEventPropertiesPath}.Queue.Fn::GetAtt"));
+            Assert.False(templateWriter.Exists($"{sqsEventPropertiesPath}.Queue.Ref"));
+            Assert.Single(syncedEventProperties[eventResourceName]);
+            Assert.Equal("Queue", syncedEventProperties[eventResourceName][0]);
+
+            // Switch to Queue reference
+            sqsEventAttribute.Queue = "@MyQueue";
+            cloudFormationWriter.ApplyReport(report);
+
+            // Assert - Check that Queue property exists as a Ref
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            syncedEventProperties = templateWriter.GetToken<Dictionary<string, List<string>>>($"{syncedEventPropertiesPath}");
+
+            Assert.Equal(["MyQueue", "Arn"], templateWriter.GetToken<List<string>>($"{sqsEventPropertiesPath}.Queue.Fn::GetAtt"));
+            Assert.Single(syncedEventProperties[eventResourceName]);
+            Assert.Equal("Queue.Fn::GetAtt", syncedEventProperties[eventResourceName][0]);
         }
 
         /// <summary>
