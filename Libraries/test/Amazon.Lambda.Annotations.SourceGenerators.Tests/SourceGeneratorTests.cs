@@ -960,8 +960,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task InvalidReturnTypeIHttpResult()
         {
-
-
             await new VerifyCS.Test
             {
                 TestState =
@@ -978,7 +976,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     },
                     ExpectedDiagnostics =
                     {
-                         DiagnosticResult.CompilerError("AWSLambda0105").WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}CustomizeResponseWithErrors.cs", 14, 9, 21, 10).WithArguments("Error")
+                         DiagnosticResult
+                            .CompilerError("AWSLambda0105")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}CustomizeResponseWithErrors.cs", 14, 9, 21, 10)
+                            .WithMessage("IHttpResult is not a valid return type for LambdaFunctions without HttpApiAttribute or RestApiAttribute attributes")
                     }
                 }
             }.RunAsync();
@@ -1203,6 +1204,130 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
             var actualTemplateContent = await File.ReadAllTextAsync(Path.Combine("TestServerlessApp.NET8", "serverless.template"));
             Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task VerifyInvalidSQSEvents_ThrowsCompilationErrors()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "SQSEventExamples", "InvalidSQSEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "SQSEventExamples", "InvalidSQSEvents.cs.error"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "SQS", "SQSEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "SQS", "SQSEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
+                            .WithArguments("BatchSize = 0. It must be between 1 and 10000"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
+                            .WithArguments("MaximumBatchingWindowInSeconds = 302. It must be between 0 and 300"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 15, 9, 20, 10)
+                            .WithArguments("MaximumConcurrency = 1. It must be between 2 and 1000"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 22, 9, 27, 10)
+                            .WithArguments("When using the SQSEventAttribute, the Lambda method can accept at most 2 parameters. " +
+                            "The first parameter is required and must be of type Amazon.Lambda.SQSEvents.SQSEvent. " +
+                            "The second parameter is optional and must be of type Amazon.Lambda.Core.ILambdaContext."),
+
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 29, 9, 35, 10)
+                            .WithArguments("When using the SQSEventAttribute, the Lambda method can return either " +
+                            "void, System.Threading.Tasks.Task, Amazon.Lambda.SQSEvents.SQSBatchResponse or Task<Amazon.Lambda.SQSEvents.SQSBatchResponse>"),
+
+                        DiagnosticResult
+                            .CompilerError("AWSLambda0102")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 37, 9, 43, 10)
+                            .WithMessage("Multiple event attributes on LambdaFunction are not supported"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 45, 9, 50, 10)
+                            .WithArguments("Queue = test-queue. The SQS queue ARN is invalid. The ARN format is 'arn:<partition>:sqs:<region>:<account-id>:<queue-name>'"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 52, 9, 57, 10)
+                            .WithArguments("ResourceName = sqs-event-source. It must only contain alphanumeric characters and must not be an empty string"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 59, 9, 64, 10)
+                            .WithArguments("ResourceName = . It must only contain alphanumeric characters and must not be an empty string"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 66, 9, 71, 10)
+                            .WithArguments("MaximumBatchingWindowInSeconds is not set or set to a value less than 1. It must be set to at least 1 when BatchSize is greater than 10"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 73, 9, 78, 10)
+                            .WithArguments("MaximumBatchingWindowInSeconds is not set or set to a value less than 1. It must be set to at least 1 when BatchSize is greater than 10"),
+
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 80, 9, 85, 10)
+                            .WithArguments("BatchSize = 100. It must be less than or equal to 10 when the event source mapping is for a FIFO queue"),
+            
+                        DiagnosticResult.CompilerError("AWSLambda0116")
+                        .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}SQSEventExamples{Path.DirectorySeparatorChar}InvalidSQSEvents.cs", 80, 9, 85, 10)
+                        .WithArguments("MaximumBatchingWindowInSeconds must not be set when the event source mapping is for a FIFO queue")
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyValidSQSEvents()
+        {
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "sqsEvents.template"))).ToEnvironmentLineEndings();
+            var validSqsEventsProcessMessagesGeneratedContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SQS", "ValidSQSEvents_ProcessMessages_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var validSqsEventsProcessMessagesWithBatchFailureReportingGeneratedContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SQS", "ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated.g.cs"))).ToEnvironmentLineEndings();
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "SQSEventExamples", "ValidSQSEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "SQSEventExamples", "ValidSQSEvents.cs.txt"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "SQS", "SQSEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "SQS", "SQSEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidSQSEvents_ProcessMessages_Generated.g.cs",
+                            SourceText.From(validSqsEventsProcessMessagesGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated.g.cs",
+                            SourceText.From(validSqsEventsProcessMessagesWithBatchFailureReportingGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidSQSEvents_ProcessMessages_Generated.g.cs", validSqsEventsProcessMessagesGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated.g.cs", validSqsEventsProcessMessagesWithBatchFailureReportingGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    }
+                }
+            }.RunAsync();
         }
 
         public void Dispose()

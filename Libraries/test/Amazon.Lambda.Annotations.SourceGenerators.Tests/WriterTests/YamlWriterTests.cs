@@ -42,6 +42,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.False(yamlWriter.Exists("Person.FirstName"));
             Assert.False(yamlWriter.Exists("Person.DOB"));
             Assert.False(yamlWriter.Exists("Person.Name.MiddleName"));
+            Assert.False(yamlWriter.Exists("Person.Gender.IsMale"));
 
             Assert.Throws<InvalidDataException>(() => yamlWriter.Exists("Person..Name.FirstName"));
             Assert.Throws<InvalidDataException>(() => yamlWriter.Exists("  "));
@@ -125,6 +126,40 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         }
 
         [Fact]
+        public void RemoveTokenIfNullOrEmpty()
+        {
+            var yamlContent = @"
+                        Description: !Sub '${AWS::Region}'
+                        Person:
+                          Name:
+                            FirstName: John
+                            LastName: Smith
+                          Gender: male
+                          Age: null
+                          Address: 
+                        ";
+
+            // ARRANGE
+            ITemplateWriter yamlWriter = new YamlWriter();
+            yamlWriter.Parse(yamlContent);
+
+            // ACT
+            yamlWriter.RemoveTokenIfNullOrEmpty("Person.Age"); // Should be deleted
+            yamlWriter.RemoveTokenIfNullOrEmpty("Person.Address"); // Should be deleted
+
+            yamlWriter.RemoveTokenIfNullOrEmpty("Person.Name"); // Should not be deleted
+            yamlWriter.RemoveTokenIfNullOrEmpty("Person.Gender"); // Should not be deleted
+
+            // ASSERT
+            Assert.False(yamlWriter.Exists("Person.Age"));
+            Assert.False(yamlWriter.Exists("Person.Address"));
+            Assert.True(yamlWriter.Exists("Person.Name"));
+            Assert.Equal("John", yamlWriter.GetToken<string>("Person.Name.FirstName"));
+            Assert.Equal("Smith", yamlWriter.GetToken<string>("Person.Name.LastName"));
+            Assert.Equal("male", yamlWriter.GetToken<string>("Person.Gender"));
+        }
+
+        [Fact]
         public void GetContent()
         {
             // ARRANGE
@@ -135,6 +170,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             yamlWriter.SetToken("Person.PhoneNumbers", new List<int> { 1, 2, 3 }, TokenType.List);
             yamlWriter.SetToken("Person.Address", new Dictionary<string, string> { { "City", "AmazingCity" }, { "State", "AmazingState" } }, TokenType.KeyVal);
             yamlWriter.SetToken("Person.IsAlive", true);
+            yamlWriter.SetToken("Person.Aliases", new List<Dictionary<string, string>>
+            {
+                new Dictionary<string, string> { {"Alias", "Johnny" } },
+                new Dictionary<string, string> { {"Alias", "Johnny Boy" } }
+            }, TokenType.List);
 
             // ACT
             var actualSnapshot = yamlWriter.GetContent();

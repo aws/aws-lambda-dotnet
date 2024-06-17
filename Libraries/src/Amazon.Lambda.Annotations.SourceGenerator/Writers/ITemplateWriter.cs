@@ -44,6 +44,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         void RemoveToken(string path);
 
         /// <summary>
+        /// Deletes the token found at the dot(.) separated path if it points to a null value or empty object.
+        /// It does not do anything if the jsonPath does not exist.
+        /// </summary>
+        /// <param name="path">dot(.) seperated path. Example "Person.Name.FirstName"</param>
+        void RemoveTokenIfNullOrEmpty(string path);
+
+        /// <summary>
         /// Returns the template as a string
         /// </summary>
         string GetContent();

@@ -1,5 +1,6 @@
 using System;
 using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Annotations.SQS;
 using Microsoft.CodeAnalysis;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
@@ -66,6 +67,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             {
                 var data = RestApiAttributeBuilder.Build(att);
                 model = new AttributeModel<RestApiAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.SQSEventAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = SQSEventAttributeBuilder.Build(att);
+                model = new AttributeModel<SQSEventAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)

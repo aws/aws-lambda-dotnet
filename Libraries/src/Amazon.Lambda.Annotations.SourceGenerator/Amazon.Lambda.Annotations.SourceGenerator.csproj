@@ -4,6 +4,11 @@
     <AssemblyVersion>1.4.0</AssemblyVersion>
     <TargetFramework>netstandard2.0</TargetFramework>
 
+    <!--This assembly needs to access internal methods inside the Amazon.Lambda.Annotations assembly.
+    Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
+    <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly> 
+
     <!-- This is required to allow copying all the dependencies to bin directory which can be copied after to nuget package based on nuspec -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>

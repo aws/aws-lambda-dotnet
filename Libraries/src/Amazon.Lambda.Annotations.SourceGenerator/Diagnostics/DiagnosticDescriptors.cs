@@ -103,7 +103,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
-        
+
         public static readonly DiagnosticDescriptor ExecutableWithNoFunctions = new DiagnosticDescriptor(id: "AWSLambda0113",
             title: "Executable output with no LambdaFunction annotations",
             messageFormat: "Your project is configured to output an executable and generate a static Main method, but you have not configured any methods with the 'LambdaFunction' attribute",
@@ -114,6 +114,27 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly DiagnosticDescriptor MainMethodExists = new DiagnosticDescriptor(id: "AWSLambda0114",
             title: "static Main method exists",
             messageFormat: "Failed to generate Main method for LambdaGenerateMainAttribute because project already contains Main method. Existing Main methods must be removed when using LambdaGenerateMainAttribute attribute.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor ApiParametersOnNonApiFunction = new DiagnosticDescriptor(id: "AWSLambda0115",
+            title: "Invalid Usage of API Parameters",
+            messageFormat: "The Lambda function parameters are annotated with HTTP API attributes but the Lambda function itself is not annotated with an HTTP API attribute",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidSqsEventAttribute = new DiagnosticDescriptor(id: "AWSLambda0116",
+            title: "Invalid SQSEventAttribute",
+            messageFormat: "Invalid SQSEventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidLambdaMethodSignature = new DiagnosticDescriptor(id: "AWSLambda0117",
+            title: "Invalid Lambda Method Signature",
+            messageFormat: "Invalid Lambda method signature encountered: {0}",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

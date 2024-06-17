@@ -39,6 +39,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.True(jsonWriter.Exists("Person.Gender"));
             Assert.False(jsonWriter.Exists("Person.Weight"));
             Assert.False(jsonWriter.Exists("Person.Name.MiddleName"));
+            Assert.False(jsonWriter.Exists("Person.Gender.IsMale"));
             Assert.Throws<InvalidDataException>(() => jsonWriter.Exists("Person..Name.FirstName"));
             Assert.Throws<InvalidDataException>(() => jsonWriter.Exists("  "));
             Assert.Throws<InvalidDataException>(() => jsonWriter.Exists("..."));
@@ -118,6 +119,39 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         }
 
         [Fact]
+        public void RemoveTokenIfNullOrEmpty()
+        {
+            var jsonString = @"{
+               'Person':{
+                  'Name':{
+                     'FirstName':'John',
+                     'LastName':'Smith'
+                  },
+                  'Gender':'male',
+                  'Age': null,
+                  'Address': {}
+               }
+            }";
+            ITemplateWriter jsonWriter = new JsonWriter();
+            jsonWriter.Parse(jsonString);
+
+            // ACT
+            jsonWriter.RemoveTokenIfNullOrEmpty("Person.Age"); // Should be deleted
+            jsonWriter.RemoveTokenIfNullOrEmpty("Person.Address"); // Should be deleted
+
+            jsonWriter.RemoveTokenIfNullOrEmpty("Person.Name"); // Should not be deleted
+            jsonWriter.RemoveTokenIfNullOrEmpty("Person.Gender"); // Should not be deleted
+
+            // ASSERT
+            Assert.False(jsonWriter.Exists("Person.Age"));
+            Assert.False(jsonWriter.Exists("Person.Address"));
+            Assert.True(jsonWriter.Exists("Person.Name"));
+            Assert.Equal("John", jsonWriter.GetToken<string>("Person.Name.FirstName"));
+            Assert.Equal("Smith", jsonWriter.GetToken<string>("Person.Name.LastName"));
+            Assert.Equal("male", jsonWriter.GetToken<string>("Person.Gender"));
+        }
+
+        [Fact]
         public void GetContent()
         {
             // ARRANGE
@@ -128,6 +162,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             jsonWriter.SetToken("Person.PhoneNumbers", new List<int> { 1, 2, 3 }, TokenType.List);
             jsonWriter.SetToken("Person.Address", new Dictionary<string, string> { { "City", "AmazingCity" }, { "State", "AmazingState" } }, TokenType.KeyVal);
             jsonWriter.SetToken("Person.IsAlive", true);
+            jsonWriter.SetToken("Person.Aliases", new List<Dictionary<string, string>>
+            {
+                new Dictionary<string, string> { {"Alias", "Johnny" } },
+                new Dictionary<string, string> { {"Alias", "Johnny Boy" } }
+            });
 
             // ACT
             var actualSnapshot = jsonWriter.GetContent();

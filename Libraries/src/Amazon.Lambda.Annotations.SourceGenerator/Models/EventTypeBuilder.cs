@@ -11,16 +11,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// </summary>
     public class EventTypeBuilder
     {
-        public static List<EventType> Build(IMethodSymbol lambdaMethodSymbol,
+        public static HashSet<EventType> Build(IMethodSymbol lambdaMethodSymbol,
             GeneratorExecutionContext context)
         {
-            var events = new List<EventType>();
+            var events = new HashSet<EventType>();
             foreach (var attribute in lambdaMethodSymbol.GetAttributes())
             {
                 if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.RestApiAttribute
                     || attribute.AttributeClass.ToDisplayString() == TypeFullNames.HttpApiAttribute)
                 {
                     events.Add(EventType.API);
+                }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.SQSEventAttribute)
+                {
+                    events.Add(EventType.SQS);
                 }
             }
 

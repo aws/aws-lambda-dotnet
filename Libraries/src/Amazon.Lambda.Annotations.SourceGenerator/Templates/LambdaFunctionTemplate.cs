@@ -182,7 +182,9 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
         this.Write(apiParameters.TransformText());
         this.Write(new APIGatewayInvoke(_model, apiParameters.ParameterSignature).TransformText());
     }
-    else if (_model.LambdaMethod.Events.Count == 0)
+    // Currently we only support 2 event types - APIGatewayEvents and SQSEvents.
+    // Since SQSEvents does not require any special code generation, the generated method body will be same as when the Lambda method contains no events.
+    else
     {
         this.Write(new NoEventMethodBody(_model).TransformText());
     }
@@ -206,7 +208,7 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
 
             envValue.Append(""lib/amazon-lambda-annotations#");
             
-            #line 82 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
+            #line 84 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.SourceGeneratorVersion));
             
             #line default

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
@@ -74,6 +73,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public IList<AttributeModel> Attributes => LambdaMethod.Attributes ?? new List<AttributeModel>();
 
         /// <inheritdoc />
+        public string ReturnTypeFullName  => LambdaMethod.ReturnType.FullName;
+
+        /// <inheritdoc />
         public string SourceGeneratorVersion { get; set; }
+
+        /// <summary>
+        /// Indicates if the model is valid.
+        /// </summary>
+        public bool IsValid {  get; set; }
     }
 }

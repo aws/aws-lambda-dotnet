@@ -1,7 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.IO;
+using System.Linq;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
@@ -9,13 +8,14 @@ using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
+using Amazon.Lambda.Annotations.SQS;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 {
-    public class CloudFormationWriterTests
+    public partial class CloudFormationWriterTests
     {
         private readonly IDirectoryManager _directoryManager = new DirectoryManager();
         private readonly IDiagnosticReporter _diagnosticReporter = new Mock<IDiagnosticReporter>().Object;
@@ -817,8 +817,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             mockFileManager.WriteAllText(ServerlessTemplateFilePath, originalContent);
             return mockFileManager;
         }
-        private LambdaFunctionModelTest GetLambdaFunctionModel(string handler, string resourceName, uint? timeout,
-            uint? memorySize, string role, string policies)
+
+        private LambdaFunctionModelTest GetLambdaFunctionModel(string handler = "MyAssembly::MyNamespace.MyType::Handler", 
+            string resourceName = "TestMethod",
+            uint timeout = 30,
+            uint memorySize = 512, 
+            string role = null, 
+            string policies = "AWSLambdaBasicExecutionRole")
         {
             return new LambdaFunctionModelTest
             {
@@ -868,6 +873,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
             public string SourceGeneratorVersion { get; set; }
             public LambdaPackageType PackageType { get; set; } = LambdaPackageType.Zip;
+            public string ReturnTypeFullName { get; set; } = "void";
         }
     }
 }

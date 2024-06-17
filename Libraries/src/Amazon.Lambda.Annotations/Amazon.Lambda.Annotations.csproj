@@ -4,8 +4,13 @@
     <AssemblyVersion>1.4.0</AssemblyVersion>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>	
-	
+
+    <!--This assembly contains some internal methods that need to be accessed by the Amazon.Lambda.Annotations.SourceGenerator assembly.
+    Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
+    <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <WarningsAsErrors>IL2026,IL2067,IL2075,IL3050</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>
@@ -14,5 +19,15 @@
 	
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
-  </ItemGroup>		
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Amazon.Lambda.Annotations.SourceGenerator, PublicKey="0024000004800000940000000602000000240000525341310004000001000100db5f59f098d27276c7833875a6263a3cc74ab17ba9a9df0b52aedbe7252745db7274d5271fd79c1f08f668ecfa8eaab5626fa76adc811d3c8fc55859b0d09d3bc0a84eecd0ba891f2b8a2fc55141cdcc37c2053d53491e650a479967c3622762977900eddbf1252ed08a2413f00a28f3a0752a81203f03ccb7f684db373518b4"</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Amazon.Lambda.Annotations.SourceGenerators.Tests, PublicKey="0024000004800000940000000602000000240000525341310004000001000100db5f59f098d27276c7833875a6263a3cc74ab17ba9a9df0b52aedbe7252745db7274d5271fd79c1f08f668ecfa8eaab5626fa76adc811d3c8fc55859b0d09d3bc0a84eecd0ba891f2b8a2fc55141cdcc37c2053d53491e650a479967c3622762977900eddbf1252ed08a2413f00a28f3a0752a81203f03ccb7f684db373518b4"</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>
