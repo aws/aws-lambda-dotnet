@@ -1,3 +1,7 @@
+### Release 2024-06-17
+* **Amazon.Lambda.Annotations (1.5.0)**
+  * Added new .NET attribute to create SQS event source mapping for Lambda functions.
+
 ### Release 2024-05-16
 * **Amazon.Lambda.Annotations (1.4.0)**
   * Updated the source generator to add documentation on public members in the generated files.
