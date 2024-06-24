@@ -1,6 +1,6 @@
 ### Release 2024-06-21
 * **Amazon.Lambda.Templates (7.2.0)**
-  * Updated Amazon.Lambda.Annotations dependency to 1.5.0 in the Message Processing Framework Visual Studio blueprint. Added the `SQSEvent` attribute to set up SQS event source mapping for the message handler Lambda function.
+  * Updated Amazon.Lambda.Annotations dependency to 1.5.0 in the Message Processing Framework template. Added the `SQSEvent` attribute to set up SQS event source mapping for the message handler Lambda function.
 
 ### Release 2024-06-17
 * **Amazon.Lambda.Annotations (1.5.0)**
