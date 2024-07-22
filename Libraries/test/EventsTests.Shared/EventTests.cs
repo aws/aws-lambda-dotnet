@@ -26,6 +26,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.SimpleEmailEvents;
     using Amazon.Lambda.SNSEvents;
     using Amazon.Lambda.SQSEvents;
+    using Amazon.Runtime.Internal.Transform;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json.Serialization;
@@ -2007,6 +2008,154 @@ namespace Amazon.Lambda.Tests
             Assert.Equal("execute-api:Invoke", root["policyDocument"]["Statement"][0]["Action"][0]);
             Assert.Equal("Allow", root["policyDocument"]["Statement"][0]["Effect"]);
             Assert.Equal("*", root["policyDocument"]["Statement"][0]["Resource"][0]);
+            Assert.Null(root["policyDocument"]["Statement"][0]["Condition"]);
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void APIGatewayAuthorizerWithSimpleIAMConditionResponseTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            var context = new APIGatewayCustomAuthorizerContextOutput();
+            context["field1"] = "value1";
+            context["field2"] = "value2";
+
+            var response = new APIGatewayCustomAuthorizerResponse
+            {
+                PrincipalID = "prin1",
+                UsageIdentifierKey = "usageKey",
+                Context = context,
+                PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+                {
+                    Version = "2012-10-17",
+                    Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
+                    {
+                        new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                        {
+                            Action = new HashSet<string>{ "execute-api:Invoke" },
+                            Effect = "Allow",
+                            Resource = new HashSet<string>{ "*" },
+                            Condition = new Dictionary<string, IDictionary<string, object>>()
+                            {
+                                {  "StringEquals", new Dictionary<string, object>()
+                                    { 
+                                        { "aws:PrincipalTag/job-category", "iamuser-admin" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string serializedJson;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                serializer.Serialize(response, stream);
+
+                stream.Position = 0;
+                serializedJson = Encoding.UTF8.GetString(stream.ToArray());
+            }
+
+            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+
+            Assert.Equal("prin1", root["principalId"]);
+            Assert.Equal("usageKey", root["usageIdentifierKey"]);
+            Assert.Equal("value1", root["context"]["field1"]);
+            Assert.Equal("value2", root["context"]["field2"]);
+
+            Assert.Equal("2012-10-17", root["policyDocument"]["Version"]);
+            Assert.Equal("execute-api:Invoke", root["policyDocument"]["Statement"][0]["Action"][0]);
+            Assert.Equal("Allow", root["policyDocument"]["Statement"][0]["Effect"]);
+            Assert.Equal("*", root["policyDocument"]["Statement"][0]["Resource"][0]);
+            Assert.Equal("iamuser-admin", root["policyDocument"]["Statement"][0]["Condition"]["StringEquals"]["aws:PrincipalTag/job-category"].ToString());
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void APIGatewayAuthorizerWithMultiValueIAMConditionResponseTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            var context = new APIGatewayCustomAuthorizerContextOutput();
+            context["field1"] = "value1";
+            context["field2"] = "value2";
+
+            var response = new APIGatewayCustomAuthorizerResponse
+            {
+                PrincipalID = "prin1",
+                UsageIdentifierKey = "usageKey",
+                Context = context,
+                PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+                {
+                    Version = "2012-10-17",
+                    Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
+                    {
+                        new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                        {
+                            Action = new HashSet<string>{ "execute-api:Invoke" },
+                            Effect = "Allow",
+                            Resource = new HashSet<string>{ "*" },
+                            Condition = new Dictionary<string, IDictionary<string, object>>()
+                            {
+                                {  
+                                    "StringEquals", 
+                                    new Dictionary<string, object>()
+                                    {
+                                        { "aws:PrincipalTag/department", new List<string>{ "finance", "hr", "legal" } },
+                                        { "aws:PrincipalTag/role", new List<string>{ "audit", "security" } }
+                                    }
+                                },
+                                { 
+                                    "ArnLike", 
+                                    new Dictionary<string, object>()
+                                    {
+                                        { "aws:PrincipalArn", new List<string>{ "arn:aws:iam::XXXXXXXXXXXX:user/User1", "arn:aws:iam::XXXXXXXXXXXX:user/User2" } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string serializedJson;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                serializer.Serialize(response, stream);
+
+                stream.Position = 0;
+                serializedJson = Encoding.UTF8.GetString(stream.ToArray());
+            }
+
+            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+
+            Assert.Equal("prin1", root["principalId"]);
+            Assert.Equal("usageKey", root["usageIdentifierKey"]);
+            Assert.Equal("value1", root["context"]["field1"]);
+            Assert.Equal("value2", root["context"]["field2"]);
+
+            Assert.Equal("2012-10-17", root["policyDocument"]["Version"]);
+            Assert.Equal("execute-api:Invoke", root["policyDocument"]["Statement"][0]["Action"][0]);
+            Assert.Equal("Allow", root["policyDocument"]["Statement"][0]["Effect"]);
+            Assert.Equal("*", root["policyDocument"]["Statement"][0]["Resource"][0]);
+            Assert.Equal(3, root["policyDocument"]["Statement"][0]["Condition"]["StringEquals"]["aws:PrincipalTag/department"].Values<string>().ToList().Count);
+            Assert.Equal("finance", root["policyDocument"]["Statement"][0]["Condition"]["StringEquals"]["aws:PrincipalTag/department"][0]);
+            Assert.Equal("hr", root["policyDocument"]["Statement"][0]["Condition"]["StringEquals"]["aws:PrincipalTag/department"][1]);
+            Assert.Equal("legal", root["policyDocument"]["Statement"][0]["Condition"]["StringEquals"]["aws:PrincipalTag/department"][2]);
+            Assert.Equal(2, root["policyDocument"]["Statement"][0]["Condition"]["StringEquals"]["aws:PrincipalTag/role"].Values<string>().ToList().Count);
+            Assert.Equal("audit", root["policyDocument"]["Statement"][0]["Condition"]["StringEquals"]["aws:PrincipalTag/role"][0]);
+            Assert.Equal("security", root["policyDocument"]["Statement"][0]["Condition"]["StringEquals"]["aws:PrincipalTag/role"][1]);
+            Assert.Equal(2, root["policyDocument"]["Statement"][0]["Condition"]["ArnLike"]["aws:PrincipalArn"].Values<string>().ToList().Count);
+            Assert.Equal("arn:aws:iam::XXXXXXXXXXXX:user/User1", root["policyDocument"]["Statement"][0]["Condition"]["ArnLike"]["aws:PrincipalArn"][0]);
+            Assert.Equal("arn:aws:iam::XXXXXXXXXXXX:user/User2", root["policyDocument"]["Statement"][0]["Condition"]["ArnLike"]["aws:PrincipalArn"][1]);
         }
 
         [Theory]

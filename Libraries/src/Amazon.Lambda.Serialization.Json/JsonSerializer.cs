@@ -52,6 +52,7 @@ namespace Amazon.Lambda.Serialization.Json
                 resolver.NamingStrategy = namingStrategy;
             };
             settings.ContractResolver = resolver;
+            settings.NullValueHandling = NullValueHandling.Ignore;
 
             serializer = Newtonsoft.Json.JsonSerializer.Create(settings);
 

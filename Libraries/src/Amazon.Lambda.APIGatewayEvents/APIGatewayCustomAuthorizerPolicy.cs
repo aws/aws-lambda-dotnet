@@ -51,6 +51,15 @@
             [System.Text.Json.Serialization.JsonPropertyName("Resource")]
 #endif
             public HashSet<string> Resource { get; set; }
+
+            /// <summary>
+            /// Gets or sets the conditions for when a policy is in effect. 
+            /// https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition.html
+            /// </summary>
+#if NETCOREAPP3_1_OR_GREATER
+            [System.Text.Json.Serialization.JsonPropertyName("Condition")]
+#endif
+            public IDictionary<string, IDictionary<string, object>> Condition { get; set; }
         }
     }
 }
