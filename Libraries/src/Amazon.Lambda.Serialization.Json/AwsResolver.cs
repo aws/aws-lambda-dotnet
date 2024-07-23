@@ -130,8 +130,9 @@ namespace Amazon.Lambda.Serialization.Json
                     }
                 }
             }
+            // If user is directly using CloudWatchEvent class or using a derived type created in custom namespace.
             else if (type.FullName.StartsWith("Amazon.Lambda.CloudWatchEvents.")
-                     && (type.GetTypeInfo().BaseType?.FullName?.StartsWith("Amazon.Lambda.CloudWatchEvents.CloudWatchEvent`",
+                     || (type.GetTypeInfo().BaseType?.FullName?.StartsWith("Amazon.Lambda.CloudWatchEvents.CloudWatchEvent`",
                              StringComparison.Ordinal) ?? false))
             {
                 foreach (JsonProperty property in properties)
