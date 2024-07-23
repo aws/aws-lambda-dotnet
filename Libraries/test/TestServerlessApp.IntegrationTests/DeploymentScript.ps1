@@ -38,9 +38,22 @@ try
     $content = Get-Content .\aws-lambda-tools-defaults.json
     $content | ForEach-Object {$_ -replace $line, "`"function-architecture`" : `"$arch`""} | Set-Content .\aws-lambda-tools-defaults.json
 
+    # Extract region
+    $json =  Get-Content .\aws-lambda-tools-defaults.json | Out-String | ConvertFrom-Json
+    $region = $json.region
+
     dotnet tool install -g Amazon.Lambda.Tools
     Write-Host "Creating S3 Bucket $identifier"
-    aws s3 mb s3://$identifier
+
+    if(![string]::IsNullOrEmpty($region))
+    {
+        aws s3 mb s3://$identifier --region $region
+    }
+    else
+    {
+        aws s3 mb s3://$identifier
+    }
+    
     if (!$?)
     {
         throw "Failed to create the following bucket: $identifier"
