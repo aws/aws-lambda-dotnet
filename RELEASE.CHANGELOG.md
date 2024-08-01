@@ -1,3 +1,10 @@
+### Release 2024-08-01
+* **Amazon.Lambda.Serialization.Json (2.2.2)**
+  * Fixed `AwsResolver.CreateProperties()` to use logical `OR` condition when checking for `Amazon.Lambda.CloudWatchEvents.CloudWatchEvent` type.
+   * Initialized `JsonSerializerSettings.NullValueHandling` to `NullValueHandling.Ignore` for `JsonSerializer`.
+* **Amazon.Lambda.APIGatewayEvents (2.7.1)**
+   * Added support for `Condition` element in `APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement`.
+
 ### Release 2024-06-21
 * **Amazon.Lambda.Templates (7.2.0)**
   * Updated Amazon.Lambda.Annotations dependency to 1.5.0 in the Message Processing Framework template. Added the `SQSEvent` attribute to set up SQS event source mapping for the message handler Lambda function.
