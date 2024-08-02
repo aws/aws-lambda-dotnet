@@ -9,6 +9,11 @@ This package allows ASP .NET Core applications written using the minimal api sty
 The `AddAWSLambdaHosting` will setup the `Amazon.Lambda.AspNetCoreServer` package to process 
 the incoming Lambda events as ASP .NET Core requests. It will also initialize `Amazon.Lambda.RuntimeSupport` package to interact with the Lambda service.
 
+## Supported .NET versions
+
+This library supports .NET 6 and above. Lambda provides managed runtimes for long term supported (LTS) versions like .NET 6 and .NET 8. To use standard term supported (STS) versions like .NET 9
+the Lambda function must be bundled as a self contained executable or an OCI image.
+
 ## Sample ASP .NET Core application
 
 The code sample below is the typical initilization code for an ASP .NET Core application using the minimal api style. The one difference is the extra line of code calling `AddAWSLambdaHosting`.
