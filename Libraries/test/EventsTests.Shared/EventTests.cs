@@ -23,6 +23,7 @@ namespace Amazon.Lambda.Tests
     using Amazon.Lambda.LexV2Events;
     using Amazon.Lambda.MQEvents;
     using Amazon.Lambda.S3Events;
+    using Amazon.Lambda.Serialization.Json;
     using Amazon.Lambda.SimpleEmailEvents;
     using Amazon.Lambda.SNSEvents;
     using Amazon.Lambda.SQSEvents;
@@ -3879,6 +3880,28 @@ namespace Amazon.Lambda.Tests
 
             }
         }
+
+        [Fact]
+        public void TestJsonIncludeNullValueSerializer()
+        {
+            var serializer = new JsonIncludeNullValueSerializer();
+
+            var response = new ClassUsingPascalCase
+            {
+                SomeValue = 123,
+                SomeOtherValue = null
+            };
+
+            MemoryStream ms = new MemoryStream();
+            serializer.Serialize(response, ms);
+            ms.Position = 0;
+            var json = new StreamReader(ms).ReadToEnd();
+
+            var serialized = JObject.Parse(json);
+            Assert.Equal(123, serialized["SomeValue"]);
+            Assert.Equal(JTokenType.Null, serialized["SomeOtherValue"].Type); // System.NullReferenceException is thrown if value is missing.
+        }
+
         class ClassUsingPascalCase
         {
             public int SomeValue { get; set; }
