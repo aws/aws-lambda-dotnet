@@ -1,9 +1,14 @@
+### Release 2024-08-14
+* **Amazon.Lambda.Serialization.Json (2.2.3)**
+  * Fixed an issue in `JsonSerializer` where `JsonSerializerSettings.NullValueHandling` was being set to `NullValueHandling.Ignore` after custom settings were applied.
+  * Added new `JsonIncludeNullValueSerializer` derived from `JsonSerializer` that includes null values in serialized JSON.
+
 ### Release 2024-08-01
 * **Amazon.Lambda.Serialization.Json (2.2.2)**
   * Fixed `AwsResolver.CreateProperties()` to use logical `OR` condition when checking for `Amazon.Lambda.CloudWatchEvents.CloudWatchEvent` type.
-   * Initialized `JsonSerializerSettings.NullValueHandling` to `NullValueHandling.Ignore` for `JsonSerializer`.
+  * Initialized `JsonSerializerSettings.NullValueHandling` to `NullValueHandling.Ignore` for `JsonSerializer`.
 * **Amazon.Lambda.APIGatewayEvents (2.7.1)**
-   * Added support for `Condition` element in `APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement`.
+  * Added support for `Condition` element in `APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement`.
 
 ### Release 2024-06-21
 * **Amazon.Lambda.Templates (7.2.0)**
