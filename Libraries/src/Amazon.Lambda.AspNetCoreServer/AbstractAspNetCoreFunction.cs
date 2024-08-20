@@ -76,6 +76,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             ["application/zip"] = ResponseContentEncoding.Base64,
             ["application/pdf"] = ResponseContentEncoding.Base64,
             ["application/x-protobuf"] = ResponseContentEncoding.Base64,
+            ["application/wasm"] = ResponseContentEncoding.Base64
         };
 
         // Defines a mapping from registered content encodings to the response encoding format
