@@ -24,7 +24,7 @@ namespace TestServerlessApp.IntegrationTests
             var errorJson = JObject.Parse(content);
 
             var expectedErrorMessage = "1 validation error(s) detected: Value hello at 'x' failed to satisfy constraint: Input string was not in a correct format.";
-            Assert.That(errorJson["message"], Is.EqualTo(expectedErrorMessage));
+            Assert.That(errorJson["message"].ToString(), Is.EqualTo(expectedErrorMessage));
         }
 
         [Test]
@@ -35,8 +35,8 @@ namespace TestServerlessApp.IntegrationTests
 
             var content = await response.Content.ReadAsStringAsync();
             var person = JObject.Parse(content);
-            Assert.That(person["FIRST_NAME"], Is.EqualTo("John"));
-            Assert.That(person["LAST_NAME"], Is.EqualTo("Doe"));
+            Assert.That(person["FIRST_NAME"].ToString(), Is.EqualTo("John"));
+            Assert.That(person["LAST_NAME"].ToString(), Is.EqualTo("Doe"));
         }
     }
 }
