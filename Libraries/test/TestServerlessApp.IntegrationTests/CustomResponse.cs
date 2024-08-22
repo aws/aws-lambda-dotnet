@@ -1,53 +1,42 @@
 ﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Xunit;
+using NUnit.Framework;
 
 namespace TestServerlessApp.IntegrationTests
 {
-    [Collection("Integration Tests")]
-    public class CustomResponse
+    [TestFixture]
+    public class CustomResponse : IntegrationTestsSetup
     {
-        private readonly IntegrationTestContextFixture _fixture;
-
-        public CustomResponse(IntegrationTestContextFixture fixture)
-        {
-            _fixture = fixture;
-        }
-
-        [Fact]
+        [Test]
         public async Task OkResponseWithHeader_Returns200Status()
         {
-            var response = await _fixture.HttpClient.GetAsync($"{_fixture.RestApiUrlPrefix}/okresponsewithheader/1");
+            var response = await HttpClient.GetAsync($"{RestApiUrlPrefix}/okresponsewithheader/1");
             response.EnsureSuccessStatusCode();
-            Assert.Equal("All Good", await response.Content.ReadAsStringAsync());
+            Assert.That(await response.Content.ReadAsStringAsync(), Is.EqualTo("All Good"));
         }
 
-        [Fact]
+        [Test]
         public async Task OkResponseWithHeader_ReturnsValidationErrors()
         {
-            var response = await _fixture.HttpClient.GetAsync($"{_fixture.RestApiUrlPrefix}/okresponsewithheader/hello");
-            Assert.Equal(400, (int)response.StatusCode);
+            var response = await HttpClient.GetAsync($"{RestApiUrlPrefix}/okresponsewithheader/hello");
+            Assert.That((int)response.StatusCode, Is.EqualTo(400));
             var content = await response.Content.ReadAsStringAsync();
             var errorJson = JObject.Parse(content);
 
             var expectedErrorMessage = "1 validation error(s) detected: Value hello at 'x' failed to satisfy constraint: Input string was not in a correct format.";
-            Assert.Equal(expectedErrorMessage, errorJson["message"]);
+            Assert.That(errorJson["message"], Is.EqualTo(expectedErrorMessage));
         }
 
-        [Fact]
+        [Test]
         public async Task OkResponseWithCustomSerializer_Returns200Status()
         {
-            var response = await _fixture.HttpClient.GetAsync($"{_fixture.HttpApiUrlPrefix}/okresponsewithcustomserializerasync/John/Doe");
+            var response = await HttpClient.GetAsync($"{HttpApiUrlPrefix}/okresponsewithcustomserializerasync/John/Doe");
             response.EnsureSuccessStatusCode();
 
             var content = await response.Content.ReadAsStringAsync();
             var person = JObject.Parse(content);
-            Assert.Equal("John", person["FIRST_NAME"]);
-            Assert.Equal("Doe", person["LAST_NAME"]);
+            Assert.That(person["FIRST_NAME"], Is.EqualTo("John"));
+            Assert.That(person["LAST_NAME"], Is.EqualTo("Doe"));
         }
     }
 }
