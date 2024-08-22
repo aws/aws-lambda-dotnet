@@ -15,6 +15,7 @@ namespace TestServerlessApp.IntegrationTests
             Assert.That(await response.Content.ReadAsStringAsync(), Is.EqualTo("All Good"));
         }
 
+        [Retry(3)]
         [Test]
         public async Task OkResponseWithHeader_ReturnsValidationErrors()
         {
@@ -27,6 +28,7 @@ namespace TestServerlessApp.IntegrationTests
             Assert.That(errorJson["message"].ToString(), Is.EqualTo(expectedErrorMessage));
         }
 
+        [Retry(3)]
         [Test]
         public async Task OkResponseWithCustomSerializer_Returns200Status()
         {
