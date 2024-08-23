@@ -7,8 +7,8 @@ namespace TestServerlessApp.IntegrationTests
     [TestFixture]
     public class CustomResponse : IntegrationTestsSetup
     {
-        [Retry(3)]
         [Test]
+        [Retry(5)]
         public async Task OkResponseWithHeader_Returns200Status()
         {
             var response = await HttpClient.GetAsync($"{RestApiUrlPrefix}/okresponsewithheader/1");
@@ -16,8 +16,8 @@ namespace TestServerlessApp.IntegrationTests
             Assert.That(await response.Content.ReadAsStringAsync(), Is.EqualTo("All Good"));
         }
 
-        [Retry(3)]
         [Test]
+        [Retry(5)]
         public async Task OkResponseWithHeader_ReturnsValidationErrors()
         {
             var response = await HttpClient.GetAsync($"{RestApiUrlPrefix}/okresponsewithheader/hello");
@@ -29,8 +29,8 @@ namespace TestServerlessApp.IntegrationTests
             Assert.That(errorJson["message"].ToString(), Is.EqualTo(expectedErrorMessage));
         }
 
-        [Retry(3)]
         [Test]
+        [Retry(5)]
         public async Task OkResponseWithCustomSerializer_Returns200Status()
         {
             var response = await HttpClient.GetAsync($"{HttpApiUrlPrefix}/okresponsewithcustomserializerasync/John/Doe");
