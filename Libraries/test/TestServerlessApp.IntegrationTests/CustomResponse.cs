@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -8,10 +9,14 @@ namespace TestServerlessApp.IntegrationTests
     [TestFixture]
     public class CustomResponse : IntegrationTestsSetup
     {
+        private static int attempt = 0;
+        
         [Test]
         [Retry(5)]
         public async Task OkResponseWithHeader_Returns200Status()
         {
+            attempt++;
+            Console.WriteLine($"Attempt {attempt}");
             var response = await HttpClient.GetAsync($"{RestApiUrlPrefix}/okresponsewithheader/1");
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(await response.Content.ReadAsStringAsync(), Is.EqualTo("All Good"));
@@ -21,6 +26,8 @@ namespace TestServerlessApp.IntegrationTests
         [Retry(5)]
         public async Task OkResponseWithHeader_ReturnsValidationErrors()
         {
+            attempt++;
+            Console.WriteLine($"Attempt {attempt}");
             var response = await HttpClient.GetAsync($"{RestApiUrlPrefix}/okresponsewithheader/hello");
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             var content = await response.Content.ReadAsStringAsync();
@@ -34,6 +41,8 @@ namespace TestServerlessApp.IntegrationTests
         [Retry(5)]
         public async Task OkResponseWithCustomSerializer_Returns200Status()
         {
+            attempt++;
+            Console.WriteLine($"Attempt {attempt}");
             var response = await HttpClient.GetAsync($"{HttpApiUrlPrefix}/okresponsewithcustomserializerasync/John/Doe");
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
