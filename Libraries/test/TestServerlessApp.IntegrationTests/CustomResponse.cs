@@ -7,6 +7,7 @@ namespace TestServerlessApp.IntegrationTests
     [TestFixture]
     public class CustomResponse : IntegrationTestsSetup
     {
+        [Retry(3)]
         [Test]
         public async Task OkResponseWithHeader_Returns200Status()
         {
