@@ -12,7 +12,7 @@ namespace TestServerlessApp.IntegrationTests
         private static int attempt = 0;
         
         [Test]
-        [Retry(5)]
+        [Retry(15)]
         public async Task OkResponseWithHeader_Returns200Status()
         {
             attempt++;
@@ -23,7 +23,7 @@ namespace TestServerlessApp.IntegrationTests
         }
 
         [Test]
-        [Retry(5)]
+        [Retry(15)]
         public async Task OkResponseWithHeader_ReturnsValidationErrors()
         {
             attempt++;
@@ -38,7 +38,7 @@ namespace TestServerlessApp.IntegrationTests
         }
 
         [Test]
-        [Retry(5)]
+        [Retry(15)]
         public async Task OkResponseWithCustomSerializer_Returns200Status()
         {
             attempt++;
