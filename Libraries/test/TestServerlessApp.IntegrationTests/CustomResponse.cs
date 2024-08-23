@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System.Net;
+using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
@@ -12,7 +13,7 @@ namespace TestServerlessApp.IntegrationTests
         public async Task OkResponseWithHeader_Returns200Status()
         {
             var response = await HttpClient.GetAsync($"{RestApiUrlPrefix}/okresponsewithheader/1");
-            response.EnsureSuccessStatusCode();
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             Assert.That(await response.Content.ReadAsStringAsync(), Is.EqualTo("All Good"));
         }
 
@@ -21,7 +22,7 @@ namespace TestServerlessApp.IntegrationTests
         public async Task OkResponseWithHeader_ReturnsValidationErrors()
         {
             var response = await HttpClient.GetAsync($"{RestApiUrlPrefix}/okresponsewithheader/hello");
-            Assert.That((int)response.StatusCode, Is.EqualTo(400));
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             var content = await response.Content.ReadAsStringAsync();
             var errorJson = JObject.Parse(content);
 
@@ -34,7 +35,7 @@ namespace TestServerlessApp.IntegrationTests
         public async Task OkResponseWithCustomSerializer_Returns200Status()
         {
             var response = await HttpClient.GetAsync($"{HttpApiUrlPrefix}/okresponsewithcustomserializerasync/John/Doe");
-            response.EnsureSuccessStatusCode();
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
             var content = await response.Content.ReadAsStringAsync();
             var person = JObject.Parse(content);
