@@ -24,7 +24,6 @@
     <WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-	<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>	
 
   <ItemGroup>

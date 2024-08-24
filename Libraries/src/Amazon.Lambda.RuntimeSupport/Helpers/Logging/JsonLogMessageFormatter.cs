@@ -208,6 +208,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         /// <param name="directive"></param>
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
             Justification = "If formatting an object using JSON serialization this will do its best attempt. If the object has trim errors formatting will fall back to ToString for the object.")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050",
+            Justification = "If formatting an object using JSON serialization this will do its best attempt. If the object has trim errors formatting will fall back to ToString for the object.")]
         private void FormatJsonValue(Utf8JsonWriter writer, object value, string formatArguments, MessageProperty.Directive directive)
         {
             if(value == null)
