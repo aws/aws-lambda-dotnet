@@ -16,7 +16,7 @@ namespace Amazon.Lambda.CognitoEvents
 #if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("claimsToAddOrOverride")]
 # endif
-        public Dictionary<string, string> ClaimsToAddOrOverride { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, object> ClaimsToAddOrOverride { get; set; } = new Dictionary<string, object>();
         
         /// <summary>
         /// A list that contains claims to be suppressed from the identity token.
