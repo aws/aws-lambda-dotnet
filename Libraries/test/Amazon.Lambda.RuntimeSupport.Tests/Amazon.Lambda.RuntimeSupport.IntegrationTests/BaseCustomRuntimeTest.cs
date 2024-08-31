@@ -198,9 +198,11 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             return await lambdaClient.InvokeAsync(request);
         }
 
-        protected async Task UpdateHandlerAsync(IAmazonLambda lambdaClient, string handler, Dictionary<string, string> environmentVariables = null)
+        protected async Task UpdateHandlerAsync(IAmazonLambda lambdaClient, string handler, Dictionary<string, string> environmentVariables = null, RuntimeLogLevel? logLevel = null)
         {
-            if(environmentVariables == null)
+            await WaitForFunctionToBeReady(lambdaClient);
+
+            if (environmentVariables == null)
             {
                 environmentVariables = new Dictionary<string, string>();
             }
@@ -216,8 +218,30 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     Variables = environmentVariables
                 }
             };
+
+            if (logLevel == null)
+            {
+                updateFunctionConfigurationRequest.LoggingConfig = new LoggingConfig
+                {
+                    LogFormat = LogFormat.Text
+                };
+            }
+            else
+            {
+                updateFunctionConfigurationRequest.LoggingConfig = new LoggingConfig
+                {
+                    ApplicationLogLevel = ConvertRuntimeLogLevel(logLevel.Value),
+                    LogFormat = LogFormat.JSON
+                };
+            }
+
             await lambdaClient.UpdateFunctionConfigurationAsync(updateFunctionConfigurationRequest);
 
+            await WaitForFunctionToBeReady(lambdaClient);
+        }
+
+        private async Task WaitForFunctionToBeReady(IAmazonLambda lambdaClient)
+        {
             // Wait for eventual consistency of function change.
             var getConfigurationRequest = new GetFunctionConfigurationRequest { FunctionName = FunctionName };
             GetFunctionConfigurationResponse getConfigurationResponse = null;
@@ -343,6 +367,59 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         protected class NoDeploymentPackageFoundException : Exception
         {
 
+        }
+
+        private ApplicationLogLevel ConvertRuntimeLogLevel(RuntimeLogLevel runtimeLogLevel)
+        {
+            switch (runtimeLogLevel)
+            {
+                case RuntimeLogLevel.Trace:
+                    return ApplicationLogLevel.TRACE;
+                case RuntimeLogLevel.Debug:
+                    return ApplicationLogLevel.DEBUG;
+                case RuntimeLogLevel.Information:
+                    return ApplicationLogLevel.INFO;
+                case RuntimeLogLevel.Warning:
+                    return ApplicationLogLevel.WARN;
+                case RuntimeLogLevel.Error:
+                    return ApplicationLogLevel.ERROR;
+                case RuntimeLogLevel.Critical:
+                    return ApplicationLogLevel.FATAL;
+                default:
+                    throw new ArgumentException("Unknown log level: " + runtimeLogLevel);
+            }
+        }
+
+        public enum RuntimeLogLevel
+        {
+            /// <summary>
+            /// Trace level logging
+            /// </summary>
+            Trace = 0,
+            /// <summary>
+            /// Debug level logging
+            /// </summary>
+            Debug = 1,
+
+            /// <summary>
+            /// Information level logging
+            /// </summary>
+            Information = 2,
+
+            /// <summary>
+            /// Warning level logging
+            /// </summary>
+            Warning = 3,
+
+            /// <summary>
+            /// Error level logging
+            /// </summary>
+            Error = 4,
+
+            /// <summary>
+            /// Critical level logging
+            /// </summary>
+            Critical = 5
         }
     }
 }

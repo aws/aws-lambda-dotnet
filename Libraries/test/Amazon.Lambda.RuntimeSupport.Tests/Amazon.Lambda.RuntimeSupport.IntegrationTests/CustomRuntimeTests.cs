@@ -102,8 +102,21 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await RunTestExceptionAsync(lambdaClient, "ExceptionNonAsciiCharacterUnwrappedAsync", "", "Exception", "Unhandled exception with non ASCII character: ♂");
                     await RunTestSuccessAsync(lambdaClient, "UnintendedDisposeTest", "not-used", "UnintendedDisposeTest-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "LoggingStressTest", "not-used", "LoggingStressTest-success");
-                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", null);
-                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", "debug");
+
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Trace, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Debug, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Information, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Warning, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Error, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Critical, LogConfigSource.LambdaAPI);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Trace, LogConfigSource.DotnetEnvironment);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Debug, LogConfigSource.DotnetEnvironment);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Information, LogConfigSource.DotnetEnvironment);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Warning, LogConfigSource.DotnetEnvironment);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Error, LogConfigSource.DotnetEnvironment);
+                    await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Critical, LogConfigSource.DotnetEnvironment);
+
+
                     await RunUnformattedLoggingTestAsync(lambdaClient, "LoggingTest");
 
                     await RunTestSuccessAsync(lambdaClient, "ToUpperAsync", "message", "ToUpperAsync-MESSAGE");
@@ -207,14 +220,17 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             }
         }
 
-        private async Task RunLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler, string logLevel)
+        // The .NET Lambda runtime has a legacy environment variable for configuring the log level. This enum is used in the test to choose
+        // whether the legacy environment variable should be set or use the new properties in the update configuration api for setting log level.
+        enum LogConfigSource { LambdaAPI, DotnetEnvironment}
+        private async Task RunLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler, RuntimeLogLevel? runtimeLogLevel, LogConfigSource configSource)
         {
             var environmentVariables = new Dictionary<string, string>();
-            if(!string.IsNullOrEmpty(logLevel))
+            if(runtimeLogLevel.HasValue && configSource == LogConfigSource.DotnetEnvironment)
             {
-                environmentVariables["AWS_LAMBDA_HANDLER_LOG_LEVEL"] = logLevel;
+                environmentVariables["AWS_LAMBDA_HANDLER_LOG_LEVEL"] = runtimeLogLevel.Value.ToString().ToLowerInvariant();
             }
-            await UpdateHandlerAsync(lambdaClient, handler, environmentVariables);
+            await UpdateHandlerAsync(lambdaClient, handler, environmentVariables, configSource == LogConfigSource.LambdaAPI ? runtimeLogLevel : null); 
 
             var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
             Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
@@ -222,22 +238,65 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
             var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
 
-            Assert.Contains("info\tA information log", log);
-            Assert.Contains("warn\tA warning log", log);
-            Assert.Contains("fail\tA error log", log);
-            Assert.Contains("crit\tA critical log", log);
+            if (!runtimeLogLevel.HasValue)
+                runtimeLogLevel = RuntimeLogLevel.Information;
 
-            Assert.Contains("info\tA stdout info message", log);
-
-            Assert.Contains("fail\tA stderror error message", log);
-
-            if (string.IsNullOrEmpty(logLevel))
+            if (runtimeLogLevel <= RuntimeLogLevel.Trace)
             {
-                Assert.DoesNotContain($"a {logLevel} log".ToLower(), log.ToLower());
+                Assert.Contains("A trace log", log);
             }
             else
             {
-                Assert.Contains($"a {logLevel} log".ToLower(), log.ToLower());
+                Assert.DoesNotContain("A trace log", log);
+            }
+
+            if (runtimeLogLevel <= RuntimeLogLevel.Debug)
+            {
+                Assert.Contains("A debug log", log);
+            }
+            else
+            {
+                Assert.DoesNotContain("A debug log", log);
+            }
+
+            if (runtimeLogLevel <= RuntimeLogLevel.Information)
+            {
+                Assert.Contains("A information log", log);
+                Assert.Contains("A stdout info message", log);
+            }
+            else
+            {
+                Assert.DoesNotContain("A information log", log);
+                Assert.DoesNotContain("A stdout info message", log);
+            }
+
+            if (runtimeLogLevel <= RuntimeLogLevel.Warning)
+            {
+                Assert.Contains("A warning log", log);
+            }
+            else
+            {
+                Assert.DoesNotContain("A warning log", log);
+            }
+
+            if (runtimeLogLevel <= RuntimeLogLevel.Error)
+            {
+                Assert.Contains("A error log", log);
+                Assert.Contains("A stderror error message", log);
+            }
+            else
+            {
+                Assert.DoesNotContain("A error log", log);
+                Assert.DoesNotContain("A stderror error message", log);
+            }
+
+            if (runtimeLogLevel <= RuntimeLogLevel.Critical)
+            {
+                Assert.Contains("A critical log", log);
+            }
+            else
+            {
+                Assert.DoesNotContain("A critical log", log);
             }
         }
 
