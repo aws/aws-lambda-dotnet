@@ -95,6 +95,47 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
     }
 
     /// <summary>
+    /// IServer for handlying Lambda events from an API Gateway Websocket API.
+    /// </summary>
+    public class APIGatewayWebsocketApiV2LambdaRuntimeSupportServer : LambdaRuntimeSupportServer
+    {
+        /// <summary>
+        /// Create instances
+        /// </summary>
+        /// <param name="serviceProvider">The IServiceProvider created for the ASP.NET Core application</param>
+        public APIGatewayWebsocketApiV2LambdaRuntimeSupportServer(IServiceProvider serviceProvider)
+            : base(serviceProvider)
+        {
+        }
+
+        /// <summary>
+        /// Creates HandlerWrapper for processing events from API Gateway Websocket API
+        /// </summary>
+        /// <param name="serviceProvider"></param>
+        /// <returns></returns>
+        protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
+        {
+            var handler = new APIGatewayWebsocketApiV2MinimalApi(serviceProvider).FunctionHandlerAsync;
+            return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
+        }
+
+        /// <summary>
+        /// Create the APIGatewayWebsocketApiV2ProxyFunction passing in the ASP.NET Core application's IServiceProvider
+        /// </summary>
+        public class APIGatewayWebsocketApiV2MinimalApi : APIGatewayWebsocketApiV2ProxyFunction
+        {
+            /// <summary>
+            /// Create instances
+            /// </summary>
+            /// <param name="serviceProvider">The IServiceProvider created for the ASP.NET Core application</param>
+            public APIGatewayWebsocketApiV2MinimalApi(IServiceProvider serviceProvider)
+                : base(serviceProvider)
+            {
+            }
+        }
+    }
+
+    /// <summary>
     /// IServer for handlying Lambda events from an API Gateway REST API.
     /// </summary>
     public class APIGatewayRestApiLambdaRuntimeSupportServer : LambdaRuntimeSupportServer

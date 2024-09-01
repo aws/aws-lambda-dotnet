@@ -96,10 +96,9 @@ namespace Amazon.Lambda.AspNetCoreServer
                 PostMarshallHttpAuthenticationFeature(authFeatures, apiGatewayRequest, lambdaContext);
             }
             {
-                var httpInfo = apiGatewayRequest.RequestContext.Http;
                 var requestFeatures = (IHttpRequestFeature)features;
                 requestFeatures.Scheme = "https";
-                requestFeatures.Method = httpInfo.Method;
+                requestFeatures.Method = this.ParseHttpMethod(apiGatewayRequest);
 
                 if (string.IsNullOrWhiteSpace(apiGatewayRequest.RequestContext?.DomainName))
                 {
@@ -110,11 +109,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 requestFeatures.RawTarget = apiGatewayRequest.RawPath + rawQueryString;
                 requestFeatures.QueryString = rawQueryString;
 
-                requestFeatures.Path = Utilities.DecodeResourcePath(httpInfo.Path);
-                if (!requestFeatures.Path.StartsWith("/"))
-                {
-                    requestFeatures.Path = "/" + requestFeatures.Path;
-                }
+                requestFeatures.Path = this.ParseHttpPath(apiGatewayRequest);
 
                 // If there is a stage name in the resource path strip it out and set the stage name as the base path.
                 // This is required so that ASP.NET Core will route request based on the resource path without the stage name.
@@ -265,6 +260,31 @@ namespace Amazon.Lambda.AspNetCoreServer
             _logger.LogDebug($"Response Base 64 Encoded: {response.IsBase64Encoded}");
 
             return response;
+        }
+
+        /// <summary>
+        /// Get the http path from the request.
+        /// </summary>
+        /// <param name="apiGatewayRequest"></param>
+        /// <returns>string</returns>
+        protected virtual string ParseHttpPath(APIGatewayHttpApiV2ProxyRequest apiGatewayRequest)
+        {
+            var path = Utilities.DecodeResourcePath(apiGatewayRequest.RequestContext.Http.Path);
+            if (!path.StartsWith("/"))
+            {
+                path = "/" + path;
+            }
+            return path;
+        }
+
+        /// <summary>
+        /// Get the http method from the request.
+        /// </summary>
+        /// <param name="apiGatewayRequest"></param>
+        /// <returns>string</returns>
+        protected virtual string ParseHttpMethod(APIGatewayHttpApiV2ProxyRequest apiGatewayRequest)
+        {
+            return apiGatewayRequest.RequestContext.Http.Method;
         }
     }
 }
