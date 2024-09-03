@@ -22,6 +22,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -92,7 +93,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     roleAlreadyExisted = await PrepareTestResources(s3Client, lambdaClient, iamClient);
 
                     // .NET API to address setting memory constraint was added for .NET 8
-                    if(_targetFramework == TargetFramework.NET8)
+                    if (_targetFramework == TargetFramework.NET8)
                     {
                         await RunMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
                         await RunWithoutMaxHeapMemoryCheck(lambdaClient, "GetTotalAvailableMemoryBytes");
@@ -102,6 +103,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await RunTestExceptionAsync(lambdaClient, "ExceptionNonAsciiCharacterUnwrappedAsync", "", "Exception", "Unhandled exception with non ASCII character: ♂");
                     await RunTestSuccessAsync(lambdaClient, "UnintendedDisposeTest", "not-used", "UnintendedDisposeTest-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "LoggingStressTest", "not-used", "LoggingStressTest-success");
+
+                    await RunJsonLoggingWithUnhandledExceptionAsync(lambdaClient);
 
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Trace, LogConfigSource.LambdaAPI);
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Debug, LogConfigSource.LambdaAPI);
@@ -147,6 +150,18 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await CleanUpTestResources(s3Client, lambdaClient, iamClient, roleAlreadyExisted);
                 }
             }
+        }
+
+        private async Task RunJsonLoggingWithUnhandledExceptionAsync(AmazonLambdaClient lambdaClient)
+        {
+            await UpdateHandlerAsync(lambdaClient, "ThrowUnhandledApplicationException", null, RuntimeLogLevel.Information);
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+
+            var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+            var exceptionLog = log.Split('\n').FirstOrDefault(x => x.Contains("System.ApplicationException"));
+
+            Assert.NotNull(exceptionLog);
+            Assert.Contains("\"level\":\"Error\"", exceptionLog);
         }
 
         private async Task RunMaxHeapMemoryCheck(AmazonLambdaClient lambdaClient, string handler)
