@@ -1,5 +1,7 @@
 ﻿using System;
 
+using Microsoft.AspNetCore.Http;
+
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 
@@ -54,6 +56,15 @@ namespace Amazon.Lambda.AspNetCoreServer
         protected override string ParseHttpMethod(APIGatewayHttpApiV2ProxyRequest apiGatewayRequest)
         {
             return "POST";
+        }
+
+        /// <inheritdoc/>
+        /// <returns>IHeaderDictionary</returns>
+        protected override IHeaderDictionary AddRequestHeaders(APIGatewayHttpApiV2ProxyRequest apiGatewayRequest, IHeaderDictionary headers)
+        {
+            headers = base.AddRequestHeaders(apiGatewayRequest, headers);
+            headers["Content-Type"] = "application/json";
+            return headers;
         }
     }
 }

@@ -1,0 +1,22 @@
+﻿{
+  "version": null,
+  "routeKey": null,
+  "rawPath": null,
+  "rawQueryString": null,
+  "headers": null,
+  "requestContext": {
+    "accountId": null,
+    "apiId": "uo9pe23ec6",
+    "domainName": "uo9pe23ec6.execute-api.us-east-1.amazonaws.com",
+    "domainPrefix": null,
+    "http": null,
+    "requestId": "J7jk9g-7oAMEJGw=",
+    "routeKey": "$default",
+    "stage": "websocket",
+    "time": null,
+    "timeEpoch": 0
+  },
+  "pathParameters": null,
+  "body": "{\"firstName\":\"Smith\",\"lastName\": \"Agent\"}",
+  "isBase64Encoded": false
+}

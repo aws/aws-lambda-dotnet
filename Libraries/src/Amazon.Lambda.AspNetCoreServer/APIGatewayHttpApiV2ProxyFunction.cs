@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Claims;
 
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
 
@@ -285,6 +286,19 @@ namespace Amazon.Lambda.AspNetCoreServer
         protected virtual string ParseHttpMethod(APIGatewayHttpApiV2ProxyRequest apiGatewayRequest)
         {
             return apiGatewayRequest.RequestContext.Http.Method;
+        }
+
+        /// <summary>
+        /// Add missing headers to request.
+        /// </summary>
+        /// <returns>IHeaderDictionary</returns>
+        protected virtual IHeaderDictionary AddRequestHeaders(APIGatewayHttpApiV2ProxyRequest apiGatewayRequest, IHeaderDictionary headers)
+        {
+            if (!headers.ContainsKey("Host"))
+            {
+                headers["Host"] = apiGatewayRequest.RequestContext.DomainName;
+            }
+            return headers;
         }
     }
 }
