@@ -766,7 +766,7 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "MemorySize": 512,
+        "MemorySize": 256,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"

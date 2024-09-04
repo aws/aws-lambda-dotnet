@@ -33,6 +33,14 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         internal const string AWS_LAMBDA_INITIALIZATION_TYPE_PC = "provisioned-concurrency";
         internal const string AWS_LAMBDA_INITIALIZATION_TYPE_ON_DEMAND = "on-demand";
 
+        internal const string NET_RIC_LOG_LEVEL_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_LEVEL";
+        internal const string NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_FORMAT";
+
+        internal const string LAMBDA_LOG_LEVEL_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_LOG_LEVEL";
+        internal const string LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_LOG_FORMAT";
+
+        internal const string LAMBDA_LOG_FORMAT_JSON = "Json";
+
         internal enum AwsLambdaDotNetPreJit
         {
             Never,

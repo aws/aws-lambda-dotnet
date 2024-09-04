@@ -98,6 +98,10 @@ namespace CustomRuntimeFunctionTest
                     case nameof(GetTimezoneNameAsync):
                         bootstrap = new LambdaBootstrap(GetTimezoneNameAsync);
                         break;
+                    case nameof(ThrowUnhandledApplicationException):
+                        handlerWrapper = HandlerWrapper.GetHandlerWrapper((Action)ThrowUnhandledApplicationException);
+                        bootstrap = new LambdaBootstrap(handlerWrapper);
+                        break;
                     default:
                         throw new Exception($"Handler {handler} is not supported.");
                 }
@@ -372,6 +376,11 @@ namespace CustomRuntimeFunctionTest
         private static void AggregateExceptionNotUnwrapped()
         {
             throw new AggregateException("AggregateException thrown from a synchronous handler.");
+        }
+
+        private static void ThrowUnhandledApplicationException()
+        {
+            throw new ApplicationException("Function fail");
         }
 
         private static Task<InvocationResponse> TooLargeResponseBodyAsync(InvocationRequest invocation)

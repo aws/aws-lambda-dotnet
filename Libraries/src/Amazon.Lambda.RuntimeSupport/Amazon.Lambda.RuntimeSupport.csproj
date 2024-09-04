@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net5.0;net6.0;net8.0</TargetFrameworks>
-    <VersionPrefix>1.10.0</VersionPrefix>
+    <VersionPrefix>1.11.0</VersionPrefix>
     <Description>Provides a bootstrap and Lambda Runtime API Client to help you to develop custom .NET Core Lambda Runtimes.</Description>
     <AssemblyTitle>Amazon.Lambda.RuntimeSupport</AssemblyTitle>
     <AssemblyName>Amazon.Lambda.RuntimeSupport</AssemblyName>
@@ -13,6 +13,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
+	<LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(ExecutableOutputType)'=='true' ">
@@ -23,7 +24,6 @@
     <WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-	<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>	
 
   <ItemGroup>
