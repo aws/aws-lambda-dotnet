@@ -324,6 +324,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     {
                         _minmumLogLevel = LogLevel.Critical;
                     }
+                    else if (string.Equals(envLogLevel, "warn", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        _minmumLogLevel = LogLevel.Warning;
+                    }
                     else if (Enum.TryParse<LogLevel>(envLogLevel, true, out var result))
                     {
                         _minmumLogLevel = result;
