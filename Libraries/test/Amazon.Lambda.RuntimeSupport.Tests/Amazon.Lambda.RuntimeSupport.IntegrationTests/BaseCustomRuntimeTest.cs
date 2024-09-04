@@ -189,6 +189,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
         protected async Task<InvokeResponse> InvokeFunctionAsync(IAmazonLambda lambdaClient, string payload)
         {
+            await WaitForFunctionToBeReady(lambdaClient);
+
             var request = new InvokeRequest
             {
                 FunctionName = FunctionName,
