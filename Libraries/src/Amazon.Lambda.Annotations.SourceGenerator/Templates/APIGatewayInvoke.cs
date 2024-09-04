@@ -22,7 +22,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+    #line 1 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
     public partial class APIGatewayInvoke : APIGatewayInvokeBase
     {
@@ -33,7 +33,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
         public virtual string TransformText()
         {
             
-            #line 10 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 10 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
 
         var restApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.RestApiAttribute>;
         var httpApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.HttpApiAttribute>;
@@ -46,27 +46,27 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            var httpResults = ");
             
-            #line 17 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 17 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ReturnsGenericTask ? "await " : ""));
             
             #line default
             #line hidden
             
-            #line 17 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 17 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
             this.Write(".");
             
-            #line 17 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 17 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.Name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 17 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 17 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_parameterSignature));
             
             #line default
@@ -74,7 +74,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write(");\r\n            HttpResultSerializationOptions.ProtocolFormat serializationFormat" +
                     " = ");
             
-            #line 18 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 18 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(restApiAttribute != null ? "HttpResultSerializationOptions.ProtocolFormat.RestApi" : "HttpResultSerializationOptions.ProtocolFormat.HttpApi"));
             
             #line default
@@ -82,25 +82,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write(";\r\n            HttpResultSerializationOptions.ProtocolVersion serializationVersio" +
                     "n = ");
             
-            #line 19 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 19 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "HttpResultSerializationOptions.ProtocolVersion.V1" : "HttpResultSerializationOptions.ProtocolVersion.V2"));
             
             #line default
             #line hidden
-            this.Write(";\r\n            System.Text.Json.Serialization.JsonSerializerContext jsonContext =" +
-                    " ");
-            
-            #line 20 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(_model.SerializerInfo.SerializerJsonContextName != null ? _model.SerializerInfo.SerializerJsonContextName + ".Default" : "null"));
-            
-            #line default
-            #line hidden
             this.Write(";\r\n            var serializationOptions = new HttpResultSerializationOptions { Fo" +
-                    "rmat = serializationFormat, Version = serializationVersion, JsonContext = jsonCo" +
-                    "ntext };\r\n            var response = httpResults.Serialize(serializationOptions)" +
-                    ";\r\n");
+                    "rmat = serializationFormat, Version = serializationVersion, Serializer = seriali" +
+                    "zer };\r\n            var response = httpResults.Serialize(serializationOptions);\r" +
+                    "\n");
             
-            #line 23 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 22 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
 
         }
         else if (_model.LambdaMethod.ReturnsVoid)
@@ -111,28 +103,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            ");
             
-            #line 28 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 27 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
             this.Write(".");
             
-            #line 28 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 27 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.Name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 28 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 27 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_parameterSignature));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 29 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 28 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
 
         }
         else if (_model.LambdaMethod.ReturnsVoidTask)
@@ -143,28 +135,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            await ");
             
-            #line 34 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 33 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
             this.Write(".");
             
-            #line 34 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 33 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.Name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 34 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 33 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_parameterSignature));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 35 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 34 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
 
         }
         else
@@ -175,34 +167,34 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            var response = ");
             
-            #line 40 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 39 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ReturnsGenericTask ? "await " : ""));
             
             #line default
             #line hidden
             
-            #line 40 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 39 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
             this.Write(".");
             
-            #line 40 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 39 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.Name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 40 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 39 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_parameterSignature));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 41 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 40 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
 
         }
 
@@ -214,7 +206,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            return response;\r\n");
             
-            #line 48 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 47 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
 
         }
         else
@@ -229,7 +221,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("\r\n            var body = response.ToString();\r\n");
             
-            #line 59 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 58 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
 
                 }
                 else if (_model.LambdaMethod.ReturnType.IsString())
@@ -251,7 +243,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             var body = reader.ReadToEnd();
 ");
             
-            #line 75 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 74 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
 
                 }
             }
@@ -261,14 +253,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("\r\n            return new ");
             
-            #line 80 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 79 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ReturnsVoidOrGenericTask ? _model.GeneratedMethod.ReturnType.TaskTypeArgument : _model.GeneratedMethod.ReturnType.FullName));
             
             #line default
             #line hidden
             this.Write("\r\n            {\r\n");
             
-            #line 82 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 81 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
 
             if (!_model.LambdaMethod.ReturnsVoid && !_model.LambdaMethod.ReturnsVoidTask)
             {
@@ -278,7 +270,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("                Body = ");
             
-            #line 86 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 85 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ReturnType.IsString() ? "response" : "body"));
             
             #line default
@@ -286,14 +278,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write(",\r\n                Headers = new Dictionary<string, string>\r\n                {\r\n " +
                     "                   {\"Content-Type\", ");
             
-            #line 89 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 88 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ReturnType.IsString() ? "\"text/plain\"" : "\"application/json\""));
             
             #line default
             #line hidden
             this.Write("}\r\n                },\r\n");
             
-            #line 91 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 90 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
 
             }
 
@@ -302,7 +294,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("                StatusCode = 200\r\n            };\r\n");
             
-            #line 96 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
+            #line 95 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewayInvoke.tt"
 
         }
 

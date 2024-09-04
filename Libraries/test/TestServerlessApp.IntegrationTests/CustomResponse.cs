@@ -37,5 +37,17 @@ namespace TestServerlessApp.IntegrationTests
             var expectedErrorMessage = "1 validation error(s) detected: Value hello at 'x' failed to satisfy constraint: Input string was not in a correct format.";
             Assert.Equal(expectedErrorMessage, errorJson["message"]);
         }
+
+        [Fact]
+        public async Task OkResponseWithCustomSerializer_Returns200Status()
+        {
+            var response = await _fixture.HttpClient.GetAsync($"{_fixture.HttpApiUrlPrefix}/okresponsewithcustomserializerasync/John/Doe");
+            response.EnsureSuccessStatusCode();
+
+            var content = await response.Content.ReadAsStringAsync();
+            var person = JObject.Parse(content);
+            Assert.Equal("John", person["FIRST_NAME"]);
+            Assert.Equal("Doe", person["LAST_NAME"]);
+        }
     }
 }

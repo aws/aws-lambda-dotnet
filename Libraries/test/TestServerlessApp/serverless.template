@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v1.3.1.0).",
+  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v1.5.0.0).",
   "Parameters": {
     "ArchitectureTypeParameter": {
       "Type": "String",
@@ -108,7 +108,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -140,7 +146,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -172,7 +184,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -204,7 +222,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -236,7 +260,14 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -269,7 +300,14 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -322,7 +360,14 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 1024,
@@ -355,7 +400,14 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -388,7 +440,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootPost"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootPost": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -420,7 +478,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootPost"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootPost": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -452,7 +516,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -484,7 +554,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -516,7 +592,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -548,7 +630,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -580,7 +668,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -692,7 +786,13 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,
@@ -737,6 +837,110 @@
           ]
         }
       }
+    },
+    "TestServerlessAppCustomizeResponseExamplesOkResponseWithCustomSerializerGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated::OkResponseWithCustomSerializer"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/okresponsewithcustomserializerasync/{firstName}/{lastName}",
+              "Method": "GET",
+              "PayloadFormatVersion": "1.0"
+            }
+          }
+        }
+      }
+    },
+    "SQSMessageHandler": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestQueueEvent"
+        ],
+        "SyncedEventProperties": {
+          "TestQueueEvent": [
+            "Queue.Fn::GetAtt",
+            "BatchSize",
+            "FilterCriteria.Filters",
+            "FunctionResponseTypes",
+            "MaximumBatchingWindowInSeconds",
+            "ScalingConfig.MaximumConcurrency"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaSQSQueueExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.SqsMessageProcessing_HandleMessage_Generated::HandleMessage"
+          ]
+        },
+        "Events": {
+          "TestQueueEvent": {
+            "Type": "SQS",
+            "Properties": {
+              "Queue": {
+                "Fn::GetAtt": [
+                  "TestQueue",
+                  "Arn"
+                ]
+              },
+              "BatchSize": 50,
+              "FilterCriteria": {
+                "Filters": [
+                  {
+                    "Pattern": "{ \"body\" : { \"RequestCode\" : [ \"BBBB\" ] } }"
+                  }
+                ]
+              },
+              "FunctionResponseTypes": [
+                "ReportBatchItemFailures"
+              ],
+              "MaximumBatchingWindowInSeconds": 5,
+              "ScalingConfig": {
+                "MaximumConcurrency": 5
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestQueue": {
+      "Type": "AWS::SQS::Queue"
     }
   },
   "Outputs": {
@@ -750,6 +954,15 @@
       "Description": "HTTP API endpoint URL for Prod environment",
       "Value": {
         "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+      }
+    },
+    "TestQueueARN": {
+      "Description": "ARN of the TestQueue resource",
+      "Value": {
+        "Fn::GetAtt": [
+          "TestQueue",
+          "Arn"
+        ]
       }
     }
   }

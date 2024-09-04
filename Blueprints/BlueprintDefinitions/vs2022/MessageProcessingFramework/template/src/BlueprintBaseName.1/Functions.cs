@@ -1,5 +1,5 @@
 using Amazon.Lambda.Annotations;
-using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Annotations.SQS;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.SQSEvents;
 using AWS.Messaging;
@@ -56,6 +56,7 @@ public class Functions
     /// <param name="context">Lambda execution context</param>
     /// <returns>Set of messages whose handler invocations failed, only these will be reprocessed</returns>
     [LambdaFunction(Policies = "AWSLambdaSQSQueueExecutionRole")]
+    [SQSEvent("@MessageProcessingFrameworkDemoQueue", ResourceName = "SQSEvent")]
     public async Task<SQSBatchResponse> Handler(SQSEvent evnt, ILambdaContext context)
     {
         // Pass the SQSEvent into the framework

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
@@ -35,7 +34,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// Gets or sets fully qualified name of the serializer used for serialization or deserialization.
         /// </summary>
         public LambdaSerializerInfo SerializerInfo { get; set; } =
-            new LambdaSerializerInfo("Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer", null);
+            new LambdaSerializerInfo("Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer");
         
         /// <summary>
         /// Gets or sets if the output is an executable.
@@ -74,6 +73,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public IList<AttributeModel> Attributes => LambdaMethod.Attributes ?? new List<AttributeModel>();
 
         /// <inheritdoc />
+        public string ReturnTypeFullName  => LambdaMethod.ReturnType.FullName;
+
+        /// <inheritdoc />
         public string SourceGeneratorVersion { get; set; }
+
+        /// <summary>
+        /// Indicates if the model is valid.
+        /// </summary>
+        public bool IsValid {  get; set; }
     }
 }

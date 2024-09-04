@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.3.1.0).",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.5.0.0).",
   "Resources": {
     "GreeterSayHello": {
       "Type": "AWS::Serverless::Function",
@@ -9,7 +9,14 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 1024,
@@ -47,7 +54,14 @@
         "Tool": "Amazon.Lambda.Annotations",
         "SyncedEvents": [
           "RootGet"
-        ]
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "PayloadFormatVersion"
+          ]
+        }
       },
       "Properties": {
         "MemorySize": 512,

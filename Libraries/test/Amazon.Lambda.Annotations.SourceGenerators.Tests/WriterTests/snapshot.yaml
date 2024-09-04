@@ -11,3 +11,6 @@
     City: AmazingCity
     State: AmazingState
   IsAlive: true
+  Aliases:
+    - Alias: Johnny
+    - Alias: Johnny Boy

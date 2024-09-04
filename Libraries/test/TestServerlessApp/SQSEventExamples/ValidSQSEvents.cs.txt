@@ -1,0 +1,33 @@
+﻿using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.SQS;
+using Amazon.Lambda.SQSEvents;
+using System;
+using System.Threading.Tasks;
+
+namespace TestServerlessApp.SQSEventExamples
+{
+    // This file represents valid usage of the SQSEventAttribute. This is added as .txt file since we do not want to deploy these functions during our integration tests. 
+    // This file is only sent as input to the source generator unit tests. 
+    // Refer to VerifyValidSQSEvents unit test.
+
+    public class ValidSQSEvents
+    {
+        [LambdaFunction]
+        [SQSEvent("arn:aws:sqs:us-east-2:444455556666:queue1", BatchSize = 50, MaximumBatchingWindowInSeconds = 2, MaximumConcurrency = 30, Filters = "My-Filter-1; My-Filter-2")]
+        [SQSEvent("arn:aws:sqs:us-east-2:444455556666:queue2", MaximumBatchingWindowInSeconds = 5, Enabled = false)]
+        [SQSEvent("arn:aws:sqs:us-east-2:444455556666:my-queue")]
+        [SQSEvent("@testQueue", ResourceName = "testQueueEvent")]
+        public void ProcessMessages(SQSEvent evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction]
+        [SQSEvent("arn:aws:sqs:us-east-2:444455556666:queue3")]
+        public async Task<SQSBatchResponse> ProcessMessagesWithBatchFailureReporting(SQSEvent evnt)
+        {
+            await Console.Out.WriteLineAsync($"Event processed: {evnt}");
+            return new SQSBatchResponse();
+        }
+    }
+}

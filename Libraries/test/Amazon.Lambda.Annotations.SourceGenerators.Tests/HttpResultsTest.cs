@@ -6,6 +6,9 @@ using Amazon.Lambda.Annotations.APIGateway;
 using Xunit;
 using System.IO;
 using System.Linq;
+using Amazon.Lambda.Serialization.SystemTextJson;
+using Amazon.Lambda.Core;
+using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions.Interfaces;
 
 namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 {
@@ -357,21 +360,42 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             });
         }
 
+        [Fact]
+        public void HttpResult_WithCustomSerializer()
+        {
+            var result = HttpResults.Ok(new Person { FirstName = "John", LastName = "Doe" });
+            var response = result.Serialize(new HttpResultSerializationOptions
+            {
+                Format = HttpResultSerializationOptions.ProtocolFormat.HttpApi,
+                Version = HttpResultSerializationOptions.ProtocolVersion.V2,
+                Serializer = new CustomLambdaSerializer()
+            });
+
+            var jsonDoc = JsonDocument.Parse(response);
+            Assert.Equal(200, jsonDoc.RootElement.GetProperty("statusCode").GetInt32());
+
+            var body = jsonDoc.RootElement.GetProperty("body").GetString();
+            var person = JsonSerializer.Deserialize<Dictionary<string, string>>(body);
+            Assert.Equal("John", person["FIRST_NAME"]);
+            Assert.Equal("Doe", person["LAST_NAME"]);
+        }
+
 
         private void ValidateResult(Func<IHttpResult> resultCreator, HttpStatusCode statusCode, string body = null, bool isBase64Encoded = false, IDictionary<string, IList<string>> headers = null)
         {
-            var testScenarios = new List<Tuple<HttpResultSerializationOptions.ProtocolFormat, HttpResultSerializationOptions.ProtocolVersion>>
+            var lambdaSerializer = new DefaultLambdaJsonSerializer();
+            var testScenarios = new List<Tuple<HttpResultSerializationOptions.ProtocolFormat, HttpResultSerializationOptions.ProtocolVersion, ILambdaSerializer>>
             {
-                new (HttpResultSerializationOptions.ProtocolFormat.RestApi, HttpResultSerializationOptions.ProtocolVersion.V1),
-                new (HttpResultSerializationOptions.ProtocolFormat.HttpApi, HttpResultSerializationOptions.ProtocolVersion.V1),
-                new (HttpResultSerializationOptions.ProtocolFormat.HttpApi, HttpResultSerializationOptions.ProtocolVersion.V2)
+                new (HttpResultSerializationOptions.ProtocolFormat.RestApi, HttpResultSerializationOptions.ProtocolVersion.V1, lambdaSerializer),
+                new (HttpResultSerializationOptions.ProtocolFormat.HttpApi, HttpResultSerializationOptions.ProtocolVersion.V1, lambdaSerializer),
+                new (HttpResultSerializationOptions.ProtocolFormat.HttpApi, HttpResultSerializationOptions.ProtocolVersion.V2, lambdaSerializer)
             };
 
-            foreach(var (format, version) in testScenarios)
+            foreach(var (format, version, serializer) in testScenarios)
             {
                 IHttpResult result = resultCreator();
 
-                var stream = result.Serialize(new HttpResultSerializationOptions { Format = format, Version = version });
+                var stream = result.Serialize(new HttpResultSerializationOptions { Format = format, Version = version, Serializer = serializer });
                 var jsonDoc = JsonDocument.Parse(stream);
                 if (format == HttpResultSerializationOptions.ProtocolFormat.RestApi || (format == HttpResultSerializationOptions.ProtocolFormat.HttpApi && version == HttpResultSerializationOptions.ProtocolVersion.V1))
                 {
@@ -455,6 +479,27 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         public class FakeBody
         {
             public int Id { get; set; } = 1;
+        }
+
+        public class Person
+        {
+            public string FirstName { get; set; }
+            public string LastName { get; set; }
+        }
+
+        public class CustomLambdaSerializer : DefaultLambdaJsonSerializer
+        {
+            public CustomLambdaSerializer()
+                : base(CreateCustomizer())
+            { }
+
+            private static Action<JsonSerializerOptions> CreateCustomizer()
+            {
+                return (JsonSerializerOptions options) =>
+                {
+                    options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseUpper;
+                };
+            }
         }
     }
 }

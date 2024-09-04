@@ -28,6 +28,7 @@ namespace TestServerlessApp.IntegrationTests
 
         public string RestApiUrlPrefix;
         public string HttpApiUrlPrefix;
+        public string TestQueueARN;
         public List<LambdaFunction> LambdaFunctions;
 
         public IntegrationTestContextFixture()
@@ -51,11 +52,12 @@ namespace TestServerlessApp.IntegrationTests
 
             RestApiUrlPrefix = await _cloudFormationHelper.GetOutputValueAsync(_stackName, "RestApiURL");
             HttpApiUrlPrefix = await _cloudFormationHelper.GetOutputValueAsync(_stackName, "HttpApiURL");
+            TestQueueARN = await _cloudFormationHelper.GetOutputValueAsync(_stackName, "TestQueueARN");
             LambdaFunctions = await LambdaHelper.FilterByCloudFormationStackAsync(_stackName);
 
             Assert.Equal(StackStatus.CREATE_COMPLETE, await _cloudFormationHelper.GetStackStatusAsync(_stackName));
             Assert.True(await _s3Helper.BucketExistsAsync(_bucketName));
-            Assert.Equal(26, LambdaFunctions.Count);
+            Assert.Equal(28, LambdaFunctions.Count);
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix));
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix));
 

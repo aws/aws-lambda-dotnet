@@ -39,7 +39,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 {
                     return false;
                 }
-                currentNode = currentNode[property];
+                try
+                {
+                    currentNode = currentNode[property];
+                }
+                // If the currentNode is already a leaf value then we will encounter an InvalidOperationException
+                catch (InvalidOperationException)
+                {
+                    return false;
+                }
             }
 
             return currentNode != null;
@@ -172,6 +180,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             currentNode.Remove(lastProperty);
+        }
+
+        /// <inheritdoc/>
+        public void RemoveTokenIfNullOrEmpty(string jsonPath)
+        {
+            if (!Exists(jsonPath))
+            {
+                return;
+            }
+
+            JToken currentNode = _rootNode;
+            foreach (var property in jsonPath.Split('.'))
+            {
+                currentNode = currentNode[property];
+            }
+
+            if (currentNode.Type == JTokenType.Null || (currentNode.Type == JTokenType.Object && !currentNode.HasValues))
+            {
+                RemoveToken(jsonPath);
+            }
         }
 
         /// <summary>

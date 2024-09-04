@@ -8,6 +8,17 @@ or from an [Application Load Balancer](https://docs.aws.amazon.com/elasticloadba
 and converts that request into the classes the ASP.NET Core framework expects and then converts the response from the ASP.NET Core
 framework into the response body that API Gateway Proxy or Application Load Balancer understands.
 
+## Supported .NET versions
+
+This library supports .NET 6 and above. Lambda provides managed runtimes for long term supported (LTS) versions like .NET 6 and .NET 8. To use standard term supported (STS) versions like .NET 9
+the Lambda function must be bundled as a self contained executable or an OCI image.
+
+## Amazon.Lambda.AspNetCoreServer vs Amazon.Lambda.AspNetCoreServer.Hosting
+
+The `Amazon.Lambda.AspNetCoreServer` is typically used with the older ASP.NET Core pattern of having a `Startup` class to setup the ASP.NET Core application. This allows you to share the ASP.NET Core setup logic between the `LambdaEntryPoint` and the normal `Main` entrypoint used for running the ASP.NET Core applications locally. For integrating Lambda into an ASP.NET Core project using the minimal api pattern checkout the [Amazon.Lambda.AspNetCoreServer.Hosting](https://github.com/aws/aws-lambda-dotnet/tree/master/Libraries/src/Amazon.Lambda.AspNetCoreServer.Hosting). This package integrates Amazon.Lambda.AspNetCoreServer setup into the project's `Main` or top level statements.
+
+Using Amazon.Lambda.AspNetCoreServer directly instead of Amazon.Lambda.AspNetCoreServer.Hosting is recommened when projects need to customize the Lambda behavior through the `LambdaEntryPoint` by overriding the base class methods.
+
 ## Lambda Entry Point
 
 In the ASP.NET Core application add a class that will be the entry point for Lambda to call into the application. Commonly this class
@@ -23,95 +34,71 @@ is called `LambdaEntryPoint`. The base class is determined based on where the La
 
 **Note:** HTTP API default to payload 2.0 so unless 1.0 is explicitly set the base class should be APIGatewayHttpApiV2ProxyFunction.
 
-Here is an example implementation of the Lamba function in an ASP.NET Core Web API application.
+The function handler for the Lambda function will be **TestWebApp::TestWebApp.LambdaEntryPoint::FunctionHandlerAsync**.
+
+## ASP.NET Core setup
+
+The `LambdaEntryPoint` class in the ASP.NET Core project inherits `Init` methods that can be used to setup ASP.NET Core application. The most common approach is override the `Init` and using the `UseStartup` method on the `IWebHostBuilder` register the startup class. The startup class contains ASP.NET Core setup logic that can be shared between the `LambdaEntryPoint` and the project's `Main` method.
+
+Example `LambdaEntryPoint`:
 ```csharp
-using System.IO;
-
-using Amazon.Lambda.AspNetCoreServer;
-using Microsoft.AspNetCore.Hosting;
-
-namespace TestWebApp
+public class LambdaEntryPoint : Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction
 {
     /// <summary>
-    /// This class extends from APIGatewayProxyFunction which contains the method FunctionHandlerAsync which is the 
-    /// actual Lambda function entry point. The Lambda handler field should be set to
-    /// 
-    /// AWSServerless19::AWSServerless19.LambdaEntryPoint::FunctionHandlerAsync
+    /// The builder has configuration, logging and Amazon API Gateway already configured. The startup class
+    /// needs to be configured in this method using the UseStartup<>() method.
     /// </summary>
-    public class LambdaEntryPoint :
-
-        // The base class must be set to match the AWS service invoking the Lambda function. If not Amazon.Lambda.AspNetCoreServer
-        // will fail to convert the incoming request correctly into a valid ASP.NET Core request.
-        //
-        // API Gateway REST API                         -> Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction
-        // API Gateway HTTP API payload version 1.0     -> Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction
-        // API Gateway HTTP API payload version 2.0     -> Amazon.Lambda.AspNetCoreServer.APIGatewayHttpApiV2ProxyFunction
-        // Application Load Balancer                    -> Amazon.Lambda.AspNetCoreServer.ApplicationLoadBalancerFunction
-        // 
-        // Note: When using the AWS::Serverless::Function resource with an event type of "HttpApi" then payload version 2.0
-        // will be the default and you must make Amazon.Lambda.AspNetCoreServer.APIGatewayHttpApiV2ProxyFunction the base class.
-
-        Amazon.Lambda.AspNetCoreServer.APIGatewayProxyFunction
+    /// <param name="builder">The IWebHostBuilder to configure.</param>
+    protected override void Init(IWebHostBuilder builder)
     {
-        /// <summary>
-        /// The builder has configuration, logging and Amazon API Gateway already configured. The startup class
-        /// needs to be configured in this method using the UseStartup<>() method.
-        /// </summary>
-        /// <param name="builder"></param>
-        protected override void Init(IWebHostBuilder builder)
-        {
-            builder
-                .UseStartup<Startup>();
-        }
+        builder
+            .UseStartup<Startup>();
     }
 }
 ```
 
-The function handler for the Lambda function will be **TestWebApp::TestWebApp.LambdaEntryPoint::FunctionHandlerAsync**.
-
-## Bootstrapping application (IWebHostBuilder vs IHostBuilder)
-
-ASP.NET Core applications are bootstrapped by using a host builder. The host builder is used to configure all of the required services needed to run the ASP.NET Core application. With Amazon.Lambda.AspNetCoreServer there are multiple options for customizing the bootstrapping and they vary between targeted versions of .NET Core.
-
-### ASP.NET Core 3.1
-
-ASP.NET Core 3.1 uses the generic `IHostBuilder` to bootstrap the application. In a typical ASP.NET Core 3.1 application the `Program.cs` file will bootstrap the application using `IHostBuilder` like the following snippet shows. As part of creating the `IHostBuilder` an `IWebHostBuilder` is created by the `ConfigureWebHostDefaults` method.
-
+Example `Startup`:
 ```csharp
-public static IHostBuilder CreateHostBuilder(string[] args) =>
-    Host.CreateDefaultBuilder(args)
-        .ConfigureWebHostDefaults(webBuilder =>
+public class Startup
+{
+    public Startup(IConfiguration configuration)
+    {
+        Configuration = configuration;
+    }
+
+    public IConfiguration Configuration { get; }
+
+    // This method gets called by the runtime. Use this method to add services to the container
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddControllers();
+    }
+
+    // This method gets called by the runtime. Use this method to configure the HTTP request pipeline
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        if (env.IsDevelopment())
         {
-            webBuilder.UseStartup<Startup>();
+            app.UseDeveloperExceptionPage();
+        }
+
+        app.UseHttpsRedirection();
+
+        app.UseRouting();
+
+        app.UseAuthorization();
+
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapControllers();
+            endpoints.MapGet("/", async context =>
+            {
+                await context.Response.WriteAsync("Welcome to running ASP.NET Core on AWS Lambda");
+            });
         });
+    }
+}
 ```
-
-Amazon.Lambda.AspNetCoreServer creates this `IHostBuilder` and configures all of the default settings needed to run the ASP.NET Core application in Lambda. 
-
-There are two `Init` methods that can be overridden to customize the `IHostBuilder`. The most common customization is to override the `Init(IWebHostBuilder)` method and set the startup class via the `UseStartup` method. To customize the `IHostBuilder` then override the `Init(IHostBuilder)`. **Do not call `ConfigureWebHostDefaults` when overriding `Init(IHostBuilder)` because Amazon.Lambda.AspNetCoreServer will call `ConfigureWebHostDefaults` when creating the `IHostBuilder`. By calling `ConfigureWebHostDefaults` in the `Init(IHostBuilder)` method, the `IWebHostBuilder` will be configured twice.**
-
-If you want complete control over creating the `IHostBuilder` then override the `CreateHostBuilder` method. When overriding the `CreateHostBuilder` method neither of the `Init` methods will be called unless the override calls the base implementation. When overriding `CreateHostBuilder` it is recommended to call `ConfigureWebHostLambdaDefaults` instead of `ConfigureWebHostDefaults` to configure the `IWebHostBuilder` for Lambda.
-
-If the `CreateWebHostBuilder` is overridden in an ASP.NET Core 3.1 application then only the `IWebHostBuilder` is used for bootstrapping using the same pattern that ASP.NET Core 2.1 applications use. `CreateHostBuilder` and `Init(IHostBuilder)` will not be called when `CreateWebHostBuilder` is overridden.
-
-
-
-### ASP.NET Core 2.1
-
-ASP.NET Core 2.1 applications are bootstrapped with the `IWebHostBuilder` type. Amazon.Lambda.AspNetCoreServer will create an instance of `IWebHostBuilder` and it can be customized by overriding the `Init(IWebHostBuilder)` method. The most common customization is configuring the startup class via the `UseStartup` method.
-
-If you want complete control over creating the `IWebHostBuilder` then override the `CreateWebHostBuilder` method. When overriding the `CreateWebHostBuilder` method the `Init(IWebHostBuilder)` method will not be called unless the override calls the base implementation or explicitly calls the `Init(IWebHostBuilder)` method.
-
-
-## Access to Lambda Objects from HttpContext
-
-The original lambda request object and the `ILambdaContext` object can be accessed from the `HttpContext.Items` collection.
-
-| Constant | Object |
-|-------|--------|
-| AbstractAspNetCoreFunction.LAMBDA_CONTEXT | ILambdaContext |
-| AbstractAspNetCoreFunction.LAMBDA_REQUEST_OBJECT | <ul><li>APIGatewayProxyFunction -> APIGatewayProxyRequest</li><li>APIGatewayHttpApiV2ProxyFunction -> APIGatewayHttpApiV2ProxyRequest</li><li>ApplicationLoadBalancerFunction -> ApplicationLoadBalancerRequest</li></ul> |
-
 
 ## JSON Serialization
 

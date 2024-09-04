@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using Amazon.Lambda.Core;
+
 #if NET6_0_OR_GREATER
 using System.Buffers;
 using System.Text.Json;
@@ -66,16 +68,11 @@ namespace Amazon.Lambda.Annotations.APIGateway
         /// </summary>
         public ProtocolVersion Version { get; set; }
 
-#if !NETSTANDARD2_0
 
         /// <summary>
-        /// The JsonSerializerContext used for serializing response body using .NET's source generator serializer.
-        /// This is set when the SourceGeneratorLambdaJsonSerializer serializer is registered taking the JsonSerializerContext
-        /// assigned with it. If SourceGeneratorLambdaJsonSerializer is not used then the reflection based 
-        /// JsonSerializer.Serialize method is used.
+        /// The JSON serializer used for serializing the response body.
         /// </summary>
-        public JsonSerializerContext JsonContext { get; set; }
-#endif
+        public ILambdaSerializer Serializer { get; set; }
     }
 
     /// <summary>
@@ -350,13 +347,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
 
 
 #if !NETSTANDARD2_0
-        // See comment in class documentation on the rules for serializing. If any changes are made in this method be sure to update
-        // the comment above.
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026",
-            Justification = "When using this library with the Native AOT the SourceGeneratorLambdaJsonSerializer has to be registered which will provide the information needed for JsonSerializerContext and avoid the reflection based JsonSerializer.Serialize call")]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050",
-            Justification = "When using this library with the Native AOT the SourceGeneratorLambdaJsonSerializer has to be registered which will provide the information needed for JsonSerializerContext and avoid the reflection based JsonSerializer.Serialize call")]
-        private static (string body, string contentType, bool base64Encoded) FormatBody(object body, JsonSerializerContext context)
+        private static (string body, string contentType, bool base64Encoded) FormatBody(object body, ILambdaSerializer serializer)
         {
             if (body == null)
                 return new (null, null, false);
@@ -392,16 +383,10 @@ namespace Amazon.Lambda.Annotations.APIGateway
             }
             else
             {
-                string serializedBody;
-                if (context != null)
-                {
-                    serializedBody = JsonSerializer.Serialize(body, body.GetType(), context);
-                }
-                else
-                {
-                    serializedBody = JsonSerializer.Serialize(body);
-                }
-
+                var bodyStream = new MemoryStream();
+                serializer.Serialize(body, bodyStream);
+                bodyStream.Position = 0;
+                var serializedBody = new StreamReader(bodyStream).ReadToEnd();
                 return new(serializedBody, CONTENT_TYPE_APPLICATION_JSON, false);
             }
         }
@@ -421,7 +406,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
             throw new NotImplementedException();
 #else
 
-            var (serializedBody, defaultContentType, isBase64Encoded) = FormatBody(_rawBody, options.JsonContext);
+            var (serializedBody, defaultContentType, isBase64Encoded) = FormatBody(_rawBody, options.Serializer);
 
             // If the user didn't explicit set the content type then default to application/json
             if (!string.IsNullOrEmpty(serializedBody) && (_headers == null || !_headers.ContainsKey(HEADER_NAME_CONTENT_TYPE)))
@@ -429,7 +414,6 @@ namespace Amazon.Lambda.Annotations.APIGateway
                 AddHeader(HEADER_NAME_CONTENT_TYPE, defaultContentType);
             }
 
-            var stream = new MemoryStream();
             object response;
             Type responseType;
             if (options.Format == HttpResultSerializationOptions.ProtocolFormat.RestApi ||
@@ -457,9 +441,8 @@ namespace Amazon.Lambda.Annotations.APIGateway
 
                 responseType = typeof(APIGatewayV2Response);
             }
-
+            var stream = new MemoryStream();
             JsonSerializer.Serialize(stream, response, responseType, AnnotationsResponseJsonSerializerContext.Default);
-
             stream.Position = 0;
             return stream;
 #endif

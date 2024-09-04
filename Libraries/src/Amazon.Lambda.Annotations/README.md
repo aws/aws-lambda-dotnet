@@ -5,14 +5,27 @@ idiomatic .NET coding patterns. [C# Source Generators](https://docs.microsoft.co
 gap between the Lambda programming model to the Lambda Annotations programming model without adding any performance penalty.
 
 Topics:
-* [Getting Started](#getting-started)
-* [How does Lambda Annotations work?](#how-does-lambda-annotations-work)
-* [Dependency Injection integration](#dependency-injection-integration)
-* [Synchronizing CloudFormation template](#synchronizing-cloudFormation-template)
-* [Getting build information](#getting-build-information)
-* [Amazon API Gateway example](#amazon-api-gateway-example)
-* [Amazon S3 example](#amazon-s3-example)
-* [Lambda .NET Attributes Reference](#lambda-net-attributes-reference)
+- [Amazon.Lambda.Annotations](#amazonlambdaannotations)
+  - [How does Lambda Annotations work?](#how-does-lambda-annotations-work)
+  - [Getting started](#getting-started)
+    - [Visual Studio 2022](#visual-studio-2022)
+    - [.NET CLI](#net-cli)
+    - [The sample project](#the-sample-project)
+    - [Deployment](#deployment)
+    - [Adding Lambda Annotations to an existing project](#adding-lambda-annotations-to-an-existing-project)
+  - [Dependency Injection integration](#dependency-injection-integration)
+  - [Synchronizing CloudFormation template](#synchronizing-cloudformation-template)
+  - [Lambda Global Properties](#lambda-global-properties)
+  - [Amazon API Gateway example](#amazon-api-gateway-example)
+  - [Amazon S3 example](#amazon-s3-example)
+  - [SQS Event Example](#sqs-event-example)
+  - [Getting build information](#getting-build-information)
+  - [Lambda .NET Attributes Reference](#lambda-net-attributes-reference)
+    - [Event Attributes](#event-attributes)
+    - [Parameter Attributes](#parameter-attributes)
+    - [Customizing responses for API Gateway Lambda functions](#customizing-responses-for-api-gateway-lambda-functions)
+      - [Content-Type](#content-type)
+  - [Project References](#project-references)
 
 ## How does Lambda Annotations work?
 
@@ -709,6 +722,98 @@ public class Functions_Resize_Generated
 }
 ```
 
+## SQS Event Example
+This example shows how users can use the `SQSEvent` attribute to set up event source mapping between their SQS queues and Lambda function.
+
+The `SQSEvent` attribute contains the following properties:
+* **Queue** (Required) - The SQS queue that will act as the event trigger for the Lambda function. This can either be the queue ARN or reference to the SQS queue resource that is already defined in the serverless template. To reference a SQS queue resource in the serverless template, prefix the resource name with "@" symbol.
+* **ResourceName** (Optional) - The CloudFormation resource name for the SQS event source mapping. By default this is set to the SQS queue name if `Queue` is set to an SQS queue ARN. If `Queue` is set to an existing CloudFormation resource, than that is used as the default value without the "@" prefix.
+* **Enabled** (Optional) - If set to false, the event source mapping will be disabled and message polling will be paused. Default value is true.
+* **BatchSize** (Optional) - The maximum number of messages that will be sent for processing in a single batch.  This value must be between 1 to 10000. For FIFO queues the maximum allowed value is 10. Default value is 10.
+* **MaximumBatchingWindowInSeconds** (Optional) - The maximum amount of time, in seconds, to gather records before invoking the function. This value must be between 0 to 300. Default value is 0. When BatchSize is set to a value greater than 10 MaximumBatchingWindowInSeconds must be set to at least 1. This property must not be set if the event source mapping is being created for a FIFO queue.
+* **Filters** (Optional) - A collection of semicolon (;) separated strings where each string denotes a pattern.  Only those SQS messages that conform to at least 1 pattern will be forwarded to the Lambda function for processing. 
+* **MaximumConcurrency** (Optional) - The maximum number of concurrent Lambda invocations that the SQS queue can trigger. This value must be between 2 to 1000. The default value is 1000.
+
+The `SQSEvent` attribute must be applied to Lambda method along with the `LambdaFunction` attribute.
+
+The Lambda method must conform to the following rules when it is tagged with the `SQSEvent` attribute:
+
+ 1. It must have at least 1 argument and can have at most 2 arguments.
+	 - The first argument is required and must be of type `SQSEvent` defined in the [Amazon.Lambda.SQSEvents](https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.SQSEvents/SQSEvent.cs) package. 
+	 - The second argument is optional and must be of type `ILambdaContext` defined in the [Amazon.Lambda.Core](https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.Core/ILambdaContext.cs) package.
+ 2. The method return type must be one of `void`, `Task`, `SQSBatchResponse` or `Task<SQSBatchResponse>`. The `SQSBatchResponse` type is defined in the [Amazon.Lambda.SQSEvents](https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.SQSEvents/SQSBatchResponse.cs) package. If the return type is `SQSBatchResponse` or `Task<SQSBatchResponse>`, then the [FunctionResponseTypes](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-sqs.html#sam-function-sqs-functionresponsetypes) in the event source mapping is set to report `ReportBatchItemFailures`
+
+```csharp
+
+[LambdaFunction(ResourceName = "SQSMessageHandler", Policies = "AWSLambdaSQSQueueExecutionRole", PackageType = LambdaPackageType.Image)]
+[SQSEvent("@TestQueue", ResourceName = "TestQueueEvent", BatchSize = 50, MaximumConcurrency = 5, MaximumBatchingWindowInSeconds = 5, Filters = "{ \"body\" : { \"RequestCode\" : [ \"BBBB\" ] } }")]
+public SQSBatchResponse HandleMessage(SQSEvent evnt, ILambdaContext lambdaContext)
+{
+    lambdaContext.Logger.Log($"Received {evnt.Records.Count} messages");
+    return new SQSBatchResponse();
+}
+```
+In the above example `TestQueue` refers to an existing SQS queue resource in the CloudFormation template.
+
+The following SQS event source mapping will be generated for the `SQSMessageHandler` Lambda function
+
+```json
+    "SQSMessageHandler": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestQueueEvent"
+        ]
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaSQSQueueExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.SqsMessageProcessing_HandleMessage_Generated::HandleMessage"
+          ]
+        },
+        "Events": {
+          "TestQueueEvent": {
+            "Type": "SQS",
+            "Properties": {
+              "Queue": {
+                "Fn::GetAtt": [
+                  "TestQueue",
+                  "Arn"
+                ]
+              },
+              "BatchSize": 50,
+              "FilterCriteria": {
+                "Filters": [
+                  {
+                    "Pattern": "{ \"body\" : { \"RequestCode\" : [ \"BBBB\" ] } }"
+                  }
+                ]
+              },
+              "FunctionResponseTypes": [
+                "ReportBatchItemFailures"
+              ],
+              "MaximumBatchingWindowInSeconds": 5,
+              "ScalingConfig": {
+                "MaximumConcurrency": 5
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestQueue": {
+      "Type": "AWS::SQS::Queue"
+    }
+```
+
 ## Getting build information
 
 The source generator integrates with MSBuild's compiler error and warning reporting when there are problems generating the boiler plate code. 
@@ -741,6 +846,8 @@ parameter to the `LambdaFunction` must be the event object and the event source 
     * Configures the Lambda function to be called from an API Gateway REST API. The HTTP method and resource path are required to be set on the attribute.
 * HttpApi
     * Configures the Lambda function to be called from an API Gateway HTTP API. The HTTP method, HTTP API payload version and resource path are required to be set on the attribute.
+* SQSEvent
+    * Sets up event source mapping between the Lambda function and SQS queues. The SQS queue ARN is required to be set on the attribute. If users want to pass a reference to an existing SQS queue resource defined in their CloudFormation template, they can pass the SQS queue resource name prefixed with the '@' symbol. 
 
 ### Parameter Attributes
 
