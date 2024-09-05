@@ -1,3 +1,15 @@
+### Release 2024-09-05
+* **Amazon.Lambda.RuntimeSupport (1.11.0)**
+  * Add support for structured logging. Access to structured logging is pending a deployment of Amazon.Lambda.RuntimeSupport to the managed runtime. Follow GitHub issue https://github.com/aws/aws-lambda-dotnet/issues/1747 for status updates on deployment.
+* **Amazon.Lambda.Core (2.3.0)**
+  * Add preview parameterized logging APIs to the ILogger interface. The API will be in preview till the completion of Amazon.Lambda.RuntimeSupport being deployed to the managed runtime.
+* **Amazon.Lambda.AspNetCoreServer (9.0.1)**
+  * Add application/wasm to list of content types that should be base 64 encoded.
+* **Amazon.Lambda.AspNetCoreServer.Hosting (1.7.1)**
+  * Updated reference of Amazon.Lambda.AspNetCoreServer to 9.0.1
+* **Amazon.Lambda.CognitoEvents (4.0.0)**
+  * **Breaking Change** Corrected the data type for ClaimsToAddOrOverride property in IdTokenGeneration and AccessTokenGeneration classes for CognitoPreTokenGenerationV2Event.
+
 ### Release 2024-08-14
 * **Amazon.Lambda.Serialization.Json (2.2.3)**
   * Fixed an issue in `JsonSerializer` where `JsonSerializerSettings.NullValueHandling` was being set to `NullValueHandling.Ignore` after custom settings were applied.
