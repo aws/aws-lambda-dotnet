@@ -62,6 +62,9 @@ namespace TestServerlessApp.IntegrationTests
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix));
 
             await LambdaHelper.WaitTillNotPending(LambdaFunctions.Select(x => x.Name).ToList());
+
+            // Wait an additional 10 seconds for any other eventually consistency state to finish up.
+            await Task.Delay(10000);
         }
 
         public async Task DisposeAsync()

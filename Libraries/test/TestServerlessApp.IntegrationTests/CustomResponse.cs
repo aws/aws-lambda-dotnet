@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -21,7 +22,7 @@ namespace TestServerlessApp.IntegrationTests
         [Fact]
         public async Task OkResponseWithHeader_Returns200Status()
         {
-            var response = await _fixture.HttpClient.GetAsync($"{_fixture.RestApiUrlPrefix}/okresponsewithheader/1");
+            var response = await GetWithRetryAsync($"{_fixture.RestApiUrlPrefix}/okresponsewithheader/1");
             response.EnsureSuccessStatusCode();
             Assert.Equal("All Good", await response.Content.ReadAsStringAsync());
         }
@@ -29,7 +30,7 @@ namespace TestServerlessApp.IntegrationTests
         [Fact]
         public async Task OkResponseWithHeader_ReturnsValidationErrors()
         {
-            var response = await _fixture.HttpClient.GetAsync($"{_fixture.RestApiUrlPrefix}/okresponsewithheader/hello");
+            var response = await GetWithRetryAsync($"{_fixture.RestApiUrlPrefix}/okresponsewithheader/hello");
             Assert.Equal(400, (int)response.StatusCode);
             var content = await response.Content.ReadAsStringAsync();
             var errorJson = JObject.Parse(content);
@@ -41,13 +42,43 @@ namespace TestServerlessApp.IntegrationTests
         [Fact]
         public async Task OkResponseWithCustomSerializer_Returns200Status()
         {
-            var response = await _fixture.HttpClient.GetAsync($"{_fixture.HttpApiUrlPrefix}/okresponsewithcustomserializerasync/John/Doe");
+            var response = await GetWithRetryAsync($"{_fixture.HttpApiUrlPrefix}/okresponsewithcustomserializerasync/John/Doe");
             response.EnsureSuccessStatusCode();
 
             var content = await response.Content.ReadAsStringAsync();
             var person = JObject.Parse(content);
             Assert.Equal("John", person["FIRST_NAME"]);
             Assert.Equal("Doe", person["LAST_NAME"]);
+        }
+
+        private async Task<HttpResponseMessage> GetWithRetryAsync(string path)
+        {
+            int MAX_ATTEMPTS = 10;
+            HttpResponseMessage response = null;
+            for (var retryAttempt = 0; retryAttempt < MAX_ATTEMPTS; retryAttempt++)
+            {
+                await Task.Delay(retryAttempt * 1000);
+                try
+                {
+                    response = await _fixture.HttpClient.GetAsync(path);
+
+                    // No tests are coded to return 403 Forbidden. If this is returned it is likely
+                    // an eventual consistency issue.
+                    if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                        continue;
+
+                    break;
+                }
+                catch
+                {
+                    if (retryAttempt + 1 == MAX_ATTEMPTS)
+                    {
+                        throw;
+                    }
+                }
+            }
+
+            return response;
         }
     }
 }
