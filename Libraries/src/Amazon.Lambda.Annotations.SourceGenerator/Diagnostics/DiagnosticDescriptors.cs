@@ -138,5 +138,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor MaximumHandlerLengthExceeded = new DiagnosticDescriptor(id: "AWSLambda0118",
+            title: "Maximum Handler Length Exceeded",
+            messageFormat: "The handler string '{0}' exceeds the maximum length of 127 characters. Please trim down your project namespace to stay within the character limit. Alternatively, you can switch to an image based deployment by setting the 'PackageType' to 'Image' to avoid the handler length restriction.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }
