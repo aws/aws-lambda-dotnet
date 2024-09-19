@@ -148,6 +148,9 @@ namespace Amazon.Lambda.PowerShellHost
             // Clear all previous PowerShell executions, variables and outputs
             this._ps.Commands?.Clear();
             this._ps.Streams.Verbose?.Clear();
+            this._ps.Streams.Debug?.Clear();
+            this._ps.Streams.Information?.Clear();
+            this._ps.Streams.Warning?.Clear();
             this._ps.Streams.Error?.Clear();
             this._ps.Runspace?.ResetRunspaceState();
             this._output.Clear();
@@ -292,6 +295,7 @@ ConvertTo-Json $Response
             };
 
             this._ps.Streams.Verbose.DataAdding += _loggerFactory("Verbose");
+            this._ps.Streams.Debug.DataAdding += _loggerFactory("Debug");
             this._ps.Streams.Information.DataAdding += _loggerFactory("Information");
             this._ps.Streams.Warning.DataAdding += _loggerFactory("Warning");
             this._ps.Streams.Error.DataAdding += _loggerFactory("Error");
