@@ -1330,6 +1330,31 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             }.RunAsync();
         }
 
+        [Fact]
+        public async Task ExceededMaximumHandlerLength()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "ExceededMaximumHandlerLength.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ExceededMaximumHandlerLength.cs.error"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                         DiagnosticResult
+                            .CompilerError("AWSLambda0118")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ExceededMaximumHandlerLength.cs", 9, 9, 13, 10)
+                            .WithArguments("TestProject::TestServerlessApp.ExceededMaximumHandlerLength_SayHelloXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX_Generated::SayHelloXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+                    },
+                }
+            }.RunAsync();
+        }
+
         public void Dispose()
         {
             File.Delete(Path.Combine("TestServerlessApp", "serverless.template"));

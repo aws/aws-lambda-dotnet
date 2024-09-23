@@ -1,6 +1,13 @@
 ; Shipped analyzer releases
 ; https://github.com/dotnet/roslyn-analyzers/blob/master/src/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md
 
+## Release 1.5.1
+### New Rules
+
+Rule ID | Category | Severity | Notes
+--------|----------|----------|-------
+AWSLambda0118 | AWSLambdaCSharpGenerator | Error | Maximum Handler Length Exceeded
+
 ## Release 1.5.0
 ### New Rules
 

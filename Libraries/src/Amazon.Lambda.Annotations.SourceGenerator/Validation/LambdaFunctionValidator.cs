@@ -28,6 +28,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidResourceName, methodLocation));
             }
 
+            // Check the handler length does not exceed 127 characters when the package type is set to zip
+            // The official AWS docs state a 128 character limit on the Lambda handler. However, there is an open issue where the last character is stripped off
+            // when the handler is exactly 128 characters long. Hence, we are enforcing a 127 character limit.
+            // https://github.com/aws/aws-lambda-dotnet/issues/1642
+            if (lambdaFunctionModel.PackageType == LambdaPackageType.Zip && lambdaFunctionModel.Handler.Length > 127)
+            {
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.MaximumHandlerLengthExceeded, methodLocation, lambdaFunctionModel.Handler));
+            }
+
             // Check for Serializer attribute
             if (!lambdaMethodSymbol.ContainingAssembly.HasAttribute(context, TypeFullNames.LambdaSerializerAttribute))
             {
