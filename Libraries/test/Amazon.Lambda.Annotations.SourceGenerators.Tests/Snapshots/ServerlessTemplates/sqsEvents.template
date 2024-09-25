@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.5.0.0).",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.5.1.0).",
   "Resources": {
     "TestServerlessAppSQSEventExamplesValidSQSEventsProcessMessagesGenerated": {
       "Type": "AWS::Serverless::Function",
@@ -35,15 +35,18 @@
         }
       },
       "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
         "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "PackageType": "Zip",
-        "Handler": "TestProject::TestServerlessApp.SQSEventExamples.ValidSQSEvents_ProcessMessages_Generated::ProcessMessages",
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.SQSEventExamples.ValidSQSEvents_ProcessMessages_Generated::ProcessMessages"
+          ]
+        },
         "Events": {
           "queue1": {
             "Type": "SQS",
@@ -109,15 +112,18 @@
         }
       },
       "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
         "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "PackageType": "Zip",
-        "Handler": "TestProject::TestServerlessApp.SQSEventExamples.ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated::ProcessMessagesWithBatchFailureReporting",
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.SQSEventExamples.ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated::ProcessMessagesWithBatchFailureReporting"
+          ]
+        },
         "Events": {
           "queue3": {
             "Type": "SQS",

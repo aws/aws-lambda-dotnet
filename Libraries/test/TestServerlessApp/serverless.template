@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v1.5.0.0).",
+  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v1.5.1.0).",
   "Parameters": {
     "ArchitectureTypeParameter": {
       "Type": "String",
@@ -913,12 +913,6 @@
           "TestQueueEvent": {
             "Type": "SQS",
             "Properties": {
-              "Queue": {
-                "Fn::GetAtt": [
-                  "TestQueue",
-                  "Arn"
-                ]
-              },
               "BatchSize": 50,
               "FilterCriteria": {
                 "Filters": [
@@ -933,6 +927,12 @@
               "MaximumBatchingWindowInSeconds": 5,
               "ScalingConfig": {
                 "MaximumConcurrency": 5
+              },
+              "Queue": {
+                "Fn::GetAtt": [
+                  "TestQueue",
+                  "Arn"
+                ]
               }
             }
           }
