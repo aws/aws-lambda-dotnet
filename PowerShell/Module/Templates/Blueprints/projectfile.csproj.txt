@@ -16,7 +16,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.PowerShell.SDK" Version="POWERSHELL_SDK_VERSION" />
 
-        <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
-        <PackageReference Include="Amazon.Lambda.PowerShellHost" Version="3.0.0" />
+        <PackageReference Include="Amazon.Lambda.Core" Version="2.3.0" />
+        <PackageReference Include="Amazon.Lambda.PowerShellHost" Version="3.0.1" />
     </ItemGroup>
 </Project>
