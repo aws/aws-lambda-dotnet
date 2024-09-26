@@ -1,3 +1,7 @@
+### Release 2024-09-25
+* **Amazon.Lambda.Annotations (1.5.1)**
+  * Added a 127 character limit on the Lambda function handler when the package type is set to zip.
+
 ### Release 2024-09-05
 * **Amazon.Lambda.RuntimeSupport (1.11.0)**
   * Add support for structured logging. Access to structured logging is pending a deployment of Amazon.Lambda.RuntimeSupport to the managed runtime. Follow GitHub issue https://github.com/aws/aws-lambda-dotnet/issues/1747 for status updates on deployment.
