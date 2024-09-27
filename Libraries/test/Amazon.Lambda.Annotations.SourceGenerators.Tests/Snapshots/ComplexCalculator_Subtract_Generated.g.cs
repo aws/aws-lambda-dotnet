@@ -41,7 +41,7 @@ namespace TestServerlessApp
             try
             {
                 // convert string to stream
-                var byteArray = Encoding.ASCII.GetBytes(__request__.Body);
+                var byteArray = Encoding.UTF8.GetBytes(__request__.Body);
                 var stream = new MemoryStream(byteArray);
                 complexNumbers = serializer.Deserialize<System.Collections.Generic.IList<System.Collections.Generic.IList<int>>>(stream);
             }
@@ -98,7 +98,7 @@ namespace TestServerlessApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("lib/amazon-lambda-annotations#1.5.1.0");
+            envValue.Append("lib/amazon-lambda-annotations#1.5.2.0");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }
