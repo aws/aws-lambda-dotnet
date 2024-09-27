@@ -238,7 +238,7 @@
             try
             {
                 // convert string to stream
-                var byteArray = Encoding.ASCII.GetBytes(__request__.Body);
+                var byteArray = Encoding.UTF8.GetBytes(__request__.Body);
                 var stream = new MemoryStream(byteArray);
                 <#= parameter.Name #> = serializer.Deserialize<<#= parameter.Type.FullName #>>(stream);
             }
