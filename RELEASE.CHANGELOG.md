@@ -1,3 +1,7 @@
+### Release 2024-09-30
+* **AWSLambdaPSCore PowerShell Module (4.0.2.0)**
+  * Update PowerShell Lambda blueprints to reference the latest Amazon.Lambda.PowerShellHost and Amazon.Lambda.Core packages.
+
 ### Release 2024-09-29
 * **Amazon.Lambda.Annotations (1.5.2)**
   * Fixed issue with handling unicode characters when converting FromBody parameters from JSON to .NET type.
