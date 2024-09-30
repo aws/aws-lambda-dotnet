@@ -41,6 +41,25 @@ New-AWSPowerShellLambda|Used to create an initial PowerShell script that is base
 Publish-AWSPowerShellLambda|Publishes a given PowerShell script to Lambda.
 New-AWSPowerShellLambdaPackage|Creates the Lambda deployment package that can be used in a CI/CD system for deployment.
 
+## Troubleshooting
+### Enabling Debug output
+In PowerShell, [Write-Debug](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/write-debug?view=powershell-7.4) CmdLet could be used to write debug message to the console. However, by default, debug messages are not displayed in the console, but you can display them by using the **Debug** parameter or the **$DebugPreference** variable.
+
+The default value of [DebugPreference](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_preference_variables?view=powershell-7.4#debugpreference) variable is `SilentlyContinue`, which means the debug message isn't displayed and execution continues without interruption. The `-Debug` parameter could be used to override the `$DebugPreference` value.
+
+Enabling output of `Write-Debug` to CloudWatch logs is a 2 step process:
+- In PowerShell Lambda script, 
+  - Either need to set `$DebugPreference = "Continue"` at the beginning of script. Thereafter use `Write-Debug` to output debug messages ; **OR**
+  - Include `-Debug` parameter while executing `Write-Debug` (e.g.` Write-Debug "Testing Lambda PowerShell Write-Debug" -Debug`).
+- At Lambda function level, set the value of `AWS_LAMBDA_HANDLER_LOG_LEVEL` environment variable with value `DEBUG`. This would enable debug logs at Lambda level. This environment variable could be set:
+  - Either manually in Lambda function configuration in AWS console; **OR**
+  - While executing CmdLet `Publish-AWSPowerShellLambda`, passing parameter `-EnvironmentVariable @{'AWS_LAMBDA_HANDLER_LOG_LEVEL'='DEBUG'}`.
+  
+  The value of the `AWS_LAMBDA_HANDLER_LOG_LEVEL` environment variable is set to the values of the [LogLevel](https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.Core/ILambdaLogger.cs#L7) enum.
+
+The role assigned to Lambda function should have permissions to write to CloudWatch logs. 
+
+
 # Learning Resources
 
 [Lambda Developer Guide](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
