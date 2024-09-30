@@ -254,7 +254,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private void WriteUnhandledExceptionToLog(Exception exception)
         {
 #if NET6_0_OR_GREATER
-            Client.ConsoleLogger.FormattedWriteLine(LogLevel.Error.ToString(), exception, null);
+            Client.ConsoleLogger.FormattedWriteLine(Amazon.Lambda.RuntimeSupport.Helpers.LogLevelLoggerWriter.LogLevel.Error.ToString(), exception, null);
 #else
             Console.Error.WriteLine(exception);
 #endif
