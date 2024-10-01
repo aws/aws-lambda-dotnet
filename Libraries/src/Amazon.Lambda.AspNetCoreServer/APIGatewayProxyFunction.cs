@@ -5,6 +5,7 @@ using System.Net;
 using System.Security.Claims;
 using System.Text;
 
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -151,33 +152,9 @@ namespace Amazon.Lambda.AspNetCoreServer
             {
                 var requestFeatures = (IHttpRequestFeature)features;
                 requestFeatures.Scheme = "https";
-                requestFeatures.Method = apiGatewayRequest.HttpMethod;
+                requestFeatures.Method = this.ParseHttpMethod(apiGatewayRequest);
 
-                string path = null;
-
-                // Replaces {proxy+} in path, if exists
-                if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.TryGetValue("proxy", out var proxy) &&
-                    !string.IsNullOrEmpty(apiGatewayRequest.Resource))
-                {
-                    var proxyPath = proxy;
-                    path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);
-
-                    // Adds all the rest of non greedy parameters in apiGateway.Resource to the path
-                    foreach (var pathParameter in apiGatewayRequest.PathParameters.Where(pp => pp.Key != "proxy"))
-                    {
-                        path = path.Replace($"{{{pathParameter.Key}}}", pathParameter.Value);
-                    }
-                }
- 
-                if (string.IsNullOrEmpty(path))
-                {
-                    path = apiGatewayRequest.Path;
-                }
-
-                if (!path.StartsWith("/"))
-                {
-                    path = "/" + path;
-                }
+                string path = this.ParseHttpPath(apiGatewayRequest);
 
                 var rawQueryString = Utilities.CreateQueryStringParameters(
                     apiGatewayRequest.QueryStringParameters, apiGatewayRequest.MultiValueQueryStringParameters, true);
@@ -214,13 +191,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                 Utilities.SetHeadersCollection(requestFeatures.Headers, apiGatewayRequest.Headers, apiGatewayRequest.MultiValueHeaders);
 
-                if (!requestFeatures.Headers.ContainsKey("Host"))
-                {
-                    var apiId = apiGatewayRequest?.RequestContext?.ApiId ?? "";
-                    var stage = apiGatewayRequest?.RequestContext?.Stage ?? "";
-
-                    requestFeatures.Headers["Host"] = $"apigateway-{apiId}-{stage}";
-                }
+                requestFeatures.Headers = this.AddMissingRequestHeaders(apiGatewayRequest, requestFeatures.Headers);
 
 
                 if (!string.IsNullOrEmpty(apiGatewayRequest.Body))
@@ -256,6 +227,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 {
                     connectionFeatures.RemotePort = int.Parse(forwardedPort, CultureInfo.InvariantCulture);
                 }
+                connectionFeatures.ConnectionId = apiGatewayRequest.RequestContext?.ConnectionId;
 
                 // Call consumers customize method in case they want to change how API Gateway's request
                 // was marshalled into ASP.NET Core request.
@@ -334,6 +306,67 @@ namespace Amazon.Lambda.AspNetCoreServer
             _logger.LogDebug($"Response Base 64 Encoded: {response.IsBase64Encoded}");
 
             return response;
+        }
+
+        /// <summary>
+        /// Get the http path from the request.
+        /// </summary>
+        /// <param name="apiGatewayRequest"></param>
+        /// <returns>string</returns>
+        protected virtual string ParseHttpPath(APIGatewayProxyRequest apiGatewayRequest)
+        {
+            string path = null;
+
+            // Replaces {proxy+} in path, if exists
+            if (apiGatewayRequest.PathParameters != null && apiGatewayRequest.PathParameters.TryGetValue("proxy", out var proxy) &&
+                !string.IsNullOrEmpty(apiGatewayRequest.Resource))
+            {
+                var proxyPath = proxy;
+                path = apiGatewayRequest.Resource.Replace("{proxy+}", proxyPath);
+
+                // Adds all the rest of non greedy parameters in apiGateway.Resource to the path
+                foreach (var pathParameter in apiGatewayRequest.PathParameters.Where(pp => pp.Key != "proxy"))
+                {
+                    path = path.Replace($"{{{pathParameter.Key}}}", pathParameter.Value);
+                }
+            }
+
+            if (string.IsNullOrEmpty(path))
+            {
+                path = apiGatewayRequest.Path;
+            }
+
+            if (!path.StartsWith("/"))
+            {
+                path = "/" + path;
+            }
+            return path;
+        }
+
+        /// <summary>
+        /// Get the http method from the request.
+        /// </summary>
+        /// <param name="apiGatewayRequest"></param>
+        /// <returns>string</returns>
+        protected virtual string ParseHttpMethod(APIGatewayProxyRequest apiGatewayRequest)
+        {
+            return apiGatewayRequest.HttpMethod;
+        }
+
+        /// <summary>
+        /// Add missing headers to request.
+        /// </summary>
+        /// <returns>IHeaderDictionary</returns>
+        protected virtual IHeaderDictionary AddMissingRequestHeaders(APIGatewayProxyRequest apiGatewayRequest, IHeaderDictionary headers)
+        {
+            if (!headers.ContainsKey("Host"))
+            {
+                var apiId = apiGatewayRequest?.RequestContext?.ApiId ?? "";
+                var stage = apiGatewayRequest?.RequestContext?.Stage ?? "";
+
+                headers["Host"] = $"apigateway-{apiId}-{stage}";
+            }
+            return headers;
         }
     }
 }
