@@ -80,7 +80,8 @@ namespace Amazon.Lambda.TestTool.BlazorTester
             services.AddControllers();
             services.AddRazorPages();
             services.AddServerSideBlazor()
-                    .AddHubOptions(options => options.MaximumReceiveMessageSize = null);
+                    .AddHubOptions(options => options.MaximumReceiveMessageSize = null)
+                    .AddHubOptions(options => options.ClientTimeoutInterval = TimeSpan.FromMinutes(10));
             services.AddHttpContextAccessor();
 
             services.AddBlazoredModal();
