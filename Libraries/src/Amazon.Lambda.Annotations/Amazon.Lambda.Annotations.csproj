@@ -1,21 +1,44 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyVersion>1.5.2</AssemblyVersion>
-    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    <Version>1.5.2</Version>
+    <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
     <!--This assembly contains some internal methods that need to be accessed by the Amazon.Lambda.Annotations.SourceGenerator assembly.
     Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
+    
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
-    <WarningsAsErrors>IL2026,IL2067,IL2075,IL3050</WarningsAsErrors>
-    <IsTrimmable>true</IsTrimmable>
-    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-  </PropertyGroup>	
+  <ItemGroup>
+    <None Include="$(OutputPath)\netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" PrivateAssets="all" />
+    <PackageReference Include="System.CodeDom" Version="6.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Generator dependencies, update Libraries/src/Amazon.Lambda.Annotations.nuspec whenever a new generator dependency is added.  -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" GeneratePathProperty="true" />
+    <PackageReference Include="YamlDotNet" Version="12.0.0" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
+  </PropertyGroup>
+
+  <Target Name="GetDependencyTargetPaths">
+    <ItemGroup>
+      <TargetPathWithTargetPlatformMoniker Include="$(PKGNewtonsoft_Json)\lib\netstandard2.0\Newtonsoft.Json.dll" IncludeRuntimeDependency="false" />
+      <TargetPathWithTargetPlatformMoniker Include="$(PKGYamlDotNet)\lib\netstandard2.0\YamlDotNet.dll" IncludeRuntimeDependency="false" />
+    </ItemGroup>
+  </Target>
 	
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
@@ -28,6 +51,38 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>Amazon.Lambda.Annotations.SourceGenerators.Tests, PublicKey="0024000004800000940000000602000000240000525341310004000001000100db5f59f098d27276c7833875a6263a3cc74ab17ba9a9df0b52aedbe7252745db7274d5271fd79c1f08f668ecfa8eaab5626fa76adc811d3c8fc55859b0d09d3bc0a84eecd0ba891f2b8a2fc55141cdcc37c2053d53491e650a479967c3622762977900eddbf1252ed08a2413f00a28f3a0752a81203f03ccb7f684db373518b4"</_Parameter1>
     </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="Analyzer\Diagnostics\AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="Analyzer\Diagnostics\AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Analyzer\Templates\APIGatewayInvoke.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>APIGatewayInvoke.cs</LastGenOutput>
+    </None>
+    <None Update="Analyzer\Templates\APIGatewaySetupParameters.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>APIGatewaySetupParameters.cs</LastGenOutput>
+    </None>
+    <None Update="Analyzer\Templates\ExecutableAssembly.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ExecutableAssembly.cs</LastGenOutput>
+    </None>
+    <None Update="Analyzer\Templates\FieldsAndConstructor.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>FieldsAndConstructor.cs</LastGenOutput>
+    </None>
+    <None Update="Analyzer\Templates\LambdaFunctionTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>LambdaFunctionTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Analyzer\Templates\NoEventMethodBody.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>NoEventMethodBody.cs</LastGenOutput>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -22,26 +22,6 @@
     }
   },
   "Resources": {
-    "TestServerlessAppDynamicExampleDynamicReturnGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.DynamicExample_DynamicReturn_Generated::DynamicReturn"
-          ]
-        }
-      }
-    },
     "TestServerlessAppDynamicExampleDynamicInputGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -941,6 +921,26 @@
     },
     "TestQueue": {
       "Type": "AWS::SQS::Queue"
+    },
+    "TestServerlessAppDynamicExampleDynamicReturnGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.DynamicExample_DynamicReturn_Generated::DynamicReturn"
+          ]
+        }
+      }
     }
   },
   "Outputs": {

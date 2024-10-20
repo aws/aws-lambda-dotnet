@@ -23,6 +23,7 @@
         </PackageReference>
         <PackageReference Include="AWSSDK.Core" Version="3.7.103.24" />
         <PackageReference Include="xunit" Version="2.4.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="1.1.1" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="1.1.1" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeRefactoring.Testing.XUnit" Version="1.1.1" />
@@ -174,7 +175,6 @@
   </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations.SourceGenerator\Amazon.Lambda.Annotations.SourceGenerator.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj" />
