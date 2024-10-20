@@ -7,7 +7,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// <summary>
     /// <see cref="TypeModel"/> builder.
     /// </summary>
-    public static class TypeModelBuilder
+    internal static class TypeModelBuilder
     {
         public static TypeModel Build(ITypeSymbol symbol, GeneratorExecutionContext context)
         {

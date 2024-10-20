@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.FileIO
 {
-    public class DirectoryManager : IDirectoryManager
+    internal class DirectoryManager : IDirectoryManager
     {
         public string GetDirectoryName(string path) => Path.GetDirectoryName(path);
 

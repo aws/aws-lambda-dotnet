@@ -2,7 +2,7 @@ using System;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
 {
-    public static class StringExtensions
+    internal static class StringExtensions
     {
         public static string ToCamelCase(this string str)
         {
@@ -14,7 +14,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
         }
     }
 
-    public static class ExceptionExtensions
+    internal static class ExceptionExtensions
     {
         public static string PrettyPrint(this Exception e)
         {
@@ -27,7 +27,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
         }
     }
 
-    public static class EnvironmentExtensions
+    internal static class EnvironmentExtensions
     {
         public static string ToEnvironmentLineEndings(this string str)
         {

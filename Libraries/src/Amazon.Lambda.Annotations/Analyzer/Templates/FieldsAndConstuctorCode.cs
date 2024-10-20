@@ -2,11 +2,11 @@
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
 {
-    public partial class FieldsAndConstructor
+    internal partial class FieldsAndConstructor
     {
         private readonly LambdaFunctionModel _model;
 
-        public FieldsAndConstructor(LambdaFunctionModel model)
+        internal FieldsAndConstructor(LambdaFunctionModel model)
         {
             _model = model;
         }

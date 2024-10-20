@@ -7,7 +7,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     /// <summary>
     /// Builder for <see cref="RestApiAttribute"/>.
     /// </summary>
-    public class RestApiAttributeBuilder
+    internal class RestApiAttributeBuilder
     {
         public static RestApiAttribute Build(AttributeData att)
         {

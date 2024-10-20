@@ -13,7 +13,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// Construct an instance of LambdaSerializerInfo
         /// </summary>
         /// <param name="serializerName"></param>
-        /// <param name="serializerJsonContextName"></param>
         public LambdaSerializerInfo(string serializerName)
         {
             SerializerName = serializerName;

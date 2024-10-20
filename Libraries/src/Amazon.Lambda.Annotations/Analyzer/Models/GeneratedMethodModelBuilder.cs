@@ -10,7 +10,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// <summary>
     /// <see cref="GeneratedMethodModel"/> builder.
     /// </summary>
-    public static class GeneratedMethodModelBuilder
+    internal static class GeneratedMethodModelBuilder
     {
         public static GeneratedMethodModel Build(IMethodSymbol lambdaMethodSymbol,
             IMethodSymbol configureMethodSymbol,

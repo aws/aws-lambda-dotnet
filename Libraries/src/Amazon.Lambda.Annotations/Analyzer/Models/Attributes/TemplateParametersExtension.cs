@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
 {
-    public static class TemplateParametersExtension
+    internal static class TemplateParametersExtension
     {
         /// <summary>
         /// Returns aa <see cref="HashSet{T}"/> of string containing template parameter

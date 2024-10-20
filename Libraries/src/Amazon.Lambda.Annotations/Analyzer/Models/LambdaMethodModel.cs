@@ -8,7 +8,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// <summary>
     /// Represents original method model used for generating the code from the template.
     /// </summary>
-    public class LambdaMethodModel
+    internal class LambdaMethodModel
     {
         private AttributeModel<LambdaFunctionAttribute> _lambdaFunctionAttribute;
 
@@ -24,7 +24,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public bool ReturnsVoidTask { get; set; }
 
         /// <summary>
-        /// Returns true if original method returns <see cref="System.Threading.Tasks.Task<T>"/>
+        /// Returns true if original method returns <see cref="System.Threading.Tasks.Task{T}"/>
         /// </summary>
         public bool ReturnsGenericTask { get; set; }
 
@@ -39,7 +39,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public TypeModel ReturnType { get; set; }
 
         /// <summary>
-        /// Returns true if the Lambda function returns either IHttpResult or Task<IHttpResult>
+        /// Returns true if the Lambda function returns either IHttpResult or Task{IHttpResult}
         /// </summary>
         public bool ReturnsIHttpResults
         {
@@ -65,7 +65,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         }
 
         /// <summary>
-        /// Returns true if the Lambda function returns either void, Task, SQSBatchResponse or Task<SQSBatchResponse>
+        /// Returns true if the Lambda function returns either void, Task, SQSBatchResponse or Task{SQSBatchResponse}
         /// </summary>
         public bool ReturnsVoidTaskOrSqsBatchResponse
         {

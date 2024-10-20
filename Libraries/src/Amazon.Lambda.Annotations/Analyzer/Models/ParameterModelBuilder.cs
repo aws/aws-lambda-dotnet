@@ -9,7 +9,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// <summary>
     /// <see cref="ParameterModel"/> builder.
     /// </summary>
-    public static class ParameterModelBuilder
+    internal static class ParameterModelBuilder
     {
         public static IList<ParameterModel> Build(IMethodSymbol methodSymbol,
             GeneratorExecutionContext context)

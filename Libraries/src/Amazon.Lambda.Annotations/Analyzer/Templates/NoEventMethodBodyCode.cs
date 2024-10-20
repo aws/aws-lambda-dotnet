@@ -2,11 +2,11 @@
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
 {
-    public partial class NoEventMethodBody
+    internal partial class NoEventMethodBody
     {
         private readonly LambdaFunctionModel _model;
 
-        public NoEventMethodBody(LambdaFunctionModel model)
+        internal NoEventMethodBody(LambdaFunctionModel model)
         {
             _model = model;
         }

@@ -10,9 +10,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// <summary>
     /// <see cref="LambdaFunctionModel"/> builder.
     /// </summary>
-    public static class LambdaFunctionModelBuilder
+    internal static class LambdaFunctionModelBuilder
     {
-        public static LambdaFunctionModel BuildAndValidate(IMethodSymbol lambdaMethodSymbol, Location LambdamethodLocation, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context, bool isExecutable, string runtime, DiagnosticReporter diagnosticReporter)
+        internal static LambdaFunctionModel BuildAndValidate(IMethodSymbol lambdaMethodSymbol, Location LambdamethodLocation, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context, bool isExecutable, string runtime, DiagnosticReporter diagnosticReporter)
         {
             // We need to check for the necessary dependencies before attempting to build the LambdaFunctionModel otherwise the generator blows up with unknown exceptions.
             if (!LambdaFunctionValidator.ValidateDependencies(context, lambdaMethodSymbol, LambdamethodLocation, diagnosticReporter))
@@ -25,7 +25,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             return lambdaFunctionModel;
         }
 
-        private static LambdaFunctionModel Build(IMethodSymbol lambdaMethodSymbol, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context, bool isExecutable, string runtime)
+        internal static LambdaFunctionModel Build(IMethodSymbol lambdaMethodSymbol, IMethodSymbol configureMethodSymbol, GeneratorExecutionContext context, bool isExecutable, string runtime)
         {
             var lambdaMethod = LambdaMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, context);
             var generatedMethod = GeneratedMethodModelBuilder.Build(lambdaMethodSymbol, configureMethodSymbol, lambdaMethod, context);
@@ -45,7 +45,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             return model;
         }
 
-        private static LambdaSerializerInfo GetSerializerInfoAttribute(GeneratorExecutionContext context, IMethodSymbol methodModel)
+        internal static LambdaSerializerInfo GetSerializerInfoAttribute(GeneratorExecutionContext context, IMethodSymbol methodModel)
         {
             var serializerString = TypeFullNames.DefaultLambdaSerializer;
 

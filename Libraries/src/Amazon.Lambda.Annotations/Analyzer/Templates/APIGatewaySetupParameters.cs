@@ -24,7 +24,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     
     #line 1 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class APIGatewaySetupParameters : APIGatewaySetupParametersBase
+    internal partial class APIGatewaySetupParameters : APIGatewaySetupParametersBase
     {
 #line hidden
         /// <summary>
@@ -796,7 +796,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class APIGatewaySetupParametersBase
+    internal class APIGatewaySetupParametersBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

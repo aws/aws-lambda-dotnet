@@ -2,7 +2,7 @@
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
-    public class AnnotationReport
+    internal class AnnotationReport
     {
         /// <summary>
         /// Collection of annotated Lambda functions detected in the project

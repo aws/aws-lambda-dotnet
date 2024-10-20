@@ -3,7 +3,7 @@ using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models
 {
-    public interface ILambdaFunctionSerializable
+    internal interface ILambdaFunctionSerializable
     {
         /// <summary>
         /// <para>

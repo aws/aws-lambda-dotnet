@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
 {
-    public static class SymbolHasAttributeExtension
+    internal static class SymbolHasAttributeExtension
     {
         /// <summary>
         /// Returns true if symbol has an given attribute.

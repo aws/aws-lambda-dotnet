@@ -10,7 +10,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
     /// <summary>
     /// This contains the functionality to manipulate a YAML blob
     /// </summary>
-    public class YamlWriter : ITemplateWriter
+    internal class YamlWriter : ITemplateWriter
     {
         private YamlMappingNode _rootNode;
         private readonly Serializer _serializer  = new Serializer();

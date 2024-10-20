@@ -54,6 +54,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public bool HasNullableAnnotations { get; set; }
 
 
+        /// <summary>
+        /// Gets the full qualified name of the type without annotations.
+        /// </summary>
         public string FullNameWithoutAnnotations
         {
             get

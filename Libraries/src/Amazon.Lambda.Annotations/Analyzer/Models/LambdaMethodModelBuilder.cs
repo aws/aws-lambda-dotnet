@@ -8,7 +8,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// <summary>
     /// <see cref="LambdaMethodModel"/> builder.
     /// </summary>
-    public static class LambdaMethodModelBuilder
+    internal static class LambdaMethodModelBuilder
     {
         public static LambdaMethodModel Build(IMethodSymbol lambdaMethodSymbol,
             IMethodSymbol configureMethodSymbol,

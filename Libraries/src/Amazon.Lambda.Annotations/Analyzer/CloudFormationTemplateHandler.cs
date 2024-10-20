@@ -10,7 +10,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
     /// <summary>
     /// This class contains utility methods to determine the .NET project's root directory and resolve the AWS serverless template file path.
     /// </summary>
-    public class CloudFormationTemplateHandler
+    internal class CloudFormationTemplateHandler
     {
         private const string DEFAULT_CONFIG_FILE_NAME = "aws-lambda-tools-defaults.json";
         private const string DEFAULT_SERVERLESS_TEMPLATE_NAME = "serverless.template";
@@ -18,6 +18,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         private readonly IFileManager _fileManager;
         private readonly IDirectoryManager _directoryManager;
 
+        /// <summary>
+        /// Constructs a <see cref="CloudFormationTemplateHandler"/>
+        /// </summary>
         public CloudFormationTemplateHandler(IFileManager fileManager, IDirectoryManager directoryManager)
         {
             _fileManager = fileManager;

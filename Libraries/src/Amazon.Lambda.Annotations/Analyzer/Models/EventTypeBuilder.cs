@@ -9,7 +9,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// <summary>
     /// <see cref="EventType"/> builder.
     /// </summary>
-    public class EventTypeBuilder
+    internal class EventTypeBuilder
     {
         public static HashSet<EventType> Build(IMethodSymbol lambdaMethodSymbol,
             GeneratorExecutionContext context)

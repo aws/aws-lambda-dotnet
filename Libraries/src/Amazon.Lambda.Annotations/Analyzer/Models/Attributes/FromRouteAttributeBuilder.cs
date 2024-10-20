@@ -6,7 +6,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     /// <summary>
     /// Builder for <see cref="FromRouteAttribute"/>.
     /// </summary>
-    public class FromRouteAttributeBuilder
+    internal class FromRouteAttributeBuilder
     {
         public static FromRouteAttribute Build(AttributeData att)
         {

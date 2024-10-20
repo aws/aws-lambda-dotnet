@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
 {
-    public static class HttpApiAttributeBuilder
+    internal static class HttpApiAttributeBuilder
     {
         public static HttpApiAttribute Build(AttributeData att)
         {

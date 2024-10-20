@@ -6,7 +6,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// <summary>
     /// Represents parameters of the original method used for generating the code from the template.
     /// </summary>
-    public class ParameterModel
+    internal class ParameterModel
     {
         /// <summary>
         /// Gets or sets type of the parameter.

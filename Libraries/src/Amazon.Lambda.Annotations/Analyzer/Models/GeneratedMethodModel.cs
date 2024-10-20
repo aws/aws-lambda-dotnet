@@ -5,7 +5,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// <summary>
     /// Represents generated method model used for generating the code from the template.
     /// </summary>
-    public class GeneratedMethodModel
+    internal class GeneratedMethodModel
     {
         /// <summary>
         /// Gets or sets type of response returned by the generated Lambda function.

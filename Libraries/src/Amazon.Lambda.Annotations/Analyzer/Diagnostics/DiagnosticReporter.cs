@@ -6,12 +6,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
     /// Wrapper for GeneratorExecutionContext.ReportDiagnostic method
     /// because GeneratorExecutionContext is a struct and can't be mocked easily.
     /// </summary>
-    public interface IDiagnosticReporter
+    internal interface IDiagnosticReporter
     {
         void Report(Diagnostic diagnostic);
     }
 
-    public class DiagnosticReporter : IDiagnosticReporter
+    internal class DiagnosticReporter : IDiagnosticReporter
     {
         private readonly GeneratorExecutionContext _context;
 

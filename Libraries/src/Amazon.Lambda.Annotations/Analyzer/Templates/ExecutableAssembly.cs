@@ -25,7 +25,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     
     #line 1 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\ExecutableAssembly.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class ExecutableAssembly : ExecutableAssemblyBase
+    internal partial class ExecutableAssembly : ExecutableAssemblyBase
     {
 #line hidden
         /// <summary>
@@ -243,7 +243,7 @@ public class GeneratedProgram
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class ExecutableAssemblyBase
+    internal class ExecutableAssemblyBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

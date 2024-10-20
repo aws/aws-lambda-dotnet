@@ -26,7 +26,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     
     #line 1 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\LambdaFunctionTemplate.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class LambdaFunctionTemplate : LambdaFunctionTemplateBase
+    internal partial class LambdaFunctionTemplate : LambdaFunctionTemplateBase
     {
 #line hidden
         /// <summary>
@@ -226,7 +226,7 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class LambdaFunctionTemplateBase
+    internal class LambdaFunctionTemplateBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

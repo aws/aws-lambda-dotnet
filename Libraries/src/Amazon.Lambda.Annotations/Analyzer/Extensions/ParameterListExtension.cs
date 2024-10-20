@@ -5,9 +5,9 @@ using Amazon.Lambda.Annotations.SourceGenerator.Models;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
 {
-    public static class ParameterListExtension
+    internal static class ParameterListExtension
     {
-        public static bool HasConvertibleParameter(this IList<ParameterModel> parameters)
+        internal static bool HasConvertibleParameter(this IList<ParameterModel> parameters)
         {
             return parameters.Any(p =>
             {

@@ -20,7 +20,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     /// Type of attribute data, for example a FromRoute attribute can optionally have Name
     /// which can be modeled using attribute data.
     /// </typeparam>
-    public class AttributeModel<T> : AttributeModel where T : Attribute
+    internal class AttributeModel<T> : AttributeModel where T : Attribute
     {
         /// <summary>
         /// Gets or sets data associated with attribute.

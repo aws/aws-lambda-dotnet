@@ -2,7 +2,7 @@
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 {
-    public interface IAnnotationReportWriter
+    internal interface IAnnotationReportWriter
     {
         void ApplyReport(AnnotationReport report);
     }

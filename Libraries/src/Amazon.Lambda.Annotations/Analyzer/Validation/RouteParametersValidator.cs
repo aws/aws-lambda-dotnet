@@ -7,7 +7,7 @@ using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
 {
-    public static class RouteParametersValidator
+    internal static class RouteParametersValidator
     {
         public static (bool isValid, IList<string> missingParameters) Validate(HashSet<string> routeParameters, IList<ParameterModel> lambdaMethodParameters)
         {

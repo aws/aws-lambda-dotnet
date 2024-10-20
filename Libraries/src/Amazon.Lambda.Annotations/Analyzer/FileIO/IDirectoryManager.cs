@@ -2,7 +2,7 @@ using System.IO;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.FileIO
 {
-    public interface IDirectoryManager
+    internal interface IDirectoryManager
     {
         string GetDirectoryName(string path);
         string[] GetFiles(string path, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly);

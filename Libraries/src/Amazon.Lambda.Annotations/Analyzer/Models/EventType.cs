@@ -4,7 +4,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// Type of Lambda event
     /// <see href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-eventsource.html">Supported Lambda events</see>
     /// </summary>
-    public enum EventType
+    internal enum EventType
     {
         API,
         S3,

@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
-    public class SemanticModelProvider
+    internal class SemanticModelProvider
     {
         private readonly GeneratorExecutionContext _context;
 
@@ -17,7 +17,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
         /// <summary>
         /// Returns the Configure(IServiceCollection) method's semantic model in the LambdaStartup attributed class.
-        /// If <see cref="startupSyntax"/> is null, returns null.
         /// </summary>
         /// <param name="startupSyntax">LambdaStartup attributed class syntax</param>
         public IMethodSymbol GetConfigureMethodModel(ClassDeclarationSyntax startupSyntax)
@@ -56,7 +55,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         }
 
         /// <summary>
-        /// Returns semantic model of <see cref="syntax"/>
+        /// Returns semantic model of <see cref="MethodDeclarationSyntax"/>
         /// </summary>
         /// <param name="syntax">Method declaration syntax used for representing method by compiler.</param>
         public IMethodSymbol GetMethodSemanticModel(MethodDeclarationSyntax syntax)

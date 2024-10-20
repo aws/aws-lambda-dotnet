@@ -14,7 +14,7 @@ using System.Text;
 namespace Amazon.Lambda.Annotations.SourceGenerator
 {
     [Generator]
-    public class Generator : ISourceGenerator
+    internal class Generator : ISourceGenerator
     {
         private const string DEFAULT_LAMBDA_SERIALIZER = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
         private readonly IFileManager _fileManager = new FileManager();

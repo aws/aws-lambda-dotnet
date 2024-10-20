@@ -10,7 +10,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
     /// <summary>
     /// This contains the functionality to manipulate a JSON blob
     /// </summary>
-    public class JsonWriter : ITemplateWriter
+    internal class JsonWriter : ITemplateWriter
     {
         private JObject _rootNode;
 

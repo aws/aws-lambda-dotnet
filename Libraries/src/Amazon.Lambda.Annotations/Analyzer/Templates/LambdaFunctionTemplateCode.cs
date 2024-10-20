@@ -6,11 +6,11 @@ using YamlDotNet.Core.Tokens;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
 {
-    public partial class LambdaFunctionTemplate
+    internal partial class LambdaFunctionTemplate
     {
         private readonly LambdaFunctionModel _model;
 
-        public LambdaFunctionTemplate(LambdaFunctionModel model)
+        internal LambdaFunctionTemplate(LambdaFunctionModel model)
         {
             _model = model;
         }

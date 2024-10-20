@@ -21,7 +21,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     
     #line 1 "C:\codebase\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\NoEventMethodBody.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class NoEventMethodBody : NoEventMethodBodyBase
+    internal partial class NoEventMethodBody : NoEventMethodBodyBase
     {
 #line hidden
         /// <summary>
@@ -190,7 +190,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class NoEventMethodBodyBase
+    internal class NoEventMethodBodyBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

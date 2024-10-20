@@ -6,7 +6,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     /// <summary>
     /// Builder for <see cref="FromHeaderAttribute"/>.
     /// </summary>
-    public class FromHeaderAttributeBuilder
+    internal class FromHeaderAttributeBuilder
     {
         public static FromHeaderAttribute Build(AttributeData att)
         {

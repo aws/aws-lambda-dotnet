@@ -7,7 +7,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
     /// <summary>
     /// Represents container class for the Lambda function.
     /// </summary>
-    public class LambdaFunctionModel : ILambdaFunctionSerializable
+    internal class LambdaFunctionModel : ILambdaFunctionSerializable
     {
         /// <summary>
         /// Gets or sets original method model.

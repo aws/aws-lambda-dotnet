@@ -8,7 +8,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     /// <summary>
     /// <see cref="AttributeModel"/> builder.
     /// </summary>
-    public static class AttributeModelBuilder
+    internal static class AttributeModelBuilder
     {
         public static AttributeModel Build(AttributeData att, GeneratorExecutionContext context)
         {

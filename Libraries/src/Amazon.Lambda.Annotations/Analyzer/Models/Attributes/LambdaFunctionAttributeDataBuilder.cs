@@ -3,9 +3,9 @@ using Microsoft.CodeAnalysis;
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
 {
     /// <summary>
-    /// Builder for <see cref="LambdaFunctionAttributeData"/>.
+    /// Builder for <see cref="LambdaFunctionAttribute"/>.
     /// </summary>
-    public static class LambdaFunctionAttributeDataBuilder
+    internal static class LambdaFunctionAttributeDataBuilder
     {
         public static LambdaFunctionAttribute Build(AttributeData att)
         {

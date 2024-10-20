@@ -7,7 +7,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     /// <summary>
     /// Builder for <see cref="SQSEventAttribute"/>.
     /// </summary>
-    public class SQSEventAttributeBuilder
+    internal class SQSEventAttributeBuilder
     {
         public static SQSEventAttribute Build(AttributeData att)
         {

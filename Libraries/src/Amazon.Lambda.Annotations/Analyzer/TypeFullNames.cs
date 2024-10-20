@@ -5,7 +5,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
     /// <summary>
     /// Contains fully qualified name constants for various C# types
     /// </summary>
-    public static class TypeFullNames
+    internal static class TypeFullNames
     {
         public const string IEnumerable = "System.Collections.IEnumerable";
         public const string Task1 = "System.Threading.Tasks.Task`1";

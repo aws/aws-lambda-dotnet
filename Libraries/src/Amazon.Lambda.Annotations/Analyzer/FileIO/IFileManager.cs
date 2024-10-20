@@ -2,7 +2,7 @@ using System.IO;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.FileIO
 {
-    public interface IFileManager
+    internal interface IFileManager
     {
         string ReadAllText(string path);
         void WriteAllText(string path, string content);

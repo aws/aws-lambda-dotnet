@@ -6,7 +6,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
     /// <summary>
     /// Builder for <see cref="FromQueryAttribute"/>.
     /// </summary>
-    public class FromQueryAttributeBuilder
+    internal class FromQueryAttributeBuilder
     {
         public static FromQueryAttribute Build(AttributeData att)
         {

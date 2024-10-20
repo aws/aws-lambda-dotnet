@@ -6,7 +6,13 @@
     /// </summary>
     public enum LambdaPackageType
     {
+        /// <summary>
+        /// A ZIP Lambda Package Type
+        /// </summary>
         Zip=0,
+        /// <summary>
+        /// An Image Lambda Package Type
+        /// </summary>
         Image=1
     }
 }

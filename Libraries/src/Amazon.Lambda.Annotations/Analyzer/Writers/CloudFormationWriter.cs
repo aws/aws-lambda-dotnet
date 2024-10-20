@@ -19,7 +19,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
     /// <see href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html">see here</see> to know more about configurable properties for AWS::Serverless::Function
     /// <see href="https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/test/TestServerlessApp/serverless.template">see here</see> for an actual serverless template.
     /// </summary>
-    public class CloudFormationWriter : IAnnotationReportWriter
+    internal class CloudFormationWriter : IAnnotationReportWriter
     {
         private const string CREATION_TOOL = "Amazon.Lambda.Annotations";
         private const string PARAMETERS = "Parameters";
@@ -319,10 +319,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         }
 
         /// <summary>
-        /// Writes all properties associated with <see cref="LambdaFunctionRoleAttribute"/> to the serverless template.
-        /// </summary>
-
-        /// <summary>
         /// Writes the default values for the Lambda function's metadata and properties.
         /// </summary>
         private void ApplyLambdaFunctionDefaults(string lambdaFunctionPath, string propertiesPath, string runtime)
@@ -414,7 +410,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         {
             get
             {
-                var version = Assembly.GetAssembly(MethodBase.GetCurrentMethod().DeclaringType).GetName().Version.ToString();
+                var version = typeof(CloudFormationWriter).Assembly.GetName().Version?.ToString();
                 return $"{BASE_DESCRIPTION} (v{version}).";
             }
         }

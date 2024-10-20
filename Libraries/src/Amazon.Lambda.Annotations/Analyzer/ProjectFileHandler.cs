@@ -7,7 +7,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
     /// <summary>
     /// Utilities for working with project (.csproj) files
     /// </summary>
-    public class ProjectFileHandler
+    internal class ProjectFileHandler
     {
         private const string OptOutNodeXpath = "//PropertyGroup/AWSSuppressLambdaAnnotationsTelemetry";
 
