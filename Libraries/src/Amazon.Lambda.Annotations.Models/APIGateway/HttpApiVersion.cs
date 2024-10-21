@@ -6,7 +6,13 @@ namespace Amazon.Lambda.Annotations.APIGateway
     /// </summary>
     public enum HttpApiVersion
     {
+        /// <summary>
+        /// API Gateway HTTP API V1
+        /// </summary>
         V1,
+        /// <summary>
+        /// API Gateway HTTP API V2
+        /// </summary>
         V2
     }
 }
