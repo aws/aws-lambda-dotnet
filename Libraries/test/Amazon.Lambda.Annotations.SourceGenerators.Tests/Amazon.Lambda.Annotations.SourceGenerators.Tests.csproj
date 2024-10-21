@@ -133,12 +133,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="..\..\src\Amazon.Lambda.Annotations\**">
-            <Link>Amazon.Lambda.Annotations\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\**">
+            <Link>Amazon.Lambda.Annotations.Models\%(RecursiveDir)/%(FileName)%(Extension)</Link>
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
-        <Content Remove="..\..\src\Amazon.Lambda.Annotations\obj\**" />
-        <Content Remove="..\..\src\Amazon.Lambda.Annotations\bin\**" />
+        <Content Remove="..\..\src\Amazon.Lambda.Annotations.Models\obj\**" />
+        <Content Remove="..\..\src\Amazon.Lambda.Annotations.Models\bin\**" />
     </ItemGroup>
 
     <ItemGroup>

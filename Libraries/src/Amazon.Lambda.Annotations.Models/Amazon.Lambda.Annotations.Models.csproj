@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <RootNamespace>Amazon.Lambda.Annotations</RootNamespace>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
@@ -8,7 +9,8 @@
     Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
-    <RootNamespace>Amazon.Lambda.Annotations</RootNamespace>
+    
+    <Version>1.5.2</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
