@@ -23,6 +23,7 @@
         </PackageReference>
         <PackageReference Include="AWSSDK.Core" Version="3.7.103.24" />
         <PackageReference Include="xunit" Version="2.4.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="1.1.1" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="1.1.1" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeRefactoring.Testing.XUnit" Version="1.1.1" />
@@ -132,12 +133,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="..\..\src\Amazon.Lambda.Annotations\**">
-            <Link>Amazon.Lambda.Annotations\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\**">
+            <Link>Amazon.Lambda.Annotations.Models\%(RecursiveDir)/%(FileName)%(Extension)</Link>
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
-        <Content Remove="..\..\src\Amazon.Lambda.Annotations\obj\**" />
-        <Content Remove="..\..\src\Amazon.Lambda.Annotations\bin\**" />
+        <Content Remove="..\..\src\Amazon.Lambda.Annotations.Models\obj\**" />
+        <Content Remove="..\..\src\Amazon.Lambda.Annotations.Models\bin\**" />
     </ItemGroup>
 
     <ItemGroup>
@@ -175,7 +176,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations.SourceGenerator\Amazon.Lambda.Annotations.SourceGenerator.csproj" />
-      <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations.Models\Amazon.Lambda.Annotations.Models.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj" />
       <!-- 
