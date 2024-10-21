@@ -23,6 +23,7 @@
         </PackageReference>
         <PackageReference Include="AWSSDK.Core" Version="3.7.103.24" />
         <PackageReference Include="xunit" Version="2.4.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="1.1.1" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="1.1.1" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeRefactoring.Testing.XUnit" Version="1.1.1" />
@@ -32,6 +33,78 @@
 	</ItemGroup>
 
     <ItemGroup>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\APIGateway\FromBodyAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\APIGateway\FromBodyAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\APIGateway\FromHeaderAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\APIGateway\FromHeaderAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\APIGateway\FromQueryAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\APIGateway\FromQueryAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\APIGateway\FromRouteAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\APIGateway\FromRouteAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\APIGateway\HttpApiAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\APIGateway\HttpApiAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\APIGateway\HttpApiVersion.cs">
+          <Link>Amazon.Lambda.Annotations\APIGateway\HttpApiVersion.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\APIGateway\HttpResults.cs">
+          <Link>Amazon.Lambda.Annotations\APIGateway\HttpResults.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\APIGateway\LambdaHttpMethod.cs">
+          <Link>Amazon.Lambda.Annotations\APIGateway\LambdaHttpMethod.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\APIGateway\RestApiAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\APIGateway\RestApiAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\FromServicesAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\FromServicesAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\INamedAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\INamedAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\LambdaFunctionAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\LambdaFunctionAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\LambdaGlobalPropertiesAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\LambdaGlobalPropertiesAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\LambdaPackageType.cs">
+          <Link>Amazon.Lambda.Annotations\LambdaPackageType.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\LambdaStartupAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\LambdaStartupAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\README.md">
+          <Link>Amazon.Lambda.Annotations\README.md</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\SQS\SQSEventAttribute.cs">
+          <Link>Amazon.Lambda.Annotations\SQS\SQSEventAttribute.cs</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\..\src\Amazon.Lambda.Annotations.Models\THIRD_PARTY_LICENSES">
+          <Link>Amazon.Lambda.Annotations\THIRD_PARTY_LICENSES</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
         <Content Include="..\TestServerlessApp\**">
             <Link>TestServerlessApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -175,7 +248,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations.SourceGenerator\Amazon.Lambda.Annotations.SourceGenerator.csproj" />
-      <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations.Models\Amazon.Lambda.Annotations.Models.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj" />
       <!-- 

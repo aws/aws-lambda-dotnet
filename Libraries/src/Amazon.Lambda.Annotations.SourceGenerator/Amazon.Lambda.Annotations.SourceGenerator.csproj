@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyVersion>1.5.2</AssemblyVersion>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>1.5.2</Version>
+    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
 
     <!--This assembly needs to access internal methods inside the Amazon.Lambda.Annotations assembly.
     Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
@@ -11,16 +11,35 @@
 
     <!-- This is required to allow copying all the dependencies to bin directory which can be copied after to nuget package based on nuspec -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <PackageId>Amazon.Lambda.Annotations</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" />
-    <PackageReference Include="System.CodeDom" Version="6.0.0" />
+    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.Models.dll" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
+    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.Models.xml" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
+    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.Models.dll" Pack="true" PackagePath="lib/net6.0" Visible="false" />
+    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.Models.xml" Pack="true" PackagePath="lib/net6.0" Visible="false" />
+    <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.Models.dll" Pack="true" PackagePath="lib/net8.0" Visible="false" />
+    <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.Models.xml" Pack="true" PackagePath="lib/net8.0" Visible="false" />
+    
+    <None Include="$(OutputPath)\netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.Models.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+<!--    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Core.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />-->
+    <None Include="$(OutputPath)\netstandard2.0\Newtonsoft.Json.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\netstandard2.0\YamlDotNet.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" PrivateAssets="all" />
+    <PackageReference Include="System.CodeDom" Version="6.0.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Generator dependencies, update Libraries/src/Amazon.Lambda.Annotations.nuspec whenever a new generator dependency is added.  -->
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" GeneratePathProperty="true" PrivateAssets="all" />
     <PackageReference Include="YamlDotNet" Version="12.0.0" GeneratePathProperty="true" PrivateAssets="all" />
   </ItemGroup>
@@ -37,7 +56,9 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="..\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" OutputItemType="Analyzer" />
+    <ProjectReference Include="..\Amazon.Lambda.Annotations.Models\Amazon.Lambda.Annotations.Models.csproj" OutputItemType="Analyzer">
+      <ExcludeAssets>All</ExcludeAssets>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
