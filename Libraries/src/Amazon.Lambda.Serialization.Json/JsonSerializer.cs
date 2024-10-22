@@ -94,7 +94,7 @@ namespace Amazon.Lambda.Serialization.Json
         {
             try
             {
-                if (debug)
+                if (debug && response != null)
                 {
                     using (StringWriter debugWriter = new StringWriter())
                     {

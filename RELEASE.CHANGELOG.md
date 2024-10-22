@@ -1,3 +1,7 @@
+### Release 2024-10-15
+* **AWSLambdaPSCore PowerShell Module (4.0.3.0)**
+  * Update default version of Microsoft.PowerShell.SDK to 7.4.5
+
 ### Release 2024-09-30
 * **AWSLambdaPSCore PowerShell Module (4.0.2.0)**
   * Update PowerShell Lambda blueprints to reference the latest Amazon.Lambda.PowerShellHost and Amazon.Lambda.Core packages.
