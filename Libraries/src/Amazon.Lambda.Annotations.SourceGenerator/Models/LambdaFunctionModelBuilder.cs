@@ -36,7 +36,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 SerializerInfo = GetSerializerInfoAttribute(context, lambdaMethodSymbol),
                 StartupType = configureMethodSymbol != null ? TypeModelBuilder.Build(configureMethodSymbol.ContainingType, context) : null,
                 SourceGeneratorVersion = context.Compilation
-                    .ReferencedAssemblyNames.FirstOrDefault(x => string.Equals(x.Name, "Amazon.Lambda.Annotations"))
+                    .ReferencedAssemblyNames.FirstOrDefault(x => string.Equals(x.Name, "Amazon.Lambda.Annotations.Models"))
                     ?.Version.ToString(),
                 IsExecutable = isExecutable,
                 Runtime = runtime,

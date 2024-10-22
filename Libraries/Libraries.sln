@@ -4,9 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.0.31717.71
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}"
-	ProjectSection(SolutionItems) = preProject
-		src\Amazon.Lambda.Annotations.nuspec = src\Amazon.Lambda.Annotations.nuspec
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A101C2F7-C63F-4FDE-94BB-DFA637EBEA44}"
 	ProjectSection(SolutionItems) = preProject
@@ -108,7 +105,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestServerlessApp", "test\T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Annotations.SourceGenerators.Tests", "test\Amazon.Lambda.Annotations.SourceGenerators.Tests\Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj", "{D76F2C74-3D7F-4DB3-BA1A-F2EA14749253}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Annotations", "src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj", "{ADA9AF37-A8C1-47E6-BBBD-5C7E49C26C0E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Annotations.Models", "src\Amazon.Lambda.Annotations.Models\Amazon.Lambda.Annotations.Models.csproj", "{ADA9AF37-A8C1-47E6-BBBD-5C7E49C26C0E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Annotations.SourceGenerator", "src\Amazon.Lambda.Annotations.SourceGenerator\Amazon.Lambda.Annotations.SourceGenerator.csproj", "{3C617909-D61F-4AA8-B11C-4C9ECC865D75}"
 EndProject
