@@ -1,3 +1,9 @@
+### Release 2024-10-22
+* **Amazon.Lambda.Serialization.Json (2.2.4)**
+  * Fixed null pointer exception when enabling debug mode with LAMBDA_NET_SERIALIZER_DEBUG environment variable and function response is null.
+* **Amazon.Lambda.Serialization.SystemTextJson (2.4.4)**
+  * Fixed null pointer exception when enabling debug mode with LAMBDA_NET_SERIALIZER_DEBUG environment variable and function response is null.
+
 ### Release 2024-10-15
 * **AWSLambdaPSCore PowerShell Module (4.0.3.0)**
   * Update default version of Microsoft.PowerShell.SDK to 7.4.5
