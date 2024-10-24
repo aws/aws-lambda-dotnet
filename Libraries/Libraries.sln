@@ -105,7 +105,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestServerlessApp", "test\T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Annotations.SourceGenerators.Tests", "test\Amazon.Lambda.Annotations.SourceGenerators.Tests\Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj", "{D76F2C74-3D7F-4DB3-BA1A-F2EA14749253}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Annotations.Models", "src\Amazon.Lambda.Annotations.Models\Amazon.Lambda.Annotations.Models.csproj", "{ADA9AF37-A8C1-47E6-BBBD-5C7E49C26C0E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Annotations", "src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj", "{ADA9AF37-A8C1-47E6-BBBD-5C7E49C26C0E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.Annotations.SourceGenerator", "src\Amazon.Lambda.Annotations.SourceGenerator\Amazon.Lambda.Annotations.SourceGenerator.csproj", "{3C617909-D61F-4AA8-B11C-4C9ECC865D75}"
 EndProject

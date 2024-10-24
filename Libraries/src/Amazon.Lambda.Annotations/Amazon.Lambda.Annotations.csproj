@@ -4,7 +4,8 @@
     <RootNamespace>Amazon.Lambda.Annotations</RootNamespace>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-
+    <IsPackable>false</IsPackable>
+    
     <!--This assembly contains some internal methods that need to be accessed by the Amazon.Lambda.Annotations.SourceGenerator assembly.
     Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>

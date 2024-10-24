@@ -27,8 +27,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "Greeter.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "Greeter.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -69,8 +69,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestExecutableServerlessApp", "ExecutableNoAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "ExecutableNoAttributes.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributesWithRouting.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     ExpectedDiagnostics =
@@ -99,8 +99,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (Path.Combine("TestServerlessApp", "Greeter.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "Greeter.cs"))),
                         ("NonCompilableCodeFile.cs", await File.ReadAllTextAsync("NonCompilableCodeFile.cs")),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -138,11 +138,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestServerlessApp", "SimpleCalculator.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "SimpleCalculator.cs"))),
                         (Path.Combine("TestServerlessApp", "Startup.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "Startup.cs"))),
                         (Path.Combine("TestServerlessApp", "Services", "SimpleCalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "Services", "SimpleCalculatorService.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "FromServicesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "FromServicesAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "FromServicesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "FromServicesAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -215,8 +215,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "ComplexCalculator.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ComplexCalculator.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -257,9 +257,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestExecutableServerlessApp", "Sub1", "Functions.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Sub1", "Functions.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "Startup.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Startup.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
                         SourceText.From(InvalidAssemblyAttributeString),
                     },
                     ExpectedDiagnostics =
@@ -292,8 +292,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "Sub1", "Functions.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "Sub1", "Functions.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -333,9 +333,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestExecutableServerlessApp", "Sub1", "FunctionsZipOutput.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Sub1", "FunctionsZipOutput.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "Startup.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Startup.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -392,9 +392,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestExecutableServerlessApp", "Sub1", "Functions.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Sub1", "Functions.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "Startup.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Startup.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -449,8 +449,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestExecutableServerlessApp", "ParameterlessMethods.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "ParameterlessMethods.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -505,8 +505,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestExecutableServerlessApp", "ParameterlessMethodWithResponse.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "ParameterlessMethodWithResponse.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -559,8 +559,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "Sub1", "Functions.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "Sub1", "Functions.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         SourceText.From(NullAssemblyAttributeString)
                     },
                     GeneratedSources =
@@ -601,9 +601,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("TestExecutableServerlessApp", "Greeter.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Greeter.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "Startup.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Startup.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "Services", "SimpleCalculatorService.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -664,9 +664,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestExecutableServerlessApp", "SourceGenerationSerializationExample.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "SourceGenerationSerializationExample.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaGlobalPropertiesAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaGlobalPropertiesAttribute.cs"))),
                         (Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestExecutableServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -725,8 +725,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "VoidExample.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "VoidExample.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -763,8 +763,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "IntrinsicExample.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "IntrinsicExample.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -800,8 +800,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "TaskExample.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "TaskExample.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -838,8 +838,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "DynamicExample.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "DynamicExample.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -888,10 +888,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "CustomizeResponseExamples.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "CustomizeResponseExamples.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -968,10 +968,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
                         (Path.Combine("TestServerlessApp", "CustomizeResponseWithErrors.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "CustomizeResponseWithErrors.cs.error"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     ExpectedDiagnostics =
@@ -996,10 +996,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
                         (Path.Combine("TestServerlessApp", "MissingResourePathMapping.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "MissingResourePathMapping.cs.error"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     ExpectedDiagnostics =
@@ -1024,10 +1024,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "NullableReferenceTypeExample.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "NullableReferenceTypeExample.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -1062,9 +1062,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "FromScratch", "NoApiGatewayEventsReference.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "FromScratch", "NoApiGatewayEventsReference.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -1092,8 +1092,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Sources =
                     {
                         (Path.Combine("TestServerlessApp", "FromScratch", "NoSerializerAttributeReference.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "FromScratch", "NoSerializerAttributeReference.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
                     },
                     GeneratedSources =
                     {
@@ -1120,10 +1120,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
                         (Path.Combine("TestServerlessApp", "ComplexQueryParameter.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ComplexQueryParameter.cs.error"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     ExpectedDiagnostics =
@@ -1147,10 +1147,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
                         (Path.Combine("TestServerlessApp", "InvalidParameterAttributeNames.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "InvalidParameterAttributeNames.cs.error"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaStartupAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "RestApiAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     ExpectedDiagnostics =
@@ -1217,8 +1217,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
                         (Path.Combine("TestServerlessApp", "SQSEventExamples", "InvalidSQSEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "SQSEventExamples", "InvalidSQSEvents.cs.error"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "SQS", "SQSEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "SQS", "SQSEventAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "SQS", "SQSEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "SQS", "SQSEventAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     ExpectedDiagnostics =
@@ -1298,8 +1298,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
                         (Path.Combine("TestServerlessApp", "SQSEventExamples", "ValidSQSEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "SQSEventExamples", "ValidSQSEvents.cs.txt"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "SQS", "SQSEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "SQS", "SQSEventAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "SQS", "SQSEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "SQS", "SQSEventAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     GeneratedSources =
@@ -1341,7 +1341,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     {
                         (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
                         (Path.Combine("TestServerlessApp", "ExceededMaximumHandlerLength.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ExceededMaximumHandlerLength.cs.error"))),
-                        (Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations.Models", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
                         (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
                     },
                     ExpectedDiagnostics =

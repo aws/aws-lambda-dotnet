@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <PackageId>Amazon.Lambda.Annotations</PackageId>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
     
     <Authors>Amazon Web Services</Authors>
@@ -11,7 +10,7 @@
     <PackageIcon>images\icon.png</PackageIcon>
     <PackageReadmeFile>docs\README.md</PackageReadmeFile>
     
-    <!--This assembly needs to access internal methods inside the Amazon.Lambda.Annotations.Models assembly.
+    <!--This assembly needs to access internal methods inside the Amazon.Lambda.Annotations assembly.
     Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly> 
@@ -22,17 +21,24 @@
     
     <Version>1.5.3</Version>
   </PropertyGroup>
+  
+  <!-- Delay setting the package id till after resolving dependencies to avoid ambigious errors. -->
+  <Target Name="SetPackageId" BeforeTargets="GenerateNuspec">
+    <PropertyGroup>
+      <PackageId>Amazon.Lambda.Annotations</PackageId>
+    </PropertyGroup>
+  </Target>
 
   <ItemGroup>
-    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.Models.dll" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
-    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.Models.xml" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
-    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.Models.dll" Pack="true" PackagePath="lib/net6.0" Visible="false" />
-    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.Models.xml" Pack="true" PackagePath="lib/net6.0" Visible="false" />
-    <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.Models.dll" Pack="true" PackagePath="lib/net8.0" Visible="false" />
-    <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.Models.xml" Pack="true" PackagePath="lib/net8.0" Visible="false" />
+    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
+    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
+    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/net6.0" Visible="false" />
+    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/net6.0" Visible="false" />
+    <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/net8.0" Visible="false" />
+    <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/net8.0" Visible="false" />
     
     <None Include="$(OutputPath)\netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.Models.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <None Include="$(OutputPath)\netstandard2.0\Newtonsoft.Json.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <None Include="$(OutputPath)\netstandard2.0\YamlDotNet.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
@@ -44,7 +50,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" GeneratePathProperty="true" PrivateAssets="all" />
     <PackageReference Include="YamlDotNet" Version="12.0.0" GeneratePathProperty="true" PrivateAssets="all" />
   </ItemGroup>
@@ -61,9 +66,10 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="..\Amazon.Lambda.Annotations.Models\Amazon.Lambda.Annotations.Models.csproj" OutputItemType="Analyzer">
+    <ProjectReference Include="..\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" OutputItemType="Analyzer">
       <ExcludeAssets>All</ExcludeAssets>
     </ProjectReference>
+    <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

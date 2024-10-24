@@ -2,8 +2,8 @@
   "solution": {
     "path": "Libraries.sln",
     "projects": [
-      "src\\Amazon.Lambda.Annotations.Models\\Amazon.Lambda.Annotations.Models.csproj",
       "src\\Amazon.Lambda.Annotations.SourceGenerator\\Amazon.Lambda.Annotations.SourceGenerator.csproj",
+      "src\\Amazon.Lambda.Annotations\\Amazon.Lambda.Annotations.csproj",
       "src\\Amazon.Lambda.APIGatewayEvents\\Amazon.Lambda.APIGatewayEvents.csproj",
       "src\\Amazon.Lambda.Core\\Amazon.Lambda.Core.csproj",
       "src\\Amazon.Lambda.RuntimeSupport\\Amazon.Lambda.RuntimeSupport.csproj",
