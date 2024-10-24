@@ -143,8 +143,8 @@
 
   <ItemGroup>
     <None Include="..\..\..\icon.png" Pack="true" PackagePath="images\icon.png" />
-    <None Include=".\README.md" Pack="true" PackagePath="docs\README.md" />
-    <None Include=".\THIRD_PARTY_LICENSES" Pack="true" PackagePath="" />
+    <None Include="..\Amazon.Lambda.Annotations\README.md" Pack="true" PackagePath="docs\README.md" />
+    <None Include="..\Amazon.Lambda.Annotations\THIRD_PARTY_LICENSES" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>
