@@ -16,9 +16,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task Greeter()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template"))).ToEnvironmentLineEndings();
-            var expectedSayHelloGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Greeter_SayHello_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedSayHelloAsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Greeter_SayHelloAsync_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "greeter.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSayHelloGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Greeter_SayHello_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSayHelloAsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Greeter_SayHelloAsync_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             await new VerifyCS.Test
             {
@@ -119,14 +119,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task SimpleCalculator()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "simpleCalculator.template"))).ToEnvironmentLineEndings();
-            var expectedAddGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Add_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedSubtractGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Subtract_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedMultiplyGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Multiply_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedDivideAsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_DivideAsync_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedPiGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Pi_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedRandomGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Random_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedRandomsGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Randoms_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "simpleCalculator.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedAddGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Add_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubtractGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Subtract_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedMultiplyGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Multiply_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedDivideAsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_DivideAsync_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedPiGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Pi_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedRandomGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Random_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedRandomsGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SimpleCalculator_Randoms_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             await new VerifyCS.Test
             {
@@ -204,10 +204,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task ComplexCalculator()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "complexCalculator.template"))).ToEnvironmentLineEndings();
-            var expectedAddGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ComplexCalculator_Add_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedSubtractGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ComplexCalculator_Subtract_Generated.g.cs"))).ToEnvironmentLineEndings();
-
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "complexCalculator.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedAddGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ComplexCalculator_Add_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubtractGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ComplexCalculator_Subtract_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            
             await new VerifyCS.Test
             {
                 TestState =
@@ -282,8 +282,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyFunctionInSubNamespace()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             await new VerifyCS.Test
             {
@@ -319,9 +319,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyExecutableAssemblyWithZipAndHandler()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace_executable.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_AsyncStartupToLower_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgram = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramZipOutput.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace_executable.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_AsyncStartupToLower_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedProgram = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramZipOutput.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             var test = new VerifyCS.Test
             {
@@ -378,9 +378,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyExecutableAssembly()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace_executableimage.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_AsyncStartupToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Program.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace_executableimage.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_AsyncStartupToUpper_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Program.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
             
             var test = new VerifyCS.Test
             {
@@ -437,9 +437,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyExecutableAssemblyWithParameterlessConstructor()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "parameterless.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ParameterlessMethods_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramParameterless.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "parameterless.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ParameterlessMethods_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramParameterless.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             var test = new VerifyCS.Test
             {
@@ -493,9 +493,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyExecutableAssemblyWithParameterlessConstructorAndResponse()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "parameterlesswithresponse.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ParameterlessMethodWithResponse_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramParameterlessWithResponse.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "parameterlesswithresponse.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ParameterlessMethodWithResponse_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramParameterlessWithResponse.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             var test = new VerifyCS.Test
             {
@@ -549,8 +549,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyExecutableAssembly_WithNullAttributeValues_ShouldComplete()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "subnamespace.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             await new VerifyCS.Test
             {
@@ -586,10 +586,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyExecutableAssemblyWithMultipleHandler()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "greeter_executable.template"))).ToEnvironmentLineEndings();
-            var expectedSayHello = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "GreeterExecutable_SayHello_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedSayHelloAsync = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "GreeterExecutable_SayHelloAsync_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramMultiHandler.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "greeter_executable.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSayHello = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "GreeterExecutable_SayHello_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSayHelloAsync = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "GreeterExecutable_SayHelloAsync_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramMultiHandler.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
             
             var test = new VerifyCS.Test
             {
@@ -652,9 +652,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifySourceGeneratorSerializerWithHttpResultsBody()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "sourcegeneratorserializationexample.template"))).ToEnvironmentLineEndings();
-            var expectedFunctionContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SourceGenerationSerializationExample_GetPerson_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramSourceGeneratorSerializationExample.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "sourcegeneratorserializationexample.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedFunctionContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SourceGenerationSerializationExample_GetPerson_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedProgramGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ProgramSourceGeneratorSerializationExample.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             var test = new VerifyCS.Test
             {
@@ -715,8 +715,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyFunctionReturnVoid()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "voidexample.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "VoidExample_VoidReturn_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "voidexample.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "VoidExample_VoidReturn_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             await new VerifyCS.Test
             {
@@ -752,8 +752,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyNoErrorWithIntrinsicInTemplate()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "intrinsicexample.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "IntrinsicExample_HasIntrinsic_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "intrinsicexample.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "IntrinsicExample_HasIntrinsic_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
             await File.WriteAllTextAsync(Path.Combine("TestServerlessApp", "serverless.template"), expectedTemplateContent);
 
             await new VerifyCS.Test
@@ -790,8 +790,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyFunctionReturnTask()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "taskexample.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "TaskExample_TaskReturn_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "taskexample.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubNamespaceGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "TaskExample_TaskReturn_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             await new VerifyCS.Test
             {
@@ -827,9 +827,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyFunctionDynamic()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "dynamicexample.template"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated_DynamicReturn = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "DynamicExample_DynamicReturn_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedSubNamespaceGenerated_DynamicInput = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "DynamicExample_DynamicInput_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "dynamicexample.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubNamespaceGenerated_DynamicReturn = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "DynamicExample_DynamicReturn_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedSubNamespaceGenerated_DynamicInput = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "DynamicExample_DynamicInput_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             await new VerifyCS.Test
             {
@@ -871,15 +871,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task CustomizeResponses()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "customizeResponse.template"))).ToEnvironmentLineEndings();
-            var expectedOkResponseWithHeaderGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithHeader_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedNotFoundResponseWithHeaderV2Generated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedNotFoundResponseWithHeaderV1Generated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "customizeResponse.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedOkResponseWithHeaderGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithHeader_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedNotFoundResponseWithHeaderV2Generated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV2_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedNotFoundResponseWithHeaderV1Generated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV1_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
-            var expectedOkResponseWithHeaderAsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedNotFoundResponseWithHeaderV2AsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedNotFoundResponseWithHeaderV1AsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var expectedOkResponseWithCustomSerializerGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedOkResponseWithHeaderAsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithHeaderAsync_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedNotFoundResponseWithHeaderV2AsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV2Async_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedNotFoundResponseWithHeaderV1AsyncGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_NotFoundResponseWithHeaderV1Async_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedOkResponseWithCustomSerializerGenerated = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "CustomizeResponseExamples_OkResponseWithCustomSerializer_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             await new VerifyCS.Test
             {
@@ -1014,8 +1014,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyApiFunctionUsingNullableParameters()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "nullreferenceexample.template"))).ToEnvironmentLineEndings();
-            var expectedCSharpContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "NullableReferenceTypeExample_NullableHeaderHttpApi_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "nullreferenceexample.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedCSharpContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "NullableReferenceTypeExample_NullableHeaderHttpApi_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             var test = new VerifyCS.Test
             {
@@ -1175,8 +1175,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task ToUpper_Net8()
         {
-            var expectedFunctionContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated_NET8.g.cs"))).ToEnvironmentLineEndings();
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "net8.template"))).ToEnvironmentLineEndings();
+            var expectedFunctionContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "Functions_ToUpper_Generated_NET8.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "net8.template"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             await new VerifyCS.Test(targetFramework: VerifyCS.Test.TargetFramework.Net80)
             {
@@ -1286,9 +1286,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public async Task VerifyValidSQSEvents()
         {
-            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "sqsEvents.template"))).ToEnvironmentLineEndings();
-            var validSqsEventsProcessMessagesGeneratedContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SQS", "ValidSQSEvents_ProcessMessages_Generated.g.cs"))).ToEnvironmentLineEndings();
-            var validSqsEventsProcessMessagesWithBatchFailureReportingGeneratedContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SQS", "ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated.g.cs"))).ToEnvironmentLineEndings();
+            var expectedTemplateContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "ServerlessTemplates", "sqsEvents.template"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var validSqsEventsProcessMessagesGeneratedContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SQS", "ValidSQSEvents_ProcessMessages_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
+            var validSqsEventsProcessMessagesWithBatchFailureReportingGeneratedContent = (await File.ReadAllTextAsync(Path.Combine("Snapshots", "SQS", "ValidSQSEvents_ProcessMessagesWithBatchFailureReporting_Generated.g.cs"))).ToEnvironmentLineEndings().ApplyReplacements();
 
             await new VerifyCS.Test
             {

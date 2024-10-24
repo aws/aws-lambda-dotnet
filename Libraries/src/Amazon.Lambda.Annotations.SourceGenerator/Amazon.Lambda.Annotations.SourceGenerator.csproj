@@ -1,9 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyVersion>1.5.2</AssemblyVersion>
-    <TargetFramework>netstandard2.0</TargetFramework>
-
+    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    
+    <Authors>Amazon Web Services</Authors>
+    <PackageTags>AWS Amazon Lambda</PackageTags>
+    <Description>Annotations that can be added to Lambda projects to generate C# code and CloudFormation templates.</Description>
+    <PackageProjectUrl>https://github.com/aws/aws-lambda-dotnet</PackageProjectUrl>
+    <PackageIcon>images\icon.png</PackageIcon>
+    <PackageReadmeFile>docs\README.md</PackageReadmeFile>
+    
     <!--This assembly needs to access internal methods inside the Amazon.Lambda.Annotations assembly.
     Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
@@ -11,16 +17,39 @@
 
     <!-- This is required to allow copying all the dependencies to bin directory which can be copied after to nuget package based on nuspec -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    
+    <Version>1.5.3</Version>
   </PropertyGroup>
+  
+  <!-- Delay setting the package id till after resolving dependencies to avoid ambigious errors. -->
+  <Target Name="SetPackageId" BeforeTargets="GenerateNuspec">
+    <PropertyGroup>
+      <PackageId>Amazon.Lambda.Annotations</PackageId>
+    </PropertyGroup>
+  </Target>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" />
-    <PackageReference Include="System.CodeDom" Version="6.0.0" />
+    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
+    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
+    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/net6.0" Visible="false" />
+    <None Include="$(OutputPath)\net6.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/net6.0" Visible="false" />
+    <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="lib/net8.0" Visible="false" />
+    <None Include="$(OutputPath)\net8.0\Amazon.Lambda.Annotations.xml" Pack="true" PackagePath="lib/net8.0" Visible="false" />
+    
+    <None Include="$(OutputPath)\netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\netstandard2.0\Amazon.Lambda.Annotations.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\netstandard2.0\Newtonsoft.Json.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\netstandard2.0\YamlDotNet.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Generator dependencies, update Libraries/src/Amazon.Lambda.Annotations.nuspec whenever a new generator dependency is added.  -->
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" PrivateAssets="all" />
+    <PackageReference Include="System.CodeDom" Version="6.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" GeneratePathProperty="true" PrivateAssets="all" />
     <PackageReference Include="YamlDotNet" Version="12.0.0" GeneratePathProperty="true" PrivateAssets="all" />
   </ItemGroup>
@@ -37,7 +66,10 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="..\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" OutputItemType="Analyzer" />
+    <ProjectReference Include="..\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" OutputItemType="Analyzer">
+      <ExcludeAssets>All</ExcludeAssets>
+    </ProjectReference>
+    <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -107,6 +139,12 @@
   <ItemGroup>
     <AdditionalFiles Include="Diagnostics\AnalyzerReleases.Shipped.md" />
     <AdditionalFiles Include="Diagnostics\AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\icon.png" Pack="true" PackagePath="images\icon.png" />
+    <None Include="..\Amazon.Lambda.Annotations\README.md" Pack="true" PackagePath="docs\README.md" />
+    <None Include="..\Amazon.Lambda.Annotations\THIRD_PARTY_LICENSES" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>
