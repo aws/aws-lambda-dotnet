@@ -16,10 +16,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
         
         public static string ApplyReplacements(this string str)
         {
-            Type generatorType = typeof(Generator);
-            Assembly generatorAssembly = generatorType.Assembly;
-            AssemblyName assemblyName = generatorAssembly.GetName();
-            Version assemblyVersion = assemblyName.Version;
+            var generatorType = typeof(Generator);
+            var generatorAssembly = generatorType.Assembly;
+            var assemblyName = generatorAssembly.GetName();
+            var assemblyVersion = assemblyName.Version;
             return str.Replace("{ANNOTATIONS_ASSEMBLY_VERSION}", assemblyVersion?.ToString());
         }
     }
