@@ -6,7 +6,7 @@
     <TargetFrameworks>netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - DynamoDBEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.DynamoDBEvents</AssemblyTitle>
-    <VersionPrefix>3.1.1</VersionPrefix>
+    <Version>3.1.1</Version>
     <AssemblyName>Amazon.Lambda.DynamoDBEvents</AssemblyName>
     <PackageId>Amazon.Lambda.DynamoDBEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
