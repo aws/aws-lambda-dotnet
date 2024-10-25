@@ -6,7 +6,7 @@
     <Description>Amazon.Lambda.TestUtilties includes stub implementations of interfaces defined in Amazon.Lambda.Core and helper methods.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyTitle>Amazon.Lambda.TestUtilities</AssemblyTitle>
-    <VersionPrefix>2.0.0</VersionPrefix>
+    <Version>2.0.0</Version>
     <AssemblyName>Amazon.Lambda.TestUtilities</AssemblyName>
     <PackageId>Amazon.Lambda.TestUtilities</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>

@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - S3Events package.</Description>
     <TargetFrameworks>netcoreapp3.1;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.S3Events</AssemblyTitle>
-    <VersionPrefix>3.1.0</VersionPrefix>
+    <Version>3.1.0</Version>
     <AssemblyName>Amazon.Lambda.S3Events</AssemblyName>
     <PackageId>Amazon.Lambda.S3Events</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>

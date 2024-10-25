@@ -6,7 +6,7 @@
     <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - CloudWatchEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.CloudWatchEvents</AssemblyTitle>
-    <VersionPrefix>4.4.0</VersionPrefix>
+    <Version>4.4.0</Version>
     <AssemblyName>Amazon.Lambda.CloudWatchEvents</AssemblyName>
     <PackageId>Amazon.Lambda.CloudWatchEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
