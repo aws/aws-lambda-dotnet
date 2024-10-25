@@ -19,6 +19,9 @@ namespace Amazon.Lambda.Annotations.APIGateway
         /// <inheritdoc cref="LambdaHttpMethod" />
         public LambdaHttpMethod Method { get; set; }
 
+        /// <summary>
+        /// Constructs a <see cref="RestApiAttribute"/>
+        /// </summary>
         public RestApiAttribute(LambdaHttpMethod method, string template)
         {
             Template = template;
