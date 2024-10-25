@@ -1,0 +1,136 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Annotations",
+      "Paths": [
+        "Libraries/src/Amazon.Lambda.Annotations/Amazon.Lambda.Annotations.csproj",
+        "Libraries/src/Amazon.Lambda.Annotations.SourceGenerator/Amazon.Lambda.Annotations.SourceGenerator.csproj"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.APIGatewayEvents",
+      "Path": "Libraries/src/Amazon.Lambda.APIGatewayEvents/Amazon.Lambda.APIGatewayEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.ApplicationLoadBalancerEvents",
+      "Path": "Libraries/src/Amazon.Lambda.ApplicationLoadBalancerEvents/Amazon.Lambda.ApplicationLoadBalancerEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Path": "Libraries/src/Amazon.Lambda.AspNetCoreServer/Amazon.Lambda.AspNetCoreServer.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Path": "Libraries/src/Amazon.Lambda.AspNetCoreServer.Hosting/Amazon.Lambda.AspNetCoreServer.Hosting.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.CloudWatchEvents",
+      "Path": "Libraries/src/Amazon.Lambda.CloudWatchEvents/Amazon.Lambda.CloudWatchEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.CloudWatchLogsEvents",
+      "Path": "Libraries/src/Amazon.Lambda.CloudWatchLogsEvents/Amazon.Lambda.CloudWatchLogsEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.CognitoEvents",
+      "Path": "Libraries/src/Amazon.Lambda.CognitoEvents/Amazon.Lambda.CognitoEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.ConfigEvents",
+      "Path": "Libraries/src/Amazon.Lambda.ConfigEvents/Amazon.Lambda.ConfigEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.ConnectEvents",
+      "Path": "Libraries/src/Amazon.Lambda.ConnectEvents/Amazon.Lambda.ConnectEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Path": "Libraries/src/Amazon.Lambda.Core/Amazon.Lambda.Core.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.DynamoDBEvents",
+      "Path": "Libraries/src/Amazon.Lambda.DynamoDBEvents/Amazon.Lambda.DynamoDBEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.KafkaEvents",
+      "Path": "Libraries/src/Amazon.Lambda.KafkaEvents/Amazon.Lambda.KafkaEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.KinesisAnalyticsEvents",
+      "Path": "Libraries/src/Amazon.Lambda.KinesisAnalyticsEvents/Amazon.Lambda.KinesisAnalyticsEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.KinesisEvents",
+      "Path": "Libraries/src/Amazon.Lambda.KinesisEvents/Amazon.Lambda.KinesisEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.KinesisFirehoseEvents",
+      "Path": "Libraries/src/Amazon.Lambda.KinesisFirehoseEvents/Amazon.Lambda.KinesisFirehoseEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.LexEvents",
+      "Path": "Libraries/src/Amazon.Lambda.LexEvents/Amazon.Lambda.LexEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.LexV2Events",
+      "Path": "Libraries/src/Amazon.Lambda.LexV2Events/Amazon.Lambda.LexV2Events.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.Logging.AspNetCore",
+      "Path": "Libraries/src/Amazon.Lambda.Logging.AspNetCore/Amazon.Lambda.Logging.AspNetCore.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.MQEvents",
+      "Path": "Libraries/src/Amazon.Lambda.MQEvents/Amazon.Lambda.MQEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.PowerShellHost",
+      "Path": "Libraries/src/Amazon.Lambda.PowerShellHost/Amazon.Lambda.PowerShellHost.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Path": "Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.S3Events",
+      "Path": "Libraries/src/Amazon.Lambda.S3Events/Amazon.Lambda.S3Events.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.Serialization.Json",
+      "Path": "Libraries/src/Amazon.Lambda.Serialization.Json/Amazon.Lambda.Serialization.Json.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.Serialization.SystemTextJson",
+      "Path": "Libraries/src/Amazon.Lambda.Serialization.SystemTextJson/Amazon.Lambda.Serialization.SystemTextJson.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.SimpleEmailEvents",
+      "Path": "Libraries/src/Amazon.Lambda.SimpleEmailEvents/Amazon.Lambda.SimpleEmailEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.SNSEvents",
+      "Path": "Libraries/src/Amazon.Lambda.SNSEvents/Amazon.Lambda.SNSEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.SQSEvents",
+      "Path": "Libraries/src/Amazon.Lambda.SQSEvents/Amazon.Lambda.SQSEvents.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.TestUtilities",
+      "Path": "Libraries/src/Amazon.Lambda.TestUtilities/Amazon.Lambda.TestUtilities.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.TestTool.BlazorTester",
+      "Paths": [
+        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester.csproj",
+        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester60-pack.csproj",
+        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester70-pack.csproj",
+        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester80-pack.csproj"
+      ]
+    }
+  ],
+  "UseCommitsForChangelog": false,
+  "UseSameVersionForAllProjects": false,
+  "DefaultIncrementType": "Patch",
+  "ChangeFilesDetermineIncrementType": true
+}
