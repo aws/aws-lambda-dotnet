@@ -10,8 +10,6 @@ namespace Amazon.Lambda.TestTool.Tests
 {
     public class NoUiStartupTests
     {
-        
-
         [Fact]
         public void DirectFunctionCallFromConfig()
         {
@@ -104,6 +102,36 @@ namespace Amazon.Lambda.TestTool.Tests
 
             TestToolStartup.Startup("Unit Tests", null, new string[] { "--path", buildPath, "--no-ui", "--payload", "\"hello WORLD\"", "--disable-logs" }, runConfiguration);
             Assert.Equal("\"HELLO WORLD\"", runConfiguration.OutputWriter.ToString());
+        }
+
+        [Fact]
+        public void DirectFunctionCallNonDelimitedPayloadStringFromConfig()
+        {
+            var runConfiguration = CreateRunConfiguration();
+            var buildPath = TestUtils.GetLambdaFunctionBuildPath("ToUpperFunc");
+
+            TestToolStartup.Startup("Unit Tests", null, new string[] { "--path", buildPath, "--no-ui", "--payload", "hello WORLD" }, runConfiguration);
+            Assert.Contains("HELLO WORLD", runConfiguration.OutputWriter.ToString());
+        }
+
+        [Fact]
+        public void DirectFunctionCallSingleQuoteDelimitedPayloadStringFromConfig()
+        {
+            var runConfiguration = CreateRunConfiguration();
+            var buildPath = TestUtils.GetLambdaFunctionBuildPath("ToUpperFunc");
+
+            TestToolStartup.Startup("Unit Tests", null, new string[] { "--path", buildPath, "--no-ui", "--payload", "'hello WORLD'" }, runConfiguration);
+            Assert.Contains("'HELLO WORLD'", runConfiguration.OutputWriter.ToString());
+        }
+
+        [Fact]
+        public void DirectFunctionCallIntegerPayloadFromConfig()
+        {
+            var runConfiguration = CreateRunConfiguration();
+            var buildPath = TestUtils.GetLambdaFunctionBuildPath("IntegerFunc");
+
+            TestToolStartup.Startup("Unit Tests", null, new string[] { "--path", buildPath, "--no-ui", "--payload", "42" }, runConfiguration);
+            Assert.Contains("Hello 42", runConfiguration.OutputWriter.ToString());
         }
 
         private TestToolStartup.RunConfiguration CreateRunConfiguration()
