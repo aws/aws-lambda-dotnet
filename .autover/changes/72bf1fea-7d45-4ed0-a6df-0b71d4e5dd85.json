@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool.BlazorTester",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fixed an issue where delimited string and primitive values in payload were not parsed properly by Lambda Test Tool."
+      ]
+    }
+  ]
+}

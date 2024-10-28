@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 namespace Amazon.Lambda.TestTool
 {
@@ -315,6 +316,30 @@ namespace Amazon.Lambda.TestTool
                     {
                         runConfiguration.OutputWriter.WriteLine("... No payload configured. If a payload is required set the --payload switch to a file path or a JSON document.");
                     }
+                }
+            }
+
+            try
+            {
+                var doc = JsonDocument.Parse(payload);
+            }
+            catch (JsonException)
+            {
+                try
+                {
+                    if (!payload.StartsWith("[") && !payload.StartsWith("{") && !payload.StartsWith("\""))
+                    {
+                        payload = "\"" + payload + "\"";
+                        JsonDocument.Parse(payload);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                catch (JsonException)
+                {
+                    throw new ArgumentException("Provided payload for Lambda function is not a valid JSON document.");
                 }
             }
 
