@@ -56,7 +56,8 @@ namespace Amazon.Lambda.TestTool.Runtime
                     Logger = logger,
                     AwsRequestId = Guid.NewGuid().ToString(),
                     FunctionName = request.Function.FunctionInfo.Name,
-                    InvokedFunctionArn = string.Format("arn:aws:lambda:{0}::function:{1}", request.AWSRegion, request.Function.FunctionInfo.Name)
+                    InvokedFunctionArn = string.Format("arn:aws:lambda:{0}::function:{1}", request.AWSRegion, request.Function.FunctionInfo.Name),
+                    RemainingTime = request.Function.FunctionInfo.Timeout
                 };
 
                 object instance = null;
