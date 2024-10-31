@@ -242,6 +242,31 @@ If you are developing .NET Lambda function using **custom runtimes** or C# **top
 
 **NOTE:** Adjust the port if this was changed in test tool configuration.
 
+At high level, below are the steps to debug executable assemblies using Lambda Test tool:
+- Navigate to project's root directory containing `.csproj` file.
+- Run `dotnet lambda-test-tool-<<version>>` (e.g `dotnet lambda-test-tool-8.0`) to launch Lambda Test Tool.
+- As mentioned in Lambda Test Tool documentation at http://localhost:5050/documentation, in project's `launchSettings.json`, specify the environment variables either via Visual Studio Debug UI or modifying the `launchSettings.json` manually:
+  ```JSON
+  {
+    "profiles": {
+      "Lambda Runtime API": {
+        "commandName": "Project",
+        "environmentVariables": {
+          "AWS_LAMBDA_RUNTIME_API": "localhost:5050",
+          "AWS_PROFILE": "default",
+          "AWS_REGION": "us-east-2"
+        }
+      }
+    }
+  }
+  ```
+- Setup breakpoint in Lambda function handler.
+- Debug project using Visual Studio.
+- In Lambda Test Tool's `Executable Assembly` page, queue the event (for project created using Native AOT Visual Studio AWS template, the handler converts input string to upper case and returns it. Hence we may pass double quoted string, e.g. `"Hello World"` from test tool)
+- Execution would now stop at breakpoint set in Lambda function handler in Visual Studio.
+
+
+
 
 
 ## Known Limitations
