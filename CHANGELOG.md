@@ -1,3 +1,9 @@
+## Release 2024-10-30
+
+### Amazon.Lambda.Annotations (1.5.3)
+* Added a .NET 8 target with support for Trimming
+* Updated package description to remove "preview" text
+
 ## Release 2024-10-22
 
 ### Amazon.Lambda.Serialization.Json (2.2.4)
