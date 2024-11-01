@@ -1,3 +1,8 @@
+## Release 2024-11-01
+
+### Amazon.Lambda.TestTool.BlazorTester (0.15.3)
+* Fixed an issue where delimited string and primitive values in payload were not parsed properly by Lambda Test Tool.
+
 ## Release 2024-10-30
 
 ### Amazon.Lambda.Annotations (1.5.3)
