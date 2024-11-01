@@ -75,7 +75,12 @@ jobs:
         run: |
           dotnet build Libraries/Libraries.sln -c Release
           git add "*.template"
-          git commit -m "Update test app CloudFormation templates"
+          
+          if git diff --cached --quiet; then
+            echo "No .template files were staged; skipping commit."
+          else
+            git commit -m "Update test app CloudFormation templates"
+          fi
       # Update the changelog based on the change files
       - name: Update Changelog
         run: autover changelog
