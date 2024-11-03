@@ -14,15 +14,34 @@ using System.Threading.Tasks;
 using Xunit;
 using Amazon.Lambda.APIGatewayEvents;
 using System.Text.Json;
+using Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
+using Xunit.Abstractions;
 
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class CustomRuntimeAspNetCoreMinimalApiTest : BaseCustomRuntimeTest
     {
-        public CustomRuntimeAspNetCoreMinimalApiTest()
+        public CustomRuntimeAspNetCoreMinimalApiTest(
+            ITestOutputHelper output)
             : base("CustomRuntimeAspNetCoreMinimalApiTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiTest.zip", @"CustomRuntimeAspNetCoreMinimalApiTest\bin\Release\net6.0\CustomRuntimeAspNetCoreMinimalApiTest.zip", "bootstrap")
         {
+            string testAppPath = null;
+            string toolPath = null;
+            try
+            {
+                testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
+                    "../../../../../../..",
+                    "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeAspNetCoreMinimalApiTest");
+                toolPath = LambdaToolsHelper.InstallLambdaTools(output);
+                LambdaToolsHelper.DotnetRestore(testAppPath, output);
+                LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath, output);
+            }
+            finally
+            {
+                LambdaToolsHelper.CleanUp(testAppPath);
+                LambdaToolsHelper.CleanUp(toolPath);
+            }
         }
 
 

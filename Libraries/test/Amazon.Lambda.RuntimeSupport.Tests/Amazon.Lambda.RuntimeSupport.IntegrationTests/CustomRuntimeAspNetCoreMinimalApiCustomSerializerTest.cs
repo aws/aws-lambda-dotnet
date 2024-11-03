@@ -14,15 +14,34 @@ using System.Threading.Tasks;
 using Xunit;
 using Amazon.Lambda.APIGatewayEvents;
 using System.Text.Json;
+using Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
+using Xunit.Abstractions;
 
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest : BaseCustomRuntimeTest
     {
-        public CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest()
+        public CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest(
+            ITestOutputHelper output)
             : base("CustomRuntimeMinimalApiCustomSerializerTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", @"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net6.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", "bootstrap")
         {
+            string testAppPath = null;
+            string toolPath = null;
+            try
+            {
+                testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
+                    "../../../../../../..",
+                    "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest");
+                toolPath = LambdaToolsHelper.InstallLambdaTools(output);
+                LambdaToolsHelper.DotnetRestore(testAppPath, output);
+                LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath, output);
+            }
+            finally
+            {
+                LambdaToolsHelper.CleanUp(testAppPath);
+                LambdaToolsHelper.CleanUp(toolPath);
+            }
         }
 
 

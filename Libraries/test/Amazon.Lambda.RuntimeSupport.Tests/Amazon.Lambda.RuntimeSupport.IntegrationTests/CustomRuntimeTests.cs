@@ -26,15 +26,23 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
 using Xunit;
+using Xunit.Abstractions;
 using static Amazon.Lambda.RuntimeSupport.IntegrationTests.CustomRuntimeTests;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class CustomRuntimeNET6Tests : CustomRuntimeTests
     {
-        public CustomRuntimeNET6Tests()
-            : base("CustomRuntimeNET6FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET6)
+        public CustomRuntimeNET6Tests(ITestOutputHelper output)
+            : base(
+                output, 
+                "CustomRuntimeNET6FunctionTest-" + DateTime.Now.Ticks, 
+                "CustomRuntimeFunctionTest.zip", 
+                @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip", 
+                "CustomRuntimeFunctionTest", 
+                TargetFramework.NET6)
         {
         }
 
@@ -51,8 +59,14 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
     public class CustomRuntimeNET8Tests : CustomRuntimeTests
     {
-        public CustomRuntimeNET8Tests()
-            : base("CustomRuntimeNET8FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net8.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET8)
+        public CustomRuntimeNET8Tests(ITestOutputHelper output)
+            : base(
+                output,
+                "CustomRuntimeNET8FunctionTest-" + DateTime.Now.Ticks, 
+                "CustomRuntimeFunctionTest.zip", 
+                @"CustomRuntimeFunctionTest\bin\Release\net8.0\CustomRuntimeFunctionTest.zip", 
+                "CustomRuntimeFunctionTest", 
+                TargetFramework.NET8)
         {
         }
 
@@ -73,12 +87,34 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
         private TargetFramework _targetFramework;
 
-        public CustomRuntimeTests(string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler, TargetFramework targetFramework) 
+        public CustomRuntimeTests(
+            ITestOutputHelper output,
+            string functionName, 
+            string deploymentZipKey, 
+            string deploymentPackageZipRelativePath, 
+            string handler, 
+            TargetFramework targetFramework) 
             : base(functionName, deploymentZipKey, deploymentPackageZipRelativePath, handler)
         {
             _targetFramework = targetFramework;
+            string testAppPath = null;
+            string toolPath = null;
+            try
+            {
+                testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
+                    "../../../../../../..",
+                    "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeFunctionTest");
+                toolPath = LambdaToolsHelper.InstallLambdaTools(output);
+                LambdaToolsHelper.DotnetRestore(testAppPath, output);
+                LambdaToolsHelper.LambdaPackage(toolPath, _targetFramework == TargetFramework.NET8 ? "net8.0" : "net6.0", testAppPath, output);
+            }
+            finally
+            {
+                LambdaToolsHelper.CleanUp(testAppPath);
+                LambdaToolsHelper.CleanUp(toolPath);
+            }
         }
-
+        
         protected virtual async Task TestAllHandlersAsync()
         {
             // run all test cases in one test to ensure they run serially
