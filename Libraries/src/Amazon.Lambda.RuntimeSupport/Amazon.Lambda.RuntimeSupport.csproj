@@ -14,6 +14,7 @@
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
 	<LangVersion>9.0</LangVersion>
+	<OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(ExecutableOutputType)'=='true' ">

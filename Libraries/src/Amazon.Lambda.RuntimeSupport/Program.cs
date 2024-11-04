@@ -14,6 +14,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace Amazon.Lambda.RuntimeSupport
@@ -27,15 +28,60 @@ namespace Amazon.Lambda.RuntimeSupport
 #endif
         private static async Task Main(string[] args)
         {
-            if (args.Length == 0)
+            string handler = null;
+            bool startTestTool = false;
+            int port = 0;
+
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (handler == null && !args[i].StartsWith("--"))
+                {
+                    handler = args[i];
+                }
+                else if (string.Equals(args[i], "--port"))
+                {
+                    if (i + 1 < args.Length)
+                    {
+                        if (!int.TryParse(args[i + 1], out port))
+                        {
+                            throw new ArgumentException("The value for --port switch is not a valid port number.", "--port");
+                        }
+                    }
+                }
+                else if (string.Equals(args[i], "--start-testtool"))
+                {
+                    startTestTool = true;
+                }
+            }
+
+            if (handler == null)
             {
                 throw new ArgumentException("The function handler was not provided via command line arguments.", nameof(args));
             }
 
-            var handler = args[0];
+            if (port != 0)
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{port}");
+            }
+
+            if (startTestTool)
+            {
+                StartTestTool(port);
+            }
 
             RuntimeSupportInitializer runtimeSupportInitializer = new RuntimeSupportInitializer(handler);
             await runtimeSupportInitializer.RunLambdaBootstrap();
+        }
+
+        private static void StartTestTool(int port)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                Arguments = $"--port {port}",
+                FileName = $"{Environment.GetEnvironmentVariable("USERPROFILE")}\\.dotnet\\tools\\dotnet-lambda-test-tool-8.0.exe"
+            };
+
+            Process.Start(startInfo);
         }
     }
 }
