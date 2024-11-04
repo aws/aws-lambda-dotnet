@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
     <DefineConstants Condition="'$(SkipRuntimeSupportIntegTests)'=='true'">SKIP_RUNTIME_SUPPORT_INTEG_TESTS</DefineConstants>
   </PropertyGroup>
 
