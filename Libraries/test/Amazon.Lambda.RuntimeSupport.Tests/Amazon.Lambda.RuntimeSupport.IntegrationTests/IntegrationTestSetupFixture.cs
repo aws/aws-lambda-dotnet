@@ -21,7 +21,7 @@ public class IntegrationTestSetupFixture
             TestContext.Progress.WriteLine("2");
             toolPath = await LambdaToolsHelper.InstallLambdaTools();
             TestContext.Progress.WriteLine("3");
-            // await LambdaToolsHelper.DotnetRestore(testAppPath);
+            await LambdaToolsHelper.DotnetRestore(testAppPath);
             TestContext.Progress.WriteLine("4");
             await LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
             TestContext.Progress.WriteLine("5");
@@ -43,7 +43,7 @@ public class IntegrationTestSetupFixture
             TestContext.Progress.WriteLine("8");
             toolPath = await LambdaToolsHelper.InstallLambdaTools();
             TestContext.Progress.WriteLine("9");
-            // await LambdaToolsHelper.DotnetRestore(testAppPath);
+            await LambdaToolsHelper.DotnetRestore(testAppPath);
             TestContext.Progress.WriteLine("10");
             await LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
             TestContext.Progress.WriteLine("11");
@@ -63,7 +63,7 @@ public class IntegrationTestSetupFixture
             TestContext.Progress.WriteLine("13");
             toolPath = await LambdaToolsHelper.InstallLambdaTools();
             TestContext.Progress.WriteLine("14");
-            // await LambdaToolsHelper.DotnetRestore(testAppPath);
+            await LambdaToolsHelper.DotnetRestore(testAppPath);
             TestContext.Progress.WriteLine("15");
             await LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
             TestContext.Progress.WriteLine("16");

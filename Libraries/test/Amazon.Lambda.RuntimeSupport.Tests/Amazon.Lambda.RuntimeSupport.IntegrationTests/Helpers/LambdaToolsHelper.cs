@@ -34,7 +34,7 @@ public static class LambdaToolsHelper
     {
         await CommandLineWrapper.Run(
             "dotnet", 
-            "restore --disable-parallel --verbosity detailed", 
+            "restore", 
             workingDirectory);
     }
 

@@ -30,18 +30,28 @@ public static class CommandLineWrapper
             if (process == null)
                 throw new Exception($"Unable to start process: {command} {arguments}");
             
-            DataReceivedEventHandler callback = (object sender, DataReceivedEventArgs e) =>
+            // Separate handlers for StandardOutput and StandardError
+            process.OutputDataReceived += (sender, e) =>
             {
-                TestContext.Progress.WriteLine(e.Data);
+                if (e.Data != null)
+                {
+                    TestContext.Progress.WriteLine(e.Data);
+                }
             };
-            
-            process.OutputDataReceived += callback;
-            process.ErrorDataReceived += callback;
+            process.ErrorDataReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                {
+                    TestContext.Progress.WriteLine(e.Data);
+                }
+            };
 
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             
             await process.WaitForExitAsync();
+            
+            process.WaitForExit();
                 
             Assert.That(process.ExitCode == 0, $"Command '{command} {arguments}' failed.");
         }
