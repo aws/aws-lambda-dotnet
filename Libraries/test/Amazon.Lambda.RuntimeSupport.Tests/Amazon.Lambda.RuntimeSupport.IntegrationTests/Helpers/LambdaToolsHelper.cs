@@ -1,5 +1,6 @@
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
 
@@ -18,29 +19,29 @@ public static class LambdaToolsHelper
         return Path.Combine(customTestAppPath, testAppPath);
     }
     
-    public static string InstallLambdaTools()
+    public static async Task<string> InstallLambdaTools()
     {
         var customToolPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(customToolPath);
-        CommandLineWrapper.Run(
+        await CommandLineWrapper.Run(
             "dotnet", 
-            $"tool install Amazon.Lambda.Tools --tool-path {customToolPath}",
+            $"tool install Amazon.Lambda.Tools --version 5.13.0 --add-source ../../../Package/ --tool-path {customToolPath}",
             Directory.GetCurrentDirectory());
         return customToolPath;
     }
 
-    public static void DotnetRestore(string workingDirectory)
+    public static async Task DotnetRestore(string workingDirectory)
     {
-        CommandLineWrapper.Run(
+        await CommandLineWrapper.Run(
             "dotnet", 
             "restore", 
             workingDirectory);
     }
 
-    public static void LambdaPackage(string toolPath, string framework, string workingDirectory)
+    public static async Task LambdaPackage(string toolPath, string framework, string workingDirectory)
     {
         string lambdaToolPath = Path.Combine(toolPath, "dotnet-lambda");
-        CommandLineWrapper.Run(
+        await CommandLineWrapper.Run(
             lambdaToolPath, 
             $"package -c Release --framework {framework} --function-architecture {FunctionArchitecture}", 
             workingDirectory);
