@@ -32,10 +32,10 @@ public static class LambdaToolsHelper
 
     public static void DotnetRestore(string workingDirectory)
     {
-        CommandLineWrapper.Run(
-            "dotnet", 
-            "restore", 
-            workingDirectory);
+        // CommandLineWrapper.Run(
+        //     "dotnet", 
+        //     "restore", 
+        //     workingDirectory);
     }
 
     public static void LambdaPackage(string toolPath, string framework, string workingDirectory)
