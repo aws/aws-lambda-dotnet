@@ -10,16 +10,14 @@ public static class CommandLineWrapper
 {
     public static void Run(string command, string arguments, string workingDirectory)
     {
-        string tempOutputFile = Path.GetTempFileName();
         var startInfo = new ProcessStartInfo
         {
-            FileName = GetSystemShell(),
-            Arguments = 
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 
-                    $"/c {command} {arguments} > \"{tempOutputFile}\" 2>&1" : 
-                    $"-c \"{command} {arguments} > '{tempOutputFile}' 2>&1\"",
+            FileName = command,
+            Arguments = arguments,
             WorkingDirectory = workingDirectory,
-            UseShellExecute = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
             CreateNoWindow = true
         };
             
@@ -28,14 +26,23 @@ public static class CommandLineWrapper
             if (process == null)
                 throw new Exception($"Unable to start process: {command} {arguments}");
             
+            // Capture both output and error in a blocking way to ensure they are fully read
+            var output = process.StandardOutput.ReadToEnd();
+            var error = process.StandardError.ReadToEnd();
+
+            // Wait for the process to exit completely
             process.WaitForExit();
 
-            string output = File.ReadAllText(tempOutputFile);
+            // Output captured output and error to TestContext or Console
             TestContext.Progress.WriteLine(output);
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                TestContext.Progress.WriteLine("Errors:");
+                TestContext.Progress.WriteLine(error);
+            }
                 
             Assert.That(process.ExitCode == 0, $"Command '{command} {arguments}' failed.");
         }
-        File.Delete(tempOutputFile);
     }
 
     private static string GetSystemShell()
