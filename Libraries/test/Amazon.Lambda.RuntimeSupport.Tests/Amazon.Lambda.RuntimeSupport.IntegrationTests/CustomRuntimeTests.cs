@@ -27,17 +27,35 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
-using Xunit;
-using Xunit.Abstractions;
-using static Amazon.Lambda.RuntimeSupport.IntegrationTests.CustomRuntimeTests;
+using NUnit.Framework;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class CustomRuntimeNET6Tests : CustomRuntimeTests
     {
-        public CustomRuntimeNET6Tests(ITestOutputHelper output)
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            string testAppPath = null;
+            string toolPath = null;
+            try
+            {
+                testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
+                    "../../../../../../..",
+                    "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeFunctionTest");
+                toolPath = LambdaToolsHelper.InstallLambdaTools();
+                LambdaToolsHelper.DotnetRestore(testAppPath);
+                LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
+            }
+            finally
+            {
+                LambdaToolsHelper.CleanUp(testAppPath);
+                LambdaToolsHelper.CleanUp(toolPath);
+            }
+        }
+        
+        public CustomRuntimeNET6Tests()
             : base(
-                output, 
                 "CustomRuntimeNET6FunctionTest-" + DateTime.Now.Ticks, 
                 "CustomRuntimeFunctionTest.zip", 
                 @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip", 
@@ -47,9 +65,10 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
 
 #if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
-        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
+        [Test]
+        [Ignore("Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
 #else
-        [Fact]
+        [Test]
 #endif
         public async Task TestAllNET6HandlersAsync()
         {
@@ -59,9 +78,29 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
     public class CustomRuntimeNET8Tests : CustomRuntimeTests
     {
-        public CustomRuntimeNET8Tests(ITestOutputHelper output)
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            string testAppPath = null;
+            string toolPath = null;
+            try
+            {
+                testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
+                    "../../../../../../..",
+                    "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeFunctionTest");
+                toolPath = LambdaToolsHelper.InstallLambdaTools();
+                LambdaToolsHelper.DotnetRestore(testAppPath);
+                LambdaToolsHelper.LambdaPackage(toolPath, "net8.0", testAppPath);
+            }
+            finally
+            {
+                LambdaToolsHelper.CleanUp(testAppPath);
+                LambdaToolsHelper.CleanUp(toolPath);
+            }
+        }
+        
+        public CustomRuntimeNET8Tests()
             : base(
-                output,
                 "CustomRuntimeNET8FunctionTest-" + DateTime.Now.Ticks, 
                 "CustomRuntimeFunctionTest.zip", 
                 @"CustomRuntimeFunctionTest\bin\Release\net8.0\CustomRuntimeFunctionTest.zip", 
@@ -71,9 +110,10 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
 
 #if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
-        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
+        [Test]
+        [Ignore("Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
 #else
-        [Fact]
+        [Test]
 #endif
         public async Task TestAllNET8HandlersAsync()
         {
@@ -88,7 +128,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         private TargetFramework _targetFramework;
 
         public CustomRuntimeTests(
-            ITestOutputHelper output,
             string functionName, 
             string deploymentZipKey, 
             string deploymentPackageZipRelativePath, 
@@ -97,22 +136,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             : base(functionName, deploymentZipKey, deploymentPackageZipRelativePath, handler)
         {
             _targetFramework = targetFramework;
-            string testAppPath = null;
-            string toolPath = null;
-            try
-            {
-                testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
-                    "../../../../../../..",
-                    "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeFunctionTest");
-                toolPath = LambdaToolsHelper.InstallLambdaTools(output);
-                LambdaToolsHelper.DotnetRestore(testAppPath, output);
-                LambdaToolsHelper.LambdaPackage(toolPath, _targetFramework == TargetFramework.NET8 ? "net8.0" : "net6.0", testAppPath, output);
-            }
-            finally
-            {
-                LambdaToolsHelper.CleanUp(testAppPath);
-                LambdaToolsHelper.CleanUp(toolPath);
-            }
         }
         
         protected virtual async Task TestAllHandlersAsync()
@@ -196,8 +219,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
             var exceptionLog = log.Split('\n').FirstOrDefault(x => x.Contains("System.ApplicationException"));
 
-            Assert.NotNull(exceptionLog);
-            Assert.Contains("\"level\":\"Error\"", exceptionLog);
+            Assert.That(exceptionLog, Is.Not.Null);
+            Assert.That(exceptionLog, Does.Contain("\"level\":\"Error\""));
         }
 
         private async Task RunMaxHeapMemoryCheck(AmazonLambdaClient lambdaClient, string handler)
@@ -212,7 +235,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 // To check memory split on the - and grab the second token representing the memory size.
                 var tokens = payloadStr.Split('-');
                 var memory = long.Parse(tokens[1]);
-                Assert.True(memory <= BaseCustomRuntimeTest.FUNCTION_MEMORY_MB * 1048576);
+                Assert.That(memory <= BaseCustomRuntimeTest.FUNCTION_MEMORY_MB * 1048576);
             }
         }
 
@@ -228,7 +251,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 // To check memory split on the - and grab the second token representing the memory size.
                 var tokens = payloadStr.Split('-');
                 var memory = long.Parse(tokens[1]);
-                Assert.False(memory <= BaseCustomRuntimeTest.FUNCTION_MEMORY_MB * 1048576);
+                Assert.That(memory <= BaseCustomRuntimeTest.FUNCTION_MEMORY_MB * 1048576, Is.False);
             }
         }
 
@@ -246,7 +269,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 // To check memory split on the - and grab the second token representing the memory size.
                 var tokens = payloadStr.Split('-');
                 var memory = long.Parse(tokens[1]);
-                Assert.True(memory <= 256 * 1048576);
+                Assert.That(memory <= 256 * 1048576);
             }
         }
 
@@ -256,18 +279,18 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             await UpdateHandlerAsync(lambdaClient, handler);
 
             var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(input));
-            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
-            Assert.True(invokeResponse.FunctionError != null);
+            Assert.That(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.That(invokeResponse.FunctionError != null);
             using (var responseStream = invokeResponse.Payload)
             using (var sr = new StreamReader(responseStream))
             {
                 JObject exception = (JObject)JsonConvert.DeserializeObject(await sr.ReadToEndAsync());
-                Assert.Equal(expectedErrorType, exception["errorType"].ToString());
-                Assert.Equal(expectedErrorMessage, exception["errorMessage"].ToString());
+                Assert.Equals(expectedErrorType, exception["errorType"].ToString());
+                Assert.Equals(expectedErrorMessage, exception["errorMessage"].ToString());
 
                 var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
                 var logExpectedException = expectedErrorType != "Function.ResponseSizeTooLarge" ? expectedErrorType : "RuntimeApiClientException";
-                Assert.Contains(logExpectedException, log);
+                Assert.That(logExpectedException, Does.Contain(log));
             }
         }
 
@@ -284,8 +307,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             await UpdateHandlerAsync(lambdaClient, handler, environmentVariables, configSource == LogConfigSource.LambdaAPI ? runtimeLogLevel : null); 
 
             var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
-            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
-            Assert.True(invokeResponse.FunctionError == null);
+            Assert.That(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.That(invokeResponse.FunctionError == null);
 
             var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
 
@@ -294,60 +317,60 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
             if (runtimeLogLevel <= RuntimeLogLevel.Trace)
             {
-                Assert.Contains("A trace log", log);
+                Assert.That(log, Does.Contain("A trace log"));
             }
             else
             {
-                Assert.DoesNotContain("A trace log", log);
+                Assert.That(log, Does.Not.Contain("A trace log"));
             }
 
             if (runtimeLogLevel <= RuntimeLogLevel.Debug)
             {
-                Assert.Contains("A debug log", log);
+                Assert.That(log, Does.Contain("A debug log"));
             }
             else
             {
-                Assert.DoesNotContain("A debug log", log);
+                Assert.That(log, Does.Not.Contain("A debug log"));
             }
 
             if (runtimeLogLevel <= RuntimeLogLevel.Information)
             {
-                Assert.Contains("A information log", log);
-                Assert.Contains("A stdout info message", log);
+                Assert.That(log, Does.Contain("A information log"));
+                Assert.That(log, Does.Contain("A stdout info message"));
             }
             else
             {
-                Assert.DoesNotContain("A information log", log);
-                Assert.DoesNotContain("A stdout info message", log);
+                Assert.That(log, Does.Not.Contain("A information log"));
+                Assert.That(log, Does.Not.Contain("A stdout info message"));
             }
 
             if (runtimeLogLevel <= RuntimeLogLevel.Warning)
             {
-                Assert.Contains("A warning log", log);
+                Assert.That(log, Does.Contain("A warning log"));
             }
             else
             {
-                Assert.DoesNotContain("A warning log", log);
+                Assert.That(log, Does.Not.Contain("A warning log"));
             }
 
             if (runtimeLogLevel <= RuntimeLogLevel.Error)
             {
-                Assert.Contains("A error log", log);
-                Assert.Contains("A stderror error message", log);
+                Assert.That(log, Does.Contain("A error log"));
+                Assert.That(log, Does.Contain("A stderror error message"));
             }
             else
             {
-                Assert.DoesNotContain("A error log", log);
-                Assert.DoesNotContain("A stderror error message", log);
+                Assert.That(log, Does.Not.Contain("A error log"));
+                Assert.That(log, Does.Not.Contain("A stderror error message"));
             }
 
             if (runtimeLogLevel <= RuntimeLogLevel.Critical)
             {
-                Assert.Contains("A critical log", log);
+                Assert.That(log, Does.Contain("A critical log"));
             }
             else
             {
-                Assert.DoesNotContain("A critical log", log);
+                Assert.That(log, Does.Not.Contain("A critical log"));
             }
         }
 
@@ -358,20 +381,20 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             await UpdateHandlerAsync(lambdaClient, handler, environmentVariables);
 
             var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
-            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
-            Assert.True(invokeResponse.FunctionError == null);
+            Assert.That(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.That(invokeResponse.FunctionError == null);
 
             var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
 
-            Assert.DoesNotContain("info\t", log);
-            Assert.DoesNotContain("warn\t", log);
-            Assert.DoesNotContain("fail\t", log);
-            Assert.DoesNotContain("crit\t", log);
+            Assert.That(log, Does.Not.Contain("info\t"));
+            Assert.That(log, Does.Not.Contain("warn\t"));
+            Assert.That(log, Does.Not.Contain("fail\t"));
+            Assert.That(log, Does.Not.Contain("crit\t"));
 
-            Assert.Contains("A information log", log);
-            Assert.Contains("A warning log", log);
-            Assert.Contains("A error log", log);
-            Assert.Contains("A critical log", log);
+            Assert.That(log, Does.Contain("A information log"));
+            Assert.That(log, Does.Contain("A warning log"));
+            Assert.That(log, Does.Contain("A error log"));
+            Assert.That(log, Does.Contain("A critical log"));
         }
 
 
@@ -380,13 +403,13 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             await UpdateHandlerAsync(lambdaClient, handler);
 
             var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(input));
-            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
-            Assert.True(invokeResponse.FunctionError == null);
+            Assert.That(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.That(invokeResponse.FunctionError == null);
             using (var responseStream = invokeResponse.Payload)
             using (var sr = new StreamReader(responseStream))
             {
                 var responseString = JsonConvert.DeserializeObject<string>(await sr.ReadToEndAsync());
-                Assert.Equal(expectedResponse, responseString);
+                Assert.Equals(expectedResponse, responseString);
             }
         }
 

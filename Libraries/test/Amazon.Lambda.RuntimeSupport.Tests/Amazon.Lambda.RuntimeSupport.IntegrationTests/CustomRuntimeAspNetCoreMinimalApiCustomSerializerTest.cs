@@ -1,30 +1,18 @@
 ﻿using Amazon.IdentityManagement;
-using Amazon.IdentityManagement.Model;
-using Amazon.Lambda.Model;
 using Amazon.S3;
-using Amazon.S3.Model;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
 using Amazon.Lambda.APIGatewayEvents;
-using System.Text.Json;
 using Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
-using Xunit.Abstractions;
-
+using NUnit.Framework;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest : BaseCustomRuntimeTest
     {
-        public CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest(
-            ITestOutputHelper output)
-            : base("CustomRuntimeMinimalApiCustomSerializerTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", @"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net6.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", "bootstrap")
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
         {
             string testAppPath = null;
             string toolPath = null;
@@ -33,9 +21,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
                     "../../../../../../..",
                     "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest");
-                toolPath = LambdaToolsHelper.InstallLambdaTools(output);
-                LambdaToolsHelper.DotnetRestore(testAppPath, output);
-                LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath, output);
+                toolPath = LambdaToolsHelper.InstallLambdaTools();
+                LambdaToolsHelper.DotnetRestore(testAppPath);
+                LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
             }
             finally
             {
@@ -43,12 +31,18 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 LambdaToolsHelper.CleanUp(toolPath);
             }
         }
+        
+        public CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest()
+            : base("CustomRuntimeMinimalApiCustomSerializerTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", @"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net6.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", "bootstrap")
+        {
+        }
 
 
 #if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
-        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
+        [Test]
+        [Ignore("Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
 #else
-        [Fact]
+        [Test]
 #endif
         public async Task TestMinimalApi()
         {
@@ -82,7 +76,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 #if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
         [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
 #else
-        [Fact]
+        [Test]
 #endif
         public async Task TestThreadingLogging()
         {
@@ -117,21 +111,21 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         {
             var payload = File.ReadAllText("get-weatherforecast-request.json");
             var response = await InvokeFunctionAsync(lambdaClient, payload);
-            Assert.Equal(200, response.StatusCode);
+            Assert.Equals(200, response.StatusCode);
 
             var apiGatewayResponse = System.Text.Json.JsonSerializer.Deserialize<APIGatewayHttpApiV2ProxyResponse>(response.Payload);
-            Assert.Equal("application/json; charset=utf-8", apiGatewayResponse.Headers["Content-Type"]);
-            Assert.Contains("temperatureC", apiGatewayResponse.Body);
+            Assert.Equals("application/json; charset=utf-8", apiGatewayResponse.Headers["Content-Type"]);
+            Assert.That(apiGatewayResponse.Body, Does.Contain("temperatureC"));
         }
 
         private async Task InvokeLoggerTestController(IAmazonLambda lambdaClient)
         {
             var payload = File.ReadAllText("get-loggertest-request.json");
             var response = await InvokeFunctionAsync(lambdaClient, payload);
-            Assert.Equal(200, response.StatusCode);
+            Assert.Equals(200, response.StatusCode);
 
             var apiGatewayResponse = System.Text.Json.JsonSerializer.Deserialize<APIGatewayHttpApiV2ProxyResponse>(response.Payload);
-            Assert.Contains("90000", apiGatewayResponse.Body);
+            Assert.That(apiGatewayResponse.Body, Does.Contain("90000"));
         }
     }
 }

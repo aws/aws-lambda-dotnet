@@ -25,16 +25,13 @@
     <PackageReference Include="AWSSDK.IdentityManagement" Version="3.7.402.7" />
     <PackageReference Include="AWSSDK.Lambda" Version="3.7.402.3" />
     <PackageReference Include="AWSSDK.S3" Version="3.7.103.34" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="xunit" Version="2.9.2" />
 
     <!-- This needs to be referenced to allow testing via AssumeRole credentials -->
     <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.400.13" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="4.2.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
 
   <ItemGroup>

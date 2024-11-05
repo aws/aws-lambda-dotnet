@@ -2,14 +2,13 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using Xunit;
-using Xunit.Abstractions;
+using NUnit.Framework;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
 
 public static class CommandLineWrapper
 {
-    public static void Run(string command, string arguments, string workingDirectory, ITestOutputHelper outputHelper)
+    public static void Run(string command, string arguments, string workingDirectory)
     {
         string tempOutputFile = Path.GetTempFileName();
         var startInfo = new ProcessStartInfo
@@ -32,9 +31,9 @@ public static class CommandLineWrapper
             process.WaitForExit();
 
             string output = File.ReadAllText(tempOutputFile);
-            outputHelper.WriteLine(output);
+            Console.WriteLine(output);
                 
-            Assert.True(process.ExitCode == 0, $"Command '{command} {arguments}' failed.");
+            Assert.That(process.ExitCode == 0, $"Command '{command} {arguments}' failed.");
         }
         File.Delete(tempOutputFile);
     }
