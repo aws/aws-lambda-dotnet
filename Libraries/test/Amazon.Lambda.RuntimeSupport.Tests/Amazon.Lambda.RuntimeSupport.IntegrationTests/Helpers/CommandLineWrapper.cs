@@ -28,7 +28,7 @@ public static class CommandLineWrapper
             process.StartInfo = startInfo;
             
             process.OutputDataReceived += new DataReceivedEventHandler((sender, e) => 
-                { TestContext.Progress.WriteLine("... publish: " + e.Data); });
+                { TestContext.Progress.WriteLine(e.Data); });
             
             process.Start();
 

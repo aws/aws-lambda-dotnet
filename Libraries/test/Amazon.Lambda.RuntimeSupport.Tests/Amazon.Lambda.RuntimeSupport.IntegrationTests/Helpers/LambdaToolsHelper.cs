@@ -24,7 +24,7 @@ public static class LambdaToolsHelper
         Directory.CreateDirectory(customToolPath);
         CommandLineWrapper.Run(
             "dotnet", 
-            $"tool install Amazon.Lambda.Tools --version 5.16.0 --add-source ../../../Package/ --tool-path {customToolPath}",
+            $"tool install Amazon.Lambda.Tools --version 5.12.0 --add-source ../../../Package/ --tool-path {customToolPath}",
             Directory.GetCurrentDirectory());
         return customToolPath;
     }
