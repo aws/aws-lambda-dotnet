@@ -10,7 +10,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
 
 public static class CommandLineWrapper
 {
-    public static async Task Run(string command, string arguments, string workingDirectory, CancellationToken cancelToken = default)
+    public static void Run(string command, string arguments, string workingDirectory)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -23,30 +23,20 @@ public static class CommandLineWrapper
             CreateNoWindow = true
         };
             
-        using (var process = Process.Start(startInfo))
+        using (var process = new Process())
         {
-            if (process == null)
-                throw new Exception($"Unable to start process: {command} {arguments}");
+            process.StartInfo = startInfo;
             
-            DataReceivedEventHandler outCallback = (object sender, DataReceivedEventArgs e) =>
-            {
-                TestContext.Progress.WriteLine(e.Data);
-            };
+            process.OutputDataReceived += new DataReceivedEventHandler((sender, e) => 
+                { TestContext.Progress.WriteLine("... publish: " + e.Data); });
             
-            DataReceivedEventHandler errorCallback = (object sender, DataReceivedEventArgs e) =>
-            {
-                TestContext.Progress.WriteLine(e.Data);
-            };
-            
-            process.OutputDataReceived += outCallback;
-            process.ErrorDataReceived += errorCallback;
+            process.Start();
 
+            // To avoid deadlocks, use an asynchronous read operation on at least one of the streams.  
             process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            
-            await process.WaitForExitAsync(cancelToken);
-
+            string error = process.StandardError.ReadToEnd();  
             process.WaitForExit();
+            TestContext.Progress.WriteLine(error);
             
             Assert.That(process.ExitCode == 0, $"Command '{command} {arguments}' failed.");
         }
