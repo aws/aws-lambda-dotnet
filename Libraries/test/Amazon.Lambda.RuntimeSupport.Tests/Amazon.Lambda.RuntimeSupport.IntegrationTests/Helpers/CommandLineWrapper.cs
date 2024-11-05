@@ -2,26 +2,24 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
 
 public static class CommandLineWrapper
 {
-    public static async Task Run(string command, string arguments, string workingDirectory)
+    public static void Run(string command, string arguments, string workingDirectory)
     {
+        string tempOutputFile = Path.GetTempFileName();
         var startInfo = new ProcessStartInfo
         {
             FileName = GetSystemShell(),
             Arguments = 
                 RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 
-                    $"/c {command} {arguments}" : 
-                    $"-c \"{command} {arguments}\"",
+                    $"/c {command} {arguments} > \"{tempOutputFile}\" 2>&1" : 
+                    $"-c \"{command} {arguments} > '{tempOutputFile}' 2>&1\"",
             WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
+            UseShellExecute = true,
             CreateNoWindow = true
         };
             
@@ -30,31 +28,14 @@ public static class CommandLineWrapper
             if (process == null)
                 throw new Exception($"Unable to start process: {command} {arguments}");
             
-            // Separate handlers for StandardOutput and StandardError
-            process.OutputDataReceived += (sender, e) =>
-            {
-                if (e.Data != null)
-                {
-                    TestContext.Progress.WriteLine(e.Data);
-                }
-            };
-            process.ErrorDataReceived += (sender, e) =>
-            {
-                if (e.Data != null)
-                {
-                    TestContext.Progress.WriteLine(e.Data);
-                }
-            };
-
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            
-            await process.WaitForExitAsync();
-            
             process.WaitForExit();
+
+            string output = File.ReadAllText(tempOutputFile);
+            TestContext.Progress.WriteLine(output);
                 
             Assert.That(process.ExitCode == 0, $"Command '{command} {arguments}' failed.");
         }
+        File.Delete(tempOutputFile);
     }
 
     private static string GetSystemShell()

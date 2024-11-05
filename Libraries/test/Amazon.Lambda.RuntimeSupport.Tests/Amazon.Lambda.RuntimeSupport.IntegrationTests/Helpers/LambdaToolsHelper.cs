@@ -19,29 +19,29 @@ public static class LambdaToolsHelper
         return Path.Combine(customTestAppPath, testAppPath);
     }
     
-    public static async Task<string> InstallLambdaTools()
+    public static string InstallLambdaTools()
     {
         var customToolPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(customToolPath);
-        await CommandLineWrapper.Run(
+        CommandLineWrapper.Run(
             "dotnet", 
             $"tool install Amazon.Lambda.Tools --version 5.13.0 --add-source ../../../Package/ --tool-path {customToolPath}",
             Directory.GetCurrentDirectory());
         return customToolPath;
     }
 
-    public static async Task DotnetRestore(string workingDirectory)
+    public static void DotnetRestore(string workingDirectory)
     {
-        await CommandLineWrapper.Run(
+        CommandLineWrapper.Run(
             "dotnet", 
             "restore", 
             workingDirectory);
     }
 
-    public static async Task LambdaPackage(string toolPath, string framework, string workingDirectory)
+    public static void LambdaPackage(string toolPath, string framework, string workingDirectory)
     {
         string lambdaToolPath = Path.Combine(toolPath, "dotnet-lambda");
-        await CommandLineWrapper.Run(
+        CommandLineWrapper.Run(
             lambdaToolPath, 
             $"package -c Release --framework {framework} --function-architecture {FunctionArchitecture}", 
             workingDirectory);
