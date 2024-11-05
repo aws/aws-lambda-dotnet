@@ -34,7 +34,7 @@ public static class LambdaToolsHelper
     {
         await CommandLineWrapper.Run(
             "dotnet", 
-            "restore", 
+            "restore --disable-parallel", 
             workingDirectory);
     }
 
