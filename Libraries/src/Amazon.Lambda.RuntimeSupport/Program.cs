@@ -30,7 +30,7 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             string handler = null;
             bool startTestTool = false;
-            int port = 0;
+            int lambdaRuntimeApi = -1;
 
             for (var i = 0; i < args.Length; i++)
             {
@@ -38,13 +38,13 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     handler = args[i];
                 }
-                else if (string.Equals(args[i], "--port"))
+                else if (string.Equals(args[i], "--lambda-runtimeapi-port"))
                 {
                     if (i + 1 < args.Length)
                     {
-                        if (!int.TryParse(args[i + 1], out port))
+                        if (!int.TryParse(args[i + 1], out lambdaRuntimeApi))
                         {
-                            throw new ArgumentException("The value for --port switch is not a valid port number.", "--port");
+                            throw new ArgumentException("The value for --port switch is not a valid port number.", "--lambda-runtimeapi-port");
                         }
                     }
                 }
@@ -59,14 +59,14 @@ namespace Amazon.Lambda.RuntimeSupport
                 throw new ArgumentException("The function handler was not provided via command line arguments.", nameof(args));
             }
 
-            if (port != 0)
+            if (lambdaRuntimeApi > 0)
             {
-                Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{port}");
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{lambdaRuntimeApi}");
             }
 
             if (startTestTool)
             {
-                StartTestTool(port);
+                StartTestTool(lambdaRuntimeApi);
             }
 
             RuntimeSupportInitializer runtimeSupportInitializer = new RuntimeSupportInitializer(handler);
