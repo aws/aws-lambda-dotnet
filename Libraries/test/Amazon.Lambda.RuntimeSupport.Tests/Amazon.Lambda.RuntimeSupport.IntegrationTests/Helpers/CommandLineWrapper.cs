@@ -31,7 +31,7 @@ public static class CommandLineWrapper
             process.WaitForExit();
 
             string output = File.ReadAllText(tempOutputFile);
-            Console.WriteLine(output);
+            TestContext.Progress.WriteLine(output);
                 
             Assert.That(process.ExitCode == 0, $"Command '{command} {arguments}' failed.");
         }
