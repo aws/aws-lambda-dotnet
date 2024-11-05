@@ -33,27 +33,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class CustomRuntimeNET6Tests : CustomRuntimeTests
     {
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
-        {
-            string testAppPath = null;
-            string toolPath = null;
-            try
-            {
-                testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
-                    "../../../../../../..",
-                    "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeFunctionTest");
-                toolPath = LambdaToolsHelper.InstallLambdaTools();
-                LambdaToolsHelper.DotnetRestore(testAppPath);
-                LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
-            }
-            finally
-            {
-                LambdaToolsHelper.CleanUp(testAppPath);
-                LambdaToolsHelper.CleanUp(toolPath);
-            }
-        }
-        
         public CustomRuntimeNET6Tests()
             : base(
                 "CustomRuntimeNET6FunctionTest-" + DateTime.Now.Ticks, 
@@ -78,27 +57,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
     public class CustomRuntimeNET8Tests : CustomRuntimeTests
     {
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
-        {
-            string testAppPath = null;
-            string toolPath = null;
-            try
-            {
-                testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
-                    "../../../../../../..",
-                    "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeFunctionTest");
-                toolPath = LambdaToolsHelper.InstallLambdaTools();
-                LambdaToolsHelper.DotnetRestore(testAppPath);
-                LambdaToolsHelper.LambdaPackage(toolPath, "net8.0", testAppPath);
-            }
-            finally
-            {
-                LambdaToolsHelper.CleanUp(testAppPath);
-                LambdaToolsHelper.CleanUp(toolPath);
-            }
-        }
-        
         public CustomRuntimeNET8Tests()
             : base(
                 "CustomRuntimeNET8FunctionTest-" + DateTime.Now.Ticks, 

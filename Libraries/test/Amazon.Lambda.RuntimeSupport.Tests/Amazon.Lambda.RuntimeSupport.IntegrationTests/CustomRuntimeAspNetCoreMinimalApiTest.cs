@@ -11,27 +11,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class CustomRuntimeAspNetCoreMinimalApiTest : BaseCustomRuntimeTest
     {
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
-        {
-            string testAppPath = null;
-            string toolPath = null;
-            try
-            {
-                testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
-                    "../../../../../../..",
-                    "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeAspNetCoreMinimalApiTest");
-                toolPath = LambdaToolsHelper.InstallLambdaTools();
-                LambdaToolsHelper.DotnetRestore(testAppPath);
-                LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
-            }
-            finally
-            {
-                LambdaToolsHelper.CleanUp(testAppPath);
-                LambdaToolsHelper.CleanUp(toolPath);
-            }
-        }
-        
         public CustomRuntimeAspNetCoreMinimalApiTest()
             : base("CustomRuntimeAspNetCoreMinimalApiTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiTest.zip", @"CustomRuntimeAspNetCoreMinimalApiTest\bin\Release\net6.0\CustomRuntimeAspNetCoreMinimalApiTest.zip", "bootstrap")
         {

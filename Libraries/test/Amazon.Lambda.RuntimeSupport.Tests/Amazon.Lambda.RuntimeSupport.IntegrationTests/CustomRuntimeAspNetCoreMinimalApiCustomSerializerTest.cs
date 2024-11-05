@@ -11,27 +11,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     public class CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest : BaseCustomRuntimeTest
     {
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
-        {
-            string testAppPath = null;
-            string toolPath = null;
-            try
-            {
-                testAppPath = LambdaToolsHelper.GetTempTestAppDirectory(
-                    "../../../../../../..",
-                    "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest");
-                toolPath = LambdaToolsHelper.InstallLambdaTools();
-                LambdaToolsHelper.DotnetRestore(testAppPath);
-                LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
-            }
-            finally
-            {
-                LambdaToolsHelper.CleanUp(testAppPath);
-                LambdaToolsHelper.CleanUp(toolPath);
-            }
-        }
-        
         public CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest()
             : base("CustomRuntimeMinimalApiCustomSerializerTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", @"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net6.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", "bootstrap")
         {
