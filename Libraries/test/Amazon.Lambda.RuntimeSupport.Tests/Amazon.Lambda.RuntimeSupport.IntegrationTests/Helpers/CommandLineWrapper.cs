@@ -2,18 +2,20 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
 
 public static class CommandLineWrapper
 {
-    public static void Run(string command, string arguments, string workingDirectory)
+    public static async Task Run(string command, string arguments, string workingDirectory, CancellationToken cancelToken = default)
     {
         var startInfo = new ProcessStartInfo
         {
-            FileName = command,
-            Arguments = arguments,
+            FileName = GetSystemShell(),
+            Arguments = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? $"/c {command} {arguments}" : $"-c \"{command} {arguments}\"",
             WorkingDirectory = workingDirectory,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -26,21 +28,26 @@ public static class CommandLineWrapper
             if (process == null)
                 throw new Exception($"Unable to start process: {command} {arguments}");
             
-            // Capture both output and error in a blocking way to ensure they are fully read
-            var output = process.StandardOutput.ReadToEnd();
-            var error = process.StandardError.ReadToEnd();
-
-            // Wait for the process to exit completely
-            process.WaitForExit();
-
-            // Output captured output and error to TestContext or Console
-            TestContext.Progress.WriteLine(output);
-            if (!string.IsNullOrWhiteSpace(error))
+            DataReceivedEventHandler outCallback = (object sender, DataReceivedEventArgs e) =>
             {
-                TestContext.Progress.WriteLine("Errors:");
-                TestContext.Progress.WriteLine(error);
-            }
-                
+                TestContext.Progress.WriteLine(e.Data);
+            };
+            
+            DataReceivedEventHandler errorCallback = (object sender, DataReceivedEventArgs e) =>
+            {
+                TestContext.Progress.WriteLine(e.Data);
+            };
+            
+            process.OutputDataReceived += outCallback;
+            process.ErrorDataReceived += errorCallback;
+
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            
+            await process.WaitForExitAsync(cancelToken);
+
+            process.WaitForExit();
+            
             Assert.That(process.ExitCode == 0, $"Command '{command} {arguments}' failed.");
         }
     }
@@ -54,7 +61,7 @@ public static class CommandLineWrapper
             return shell!;
 
         // fall back to defaults
-        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "bash";
+        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/sh";
     }
 
     private static bool TryGetEnvironmentVariable(string variable, out string value)

@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
 using NUnit.Framework;
 
@@ -7,7 +8,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests;
 public class IntegrationTestSetupFixture
 {
     [OneTimeSetUp]
-    public void OneTimeSetUp()
+    public async Task OneTimeSetUp()
     {
         string testAppPath = null;
         string toolPath = null;
@@ -18,13 +19,13 @@ public class IntegrationTestSetupFixture
                 "../../../../../../..",
                 "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeFunctionTest");
             TestContext.Progress.WriteLine("2");
-            toolPath = LambdaToolsHelper.InstallLambdaTools();
+            toolPath = await LambdaToolsHelper.InstallLambdaTools();
             TestContext.Progress.WriteLine("3");
-            LambdaToolsHelper.DotnetRestore(testAppPath);
+            await LambdaToolsHelper.DotnetRestore(testAppPath);
             TestContext.Progress.WriteLine("4");
-            LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
+            await LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
             TestContext.Progress.WriteLine("5");
-            LambdaToolsHelper.LambdaPackage(toolPath, "net8.0", testAppPath);
+            await LambdaToolsHelper.LambdaPackage(toolPath, "net8.0", testAppPath);
             TestContext.Progress.WriteLine("6");
         }
         finally
@@ -40,11 +41,11 @@ public class IntegrationTestSetupFixture
                 "../../../../../../..",
                 "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeAspNetCoreMinimalApiTest");
             TestContext.Progress.WriteLine("8");
-            toolPath = LambdaToolsHelper.InstallLambdaTools();
+            toolPath = await LambdaToolsHelper.InstallLambdaTools();
             TestContext.Progress.WriteLine("9");
-            LambdaToolsHelper.DotnetRestore(testAppPath);
+            await LambdaToolsHelper.DotnetRestore(testAppPath);
             TestContext.Progress.WriteLine("10");
-            LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
+            await LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
             TestContext.Progress.WriteLine("11");
         }
         finally
@@ -60,11 +61,11 @@ public class IntegrationTestSetupFixture
                 "../../../../../../..",
                 "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest");
             TestContext.Progress.WriteLine("13");
-            toolPath = LambdaToolsHelper.InstallLambdaTools();
+            toolPath = await LambdaToolsHelper.InstallLambdaTools();
             TestContext.Progress.WriteLine("14");
-            LambdaToolsHelper.DotnetRestore(testAppPath);
+            await LambdaToolsHelper.DotnetRestore(testAppPath);
             TestContext.Progress.WriteLine("15");
-            LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
+            await LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
             TestContext.Progress.WriteLine("16");
         }
         finally
