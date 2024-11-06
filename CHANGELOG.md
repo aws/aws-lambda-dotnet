@@ -1,3 +1,8 @@
+## Release 2024-11-06
+
+### Amazon.Lambda.Core (2.4.0)
+* Removed RequiresPreviewFeatures attribute from parameterized logging APIs
+
 ## Release 2024-11-01
 
 ### Amazon.Lambda.TestTool.BlazorTester (0.15.3)
