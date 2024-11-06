@@ -147,12 +147,6 @@ namespace Amazon.Lambda.Core
         void LogCritical(string message) => Log(LogLevel.Critical.ToString(), message);
 
 
-        private const string ParameterizedPreviewMessage =
-            "Parameterized logging is in preview till a new version of .NET Lambda runtime client that supports parameterized logging " +
-            "has been deployed to the .NET Lambda managed runtime. Till deployment has been made the feature can be used by deploying as an " +
-            "executable including the latest version of Amazon.Lambda.RuntimeSupport and setting the \"EnablePreviewFeatures\" in the Lambda " +
-            "project file to \"true\"";
-
         /// <summary>
         /// Log message categorized by the given log level
         /// <para>
@@ -163,7 +157,6 @@ namespace Amazon.Lambda.Core
         /// <param name="level">Log level of the message.</param>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void Log(string level, string message, params object[] args) => Log(level, message, args);
 
         /// <summary>
@@ -177,7 +170,6 @@ namespace Amazon.Lambda.Core
         /// <param name="exception">Exception to include with the logging.</param>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void Log(string level, Exception exception, string message, params object[] args)
         {
             Log(level, message, args);
@@ -194,7 +186,6 @@ namespace Amazon.Lambda.Core
         /// <param name="level">Log level of the message.</param>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void Log(LogLevel level, string message, params object[] args) => Log(level.ToString(), message, args);
 
         /// <summary>
@@ -208,7 +199,6 @@ namespace Amazon.Lambda.Core
         /// <param name="exception">Exception to include with the logging.</param>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void Log(LogLevel level, Exception exception, string message, params object[] args) => Log(level.ToString(), exception, message, args);
 
         /// <summary>
@@ -220,7 +210,6 @@ namespace Amazon.Lambda.Core
         /// </summary>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogTrace(string message, params object[] args) => Log(LogLevel.Trace.ToString(), message, args);
 
         /// <summary>
@@ -233,7 +222,6 @@ namespace Amazon.Lambda.Core
         /// <param name="exception">Exception to include with the logging.</param>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogTrace(Exception exception, string message, params object[] args) => Log(LogLevel.Trace.ToString(), exception, message, args);
 
         /// <summary>
@@ -245,7 +233,6 @@ namespace Amazon.Lambda.Core
         /// </summary>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogDebug(string message, params object[] args) => Log(LogLevel.Debug.ToString(), message, args);
 
         /// <summary>
@@ -258,7 +245,6 @@ namespace Amazon.Lambda.Core
         /// <param name="exception">Exception to include with the logging.</param>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogDebug(Exception exception, string message, params object[] args) => Log(LogLevel.Debug.ToString(), exception, message, args);
 
         /// <summary>
@@ -270,7 +256,6 @@ namespace Amazon.Lambda.Core
         /// </summary>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogInformation(string message, params object[] args) => Log(LogLevel.Information.ToString(), message, args);
 
         /// <summary>
@@ -283,7 +268,6 @@ namespace Amazon.Lambda.Core
         /// <param name="exception">Exception to include with the logging.</param>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogInformation(Exception exception, string message, params object[] args) => Log(LogLevel.Information.ToString(), exception, message, args);
 
         /// <summary>
@@ -295,7 +279,6 @@ namespace Amazon.Lambda.Core
         /// </summary>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogWarning(string message, params object[] args) => Log(LogLevel.Warning.ToString(), message, args);
 
         /// <summary>
@@ -308,7 +291,6 @@ namespace Amazon.Lambda.Core
         /// <param name="exception">Exception to include with the logging.</param>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogWarning(Exception exception, string message, params object[] args) => Log(LogLevel.Warning.ToString(), exception, message, args);
 
         /// <summary>
@@ -320,7 +302,6 @@ namespace Amazon.Lambda.Core
         /// </summary>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogError(string message, params object[] args) => Log(LogLevel.Error.ToString(), message, args);
 
         /// <summary>
@@ -333,7 +314,6 @@ namespace Amazon.Lambda.Core
         /// <param name="exception">Exception to include with the logging.</param>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogError(Exception exception, string message, params object[] args) => Log(LogLevel.Error.ToString(), exception, message, args);
 
         /// <summary>
@@ -345,7 +325,6 @@ namespace Amazon.Lambda.Core
         /// </summary>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogCritical(string message, params object[] args) => Log(LogLevel.Critical.ToString(), message, args);
 
         /// <summary>
@@ -358,7 +337,6 @@ namespace Amazon.Lambda.Core
         /// <param name="exception">Exception to include with the logging.</param>
         /// <param name="message">Message to log.</param>
         /// <param name="args">Values to be replaced in log messages that are parameterized.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         void LogCritical(Exception exception, string message, params object[] args) => Log(LogLevel.Critical.ToString(), exception, message, args);
 
 #endif

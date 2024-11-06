@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Removed RequiresPreviewFeatures attribute from parameterized logging APIs"
+      ]
+    }
+  ]
+}
