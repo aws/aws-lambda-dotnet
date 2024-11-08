@@ -57,10 +57,10 @@ namespace Amazon.Lambda.TestTool
 
 #if NET6_0
                 var targetFramework = "net6.0";
-#elif NET7_0
-                var targetFramework = "net7.0";
 #elif NET8_0
                 var targetFramework = "net8.0";
+#elif NET9_0
+                var targetFramework = "net9.0";
 #endif
 
                 // If running in the project directory select the build directory so the deps.json file can be found.

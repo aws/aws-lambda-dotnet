@@ -7,11 +7,11 @@
   <PropertyGroup Condition=" '$(Framework)'=='net6.0' ">
     <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Framework)'=='net7.0' ">
-    <TargetFramework>net7.0</TargetFramework>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(Framework)'=='net8.0' ">
     <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Framework)'=='net9.0' ">
+    <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.1.0" />

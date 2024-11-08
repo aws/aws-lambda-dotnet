@@ -16,22 +16,29 @@
 using System;
 using Amazon.CDK;
 
-namespace Infrastructure
-{
-    sealed class Program
-    {
-        public static void Main(string[] args)
-        {
-            var configuration = new Configuration();
-            var app = new App();
-            if (configuration.EcrRepositoryNames.Length != configuration.Frameworks.Length &&
-                configuration.EcrRepositoryNames.Length != configuration.Channels.Length)
-                throw new ArgumentException(
-                    "There is a mismatch between the number of ECR Repositories, .NET Versions and .NET Channels.");
+namespace Infrastructure;
 
-            for (var i = 0; i < configuration.Frameworks.Length; i++)
-            {
-                new PipelineStack(app, $"{Configuration.ProjectName}-{configuration.Frameworks[i]}", configuration.EcrRepositoryNames[i], configuration.Frameworks[i], configuration.Channels[i], configuration.DockerBuildImages[configuration.Frameworks[i]], configuration, new StackProps
+sealed class Program
+{
+    public static void Main(string[] args)
+    {
+        var configuration = new Configuration();
+        var app = new App();
+        if (configuration.EcrRepositoryNames.Length != configuration.Frameworks.Length &&
+            configuration.EcrRepositoryNames.Length != configuration.Channels.Length)
+            throw new ArgumentException(
+                "There is a mismatch between the number of ECR Repositories, .NET Versions and .NET Channels.");
+
+        for (var i = 0; i < configuration.Frameworks.Length; i++)
+        {
+            new PipelineStack(app, 
+                $"{Configuration.ProjectName}-{configuration.Frameworks[i]}", 
+                configuration.EcrRepositoryNames[i], 
+                configuration.Frameworks[i], 
+                configuration.Channels[i], 
+                configuration.DockerBuildImages[configuration.Frameworks[i]], 
+                configuration, 
+                new StackProps
                 {
                     TerminationProtection = true,
                     Env = new Amazon.CDK.Environment
@@ -39,10 +46,10 @@ namespace Infrastructure
                         Account = configuration.AccountId,
                         Region = configuration.Region
                     }
-                });
-            }
-
-            app.Synth();
+                }
+            );
         }
+
+        app.Synth();
     }
 }
