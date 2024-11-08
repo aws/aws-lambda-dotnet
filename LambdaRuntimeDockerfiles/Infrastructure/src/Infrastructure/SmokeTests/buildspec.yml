@@ -2,6 +2,8 @@ version: 0.2
 phases:
   pre_build:
     commands:
+      # Find and delete the global.json files that were added by CodeBuild. This causes issues when multiple SDKs are installed.
+      - find / -type f -name 'global.json' -delete
       - |
         if [ "$AWS_LAMBDA_DOTNET_SDK_VERSION" = "" ]; then
           curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel $AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL
@@ -11,7 +13,7 @@ phases:
       - export PATH="$PATH:$HOME/.dotnet"
       - export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
       - rm -rf /usr/bin/pwsh
-      - curl -sSL https://raw.githubusercontent.com/PowerShell/PowerShell/master/docker/InstallTarballPackage.sh | bash /dev/stdin $AWS_LAMBDA_POWERSHELL_VERSION
+      - dotnet tool install --global PowerShell --version $AWS_LAMBDA_POWERSHELL_VERSION
   build:
     commands:
       - pwsh LambdaRuntimeDockerfiles/Infrastructure/src/Infrastructure/SmokeTests/build.ps1

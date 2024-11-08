@@ -124,8 +124,8 @@
       "Paths": [
         "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester.csproj",
         "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester60-pack.csproj",
-        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester70-pack.csproj",
-        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester80-pack.csproj"
+        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester80-pack.csproj",
+        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester90-pack.csproj"
       ]
     }
   ],
