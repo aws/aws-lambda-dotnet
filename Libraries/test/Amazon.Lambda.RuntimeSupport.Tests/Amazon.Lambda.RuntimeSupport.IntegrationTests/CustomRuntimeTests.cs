@@ -31,6 +31,7 @@ using static Amazon.Lambda.RuntimeSupport.IntegrationTests.CustomRuntimeTests;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
+    [Collection("Integration Tests")]
     public class CustomRuntimeNET6Tests : CustomRuntimeTests
     {
         public CustomRuntimeNET6Tests()
@@ -49,6 +50,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
     }
 
+    [Collection("Integration Tests")]
     public class CustomRuntimeNET8Tests : CustomRuntimeTests
     {
         public CustomRuntimeNET8Tests()
