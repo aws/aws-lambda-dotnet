@@ -1,3 +1,8 @@
+## Release 2024-11-12
+
+### Amazon.Lambda.Annotations (1.6.0)
+* Eagerly build Function Handler inside the Generated class's constructor
+
 ## Release 2024-11-06
 
 ### Amazon.Lambda.Core (2.4.0)
