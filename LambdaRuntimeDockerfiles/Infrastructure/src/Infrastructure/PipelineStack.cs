@@ -18,565 +18,577 @@ using System.Collections.Generic;
 using System.Linq;
 using Amazon.CDK;
 using Amazon.CDK.AWS.CodeBuild;
-using Amazon.CDK.AWS.CodeCommit;
 using Amazon.CDK.AWS.CodePipeline;
 using Amazon.CDK.AWS.CodePipeline.Actions;
 using Amazon.CDK.AWS.IAM;
-using Amazon.CDK.AWS.KMS;
-using Amazon.CDK.AWS.S3;
 using Amazon.CDK.Pipelines;
 using Constructs;
-using Action = Amazon.CDK.AWS.CodePipeline.Actions.Action;
-using RepositoryProps = Amazon.CDK.AWS.ECR.RepositoryProps;
 
-namespace Infrastructure
+namespace Infrastructure;
+
+public class PipelineStack : Stack
 {
-    public class PipelineStack : Stack
+    private const string CdkCliVersion = "2.165.0";
+    private const string PowershellVersion = "7.4.5";
+    private const string BaseImageMultiArch = "contributed-base-image-multi-arch";
+
+    internal PipelineStack(
+        Construct scope,
+        string id,
+        string ecrRepositoryName,
+        string framework,
+        string channel,
+        string dockerBuildImage,
+        Configuration configuration,
+        IStackProps props = null) : base(scope, id, props)
     {
-        private const string cdkCliVersion = "2.44.0";
-        private const string PowershellArm64 = "7.1.3 powershell-7.1.3-linux-arm64.tar.gz";
-        private const string PowershellAmd64 = "7.1.3 powershell-7.1.3-linux-x64.tar.gz";
-        private const string BaseImageMultiArch = "contributed-base-image-multi-arch";
+        var sourceArtifact = new Artifact_();
 
-        internal PipelineStack(
-            Construct scope,
-            string id,
-            string ecrRepositoryName,
-            string framework,
-            string channel,
-            string dockerBuildImage,
-            Configuration configuration,
-            IStackProps props = null) : base(scope, id, props)
+        var ecrPolicy = new PolicyStatement(new PolicyStatementProps
         {
-            var repository = Repository.FromRepositoryArn(this, "Repository", configuration.Source.RepositoryArn);
+            Effect = Effect.ALLOW,
+            Actions = new[] { "ecr:*" },
+            Resources = new[] { "*" }
+        });
 
-            var artifactBucket = new Bucket(this, "ArtifactBucket", new BucketProps
+        var sourceAction = new GitHubSourceAction(new GitHubSourceActionProps
+        {
+            ActionName = configuration.GitHubRepository,
+            Output = sourceArtifact,
+            Owner = configuration.GitHubOwner,
+            Repo = configuration.GitHubRepository,
+            Branch = configuration.GitHubBranch,
+            Trigger = GitHubTrigger.WEBHOOK,
+            OauthToken = SecretValue.SecretsManager(configuration.GitHubTokenSecretName, new SecretsManagerSecretOptions
             {
-                AutoDeleteObjects = true,
-                BucketName = $"{id}-{configuration.AccountId}",
-                EncryptionKey = new Key(this, $"{id}-crossaccountaccess-encryptionkey"),
-                RemovalPolicy = RemovalPolicy.DESTROY
-            });
-
-            var sourceArtifact = new Artifact_();
-
-            var ecrPolicy = new PolicyStatement(new PolicyStatementProps
-            {
-                Effect = Effect.ALLOW,
-                Actions = new[] { "ecr:*" },
-                Resources = new[] { "*" }
-            });
-
-            var sourceAction = new CodeCommitSourceAction(new CodeCommitSourceActionProps
-            {
-                ActionName = repository.RepositoryName,
-                Output = sourceArtifact,
-                Repository = repository,
-                Branch = configuration.Source.BranchName,
-                Trigger = CodeCommitTrigger.POLL
-            });
-
-            var basePipeline = new Pipeline(this, "CodePipeline", new PipelineProps
-            {
-                PipelineName = id,
-                RestartExecutionOnUpdate = true,
-                ArtifactBucket = artifactBucket,
-                Stages = new StageOptions[] {
-                    new StageOptions
-                    {
-                        StageName = "Source",
-                        Actions = new Action[] { sourceAction }
-                    }
+                JsonField = configuration.GitHubTokenSecretKey
+            })
+        });
+        
+        var basePipeline = new Pipeline(this, "CodePipeline", new PipelineProps
+        {
+            PipelineType = PipelineType.V2,
+            PipelineName = id,
+            RestartExecutionOnUpdate = true,
+            Stages =
+            [
+                new StageOptions
+                {
+                    StageName = "Source",
+                    Actions = [sourceAction]
                 }
-            });
+            ]
+        });
 
-            var environmentVariables =
-                new Dictionary<string, IBuildEnvironmentVariable>
-                {
-                    { "AWS_LAMBDA_PIPELINE_ACCOUNT_ID",
-                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_ACCOUNT_ID") ?? string.Empty } },
-                    { "AWS_LAMBDA_PIPELINE_CODECOMMIT_ACCOUNT_ID",
-                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_CODECOMMIT_ACCOUNT_ID") ?? string.Empty } },
-                    { "AWS_LAMBDA_PIPELINE_REGION",
-                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_REGION") ?? string.Empty } },
-                    { "AWS_LAMBDA_SOURCE_REPOSITORY_ARN",
-                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_SOURCE_REPOSITORY_ARN") ?? string.Empty } },
-                    { "AWS_LAMBDA_SOURCE_BRANCH_NAME",
-                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_SOURCE_BRANCH_NAME") ?? string.Empty } },
-                    { "AWS_LAMBDA_STAGE_ECR",
-                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_STAGE_ECR") ?? string.Empty } },
-                    { "AWS_LAMBDA_BETA_ECRS",
-                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_BETA_ECRS") ?? string.Empty } },
-                    { "AWS_LAMBDA_PROD_ECRS",
-                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PROD_ECRS") ?? string.Empty } },
-                    { "AWS_LAMBDA_ECR_REPOSITORY_NAME",
-                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_ECR_REPOSITORY_NAME") ?? string.Empty } },
-                    { "AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION",
-                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION") ?? string.Empty } },
-                    { "AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL",
-                        new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL") ?? string.Empty } },
-                };
-
-            // Self mutation
-            var pipeline = new CodePipeline(this, "Pipeline", new CodePipelineProps
+        var environmentVariables =
+            new Dictionary<string, IBuildEnvironmentVariable>
             {
-                CodePipeline = basePipeline,
+                { "AWS_LAMBDA_PIPELINE_ACCOUNT_ID",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_ACCOUNT_ID") ?? string.Empty } },
+                { "AWS_LAMBDA_PIPELINE_NAME_SUFFIX",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_NAME_SUFFIX") ?? string.Empty } },
+                { "AWS_LAMBDA_PIPELINE_REGION",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_REGION") ?? string.Empty } },
+                { "AWS_LAMBDA_GITHUB_TOKEN_SECRET_NAME",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_TOKEN_SECRET_NAME") ?? string.Empty } },
+                { "AWS_LAMBDA_GITHUB_TOKEN_SECRET_KEY",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_TOKEN_SECRET_KEY") ?? string.Empty } },
+                { "AWS_LAMBDA_GITHUB_REPO_OWNER",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_OWNER") ?? string.Empty } },
+                { "AWS_LAMBDA_GITHUB_REPO_NAME",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_NAME") ?? string.Empty } },
+                { "AWS_LAMBDA_GITHUB_REPO_BRANCH",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_BRANCH") ?? string.Empty } },
+                { "AWS_LAMBDA_STAGE_ECR",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_STAGE_ECR") ?? string.Empty } },
+                { "AWS_LAMBDA_BETA_ECRS",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_BETA_ECRS") ?? string.Empty } },
+                { "AWS_LAMBDA_PROD_ECRS",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PROD_ECRS") ?? string.Empty } },
+                { "AWS_LAMBDA_ECR_REPOSITORY_NAME",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_ECR_REPOSITORY_NAME") ?? string.Empty } },
+                { "AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION") ?? string.Empty } },
+                { "AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL") ?? string.Empty } },
+            };
 
-                // It synthesizes CDK code to cdk.out directory which is picked by SelfMutate stage to mutate the pipeline
-                Synth = new ShellStep("Synth", new ShellStepProps
+        // Self mutation
+        var pipeline = new CodePipeline(this, "Pipeline", new CodePipelineProps
+        {
+            CodePipeline = basePipeline,
+
+            // It synthesizes CDK code to cdk.out directory which is picked by SelfMutate stage to mutate the pipeline
+            Synth = new ShellStep("Synth", new ShellStepProps
+            {
+                Input = CodePipelineFileSet.FromArtifact(sourceArtifact),
+                InstallCommands = new[] { $"npm install -g aws-cdk@{CdkCliVersion}" },
+                Commands = new[] { $"dotnet build {Configuration.ProjectRoot}", "cdk synth" }
+            }),
+            CodeBuildDefaults = new CodeBuildOptions
+            {
+                BuildEnvironment = new BuildEnvironment
                 {
-                    Input = CodePipelineFileSet.FromArtifact(sourceArtifact),
-                    InstallCommands = new[] { $"npm install -g aws-cdk@{cdkCliVersion}" },
-                    Commands = new[] { $"dotnet build {Configuration.ProjectRoot}", "cdk synth" }
-                }),
-                CodeBuildDefaults = new CodeBuildOptions
-                {
-                    BuildEnvironment = new BuildEnvironment
-                    {
-                        EnvironmentVariables = environmentVariables
-                    }
+                    EnvironmentVariables = environmentVariables
                 },
-                SelfMutationCodeBuildDefaults = new CodeBuildOptions
+                PartialBuildSpec = BuildSpec.FromObject(new Dictionary<string, object>
                 {
-                    RolePolicy = new PolicyStatement[]
-                    {
-                        new PolicyStatement(new PolicyStatementProps
+                    { "phases", new Dictionary<string, object>
                         {
-                            Effect = Effect.ALLOW,
-                            Actions = new[] { "sts:AssumeRole" },
-                            Resources = new[] { $"arn:aws:iam::{configuration.CodeCommitAccountId}:role/*" }
-                        })
+                            { "install", new Dictionary<string, object>
+                                {
+                                    { "runtime-versions", new Dictionary<string, object>
+                                        {
+                                            { "dotnet", "8.x"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
-                }
-            });
+                })
+            }
+        });
 
-            pipeline.BuildPipeline();
+        pipeline.BuildPipeline();
 
-            var stageEcr = GetStageEcr(this, ecrRepositoryName, configuration);
+        var stageEcr = GetStageEcr(this, ecrRepositoryName, configuration);
 
-            var dockerBuildActions = new List<Action>();
+        var dockerBuildActions = new List<IAction>();
 
-            // Stage
-            // Build AMD64 image
-            var dockerBuildAmd64 = new Project(this, "DockerBuild-amd64", new ProjectProps
+        // Stage
+        // Build AMD64 image
+        var dockerBuildAmd64 = new Project(this, "DockerBuild-amd64", new ProjectProps
+        {
+            BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerBuild/buildspec.yml"),
+            Description = $"Builds and pushes image to {stageEcr}",
+            Environment = new BuildEnvironment
+            {
+                BuildImage = LinuxBuildImage.AMAZON_LINUX_2_5,
+                Privileged = true
+            },
+            Source = Source.GitHub(new GitHubSourceProps
+            {
+                Owner = configuration.GitHubOwner,
+                Repo = configuration.GitHubRepository,
+                BranchOrRef = configuration.GitHubBranch
+            }),
+            EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
+            {
+                {"AWS_LAMBDA_STAGE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
+                {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                {"AWS_LAMBDA_ARCHITECTURE", new BuildEnvironmentVariable {Value = "amd64"}},
+                {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellVersion}},
+                {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAmd64Tags[framework]}},
+                {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
+                {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
+                {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }}
+            }
+        });
+
+        dockerBuildAmd64.AddToRolePolicy(ecrPolicy);
+        dockerBuildActions.Add(new CodeBuildAction(new CodeBuildActionProps
+        {
+            Input = sourceArtifact,
+            Project = dockerBuildAmd64,
+            ActionName = "amd64"
+        }));
+
+        if (configuration.DockerArm64Images.Contains(framework))
+        {
+            // Build ARM64 image
+            var dockerBuildArm64 = new Project(this, "DockerBuild-arm64", new ProjectProps
             {
                 BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerBuild/buildspec.yml"),
                 Description = $"Builds and pushes image to {stageEcr}",
                 Environment = new BuildEnvironment
                 {
-                    BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
+                    BuildImage = LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
                     Privileged = true
                 },
-                Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
+                Source = Source.GitHub(new GitHubSourceProps
                 {
-                    Repository = repository,
-                    BranchOrRef = configuration.Source.BranchName
+                    Owner = configuration.GitHubOwner,
+                    Repo = configuration.GitHubRepository,
+                    BranchOrRef = configuration.GitHubBranch
                 }),
                 EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
                 {
                     {"AWS_LAMBDA_STAGE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
                     {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
-                    {"AWS_LAMBDA_ARCHITECTURE", new BuildEnvironmentVariable {Value = "amd64"}},
-                    {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellAmd64}},
-                    {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAMD64Tags[framework]}},
+                    {"AWS_LAMBDA_ARCHITECTURE", new BuildEnvironmentVariable {Value = "arm64"}},
+                    {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellVersion}},
+                    {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageArm64Tags[framework]}},
                     {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
                     {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
                     {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }}
                 }
             });
 
-            dockerBuildAmd64.AddToRolePolicy(ecrPolicy);
+            dockerBuildArm64.AddToRolePolicy(ecrPolicy);
             dockerBuildActions.Add(new CodeBuildAction(new CodeBuildActionProps
             {
                 Input = sourceArtifact,
-                Project = dockerBuildAmd64,
-                ActionName = "amd64"
+                Project = dockerBuildArm64,
+                ActionName = "arm64"
             }));
+        }
 
-            if (configuration.DockerARM64Images.Contains(framework))
+        basePipeline.AddStage(new StageOptions
+        {
+            StageName = "DockerBuild",
+            Actions = dockerBuildActions.ToArray()
+        });
+
+        // Create multi arch image manifest
+        var dockerImageManifest = new Project(this, "DockerImageManifest", new ProjectProps
+        {
+            BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerImageManifest/buildspec.yml"),
+            Description = $"Creates image manifest and pushes to {stageEcr}",
+            Environment = new BuildEnvironment
             {
-                // Build ARM64 image
-                var dockerBuildArm64 = new Project(this, "DockerBuild-arm64", new ProjectProps
-                {
-                    BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerBuild/buildspec.yml"),
-                    Description = $"Builds and pushes image to {stageEcr}",
-                    Environment = new BuildEnvironment
-                    {
-                        BuildImage = LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_1_0,
-                        Privileged = true
-                    },
-                    Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
-                    {
-                        Repository = repository,
-                        BranchOrRef = configuration.Source.BranchName
-                    }),
-                    EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
-                    {
-                        {"AWS_LAMBDA_STAGE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                        {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
-                        {"AWS_LAMBDA_ARCHITECTURE", new BuildEnvironmentVariable {Value = "arm64"}},
-                        {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellArm64}},
-                        {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageARM64Tags[framework]}},
-                        {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
-                        {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
-                        {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }}
-                    }
-                });
+                BuildImage = LinuxBuildImage.AMAZON_LINUX_2_5,
+                Privileged = true
+            },
+            Source = Source.GitHub(new GitHubSourceProps
+            {
+                Owner = configuration.GitHubOwner,
+                Repo = configuration.GitHubRepository,
+                BranchOrRef = configuration.GitHubBranch
+            }),
+            EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
+            {
+                {"AWS_LAMBDA_STAGE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
+                {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
+                {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAmd64Tags[framework]}},
+                {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageArm64Tags[framework]}},
+                {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerArm64Images.Contains(framework).ToString()}},
+            }
+        });
 
-                dockerBuildArm64.AddToRolePolicy(ecrPolicy);
-                dockerBuildActions.Add(new CodeBuildAction(new CodeBuildActionProps
+        dockerImageManifest.AddToRolePolicy(ecrPolicy);
+
+        basePipeline.AddStage(new StageOptions
+        {
+            StageName = "DockerImageManifest",
+            Actions =
+            [
+                new CodeBuildAction(new CodeBuildActionProps
                 {
                     Input = sourceArtifact,
-                    Project = dockerBuildArm64,
-                    ActionName = "arm64"
-                }));
-            }
+                    Project = dockerImageManifest,
+                    ActionName = "DockerImageManifest"
+                })
+            ]
+        });
 
-            basePipeline.AddStage(new StageOptions
+        var smokeTestsLambdaFunctionRole = new Role(this, "SmokeTestsLambdaFunctionRole", new RoleProps
+        {
+            RoleName = $"image-function-tests-{Guid.NewGuid()}",
+            ManagedPolicies = [ManagedPolicy.FromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")],
+            AssumedBy = new ServicePrincipal("lambda.amazonaws.com")
+        });
+
+        // Smoke test AMD64 image
+        var amd64SmokeTests = new Project(this, "SmokeTests-amd64", new ProjectProps
+        {
+            BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/SmokeTests/buildspec.yml"),
+            Description = "Runs smoke tests on the built image.",
+            Environment = new BuildEnvironment
             {
-                StageName = "DockerBuild",
-                Actions = dockerBuildActions.ToArray()
-            });
-
-            // Create multi arch image manifest
-            var dockerImageManifest = new Project(this, "DockerImageManifest", new ProjectProps
+                BuildImage = LinuxBuildImage.AMAZON_LINUX_2_5,
+                Privileged = true
+            },
+            Source = Source.GitHub(new GitHubSourceProps
             {
-                BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerImageManifest/buildspec.yml"),
-                Description = $"Creates image manifest and pushes to {stageEcr}",
-                Environment = new BuildEnvironment
-                {
-                    BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
-                    Privileged = true
-                },
-                Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
-                {
-                    Repository = repository,
-                    BranchOrRef = configuration.Source.BranchName
-                }),
-                EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
-                {
-                    {"AWS_LAMBDA_STAGE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
-                    {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
-                    {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAMD64Tags[framework]}},
-                    {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageARM64Tags[framework]}},
-                    {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerARM64Images.Contains(framework).ToString()}},
-                }
-            });
-
-            dockerImageManifest.AddToRolePolicy(ecrPolicy);
-
-            basePipeline.AddStage(new StageOptions
+                Owner = configuration.GitHubOwner,
+                Repo = configuration.GitHubRepository,
+                BranchOrRef = configuration.GitHubBranch
+            }),
+            EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
             {
-                StageName = "DockerImageManifest",
-                Actions = new Action[] {
-                    new CodeBuildAction(new CodeBuildActionProps
-                    {
-                        Input = sourceArtifact,
-                        Project = dockerImageManifest,
-                        ActionName = "DockerImageManifest"
-                    })
-                }
-            });
+                {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
+                {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                {"AWS_LAMBDA_SOURCE_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
+                {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellVersion}},
+                {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
+                {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
+                {"AWS_LAMBDA_DOTNET_BUILD_IMAGE", new BuildEnvironmentVariable {Value = dockerBuildImage}},
+                {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }},
+                {"AWS_LAMBDA_SMOKETESTS_LAMBDA_ROLE", new BuildEnvironmentVariable {Value = smokeTestsLambdaFunctionRole.RoleArn}}
+            },
+        });
 
-            var smokeTestsLambdaFunctionRole = new Role(this, "SmokeTestsLambdaFunctionRole", new RoleProps
-            {
-                RoleName = $"image-function-tests-{Guid.NewGuid()}",
-                ManagedPolicies = new IManagedPolicy[] { ManagedPolicy.FromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole") },
-                AssumedBy = new ServicePrincipal("lambda.amazonaws.com")
-            });
+        var smokeTestsPolicies = new List<PolicyStatement>();
 
-            // Smoke test AMD64 image
-            var amd64SmokeTests = new Project(this, "SmokeTests-amd64", new ProjectProps
+        // ECR Policies
+        smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
+        {
+            Effect = Effect.ALLOW,
+            Actions =
+            [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:BatchDeleteImage",
+                "ecr:BatchGetImage",
+                "ecr:CompleteLayerUpload",
+                "ecr:CreateRepository",
+                "ecr:DescribeRepositories",
+                "ecr:GetAuthorizationToken",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:InitiateLayerUpload",
+                "ecr:PutImage",
+                "ecr:UploadLayerPart"
+            ],
+            Resources =
+            [
+                $"arn:aws:ecr:{configuration.Region}:{configuration.AccountId}:repository/image-function-tests",
+                $"arn:aws:ecr:{configuration.Region}:{configuration.AccountId}:repository/{ecrRepositoryName}"
+            ]
+        }));
+
+        // The following ECR policy needs to specify * as the resource since that is what is explicitly stated by the following error:
+        // An error occurred (AccessDeniedException) when calling the GetAuthorizationToken operation:
+        // User: *** is not authorized to perform: ecr:GetAuthorizationToken on resource: * because no identity-based policy
+        // allows the ecr:GetAuthorizationToken action
+        smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
+        {
+            Effect = Effect.ALLOW,
+            Actions =
+            [
+                "ecr:GetAuthorizationToken"
+            ],
+            Resources = ["*"]
+        }));
+
+        // IAM Policies
+        smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
+        {
+            Effect = Effect.ALLOW,
+            Actions =
+            [
+                "iam:PassRole"
+            ],
+            Resources = [smokeTestsLambdaFunctionRole.RoleArn]
+        }));
+
+        // Lambda Policies
+        smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
+        {
+            Effect = Effect.ALLOW,
+            Actions =
+            [
+                "lambda:CreateFunction",
+                "lambda:DeleteFunction",
+                "lambda:GetFunction",
+                "lambda:GetFunctionConfiguration",
+                "lambda:InvokeFunction",
+                "lambda:UpdateFunctionConfiguration"
+            ],
+            Resources =
+            [
+                $"arn:aws:lambda:{configuration.Region}:{configuration.AccountId}:function:image-function-tests-*"
+            ]
+        }));
+
+        foreach (var policy in smokeTestsPolicies)
+            amd64SmokeTests.AddToRolePolicy(policy);
+
+        var smokeTestsActions = new List<IAction>();
+        smokeTestsActions.Add(new CodeBuildAction(new CodeBuildActionProps
+        {
+            Input = sourceArtifact,
+            Project = amd64SmokeTests,
+            ActionName = "amd64"
+        }));
+
+        if (configuration.DockerArm64Images.Contains(framework))
+        {
+            // Smoke test ARM64 image
+            var arm64SmokeTests = new Project(this, "SmokeTests-arm64", new ProjectProps
             {
                 BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/SmokeTests/buildspec.yml"),
                 Description = "Runs smoke tests on the built image.",
                 Environment = new BuildEnvironment
                 {
-                    BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
+                    BuildImage = LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
                     Privileged = true
                 },
-                Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
+                Source = Source.GitHub(new GitHubSourceProps
                 {
-                    Repository = repository,
-                    BranchOrRef = configuration.Source.BranchName
+                    Owner = configuration.GitHubOwner,
+                    Repo = configuration.GitHubRepository,
+                    BranchOrRef = configuration.GitHubBranch
                 }),
                 EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
                 {
                     {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
                     {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
                     {"AWS_LAMBDA_SOURCE_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
-                    {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellAmd64}},
+                    {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellVersion}},
                     {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
                     {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
                     {"AWS_LAMBDA_DOTNET_BUILD_IMAGE", new BuildEnvironmentVariable {Value = dockerBuildImage}},
                     {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }},
                     {"AWS_LAMBDA_SMOKETESTS_LAMBDA_ROLE", new BuildEnvironmentVariable {Value = smokeTestsLambdaFunctionRole.RoleArn}}
-                },
+                }
             });
 
-            var smokeTestsPolicies = new List<PolicyStatement>();
-
-            // ECR Policies
-            smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
-            {
-                Effect = Effect.ALLOW,
-                Actions = new[]
-                {
-                    "ecr:BatchCheckLayerAvailability",
-                    "ecr:BatchDeleteImage",
-                    "ecr:BatchGetImage",
-                    "ecr:CompleteLayerUpload",
-                    "ecr:CreateRepository",
-                    "ecr:DescribeRepositories",
-                    "ecr:GetAuthorizationToken",
-                    "ecr:GetDownloadUrlForLayer",
-                    "ecr:InitiateLayerUpload",
-                    "ecr:PutImage",
-                    "ecr:UploadLayerPart"
-                },
-                Resources = new[] { 
-                    $"arn:aws:ecr:{configuration.Region}:{configuration.AccountId}:repository/image-function-tests",
-                    $"arn:aws:ecr:{configuration.Region}:{configuration.AccountId}:repository/{ecrRepositoryName}"
-                }
-            }));
-
-            // The following ECR policy needs to specify * as the resource since that is what is explicitly stated by the following error:
-            // An error occurred (AccessDeniedException) when calling the GetAuthorizationToken operation:
-            // User: *** is not authorized to perform: ecr:GetAuthorizationToken on resource: * because no identity-based policy
-            // allows the ecr:GetAuthorizationToken action
-            smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
-            {
-                Effect = Effect.ALLOW,
-                Actions = new[]
-                {
-                    "ecr:GetAuthorizationToken"
-                },
-                Resources = new[] { "*" }
-            }));
-
-            // IAM Policies
-            smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
-            {
-                Effect = Effect.ALLOW,
-                Actions = new[]
-                {
-                    "iam:PassRole"
-                },
-                Resources = new[] { smokeTestsLambdaFunctionRole.RoleArn }
-            }));
-
-            // Lambda Policies
-            smokeTestsPolicies.Add(new PolicyStatement(new PolicyStatementProps
-            {
-                Effect = Effect.ALLOW,
-                Actions = new[]
-                {
-                    "lambda:CreateFunction",
-                    "lambda:DeleteFunction",
-                    "lambda:GetFunction",
-                    "lambda:GetFunctionConfiguration",
-                    "lambda:InvokeFunction",
-                    "lambda:UpdateFunctionConfiguration"
-                },
-                Resources = new[] {
-                    $"arn:aws:lambda:{configuration.Region}:{configuration.AccountId}:function:image-function-tests-*"
-                }
-            }));
-
             foreach (var policy in smokeTestsPolicies)
-                amd64SmokeTests.AddToRolePolicy(policy);
+                arm64SmokeTests.AddToRolePolicy(policy);
 
-            var smokeTestsActions = new List<Action>();
             smokeTestsActions.Add(new CodeBuildAction(new CodeBuildActionProps
             {
                 Input = sourceArtifact,
-                Project = amd64SmokeTests,
-                ActionName = "amd64"
+                Project = arm64SmokeTests,
+                ActionName = "arm64"
             }));
+        }
 
-            if (configuration.DockerARM64Images.Contains(framework))
+        basePipeline.AddStage(new StageOptions
+        {
+            StageName = "SmokeTests",
+            Actions = smokeTestsActions.ToArray()
+        });
+
+        // Beta
+        if (!string.IsNullOrWhiteSpace(configuration.Ecrs.Beta))
+        {
+            var betaDockerPush = new Project(this, "Beta-DockerPush", new ProjectProps
             {
-                // Smoke test ARM64 image
-                var arm64SmokeTests = new Project(this, "SmokeTests-arm64", new ProjectProps
+                BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerPush/buildspec.yml"),
+                Description = $"Pushes staged image to {configuration.Ecrs.Beta}",
+                Environment = new BuildEnvironment
                 {
-                    BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/SmokeTests/buildspec.yml"),
-                    Description = "Runs smoke tests on the built image.",
-                    Environment = new BuildEnvironment
-                    {
-                        BuildImage = LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_1_0,
-                        Privileged = true
-                    },
-                    Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
-                    {
-                        Repository = repository,
-                        BranchOrRef = configuration.Source.BranchName
-                    }),
-                    EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
-                    {
-                        {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                        {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
-                        {"AWS_LAMBDA_SOURCE_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
-                        {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellArm64}},
-                        {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
-                        {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
-                        {"AWS_LAMBDA_DOTNET_BUILD_IMAGE", new BuildEnvironmentVariable {Value = dockerBuildImage}},
-                        {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }},
-                        {"AWS_LAMBDA_SMOKETESTS_LAMBDA_ROLE", new BuildEnvironmentVariable {Value = smokeTestsLambdaFunctionRole.RoleArn}}
-                    }
-                });
-
-                foreach (var policy in smokeTestsPolicies)
-                    arm64SmokeTests.AddToRolePolicy(policy);
-
-                smokeTestsActions.Add(new CodeBuildAction(new CodeBuildActionProps
+                    BuildImage = LinuxBuildImage.AMAZON_LINUX_2_5,
+                    Privileged = true
+                },
+                Source = Source.GitHub(new GitHubSourceProps
                 {
-                    Input = sourceArtifact,
-                    Project = arm64SmokeTests,
-                    ActionName = "arm64"
-                }));
-            }
+                    Owner = configuration.GitHubOwner,
+                    Repo = configuration.GitHubRepository,
+                    BranchOrRef = configuration.GitHubBranch
+                }),
+                EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
+                {
+                    {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
+                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                    {"AWS_LAMBDA_DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Beta}},
+                    {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
+                    {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAmd64Tags[framework]}},
+                    {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageArm64Tags[framework]}},
+                    {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerArm64Images.Contains(framework).ToString()}},
+                }
+            });
+
+            betaDockerPush.AddToRolePolicy(ecrPolicy);
 
             basePipeline.AddStage(new StageOptions
             {
-                StageName = "SmokeTests",
-                Actions = smokeTestsActions.ToArray()
+                StageName = "Beta-DockerPush",
+                Actions =
+                [
+                    new CodeBuildAction(new CodeBuildActionProps
+                    {
+                        Input = sourceArtifact,
+                        Project = betaDockerPush,
+                        ActionName = "DockerPush"
+                    })
+                ]
+            });
+        }
+
+        // Prod
+        if (!string.IsNullOrWhiteSpace(configuration.Ecrs.Prod))
+        {
+            // Manual Approval
+            basePipeline.AddStage(new StageOptions
+            {
+                StageName = "Prod-ManualApproval",
+                Actions =
+                [
+                    new ManualApprovalAction(new ManualApprovalActionProps
+                    {
+                        ActionName = "ManualApproval"
+                    })
+                ]
             });
 
-            // Beta
-            if (!string.IsNullOrWhiteSpace(configuration.Ecrs.Beta))
+            var prodDockerPush = new Project(this, "Prod-DockerPush", new ProjectProps
             {
-                var betaDockerPush = new Project(this, "Beta-DockerPush", new ProjectProps
+                BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerPush/buildspec.yml"),
+                Description = $"Pushes staged image to {configuration.Ecrs.Prod}",
+                Environment = new BuildEnvironment
                 {
-                    BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerPush/buildspec.yml"),
-                    Description = $"Pushes staged image to {configuration.Ecrs.Beta}",
-                    Environment = new BuildEnvironment
-                    {
-                        BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
-                        Privileged = true
-                    },
-                    Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
-                    {
-                        Repository = repository,
-                        BranchOrRef = configuration.Source.BranchName
-                    }),
-                    EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
-                    {
-                        {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                        {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
-                        {"AWS_LAMBDA_DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Beta}},
-                        {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
-                        {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAMD64Tags[framework]}},
-                        {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageARM64Tags[framework]}},
-                        {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerARM64Images.Contains(framework).ToString()}},
-                    }
-                });
-
-                betaDockerPush.AddToRolePolicy(ecrPolicy);
-
-                basePipeline.AddStage(new StageOptions
+                    BuildImage = LinuxBuildImage.AMAZON_LINUX_2_5,
+                    Privileged = true
+                },
+                Source = Source.GitHub(new GitHubSourceProps
                 {
-                    StageName = "Beta-DockerPush",
-                    Actions = new Action[]
-                    {
-                        new CodeBuildAction(new CodeBuildActionProps
-                        {
-                            Input = sourceArtifact,
-                            Project = betaDockerPush,
-                            ActionName = "DockerPush"
-                        })
-                    }
-                });
-            }
+                    Owner = configuration.GitHubOwner,
+                    Repo = configuration.GitHubRepository,
+                    BranchOrRef = configuration.GitHubBranch
+                }),
+                EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
+                {
+                    {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
+                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                    {"AWS_LAMBDA_DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Prod}},
+                    {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
+                    {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAmd64Tags[framework]}},
+                    {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageArm64Tags[framework]}},
+                    {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerArm64Images.Contains(framework).ToString()}},
+                }
+            });
 
-            // Prod
-            if (!string.IsNullOrWhiteSpace(configuration.Ecrs.Prod))
+            prodDockerPush.AddToRolePolicy(ecrPolicy);
+
+            basePipeline.AddStage(new StageOptions
             {
-                // Manual Approval
-                basePipeline.AddStage(new StageOptions
-                {
-                    StageName = "Prod-ManualApproval",
-                    Actions = new Action[]
+                StageName = "Prod-DockerPush",
+                Actions =
+                [
+                    new CodeBuildAction(new CodeBuildActionProps
                     {
-                        new ManualApprovalAction(new ManualApprovalActionProps
-                        {
-                            ActionName = "ManualApproval"
-                        })
-                    }
-                });
-
-                var prodDockerPush = new Project(this, "Prod-DockerPush", new ProjectProps
-                {
-                    BuildSpec = BuildSpec.FromSourceFilename($"{Configuration.ProjectRoot}/DockerPush/buildspec.yml"),
-                    Description = $"Pushes staged image to {configuration.Ecrs.Prod}",
-                    Environment = new BuildEnvironment
-                    {
-                        BuildImage = LinuxBuildImage.AMAZON_LINUX_2_3,
-                        Privileged = true
-                    },
-                    Source = Amazon.CDK.AWS.CodeBuild.Source.CodeCommit(new CodeCommitSourceProps
-                    {
-                        Repository = repository,
-                        BranchOrRef = configuration.Source.BranchName
-                    }),
-                    EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
-                    {
-                        {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                        {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
-                        {"AWS_LAMBDA_DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Prod}},
-                        {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
-                        {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAMD64Tags[framework]}},
-                        {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageARM64Tags[framework]}},
-                        {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerARM64Images.Contains(framework).ToString()}},
-                    }
-                });
-
-                prodDockerPush.AddToRolePolicy(ecrPolicy);
-
-                basePipeline.AddStage(new StageOptions
-                {
-                    StageName = "Prod-DockerPush",
-                    Actions = new Action[]
-                    {
-                        new CodeBuildAction(new CodeBuildActionProps
-                        {
-                            Input = sourceArtifact,
-                            Project = prodDockerPush,
-                            ActionName = "DockerPush"
-                        })
-                    }
-                });
-            }
+                        Input = sourceArtifact,
+                        Project = prodDockerPush,
+                        ActionName = "DockerPush"
+                    })
+                ]
+            });
         }
+    }
 
-        private string GetStageEcr(Construct scope, string ecrRepositoryName, Configuration configuration)
+    private string GetStageEcr(Construct scope, string ecrRepositoryName, Configuration configuration)
+    {
+        if (string.IsNullOrWhiteSpace(configuration.Ecrs.Stage))
         {
-            if (string.IsNullOrWhiteSpace(configuration.Ecrs.Stage))
+            var repository = new Amazon.CDK.AWS.ECR.Repository(scope, "StageEcr", new Amazon.CDK.AWS.ECR.RepositoryProps
             {
-                var repository = new Amazon.CDK.AWS.ECR.Repository(scope, "StageEcr", new RepositoryProps
-                {
-                    RepositoryName = ecrRepositoryName
-                });
-                return GetEcr(repository.RepositoryUri);
-            }
-
-            return configuration.Ecrs.Stage;
+                RepositoryName = ecrRepositoryName
+            });
+            return GetEcr(repository.RepositoryUri);
         }
 
-        private static string GetEcr(string ecrRepositoryUri)
-        {
-            return ecrRepositoryUri.Split('/')[0];
-        }
+        return configuration.Ecrs.Stage;
+    }
+
+    private static string GetEcr(string ecrRepositoryUri)
+    {
+        return ecrRepositoryUri.Split('/')[0];
     }
 }

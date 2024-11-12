@@ -1,21 +1,23 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=7.0.20
-ARG ASPNET_SHA512=62ed9743972043a72e48d5aa2f7fdf3483cf684a32b051315004d1c778e9712bf66e5e7a97a5a53993fa8e92daf5bacaf2cdb3eae44bb9a9e25532b9a80f4f70
+ARG ASPNET_VERSION=9.0.0-rc.2.24474.3
+ARG ASPNET_SHA512=9370c26174cd7f1b2fef58e0a53041c94b7d5412f15ea5865fbc653a65b148b1f92e7992f147610a6ca2e92011ff28c43480ab26a6e7f8cd56f2189af0610be8
 
-ARG LAMBDA_RUNTIME_NAME=dotnet7
-ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2
+ARG LAMBDA_RUNTIME_NAME=dotnet9
+ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
 
 FROM $AMAZON_LINUX AS base
 
-FROM base AS builder-net7
+RUN dnf install libicu-67.1-7.amzn2023.0.3.x86_64 --assumeyes
+
+FROM base AS builder-net9
 ARG ASPNET_VERSION
 ARG ASPNET_SHA512
 
 WORKDIR /dotnet
 
 # Install tar and gzip for unarchiving downloaded tar.gz
-RUN yum install tar gzip --assumeyes
+RUN dnf install tar gzip --assumeyes
 
 # Install the ASP.NET Core shared framework
 RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/$ASPNET_VERSION/aspnetcore-runtime-$ASPNET_VERSION-linux-x64.tar.gz \
@@ -25,22 +27,23 @@ RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/a
     && rm aspnetcore.tar.gz
 
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0-bullseye-slim AS builder
+FROM mcr.microsoft.com/dotnet/sdk:9.0-bookworm-slim AS builder
 WORKDIR /src
 COPY ["Libraries/src/Amazon.Lambda.RuntimeSupport", "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/"]
 COPY ["Libraries/src/Amazon.Lambda.Core", "Repo/Libraries/src/Amazon.Lambda.Core/"]
 COPY ["buildtools/", "Repo/buildtools/"]
-RUN dotnet restore "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj" /p:TargetFrameworks=net7.0
+RUN dotnet restore "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj" /p:TargetFrameworks=net9.0
 WORKDIR "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport"
-RUN dotnet build "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net7.0 --runtime linux-x64 -c Release -o /app/build
+RUN dotnet build "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net9.0 --runtime linux-x64 -c Release -o /app/build
 
 
 FROM builder AS publish
-RUN dotnet publish "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net7.0 -f net7.0 --runtime linux-x64 --self-contained false -p:PublishReadyToRun=true -c Release -o /app/publish
+RUN dotnet publish "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net9.0 -f net9.0 --runtime linux-x64 --self-contained false -p:PublishReadyToRun=true -c Release -o /app/publish
 RUN apt-get update && apt-get install -y dos2unix
-RUN dos2unix /app/publish/bootstrap.sh && \
-    mv /app/publish/bootstrap.sh /app/publish/bootstrap && \
+RUN dos2unix /app/publish/bootstrap-al2023.sh && \
+    mv /app/publish/bootstrap-al2023.sh /app/publish/bootstrap && \
     chmod +x /app/publish/bootstrap
+RUN touch /app/publish/empty-certificates.crt
 
 
 FROM base
@@ -60,7 +63,7 @@ ENV \
     # Disable Microsoft's telemetry collection
     DOTNET_CLI_TELEMETRY_OPTOUT=true
 
-COPY --from=builder-net7    /dotnet         ${DOTNET_ROOT}
+COPY --from=builder-net9    /dotnet         ${DOTNET_ROOT}
 COPY --from=publish         /app/publish    ${LAMBDA_RUNTIME_DIR}
 
 # Generate runtime-release file
