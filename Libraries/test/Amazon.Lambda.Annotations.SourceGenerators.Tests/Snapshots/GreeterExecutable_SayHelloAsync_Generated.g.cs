@@ -33,6 +33,10 @@ namespace TestServerlessApp
             var startup = new TestServerlessApp.Startup();
             startup.ConfigureServices(services);
             serviceProvider = services.BuildServiceProvider();
+
+            // Intentionally eagerly build Greeter and its dependencies.
+            // This causes time spent in the Constructor to appear on INIT_REPORTs
+            _ = serviceProvider.GetRequiredService<Greeter>();
         }
 
         /// <summary>

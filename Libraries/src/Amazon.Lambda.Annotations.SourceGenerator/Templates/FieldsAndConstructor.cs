@@ -19,7 +19,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+    #line 1 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
     public partial class FieldsAndConstructor : FieldsAndConstructorBase
     {
@@ -30,7 +30,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
         public virtual string TransformText()
         {
             
-            #line 7 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 7 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
 
     if (_model.LambdaMethod.UsingDependencyInjection)
     {
@@ -40,7 +40,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("        private readonly ServiceProvider serviceProvider;\r\n");
             
-            #line 12 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 12 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
 
     }
     else
@@ -51,28 +51,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("        private readonly ");
             
-            #line 17 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 17 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 17 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 17 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
             this.Write(";\r\n        private readonly ");
             
-            #line 18 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 18 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.SerializerInfo.SerializerName));
             
             #line default
             #line hidden
             this.Write(" serializer;\r\n");
             
-            #line 19 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 19 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
 
     }
 
@@ -87,14 +87,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
         /// </summary>
         public ");
             
-            #line 28 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 28 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.GeneratedMethod.ContainingType.Name));
             
             #line default
             #line hidden
             this.Write("()\r\n        {\r\n            SetExecutionEnvironment();\r\n");
             
-            #line 31 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 31 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
 
     if (_model.LambdaMethod.UsingDependencyInjection)
     {
@@ -108,29 +108,45 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
             services.AddSingleton<");
             
-            #line 39 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 39 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
             
             #line default
             #line hidden
             this.Write(">();\r\n            services.AddSingleton<");
             
-            #line 40 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 40 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.SerializerInfo.SerializerName));
             
             #line default
             #line hidden
             this.Write(">();\r\n\r\n            var startup = new ");
             
-            #line 42 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 42 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.StartupType.FullName));
             
             #line default
             #line hidden
             this.Write("();\r\n            startup.ConfigureServices(services);\r\n            serviceProvide" +
-                    "r = services.BuildServiceProvider();\r\n");
+                    "r = services.BuildServiceProvider();\r\n\r\n            // Intentionally eagerly bui" +
+                    "ld ");
             
-            #line 45 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 46 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
+            
+            #line default
+            #line hidden
+            this.Write(" and its dependencies.\r\n            // This causes time spent in the Constructor " +
+                    "to appear on INIT_REPORTs\r\n            _ = serviceProvider.GetRequiredService<");
+            
+            #line 48 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
+            
+            #line default
+            #line hidden
+            this.Write(">();\r\n");
+            
+            #line 49 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
 
     }
     else
@@ -141,28 +157,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            ");
             
-            #line 50 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 54 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name.ToCamelCase()));
             
             #line default
             #line hidden
             this.Write(" = new ");
             
-            #line 50 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 54 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.LambdaMethod.ContainingType.Name));
             
             #line default
             #line hidden
             this.Write("();\r\n            serializer = new ");
             
-            #line 51 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 55 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_model.SerializerInfo.SerializerName));
             
             #line default
             #line hidden
             this.Write("();\r\n");
             
-            #line 52 "C:\codebase\V3\HLL\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
+            #line 56 "C:\projects\aws\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\FieldsAndConstructor.tt"
 
     }
 
