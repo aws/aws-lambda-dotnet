@@ -1,0 +1,28 @@
+﻿@inject IModalService ModalService
+
+<div class="simple-form" style="min-width: 400px">
+    <p>@Message</p>
+
+    <button type="button" class="btn btn-primary" @onclick="OnOkClicked">Ok</button>
+    <button type="button" class="btn btn-secondary" @onclick="OnCancelClicked">Cancel</button>
+</div>
+
+@code {
+    public const string PARAMETER_NAME_MESSAGE = "Message";
+
+
+    [Parameter] public string? Message { get; set; }
+
+    [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; } = default!;
+
+    async Task OnOkClicked()
+    {
+        await BlazoredModal.CloseAsync(ModalResult.Ok(string.Empty));
+    }
+
+
+    async Task OnCancelClicked()
+    {
+        await BlazoredModal.CloseAsync(ModalResult.Cancel());
+    }
+}
