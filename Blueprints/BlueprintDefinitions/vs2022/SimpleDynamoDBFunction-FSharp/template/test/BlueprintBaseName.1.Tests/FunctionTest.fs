@@ -52,5 +52,3 @@ module FunctionTest =
 
         Assert.Contains("Stream processing complete", testLogger.Buffer.ToString())
 
-    [<EntryPoint>]
-    let main _ = 0

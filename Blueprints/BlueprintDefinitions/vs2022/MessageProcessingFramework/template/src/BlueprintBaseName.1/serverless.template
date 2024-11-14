@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "AWS Message Processing Framework for .NET Template. This template is partially managed by Amazon.Lambda.Annotations (v1.5.0.0).",
+  "Description": "AWS Message Processing Framework for .NET Template. This template is partially managed by Amazon.Lambda.Annotations (v1.6.0.0).",
   "Resources": {
     "MessageProcessingFrameworkDemoQueue": {
       "Type": "AWS::SQS::Queue"
@@ -67,6 +67,65 @@
           "Variables": {
             "QUEUE_URL": {
               "Ref": "MessageProcessingFrameworkDemoQueue"
+            }
+          }
+        }
+      }
+    },
+    "BlueprintBaseName1FunctionsSenderGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet8",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AmazonSQSFullAccess"
+        ],
+        "PackageType": "Zip",
+        "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions_Sender_Generated::Sender"
+      }
+    },
+    "BlueprintBaseName1FunctionsHandlerGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "SQSEvent"
+        ],
+        "SyncedEventProperties": {
+          "SQSEvent": [
+            "Queue.Fn::GetAtt",
+            "FunctionResponseTypes"
+          ]
+        }
+      },
+      "Properties": {
+        "Runtime": "dotnet8",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaSQSQueueExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions_Handler_Generated::Handler",
+        "Events": {
+          "SQSEvent": {
+            "Type": "SQS",
+            "Properties": {
+              "FunctionResponseTypes": [
+                "ReportBatchItemFailures"
+              ],
+              "Queue": {
+                "Fn::GetAtt": [
+                  "MessageProcessingFrameworkDemoQueue",
+                  "Arn"
+                ]
+              }
             }
           }
         }

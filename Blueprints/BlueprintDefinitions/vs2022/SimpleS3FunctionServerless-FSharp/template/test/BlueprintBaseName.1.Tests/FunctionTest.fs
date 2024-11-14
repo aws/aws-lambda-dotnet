@@ -56,6 +56,3 @@ module FunctionTest =
              AmazonS3Util.DeleteS3BucketWithObjectsAsync(s3Client, bucketName)
                 |> Async.AwaitTask |> Async.RunSynchronously
     }
-
-    [<EntryPoint>]
-    let main _ = 0

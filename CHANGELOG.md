@@ -1,3 +1,10 @@
+## Release 2024-11-13
+
+### Amazon.Lambda.Templates (7.3.0)
+* Update package Dependencies.
+* Custom Runtime templates target .NET 9.
+* Rework the `EntryPoint` for F# test projects.
+
 ## Release 2024-11-12
 
 ### Amazon.Lambda.Annotations (1.6.0)

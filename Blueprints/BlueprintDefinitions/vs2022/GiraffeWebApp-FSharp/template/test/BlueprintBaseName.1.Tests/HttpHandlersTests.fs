@@ -53,6 +53,3 @@ module HttpHandlersTests =
         Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"))
         Assert.Contains("text/plain", response.MultiValueHeaders.Item("Content-Type").[0])
     }
-
-    [<EntryPoint>]
-    let main _ = 0

@@ -15,6 +15,3 @@ module FunctionTest =
         let upperCase = Function.functionHandler "hello world" context
 
         Assert.Equal("HELLO WORLD", upperCase)
-
-    [<EntryPoint>]
-    let main _ = 0
