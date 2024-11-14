@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool.BlazorTester",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fixed issue supporting parameterized logging APIs added to Amazon.Lambda.Core in version 2.4.0"
+      ]
+    }
+  ]
+}
