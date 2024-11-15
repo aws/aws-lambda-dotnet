@@ -1,3 +1,9 @@
+## Release 2024-11-14
+
+### Amazon.Lambda.TestTool.BlazorTester (0.16.0)
+* Update Lambda Test Tool to add a .NET9 target
+* Fixed issue supporting parameterized logging APIs added to Amazon.Lambda.Core in version 2.4.0
+
 ## Release 2024-11-13
 
 ### Amazon.Lambda.Templates (7.3.0)
