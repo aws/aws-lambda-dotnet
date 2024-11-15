@@ -14,9 +14,13 @@
  */
 
 
+using System;
+using System.IO;
 using System.Text.Json;
 using System.Net;
 using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport
@@ -27,24 +31,27 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>Non-recoverable initialization error. Runtime should exit after reporting the error. Error will be served in response to the first invoke.</summary>
         /// <returns>Accepted</returns>
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ErrorAsync(string lambda_Runtime_Function_Error_Type, string errorJson);
+        Task<SwaggerResponse<StatusResponse>> ErrorAsync(string lambda_Runtime_Function_Error_Type, string errorJson, CancellationToken cancellationToken);
+        
 
-        /// <summary>Non-recoverable initialization error. Runtime should exit after reporting the error. Error will be served in response to the first invoke.</summary>
-        /// <returns>Accepted</returns>
+#if NET8_0_OR_GREATER
+        /// <summary>
+        ///  Triggers the snapshot to be taken, and then after resume, restores the lambda
+        /// context from the Runtime API as an asynchronous operation when SnapStart is enabled.
+        /// </summary>
+        /// /// <returns>A Task representing the asynchronous operation.</returns>
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ErrorAsync(string lambda_Runtime_Function_Error_Type, string errorJson, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<SwaggerResponse<System.IO.Stream>> RestoreNextAsync(CancellationToken cancellationToken);
 
+        Task<SwaggerResponse<StatusResponse>> RestoreErrorAsync(string lambda_Runtime_Function_Error_Type,
+            string errorJson, CancellationToken cancellationToken);
+#endif
+        
         /// <summary>Runtime makes this HTTP request when it is ready to receive and process a new invoke.</summary>
         /// <returns>This is an iterator-style blocking API call. Response contains event JSON document, specific to the invoking service.</returns>
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<SwaggerResponse<System.IO.Stream>> NextAsync();
-
-        /// <summary>Runtime makes this HTTP request when it is ready to receive and process a new invoke.</summary>
-        /// <returns>This is an iterator-style blocking API call. Response contains event JSON document, specific to the invoking service.</returns>
-        /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        System.Threading.Tasks.Task<SwaggerResponse<System.IO.Stream>> NextAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<SwaggerResponse<System.IO.Stream>> NextAsync(CancellationToken cancellationToken);
+        
 
         /// <summary>Runtime makes this request in order to submit a response.</summary>
         /// <returns>Accepted</returns>
@@ -54,6 +61,8 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>Runtime makes this request in order to submit a response.</summary>
         /// <returns>Accepted</returns>
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
+        /// <param name="awsRequestId"></param>
+        /// <param name="outputStream"></param>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ResponseAsync(string awsRequestId, System.IO.Stream outputStream, System.Threading.CancellationToken cancellationToken);
 
@@ -106,19 +115,17 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>Non-recoverable initialization error. Runtime should exit after reporting the error. Error will be served in response to the first invoke.</summary>
         /// <returns>Accepted</returns>
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ErrorAsync(string lambda_Runtime_Function_Error_Type, string errorJson)
+        public Task<SwaggerResponse<StatusResponse>> ErrorAsync(string lambda_Runtime_Function_Error_Type, string errorJson, CancellationToken cancellationToken)
         {
-            return ErrorAsync(lambda_Runtime_Function_Error_Type, errorJson, System.Threading.CancellationToken.None);
+            return ErrorAsync(lambda_Runtime_Function_Error_Type, errorJson, "/runtime/init/error", cancellationToken );
         }
 
-        /// <summary>Non-recoverable initialization error. Runtime should exit after reporting the error. Error will be served in response to the first invoke.</summary>
-        /// <returns>Accepted</returns>
-        /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ErrorAsync(string lambda_Runtime_Function_Error_Type, string errorJson, System.Threading.CancellationToken cancellationToken)
+        private async System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ErrorAsync(
+            string lambda_Runtime_Function_Error_Type, string errorJson, string url,
+            System.Threading.CancellationToken cancellationToken)
         {
-            var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/runtime/init/error");
+             var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append(url);
 
             var client_ = _httpClient;
             try
@@ -215,16 +222,40 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>Runtime makes this HTTP request when it is ready to receive and process a new invoke.</summary>
         /// <returns>This is an iterator-style blocking API call. Response contains event JSON document, specific to the invoking service.</returns>
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<SwaggerResponse<System.IO.Stream>> NextAsync()
+        public System.Threading.Tasks.Task<SwaggerResponse<System.IO.Stream>> NextAsync(CancellationToken cancellationToken)
         {
-            return NextAsync(System.Threading.CancellationToken.None);
+            return NextAsync("/runtime/invocation/next", cancellationToken);
         }
+
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// Restores the lambda context from the Runtime API as an asynchronous operation when SnapStart is enabled
+        /// </summary>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        public Task<SwaggerResponse<System.IO.Stream>> RestoreNextAsync(CancellationToken cancellationToken)
+        { 
+            return NextAsync("/runtime/restore/next", cancellationToken);
+        }
+
+        
+        /// <summary>Non-recoverable restore error when SnapStart is enabled. Runtime should exit after reporting the error.</summary>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
+        public async Task<SwaggerResponse<StatusResponse>> RestoreErrorAsync(string lambda_Runtime_Function_Error_Type,
+            string errorJson, CancellationToken cancellationToken)
+        {
+            return await ErrorAsync(lambda_Runtime_Function_Error_Type, errorJson, "/runtime/restore/error", cancellationToken);
+
+        }
+#endif
+
 
         /// <summary>Runtime makes this HTTP request when it is ready to receive and process a new invoke.</summary>
         /// <returns>This is an iterator-style blocking API call. Response contains event JSON document, specific to the invoking service.</returns>
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
+        /// <param name="endpointUrl">RAPID API endpointUrl that is invoked to process the request</param>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task<SwaggerResponse<System.IO.Stream>> NextAsync(System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<SwaggerResponse<System.IO.Stream>> NextAsync(String endpointUrl, CancellationToken cancellationToken)
         {
             this._logger.LogInformation("Starting InternalClient.NextAsync");
 
@@ -234,9 +265,10 @@ namespace Amazon.Lambda.RuntimeSupport
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
+                    
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
-                    var url_ = BaseUrl.TrimEnd('/') + "/runtime/invocation/next";
+                    var url_ = BaseUrl.TrimEnd('/') + endpointUrl;
                     request_.RequestUri = new System.Uri(url_, System.UriKind.Absolute);
 
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
@@ -306,6 +338,8 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>Runtime makes this request in order to submit a response.</summary>
         /// <returns>Accepted</returns>
         /// <exception cref="RuntimeApiClientException">A server side error occurred.</exception>
+        /// <param name="awsRequestId"></param>
+        /// <param name="outputStream"></param>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ResponseAsync(string awsRequestId, System.IO.Stream outputStream, System.Threading.CancellationToken cancellationToken)
         {

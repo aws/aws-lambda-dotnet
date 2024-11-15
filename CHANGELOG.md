@@ -1,3 +1,14 @@
+## Release 2024-11-18
+
+### Amazon.Lambda.Core (2.5.0)
+* Added the new `SnapshotRestore` static class for registering SnapStart hooks for before snapshot and after restore.
+
+### Amazon.Lambda.RuntimeSupport (1.12.0)
+* Added support for handling Lambda SnapStart events.
+
+### SnapshotRestore.Registry (1.0.0)
+* New package used by Amazon.Lambda.RuntimeSupport for registering and executing SnapStart hooks.
+
 ## Release 2024-11-14
 
 ### Amazon.Lambda.TestTool.BlazorTester (0.16.0)

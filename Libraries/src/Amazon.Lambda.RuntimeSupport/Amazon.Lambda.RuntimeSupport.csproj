@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net5.0;net6.0;net8.0</TargetFrameworks>
-    <Version>1.11.0</Version>
+    <Version>1.12.0</Version>
     <Description>Provides a bootstrap and Lambda Runtime API Client to help you to develop custom .NET Core Lambda Runtimes.</Description>
     <AssemblyTitle>Amazon.Lambda.RuntimeSupport</AssemblyTitle>
     <AssemblyName>Amazon.Lambda.RuntimeSupport</AssemblyName>
@@ -40,6 +40,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <ProjectReference Include="..\SnapshotRestore.Registry\SnapshotRestore.Registry.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="bootstrap.sh">

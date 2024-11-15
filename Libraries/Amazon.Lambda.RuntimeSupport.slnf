@@ -11,11 +11,13 @@
       "src\\Amazon.Lambda.RuntimeSupport\\Amazon.Lambda.RuntimeSupport.csproj",
       "src\\Amazon.Lambda.Serialization.Json\\Amazon.Lambda.Serialization.Json.csproj",
       "src\\Amazon.Lambda.Serialization.SystemTextJson\\Amazon.Lambda.Serialization.SystemTextJson.csproj",
+      "src\\SnapshotRestore.Registry\\SnapshotRestore.Registry.csproj",
       "test\\Amazon.Lambda.RuntimeSupport.Tests\\Amazon.Lambda.RuntimeSupport.IntegrationTests\\Amazon.Lambda.RuntimeSupport.IntegrationTests.csproj",
       "test\\Amazon.Lambda.RuntimeSupport.Tests\\Amazon.Lambda.RuntimeSupport.UnitTests\\Amazon.Lambda.RuntimeSupport.UnitTests.csproj",
       "test\\Amazon.Lambda.RuntimeSupport.Tests\\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.csproj",
       "test\\Amazon.Lambda.RuntimeSupport.Tests\\CustomRuntimeAspNetCoreMinimalApiTest\\CustomRuntimeAspNetCoreMinimalApiTest.csproj",
       "test\\Amazon.Lambda.RuntimeSupport.Tests\\CustomRuntimeFunctionTest\\CustomRuntimeFunctionTest.csproj",
+      "test\\SnapshotRestore.Registry.Tests\\SnapshotRestore.Registry.Tests.csproj",
       "test\\HandlerTestNoSerializer\\HandlerTestNoSerializer.csproj",
       "test\\HandlerTest\\HandlerTest.csproj"
     ]

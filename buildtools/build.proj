@@ -194,6 +194,7 @@
         <Exec Command="dotnet msbuild -restore /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
     </Target>
     <Target Name="run-unit-tests">
+        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\SnapshotRestore.Registry.Tests"/>
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests"/>
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.Annotations.SourceGenerators.Tests"/>
     </Target>

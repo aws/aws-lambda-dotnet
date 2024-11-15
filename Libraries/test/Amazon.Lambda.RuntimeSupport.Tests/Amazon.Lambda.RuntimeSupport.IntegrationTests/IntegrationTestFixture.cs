@@ -34,6 +34,7 @@ public class IntegrationTestFixture : IAsyncLifetime
         await LambdaToolsHelper.LambdaPackage(toolPath, "net6.0", testAppPath);
     }
 
+
     public Task DisposeAsync()
     {
         foreach (var tempPath in _tempPaths)
