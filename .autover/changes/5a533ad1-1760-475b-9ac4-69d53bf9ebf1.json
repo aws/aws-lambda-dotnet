@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update to latest version of Amazon.Lambda.Core and Amazon.Lambda.RuntimeSupport"
+      ]
+    }
+  ]
+}

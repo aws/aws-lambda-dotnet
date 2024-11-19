@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Annotations",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update to latest version of Amazon.Lambda.Core"
+      ]
+    }
+  ]
+}
