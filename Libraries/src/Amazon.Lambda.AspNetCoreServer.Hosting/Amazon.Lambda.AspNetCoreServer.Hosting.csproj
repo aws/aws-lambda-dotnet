@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	
   <Import Project="..\..\..\buildtools\common.props" />	
 
@@ -7,7 +7,7 @@
     <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<Version>1.7.1</Version>
+	<Version>1.7.2</Version>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
     <AssemblyName>Amazon.Lambda.AspNetCoreServer.Hosting</AssemblyName>
     <PackageId>Amazon.Lambda.AspNetCoreServer.Hosting</PackageId>	  
@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\"/>		
+    <None Include="README.md" Pack="true" PackagePath="\" />		
   </ItemGroup>
 
 
