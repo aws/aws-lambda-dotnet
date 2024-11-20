@@ -1,3 +1,16 @@
+## Release 2024-11-20
+
+### Amazon.Lambda.PowerShellHost (3.0.2)
+* Update to latest version of Amazon.Lambda.Core
+### Amazon.Lambda.Logging.AspNetCore (3.1.1)
+* Update to latest version of Amazon.Lambda.Core
+### Amazon.Lambda.Annotations (1.6.1)
+* Update to latest version of Amazon.Lambda.Core
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.7.2)
+* Update to latest version of Amazon.Lambda.Core and Amazon.Lambda.RuntimeSupport
+### Amazon.Lambda.AspNetCoreServer (9.0.2)
+* Update to latest version of Amazon.Lambda.Core
+
 ## Release 2024-11-18
 
 ### Amazon.Lambda.Core (2.5.0)
