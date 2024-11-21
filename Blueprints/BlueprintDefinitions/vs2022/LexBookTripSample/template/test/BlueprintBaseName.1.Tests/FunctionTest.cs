@@ -15,6 +15,7 @@ public class FunctionTest
         var json = File.ReadAllText("start-book-a-car-event.json");
 
         var lexEvent = JsonConvert.DeserializeObject<LexEvent>(json);
+        Assert.NotNull(lexEvent);
 
         var function = new Function();
         var context = new TestLambdaContext();
@@ -29,6 +30,7 @@ public class FunctionTest
         var json = File.ReadAllText("driver-age-too-young.json");
 
         var lexEvent = JsonConvert.DeserializeObject<LexEvent>(json);
+        Assert.NotNull(lexEvent);
 
         var function = new Function();
         var context = new TestLambdaContext();
@@ -46,6 +48,7 @@ public class FunctionTest
         var json = File.ReadAllText("commit-book-a-car.json");
 
         var lexEvent = JsonConvert.DeserializeObject<LexEvent>(json);
+        Assert.NotNull(lexEvent);
 
         var function = new Function();
         var context = new TestLambdaContext();
