@@ -1,3 +1,7 @@
+## Release 2024-11-21
+### Amazon.Lambda.Templates (7.3.0)
+* Update package dependencies. The significant dependency update was for Amazon.Lambda.Core and Amazon.Lambda.RuntimeSupport with added support for Lambda SnapStart.
+
 ## Release 2024-11-20
 
 ### Amazon.Lambda.PowerShellHost (3.0.2)

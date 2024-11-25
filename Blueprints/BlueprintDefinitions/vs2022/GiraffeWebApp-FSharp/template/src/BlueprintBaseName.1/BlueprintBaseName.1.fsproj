@@ -11,7 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Giraffe" Version="7.0.2" />
-    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="9.0.1" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="9.0.2" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppHandlers.fs" />
