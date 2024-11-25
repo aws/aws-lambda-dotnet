@@ -8,6 +8,7 @@
 * Fixed issue '(EmptyBodyBehavior = EmptyBodyBehavior.Allow)' not being honored when request body was empty
 
 ## Release 2024-11-25
+
 ### Amazon.Lambda.Templates (7.4.0)
 * Update package dependencies. The significant dependency update was for Amazon.Lambda.Core and Amazon.Lambda.RuntimeSupport with added support for Lambda SnapStart.
 
