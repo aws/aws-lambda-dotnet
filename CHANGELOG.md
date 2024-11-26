@@ -1,3 +1,12 @@
+## Release 2024-11-26
+
+### Amazon.Lambda.AspNetCoreServer (9.0.3)
+* Fixed issue '(EmptyBodyBehavior = EmptyBodyBehavior.Allow)' not being honored when request body was empty
+### Amazon.Lambda.RuntimeSupport (1.12.1)
+* Revert behavior for non SnapShot scenario to throw an exception when initialization fails
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.7.3)
+* Fixed issue '(EmptyBodyBehavior = EmptyBodyBehavior.Allow)' not being honored when request body was empty
+
 ## Release 2024-11-25
 ### Amazon.Lambda.Templates (7.4.0)
 * Update package dependencies. The significant dependency update was for Amazon.Lambda.Core and Amazon.Lambda.RuntimeSupport with added support for Lambda SnapStart.
