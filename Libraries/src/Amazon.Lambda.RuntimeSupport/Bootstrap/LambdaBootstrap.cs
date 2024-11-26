@@ -219,8 +219,8 @@ namespace Amazon.Lambda.RuntimeSupport
                     System.Environment.Exit(1); // This needs to be non-zero for Lambda Sandbox to know that Runtime client encountered an exception
                 }
 #endif
+                throw;
             }
-            return false;
         }
 
         internal async Task InvokeOnceAsync(CancellationToken cancellationToken = default)
