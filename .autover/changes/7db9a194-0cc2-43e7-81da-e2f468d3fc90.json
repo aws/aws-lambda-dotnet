@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fixed issue \u0027(EmptyBodyBehavior = EmptyBodyBehavior.Allow)\u0027 not being honored when request body was empty"
+      ]
+    }
+  ]
+}
