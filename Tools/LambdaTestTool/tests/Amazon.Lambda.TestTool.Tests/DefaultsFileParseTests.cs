@@ -162,6 +162,22 @@ namespace Amazon.Lambda.TestTool.Tests
         }
 
         [Fact]
+        public void SetTimeOut()
+        {
+            var jsonFile = WriteTempConfigFile("{\"function-timeout\" : 30, \"function-handler\" : \"Assembly::Type::Method\"}");
+            try
+            {
+                var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
+                Assert.Single(configInfo.FunctionInfos);
+                Assert.Equal(TimeSpan.FromSeconds(30), configInfo.FunctionInfos[0].Timeout);
+            }
+            finally
+            {
+                File.Delete(jsonFile);
+            }
+        }
+
+        [Fact]
         public void LoadServerlessTemplateConfig()
         {
             var defaultsFilePath = TestUtils.GetLambdaFunctionSourceFile("ServerlessTemplateExample", "aws-lambda-tools-defaults.json");
