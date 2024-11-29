@@ -9,7 +9,7 @@
     <PackageProjectUrl>https://github.com/aws/aws-lambda-dotnet</PackageProjectUrl>
     <PackageIcon>images\icon.png</PackageIcon>
     <PackageReadmeFile>docs\README.md</PackageReadmeFile>
-    <PackageLicenseUrl>https://aws.amazon.com/apache2.0/</PackageLicenseUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     
     <!--This assembly needs to access internal methods inside the Amazon.Lambda.Annotations assembly.
     Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
