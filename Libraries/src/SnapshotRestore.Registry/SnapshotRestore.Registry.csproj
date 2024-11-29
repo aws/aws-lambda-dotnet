@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\..\buildtools\common.props" />
+
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <VersionPrefix>1.0.0</VersionPrefix>
     <Description>Provides a Restore Hooks library to help you register before snapshot and after restore hooks.</Description>
     <AssemblyTitle>SnapshotRestore.Registry</AssemblyTitle>

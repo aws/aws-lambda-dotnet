@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Annotations",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Added License URL to project"
+      ]
+    }
+  ]
+}

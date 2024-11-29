@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "SnapshotRestore.Registry",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Updated project to support building the .NET 9 Lambda custom runtime image"
+      ]
+    }
+  ]
+}

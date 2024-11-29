@@ -131,6 +131,10 @@
     {
       "Name": "Amazon.Lambda.Templates",
       "Path": "Blueprints/BlueprintDefinitions/vs2022/Templates.csproj"
+    },
+    {
+      "Name": "SnapshotRestore.Registry",
+      "Path": "Libraries/src/SnapshotRestore.Registry/SnapshotRestore.Registry.csproj"
     }
   ],
   "UseCommitsForChangelog": false,

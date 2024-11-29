@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "SnapshotRestore.Registry",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Added License URL to project"
+      ]
+    }
+  ]
+}
