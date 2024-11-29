@@ -3,7 +3,7 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net5.0;net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net6.0;net8.0;net9.0</TargetFrameworks>
     <Version>1.12.1</Version>
     <Description>Provides a bootstrap and Lambda Runtime API Client to help you to develop custom .NET Core Lambda Runtimes.</Description>
     <AssemblyTitle>Amazon.Lambda.RuntimeSupport</AssemblyTitle>
@@ -20,7 +20,7 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 	
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net9.0'">
     <WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
@@ -41,7 +41,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net9.0'">
     <ProjectReference Include="..\SnapshotRestore.Registry\SnapshotRestore.Registry.csproj" />
   </ItemGroup>
   <ItemGroup>
