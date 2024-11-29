@@ -42,11 +42,11 @@ jobs:
         with:
           fetch-depth: '0'
           token: ${{ env.AWS_SECRET_TOKEN }}
-      # Install .NET8 which is needed for AutoVer
-      - name: Setup .NET 8.0
+      # Install .NET9 which is needed for AutoVer
+      - name: Setup .NET 9.0
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 9.0.x
       # Install AutoVer to automate versioning and changelog creation
       - name: Install AutoVer
         run: dotnet tool install --global AutoVer --version 0.0.24
