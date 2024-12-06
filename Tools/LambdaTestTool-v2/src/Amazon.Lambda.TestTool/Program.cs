@@ -1,31 +1,17 @@
 using Amazon.Lambda.TestTool;
-using System.Diagnostics;
+using Amazon.Lambda.TestTool.Extensions;
 
-var lambdaOptions = CommandLineOptions.Parse(args);
+var builder = Host.CreateApplicationBuilder();
 
-if (lambdaOptions.ShowHelp)
+builder.Services.AddCustomServices();
+
+var serviceProvider = builder.Build();
+
+var appRunner = serviceProvider.Services.GetService<AppRunner>();
+if (appRunner == null)
 {
-    CommandLineOptions.PrintUsage();
-    return;
+    throw new Exception($"{nameof(AppRunner)} dependencies aren't injected correctly." +
+                        $" Verify {nameof(ServiceCollectionExtensions)} has all the required dependencies to instantiate {nameof(AppRunner)}.");
 }
 
-var process = LambdaTestToolProcess.Startup(lambdaOptions);
-
-if (!lambdaOptions.NoLaunchWindow)
-{
-    try
-    {
-        var info = new ProcessStartInfo
-        {
-            UseShellExecute = true,
-            FileName = process.ServiceUrl
-        };
-        Process.Start(info);
-    }
-    catch (Exception e)
-    {
-        Console.Error.WriteLine($"Error launching browser: {e.Message}");
-    }
-}
-
-await process.RunningTask;
+return await appRunner.Run(args);

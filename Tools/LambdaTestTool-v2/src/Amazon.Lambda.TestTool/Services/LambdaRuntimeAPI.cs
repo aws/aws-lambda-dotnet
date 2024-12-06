@@ -1,7 +1,6 @@
-﻿using Amazon.Lambda.TestTool.Models;
-using Amazon.Lambda.TestTool.Services;
+﻿using System.Text;
+using Amazon.Lambda.TestTool.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Text;
 
 // TODO:
 // Make IRuntimeApiDataStore separate the events per function name
@@ -9,7 +8,7 @@ using System.Text;
 //          https://docs.aws.amazon.com/lambda/latest/api/API_Invoke.html#lambda-Invoke-request-InvocationType
 
 
-namespace Amazon.Lambda.TestTool;
+namespace Amazon.Lambda.TestTool.Services;
 
 public class LambdaRuntimeAPI
 {

@@ -3,10 +3,11 @@
 @using Amazon.Lambda.TestTool.Services
 @using Amazon.Lambda.TestTool.Models
 @using Amazon.Lambda.TestTool.SampleRequests;
+@using Amazon.Lambda.TestTool.Utilities
 @using Microsoft.AspNetCore.Http;
 
 @inject IHttpContextAccessor httpContextAccessor
-@inject LambdaTestToolOptions LambdaOptions
+@inject ApplicationOptions LambdaOptions
 @inject IRuntimeApiDataStore RuntimeApiModel
 
 <PageTitle>Lambd Function Tester</PageTitle>
@@ -81,7 +82,7 @@
                 {
                     <p>
                         <b>Response:</b>
-                        <pre class="form-control" style="@Constants.ResponseSuccessStyleSizeConstraint">@Amazon.Lambda.TestTool.Utils.TryPrettyPrintJson(RuntimeApiModel.ActiveEvent.Response)</pre>
+                        <pre class="form-control" style="@Constants.ResponseSuccessStyleSizeConstraint">@Utils.TryPrettyPrintJson(RuntimeApiModel.ActiveEvent.Response)</pre>
                     </p>
                 }
             </div>

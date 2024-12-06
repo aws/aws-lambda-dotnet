@@ -1,14 +1,12 @@
-﻿namespace Amazon.Lambda.TestTool;
+﻿namespace Amazon.Lambda.TestTool.Models;
 
-public class LambdaTestToolOptions
+public class ApplicationOptions
 {
-    public string Host { get; set; } = Constants.DEFAULT_HOST;
+    public string Host { get; set; } = Constants.DefaultHost;
 
-    public int Port { get; set; } = Constants.DEFAULT_PORT;
+    public int Port { get; set; } = Constants.DefaultPort;
 
     public bool NoLaunchWindow { get; set; }
-
-    public bool ShowHelp { get; set; }
 
     public bool PauseExit { get; set; } = true;
 
