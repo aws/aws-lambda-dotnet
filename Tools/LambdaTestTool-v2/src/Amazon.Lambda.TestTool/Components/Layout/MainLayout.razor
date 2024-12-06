@@ -1,4 +1,5 @@
-﻿@inherits LayoutComponentBase
+﻿@using Amazon.Lambda.TestTool.Utilities
+@inherits LayoutComponentBase
 
 <div class="page">
     <div class="sidebar">
@@ -10,7 +11,7 @@
             @Body
             <hr />
             <footer>
-                <p>@Constants.PRODUCT_NAME (@Utils.DetermineToolVersion()) is an open source project. For issues or feedback visit the <a href="@Constants.LINK_GITHUB_TEST_TOOL">AWS Lambda for .NET Core GitHub repository.</a></p>
+                <p>@Constants.ProductName (@Utils.DetermineToolVersion()) is an open source project. For issues or feedback visit the <a href="@Constants.LinkGithubTestTool">AWS Lambda for .NET Core GitHub repository.</a></p>
             </footer>
         </article>
     </main>

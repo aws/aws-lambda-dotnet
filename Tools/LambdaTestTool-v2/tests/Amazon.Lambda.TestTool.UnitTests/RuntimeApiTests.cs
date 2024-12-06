@@ -4,6 +4,8 @@ using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.TestTool.Models;
+using Amazon.Lambda.TestTool.Processes;
 
 namespace Amazon.Lambda.TestTool.UnitTests;
 
@@ -18,9 +20,9 @@ public class RuntimeApiTests
     [Fact]
     public async Task AddEventToDataStore()
     {
-        var options = new LambdaTestToolOptions();
+        var options = new ApplicationOptions();
 
-        var testToolProcess = LambdaTestToolProcess.Startup(options);
+        var testToolProcess = TestToolProcess.Startup(options);
         try
         {
             var lambdaClient = ConstructLambdaServiceClient(testToolProcess.ServiceUrl);

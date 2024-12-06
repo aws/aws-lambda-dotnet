@@ -1,14 +1,13 @@
 ﻿using Amazon.Lambda.TestTool.Components;
+using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;
 using Blazored.Modal;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using System.Diagnostics;
 
-namespace Amazon.Lambda.TestTool;
+namespace Amazon.Lambda.TestTool.Processes;
 
-public class LambdaTestToolProcess
+public class TestToolProcess
 {
     public required IServiceProvider Services { get; init; }
 
@@ -18,12 +17,12 @@ public class LambdaTestToolProcess
 
     public required CancellationTokenSource CancellationTokenSource { get; init; }
 
-    private LambdaTestToolProcess()
+    private TestToolProcess()
     {
 
     }
 
-    public static LambdaTestToolProcess Startup(LambdaTestToolOptions lambdaOptions)
+    public static TestToolProcess Startup(ApplicationOptions lambdaOptions)
     {
         var builder = WebApplication.CreateBuilder();
 
@@ -56,12 +55,12 @@ public class LambdaTestToolProcess
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
 
-        new LambdaRuntimeAPI(app, app.Services.GetService<IRuntimeApiDataStore>()!);
+        _ = new LambdaRuntimeAPI(app, app.Services.GetService<IRuntimeApiDataStore>()!);
 
         var cancellationTokenSource = new CancellationTokenSource();
         var runTask = app.RunAsync(cancellationTokenSource.Token);
 
-        var startup = new LambdaTestToolProcess
+        var startup = new TestToolProcess
         {
             Services = app.Services,
             RunningTask = runTask,

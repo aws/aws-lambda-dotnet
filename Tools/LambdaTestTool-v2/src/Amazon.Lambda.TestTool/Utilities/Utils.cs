@@ -3,8 +3,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 
-
-namespace Amazon.Lambda.TestTool;
+namespace Amazon.Lambda.TestTool.Utilities;
 
 public static class Utils
 {
