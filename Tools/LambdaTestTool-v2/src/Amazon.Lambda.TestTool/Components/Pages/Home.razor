@@ -1,14 +1,15 @@
 ﻿@page "/"
 
+@using Amazon.Lambda.TestTool.Commands
 @using Amazon.Lambda.TestTool.Services
 @using Amazon.Lambda.TestTool.Models
 @using Amazon.Lambda.TestTool.SampleRequests;
 @using Amazon.Lambda.TestTool.Utilities
 @using Microsoft.AspNetCore.Http;
 
-@inject IHttpContextAccessor httpContextAccessor
-@inject ApplicationOptions LambdaOptions
+@inject IHttpContextAccessor HttpContextAccessor
 @inject IRuntimeApiDataStore RuntimeApiModel
+@inject IDirectoryManager DirectoryManager
 
 <PageTitle>Lambd Function Tester</PageTitle>
 
@@ -16,7 +17,7 @@
 
 <p>
     For Lambda functions written as executable assemblies, i.e. custom runtimes functions and top level statement functions, this page can be used for testing the functions locally.
-    Set the <b>AWS_LAMBDA_RUNTIME_API</b> environment variable to <b>@httpContextAccessor?.HttpContext?.Request?.Host</b> while debugging executable assembly
+    Set the <b>AWS_LAMBDA_RUNTIME_API</b> environment variable to <b>@HttpContextAccessor?.HttpContext?.Request?.Host</b> while debugging executable assembly
     Lambda function. More information can be found in the <a href="/documentation">documentation</a>.
 </p>
 
@@ -26,10 +27,10 @@
         <label class="" for="sample-requests">Example Requests:</label>
         <select class="control" id="sample-requests" @bind="SelectedSampleRequestName">
             <option id="@NO_SAMPLE_SELECTED_ID"> -- select a request -- </option>
-            @if (@SampleRequests.ContainsKey(SampleRequestManager.SAVED_REQUEST_GROUP))
+            @if (@SampleRequests.ContainsKey(SampleRequestManager.SavedRequestGroup))
             {
-                <optgroup id="saved-select-request-group" label="@SampleRequestManager.SAVED_REQUEST_GROUP">
-                    @foreach (var request in SampleRequests[SampleRequestManager.SAVED_REQUEST_GROUP])
+                <optgroup id="saved-select-request-group" label="@SampleRequestManager.SavedRequestGroup">
+                    @foreach (var request in SampleRequests[SampleRequestManager.SavedRequestGroup])
                     {
                         <option value="@request.Filename">@request.Name</option>
                     }
@@ -37,7 +38,7 @@
             }
             @foreach (var group in SampleRequests.Keys)
             {
-                @if (!string.Equals(group, SampleRequestManager.SAVED_REQUEST_GROUP))
+                @if (!string.Equals(group, SampleRequestManager.SavedRequestGroup))
                 {
                     <optgroup label="@group">
                         @foreach (var request in SampleRequests[group])
@@ -208,7 +209,7 @@
     protected override void OnInitialized()
     {
         RuntimeApiModel.StateChange += RuntimeApiModelOnStateChange;
-        this.SampleRequestManager = new SampleRequestManager(LambdaOptions.GetPreferenceDirectory(false));
+        this.SampleRequestManager = new SampleRequestManager(DirectoryManager.GetCurrentDirectory());
         this.SampleRequests = SampleRequestManager.GetSampleRequests();
     }
 

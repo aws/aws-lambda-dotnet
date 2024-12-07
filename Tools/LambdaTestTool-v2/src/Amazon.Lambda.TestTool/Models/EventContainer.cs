@@ -6,7 +6,7 @@ public class EventContainer
 {
     public enum Status { Queued, Executing, Success, Failure }
 
-    private const string defaultFunctionArn = "arn:aws:lambda:us-west-2:123412341234:function:Function";
+    private const string DefaultFunctionArn = "arn:aws:lambda:us-west-2:123412341234:function:Function";
     public string AwsRequestId { get; }
     public string EventJson { get; }
     public string? ErrorResponse { get; private set; }
@@ -29,17 +29,18 @@ public class EventContainer
     }
 
     private readonly RuntimeApiDataStore _dataStore;
+    
     public EventContainer(RuntimeApiDataStore dataStore, int eventCount, string eventJson)
     {
         LastUpdated = DateTime.Now;
-        this._dataStore = dataStore;
-        this.AwsRequestId = eventCount.ToString("D12");
-        this.EventJson = eventJson;
+        _dataStore = dataStore;
+        AwsRequestId = eventCount.ToString("D12");
+        EventJson = eventJson;
     }
 
     public string FunctionArn
     {
-        get => defaultFunctionArn;
+        get => DefaultFunctionArn;
     }
 
     public void ReportSuccessResponse(string response)
