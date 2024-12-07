@@ -1,17 +1,19 @@
 using Amazon.Lambda.TestTool;
+using Amazon.Lambda.TestTool.Commands;
 using Amazon.Lambda.TestTool.Extensions;
+using Amazon.Lambda.TestTool.Services;
+using Spectre.Console.Cli;
 
-var builder = Host.CreateApplicationBuilder();
+var serviceCollection = new ServiceCollection();
 
-builder.Services.AddCustomServices();
+serviceCollection.AddCustomServices();
 
-var serviceProvider = builder.Build();
+var registrar = new TypeRegistrar(serviceCollection);
 
-var appRunner = serviceProvider.Services.GetService<AppRunner>();
-if (appRunner == null)
+var app = new CommandApp<RunCommand>(registrar);
+app.Configure(config =>
 {
-    throw new Exception($"{nameof(AppRunner)} dependencies aren't injected correctly." +
-                        $" Verify {nameof(ServiceCollectionExtensions)} has all the required dependencies to instantiate {nameof(AppRunner)}.");
-}
+    config.SetApplicationName(Constants.ToolName);
+});
 
-return await appRunner.Run(args);
+return await app.RunAsync(args);

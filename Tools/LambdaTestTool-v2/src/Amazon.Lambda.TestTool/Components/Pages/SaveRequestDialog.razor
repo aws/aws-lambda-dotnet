@@ -1,7 +1,8 @@
-﻿@using Amazon.Lambda.TestTool.Models
+﻿@using Amazon.Lambda.TestTool.Commands
 @using Amazon.Lambda.TestTool.SampleRequests;
-@inject ApplicationOptions LambdaOptions
+@using Amazon.Lambda.TestTool.Services
 @inject IModalService ModalService
+@inject IDirectoryManager DirectoryManager
 
 <div class="simple-form" style="min-width: 400px">
     <div class="form-group" for="save-request-name">
@@ -29,8 +30,8 @@
 
         var requestBody = Parameters.Get<string>(PARAMETER_NAME_REQUEST_BODY);
 
-        var manager = new SampleRequestManager(this.LambdaOptions.GetPreferenceDirectory(true));
-        var systemName = manager.SaveRequest(this.SaveRequestName, requestBody);
+        var manager = new SampleRequestManager(DirectoryManager.GetCurrentDirectory());
+        var systemName = manager.SaveRequest(SaveRequestName, requestBody);
 
         await BlazoredModal.CloseAsync(ModalResult.Ok(systemName));
     }

@@ -4,6 +4,7 @@ using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.TestTool.Commands;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Processes;
 
@@ -20,7 +21,7 @@ public class RuntimeApiTests
     [Fact]
     public async Task AddEventToDataStore()
     {
-        var options = new ApplicationOptions();
+        var options = new RunCommand.Settings();
 
         var testToolProcess = TestToolProcess.Startup(options);
         try

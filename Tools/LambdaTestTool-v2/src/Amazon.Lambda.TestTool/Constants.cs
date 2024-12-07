@@ -2,6 +2,7 @@ namespace Amazon.Lambda.TestTool;
 
 public abstract class Constants
 {
+    public const string ToolName = "lambda-test-tool";
     public const int DefaultPort = 5050;
     public const string DefaultHost = "localhost";
 
