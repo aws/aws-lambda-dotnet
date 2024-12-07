@@ -7,18 +7,18 @@ namespace Amazon.Lambda.TestTool.Utilities;
 
 public static class Utils
 {
-    public const string DEFAULT_CONFIG_FILE = "aws-lambda-tools-defaults.json";
+    public const string DefaultConfigFile = "aws-lambda-tools-defaults.json";
 
     public static string DetermineToolVersion()
     {
-        const string UnknownVersion = "Unknown";
+        const string unknownVersion = "Unknown";
 
         AssemblyInformationalVersionAttribute? attribute = null;
         try
         {
             var assembly = Assembly.GetEntryAssembly();
             if (assembly == null)
-                return UnknownVersion;
+                return unknownVersion;
             attribute = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
         }
         catch (Exception)
@@ -34,7 +34,7 @@ public static class Utils
             version = version.Substring(0, version.IndexOf('+'));
         }
 
-        return version ?? UnknownVersion;
+        return version ?? unknownVersion;
     }
 
 
@@ -64,7 +64,7 @@ public static class Utils
                 return string.Empty;
 
             var doc = JsonDocument.Parse(data);
-            var prettyPrintJson = System.Text.Json.JsonSerializer.Serialize(doc, new JsonSerializerOptions()
+            var prettyPrintJson = JsonSerializer.Serialize(doc, new JsonSerializerOptions()
             {
                 WriteIndented = true
             });

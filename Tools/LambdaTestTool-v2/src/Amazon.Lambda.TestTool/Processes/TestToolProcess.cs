@@ -1,5 +1,5 @@
-﻿using Amazon.Lambda.TestTool.Components;
-using Amazon.Lambda.TestTool.Models;
+﻿using Amazon.Lambda.TestTool.Commands;
+using Amazon.Lambda.TestTool.Components;
 using Amazon.Lambda.TestTool.Services;
 using Blazored.Modal;
 using Microsoft.Extensions.FileProviders;
@@ -22,7 +22,7 @@ public class TestToolProcess
 
     }
 
-    public static TestToolProcess Startup(ApplicationOptions lambdaOptions)
+    public static TestToolProcess Startup(RunCommand.Settings settings)
     {
         var builder = WebApplication.CreateBuilder();
 
@@ -38,10 +38,9 @@ public class TestToolProcess
         builder.Services.AddBlazoredModal();
 
         builder.Services.AddTransient<IPostConfigureOptions<StaticFileOptions>, ConfigureStaticFilesOptions>();
+        builder.Services.AddSingleton<IDirectoryManager, DirectoryManager>();
 
-        builder.Services.AddSingleton(lambdaOptions);
-
-        var serviceUrl = $"http://{lambdaOptions.Host}:{lambdaOptions.Port}";
+        var serviceUrl = $"http://{settings.Host}:{settings.Port}";
         builder.WebHost.UseUrls(serviceUrl);
         builder.WebHost.SuppressStatusMessages(true);
 
@@ -55,7 +54,7 @@ public class TestToolProcess
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
 
-        _ = new LambdaRuntimeAPI(app, app.Services.GetService<IRuntimeApiDataStore>()!);
+        _ = new LambdaRuntimeApi(app, app.Services.GetService<IRuntimeApiDataStore>()!);
 
         var cancellationTokenSource = new CancellationTokenSource();
         var runTask = app.RunAsync(cancellationTokenSource.Token);
