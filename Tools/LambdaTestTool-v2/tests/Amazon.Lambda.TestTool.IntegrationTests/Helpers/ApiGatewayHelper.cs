@@ -6,6 +6,7 @@ using Amazon.ApiGatewayV2;
 using Amazon.APIGateway.Model;
 using Amazon.ApiGatewayV2.Model;
 using System.Net;
+using Amazon.Runtime.Internal.Endpoints.StandardLibrary;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
 {
@@ -47,7 +48,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                         var response = await httpClient.PostAsync(apiUrl, new StringContent("{}"));
 
                         // Check if we get a response, even if it's an error
-                        if (response.StatusCode != HttpStatusCode.NotFound)
+                        if (response.StatusCode != HttpStatusCode.NotFound && response.StatusCode != HttpStatusCode.Forbidden)
                         {
                             return; // API is available and responding
                         }
@@ -70,5 +71,102 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             }
             throw new TimeoutException($"API {apiId} did not become available within {maxWaitTimeSeconds} seconds");
         }
+
+        public async Task<string> AddRouteToRestApi(string restApiId, string lambdaArn, string route = "/test")
+        {
+            var rootResourceId = (await _apiGatewayV1Client.GetResourcesAsync(new GetResourcesRequest { RestApiId = restApiId })).Items[0].Id;
+
+            var pathParts = route.Trim('/').Split('/');
+            var currentResourceId = rootResourceId;
+            foreach (var pathPart in pathParts)
+            {
+                var resources = await _apiGatewayV1Client.GetResourcesAsync(new GetResourcesRequest { RestApiId = restApiId });
+                var existingResource = resources.Items.FirstOrDefault(r => r.ParentId == currentResourceId && r.PathPart == pathPart);
+
+                if (existingResource == null)
+                {
+                    var createResourceResponse = await _apiGatewayV1Client.CreateResourceAsync(new CreateResourceRequest
+                    {
+                        RestApiId = restApiId,
+                        ParentId = currentResourceId,
+                        PathPart = pathPart
+                    });
+                    currentResourceId = createResourceResponse.Id;
+                }
+                else
+                {
+                    currentResourceId = existingResource.Id;
+                }
+            }
+
+            await _apiGatewayV1Client.PutMethodAsync(new PutMethodRequest
+            {
+                RestApiId = restApiId,
+                ResourceId = currentResourceId,
+                HttpMethod = "ANY",
+                AuthorizationType = "NONE"
+            });
+
+            await _apiGatewayV1Client.PutIntegrationAsync(new PutIntegrationRequest
+            {
+                RestApiId = restApiId,
+                ResourceId = currentResourceId,
+                HttpMethod = "ANY",
+                Type = APIGateway.IntegrationType.AWS_PROXY,
+                IntegrationHttpMethod = "POST",
+                Uri = $"arn:aws:apigateway:{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}:lambda:path/2015-03-31/functions/{lambdaArn}/invocations"
+            });
+
+            await _apiGatewayV1Client.CreateDeploymentAsync(new APIGateway.Model.CreateDeploymentRequest
+            {
+                RestApiId = restApiId,
+                StageName = "test"
+            });
+
+            var url = $"https://{restApiId}.execute-api.{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}.amazonaws.com/test{route}";
+            return url;
+        }
+
+        public async Task<string> AddRouteToHttpApi(string httpApiId, string lambdaArn, string version, string route = "/test", string routeKey = "ANY")
+        {
+            var createIntegrationResponse = await _apiGatewayV2Client.CreateIntegrationAsync(new CreateIntegrationRequest
+            {
+                ApiId = httpApiId,
+                IntegrationType = ApiGatewayV2.IntegrationType.AWS_PROXY,
+                IntegrationUri = lambdaArn,
+                PayloadFormatVersion = version
+            });
+            string integrationId = createIntegrationResponse.IntegrationId;
+
+            // Split the route into parts and create each part
+            var routeParts = route.Trim('/').Split('/');
+            var currentPath = "";
+            foreach (var part in routeParts)
+            {
+                currentPath += "/" + part;
+                await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
+                {
+                    ApiId = httpApiId,
+                    RouteKey = $"{routeKey} {currentPath}",
+                    Target = $"integrations/{integrationId}"
+                });
+            }
+
+            // Create the final route (if it's not already created)
+            if (currentPath != "/" + route.Trim('/'))
+            {
+                await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
+                {
+                    ApiId = httpApiId,
+                    RouteKey = $"{routeKey} {route}",
+                    Target = $"integrations/{integrationId}"
+                });
+            }
+
+            var url = $"https://{httpApiId}.execute-api.{_apiGatewayV2Client.Config.RegionEndpoint.SystemName}.amazonaws.com{route}";
+            return url ;
+        }
+
+
     }
 }
