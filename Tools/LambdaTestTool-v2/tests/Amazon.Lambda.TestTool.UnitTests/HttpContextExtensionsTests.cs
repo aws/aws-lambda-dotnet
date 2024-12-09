@@ -22,7 +22,7 @@ public class HttpContextExtensionsTests
                 LambdaResourceName = "TestLambdaFunction",
                 Endpoint = $"{method} {path}",
                 HttpMethod = method,
-                Path = "/api/users/{userId}/orders" // This is now the resource
+                Path = "/api/users/{userId}/orders"
             });
         _mockRouteConfigParser.Setup(x => x.ExtractPathParameters(It.IsAny<ApiGatewayRouteConfig>(), It.IsAny<string>()))
             .Returns(new Dictionary<string, string> { { "userId", "123" } });
