@@ -65,7 +65,7 @@ public static class HttpContextExtensions
 
         if (_httpRequestUtility.IsBinaryContent(request.ContentType))
         {
-            httpApiV2ProxyRequest.Body = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(httpApiV2ProxyRequest.Body));
+            httpApiV2ProxyRequest.Body = Convert.ToBase64String(Encoding.UTF8.GetBytes(httpApiV2ProxyRequest.Body));
             httpApiV2ProxyRequest.IsBase64Encoded = true;
         }
 
