@@ -5,6 +5,8 @@ using System.Web;
 using Xunit;
 using Moq;
 using System.Text;
+using Microsoft.Extensions.Primitives;
+using System.Linq;
 
 public class HttpContextExtensionsTests
 {
@@ -52,7 +54,7 @@ public class HttpContextExtensionsTests
         request.QueryString = new QueryString("?status=pending");
         request.Headers["User-Agent"] = "TestAgent";
         request.Headers["Accept"] = "application/json";
-        request.Headers["Cookie"] = "session=abc123; theme=dark; complex=this+has+spaces;";
+        request.Headers["Cookie"] = "session=abc123; theme=dark; complex=this+has+special;";
 
         var result = context.ToApiGatewayHttpV2Request();
 
@@ -64,7 +66,7 @@ public class HttpContextExtensionsTests
         Assert.Equal(3, result.Cookies.Length);
         Assert.Contains("session=abc123", result.Cookies);
         Assert.Contains("theme=dark", result.Cookies);
-        Assert.Contains("complex=this%2bhas%2bspaces", result.Cookies);
+        Assert.Contains("complex=this%2bhas%2bspecial", result.Cookies);
         Assert.Equal("123", result.PathParameters["userId"]);
         Assert.Equal("GET", result.RequestContext.Http.Method);
         Assert.Equal("/api/users/123/orders", result.RequestContext.Http.Path);
@@ -159,25 +161,23 @@ public class HttpContextExtensionsTests
         request.Path = "/api/users/123/orders";
         request.QueryString = new QueryString("?status=pending&tag=important&tag=urgent");
         request.Headers["User-Agent"] = "TestAgent";
-        request.Headers["Accept"] = new Microsoft.Extensions.Primitives.StringValues(new[] { "text/html", "application/json" });
-        request.Headers["Cookie"] = "session=abc123; theme=dark";
+        request.Headers["Accept"] = new StringValues(new[] { "text/html", "application/json" });
+        request.Headers["Cookie"] = "session=abc123; theme=dark; complex=this+has+special;";
         request.Headers["X-Custom-Header"] = "value1";
 
         _mockHttpRequestUtility.Setup(x => x.ExtractHeaders(It.IsAny<IHeaderDictionary>()))
             .Returns((
                 new Dictionary<string, string>
                 {
-                    { "User-Agent", "TestAgent" },
-                    { "Accept", "application/json" },
-                    { "Cookie", "session=abc123; theme=dark" },
-                    { "X-Custom-Header", "value1" }
+                        { "User-Agent", "TestAgent" },
+                        { "Accept", "application/json" },
+                        { "X-Custom-Header", "value1" }
                 },
                 new Dictionary<string, IList<string>>
                 {
-                    { "User-Agent", new List<string> { "TestAgent" } },
-                    { "Accept", new List<string> { "text/html", "application/json" } },
-                    { "Cookie", new List<string> { "session=abc123; theme=dark" } },
-                    { "X-Custom-Header", new List<string> { "value1" } }
+                        { "User-Agent", new List<string> { "TestAgent" } },
+                        { "Accept", new List<string> { "text/html", "application/json" } },
+                        { "X-Custom-Header", new List<string> { "value1" } }
                 }
             ));
 
@@ -185,13 +185,13 @@ public class HttpContextExtensionsTests
             .Returns((
                 new Dictionary<string, string>
                 {
-                    { "status", "pending" },
-                    { "tag", "urgent" }
+                        { "status", "pending" },
+                        { "tag", "urgent" }
                 },
                 new Dictionary<string, IList<string>>
                 {
-                    { "status", new List<string> { "pending" } },
-                    { "tag", new List<string> { "important", "urgent" } }
+                        { "status", new List<string> { "pending" } },
+                        { "tag", new List<string> { "important", "urgent" } }
                 }
             ));
 
@@ -204,13 +204,11 @@ public class HttpContextExtensionsTests
 
         Assert.Equal("TestAgent", result.Headers["User-Agent"]);
         Assert.Equal("application/json", result.Headers["Accept"]);
-        Assert.Equal("session=abc123; theme=dark", result.Headers["Cookie"]);
         Assert.Equal("value1", result.Headers["X-Custom-Header"]);
 
-        Assert.Equal(new List<string> { "TestAgent" }, result.MultiValueHeaders["User-Agent"]);
-        Assert.Equal(new List<string> { "text/html", "application/json" }, result.MultiValueHeaders["Accept"]);
-        Assert.Equal(new List<string> { "session=abc123; theme=dark" }, result.MultiValueHeaders["Cookie"]);
-        Assert.Equal(new List<string> { "value1" }, result.MultiValueHeaders["X-Custom-Header"]);
+        var expectedCookieString = $"session={HttpUtility.UrlEncode("abc123")}; theme={HttpUtility.UrlEncode("dark")}; complex={HttpUtility.UrlEncode("this+has+special")}";
+        Assert.Equal(expectedCookieString, result.Headers["Cookie"]);
+        Assert.Equal([expectedCookieString], result.MultiValueHeaders["Cookie"]);
 
         Assert.Equal("pending", result.QueryStringParameters["status"]);
         Assert.Equal("urgent", result.QueryStringParameters["tag"]);

@@ -88,6 +88,23 @@ public static class HttpContextExtensions
         var (headers, multiValueHeaders) = _httpRequestUtility.ExtractHeaders(request.Headers);
         var (queryStringParameters, multiValueQueryStringParameters) = _httpRequestUtility.ExtractQueryStringParameters(request.Query);
 
+        var encodedCookies = request.Cookies.Select(c => $"{c.Key}={HttpUtility.UrlEncode(c.Value)}");
+        var cookieString = string.Join("; ", encodedCookies);
+
+        // Add or update the Cookie header with the URL-encoded cookies
+        if (!string.IsNullOrEmpty(cookieString))
+        {
+            headers["Cookie"] = cookieString;
+            if (multiValueHeaders.ContainsKey("Cookie"))
+            {
+                multiValueHeaders["Cookie"] = [cookieString];
+            }
+            else
+            {
+                multiValueHeaders.Add("Cookie", [cookieString]);
+            }
+        }
+
         var proxyRequest = new APIGatewayProxyRequest
         {
             Resource = matchedConfig.Path,
