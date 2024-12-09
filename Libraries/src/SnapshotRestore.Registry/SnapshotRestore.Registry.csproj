@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Description>Provides a Restore Hooks library to help you register before snapshot and after restore hooks.</Description>
     <AssemblyTitle>SnapshotRestore.Registry</AssemblyTitle>
     <PackageId>SnapshotRestore.Registry</PackageId>
@@ -22,6 +22,6 @@
   </PropertyGroup>
 	
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>	
 </Project>

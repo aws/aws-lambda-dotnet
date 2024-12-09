@@ -1,3 +1,13 @@
+## Release 2024-12-09
+
+### SnapshotRestore.Registry (1.0.1)
+* Added License URL to project
+* Updated project to support building the .NET 9 Lambda custom runtime image
+### Amazon.Lambda.RuntimeSupport (1.12.2)
+* Updated project to support building the .NET 9 Lambda custom runtime image
+### Amazon.Lambda.Annotations (1.6.2)
+* Added License URL to project
+
 ## Release 2024-11-26
 
 ### Amazon.Lambda.AspNetCoreServer (9.0.3)
