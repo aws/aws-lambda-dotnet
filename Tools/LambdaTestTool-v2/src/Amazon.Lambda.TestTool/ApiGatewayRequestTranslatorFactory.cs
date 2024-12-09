@@ -28,7 +28,8 @@
             {
                 ApiGatewayMode.REST => _serviceProvider.GetRequiredService<ApiGatewayProxyRequestTranslator>(),
                 ApiGatewayMode.HTTPV1 => _serviceProvider.GetRequiredService<ApiGatewayProxyRequestTranslator>(),
-                ApiGatewayMode.HTTPV2 => _serviceProvider.GetRequiredService<ApiGatewayHttpApiV2ProxyRequestTranslator>()
+                ApiGatewayMode.HTTPV2 => _serviceProvider.GetRequiredService<ApiGatewayHttpApiV2ProxyRequestTranslator>(),
+                _ => throw new NotImplementedException()
             };
         }
     }

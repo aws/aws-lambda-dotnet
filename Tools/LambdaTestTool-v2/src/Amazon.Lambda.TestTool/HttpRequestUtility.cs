@@ -56,8 +56,8 @@
 
             foreach (var header in headers)
             {
-                singleValueHeaders[header.Key] = header.Value.Last();
-                multiValueHeaders[header.Key] = header.Value.ToList();
+                singleValueHeaders[header.Key] = header.Value.Last() ?? "";
+                multiValueHeaders[header.Key] = [.. header.Value];
             }
 
             return (singleValueHeaders, multiValueHeaders);
@@ -82,7 +82,7 @@
 
             foreach (var param in query)
             {
-                singleValueParams[param.Key] = param.Value.Last();
+                singleValueParams[param.Key] = param.Value.Last() ?? "";
                 multiValueParams[param.Key] = [.. param.Value];
             }
 
