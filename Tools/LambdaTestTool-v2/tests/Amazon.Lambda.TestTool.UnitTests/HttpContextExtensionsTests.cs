@@ -109,6 +109,45 @@ public class HttpContextExtensionsTests
     }
 
     [Fact]
+    public void ToApiGatewayRequest_WithBinaryContent_ShouldBase64EncodeBody()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "POST";
+        request.Path = "/api/users/123/avatar";
+        request.ContentType = "application/octet-stream";
+        var bodyContent = new byte[] { 1, 2, 3, 4, 5 };
+        request.Body = new MemoryStream(bodyContent);
+
+        _mockHttpRequestUtility.Setup(x => x.IsBinaryContent(It.IsAny<string>())).Returns(true);
+        _mockHttpRequestUtility.Setup(x => x.ReadRequestBody(It.IsAny<HttpRequest>())).Returns(Encoding.UTF8.GetString(bodyContent));
+
+        _mockRouteConfigParser.Setup(x => x.GetRouteConfig("POST", "/api/users/123/avatar"))
+            .Returns(new ApiGatewayRouteConfig
+            {
+                LambdaResourceName = "UploadAvatarFunction",
+                Endpoint = "POST /api/users/{userId}/avatar",
+                HttpMethod = "POST",
+                Path = "/api/users/{userId}/avatar"
+            });
+
+        var result = context.ToApiGatewayRequest();
+
+        Assert.NotNull(result);
+        Assert.True(result.IsBase64Encoded);
+        Assert.Equal(Convert.ToBase64String(bodyContent), result.Body);
+        Assert.Equal("123", result.PathParameters["userId"]);
+        Assert.Equal("/api/users/{userId}/avatar", result.Resource);
+        Assert.Equal("POST", result.HttpMethod);
+        Assert.Equal(HttpUtility.UrlEncode("/api/users/123/avatar"), result.Path);
+
+        _mockRouteConfigParser.Verify(x => x.GetRouteConfig("POST", "/api/users/123/avatar"), Times.Once);
+        _mockRouteConfigParser.Verify(x => x.ExtractPathParameters(It.IsAny<ApiGatewayRouteConfig>(), "/api/users/123/avatar"), Times.Once);
+        _mockHttpRequestUtility.Verify(x => x.IsBinaryContent("application/octet-stream"), Times.Once);
+        _mockHttpRequestUtility.Verify(x => x.ReadRequestBody(It.IsAny<HttpRequest>()), Times.Once);
+    }
+
+    [Fact]
     public void ToApiGatewayRequest_ShouldReturnValidApiGatewayProxyRequest()
     {
         var context = new DefaultHttpContext();
