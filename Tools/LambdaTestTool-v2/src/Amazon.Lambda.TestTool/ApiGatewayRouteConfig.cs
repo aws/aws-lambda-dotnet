@@ -2,9 +2,9 @@
 {
     public class ApiGatewayRouteConfig
     {
-        public string LambdaResourceName { get; set; }
-        public string Endpoint { get; set; }
-        public string HttpMethod { get; set; }
-        public string Path { get; set; }
+        public required string LambdaResourceName { get; set; }
+        public required string Endpoint { get; set; }
+        public required string HttpMethod { get; set; }
+        public required string Path { get; set; }
     }
 }
