@@ -44,7 +44,7 @@ public static class HttpContextExtensions
             RouteKey = $"{request.Method} {matchedConfig.Path}",
             RawPath = request.Path,
             RawQueryString = request.QueryString.Value,
-            Cookies = request.Cookies.Select(c => $"{c.Key}={c.Value}").ToArray(),
+            Cookies = request.Cookies.Select(c => $"{c.Key}={HttpUtility.UrlEncode(c.Value)}").ToArray(),
             Headers = headers,
             QueryStringParameters = queryStringParameters,
             PathParameters = pathParameters ?? new Dictionary<string, string>(),

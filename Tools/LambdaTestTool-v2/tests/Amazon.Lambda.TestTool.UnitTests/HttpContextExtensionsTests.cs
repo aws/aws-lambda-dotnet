@@ -52,7 +52,7 @@ public class HttpContextExtensionsTests
         request.QueryString = new QueryString("?status=pending");
         request.Headers["User-Agent"] = "TestAgent";
         request.Headers["Accept"] = "application/json";
-        request.Headers["Cookie"] = "session=abc123; theme=dark";
+        request.Headers["Cookie"] = "session=abc123; theme=dark; complex=this+has+spaces;";
 
         var result = context.ToApiGatewayHttpV2Request();
 
@@ -61,9 +61,10 @@ public class HttpContextExtensionsTests
         Assert.Equal("GET /api/users/{userId}/orders", result.RouteKey);
         Assert.Equal("/api/users/123/orders", result.RawPath);
         Assert.Equal("?status=pending", result.RawQueryString);
-        Assert.Equal(2, result.Cookies.Length);
+        Assert.Equal(3, result.Cookies.Length);
         Assert.Contains("session=abc123", result.Cookies);
         Assert.Contains("theme=dark", result.Cookies);
+        Assert.Contains("complex=this%2bhas%2bspaces", result.Cookies);
         Assert.Equal("123", result.PathParameters["userId"]);
         Assert.Equal("GET", result.RequestContext.Http.Method);
         Assert.Equal("/api/users/123/orders", result.RequestContext.Http.Path);
