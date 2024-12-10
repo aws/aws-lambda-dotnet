@@ -1,8 +1,9 @@
-﻿<Solution>
+<Solution>
   <Folder Name="/src/">
-    <Project Path="src\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" Type="Classic C#" />
+    <Project Path="src\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests\Amazon.Lambda.TestTool.UnitTests\Amazon.Lambda.TestTool.UnitTests.csproj" Type="Classic C#" />
+    <Project Path="tests\Amazon.Lambda.TestTool.UnitTests\Amazon.Lambda.TestTool.UnitTests.csproj" />
+    <Project Path="tests\Amazon.Lambda.TestTool.IntegrationTests\Amazon.Lambda.TestTool.IntegrationTests.csproj" />
   </Folder>
 </Solution>
