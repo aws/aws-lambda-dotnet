@@ -1,28 +1,36 @@
-﻿using Amazon.Lambda.TestTool.Commands;
+﻿using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Components;
 using Amazon.Lambda.TestTool.Services;
+using Amazon.Lambda.TestTool.Services.IO;
 using Blazored.Modal;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 
 namespace Amazon.Lambda.TestTool.Processes;
 
+/// <summary>
+/// A process that runs the local Lambda Runtime API and its web interface.
+/// </summary>
 public class TestToolProcess
 {
+    /// <summary>
+    /// The service provider that will contain all the registered services.
+    /// </summary>
     public required IServiceProvider Services { get; init; }
 
+    /// <summary>
+    /// The Lambda Runtime API task that was started.
+    /// </summary>
     public required Task RunningTask { get; init; }
 
+    /// <summary>
+    /// The endpoint of the Lambda Runtime API.
+    /// </summary>
     public required string ServiceUrl { get; init; }
 
-    public required CancellationTokenSource CancellationTokenSource { get; init; }
-
-    private TestToolProcess()
-    {
-
-    }
-
-    public static TestToolProcess Startup(RunCommand.Settings settings)
+    /// <summary>
+    /// Creates the Web Application and runs it in the background.
+    /// </summary>
+    public static TestToolProcess Startup(RunCommandSettings settings, CancellationToken cancellationToken = default)
     {
         var builder = WebApplication.CreateBuilder();
 
@@ -56,41 +64,15 @@ public class TestToolProcess
 
         _ = new LambdaRuntimeApi(app, app.Services.GetService<IRuntimeApiDataStore>()!);
 
-        var cancellationTokenSource = new CancellationTokenSource();
-        var runTask = app.RunAsync(cancellationTokenSource.Token);
+        var runTask = app.RunAsync(cancellationToken);
 
         var startup = new TestToolProcess
         {
             Services = app.Services,
             RunningTask = runTask,
-            CancellationTokenSource = cancellationTokenSource,
             ServiceUrl = serviceUrl
         };
 
         return startup;
-    }
-
-    internal class ConfigureStaticFilesOptions : IPostConfigureOptions<StaticFileOptions>
-    {
-        public ConfigureStaticFilesOptions(IWebHostEnvironment environment)
-        {
-            Environment = environment;
-        }
-
-        public IWebHostEnvironment Environment { get; }
-
-        public void PostConfigure(string? name, StaticFileOptions options)
-        {
-            name = name ?? throw new ArgumentNullException(nameof(name));
-            options = options ?? throw new ArgumentNullException(nameof(options));
-
-            if (name != Options.DefaultName)
-            {
-                return;
-            }
-
-            var fileProvider = new ManifestEmbeddedFileProvider(typeof(Program).Assembly, "wwwroot");
-            Environment.WebRootFileProvider = new CompositeFileProvider(fileProvider, Environment.WebRootFileProvider);
-        }
     }
 }

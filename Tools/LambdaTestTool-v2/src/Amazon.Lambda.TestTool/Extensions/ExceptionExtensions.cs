@@ -2,6 +2,9 @@ using Amazon.Lambda.TestTool.Models;
 
 namespace Amazon.Lambda.TestTool.Extensions;
 
+/// <summary>
+/// A class that contains extension methods for the <see cref="Exception"/> class.
+/// </summary>
 public static class ExceptionExtensions
 {
     /// <summary>
@@ -11,6 +14,9 @@ public static class ExceptionExtensions
     public static bool IsExpectedException(this Exception e) =>
         e is TestToolException;
 
+    /// <summary>
+    /// Prints an exception in a user-friendly way.
+    /// </summary>
     public static string PrettyPrint(this Exception? e)
     {
         if (null == e)

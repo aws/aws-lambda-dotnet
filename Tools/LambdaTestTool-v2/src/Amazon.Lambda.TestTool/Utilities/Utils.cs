@@ -1,14 +1,16 @@
-﻿using System.Net;
-using System.Reflection;
-using System.Text;
+﻿using System.Reflection;
 using System.Text.Json;
 
 namespace Amazon.Lambda.TestTool.Utilities;
 
+/// <summary>
+/// A utility class that encapsulates common functionlity.
+/// </summary>
 public static class Utils
 {
-    public const string DefaultConfigFile = "aws-lambda-tools-defaults.json";
-
+    /// <summary>
+    /// Determines the version of the tool.
+    /// </summary>
     public static string DetermineToolVersion()
     {
         const string unknownVersion = "Unknown";
@@ -37,20 +39,6 @@ public static class Utils
         return version ?? unknownVersion;
     }
 
-
-
-    public static void PrintToolTitle(string productName)
-    {
-        var sb = new StringBuilder(productName);
-        var version = Utils.DetermineToolVersion();
-        if (!string.IsNullOrEmpty(version))
-        {
-            sb.Append($" ({version})");
-        }
-
-        Console.WriteLine(sb.ToString());
-    }
-
     /// <summary>
     /// Attempt to pretty print the input string. If pretty print fails return back the input string in its original form.
     /// </summary>
@@ -74,14 +62,5 @@ public static class Utils
         {
             return data ?? string.Empty;
         }
-    }
-
-    public static string DetermineLaunchUrl(string host, int port, string defaultHost)
-    {
-        if (!IPAddress.TryParse(host, out _))
-            // Any host other than explicit IP will be redirected to default host (i.e. localhost)
-            return $"http://{defaultHost}:{port}";
-
-        return $"http://{host}:{port}";
     }
 }

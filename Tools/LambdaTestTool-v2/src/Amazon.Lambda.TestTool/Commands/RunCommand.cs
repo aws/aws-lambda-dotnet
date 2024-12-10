@@ -1,5 +1,5 @@
-using System.ComponentModel;
 using System.Diagnostics;
+using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Processes;
@@ -8,41 +8,24 @@ using Spectre.Console.Cli;
 
 namespace Amazon.Lambda.TestTool.Commands;
 
+/// <summary>
+/// The default command of the application which is responsible for launching the Lambda Runtime API and the API Gateway Emulator.
+/// </summary>
 public sealed class RunCommand(
-    IToolInteractiveService toolInteractiveService) : AsyncCommand<RunCommand.Settings>
+    IToolInteractiveService toolInteractiveService) : CancellableAsyncCommand<RunCommandSettings>
 {
-    public sealed class Settings : CommandSettings
-    {
-        [CommandOption("--host <HOST>")]
-        [Description(
-            "The hostname or IP address used for the test tool's web interface. Any host other than an explicit IP address or localhost (e.g. '*', '+' or 'example.com') binds to all public IPv4 and IPv6 addresses.")]
-        [DefaultValue(Constants.DefaultHost)]
-        public string Host { get; set; } = Constants.DefaultHost;
-
-        [CommandOption("-p|--port <PORT>")]
-        [Description("The port number used for the test tool's web interface.")]
-        [DefaultValue(Constants.DefaultPort)]
-        public int Port { get; set; } = Constants.DefaultPort;
-        
-        [CommandOption("--no-launch-window")]
-        [Description("Disable auto launching the test tool's web interface in a browser.")]
-        public bool NoLaunchWindow { get; set; }
-        
-        [CommandOption("--pause-exit")]
-        [Description("If set to true the test tool will pause waiting for a key input before exiting. The is useful when executing from an IDE so you can avoid having the output window immediately disappear after executing the Lambda code. The default value is true.")]
-        public bool PauseExit { get; set; }
-        
-        [CommandOption("--disable-logs")]
-        [Description("Disables logging in the application")]
-        public bool DisableLogs { get; set; }
-    }
-
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
+    /// <summary>
+    /// The method responsible for executing the <see cref="RunCommand"/>.
+    /// </summary>
+    public override async Task<int> ExecuteAsync(CommandContext context, RunCommandSettings settings, CancellationTokenSource cancellationTokenSource)
     {
         try
         {
-            var process = TestToolProcess.Startup(settings);
-            
+            var tasks = new List<Task>();
+
+            var testToolProcess = TestToolProcess.Startup(settings, cancellationTokenSource.Token);
+            tasks.Add(testToolProcess.RunningTask);
+
             if (!settings.NoLaunchWindow)
             {
                 try
@@ -50,7 +33,7 @@ public sealed class RunCommand(
                     var info = new ProcessStartInfo
                     {
                         UseShellExecute = true,
-                        FileName = process.ServiceUrl
+                        FileName = testToolProcess.ServiceUrl
                     };
                     Process.Start(info);
                 }
@@ -59,16 +42,23 @@ public sealed class RunCommand(
                     toolInteractiveService.WriteErrorLine($"Error launching browser: {e.Message}");
                 }
             }
-            
-            await process.RunningTask;
-            
+
+            if (settings.ApiGatewayEmulatorMode is not null)
+            {
+                var apiGatewayEmulatorProcess =
+                    ApiGatewayEmulatorProcess.Startup(settings, cancellationTokenSource.Token);
+                tasks.Add(apiGatewayEmulatorProcess.RunningTask);
+            }
+
+            await Task.WhenAny(tasks);
+
             return CommandReturnCodes.Success;
         }
         catch (Exception e) when (e.IsExpectedException())
         {
             toolInteractiveService.WriteErrorLine(string.Empty);
             toolInteractiveService.WriteErrorLine(e.Message);
-                
+
             return CommandReturnCodes.UserError;
         }
         catch (Exception e)
@@ -79,8 +69,12 @@ public sealed class RunCommand(
                 $"This is a bug.{Environment.NewLine}" +
                 $"Please copy the stack trace below and file a bug at {Constants.LinkGithubRepo}. " +
                 e.PrettyPrint());
-                
+
             return CommandReturnCodes.UnhandledException;
+        }
+        finally
+        {
+            await cancellationTokenSource.CancelAsync();
         }
     }
 }
