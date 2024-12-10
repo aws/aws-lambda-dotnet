@@ -2,6 +2,7 @@ using System.Collections;
 using System.Text.Json;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services.IO;
+using Amazon.Lambda.TestTool.Utilities;
 using Microsoft.AspNetCore.Routing.Template;
 
 namespace Amazon.Lambda.TestTool.Services;
@@ -66,7 +67,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
         {
             var template = TemplateParser.Parse(routeConfig.Path);
 
-            var matcher = new TemplateMatcher(template, GetDefaults(template));
+            var matcher = new TemplateMatcher(template, RouteTemplateUtility.GetDefaults(template));
 
             var routeValueDictionary = new RouteValueDictionary();
             if (!matcher.TryMatch(path, routeValueDictionary))
@@ -79,20 +80,5 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
         }
 
         return null;
-    }
-
-    private RouteValueDictionary GetDefaults(RouteTemplate parsedTemplate)
-    {
-        var result = new RouteValueDictionary();
-
-        foreach (var parameter in parsedTemplate.Parameters)
-        {
-            if (parameter.DefaultValue != null)
-            {
-                if (parameter.Name != null) result.Add(parameter.Name, parameter.DefaultValue);
-            }
-        }
-
-        return result;
     }
 }
