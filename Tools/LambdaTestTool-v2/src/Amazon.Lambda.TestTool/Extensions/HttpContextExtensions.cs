@@ -18,6 +18,7 @@ public static class HttpContextExtensions
     /// Translates an <see cref="HttpContext"/> to an <see cref="APIGatewayHttpApiV2ProxyRequest"/>.
     /// </summary>
     /// <param name="context">The <see cref="HttpContext"/> to be translated.</param>
+    /// <param name="apiGatewayRouteConfig">The configuration of the API Gateway route, including the HTTP method, path, and other metadata.</param>
     /// <returns>An <see cref="APIGatewayHttpApiV2ProxyRequest"/> object representing the translated request.</returns>
     public static APIGatewayHttpApiV2ProxyRequest ToApiGatewayHttpV2Request(
         this HttpContext context,
@@ -67,6 +68,7 @@ public static class HttpContextExtensions
     /// Translates an <see cref="HttpContext"/> to an <see cref="APIGatewayProxyRequest"/>.
     /// </summary>
     /// <param name="context">The <see cref="HttpContext"/> to be translated.</param>
+    /// <param name="apiGatewayRouteConfig">The configuration of the API Gateway route, including the HTTP method, path, and other metadata.</param>
     /// <returns>An <see cref="APIGatewayProxyRequest"/> object representing the translated request.</returns>
     public static APIGatewayProxyRequest ToApiGatewayRequest(
         this HttpContext context,
