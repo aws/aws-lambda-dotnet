@@ -51,7 +51,9 @@ public class ApiGatewayEmulatorProcess
             var routeConfig = routeConfigService.GetRouteConfig(context.Request.Method, context.Request.Path);
             if (routeConfig == null)
             {
-                return Results.NotFound("Route not found");
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.Headers.Append("x-amzn-errortype", "MissingAuthenticationTokenException");
+                return Results.Json(new { message = "Missing Authentication Token" });
             }
             
             if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
