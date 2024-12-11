@@ -21,7 +21,7 @@ public class RunCommandSettingsTests
         var settings = new RunCommandSettings();
 
         // Assert
-        Assert.Equal(Constants.DefaultPort, settings.Port);
+        Assert.Equal(Constants.DefaultLambdaRuntimeEmulatorPort, settings.Port);
     }
 
     [Fact]

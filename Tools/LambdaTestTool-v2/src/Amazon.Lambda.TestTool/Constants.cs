@@ -15,7 +15,7 @@ public abstract class Constants
     /// <summary>
     /// The default port used by the Lambda Test Tool for the Lambda Runtime API and the Web Interface.
     /// </summary>
-    public const int DefaultPort = 5050;
+    public const int DefaultLambdaRuntimeEmulatorPort = 5050;
 
     /// <summary>
     /// The default port used by the API Gateway Emulator.

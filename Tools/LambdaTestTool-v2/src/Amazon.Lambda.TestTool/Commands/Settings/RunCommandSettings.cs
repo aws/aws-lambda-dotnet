@@ -24,8 +24,8 @@ public sealed class RunCommandSettings : CommandSettings
     /// </summary>
     [CommandOption("-p|--port <PORT>")]
     [Description("The port number used for the test tool's web interface.")]
-    [DefaultValue(Constants.DefaultPort)]
-    public int Port { get; set; } = Constants.DefaultPort;
+    [DefaultValue(Constants.DefaultLambdaRuntimeEmulatorPort)]
+    public int Port { get; set; } = Constants.DefaultLambdaRuntimeEmulatorPort;
 
     /// <summary>
     /// Disable auto launching the test tool's web interface in a browser.

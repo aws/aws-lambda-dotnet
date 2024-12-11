@@ -19,7 +19,7 @@ public class RunCommandTests
         // Arrange
         var cancellationSource = new CancellationTokenSource();
         cancellationSource.CancelAfter(5000);
-        var settings = new RunCommandSettings { NoLaunchWindow = true };
+        var settings = new RunCommandSettings { Port = 9001, NoLaunchWindow = true };
         var command = new RunCommand(_mockInteractiveService.Object);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
         var apiUrl = $"http://{settings.Host}:{settings.Port}";
@@ -27,7 +27,7 @@ public class RunCommandTests
         // Act
         var runningTask = command.ExecuteAsync(context, settings, cancellationSource);
         var isApiRunning = await TestHelpers.WaitForApiToStartAsync(apiUrl);
-        cancellationSource.Cancel();
+        await cancellationSource.CancelAsync();
 
         // Assert
         var result = await runningTask;
@@ -41,15 +41,15 @@ public class RunCommandTests
         // Arrange
         var cancellationSource = new CancellationTokenSource();
         cancellationSource.CancelAfter(5000);
-        var settings = new RunCommandSettings { ApiGatewayEmulatorMode = ApiGatewayEmulatorMode.HttpV2, NoLaunchWindow = true};
+        var settings = new RunCommandSettings { Port = 9002,  ApiGatewayEmulatorMode = ApiGatewayEmulatorMode.HttpV2, NoLaunchWindow = true};
         var command = new RunCommand(_mockInteractiveService.Object);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
-        var apiUrl = $"http://{settings.Host}:{settings.ApiGatewayEmulatorPort}/health";
+        var apiUrl = $"http://{settings.Host}:{settings.ApiGatewayEmulatorPort}/__lambda_test_tool_apigateway_health__";
 
         // Act
         var runningTask = command.ExecuteAsync(context, settings, cancellationSource);
         var isApiRunning = await TestHelpers.WaitForApiToStartAsync(apiUrl);
-        cancellationSource.Cancel();
+        await cancellationSource.CancelAsync();
 
         // Assert
         var result = await runningTask;

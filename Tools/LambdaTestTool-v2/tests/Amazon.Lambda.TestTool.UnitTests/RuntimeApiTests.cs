@@ -22,7 +22,7 @@ public class RuntimeApiTests
     {
         var cancellationTokenSource = new CancellationTokenSource();
         var options = new RunCommandSettings();
-
+        options.Port = 9000;
         var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
         try
         {

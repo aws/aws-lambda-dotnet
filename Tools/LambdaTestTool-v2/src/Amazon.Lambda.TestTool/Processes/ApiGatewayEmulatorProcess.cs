@@ -6,7 +6,7 @@ using Amazon.Lambda.TestTool.Services;
 namespace Amazon.Lambda.TestTool.Processes;
 
 /// <summary>
-/// A process that runs the API Gatewat emulator.
+/// A process that runs the API Gateway emulator.
 /// </summary>
 public class ApiGatewayEmulatorProcess
 {
@@ -16,12 +16,12 @@ public class ApiGatewayEmulatorProcess
     public required IServiceProvider Services { get; init; }
 
     /// <summary>
-    /// The API Gatewat emulator task that was started.
+    /// The API Gateway emulator task that was started.
     /// </summary>
     public required Task RunningTask { get; init; }
 
     /// <summary>
-    /// The endpoint of the API Gatewat emulator.
+    /// The endpoint of the API Gateway emulator.
     /// </summary>
     public required string ServiceUrl { get; init; }
 
@@ -44,7 +44,7 @@ public class ApiGatewayEmulatorProcess
 
         app.UseHttpsRedirection();
 
-        app.MapHealthChecks("/health");
+        app.MapHealthChecks("/__lambda_test_tool_apigateway_health__");
 
         app.Map("/{**catchAll}", (HttpContext context, IApiGatewayRouteConfigService routeConfigService) =>
         {
