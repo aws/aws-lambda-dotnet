@@ -41,7 +41,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
                 continue;
             }
 
-            var jsonValue = entry.Value?.ToString();
+            var jsonValue = entry.Value?.ToString()?.Trim();
             logger.LogDebug("Environment variable value: {VariableValue}", jsonValue);
             if (string.IsNullOrEmpty(jsonValue))
                 continue;
