@@ -1,8 +1,7 @@
-﻿namespace Amazon.Lambda.TestTool.UnitTests;
+﻿namespace Amazon.Lambda.TestTool.UnitTests.Extensions;
 
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
-using Amazon.Lambda.TestTool.Utilities;
 using Microsoft.AspNetCore.Http;
 using System.Web;
 using Xunit;
@@ -18,10 +17,11 @@ public class HttpContextExtensionsTests
         request.Scheme = "https";
         request.Host = new HostString("api.example.com");
         request.Path = "/api/users/123/orders";
-        request.QueryString = new QueryString("?status=pending");
+        request.QueryString = new QueryString("?status=pending&tag=important&tag=urgent");
         request.Headers["User-Agent"] = "TestAgent";
-        request.Headers["Accept"] = "application/json";
+        request.Headers["Accept"] = new Microsoft.Extensions.Primitives.StringValues(new[] { "text/html", "application/json" });
         request.Headers["Cookie"] = "session=abc123; theme=dark";
+        request.Headers["X-Custom-Header"] = "value1";
 
         var apiGatewayRouteConfig = new ApiGatewayRouteConfig
         {
@@ -37,7 +37,7 @@ public class HttpContextExtensionsTests
         Assert.Equal("2.0", result.Version);
         Assert.Equal("GET /api/users/{userId}/orders", result.RouteKey);
         Assert.Equal("/api/users/123/orders", result.RawPath);
-        Assert.Equal("?status=pending", result.RawQueryString);
+        Assert.Equal("?status=pending&tag=important&tag=urgent", result.RawQueryString);
         Assert.Equal(2, result.Cookies.Length);
         Assert.Contains("session=abc123", result.Cookies);
         Assert.Contains("theme=dark", result.Cookies);
@@ -45,6 +45,39 @@ public class HttpContextExtensionsTests
         Assert.Equal("GET", result.RequestContext.Http.Method);
         Assert.Equal("/api/users/123/orders", result.RequestContext.Http.Path);
         Assert.Equal("GET /api/users/{userId}/orders", result.RequestContext.RouteKey);
+
+        Assert.Equal("TestAgent", result.Headers["User-Agent"]);
+        Assert.Equal("text/html,application/json", result.Headers["Accept"]);
+        Assert.Equal("session=abc123; theme=dark", result.Headers["Cookie"]);
+        Assert.Equal("value1", result.Headers["X-Custom-Header"]);
+
+        Assert.Equal("pending", result.QueryStringParameters["status"]);
+        Assert.Equal("important,urgent", result.QueryStringParameters["tag"]);
+    }
+
+    [Fact]
+    public void ToApiGatewayHttpV2Request_WithEmptyCollections_ShouldNotSetParameters()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/notmatchingpath/123/orders";
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "TestLambdaFunction",
+            Endpoint = "GET /api/users/{userId}/orders",
+            HttpMethod = "GET",
+            Path = "/api/users/{userId}/orders"
+        };
+
+        var result = context.ToApiGatewayHttpV2Request(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Null(result.Headers);
+        Assert.Null(result.QueryStringParameters);
+        Assert.Null(result.PathParameters);
+        Assert.Null(result.Cookies);
     }
 
     [Fact]
@@ -154,5 +187,31 @@ public class HttpContextExtensionsTests
         Assert.Equal("123", result.PathParameters["userId"]);
         Assert.Equal(string.Empty, result.Body);
         Assert.False(result.IsBase64Encoded);
+    }
+
+    [Fact]
+    public void ToApiGatewayRequest_WithEmptyCollections_ShouldNotSetParameters()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/notmatchingpath/123/orders";
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "TestLambdaFunction",
+            Endpoint = "GET /api/users/{userId}/orders",
+            HttpMethod = "GET",
+            Path = "/api/users/{userId}/orders"
+        };
+
+        var result = context.ToApiGatewayRequest(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Null(result.Headers);
+        Assert.Null(result.MultiValueHeaders);
+        Assert.Null(result.QueryStringParameters);
+        Assert.Null(result.MultiValueQueryStringParameters);
+        Assert.Null(result.PathParameters);
     }
 }

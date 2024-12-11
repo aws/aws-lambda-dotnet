@@ -13,7 +13,6 @@ using static Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest;
 /// </summary>
 public static class HttpContextExtensions
 {
-
     /// <summary>
     /// Translates an <see cref="HttpContext"/> to an <see cref="APIGatewayHttpApiV2ProxyRequest"/>.
     /// </summary>
@@ -28,18 +27,25 @@ public static class HttpContextExtensions
 
         var pathParameters = RouteTemplateUtility.ExtractPathParameters(apiGatewayRouteConfig.Path, request.Path);
 
-        var (headers, _) = HttpRequestUtility.ExtractHeaders(request.Headers);
-        var (queryStringParameters, _) = HttpRequestUtility.ExtractQueryStringParameters(request.Query);
+        // Format 2.0 doesn't have multiValueHeaders or multiValueQueryStringParameters fields. Duplicate headers are combined with commas and included in the headers field.
+        var (_, allHeaders) = HttpRequestUtility.ExtractHeaders(request.Headers);
+        var headers = allHeaders.ToDictionary(
+            kvp => kvp.Key,
+            kvp => string.Join(",", kvp.Value)
+        );
+
+        // Duplicate query strings are combined with commas and included in the queryStringParameters field.
+        var (_, allQueryParams) = HttpRequestUtility.ExtractQueryStringParameters(request.Query);
+        var queryStringParameters = allQueryParams.ToDictionary(
+            kvp => kvp.Key,
+            kvp => string.Join(",", kvp.Value)
+        );
 
         var httpApiV2ProxyRequest = new APIGatewayHttpApiV2ProxyRequest
         {
             RouteKey = $"{request.Method} {apiGatewayRouteConfig.Path}",
             RawPath = request.Path,
             RawQueryString = request.QueryString.Value,
-            Cookies = request.Cookies.Select(c => $"{c.Key}={c.Value}").ToArray(),
-            Headers = headers,
-            QueryStringParameters = queryStringParameters,
-            PathParameters = pathParameters ?? new Dictionary<string, string>(),
             Body = HttpRequestUtility.ReadRequestBody(request),
             IsBase64Encoded = false,
             RequestContext = new ProxyRequestContext
@@ -54,6 +60,26 @@ public static class HttpContextExtensions
             },
             Version = "2.0"
         };
+
+        if (request.Cookies.Any())
+        {
+            httpApiV2ProxyRequest.Cookies = request.Cookies.Select(c => $"{c.Key}={c.Value}").ToArray();
+        }
+
+        if (headers.Any())
+        {
+            httpApiV2ProxyRequest.Headers = headers;
+        }
+
+        if (queryStringParameters.Any())
+        {
+            httpApiV2ProxyRequest.QueryStringParameters = queryStringParameters;
+        }
+
+        if (pathParameters.Any())
+        {
+            httpApiV2ProxyRequest.PathParameters = pathParameters;
+        }
 
         if (HttpRequestUtility.IsBinaryContent(request.ContentType))
         {
@@ -86,14 +112,34 @@ public static class HttpContextExtensions
             Resource = apiGatewayRouteConfig.Path,
             Path = HttpUtility.UrlEncode(request.Path),
             HttpMethod = request.Method,
-            Headers = headers,
-            MultiValueHeaders = multiValueHeaders,
-            QueryStringParameters = queryStringParameters,
-            MultiValueQueryStringParameters = multiValueQueryStringParameters,
-            PathParameters = pathParameters ?? new Dictionary<string, string>(),
             Body = HttpRequestUtility.ReadRequestBody(request),
             IsBase64Encoded = false
         };
+
+        if (headers.Any())
+        {
+            proxyRequest.Headers = headers;
+        }
+
+        if (multiValueHeaders.Any())
+        {
+            proxyRequest.MultiValueHeaders = multiValueHeaders;
+        }
+
+        if (queryStringParameters.Any())
+        {
+            proxyRequest.QueryStringParameters = queryStringParameters;
+        }
+
+        if (multiValueQueryStringParameters.Any())
+        {
+            proxyRequest.MultiValueQueryStringParameters = multiValueQueryStringParameters;
+        }
+
+        if (pathParameters.Any())
+        {
+            proxyRequest.PathParameters = pathParameters;
+        }
 
         if (HttpRequestUtility.IsBinaryContent(request.ContentType))
         {

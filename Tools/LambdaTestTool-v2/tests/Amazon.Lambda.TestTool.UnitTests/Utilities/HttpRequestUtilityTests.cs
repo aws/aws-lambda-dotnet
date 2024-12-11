@@ -1,6 +1,6 @@
-﻿namespace Amazon.Lambda.TestTool.UnitTests.Utils;
+﻿namespace Amazon.Lambda.TestTool.UnitTests.Utilities;
 
-using Amazon.Lambda.TestTool.Services;
+using Amazon.Lambda.TestTool.Utilities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using Moq;
