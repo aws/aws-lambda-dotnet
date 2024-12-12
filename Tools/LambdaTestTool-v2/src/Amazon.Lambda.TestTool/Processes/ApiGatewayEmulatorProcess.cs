@@ -51,6 +51,8 @@ public class ApiGatewayEmulatorProcess
             var routeConfig = routeConfigService.GetRouteConfig(context.Request.Method, context.Request.Path);
             if (routeConfig == null)
             {
+                app.Logger.LogInformation("Unable to find a configured Lambda route for the specified method and path: {Method} {Path}", 
+                    context.Request.Method, context.Request.Path);
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 context.Response.Headers.Append("x-amzn-errortype", "MissingAuthenticationTokenException");
                 return Results.Json(new { message = "Missing Authentication Token" });
