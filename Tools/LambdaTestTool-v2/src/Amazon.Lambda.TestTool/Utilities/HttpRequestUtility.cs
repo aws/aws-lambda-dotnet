@@ -18,7 +18,11 @@ public static class HttpRequestUtility
         return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ||
                contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase) ||
                contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) ||
-               contentType.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase);
+               contentType.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase) ||
+               contentType.Equals("application/zip", StringComparison.OrdinalIgnoreCase) ||
+               contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) ||
+               contentType.Equals("application/wasm", StringComparison.OrdinalIgnoreCase) ||
+               contentType.Equals("application/x-protobuf", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
