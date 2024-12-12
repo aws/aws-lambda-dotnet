@@ -386,4 +386,117 @@ public class HttpContextExtensionsTests
         Assert.Equal("😊 Happy", result.PathParameters["reviewTitle"]);
     }
 
+    [Fact]
+    public void ToApiGatewayHttpV2Request_ShouldNotDecodeUrlEncodedAndUnicodeHeaderValues()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/test";
+        request.Headers["X-Encoded-Header"] = "value%20with%20spaces";
+        request.Headers["X-Unicode-Header"] = "☕ Coffee";
+        request.Headers["X-Mixed-Header"] = "Hello%2C%20World%21%20☕";
+        request.Headers["X-Raw-Unicode"] = "\u2615 Coffee";
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "TestFunction",
+            Endpoint = "GET /api/test",
+            HttpMethod = "GET",
+            Path = "/api/test"
+        };
+
+        var result = context.ToApiGatewayHttpV2Request(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Equal("value%20with%20spaces", result.Headers["X-Encoded-Header"]);
+        Assert.Equal("☕ Coffee", result.Headers["X-Unicode-Header"]);
+        Assert.Equal("Hello%2C%20World%21%20☕", result.Headers["X-Mixed-Header"]);
+        Assert.Equal("\u2615 Coffee", result.Headers["X-Raw-Unicode"]);
+    }
+
+    [Fact]
+    public void ToApiGatewayRequest_ShouldNotDecodeUrlEncodedAndUnicodeHeaderValues()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/test";
+        request.Headers["X-Encoded-Header"] = "value%20with%20spaces";
+        request.Headers["X-Unicode-Header"] = "☕ Coffee";
+        request.Headers["X-Mixed-Header"] = "Hello%2C%20World%21%20☕";
+        request.Headers["X-Raw-Unicode"] = "\u2615 Coffee";
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "TestFunction",
+            Endpoint = "GET /api/test",
+            HttpMethod = "GET",
+            Path = "/api/test"
+        };
+
+        var result = context.ToApiGatewayRequest(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Equal("value%20with%20spaces", result.Headers["X-Encoded-Header"]);
+        Assert.Equal("☕ Coffee", result.Headers["X-Unicode-Header"]);
+        Assert.Equal("Hello%2C%20World%21%20☕", result.Headers["X-Mixed-Header"]);
+        Assert.Equal("\u2615 Coffee", result.Headers["X-Raw-Unicode"]);
+
+        Assert.Equal(new List<string> { "value%20with%20spaces" }, result.MultiValueHeaders["X-Encoded-Header"]);
+        Assert.Equal(new List<string> { "☕ Coffee" }, result.MultiValueHeaders["X-Unicode-Header"]);
+        Assert.Equal(new List<string> { "Hello%2C%20World%21%20☕" }, result.MultiValueHeaders["X-Mixed-Header"]);
+        Assert.Equal(new List<string> { "\u2615 Coffee" }, result.MultiValueHeaders["X-Raw-Unicode"]);
+    }
+
+    [Fact]
+    public void ToApiGatewayHttpV2Request_ShouldHandleMultipleHeaderValuesWithUnicode()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/test";
+        request.Headers["X-Multi-Value"] = new string[] { "value1", "value2%20with%20spaces", "☕ Coffee", "value4%20☕" };
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "TestFunction",
+            Endpoint = "GET /api/test",
+            HttpMethod = "GET",
+            Path = "/api/test"
+        };
+
+        var result = context.ToApiGatewayHttpV2Request(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Equal("value1,value2%20with%20spaces,☕ Coffee,value4%20☕", result.Headers["X-Multi-Value"]);
+    }
+
+    [Fact]
+    public void ToApiGatewayRequest_ShouldHandleMultipleHeaderValuesWithUnicode()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/test";
+        request.Headers["X-Multi-Value"] = new string[] { "value1", "value2%20with%20spaces", "☕ Coffee", "value4%20☕" };
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "TestFunction",
+            Endpoint = "GET /api/test",
+            HttpMethod = "GET",
+            Path = "/api/test"
+        };
+
+        var result = context.ToApiGatewayRequest(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Equal("value4%20☕", result.Headers["X-Multi-Value"]); // v1 API uses the last value for single-value headers
+        Assert.Equal(
+            new List<string> { "value1", "value2%20with%20spaces", "☕ Coffee", "value4%20☕" },
+            result.MultiValueHeaders["X-Multi-Value"]
+        );
+    }
+
 }
