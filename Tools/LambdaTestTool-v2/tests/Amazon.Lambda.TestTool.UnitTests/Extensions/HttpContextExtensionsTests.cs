@@ -37,7 +37,7 @@ public class HttpContextExtensionsTests
         Assert.Equal("2.0", result.Version);
         Assert.Equal("GET /api/users/{userId}/orders", result.RouteKey);
         Assert.Equal("/api/users/123/orders", result.RawPath);
-        Assert.Equal("?status=pending&tag=important&tag=urgent", result.RawQueryString);
+        Assert.Equal("status=pending&tag=important&tag=urgent", result.RawQueryString);
         Assert.Equal(2, result.Cookies.Length);
         Assert.Contains("session=abc123", result.Cookies);
         Assert.Contains("theme=dark", result.Cookies);
@@ -135,7 +135,7 @@ public class HttpContextExtensionsTests
         Assert.Equal("123", result.PathParameters["userId"]);
         Assert.Equal("/api/users/{userId}/avatar", result.Resource);
         Assert.Equal("POST", result.HttpMethod);
-        Assert.Equal(HttpUtility.UrlEncode("/api/users/123/avatar"), result.Path);
+        Assert.Equal(HttpUtility.UrlDecode("/api/users/123/avatar"), result.Path);
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public class HttpContextExtensionsTests
 
         Assert.NotNull(result);
         Assert.Equal("/api/users/{userId}/orders", result.Resource);
-        Assert.Equal(HttpUtility.UrlEncode("/api/users/123/orders"), result.Path);
+        Assert.Equal(HttpUtility.UrlDecode("/api/users/123/orders"), result.Path);
         Assert.Equal("GET", result.HttpMethod);
 
         Assert.Equal("TestAgent", result.Headers["User-Agent"]);
@@ -214,4 +214,176 @@ public class HttpContextExtensionsTests
         Assert.Null(result.MultiValueQueryStringParameters);
         Assert.Null(result.PathParameters);
     }
+
+    [Fact]
+    public void ToApiGatewayHttpV2Request_ShouldEncodeRawQueryString()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/search";
+        request.QueryString = new QueryString("?q=Hello%20World&tag=C%23%20Programming");
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "SearchFunction",
+            Endpoint = "GET /api/search",
+            HttpMethod = "GET",
+            Path = "/api/search"
+        };
+
+        var result = context.ToApiGatewayHttpV2Request(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Equal("q=Hello%20World&tag=C%23%20Programming", result.RawQueryString);
+    }
+
+    [Fact]
+    public void ToApiGatewayHttpV2Request_ShouldDecodeQueryStringParameters()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/search";
+        request.QueryString = new QueryString("?q=Hello%20World&tag=C%23%20Programming&tag=.NET%20Core");
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "SearchFunction",
+            Endpoint = "GET /api/search",
+            HttpMethod = "GET",
+            Path = "/api/search"
+        };
+
+        var result = context.ToApiGatewayHttpV2Request(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Equal("Hello World", result.QueryStringParameters["q"]);
+        Assert.Equal("C# Programming,.NET Core", result.QueryStringParameters["tag"]);
+    }
+
+    [Fact]
+    public void ToApiGatewayRequest_ShouldDecodeQueryStringParameters()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/search";
+        request.QueryString = new QueryString("?q=Hello%20World&tag=C%23%20Programming&tag=.NET%20Core");
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "SearchFunction",
+            Endpoint = "GET /api/search",
+            HttpMethod = "GET",
+            Path = "/api/search"
+        };
+
+        var result = context.ToApiGatewayRequest(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Equal("Hello World", result.QueryStringParameters["q"]);
+        Assert.Equal(".NET Core", result.QueryStringParameters["tag"]);
+        Assert.Equal(new List<string> { "Hello World" }, result.MultiValueQueryStringParameters["q"]);
+        Assert.Equal(new List<string> { "C# Programming", ".NET Core" }, result.MultiValueQueryStringParameters["tag"]);
+    }
+
+    [Fact]
+    public void ToApiGatewayHttpV2Request_ShouldDecodePathWithSpecialCharacters()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/users/John%20Doe/orders/Summer%20Sale%202023";
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "UserOrdersFunction",
+            Endpoint = "GET /api/users/{username}/orders/{orderName}",
+            HttpMethod = "GET",
+            Path = "/api/users/{username}/orders/{orderName}"
+        };
+
+        var result = context.ToApiGatewayHttpV2Request(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Equal("/api/users/John Doe/orders/Summer Sale 2023", result.RawPath);
+        Assert.Equal("/api/users/John Doe/orders/Summer Sale 2023", result.RequestContext.Http.Path);
+        Assert.Equal("John Doe", result.PathParameters["username"]);
+        Assert.Equal("Summer Sale 2023", result.PathParameters["orderName"]);
+    }
+
+    [Fact]
+    public void ToApiGatewayHttpV2Request_ShouldDecodePathWithUnicodeCharacters()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/products/%E2%98%95%20Coffee/reviews/%F0%9F%98%8A%20Happy";
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "ProductReviewsFunction",
+            Endpoint = "GET /api/products/{productName}/reviews/{reviewTitle}",
+            HttpMethod = "GET",
+            Path = "/api/products/{productName}/reviews/{reviewTitle}"
+        };
+
+        var result = context.ToApiGatewayHttpV2Request(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Equal("/api/products/☕ Coffee/reviews/😊 Happy", result.RawPath);
+        Assert.Equal("/api/products/☕ Coffee/reviews/😊 Happy", result.RequestContext.Http.Path);
+        Assert.Equal("☕ Coffee", result.PathParameters["productName"]);
+        Assert.Equal("😊 Happy", result.PathParameters["reviewTitle"]);
+    }
+
+    [Fact]
+    public void ToApiGatewayRequest_ShouldDecodePathWithSpecialCharacters()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/users/John%20Doe/orders/Summer%20Sale%202023";
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "UserOrdersFunction",
+            Endpoint = "GET /api/users/{username}/orders/{orderName}",
+            HttpMethod = "GET",
+            Path = "/api/users/{username}/orders/{orderName}"
+        };
+
+        var result = context.ToApiGatewayRequest(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Equal("/api/users/John Doe/orders/Summer Sale 2023", result.Path);
+        Assert.Equal("John Doe", result.PathParameters["username"]);
+        Assert.Equal("Summer Sale 2023", result.PathParameters["orderName"]);
+    }
+
+    [Fact]
+    public void ToApiGatewayRequest_ShouldDecodePathWithUnicodeCharacters()
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        request.Method = "GET";
+        request.Path = "/api/products/%E2%98%95%20Coffee/reviews/%F0%9F%98%8A%20Happy";
+
+        var apiGatewayRouteConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = "ProductReviewsFunction",
+            Endpoint = "GET /api/products/{productName}/reviews/{reviewTitle}",
+            HttpMethod = "GET",
+            Path = "/api/products/{productName}/reviews/{reviewTitle}"
+        };
+
+        var result = context.ToApiGatewayRequest(apiGatewayRouteConfig);
+
+        Assert.NotNull(result);
+        Assert.Equal("/api/products/☕ Coffee/reviews/😊 Happy", result.Path);
+        Assert.Equal("☕ Coffee", result.PathParameters["productName"]);
+        Assert.Equal("😊 Happy", result.PathParameters["reviewTitle"]);
+    }
+
 }
