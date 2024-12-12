@@ -35,7 +35,7 @@ public static class HttpContextExtensions
         );
 
         // Duplicate query strings are combined with commas and included in the queryStringParameters field.
-        var (_, allQueryParams) = HttpRequestUtility.ExtractQueryStringParameters(request.Query); // accessing via request.Query will automatically url decode query strings
+        var (_, allQueryParams) = HttpRequestUtility.ExtractQueryStringParameters(request.Query);
         var queryStringParameters = allQueryParams.ToDictionary(
             kvp => kvp.Key,
             kvp => string.Join(",", kvp.Value)
@@ -44,7 +44,7 @@ public static class HttpContextExtensions
         var httpApiV2ProxyRequest = new APIGatewayHttpApiV2ProxyRequest
         {
             RouteKey = $"{request.Method} {apiGatewayRouteConfig.Path}",
-            RawPath = request.Path.Value,
+            RawPath = request.Path.Value, // this should be decoded value
             Body = HttpRequestUtility.ReadRequestBody(request),
             IsBase64Encoded = false,
             RequestContext = new ProxyRequestContext
@@ -52,7 +52,7 @@ public static class HttpContextExtensions
                 Http = new HttpDescription
                 {
                     Method = request.Method,
-                    Path = request.Path.Value,
+                    Path = request.Path.Value, // this should be decoded value
                     Protocol = request.Protocol
                 },
                 RouteKey = $"{request.Method} {apiGatewayRouteConfig.Path}"
@@ -72,8 +72,7 @@ public static class HttpContextExtensions
 
         if (queryStringParameters.Any())
         {
-            // In a real scenario, gateway automatically decodes query string parameters before sending to lambda. Since these "queryStringParameters"
-            // are already decoded, we dont have to do any additional processsing.
+            // this should be decoded value
             httpApiV2ProxyRequest.QueryStringParameters = queryStringParameters;
 
             // this should be the url encoded value and not include the "?"
@@ -84,6 +83,7 @@ public static class HttpContextExtensions
 
         if (pathParameters.Any())
         {
+            // this should be decoded value
             httpApiV2ProxyRequest.PathParameters = pathParameters;
         }
 
@@ -134,20 +134,19 @@ public static class HttpContextExtensions
 
         if (queryStringParameters.Any())
         {
-            // In a real scenario,  gateway automatically decodes query string parameters before sending to lambda. Since these "queryStringParameters"
-            // are already decoded, we dont have to do any additional processsing.
+            // this should be decoded value
             proxyRequest.QueryStringParameters = queryStringParameters;
         }
 
         if (multiValueQueryStringParameters.Any())
         {
-            // In a real scenario,  gateway automatically decodes query string parameters before sending to lambda. Since these "multiValueQueryStringParameters"
-            // are already decoded, we dont have to do any additional processsing.
+            // this should be decoded value
             proxyRequest.MultiValueQueryStringParameters = multiValueQueryStringParameters;
         }
 
         if (pathParameters.Any())
         {
+            // this should be decoded value
             proxyRequest.PathParameters = pathParameters;
         }
 
