@@ -157,7 +157,7 @@ public class ApiGatewayRouteConfigServiceTests
     }
 
     [Fact]
-    public void ProperlySortRouteConfigs()
+    public void ProperlyMatchRouteConfigs()
     {
         // Arrange
         var routeConfigs = new List<ApiGatewayRouteConfig>
@@ -209,6 +209,24 @@ public class ApiGatewayRouteConfigServiceTests
                 LambdaResourceName = "F8",
                 HttpMethod = "GET",
                 Path = "/pets/dog/cat/1"
+            },
+            new ApiGatewayRouteConfig
+            {
+                LambdaResourceName = "F9",
+                HttpMethod = "GET",
+                Path = "/resource/{id}/subsegment/{proxy+}"
+            },
+            new ApiGatewayRouteConfig
+            {
+                LambdaResourceName = "F10",
+                HttpMethod = "GET",
+                Path = "/resource/{id}/subsegment/{id2}/{proxy+}"
+            },
+            new ApiGatewayRouteConfig
+            {
+                LambdaResourceName = "F11",
+                HttpMethod = "GET",
+                Path = "/resource/1/subsegment/3/{proxy+}"
             }
         };
         
@@ -236,6 +254,9 @@ public class ApiGatewayRouteConfigServiceTests
         var result12 = service.GetRouteConfig("GET", "/pet/dog/cat/2");
         var result13 = service.GetRouteConfig("GET", "/pet/cat/dog/1");
         var result14 = service.GetRouteConfig("GET", "/pet/dog/1/2/3/4");
+        var result15 = service.GetRouteConfig("GET", "/resource/1/subsegment/more");
+        var result16 = service.GetRouteConfig("GET", "/resource/1/subsegment/2/more");
+        var result17 = service.GetRouteConfig("GET", "/resource/1/subsegment/3/more");
         
         // Assert
         Assert.Equal("F8", result1?.LambdaResourceName);
@@ -252,5 +273,8 @@ public class ApiGatewayRouteConfigServiceTests
         Assert.Equal("F1", result12?.LambdaResourceName);
         Assert.Equal("F1", result13?.LambdaResourceName);
         Assert.Equal("F1", result14?.LambdaResourceName);
+        Assert.Equal("F9", result15?.LambdaResourceName);
+        Assert.Equal("F10", result16?.LambdaResourceName);
+        Assert.Equal("F11", result17?.LambdaResourceName);
     }
 }
