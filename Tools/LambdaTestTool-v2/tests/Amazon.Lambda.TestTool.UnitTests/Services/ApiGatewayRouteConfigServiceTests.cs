@@ -157,6 +157,110 @@ public class ApiGatewayRouteConfigServiceTests
     }
 
     [Fact]
+    public void CatchAllRouteConfig()
+    {
+        // Arange
+        var routeConfigs = new List<ApiGatewayRouteConfig>
+        {
+            new ApiGatewayRouteConfig
+            {
+                LambdaResourceName = "F1",
+                HttpMethod = "ANY",
+                Path = "/{proxy+}"
+            }
+        };
+        
+        _mockEnvironmentManager
+            .Setup(m => m.GetEnvironmentVariables())
+            .Returns(new Dictionary<string, string>
+            {
+                { Constants.LambdaConfigEnvironmentVariablePrefix, JsonSerializer.Serialize(routeConfigs) }
+            });
+
+        var service = new ApiGatewayRouteConfigService(_mockEnvironmentManager.Object, _mockLogger.Object);
+        
+        // Act
+        var result1 = service.GetRouteConfig("GET", "/a");
+        var result2 = service.GetRouteConfig("POST", "/b");
+        var result3 = service.GetRouteConfig("DELETE", "/c");
+        var result4 = service.GetRouteConfig("GET", "/a/1");
+        var result5 = service.GetRouteConfig("POST", "/b/2");
+        var result6 = service.GetRouteConfig("DELETE", "/c/1/d");
+        var result7 = service.GetRouteConfig("GET", "/a/a/a/a/a/a/a/a/a/a");
+        var result8 = service.GetRouteConfig("GET", "/");
+        
+        // Assert
+        Assert.Equal("F1", result1?.LambdaResourceName);
+        Assert.Equal("F1", result2?.LambdaResourceName);
+        Assert.Equal("F1", result3?.LambdaResourceName);
+        Assert.Equal("F1", result4?.LambdaResourceName);
+        Assert.Equal("F1", result5?.LambdaResourceName);
+        Assert.Equal("F1", result6?.LambdaResourceName);
+        Assert.Equal("F1", result7?.LambdaResourceName);
+        Assert.Equal("F1", result8?.LambdaResourceName);
+    }
+
+    [Fact]
+    public void RouteConfigTemplateLongerThanRequest()
+    {
+        // Arange
+        var routeConfigs = new List<ApiGatewayRouteConfig>
+        {
+            new ApiGatewayRouteConfig
+            {
+                LambdaResourceName = "F1",
+                HttpMethod = "ANY",
+                Path = "/resource/{id}/{proxy+}"
+            }
+        };
+        
+        _mockEnvironmentManager
+            .Setup(m => m.GetEnvironmentVariables())
+            .Returns(new Dictionary<string, string>
+            {
+                { Constants.LambdaConfigEnvironmentVariablePrefix, JsonSerializer.Serialize(routeConfigs) }
+            });
+
+        var service = new ApiGatewayRouteConfigService(_mockEnvironmentManager.Object, _mockLogger.Object);
+        
+        // Act
+        var result1 = service.GetRouteConfig("GET", "/resource/123");
+        
+        // Assert
+        Assert.Null(result1);
+    }
+
+    [Fact]
+    public void RouteConfigRequestLongerThanTemplate()
+    {
+        // Arange
+        var routeConfigs = new List<ApiGatewayRouteConfig>
+        {
+            new ApiGatewayRouteConfig
+            {
+                LambdaResourceName = "F1",
+                HttpMethod = "ANY",
+                Path = "/resource/{id}"
+            }
+        };
+        
+        _mockEnvironmentManager
+            .Setup(m => m.GetEnvironmentVariables())
+            .Returns(new Dictionary<string, string>
+            {
+                { Constants.LambdaConfigEnvironmentVariablePrefix, JsonSerializer.Serialize(routeConfigs) }
+            });
+
+        var service = new ApiGatewayRouteConfigService(_mockEnvironmentManager.Object, _mockLogger.Object);
+        
+        // Act
+        var result1 = service.GetRouteConfig("GET", "/resource/123/foo");
+        
+        // Assert
+        Assert.Null(result1);
+    }
+
+    [Fact]
     public void ProperlyMatchRouteConfigs()
     {
         // Arrange
@@ -257,6 +361,10 @@ public class ApiGatewayRouteConfigServiceTests
         var result15 = service.GetRouteConfig("GET", "/resource/1/subsegment/more");
         var result16 = service.GetRouteConfig("GET", "/resource/1/subsegment/2/more");
         var result17 = service.GetRouteConfig("GET", "/resource/1/subsegment/3/more");
+        var result18 = service.GetRouteConfig("GET", "/pe/");
+        var result19 = service.GetRouteConfig("GET", "/pe");
+        var result20 = service.GetRouteConfig("GET", "/");
+        var result21 = service.GetRouteConfig("GET", "");
         
         // Assert
         Assert.Equal("F8", result1?.LambdaResourceName);
@@ -276,5 +384,9 @@ public class ApiGatewayRouteConfigServiceTests
         Assert.Equal("F9", result15?.LambdaResourceName);
         Assert.Equal("F10", result16?.LambdaResourceName);
         Assert.Equal("F11", result17?.LambdaResourceName);
+        Assert.Equal("F2", result18?.LambdaResourceName);
+        Assert.Equal("F1", result19?.LambdaResourceName);
+        Assert.Equal("F1", result20?.LambdaResourceName);
+        Assert.Equal("F1", result21?.LambdaResourceName);
     }
 }

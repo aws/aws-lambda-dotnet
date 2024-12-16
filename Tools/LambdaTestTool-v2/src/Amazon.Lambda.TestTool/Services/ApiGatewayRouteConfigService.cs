@@ -118,6 +118,27 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
     /// <returns>true if route is valid, false if not</returns>
     private bool IsRouteConfigValid(ApiGatewayRouteConfig routeConfig)
     {
+        if (string.IsNullOrEmpty(routeConfig.LambdaResourceName))
+        {
+            _logger.LogDebug("The Lambda resource name cannot be empty for the route config {Method} {Path}.",
+                routeConfig.HttpMethod, routeConfig.Path);
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(routeConfig.HttpMethod))
+        {
+            _logger.LogDebug("The HTTP Method cannot be empty for the route config with the Lambda resource name {Lambda}.",
+                routeConfig.LambdaResourceName);
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(routeConfig.Path))
+        {
+            _logger.LogDebug("The HTTP Path cannot be empty for the route config with the Lambda resource name {Lambda}.",
+                routeConfig.LambdaResourceName);
+            return false;
+        }
+        
         var occurrences = routeConfig.Path.Split("{proxy+}").Length - 1;
         if (occurrences > 1)
         {
@@ -159,7 +180,12 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
     /// <returns>An <see cref="ApiGatewayRouteConfig"/> corresponding to Lambda function with an API Gateway HTTP Method and Path.</returns>
     public ApiGatewayRouteConfig? GetRouteConfig(string httpMethod, string path)
     {
-        var requestSegments = path.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+        // Trimming start only because a '/' at the end of a path could correspond to 2 routes.
+        // Example:
+        // Route template: "/resource/{proxy+}"
+        // Request path:   "/resource ---> Not a match
+        // Request path:   "/resource/ ---> Is a match
+        var requestSegments = path.TrimStart('/').Split('/');
 
         var candidates = new List<MatchResult>();
 
@@ -259,6 +285,12 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
         int MatchedSegmentsBeforeGreedy)
         MatchRoute(string[] routeSegments, string[] requestSegments)
     {
+        // Example scenario: 
+        // Route template: "/resource/{id}/subsegment/{proxy+}"
+        // Request path:   "/resource/123/subsegment/foo/bar"
+        // Here, routeSegments are ["resource", "{id}", "subsegment", "{proxy+}"]
+        // and requestSegments are ["resource", "123", "subsegment", "foo", "bar"].
+
         var routeTemplateIndex = 0;
         var requestPathIndex = 0;
         var literalMatches = 0;
@@ -269,6 +301,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
         var matchedSegmentsBeforeGreedy = 0;
         var encounteredGreedy = false;
 
+        // First, we try to match segments one-by-one until we run out of one or both arrays
         while (
             matched && 
             routeTemplateIndex < routeSegments.Length && 
@@ -279,26 +312,34 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
 
             if (IsVariableSegment(routeTemplateSegment))
             {
+                // If the current route template segment is a variable:
+                // Example: route segment "{id}", request segment "123"
                 if (IsGreedyVariable(routeTemplateSegment))
                 {
-                    // Greedy variable must match at least one segment
-                    // Check if we have at least one segment remaining
+                    // If it's a greedy variable like "{proxy+}".
+                    // This block runs if the route template includes something like "/{proxy+}"
+                    // and the incoming request still has segments to match.
+                    // Example: template "{proxy+}" and request "foo/bar".
                     if (requestPathIndex >= requestSegments.Length)
                     {
-                        // No segments left to match the greedy variable
+                        // No segments left for the greedy variable to match
                         matched = false;
                     }
                     else
                     {
+                        // We have at least one segment to consume greedily.
+                        // Example: template "{proxy+}" can absorb "foo/bar".
                         greedyCount++;
                         encounteredGreedy = true;
                         routeTemplateIndex++;
-                        // Greedy matches all remaining segments
+                        // Consume all remaining request segments at once
                         requestPathIndex = requestSegments.Length; 
                     }
                 }
                 else
                 {
+                    // It's a normal variable like "{id}".
+                    // Example: template segment "{id}" and request segment "123".
                     variableCount++;
                     if (!encounteredGreedy) matchedSegmentsBeforeGreedy++;
                     routeTemplateIndex++;
@@ -307,12 +348,18 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
             }
             else
             {
+                // The route template segment is a literal.
+                // Example: template segment "resource", request segment "resource".
                 if (!routeTemplateSegment.Equals(requestPathSegment, StringComparison.OrdinalIgnoreCase))
                 {
+                    // Literals must match exactly.
+                    // Example: if template is "subsegment" and request is "foo", not a match.
                     matched = false;
                 }
                 else
                 {
+                    // Literal match succeeded.
+                    // Example: template "resource", request "resource".
                     literalMatches++;
                     if (!encounteredGreedy) matchedSegmentsBeforeGreedy++;
                     routeTemplateIndex++;
@@ -321,46 +368,21 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
             }
         }
 
-        // If there are leftover route segments
-        while (matched && routeTemplateIndex < routeSegments.Length)
+        // If we exhaust the request before the route template (or vice versa), we must handle leftovers.
+        // This happens, for example, if the route template still has segments to match but the request is shorter.
+        // Example scenario: 
+        // Route template: "/resource/{id}/{proxy+}"
+        // Request path:   "/resource/123"
+        if (matched && routeTemplateIndex < routeSegments.Length)
         {
-            var rs = routeSegments[routeTemplateIndex];
-            if (IsVariableSegment(rs))
-            {
-                if (IsGreedyVariable(rs))
-                {
-                    // Greedy variable must match at least one segment
-                    // At this point, j points to the next request segment to match.
-                    if (requestPathIndex >= requestSegments.Length)
-                    {
-                        // No segments left for greedy variable
-                        matched = false;
-                    }
-                    else
-                    {
-                        greedyCount++;
-                        encounteredGreedy = true;
-                        // Greedy consumes all remaining segments
-                        routeTemplateIndex++;
-                        requestPathIndex = requestSegments.Length;
-                    }
-                }
-                else
-                {
-                    // Normal variable with no corresponding request segment is not allowed
-                    matched = false;
-                    routeTemplateIndex++;
-                }
-            }
-            else
-            {
-                // Literal not matched
-                matched = false;
-                routeTemplateIndex++;
-            }
+            matched = false;
         }
 
-        // If request has leftover segments that aren't matched
+        // If we matched the template but still have leftover request segments:
+        // Example:
+        // Route template: "/resource/{id}"
+        // Request path:  "/resource/123/foo"
+        // "foo" is unmatched, fail.
         if (matched && requestPathIndex < requestSegments.Length)
         {
             matched = false;

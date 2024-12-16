@@ -45,6 +45,11 @@ public class ApiGatewayEmulatorProcess
         app.UseHttpsRedirection();
 
         app.MapHealthChecks("/__lambda_test_tool_apigateway_health__");
+        
+        app.Lifetime.ApplicationStarted.Register(() =>
+        {
+            app.Logger.LogInformation("The API Gateway Emulator is available at: {ServiceUrl}", serviceUrl);
+        });
 
         app.Map("/{**catchAll}", (HttpContext context, IApiGatewayRouteConfigService routeConfigService) =>
         {
