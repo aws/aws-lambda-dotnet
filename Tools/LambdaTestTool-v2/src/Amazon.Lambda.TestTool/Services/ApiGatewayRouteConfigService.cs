@@ -71,14 +71,14 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
                             }
                             else
                             {
-                                _logger.LogDebug("The route config {Method} {Path} is not valid. It will be skipped.", config.HttpMethod, config.Path);
+                                _logger.LogError("The route config {Method} {Path} is not valid. It will be skipped.", config.HttpMethod, config.Path);
                             }
                         }
                         _logger.LogDebug("Environment variable deserialized and added to the existing configuration.");
                     }
                     else
                     {
-                        _logger.LogDebug("Environment variable was not properly deserialized and will be skipped.");
+                        _logger.LogError("Environment variable was not properly deserialized and will be skipped.");
                     }
                 }
                 else
@@ -94,19 +94,19 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
                         }
                         else
                         {
-                            _logger.LogDebug("The route config {Method} {Path} is not valid. It will be skipped.", config.HttpMethod, config.Path);
+                            _logger.LogError("The route config {Method} {Path} is not valid. It will be skipped.", config.HttpMethod, config.Path);
                         }
                     }
                     else
                     {
-                        _logger.LogDebug("Environment variable was not properly deserialized and will be skipped.");
+                        _logger.LogError("Environment variable was not properly deserialized and will be skipped.");
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error deserializing environment variable {key}: {ex.Message}");
-                _logger.LogDebug("Error deserializing environment variable {Key}: {Message}", key, ex.Message);
+                _logger.LogError("Error deserializing environment variable {Key}: {Message}", key, ex.Message);
             }
         }
     }
@@ -120,21 +120,21 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
     {
         if (string.IsNullOrEmpty(routeConfig.LambdaResourceName))
         {
-            _logger.LogDebug("The Lambda resource name cannot be empty for the route config {Method} {Path}.",
+            _logger.LogError("The Lambda resource name cannot be empty for the route config {Method} {Path}.",
                 routeConfig.HttpMethod, routeConfig.Path);
             return false;
         }
 
         if (string.IsNullOrEmpty(routeConfig.HttpMethod))
         {
-            _logger.LogDebug("The HTTP Method cannot be empty for the route config with the Lambda resource name {Lambda}.",
+            _logger.LogError("The HTTP Method cannot be empty for the route config with the Lambda resource name {Lambda}.",
                 routeConfig.LambdaResourceName);
             return false;
         }
 
         if (string.IsNullOrEmpty(routeConfig.Path))
         {
-            _logger.LogDebug("The HTTP Path cannot be empty for the route config with the Lambda resource name {Lambda}.",
+            _logger.LogError("The HTTP Path cannot be empty for the route config with the Lambda resource name {Lambda}.",
                 routeConfig.LambdaResourceName);
             return false;
         }
@@ -142,14 +142,14 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
         var occurrences = routeConfig.Path.Split("{proxy+}").Length - 1;
         if (occurrences > 1)
         {
-            _logger.LogDebug("The route config {Method} {Path} cannot have multiple greedy variables {{proxy+}}.", 
+            _logger.LogError("The route config {Method} {Path} cannot have multiple greedy variables {{proxy+}}.", 
                 routeConfig.HttpMethod, routeConfig.Path);
             return false;
         }
 
         if (occurrences == 1 && !routeConfig.Path.EndsWith("/{proxy+}"))
         {
-            _logger.LogDebug("The route config {Method} {Path} uses a greedy variable {{proxy+}} but does not end with it.", 
+            _logger.LogError("The route config {Method} {Path} uses a greedy variable {{proxy+}} but does not end with it.", 
                 routeConfig.HttpMethod, routeConfig.Path);
             return false;
         }
