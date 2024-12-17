@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System.Collections;
 using System.Text.Json;
 using Amazon.Lambda.TestTool.Models;
@@ -42,7 +45,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
             if (key is null)
                 continue;
             _logger.LogDebug("Environment variables: {VariableName}", key);
-            if (!(key.Equals(Constants.LambdaConfigEnvironmentVariablePrefix) || 
+            if (!(key.Equals(Constants.LambdaConfigEnvironmentVariablePrefix) ||
                 key.StartsWith($"{Constants.LambdaConfigEnvironmentVariablePrefix}_")))
             {
                 _logger.LogDebug("Skipping environment variable: {VariableName}", key);
@@ -138,41 +141,41 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
                 routeConfig.LambdaResourceName);
             return false;
         }
-        
+
         var occurrences = routeConfig.Path.Split("{proxy+}").Length - 1;
         if (occurrences > 1)
         {
-            _logger.LogError("The route config {Method} {Path} cannot have multiple greedy variables {{proxy+}}.", 
+            _logger.LogError("The route config {Method} {Path} cannot have multiple greedy variables {{proxy+}}.",
                 routeConfig.HttpMethod, routeConfig.Path);
             return false;
         }
 
         if (occurrences == 1 && !routeConfig.Path.EndsWith("/{proxy+}"))
         {
-            _logger.LogError("The route config {Method} {Path} uses a greedy variable {{proxy+}} but does not end with it.", 
+            _logger.LogError("The route config {Method} {Path} uses a greedy variable {{proxy+}} but does not end with it.",
                 routeConfig.HttpMethod, routeConfig.Path);
             return false;
         }
-        
+
         return true;
     }
-    
+
     /// <summary>
     /// A method to match an HTTP Method and HTTP Path with an existing <see cref="ApiGatewayRouteConfig"/>.
     /// Given that route templates could contain variables as well as greedy path variables.
     /// API Gateway matches incoming routes in a certain order.
-    /// 
+    ///
     /// API Gateway selects the route with the most-specific match, using the following priorities:
     /// 1. Full match for a route and method.
     /// 2. Match for a route and method with path variable.
     /// 3. Match for a route and method with a greedy path variable ({proxy+}).
-    /// 
+    ///
     /// For example, this is the order for the following example routes:
     /// 1. GET /pets/dog/1
     /// 2. GET /pets/dog/{id}
     /// 3. GET /pets/{proxy+}
     /// 4. ANY /{proxy+}
-    /// 
+    ///
     /// For more info: https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-routes.html
     /// </summary>
     /// <param name="httpMethod">An HTTP Method</param>
@@ -193,7 +196,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
         {
             _logger.LogDebug("{RequestMethod} {RequestPath}: Checking if matches with {TemplateMethod} {TemplatePath}.",
                 httpMethod, path, route.HttpMethod, route.Path);
-            
+
             // Must match HTTP method or be ANY
             if (!route.HttpMethod.Equals("ANY", StringComparison.InvariantCultureIgnoreCase) &&
                 !route.HttpMethod.Equals(httpMethod, StringComparison.InvariantCultureIgnoreCase))
@@ -202,7 +205,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
                     httpMethod, path);
                 continue;
             }
-            
+
             _logger.LogDebug("{RequestMethod} {RequestPath}: The HTTP method matches. Checking the route {TemplatePath}.",
                 httpMethod, path, route.Path);
 
@@ -229,10 +232,10 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
                 httpMethod, path);
             return null;
         }
-        
+
         _logger.LogDebug("{RequestMethod} {RequestPath}: The following routes matched: {Routes}.",
             httpMethod, path, string.Join(", ", candidates.Select(x => x.Route.Path)));
-        
+
         var best = candidates
             .OrderByDescending(c => c.LiteralMatches)
             .ThenByDescending(c => c.MatchedSegmentsBeforeGreedy)
@@ -243,10 +246,10 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
 
         _logger.LogDebug("{RequestMethod} {RequestPath}: Matched with the following route: {Routes}.",
             httpMethod, path, best.Route.Path);
-        
+
         return best.Route;
     }
-    
+
     /// <summary>
     /// Attempts to match a given request path against a route template.
     /// </summary>
@@ -278,14 +281,14 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
     /// </list>
     /// </returns>
     private (
-        bool Matched, 
-        int LiteralMatches, 
-        int VariableCount, 
-        int GreedyCount, 
+        bool Matched,
+        int LiteralMatches,
+        int VariableCount,
+        int GreedyCount,
         int MatchedSegmentsBeforeGreedy)
         MatchRoute(string[] routeSegments, string[] requestSegments)
     {
-        // Example scenario: 
+        // Example scenario:
         // Route template: "/resource/{id}/subsegment/{proxy+}"
         // Request path:   "/resource/123/subsegment/foo/bar"
         // Here, routeSegments are ["resource", "{id}", "subsegment", "{proxy+}"]
@@ -303,8 +306,8 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
 
         // First, we try to match segments one-by-one until we run out of one or both arrays
         while (
-            matched && 
-            routeTemplateIndex < routeSegments.Length && 
+            matched &&
+            routeTemplateIndex < routeSegments.Length &&
             requestPathIndex < requestSegments.Length)
         {
             var routeTemplateSegment = routeSegments[routeTemplateIndex];
@@ -333,7 +336,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
                         encounteredGreedy = true;
                         routeTemplateIndex++;
                         // Consume all remaining request segments at once
-                        requestPathIndex = requestSegments.Length; 
+                        requestPathIndex = requestSegments.Length;
                     }
                 }
                 else
@@ -370,7 +373,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
 
         // If we exhaust the request before the route template (or vice versa), we must handle leftovers.
         // This happens, for example, if the route template still has segments to match but the request is shorter.
-        // Example scenario: 
+        // Example scenario:
         // Route template: "/resource/{id}/{proxy+}"
         // Request path:   "/resource/123"
         if (matched && routeTemplateIndex < routeSegments.Length)
@@ -390,7 +393,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
 
         return (matched, literalMatches, variableCount, greedyCount, matchedSegmentsBeforeGreedy);
     }
-    
+
     /// <summary>
     /// Determines if a given segment represents a variable segment.
     /// </summary>

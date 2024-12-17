@@ -1,4 +1,7 @@
-﻿using Amazon.Lambda.TestTool.Models;
+﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.TestTool.Models;
 using Spectre.Console.Cli;
 using System.ComponentModel;
 
@@ -10,7 +13,7 @@ namespace Amazon.Lambda.TestTool.Commands.Settings;
 public sealed class RunCommandSettings : CommandSettings
 {
     /// <summary>
-    /// The hostname or IP address used for the test tool's web interface. 
+    /// The hostname or IP address used for the test tool's web interface.
     /// Any host other than an explicit IP address or localhost (e.g. '*', '+' or 'example.com') binds to all public IPv4 and IPv6 addresses.
     /// </summary>
     [CommandOption("--host <HOST>")]
@@ -35,8 +38,8 @@ public sealed class RunCommandSettings : CommandSettings
     public bool NoLaunchWindow { get; set; }
 
     /// <summary>
-    /// If set to true the test tool will pause waiting for a key input before exiting. 
-    /// The is useful when executing from an IDE so you can avoid having the output window immediately disappear after executing the Lambda code. 
+    /// If set to true the test tool will pause waiting for a key input before exiting.
+    /// The is useful when executing from an IDE so you can avoid having the output window immediately disappear after executing the Lambda code.
     /// The default value is true.
     /// </summary>
     [CommandOption("--pause-exit")]
@@ -51,7 +54,7 @@ public sealed class RunCommandSettings : CommandSettings
     public bool DisableLogs { get; set; }
 
     /// <summary>
-    /// The API Gateway Emulator Mode specifies the format of the event that API Gateway sends to a Lambda integration, 
+    /// The API Gateway Emulator Mode specifies the format of the event that API Gateway sends to a Lambda integration,
     /// and how API Gateway interprets the response from Lambda.
     /// The available modes are: Rest, HttpV1, HttpV2.
     /// </summary>

@@ -1,29 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-	<Description>A tool to help debug and test your .NET AWS Lambda functions locally.</Description>
+	  <Description>A tool to help debug and test your .NET AWS Lambda functions locally.</Description>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Product>AWS .NET Lambda Test Tool</Product>
     <Copyright>Apache 2</Copyright>
-    <PackageTags>AWS;Amazon;Lambda</PackageTags>	  
-	<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+    <PackageTags>AWS;Amazon;Lambda</PackageTags>
+	  <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
-    <PackageId>Amazon.Lambda.TestTool</PackageId>	  
+    <PackageId>Amazon.Lambda.TestTool</PackageId>
   </PropertyGroup>
-	
+
   <ItemGroup>
     <PackageReference Include="Spectre.Console" Version="0.49.1" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />
     <PackageReference Include="Blazored.Modal" Version="7.3.1" />
-    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="8.0.11" /> 
-  </ItemGroup>	
-	
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="8.0.11" />
+  </ItemGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="wwwroot\**" />
-	<EmbeddedResource Include="Resources\**" />
+	  <EmbeddedResource Include="Resources\**" />
   </ItemGroup>
 
 </Project>

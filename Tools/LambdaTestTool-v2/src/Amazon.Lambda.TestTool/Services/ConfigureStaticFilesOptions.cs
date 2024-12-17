@@ -1,10 +1,13 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 
 namespace Amazon.Lambda.TestTool.Services;
 
 /// <summary>
-/// Configures static file options for the application by setting up a composite file provider 
+/// Configures static file options for the application by setting up a composite file provider
 /// that includes embedded resources from the assembly and the existing web root file provider.
 /// </summary>
 internal class ConfigureStaticFilesOptions(IWebHostEnvironment environment)

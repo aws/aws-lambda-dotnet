@@ -1,4 +1,7 @@
-﻿using Amazon.Lambda.TestTool.Commands.Settings;
+﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Commands;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;

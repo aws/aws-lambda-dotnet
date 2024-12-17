@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using Amazon.Lambda.TestTool.Models;
 using System.Collections.ObjectModel;
 
@@ -6,9 +9,9 @@ namespace Amazon.Lambda.TestTool.Services;
 public interface IRuntimeApiDataStore
 {
     EventContainer QueueEvent(string eventBody);
-    
+
     IReadOnlyList<EventContainer> QueuedEvents { get; }
-    
+
     IReadOnlyList<EventContainer> ExecutedEvents { get; }
 
     void ClearQueued();
@@ -34,9 +37,9 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
     private IList<EventContainer> _executedEvents = new List<EventContainer>();
     private int _eventCounter = 1;
     private object _lock = new object();
-    
+
     public event EventHandler? StateChange;
-    
+
     public EventContainer QueueEvent(string eventBody)
     {
         var evnt = new EventContainer(this, _eventCounter++, eventBody);
@@ -44,7 +47,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
         {
             _queuedEvents.Add(evnt);
         }
-        
+
         RaiseStateChanged();
         return evnt;
     }
@@ -77,7 +80,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
             return true;
         }
     }
-    
+
     public EventContainer? ActiveEvent { get; private set; }
 
     public IReadOnlyList<EventContainer> QueuedEvents
@@ -86,7 +89,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
         {
             lock(_lock)
             {
-                return new ReadOnlyCollection<EventContainer>(_queuedEvents.ToArray()); 
+                return new ReadOnlyCollection<EventContainer>(_queuedEvents.ToArray());
             }
         }
     }
@@ -111,7 +114,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
             {
                 return;
             }
-            
+
             evnt.ReportSuccessResponse(response);
         }
         RaiseStateChanged();
@@ -126,7 +129,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
             {
                 return;
             }
-            
+
             evnt.ReportErrorResponse(errorType, errorBody);
         }
         RaiseStateChanged();
@@ -136,7 +139,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
     {
         lock(_lock)
         {
-            this._queuedEvents.Clear();
+            _queuedEvents.Clear();
         }
         RaiseStateChanged();
     }
@@ -145,7 +148,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
     {
         lock(_lock)
         {
-            this._executedEvents.Clear();
+            _executedEvents.Clear();
         }
         RaiseStateChanged();
     }
@@ -154,17 +157,17 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
     {
         lock(_lock)
         {
-            var executedEvent = this._executedEvents.FirstOrDefault(x => string.Equals(x.AwsRequestId, awsRequestId));
+            var executedEvent = _executedEvents.FirstOrDefault(x => string.Equals(x.AwsRequestId, awsRequestId));
             if (executedEvent != null)
             {
-                this._executedEvents.Remove(executedEvent);
+                _executedEvents.Remove(executedEvent);
             }
             else
             {
-                executedEvent = this._queuedEvents.FirstOrDefault(x => string.Equals(x.AwsRequestId, awsRequestId));
+                executedEvent = _queuedEvents.FirstOrDefault(x => string.Equals(x.AwsRequestId, awsRequestId));
                 if (executedEvent != null)
                 {
-                    this._queuedEvents.Remove(executedEvent);
+                    _queuedEvents.Remove(executedEvent);
                 }
             }
         }
@@ -173,9 +176,9 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
 
     private EventContainer? FindEventContainer(string awsRequestId)
     {
-        if (string.Equals(this.ActiveEvent?.AwsRequestId, awsRequestId))
+        if (string.Equals(ActiveEvent?.AwsRequestId, awsRequestId))
         {
-            return this.ActiveEvent;
+            return ActiveEvent;
         }
 
         var evnt = _executedEvents.FirstOrDefault(x => string.Equals(x.AwsRequestId, awsRequestId));

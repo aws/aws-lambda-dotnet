@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System.Xml.Linq;
 
 namespace Amazon.Lambda.TestTool.SampleRequests;
@@ -27,9 +30,9 @@ public class SampleRequestManager(string preferenceDirectory)
             {
                 Group = item.Attribute("category")?.Value ?? string.Empty,
                 Name = item.Element("name")?.Value ?? string.Empty,
-                Filename = item.Element("filename")?.Value ?? string.Empty, 
+                Filename = item.Element("filename")?.Value ?? string.Empty,
             };
-        
+
         var hash = new Dictionary<string, IList<LambdaRequest>>();
 
         foreach (var request in requests)
@@ -40,7 +43,7 @@ public class SampleRequestManager(string preferenceDirectory)
                 r = new List<LambdaRequest>();
                 hash[request.Group] = r;
             }
-            
+
             r.Add(request);
         }
 
@@ -92,7 +95,7 @@ public class SampleRequestManager(string preferenceDirectory)
         if(name.StartsWith(SavedRequestDirectory + "@"))
         {
             name = name.Substring(name.IndexOf("@") + 1);
-            var path = Path.Combine(this.GetSavedRequestDirectory(), name);
+            var path = Path.Combine(GetSavedRequestDirectory(), name);
             return File.ReadAllText(path);
         }
         return GetEmbeddedResource(name);

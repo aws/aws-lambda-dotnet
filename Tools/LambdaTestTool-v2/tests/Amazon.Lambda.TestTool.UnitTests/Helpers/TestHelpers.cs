@@ -1,4 +1,7 @@
-﻿namespace Amazon.Lambda.TestTool.UnitTests.Helpers;
+﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+namespace Amazon.Lambda.TestTool.UnitTests.Helpers;
 
 internal static class TestHelpers
 {
