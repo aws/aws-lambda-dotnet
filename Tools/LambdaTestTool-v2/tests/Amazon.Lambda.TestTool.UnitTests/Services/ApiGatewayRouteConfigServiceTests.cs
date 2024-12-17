@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System.Text.Json;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;
@@ -169,7 +172,7 @@ public class ApiGatewayRouteConfigServiceTests
                 Path = "/{proxy+}"
             }
         };
-        
+
         _mockEnvironmentManager
             .Setup(m => m.GetEnvironmentVariables())
             .Returns(new Dictionary<string, string>
@@ -178,7 +181,7 @@ public class ApiGatewayRouteConfigServiceTests
             });
 
         var service = new ApiGatewayRouteConfigService(_mockEnvironmentManager.Object, _mockLogger.Object);
-        
+
         // Act
         var result1 = service.GetRouteConfig("GET", "/a");
         var result2 = service.GetRouteConfig("POST", "/b");
@@ -188,7 +191,7 @@ public class ApiGatewayRouteConfigServiceTests
         var result6 = service.GetRouteConfig("DELETE", "/c/1/d");
         var result7 = service.GetRouteConfig("GET", "/a/a/a/a/a/a/a/a/a/a");
         var result8 = service.GetRouteConfig("GET", "/");
-        
+
         // Assert
         Assert.Equal("F1", result1?.LambdaResourceName);
         Assert.Equal("F1", result2?.LambdaResourceName);
@@ -213,7 +216,7 @@ public class ApiGatewayRouteConfigServiceTests
                 Path = "/resource/{id}/{proxy+}"
             }
         };
-        
+
         _mockEnvironmentManager
             .Setup(m => m.GetEnvironmentVariables())
             .Returns(new Dictionary<string, string>
@@ -222,10 +225,10 @@ public class ApiGatewayRouteConfigServiceTests
             });
 
         var service = new ApiGatewayRouteConfigService(_mockEnvironmentManager.Object, _mockLogger.Object);
-        
+
         // Act
         var result1 = service.GetRouteConfig("GET", "/resource/123");
-        
+
         // Assert
         Assert.Null(result1);
     }
@@ -243,7 +246,7 @@ public class ApiGatewayRouteConfigServiceTests
                 Path = "/resource/{id}"
             }
         };
-        
+
         _mockEnvironmentManager
             .Setup(m => m.GetEnvironmentVariables())
             .Returns(new Dictionary<string, string>
@@ -252,10 +255,10 @@ public class ApiGatewayRouteConfigServiceTests
             });
 
         var service = new ApiGatewayRouteConfigService(_mockEnvironmentManager.Object, _mockLogger.Object);
-        
+
         // Act
         var result1 = service.GetRouteConfig("GET", "/resource/123/foo");
-        
+
         // Assert
         Assert.Null(result1);
     }
@@ -333,7 +336,7 @@ public class ApiGatewayRouteConfigServiceTests
                 Path = "/resource/1/subsegment/3/{proxy+}"
             }
         };
-        
+
         _mockEnvironmentManager
             .Setup(m => m.GetEnvironmentVariables())
             .Returns(new Dictionary<string, string>
@@ -365,7 +368,7 @@ public class ApiGatewayRouteConfigServiceTests
         var result19 = service.GetRouteConfig("GET", "/pe");
         var result20 = service.GetRouteConfig("GET", "/");
         var result21 = service.GetRouteConfig("GET", "");
-        
+
         // Assert
         Assert.Equal("F8", result1?.LambdaResourceName);
         Assert.Equal("F7", result2?.LambdaResourceName);

@@ -1,4 +1,7 @@
-﻿using Amazon.Lambda.TestTool.Services;
+﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.TestTool.Services;
 
 namespace Amazon.Lambda.TestTool.Models;
 
@@ -29,7 +32,7 @@ public class EventContainer
     }
 
     private readonly RuntimeApiDataStore _dataStore;
-    
+
     public EventContainer(RuntimeApiDataStore dataStore, int eventCount, string eventJson)
     {
         LastUpdated = DateTime.Now;
@@ -46,17 +49,17 @@ public class EventContainer
     public void ReportSuccessResponse(string response)
     {
         LastUpdated = DateTime.Now;
-        this.Response = response;
-        this.EventStatus = Status.Success;
+        Response = response;
+        EventStatus = Status.Success;
         _dataStore.RaiseStateChanged();
     }
 
     public void ReportErrorResponse(string errorType, string errorBody)
     {
         LastUpdated = DateTime.Now;
-        this.ErrorType = errorType;
-        this.ErrorResponse = errorBody;
-        this.EventStatus = Status.Failure;
+        ErrorType = errorType;
+        ErrorResponse = errorBody;
+        EventStatus = Status.Failure;
         _dataStore.RaiseStateChanged();
     }
 }

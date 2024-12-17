@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 namespace Amazon.Lambda.TestTool.Models;
 
 /// <summary>
@@ -9,17 +12,17 @@ public class ApiGatewayRouteConfig
     /// The name of the Lambda function
     /// </summary>
     public required string LambdaResourceName { get; set; }
-    
+
     /// <summary>
     /// The endpoint of the local Lambda Runtime API
     /// </summary>
     public string? Endpoint { get; set; }
-    
+
     /// <summary>
     /// The HTTP Method for the API Gateway endpoint
     /// </summary>
     public required string HttpMethod { get; set; }
-    
+
     /// <summary>
     /// The API Gateway HTTP Path of the Lambda function
     /// </summary>

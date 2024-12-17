@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
@@ -33,7 +36,7 @@ public class ApiGatewayEmulatorProcess
         var builder = WebApplication.CreateBuilder();
 
         builder.Services.AddApiGatewayEmulatorServices();
-        
+
         var serviceUrl = $"http://{settings.Host}:{settings.ApiGatewayEmulatorPort}";
         builder.WebHost.UseUrls(serviceUrl);
         builder.WebHost.SuppressStatusMessages(true);
@@ -45,7 +48,7 @@ public class ApiGatewayEmulatorProcess
         app.UseHttpsRedirection();
 
         app.MapHealthChecks("/__lambda_test_tool_apigateway_health__");
-        
+
         app.Lifetime.ApplicationStarted.Register(() =>
         {
             app.Logger.LogInformation("The API Gateway Emulator is available at: {ServiceUrl}", serviceUrl);
@@ -56,13 +59,13 @@ public class ApiGatewayEmulatorProcess
             var routeConfig = routeConfigService.GetRouteConfig(context.Request.Method, context.Request.Path);
             if (routeConfig == null)
             {
-                app.Logger.LogInformation("Unable to find a configured Lambda route for the specified method and path: {Method} {Path}", 
+                app.Logger.LogInformation("Unable to find a configured Lambda route for the specified method and path: {Method} {Path}",
                     context.Request.Method, context.Request.Path);
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 context.Response.Headers.Append("x-amzn-errortype", "MissingAuthenticationTokenException");
                 return Results.Json(new { message = "Missing Authentication Token" });
             }
-            
+
             if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
             {
                 // TODO: Translate to APIGatewayHttpApiV2ProxyRequest
@@ -76,7 +79,7 @@ public class ApiGatewayEmulatorProcess
         });
 
         var runTask = app.RunAsync(cancellationToken);
-        
+
         return new ApiGatewayEmulatorProcess
         {
             Services = app.Services,
