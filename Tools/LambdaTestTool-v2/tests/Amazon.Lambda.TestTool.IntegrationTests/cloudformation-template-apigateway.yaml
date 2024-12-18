@@ -16,6 +16,21 @@ Resources:
           };
       Runtime: nodejs20.x
 
+  BinaryLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-BinaryFunction'
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            const decodedBody = atob(event.body);
+            const parsedBody = JSON.parse(decodedBody.toString('utf8'));
+            return parsedBody;
+          };
+      Runtime: nodejs20.x
+
   ReturnRawRequestBodyLambdaFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
@@ -199,6 +214,47 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ReturnRawRequestBodyHttpApi}/*'
 
+  BinaryMediaRestApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: !Sub '${AWS::StackName}-BinaryMediaRestAPI'
+      BinaryMediaTypes:
+        - '*/*'
+
+  BinaryMediaRestApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt BinaryMediaRestApi.RootResourceId
+      PathPart: 'test'
+      RestApiId: !Ref BinaryMediaRestApi
+
+  BinaryMediaRestApiMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: POST
+      ResourceId: !Ref BinaryMediaRestApiResource
+      RestApiId: !Ref BinaryMediaRestApi
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${BinaryLambdaFunction.Arn}/invocations'
+
+  BinaryMediaRestApiDeployment:
+    Type: 'AWS::ApiGateway::Deployment'
+    DependsOn: BinaryMediaRestApiMethod
+    Properties:
+      RestApiId: !Ref BinaryMediaRestApi
+      StageName: 'test'
+
+  LambdaPermissionBinaryMediaRestApi:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt BinaryLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${BinaryMediaRestApi}/*'
+
 Outputs:
   RestApiId:
     Description: 'ID of the REST API'
@@ -231,3 +287,11 @@ Outputs:
   ReturnRawRequestBodyHttpApiUrl:
     Description: 'URL of the JSON Inference HTTP API'
     Value: !Sub 'https://${ReturnRawRequestBodyHttpApi}.execute-api.${AWS::Region}.amazonaws.com/'
+
+  BinaryMediaRestApiId:
+      Description: 'ID of the Binary Media REST API'
+      Value: !Ref BinaryMediaRestApi
+
+  BinaryMediaRestApiUrl:
+      Description: 'URL of the Binary Media REST API'
+      Value: !Sub 'https://${BinaryMediaRestApi}.execute-api.${AWS::Region}.amazonaws.com/test/test'

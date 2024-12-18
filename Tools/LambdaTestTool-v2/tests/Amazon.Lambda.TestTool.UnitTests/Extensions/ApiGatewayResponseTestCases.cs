@@ -147,42 +147,6 @@ public static class ApiGatewayResponseTestCases
 
         yield return new object[]
         {
-            "V1_SetsBodyBase64",
-            new ApiGatewayResponseTestCase
-            {
-                Response = new APIGatewayProxyResponse
-                {
-                    StatusCode = 200,
-                    Body = Convert.ToBase64String(Encoding.UTF8.GetBytes("{\"message\":\"Hello, World!\"}")),
-                    IsBase64Encoded = true
-                },
-                Assertions = (response, emulatormode) =>
-                {
-                    if (emulatormode == ApiGatewayEmulatorMode.Rest)
-                    {
-
-                    } else
-                    {
-                      Assert.Equal("{\"message\":\"Hello, World!\"}", ReadResponseBody(response));
-                    }
-                },
-                IntegrationAssertions = async (response, emulatorMode) =>
-                {
-                    var content = await response.Content.ReadAsStringAsync();
-                    if (emulatorMode == ApiGatewayEmulatorMode.Rest)
-                    {
-                        Assert.Equal(Convert.ToBase64String(Encoding.UTF8.GetBytes("{\"message\":\"Hello, World!\"}")), content); // rest doesnt decode
-                    } else
-                    {
-                        Assert.Equal("{\"message\":\"Hello, World!\"}", content);
-                    }
-                    await Task.CompletedTask;
-                }
-            }
-        };
-
-        yield return new object[]
-        {
             "V1_DefaultsToCorrectContentTYpe",
             new ApiGatewayResponseTestCase
             {

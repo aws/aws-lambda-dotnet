@@ -26,7 +26,7 @@ public static class ApiGatewayResponseExtensions
         response.Clear();
 
         SetResponseHeaders(response, apiResponse.Headers, emulatorMode, apiResponse.MultiValueHeaders);
-        SetResponseBody(response, apiResponse.Body, apiResponse.IsBase64Encoded, emulatorMode);
+        SetResponseBody(response, apiResponse.Body, apiResponse.IsBase64Encoded);
         SetContentTypeAndStatusCodeV1(response, apiResponse.Headers, apiResponse.MultiValueHeaders, apiResponse.StatusCode, emulatorMode);
     }
 
@@ -41,7 +41,7 @@ public static class ApiGatewayResponseExtensions
         response.Clear();
 
         SetResponseHeaders(response, apiResponse.Headers, ApiGatewayEmulatorMode.HttpV2);
-        SetResponseBody(response, apiResponse.Body, apiResponse.IsBase64Encoded, ApiGatewayEmulatorMode.HttpV2);
+        SetResponseBody(response, apiResponse.Body, apiResponse.IsBase64Encoded);
         SetContentTypeAndStatusCodeV2(response, apiResponse.Headers, apiResponse.StatusCode);
     }
 
@@ -151,13 +151,12 @@ public static class ApiGatewayResponseExtensions
     /// <param name="response">The <see cref="HttpResponse"/> to set the body on.</param>
     /// <param name="body">The body content.</param>
     /// <param name="isBase64Encoded">Whether the body is Base64 encoded.</param>
-    /// <param name="apiGatewayEmulator">The <see cref="ApiGatewayEmulatorMode"/> being used.</param>
-    private static void SetResponseBody(HttpResponse response, string? body, bool isBase64Encoded, ApiGatewayEmulatorMode apiGatewayEmulator)
+    private static void SetResponseBody(HttpResponse response, string? body, bool isBase64Encoded)
     {
         if (!string.IsNullOrEmpty(body))
         {
             byte[] bodyBytes;
-            if (isBase64Encoded && ApiGatewayEmulatorMode.Rest != apiGatewayEmulator) // rest api gateway doesnt automatically decode the response
+            if (isBase64Encoded)
             {
                 bodyBytes = Convert.FromBase64String(body);
             }

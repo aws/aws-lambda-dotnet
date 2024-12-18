@@ -24,6 +24,9 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         public string HttpApiV1Url { get; private set; }
         public string HttpApiV2Url { get; private set; }
         public string ReturnRawRequestBodyHttpApiV2Url { get; private set; }
+        public string BinaryMediaRestApiId { get; private set; }
+        public string BinaryMediaRestApiUrl { get; private set; }
+
 
         public ApiGatewayIntegrationTestFixture()
         {
@@ -43,6 +46,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             HttpApiV1Url = string.Empty;
             HttpApiV2Url = string.Empty;
             ReturnRawRequestBodyHttpApiV2Url = string.Empty;
+            BinaryMediaRestApiId = string.Empty;
+            BinaryMediaRestApiUrl = string.Empty;
         }
 
         public async Task InitializeAsync()
@@ -105,6 +110,9 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 
             ReturnRawRequestBodyV2Id = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnRawRequestBodyHttpApiId");
             ReturnRawRequestBodyHttpApiV2Url = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnRawRequestBodyHttpApiUrl");
+
+            BinaryMediaRestApiId = await CloudFormationHelper.GetOutputValueAsync(StackName, "BinaryMediaRestApiId");
+            BinaryMediaRestApiUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "BinaryMediaRestApiUrl");
         }
 
         private async Task WaitForApisAvailability()
@@ -113,6 +121,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             await ApiGatewayHelper.WaitForApiAvailability(HttpApiV1Id, HttpApiV1Url, true);
             await ApiGatewayHelper.WaitForApiAvailability(HttpApiV2Id, HttpApiV2Url, true);
             await ApiGatewayHelper.WaitForApiAvailability(ReturnRawRequestBodyV2Id, ReturnRawRequestBodyHttpApiV2Url, true);
+            await ApiGatewayHelper.WaitForApiAvailability(BinaryMediaRestApiId, BinaryMediaRestApiUrl, false);
         }
 
         public async Task DisposeAsync()
