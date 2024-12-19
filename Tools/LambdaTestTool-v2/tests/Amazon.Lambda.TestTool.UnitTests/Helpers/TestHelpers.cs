@@ -31,6 +31,14 @@ internal static class TestHelpers
         }
     }
 
+    internal static async Task<HttpResponseMessage> SendRequest(string url)
+    {
+        using (var client = new HttpClient())
+        {
+            return await client.GetAsync(url);
+        }
+    }
+
     internal static async Task CancelAndWaitAsync(Task executeTask)
     {
         await Task.Delay(1000);

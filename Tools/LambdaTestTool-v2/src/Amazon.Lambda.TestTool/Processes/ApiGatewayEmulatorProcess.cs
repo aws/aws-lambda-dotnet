@@ -33,6 +33,11 @@ public class ApiGatewayEmulatorProcess
     /// </summary>
     public static ApiGatewayEmulatorProcess Startup(RunCommandSettings settings, CancellationToken cancellationToken = default)
     {
+        if (settings.ApiGatewayEmulatorMode is null)
+        {
+            throw new InvalidApiGatewayModeException("The API Gateway emulator mode was not provided.");
+        }
+
         var builder = WebApplication.CreateBuilder();
 
         builder.Services.AddApiGatewayEmulatorServices();
@@ -61,9 +66,7 @@ public class ApiGatewayEmulatorProcess
             {
                 app.Logger.LogInformation("Unable to find a configured Lambda route for the specified method and path: {Method} {Path}",
                     context.Request.Method, context.Request.Path);
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                context.Response.Headers.Append("x-amzn-errortype", "MissingAuthenticationTokenException");
-                return Results.Json(new { message = "Missing Authentication Token" });
+                return ApiGatewayResults.RouteNotFound(context, (ApiGatewayEmulatorMode) settings.ApiGatewayEmulatorMode);
             }
 
             if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
