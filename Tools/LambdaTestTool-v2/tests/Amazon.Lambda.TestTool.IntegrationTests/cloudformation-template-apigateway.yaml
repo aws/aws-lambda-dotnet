@@ -82,6 +82,9 @@ Resources:
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
       Name: !Sub '${AWS::StackName}-ParseAndReturnBodyRestAPI'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
 
   ParseAndReturnBodyRestApiResource:
     Type: 'AWS::ApiGateway::Resource'
@@ -176,6 +179,9 @@ Resources:
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
       Name: !Sub '${AWS::StackName}-ReturnRawBodyRestAPI'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
 
   ReturnRawBodyRestApiResource:
     Type: 'AWS::ApiGateway::Resource'
@@ -270,6 +276,9 @@ Resources:
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
       Name: !Sub '${AWS::StackName}-ReturnFullEventRestAPI'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
 
   ReturnFullEventRestApiResource:
     Type: 'AWS::ApiGateway::Resource'
@@ -436,6 +445,9 @@ Resources:
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
       Name: !Sub '${AWS::StackName}-ReturnDecodedParseBinRestAPI'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
       BinaryMediaTypes:
         - '*/*'
 

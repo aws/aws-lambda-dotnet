@@ -3,6 +3,7 @@
 
 namespace Amazon.Lambda.TestTool.Extensions;
 
+using System.Text;
 using System.Web;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Models;
@@ -20,19 +21,20 @@ public static class HttpContextExtensions
     /// <param name="context">The <see cref="HttpContext"/> to be translated.</param>
     /// <param name="apiGatewayRouteConfig">The configuration of the API Gateway route, including the HTTP method, path, and other metadata.</param>
     /// <returns>An <see cref="APIGatewayHttpApiV2ProxyRequest"/> object representing the translated request.</returns>
-    public static APIGatewayHttpApiV2ProxyRequest ToApiGatewayHttpV2Request(
+    public static async Task<APIGatewayHttpApiV2ProxyRequest> ToApiGatewayHttpV2Request(
         this HttpContext context,
         ApiGatewayRouteConfig apiGatewayRouteConfig)
     {
         var request = context.Request;
         var currentTime = DateTimeOffset.UtcNow;
-        var body = HttpRequestUtility.ReadRequestBody(request);
+        var body = await HttpRequestUtility.ReadRequestBody(request);
         var contentLength = HttpRequestUtility.CalculateContentLength(request, body);
 
         var pathParameters = RouteTemplateUtility.ExtractPathParameters(apiGatewayRouteConfig.Path, request.Path);
 
         // Format 2.0 doesn't have multiValueHeaders or multiValueQueryStringParameters fields. Duplicate headers are combined with commas and included in the headers field.
-        var (_, allHeaders) = HttpRequestUtility.ExtractHeaders(request.Headers);
+        // 2.0 also lowercases all header keys
+        var (_, allHeaders) = HttpRequestUtility.ExtractHeaders(request.Headers, true);
         var headers = allHeaders.ToDictionary(
             kvp => kvp.Key,
             kvp => string.Join(", ", kvp.Value)
@@ -91,6 +93,7 @@ public static class HttpContextExtensions
         }
 
         httpApiV2ProxyRequest.RawQueryString = string.Empty; // default is empty string
+
         if (queryStringParameters.Any())
         {
             // this should be decoded value
@@ -123,12 +126,13 @@ public static class HttpContextExtensions
     /// <param name="context">The <see cref="HttpContext"/> to be translated.</param>
     /// <param name="apiGatewayRouteConfig">The configuration of the API Gateway route, including the HTTP method, path, and other metadata.</param>
     /// <returns>An <see cref="APIGatewayProxyRequest"/> object representing the translated request.</returns>
-    public static APIGatewayProxyRequest ToApiGatewayRequest(
+    public static async Task<APIGatewayProxyRequest> ToApiGatewayRequest(
         this HttpContext context,
-        ApiGatewayRouteConfig apiGatewayRouteConfig)
+        ApiGatewayRouteConfig apiGatewayRouteConfig,
+        ApiGatewayEmulatorMode emulatorMode)
     {
         var request = context.Request;
-        var body = HttpRequestUtility.ReadRequestBody(request);
+        var body = await HttpRequestUtility.ReadRequestBody(request);
         var contentLength = HttpRequestUtility.CalculateContentLength(request, body);
 
         var pathParameters = RouteTemplateUtility.ExtractPathParameters(apiGatewayRouteConfig.Path, request.Path);
@@ -136,22 +140,38 @@ public static class HttpContextExtensions
         var (headers, multiValueHeaders) = HttpRequestUtility.ExtractHeaders(request.Headers);
         var (queryStringParameters, multiValueQueryStringParameters) = HttpRequestUtility.ExtractQueryStringParameters(request.Query);
 
-        if (!headers.ContainsKey("content-length"))
+        if (!headers.ContainsKey("content-length") && emulatorMode != ApiGatewayEmulatorMode.Rest) // rest doesnt set content-length by default
         {
             headers["content-length"] = contentLength.ToString();
-            multiValueHeaders["content-length"] = new List<string> { contentLength.ToString() };
+            multiValueHeaders["content-length"] = [contentLength.ToString()];
         }
 
         if (!headers.ContainsKey("content-type"))
         {
             headers["content-type"] = "text/plain; charset=utf-8";
-            multiValueHeaders["content-type"] = new List<string> { "text/plain; charset=utf-8" };
+            multiValueHeaders["content-type"] = ["text/plain; charset=utf-8"];
+        }
+
+        // This is the decoded value
+        var path = request.Path.Value;
+
+        if (emulatorMode == ApiGatewayEmulatorMode.HttpV1 || emulatorMode == ApiGatewayEmulatorMode.Rest) // rest and httpv1 uses the encoded value for path an
+        {
+            path = request.Path.ToUriComponent();
+        }
+
+        if (emulatorMode == ApiGatewayEmulatorMode.Rest) // rest uses encoded value for the path params
+        {
+            var encodedPathParameters = pathParameters.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => Uri.EscapeUriString(kvp.Value)); // intentionally using EscapeURiString over EscapeDataString since EscapeURiString correctly handles reserved characters :/?#[]@!$&'()*+,;= in this case
+            pathParameters = encodedPathParameters;
         }
 
         var proxyRequest = new APIGatewayProxyRequest
         {
             Resource = apiGatewayRouteConfig.Path,
-            Path = request.Path.Value,
+            Path = path,
             HttpMethod = request.Method,
             Body = body,
             IsBase64Encoded = false
@@ -181,13 +201,11 @@ public static class HttpContextExtensions
 
         if (pathParameters.Any())
         {
-            // this should be decoded value
             proxyRequest.PathParameters = pathParameters;
         }
 
         if (HttpRequestUtility.IsBinaryContent(request.ContentType))
         {
-            // we already converted it when we read the body so we dont need to re-convert it
             proxyRequest.IsBase64Encoded = true;
         }
 

@@ -1,5 +1,6 @@
-﻿namespace Amazon.Lambda.TestTool.Utilities;
+namespace Amazon.Lambda.TestTool.Utilities;
 
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Routing.Template;
 
 /// <summary>
@@ -7,6 +8,8 @@ using Microsoft.AspNetCore.Routing.Template;
 /// </summary>
 public static class RouteTemplateUtility
 {
+    private const string TemporaryPrefix = "__aws_param__";
+
     /// <summary>
     /// Extracts path parameters from an actual path based on a route template.
     /// </summary>
@@ -24,43 +27,88 @@ public static class RouteTemplateUtility
     /// </example>
     public static Dictionary<string, string> ExtractPathParameters(string routeTemplate, string actualPath)
     {
+        // Preprocess the route template to convert from .net style format to aws
+        routeTemplate = PreprocessRouteTemplate(routeTemplate);
+
         var template = TemplateParser.Parse(routeTemplate);
-        var matcher = new TemplateMatcher(template, GetDefaults(template));
+        var matcher = new TemplateMatcher(template, new RouteValueDictionary());
         var routeValues = new RouteValueDictionary();
 
         if (matcher.TryMatch(actualPath, routeValues))
         {
-            return routeValues.ToDictionary(rv => rv.Key, rv => rv.Value?.ToString() ?? string.Empty);
+            var result = new Dictionary<string, string>();
+
+            foreach (var param in template.Parameters)
+            {
+                if (routeValues.TryGetValue(param.Name, out var value))
+                {
+                    var stringValue = value?.ToString() ?? string.Empty;
+
+                    // For catch-all parameters, remove the leading slash if present
+                    if (param.IsCatchAll)
+                    {
+                        stringValue = stringValue.TrimStart('/');
+                    }
+
+                    // Restore original parameter name
+                    var originalParamName = RestoreOriginalParamName(param.Name);
+                    result[originalParamName] = stringValue;
+                }
+            }
+
+            return result;
         }
 
         return new Dictionary<string, string>();
     }
 
     /// <summary>
-    /// Gets the default values for parameters in a parsed route template.
+    /// Preprocesses a route template to make it compatible with ASP.NET Core's TemplateMatcher.
     /// </summary>
-    /// <param name="parsedTemplate">The parsed route template.</param>
-    /// <returns>A dictionary of default values for the template parameters.</returns>
-    /// <example>
-    /// Using this method:
-    /// <code>
-    /// var template = TemplateParser.Parse("/api/{version=v1}/users/{id}");
-    /// var defaults = RouteTemplateUtility.GetDefaults(template);
-    /// // defaults will contain: { {"version", "v1"} }
-    /// </code>
-    /// </example>
-    public static RouteValueDictionary GetDefaults(RouteTemplate parsedTemplate)
+    /// <param name="template">The original route template, potentially in AWS API Gateway format.</param>
+    /// <returns>A preprocessed route template compatible with ASP.NET Core's TemplateMatcher.</returns>
+    /// <remarks>
+    /// This method performs two main transformations:
+    /// 1. Converts AWS-style {proxy+} to ASP.NET Core style {*proxy}
+    /// 2. Handles AWS ignoring constraignts by temporarily renaming parameters
+    ///    (e.g., {abc:int} becomes {__aws_param__abc__int})
+    /// </remarks>
+    private static string PreprocessRouteTemplate(string template)
     {
-        var result = new RouteValueDictionary();
+        // Convert AWS-style {proxy+} to ASP.NET Core style {*proxy}
+        template = Regex.Replace(template, @"\{(\w+)\+\}", "{*$1}");
 
-        foreach (var parameter in parsedTemplate.Parameters)
+        // Handle AWS-style "constraints" by replacing them with temporary parameter names
+        return Regex.Replace(template, @"\{([^}]+):([^}]+)\}", match =>
         {
-            if (parameter.DefaultValue != null)
+            var paramName = match.Groups[1].Value;
+            var constraint = match.Groups[2].Value;
+
+            // There is a low chance that one of the parameters being used actually follows the syntax of {TemporaryPrefix}{paramName}__{constraint}.
+            // But i dont think its signifigant enough to worry about.
+            return $"{{{TemporaryPrefix}{paramName}__{constraint}}}";
+        });
+    }
+
+    /// <summary>
+    /// Restores the original parameter name after processing by TemplateMatcher.
+    /// </summary>
+    /// <param name="processedName">The parameter name after processing and matching.</param>
+    /// <returns>The original parameter name.</returns>
+    /// <remarks>
+    /// This method reverses the transformation done in PreprocessRouteTemplate.
+    /// For example, "__aws_param__abc__int" would be restored to "abc:int".
+    /// </remarks>
+    private static string RestoreOriginalParamName(string processedName)
+    {
+        if (processedName.StartsWith(TemporaryPrefix))
+        {
+            var parts = processedName.Substring(TemporaryPrefix.Length).Split("__", 2);
+            if (parts.Length == 2)
             {
-                if (parameter.Name != null) result.Add(parameter.Name, parameter.DefaultValue);
+                return $"{parts[0]}:{parts[1]}";
             }
         }
-
-        return result;
+        return processedName;
     }
 }

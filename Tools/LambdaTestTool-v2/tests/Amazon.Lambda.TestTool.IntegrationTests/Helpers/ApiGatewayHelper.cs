@@ -23,9 +23,13 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             _httpClient = new HttpClient();
         }
 
-        public async Task WaitForApiAvailability(string apiId, string apiUrl, bool isHttpApi, int maxWaitTimeSeconds = 30)
+        public async Task WaitForApiAvailability(string apiId, string apiUrl, bool isHttpApi, int maxWaitTimeSeconds = 60)
         {
             var startTime = DateTime.UtcNow;
+            var successStartTime = DateTime.UtcNow;
+            var requiredSuccessDuration = TimeSpan.FromSeconds(10);
+            bool hasBeenSuccessful = false;
+
             while ((DateTime.UtcNow - startTime).TotalSeconds < maxWaitTimeSeconds)
             {
                 try
@@ -47,77 +51,107 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                     {
                         var response = await httpClient.PostAsync(apiUrl, new StringContent("{}"));
 
-                        // Check if we get a response, even if it's an error
-                        if (response.StatusCode != HttpStatusCode.NotFound && response.StatusCode != HttpStatusCode.Forbidden)
+                        // Check if we get a successful response
+                        if (response.StatusCode != HttpStatusCode.Forbidden && response.StatusCode != HttpStatusCode.NotFound)
                         {
-                            return; // API is available and responding
+                            if (!hasBeenSuccessful)
+                            {
+                                successStartTime = DateTime.UtcNow;
+                                hasBeenSuccessful = true;
+                            }
+
+                            if ((DateTime.UtcNow - successStartTime) >= requiredSuccessDuration)
+                            {
+                                return; // API has been responding successfully for at least 10 seconds
+                            }
+                        }
+                        else
+                        {
+                            // Reset the success timer if we get a non-successful response
+                            hasBeenSuccessful = false;
+                            Console.WriteLine($"API responded with status code: {response.StatusCode}");
                         }
                     }
                 }
                 catch (Amazon.ApiGatewayV2.Model.NotFoundException) when (isHttpApi)
                 {
                     // HTTP API not found yet, continue waiting
+                    hasBeenSuccessful = false;
                 }
                 catch (Amazon.APIGateway.Model.NotFoundException) when (!isHttpApi)
                 {
                     // REST API not found yet, continue waiting
+                    hasBeenSuccessful = false;
                 }
                 catch (Exception ex)
                 {
-                    // Log unexpected exceptions
+                    // Log unexpected exceptions and reset success timer
                     Console.WriteLine($"Unexpected error while checking API availability: {ex.Message}");
+                    hasBeenSuccessful = false;
                 }
                 await Task.Delay(1000); // Wait for 1 second before checking again
             }
-            throw new TimeoutException($"API {apiId} did not become available within {maxWaitTimeSeconds} seconds");
+            throw new TimeoutException($"API {apiId} did not become consistently available within {maxWaitTimeSeconds} seconds");
         }
 
-        public async Task<string> AddRouteToRestApi(string restApiId, string lambdaArn, string route = "/test")
+
+        public async Task<string> AddRouteToRestApi(string restApiId, string lambdaArn, string route = "/test", string httpMethod = "ANY")
         {
-            var rootResourceId = (await _apiGatewayV1Client.GetResourcesAsync(new GetResourcesRequest { RestApiId = restApiId })).Items[0].Id;
+            // Get all resources and find the root resource
+            var resources = await _apiGatewayV1Client.GetResourcesAsync(new GetResourcesRequest { RestApiId = restApiId });
+            var rootResource = resources.Items.First(r => r.Path == "/");
+            var rootResourceId = rootResource.Id;
 
-            var pathParts = route.Trim('/').Split('/');
-            var currentResourceId = rootResourceId;
-            foreach (var pathPart in pathParts)
+            // Split the route into parts and create each part
+            var routeParts = route.Trim('/').Split('/');
+            string currentPath = "";
+            string parentResourceId = rootResourceId;
+
+            foreach (var part in routeParts)
             {
-                var resources = await _apiGatewayV1Client.GetResourcesAsync(new GetResourcesRequest { RestApiId = restApiId });
-                var existingResource = resources.Items.FirstOrDefault(r => r.ParentId == currentResourceId && r.PathPart == pathPart);
+                currentPath += "/" + part;
 
+                // Check if the resource already exists
+                var existingResource = resources.Items.FirstOrDefault(r => r.Path == currentPath);
                 if (existingResource == null)
                 {
+                    // Create the resource if it doesn't exist
                     var createResourceResponse = await _apiGatewayV1Client.CreateResourceAsync(new CreateResourceRequest
                     {
                         RestApiId = restApiId,
-                        ParentId = currentResourceId,
-                        PathPart = pathPart
+                        ParentId = parentResourceId,
+                        PathPart = part
                     });
-                    currentResourceId = createResourceResponse.Id;
+                    parentResourceId = createResourceResponse.Id;
                 }
                 else
                 {
-                    currentResourceId = existingResource.Id;
+                    parentResourceId = existingResource.Id;
                 }
             }
 
+            // Create the method for the final resource
             await _apiGatewayV1Client.PutMethodAsync(new PutMethodRequest
             {
                 RestApiId = restApiId,
-                ResourceId = currentResourceId,
-                HttpMethod = "ANY",
+                ResourceId = parentResourceId,
+                HttpMethod = httpMethod,
                 AuthorizationType = "NONE"
             });
 
+            // Create the integration for the method
             await _apiGatewayV1Client.PutIntegrationAsync(new PutIntegrationRequest
             {
                 RestApiId = restApiId,
-                ResourceId = currentResourceId,
-                HttpMethod = "ANY",
+                ResourceId = parentResourceId,
+                HttpMethod = httpMethod,
                 Type = APIGateway.IntegrationType.AWS_PROXY,
                 IntegrationHttpMethod = "POST",
                 Uri = $"arn:aws:apigateway:{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}:lambda:path/2015-03-31/functions/{lambdaArn}/invocations"
             });
 
-            await _apiGatewayV1Client.CreateDeploymentAsync(new APIGateway.Model.CreateDeploymentRequest
+            // Deploy the API
+            var deploymentResponse = await _apiGatewayV1Client.CreateDeploymentAsync(new APIGateway.Model.CreateDeploymentRequest
             {
                 RestApiId = restApiId,
                 StageName = "test"

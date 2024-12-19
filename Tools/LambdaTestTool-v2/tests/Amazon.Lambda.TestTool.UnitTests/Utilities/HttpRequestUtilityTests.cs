@@ -25,21 +25,21 @@ public class HttpRequestUtilityTests
     [InlineData("application/json", false)]
     [InlineData(null, false)]
     [InlineData("", false)]
-    public void IsBinaryContent_ReturnsExpectedResult(string contentType, bool expected)
+    public void IsBinaryContent_ReturnsExpectedResult(string? contentType, bool expected)
     {
         var result = HttpRequestUtility.IsBinaryContent(contentType);
         Assert.Equal(expected, result);
     }
 
     [Fact]
-    public void ReadRequestBody_ReturnsCorrectContent()
+    public async Task ReadRequestBody_ReturnsCorrectContent()
     {
         var content = "Test body content";
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
         var request = new Mock<HttpRequest>();
         request.Setup(r => r.Body).Returns(stream);
 
-        var result = HttpRequestUtility.ReadRequestBody(request.Object);
+        var result = await HttpRequestUtility.ReadRequestBody(request.Object);
 
         Assert.Equal(content, result);
     }

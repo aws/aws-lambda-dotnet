@@ -1,4 +1,7 @@
-﻿using System.Text;
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using System.Text;
 
 namespace Amazon.Lambda.TestTool.Utilities;
 
@@ -32,7 +35,7 @@ public static class HttpRequestUtility
     /// </summary>
     /// <param name="request">The HTTP request.</param>
     /// <returns>The body of the request as a string, or null if the body is empty.</returns>
-    public static string? ReadRequestBody(HttpRequest request)
+    public static async Task<string?> ReadRequestBody(HttpRequest request)
     {
         if (request.ContentLength == 0 || request.Body == null || !request.Body.CanRead)
         {
@@ -46,7 +49,7 @@ public static class HttpRequestUtility
 
         using (var memoryStream = new MemoryStream())
         {
-            request.Body.CopyTo(memoryStream);
+            await request.Body.CopyToAsync(memoryStream);
 
             // If the stream is empty, return null
             if (memoryStream.Length == 0)
@@ -67,7 +70,7 @@ public static class HttpRequestUtility
                 // For text data, read as string
                 using (var reader = new StreamReader(memoryStream))
                 {
-                    string content = reader.ReadToEnd();
+                    string content = await reader.ReadToEndAsync();
                     return string.IsNullOrWhiteSpace(content) ? null : content;
                 }
             }
@@ -80,6 +83,7 @@ public static class HttpRequestUtility
     /// Extracts headers from the request, separating them into single-value and multi-value dictionaries.
     /// </summary>
     /// <param name="headers">The request headers.</param>
+    /// <param name="lowerCaseKeyName">Whether to lowercase the key name or not.</param>
     /// <returns>A tuple containing single-value and multi-value header dictionaries.</returns>
     /// <example>
     /// For headers:
@@ -91,15 +95,16 @@ public static class HttpRequestUtility
     /// singleValueHeaders: { "Accept": "application/xhtml+xml", "X-Custom-Header": "value1" }
     /// multiValueHeaders: { "Accept": ["text/html", "application/xhtml+xml"], "X-Custom-Header": ["value1"] }
     /// </example>
-    public static (IDictionary<string, string>, IDictionary<string, IList<string>>) ExtractHeaders(IHeaderDictionary headers)
+    public static (IDictionary<string, string>, IDictionary<string, IList<string>>) ExtractHeaders(IHeaderDictionary headers, bool lowerCaseKeyName = false)
     {
-        var singleValueHeaders = new Dictionary<string, string>();
-        var multiValueHeaders = new Dictionary<string, IList<string>>();
+        var singleValueHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var multiValueHeaders = new Dictionary<string, IList<string>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var header in headers)
         {
-            singleValueHeaders[header.Key.ToLower()] = header.Value.Last() ?? "";
-            multiValueHeaders[header.Key.ToLower()] = [.. header.Value];
+            var key = lowerCaseKeyName ? header.Key.ToLower() : header.Key;
+            singleValueHeaders[key] = header.Value.Last() ?? "";
+            multiValueHeaders[key] = [.. header.Value];
         }
 
         return (singleValueHeaders, multiValueHeaders);
@@ -139,7 +144,7 @@ public static class HttpRequestUtility
     /// The generated ID is a 145character string consisting of lowercase letters and numbers, followed by an equals sign.
     public static string GenerateRequestId()
     {
-        return Guid.NewGuid().ToString("N").Substring(0, 8) + Guid.NewGuid().ToString("N").Substring(0, 7) + "=";
+        return $"{Guid.NewGuid().ToString("N").Substring(0, 8)}{Guid.NewGuid().ToString("N").Substring(0, 7)}=";
     }
 
     /// <summary>
@@ -161,7 +166,7 @@ public static class HttpRequestUtility
         return $"Root=1-{timestamp}-{guid1.Substring(0, 12)}{guid2.Substring(0, 12)};Parent={Guid.NewGuid().ToString("N").Substring(0, 16)};Sampled=0;Lineage=1:{Guid.NewGuid().ToString("N").Substring(0, 8)}:0";
     }
 
-    public static long CalculateContentLength(HttpRequest request, string body)
+    public static long CalculateContentLength(HttpRequest request, string? body)
     {
         if (!string.IsNullOrEmpty(body))
         {

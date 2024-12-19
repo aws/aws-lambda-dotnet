@@ -4,7 +4,6 @@
 namespace Amazon.Lambda.TestTool.UnitTests.Utilities;
 
 using Amazon.Lambda.TestTool.Utilities;
-using Microsoft.AspNetCore.Routing.Template;
 using Xunit;
 
 public class RouteTemplateUtilityTests
@@ -14,11 +13,27 @@ public class RouteTemplateUtilityTests
     [InlineData("/users/{id}/orders/{orderId}", "/users/123/orders/456", "id", "123", "orderId", "456")]
     [InlineData("/products/{category}/{id}", "/products/electronics/laptop-123", "category", "electronics", "id", "laptop-123")]
     [InlineData("/api/{version}/users/{userId}", "/api/v1/users/abc-xyz", "version", "v1", "userId", "abc-xyz")]
+    [InlineData("/api/{proxy+}", "/api/v1/users/abc-xyz", "proxy", "v1/users/abc-xyz")]
+    [InlineData("/{param}", "/value", "param", "value")]
+    [InlineData("/{param}/", "/value/", "param", "value")]
+    [InlineData("/static/{param}/static", "/static/value/static", "param", "value")]
+    [InlineData("/{param1}/{param2}", "/123/456", "param1", "123", "param2", "456")]
+    [InlineData("/{param1}/{param2+}", "/123/456/789/000", "param1", "123", "param2", "456/789/000")]
+    [InlineData("/api/{version}/{proxy+}", "/api/v2/users/123/orders", "version", "v2", "proxy", "users/123/orders")]
+    [InlineData("/{param}", "/value with spaces", "param", "value with spaces")]
+    [InlineData("/{param+}", "/a/very/long/path/with/many/segments", "param", "a/very/long/path/with/many/segments")]
+    [InlineData("/api/{proxy+}", "/api/", "proxy", "")]
+    [InlineData("/api/{proxy+}", "/api", "proxy", "")]
+    [InlineData("/{param1}/static/{param2+}", "/value1/static/rest/of/the/path", "param1", "value1", "param2", "rest/of/the/path")]
+    [InlineData("/users/{id}/posts/{postId?}", "/users/123/posts", "id", "123")]
+    [InlineData("/{param:int}", "/123", "param:int", "123")]
+    [InlineData("/users/{id}", "/users/", new string[] { })]
+    [InlineData("/", "/", new string[] { })]
     public void ExtractPathParameters_ShouldExtractCorrectly(string routeTemplate, string actualPath, params string[] expectedKeyValuePairs)
     {
         // Arrange
         var expected = new Dictionary<string, string>();
-        for (int i = 0; i < expectedKeyValuePairs.Length; i += 2)
+        for (var i = 0; i < expectedKeyValuePairs.Length; i += 2)
         {
             expected[expectedKeyValuePairs[i]] = expectedKeyValuePairs[i + 1];
         }
@@ -38,53 +53,6 @@ public class RouteTemplateUtilityTests
     {
         // Act
         var result = RouteTemplateUtility.ExtractPathParameters(routeTemplate, actualPath);
-
-        // Assert
-        Assert.Empty(result);
-    }
-
-    [Theory]
-    [InlineData("/users/{id:int}", "/users/123", "id", "123")]
-    [InlineData("/users/{id:guid}", "/users/550e8400-e29b-41d4-a716-446655440000", "id", "550e8400-e29b-41d4-a716-446655440000")]
-    [InlineData("/api/{version:regex(^v[0-9]+$)}/users/{userId}", "/api/v1/users/abc-xyz", "version", "v1", "userId", "abc-xyz")]
-    public void ExtractPathParameters_ShouldHandleConstraints(string routeTemplate, string actualPath, params string[] expectedKeyValuePairs)
-    {
-        // Arrange
-        var expected = new Dictionary<string, string>();
-        for (int i = 0; i < expectedKeyValuePairs.Length; i += 2)
-        {
-            expected[expectedKeyValuePairs[i]] = expectedKeyValuePairs[i + 1];
-        }
-
-        // Act
-        var result = RouteTemplateUtility.ExtractPathParameters(routeTemplate, actualPath);
-
-        // Assert
-        Assert.Equal(expected, result);
-    }
-
-    [Fact]
-    public void GetDefaults_ShouldReturnCorrectDefaults()
-    {
-        // Arrange
-        var template = TemplateParser.Parse("/api/{version=v1}/users/{id}");
-
-        // Act
-        var result = RouteTemplateUtility.GetDefaults(template);
-
-        // Assert
-        Assert.Single(result);
-        Assert.Equal("v1", result["version"]);
-    }
-
-    [Fact]
-    public void GetDefaults_ShouldReturnEmptyDictionary_WhenNoDefaults()
-    {
-        // Arrange
-        var template = TemplateParser.Parse("/api/{version}/users/{id}");
-
-        // Act
-        var result = RouteTemplateUtility.GetDefaults(template);
 
         // Assert
         Assert.Empty(result);
