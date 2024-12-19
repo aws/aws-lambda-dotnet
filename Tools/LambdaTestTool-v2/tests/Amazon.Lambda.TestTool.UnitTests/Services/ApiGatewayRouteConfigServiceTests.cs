@@ -159,8 +159,10 @@ public class ApiGatewayRouteConfigServiceTests
         Assert.Equal("Function2", result2.LambdaResourceName);
     }
 
-    [Fact]
-    public void CatchAllRouteConfig()
+    [Theory]
+    [InlineData("proxy")]
+    [InlineData("anyvalue")]
+    public void CatchAllRouteConfig(string variableName)
     {
         // Arange
         var routeConfigs = new List<ApiGatewayRouteConfig>
@@ -169,7 +171,7 @@ public class ApiGatewayRouteConfigServiceTests
             {
                 LambdaResourceName = "F1",
                 HttpMethod = "ANY",
-                Path = "/{proxy+}"
+                Path = $"/{{{variableName}+}}"
             }
         };
 
