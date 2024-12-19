@@ -484,6 +484,48 @@ public static class ApiGatewayResponseTestCases
 
         yield return new object[]
         {
+            "V2_HandlesZeroStatusCode",
+            new ApiGatewayResponseTestCase
+            {
+                Response = new APIGatewayHttpApiV2ProxyResponse
+                {
+                    StatusCode = 0,
+                    Body = "{\"key\":\"This body should be replaced\"}"
+                },
+                Assertions = (response, emulatorMode) =>
+                {
+                    string error;
+                    int contentLength;
+                    int statusCode;
+                    error = "\"Internal Server Error\"}";
+                    contentLength = 35;
+                    statusCode = 500;
+                    Assert.Equal(statusCode, response.StatusCode);
+                    Assert.Equal("application/json", response.ContentType);
+                    Assert.Equal("{\"message\":"+error, ReadResponseBody(response));
+                    Assert.Equal(contentLength, response.ContentLength);
+                },
+                IntegrationAssertions = async (response, emulatorMode) =>
+                {
+                    string error;
+                    int contentLength;
+                    int statusCode;
+
+                    error = "\"Internal Server Error\"}";
+                    contentLength = 35;
+                    statusCode = 500;
+                    Assert.Equal(statusCode, (int)response.StatusCode);
+                    Assert.Equal("application/json", response.Content.Headers.ContentType?.ToString());
+                    var content = await response.Content.ReadAsStringAsync();
+                    Assert.Equal("{\"message\":"+error, content);
+                    Assert.Equal(contentLength, response.Content.Headers.ContentLength);
+                    await Task.CompletedTask;
+                }
+            }
+        };
+
+        yield return new object[]
+        {
             "V2_SetsHeaders",
             new ApiGatewayResponseTestCase
             {

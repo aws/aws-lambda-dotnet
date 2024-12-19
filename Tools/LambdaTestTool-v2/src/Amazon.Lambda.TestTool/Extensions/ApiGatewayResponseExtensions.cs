@@ -260,13 +260,11 @@ public static class ApiGatewayResponseExtensions
         }
         else
         {
-            // Assume for now that when status code is not set (we are assuming 0 means not set) then set the default to application/json
-            // Tehnically if the user were to return statusCode = 0 explicity in the response body, api gateway should internal server error, but since we don't
-            // have a way to differentiate it and not returning status code is more common, we will do this way for now.
-            // API Gateway 2.0 format version assumptions
-            response.StatusCode = 200;
+            response.StatusCode = 500;
             response.ContentType = "application/json";
-            // Note: IsBase64Encoded is assumed to be false, which is already the default behavior
+            var errorBytes = Encoding.UTF8.GetBytes("{\"message\":\"Internal Server Error\"}");
+            response.Body = new MemoryStream(errorBytes);
+            response.ContentLength = errorBytes.Length;
         }
     }
 }
