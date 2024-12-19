@@ -10,3 +10,9 @@ namespace Amazon.Lambda.TestTool.Models;
 /// <param name="innerException"></param>
 public abstract class TestToolException(string message, Exception? innerException = null)
     : Exception(message, innerException);
+
+/// <summary>
+/// Thrown if the API Gateway Emulator mode was not provided,
+/// </summary>
+public class InvalidApiGatewayModeException(string message, Exception? innerException = null)
+    : TestToolException(message, innerException);
