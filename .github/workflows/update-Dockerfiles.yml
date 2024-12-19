@@ -68,43 +68,61 @@ jobs:
       - name: Update .NET 6 AMD64
         id: update-net6-amd64
         shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_6_AMD64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_6_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_6_AMD64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_6_NEXT_VERSION }}
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$DOCKERFILE_PATH" -NextVersion "$NEXT_VERSION"
         if: ${{ github.event.inputs.NET_6_AMD64 == 'true' }}
 
       - name: Update .NET 6 ARM64
         id: update-net6-arm64
         shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_6_ARM64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_6_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_6_ARM64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_6_NEXT_VERSION }}
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$DOCKERFILE_PATH" -NextVersion "$NEXT_VERSION"
         if: ${{ github.event.inputs.NET_6_ARM64 == 'true' }}
 
       - name: Update .NET 8 AMD64
         id: update-net8-amd64
         shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_8_AMD64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_8_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_8_AMD64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_8_NEXT_VERSION }}
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$DOCKERFILE_PATH" -NextVersion "$NEXT_VERSION"
         if: ${{ github.event.inputs.NET_8_AMD64 == 'true' }}
 
       - name: Update .NET 8 ARM64
         id: update-net8-arm64
         shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_8_ARM64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_8_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_8_ARM64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_8_NEXT_VERSION }}
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$DOCKERFILE_PATH" -NextVersion "$NEXT_VERSION"
         if: ${{ github.event.inputs.NET_8_ARM64 == 'true' }}
 
       - name: Update .NET 9 AMD64
         id: update-net9-amd64
         shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_9_AMD64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_9_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_9_AMD64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_9_NEXT_VERSION }}
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$DOCKERFILE_PATH" -NextVersion "$NEXT_VERSION"
         if: ${{ github.event.inputs.NET_9_AMD64 == 'true' }}
 
       - name: Update .NET 9 ARM64
         id: update-net9-arm64
         shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_9_ARM64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_9_NEXT_VERSION }}
         run: |
-          .\LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath ${{ env.NET_9_ARM64_Dockerfile }} -NextVersion ${{ github.event.inputs.NET_9_NEXT_VERSION }}
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "$DOCKERFILE_PATH" -NextVersion "$NEXT_VERSION"
         if: ${{ github.event.inputs.NET_9_ARM64 == 'true' }}
 
       # Update Dockerfiles if newer version of ASP.NET Core is available
