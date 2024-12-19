@@ -13,6 +13,9 @@ public static class ApiGatewayResults
     /// <summary>
     /// Returns a 'Not Found' for HTTP API Gateway mode and 'Missing Authentication Token' for Rest.
     /// </summary>
+    /// <param name="context">The <see cref="HttpContext"/> to update.</param>
+    /// <param name="emulatorMode">The API Gateway Emulator mode.</param>
+    /// <returns></returns>
     public static IResult RouteNotFound(HttpContext context, ApiGatewayEmulatorMode emulatorMode)
     {
         if (emulatorMode == ApiGatewayEmulatorMode.Rest)
