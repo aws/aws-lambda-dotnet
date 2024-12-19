@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.1" />
+    <PackageReference Include="AWSSDK.APIGateway" Version="3.7.401.7" />
+    <PackageReference Include="AWSSDK.CloudFormation" Version="3.7.401.11" />
+	  <PackageReference Include="AWSSDK.IdentityManagement" Version="3.7.402" />
+    <PackageReference Include="AWSSDK.ApiGatewayV2" Version="3.7.400.63" />
+    <PackageReference Include="AWSSDK.Lambda" Version="3.7.408.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
+		<ProjectReference Include="..\Amazon.Lambda.TestTool.UnitTests\Amazon.Lambda.TestTool.UnitTests.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="cloudformation-template-apigateway.yaml" />
+	</ItemGroup>
+
+
+	<ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
