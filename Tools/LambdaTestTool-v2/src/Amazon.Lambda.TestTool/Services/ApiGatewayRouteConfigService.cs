@@ -142,15 +142,20 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
             return false;
         }
 
-        var occurrences = routeConfig.Path.Split("{proxy+}").Length - 1;
-        if (occurrences > 1)
+        var occurrences = routeConfig.Path
+            .Split('/')
+            .Where(
+                x => x.StartsWith("{") &&
+                     x.EndsWith("+}"))
+            .ToList();
+        if (occurrences.Count > 1)
         {
             _logger.LogError("The route config {Method} {Path} cannot have multiple greedy variables {{proxy+}}.",
                 routeConfig.HttpMethod, routeConfig.Path);
             return false;
         }
 
-        if (occurrences == 1 && !routeConfig.Path.EndsWith("/{proxy+}"))
+        if (occurrences.Count == 1 && !routeConfig.Path.EndsWith($"/{occurrences.Last()}"))
         {
             _logger.LogError("The route config {Method} {Path} uses a greedy variable {{proxy+}} but does not end with it.",
                 routeConfig.HttpMethod, routeConfig.Path);
@@ -412,7 +417,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
     /// <returns><c>true</c> if the segment is a greedy variable segment; <c>false</c> otherwise.</returns>
     private bool IsGreedyVariable(string segment)
     {
-        return segment.Equals("{proxy+}", StringComparison.InvariantCultureIgnoreCase);
+        return segment.StartsWith("{") && segment.EndsWith("+}");
     }
 
     /// <summary>
