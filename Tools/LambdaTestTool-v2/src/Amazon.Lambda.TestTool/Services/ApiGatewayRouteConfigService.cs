@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services.IO;
 
@@ -142,19 +143,16 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
             return false;
         }
 
-        var occurrences = routeConfig.Path.Split("{proxy+}").Length - 1;
-        if (occurrences > 1)
+        var segments = routeConfig.Path.Trim('/').Split('/');
+        foreach (var segment in segments)
         {
-            _logger.LogError("The route config {Method} {Path} cannot have multiple greedy variables {{proxy+}}.",
-                routeConfig.HttpMethod, routeConfig.Path);
-            return false;
-        }
-
-        if (occurrences == 1 && !routeConfig.Path.EndsWith("/{proxy+}"))
-        {
-            _logger.LogError("The route config {Method} {Path} uses a greedy variable {{proxy+}} but does not end with it.",
-                routeConfig.HttpMethod, routeConfig.Path);
-            return false;
+            var regexPattern = "^(\\{[\\w.:-]+\\+?\\}|[a-zA-Z0-9.:_-]+)$";
+            if (!Regex.IsMatch(segment, regexPattern))
+            {
+                _logger.LogError("One or more path parts appear to be invalid. Parts are validated against this regular expression: {Regex}",
+                    regexPattern);
+                return false;
+            }
         }
 
         return true;
@@ -412,7 +410,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
     /// <returns><c>true</c> if the segment is a greedy variable segment; <c>false</c> otherwise.</returns>
     private bool IsGreedyVariable(string segment)
     {
-        return segment.Equals("{proxy+}", StringComparison.InvariantCultureIgnoreCase);
+        return segment.StartsWith("{") && segment.EndsWith("+}");
     }
 
     /// <summary>

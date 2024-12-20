@@ -202,7 +202,7 @@ dotnet_code_quality.ca2208.api_surface=public
 dotnet_diagnostic.ca1822.severity=none
 
 # License header
-file_header_template= Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.\r\nSPDX-License-Identifier: Apache-2.0
+file_header_template= Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.\nSPDX-License-Identifier: Apache-2.0
 
 # ReSharper properties
 resharper_braces_for_for=required

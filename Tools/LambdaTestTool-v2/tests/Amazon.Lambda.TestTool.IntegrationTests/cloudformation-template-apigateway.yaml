@@ -1,0 +1,297 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for API Gateway and Lambda integration tests'
+
+Resources:
+
+  TestLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-TestFunction'
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            return JSON.parse(event.body);
+          };
+      Runtime: nodejs20.x
+
+  BinaryLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-BinaryFunction'
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            const decodedBody = atob(event.body);
+            const parsedBody = JSON.parse(decodedBody.toString('utf8'));
+            return parsedBody;
+          };
+      Runtime: nodejs20.x
+
+  ReturnRawRequestBodyLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-ReturnRawRequestBodyFunction'
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          exports.handler = async (event, context, callback) => {
+            console.log(event);
+            callback(null, event.body);
+          };
+      Runtime: nodejs20.x
+
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+  RestApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: !Sub '${AWS::StackName}-RestAPI'
+
+  RestApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: 'test'
+      RestApiId: !Ref RestApi
+
+  RestApiMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: POST
+      ResourceId: !Ref RestApiResource
+      RestApiId: !Ref RestApi
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TestLambdaFunction.Arn}/invocations'
+
+  RestApiDeployment:
+    Type: 'AWS::ApiGateway::Deployment'
+    DependsOn: RestApiMethod
+    Properties:
+      RestApiId: !Ref RestApi
+      StageName: 'test'
+
+  HttpApiV1:
+    Type: 'AWS::ApiGatewayV2::Api'
+    Properties:
+      Name: !Sub '${AWS::StackName}-HttpAPIv1'
+      ProtocolType: HTTP
+
+  HttpApiV1Integration:
+    Type: 'AWS::ApiGatewayV2::Integration'
+    Properties:
+      ApiId: !Ref HttpApiV1
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt TestLambdaFunction.Arn
+      PayloadFormatVersion: '1.0'
+
+  HttpApiV1Route:
+    Type: 'AWS::ApiGatewayV2::Route'
+    Properties:
+      ApiId: !Ref HttpApiV1
+      RouteKey: 'POST /test'
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref HttpApiV1Integration
+
+  HttpApiV1Stage:
+    Type: 'AWS::ApiGatewayV2::Stage'
+    Properties:
+      ApiId: !Ref HttpApiV1
+      StageName: '$default'
+      AutoDeploy: true
+
+  HttpApiV2:
+    Type: 'AWS::ApiGatewayV2::Api'
+    Properties:
+      Name: !Sub '${AWS::StackName}-HttpAPIv2'
+      ProtocolType: HTTP
+
+  HttpApiV2Integration:
+    Type: 'AWS::ApiGatewayV2::Integration'
+    Properties:
+      ApiId: !Ref HttpApiV2
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt TestLambdaFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  HttpApiV2Route:
+    Type: 'AWS::ApiGatewayV2::Route'
+    Properties:
+      ApiId: !Ref HttpApiV2
+      RouteKey: 'POST /test'
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref HttpApiV2Integration
+
+  HttpApiV2Stage:
+    Type: 'AWS::ApiGatewayV2::Stage'
+    Properties:
+      ApiId: !Ref HttpApiV2
+      StageName: '$default'
+      AutoDeploy: true
+
+  ReturnRawRequestBodyHttpApi:
+    Type: 'AWS::ApiGatewayV2::Api'
+    Properties:
+      Name: !Sub '${AWS::StackName}-ReturnRawRequestBodyHttpAPI'
+      ProtocolType: HTTP
+
+  ReturnRawRequestBodyHttpApiIntegration:
+    Type: 'AWS::ApiGatewayV2::Integration'
+    Properties:
+      ApiId: !Ref ReturnRawRequestBodyHttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ReturnRawRequestBodyLambdaFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  ReturnRawRequestBodyHttpApiRoute:
+    Type: 'AWS::ApiGatewayV2::Route'
+    Properties:
+      ApiId: !Ref ReturnRawRequestBodyHttpApi
+      RouteKey: 'POST /'
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref ReturnRawRequestBodyHttpApiIntegration
+
+  ReturnRawRequestBodyHttpApiStage:
+    Type: 'AWS::ApiGatewayV2::Stage'
+    Properties:
+      ApiId: !Ref ReturnRawRequestBodyHttpApi
+      StageName: '$default'
+      AutoDeploy: true
+
+  LambdaPermissionRestApi:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt TestLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*'
+
+  LambdaPermissionHttpApiV1:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt TestLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApiV1}/*'
+
+  LambdaPermissionHttpApiV2:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt TestLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApiV2}/*'
+
+  LambdaPermissionReturnRawRequestBodyHttpApi:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ReturnRawRequestBodyLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ReturnRawRequestBodyHttpApi}/*'
+
+  BinaryMediaRestApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: !Sub '${AWS::StackName}-BinaryMediaRestAPI'
+      BinaryMediaTypes:
+        - '*/*'
+
+  BinaryMediaRestApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt BinaryMediaRestApi.RootResourceId
+      PathPart: 'test'
+      RestApiId: !Ref BinaryMediaRestApi
+
+  BinaryMediaRestApiMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: POST
+      ResourceId: !Ref BinaryMediaRestApiResource
+      RestApiId: !Ref BinaryMediaRestApi
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${BinaryLambdaFunction.Arn}/invocations'
+
+  BinaryMediaRestApiDeployment:
+    Type: 'AWS::ApiGateway::Deployment'
+    DependsOn: BinaryMediaRestApiMethod
+    Properties:
+      RestApiId: !Ref BinaryMediaRestApi
+      StageName: 'test'
+
+  LambdaPermissionBinaryMediaRestApi:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt BinaryLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${BinaryMediaRestApi}/*'
+
+Outputs:
+  RestApiId:
+    Description: 'ID of the REST API'
+    Value: !Ref RestApi
+
+  RestApiUrl:
+    Description: 'URL of the REST API'
+    Value: !Sub 'https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/test/test'
+
+  HttpApiV1Id:
+    Description: 'ID of the HTTP API v1'
+    Value: !Ref HttpApiV1
+
+  HttpApiV1Url:
+    Description: 'URL of the HTTP API v1'
+    Value: !Sub 'https://${HttpApiV1}.execute-api.${AWS::Region}.amazonaws.com/test'
+
+  HttpApiV2Id:
+    Description: 'ID of the HTTP API v2'
+    Value: !Ref HttpApiV2
+
+  HttpApiV2Url:
+    Description: 'URL of the HTTP API v2'
+    Value: !Sub 'https://${HttpApiV2}.execute-api.${AWS::Region}.amazonaws.com/test'
+
+  ReturnRawRequestBodyHttpApiId:
+    Description: 'ID of the JSON Inference HTTP API'
+    Value: !Ref ReturnRawRequestBodyHttpApi
+
+  ReturnRawRequestBodyHttpApiUrl:
+    Description: 'URL of the JSON Inference HTTP API'
+    Value: !Sub 'https://${ReturnRawRequestBodyHttpApi}.execute-api.${AWS::Region}.amazonaws.com/'
+
+  BinaryMediaRestApiId:
+      Description: 'ID of the Binary Media REST API'
+      Value: !Ref BinaryMediaRestApi
+
+  BinaryMediaRestApiUrl:
+      Description: 'URL of the Binary Media REST API'
+      Value: !Sub 'https://${BinaryMediaRestApi}.execute-api.${AWS::Region}.amazonaws.com/test/test'
