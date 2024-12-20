@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 
 @using Amazon.Lambda.TestTool.Commands
 @using Amazon.Lambda.TestTool.Services
@@ -9,7 +9,7 @@
 @using Microsoft.AspNetCore.Http;
 
 @inject IHttpContextAccessor HttpContextAccessor
-@inject IRuntimeApiDataStore RuntimeApiModel
+@inject IRuntimeApiDataStoreManager DataStoreManager
 @inject IDirectoryManager DirectoryManager
 
 <PageTitle>Lambd Function Tester</PageTitle>
@@ -58,33 +58,33 @@
     </div>
     <div class="col-sm-6">
         <h3>Active Event:</h3>
-        @if (RuntimeApiModel.ActiveEvent == null)
+        @if (DataStore.ActiveEvent == null)
         {
             <h2>No active event</h2>
         }
         else
         {
             <div>
-                <div style="cursor: pointer" @onclick="() => OnRequeue(RuntimeApiModel.ActiveEvent.AwsRequestId)">
+                <div style="cursor: pointer" @onclick="() => OnRequeue(DataStore.ActiveEvent.AwsRequestId)">
                     @((MarkupString)REBOOT_ICON)
                 </div>
-                <p><b>Request ID:</b> @RuntimeApiModel.ActiveEvent.AwsRequestId</p>
-                <p><b>Status:</b> <span style="@GetStatusStyle(RuntimeApiModel.ActiveEvent.EventStatus)">@RuntimeApiModel.ActiveEvent.EventStatus</span></p>
-                <p><b>Last Updated:</b> @RuntimeApiModel.ActiveEvent.LastUpdated</p>
-                <p><b>Event JSON:</b><span class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(RuntimeApiModel.ActiveEvent)">@CreateSnippet(RuntimeApiModel.ActiveEvent.EventJson)</span></span></p>
-                @if (RuntimeApiModel.ActiveEvent.EventStatus == EventContainer.Status.Failure)
+                <p><b>Request ID:</b> @DataStore.ActiveEvent.AwsRequestId</p>
+                <p><b>Status:</b> <span style="@GetStatusStyle(DataStore.ActiveEvent.EventStatus)">@DataStore.ActiveEvent.EventStatus</span></p>
+                <p><b>Last Updated:</b> @DataStore.ActiveEvent.LastUpdated</p>
+                <p><b>Event JSON:</b><span class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(DataStore.ActiveEvent)">@CreateSnippet(DataStore.ActiveEvent.EventJson)</span></span></p>
+                @if (DataStore.ActiveEvent.EventStatus == EventContainer.Status.Failure)
                 {
-                    <p><b>Error Type:</b> @RuntimeApiModel.ActiveEvent.ErrorType</p>
+                    <p><b>Error Type:</b> @DataStore.ActiveEvent.ErrorType</p>
                     <p>
                         <b>Error Response:</b>
-                        <pre class="form-control" style="@Constants.ResponseErrorStyleSizeConstraint">@RuntimeApiModel.ActiveEvent.ErrorResponse</pre>
+                        <pre class="form-control" style="@Constants.ResponseErrorStyleSizeConstraint">@DataStore.ActiveEvent.ErrorResponse</pre>
                     </p>
                 }
                 else
                 {
                     <p>
                         <b>Response:</b>
-                        <pre class="form-control" style="@Constants.ResponseSuccessStyleSizeConstraint">@Utils.TryPrettyPrintJson(RuntimeApiModel.ActiveEvent.Response)</pre>
+                        <pre class="form-control" style="@Constants.ResponseSuccessStyleSizeConstraint">@Utils.TryPrettyPrintJson(DataStore.ActiveEvent.Response)</pre>
                     </p>
                 }
             </div>
@@ -97,7 +97,7 @@
     <div class="col-sm-6">
         <h3>Queued Events: <button class="btn btn-secondary btn-sm" @onclick="OnClearQueued">Clear</button></h3>
         <div class="col-xs-5 event-list">
-            @foreach (var evnt in @RuntimeApiModel.QueuedEvents)
+            @foreach (var evnt in @DataStore.QueuedEvents)
             {
                 <div class="event-list-item">
                     <div class="row" style="padding: 2px">
@@ -119,7 +119,7 @@
     <div class="col-sm-6">
         <h3>Executed Events: <button class="btn btn-secondary btn-sm" @onclick="OnClearExecuted">Clear</button></h3>
         <div class="col-xs-5 event-list">
-            @foreach (var evnt in @RuntimeApiModel.ExecutedEvents.OrderByDescending(x => x.LastUpdated))
+            @foreach (var evnt in @DataStore.ExecutedEvents.OrderByDescending(x => x.LastUpdated))
             {
                 <div class="event-list-item">
                     <div class="row" style="padding: 2px">
@@ -183,6 +183,8 @@
 
     private IDictionary<string, IList<LambdaRequest>> SampleRequests { get; set; } = new Dictionary<string, IList<LambdaRequest>>();
 
+    private IRuntimeApiDataStore DataStore => DataStoreManager.GetLambdaRuntimeDataStore(LambdaRuntimeApi.DefaultFunctionName);
+
     string? _selectedSampleRequestName;
     string? SelectedSampleRequestName
     {
@@ -209,7 +211,7 @@
 
     protected override void OnInitialized()
     {
-        RuntimeApiModel.StateChange += RuntimeApiModelOnStateChange;
+        DataStore.StateChange += RuntimeApiModelOnStateChange;
         this.SampleRequestManager = new SampleRequestManager(DirectoryManager.GetCurrentDirectory());
         this.SampleRequests = SampleRequestManager.GetSampleRequests();
     }
@@ -221,7 +223,7 @@
 
     void OnAddEventClick()
     {
-        RuntimeApiModel.QueueEvent(this.FunctionInput);
+        DataStore.QueueEvent(this.FunctionInput, false);
         this.FunctionInput = "";
         this.SelectedSampleRequestName = NO_SAMPLE_SELECTED_ID;
         this.StateHasChanged();
@@ -229,38 +231,38 @@
 
     void OnClearQueued()
     {
-        this.RuntimeApiModel.ClearQueued();
+        this.DataStore.ClearQueued();
         this.StateHasChanged();
     }
 
     void OnClearExecuted()
     {
-        this.RuntimeApiModel.ClearExecuted();
+        this.DataStore.ClearExecuted();
         this.StateHasChanged();
     }
 
     void OnRequeue(string awsRequestId)
     {
         EventContainer? evnt = null;
-        if (string.Equals(this.RuntimeApiModel.ActiveEvent?.AwsRequestId, awsRequestId))
+        if (string.Equals(this.DataStore.ActiveEvent?.AwsRequestId, awsRequestId))
         {
-            evnt = this.RuntimeApiModel.ActiveEvent;
+            evnt = this.DataStore.ActiveEvent;
         }
         else
         {
-            evnt = this.RuntimeApiModel.ExecutedEvents.FirstOrDefault(x => string.Equals(x.AwsRequestId, awsRequestId));
+            evnt = this.DataStore.ExecutedEvents.FirstOrDefault(x => string.Equals(x.AwsRequestId, awsRequestId));
         }
 
         if (evnt == null)
             return;
 
-        this.RuntimeApiModel.QueueEvent(evnt.EventJson);
+        this.DataStore.QueueEvent(evnt.EventJson, false);
         this.StateHasChanged();
     }
 
     void OnDeleteEvent(string awsRequestId)
     {
-        this.RuntimeApiModel.DeleteEvent(awsRequestId);
+        this.DataStore.DeleteEvent(awsRequestId);
         this.StateHasChanged();
     }
 

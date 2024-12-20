@@ -1,28 +1,24 @@
-﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Collections.Concurrent;
 using System.Text;
 using Amazon.Lambda.TestTool.Models;
 using Microsoft.AspNetCore.Mvc;
-
-// TODO:
-// Make IRuntimeApiDataStore separate the events per function name
-// When PostEvent being syncronous when X-Amz-Invocation-Type header is not set or set to RequestResponse.
-//          https://docs.aws.amazon.com/lambda/latest/api/API_Invoke.html#lambda-Invoke-request-InvocationType
-
 
 namespace Amazon.Lambda.TestTool.Services;
 
 public class LambdaRuntimeApi
 {
-    private const string DefaultFunctionName = "__DefaultFunction__";
+    internal const string DefaultFunctionName = "__DefaultFunction__";
     private const string HeaderBreak = "-----------------------------------";
 
-    private readonly IRuntimeApiDataStore _runtimeApiDataStore;
+    private readonly IRuntimeApiDataStoreManager _runtimeApiDataStoreManager;
 
-    public LambdaRuntimeApi(WebApplication app, IRuntimeApiDataStore runtimeApiDataStore)
+    private LambdaRuntimeApi(WebApplication app)
     {
-        _runtimeApiDataStore = runtimeApiDataStore;
+        _runtimeApiDataStoreManager = app.Services.GetRequiredService<IRuntimeApiDataStoreManager>();
+
         app.MapPost("/2015-03-31/functions/function/invocations", (Delegate)PostEventDefaultFunction);
         app.MapPost("/2015-03-31/functions/{functionName}/invocations", PostEvent);
 
@@ -39,18 +35,51 @@ public class LambdaRuntimeApi
         app.MapPost("/{functionName}/2018-06-01/runtime/invocation/{awsRequestId}/error", PostError);
     }
 
-    public Task<IResult> PostEventDefaultFunction(HttpContext ctx)
+    public static void SetupLambdaRuntimeApiEndpoints(WebApplication app)
+    {
+        _ = new LambdaRuntimeApi(app);
+    }
+
+    public Task PostEventDefaultFunction(HttpContext ctx)
     {
         return PostEvent(ctx, DefaultFunctionName);
     }
 
-    public async Task<IResult> PostEvent(HttpContext ctx, string functionName)
+    public async Task PostEvent(HttpContext ctx, string functionName)
     {
+        var runtimeDataStore = _runtimeApiDataStoreManager.GetLambdaRuntimeDataStore(functionName);
+
+        // RequestResponse mode is the default when invoking with the Lambda service client.
+        var isRequestResponseMode = true;
+        if (ctx.Request.Headers.TryGetValue("X-Amz-Invocation-Type", out var invocationType))
+        {
+            isRequestResponseMode = string.Equals(invocationType, "RequestResponse", StringComparison.InvariantCulture);
+        }
+
         using var reader = new StreamReader(ctx.Request.Body);
         var testEvent = await reader.ReadToEndAsync();
-        _runtimeApiDataStore.QueueEvent(testEvent);
+        var evnt = runtimeDataStore.QueueEvent(testEvent, isRequestResponseMode);
 
-        return Results.Accepted();
+        if (isRequestResponseMode)
+        {
+            evnt.WaitForCompletion();
+            var result = Results.Ok(evnt.Response);
+            ctx.Response.StatusCode = 200;
+
+            if (!string.IsNullOrEmpty(evnt.Response))
+            {
+                var responseData = Encoding.UTF8.GetBytes(evnt.Response);
+                ctx.Response.Headers.ContentType = "application/json";
+                ctx.Response.Headers.ContentLength = responseData.Length;
+
+                await ctx.Response.Body.WriteAsync(responseData);
+            }
+            evnt.Dispose();
+        }
+        else
+        {
+            ctx.Response.StatusCode = 202;
+        }
     }
 
     public Task GetNextInvocationDefaultFunction(HttpContext ctx)
@@ -60,8 +89,10 @@ public class LambdaRuntimeApi
 
     public async Task GetNextInvocation(HttpContext ctx, string functionName)
     {
+        var runtimeDataStore = _runtimeApiDataStoreManager.GetLambdaRuntimeDataStore(functionName);
+
         EventContainer? activeEvent;
-        while (!_runtimeApiDataStore.TryActivateEvent(out activeEvent))
+        while (!runtimeDataStore.TryActivateEvent(out activeEvent))
         {
             await Task.Delay(TimeSpan.FromMilliseconds(100));
         }
@@ -71,6 +102,7 @@ public class LambdaRuntimeApi
 
         Console.WriteLine(HeaderBreak);
         Console.WriteLine($"Next invocation returned: {activeEvent.AwsRequestId}");
+
 
         ctx.Response.Headers["Lambda-Runtime-Aws-Request-Id"] = activeEvent.AwsRequestId;
         ctx.Response.Headers["Lambda-Runtime-Trace-Id"] = Guid.NewGuid().ToString();
@@ -109,10 +141,12 @@ public class LambdaRuntimeApi
 
     public async Task<IResult> PostInvocationResponse(HttpContext ctx, string functionName, string awsRequestId)
     {
+        var runtimeDataStore = _runtimeApiDataStoreManager.GetLambdaRuntimeDataStore(functionName);
+
         using var reader = new StreamReader(ctx.Request.Body);
         var response = await reader.ReadToEndAsync();
 
-        _runtimeApiDataStore.ReportSuccess(awsRequestId, response);
+        runtimeDataStore.ReportSuccess(awsRequestId, response);
 
         Console.WriteLine(HeaderBreak);
         Console.WriteLine($"Response for request {awsRequestId}");
@@ -128,10 +162,12 @@ public class LambdaRuntimeApi
 
     public async Task<IResult> PostError(HttpContext ctx, string functionName, string awsRequestId, [FromHeader(Name = "Lambda-Runtime-Function-Error-Type")] string errorType)
     {
+        var runtimeDataStore = _runtimeApiDataStoreManager.GetLambdaRuntimeDataStore(functionName);
+
         using var reader = new StreamReader(ctx.Request.Body);
         var errorBody = await reader.ReadToEndAsync();
 
-        _runtimeApiDataStore.ReportError(awsRequestId, errorType, errorBody);
+        runtimeDataStore.ReportError(awsRequestId, errorType, errorBody);
         await Console.Error.WriteLineAsync(HeaderBreak);
         await Console.Error.WriteLineAsync($"Request {awsRequestId} Error Type: {errorType}");
         await Console.Error.WriteLineAsync(errorBody);

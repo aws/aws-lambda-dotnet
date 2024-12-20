@@ -1,4 +1,4 @@
-﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 using Amazon.Lambda.TestTool.Commands.Settings;
@@ -37,7 +37,7 @@ public class TestToolProcess
     {
         var builder = WebApplication.CreateBuilder();
 
-        builder.Services.AddSingleton<IRuntimeApiDataStore, RuntimeApiDataStore>();
+        builder.Services.AddSingleton<IRuntimeApiDataStoreManager, RuntimeApiDataStoreManager>();
 
         // Add services to the container.
         builder.Services.AddRazorComponents()
@@ -65,7 +65,7 @@ public class TestToolProcess
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
 
-        _ = new LambdaRuntimeApi(app, app.Services.GetService<IRuntimeApiDataStore>()!);
+        LambdaRuntimeApi.SetupLambdaRuntimeApiEndpoints(app);
 
         var runTask = app.RunAsync(cancellationToken);
 
