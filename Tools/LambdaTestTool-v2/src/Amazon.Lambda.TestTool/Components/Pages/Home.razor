@@ -23,36 +23,40 @@
 </div>
 
 <div class="row">
-    <div class="col-sm-6">
-        <h3>Queue Event:</h3>
-        <label class="" for="sample-requests">Example Requests:</label>
-        <select class="control" id="sample-requests" @bind="SelectedSampleRequestName">
-            <option id="@NO_SAMPLE_SELECTED_ID"> -- select a request -- </option>
-            @if (@SampleRequests.ContainsKey(SampleRequestManager.SavedRequestGroup))
-            {
-                <optgroup id="saved-select-request-group" label="@SampleRequestManager.SavedRequestGroup">
-                    @foreach (var request in SampleRequests[SampleRequestManager.SavedRequestGroup])
-                    {
-                        <option value="@request.Filename">@request.Name</option>
-                    }
-                </optgroup>
-            }
-            @foreach (var group in SampleRequests.Keys)
-            {
-                @if (!string.Equals(group, SampleRequestManager.SavedRequestGroup))
+    <div class="col-sm-6 gap-2 d-flex flex-column">
+        <h4>Queue Event</h4>
+        <div class="form-floating">
+            <select class="form-select" id="sample-requests" @bind="SelectedSampleRequestName">
+                <option value="@NoSampleSelectedId">Select a request</option>
+                @if (@SampleRequests.ContainsKey(SampleRequestManager.SavedRequestGroup))
                 {
-                    <optgroup label="@group">
-                        @foreach (var request in SampleRequests[group])
+                    <optgroup id="saved-select-request-group" label="@SampleRequestManager.SavedRequestGroup">
+                        @foreach (var request in SampleRequests[SampleRequestManager.SavedRequestGroup])
                         {
                             <option value="@request.Filename">@request.Name</option>
                         }
                     </optgroup>
                 }
-            }
-        </select>
-        <label class="col-xs-3 control-label" for="function-payload">Function Input:</label>
-        <textarea class="form-control" style="margin: 5px" rows="20" @bind="FunctionInput" placeholder="JSON document as input to Lambda Function. Plain strings must be wrapped in quotes."></textarea>
-        <div class="col-sm form-group">
+                @foreach (var group in SampleRequests.Keys)
+                {
+                    @if (!string.Equals(group, SampleRequestManager.SavedRequestGroup))
+                    {
+                        <optgroup label="@group">
+                            @foreach (var request in SampleRequests[group])
+                            {
+                                <option value="@request.Filename">@request.Name</option>
+                            }
+                        </optgroup>
+                    }
+                }
+            </select>
+            <label for="sample-requests">Example Requests</label>
+        </div>
+        <div class="mt-1">
+            <label class="form-label" for="function-payload">Function Input</label>
+            <StandaloneCodeEditor @ref="_editor" ConstructionOptions="EditorConstructionOptions" CssClass="rounded-4 overflow-hidden border"/>
+        </div>
+        <div class="form-group">
             <button class="btn btn-primary btn-sm" @onclick="OnAddEventClick">Queue Event</button>
         </div>
     </div>
@@ -66,7 +70,7 @@
         {
             <div>
                 <div style="cursor: pointer" @onclick="() => OnRequeue(RuntimeApiModel.ActiveEvent.AwsRequestId)">
-                    @((MarkupString)REBOOT_ICON)
+                    @((MarkupString)RebootIcon)
                 </div>
                 <p><b>Request ID:</b> @RuntimeApiModel.ActiveEvent.AwsRequestId</p>
                 <p><b>Status:</b> <span style="@GetStatusStyle(RuntimeApiModel.ActiveEvent.EventStatus)">@RuntimeApiModel.ActiveEvent.EventStatus</span></p>
@@ -106,7 +110,7 @@
                             <div class="event-label">Last Updated:</div><div class="event-value">@evnt.LastUpdated</div>
                         </div>
                         <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
-                            @((MarkupString)CLOSE_ICON)
+                            @((MarkupString)CloseIcon)
                         </div>
                     </div>
                     <div class="row" style="padding: 2px">
@@ -124,7 +128,7 @@
                 <div class="event-list-item">
                     <div class="row" style="padding: 2px">
                         <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnRequeue(evnt.AwsRequestId)">
-                            @((MarkupString)REBOOT_ICON)
+                            @((MarkupString)RebootIcon)
                         </div>
                         <div class="col-sm-10 row">
                             <div class="event-label">Request ID:</div><div class="event-value"> @evnt.AwsRequestId</div>
@@ -132,7 +136,7 @@
                             <div class="event-label">Last Updated:</div><div class="event-value">@evnt.LastUpdated</div>
                         </div>
                         <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
-                            @((MarkupString)CLOSE_ICON)
+                            @((MarkupString)CloseIcon)
                         </div>
                     </div>
                     <div class="row" style="padding: 2px">
@@ -163,13 +167,15 @@
 
 
 @code {
-    private const string REBOOT_ICON = @"
+    private StandaloneCodeEditor _editor = null!;
+
+    private const string RebootIcon = @"
 <svg xmlns=""http://www.w3.org/2000/svg"" width=""16"" height=""16"" fill=""currentColor"" class=""bi bi-bootstrap-reboot"" viewBox=""0 0 16 16"">
     <path d=""M1.161 8a6.84 6.84 0 1 0 6.842-6.84.58.58 0 1 1 0-1.16 8 8 0 1 1-6.556 3.412l-.663-.577a.58.58 0 0 1 .227-.997l2.52-.69a.58.58 0 0 1 .728.633l-.332 2.592a.58.58 0 0 1-.956.364l-.643-.56A6.812 6.812 0 0 0 1.16 8z""/>
 </svg>
 ";
 
-    private const string CLOSE_ICON = @"
+    private const string CloseIcon = @"
 <svg xmlns=""http://www.w3.org/2000/svg"" width=""16"" height=""16"" fill=""currentColor"" class=""bi bi-x"" viewBox=""0 0 16 16"">
   <path d=""M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z""/>
 </svg>
@@ -177,7 +183,7 @@
 
     [CascadingParameter] public IModalService Modal { get; set; } = default!;
 
-    private const string NO_SAMPLE_SELECTED_ID = "void-select-request";
+    private const string NoSampleSelectedId = "void-select-request";
 
     private string FunctionInput { get; set; } = "";
 
@@ -186,22 +192,25 @@
     string? _selectedSampleRequestName;
     string? SelectedSampleRequestName
     {
-        get => this._selectedSampleRequestName;
+        get => _selectedSampleRequestName;
         set
         {
             if (SampleRequestManager == null)
                 return;
 
-            this._selectedSampleRequestName = value;
-            if (string.IsNullOrEmpty(this._selectedSampleRequestName))
+            _selectedSampleRequestName = value;
+            if (string.IsNullOrEmpty(_selectedSampleRequestName) ||
+                string.Equals(value, NoSampleSelectedId))
             {
-                this.FunctionInput = string.Empty;
+                FunctionInput = string.Empty;
             }
-            else if (!string.Equals(value, NO_SAMPLE_SELECTED_ID))
+            else
             {
-                this.FunctionInput = SampleRequestManager.GetRequest(this._selectedSampleRequestName);
+                FunctionInput = SampleRequestManager.GetRequest(_selectedSampleRequestName);
             }
-            this.StateHasChanged();
+
+            _editor.SetValue(FunctionInput);
+            StateHasChanged();
         }
     }
 
@@ -210,58 +219,58 @@
     protected override void OnInitialized()
     {
         RuntimeApiModel.StateChange += RuntimeApiModelOnStateChange;
-        this.SampleRequestManager = new SampleRequestManager(DirectoryManager.GetCurrentDirectory());
-        this.SampleRequests = SampleRequestManager.GetSampleRequests();
+        SampleRequestManager = new SampleRequestManager(DirectoryManager.GetCurrentDirectory());
+        SampleRequests = SampleRequestManager.GetSampleRequests();
     }
 
     private void RuntimeApiModelOnStateChange(object? sender, EventArgs e)
     {
-        this.InvokeAsync(this.StateHasChanged);
+        InvokeAsync(this.StateHasChanged);
     }
 
     void OnAddEventClick()
     {
-        RuntimeApiModel.QueueEvent(this.FunctionInput);
-        this.FunctionInput = "";
-        this.SelectedSampleRequestName = NO_SAMPLE_SELECTED_ID;
-        this.StateHasChanged();
+        RuntimeApiModel.QueueEvent(FunctionInput);
+        FunctionInput = "";
+        SelectedSampleRequestName = NoSampleSelectedId;
+        StateHasChanged();
     }
 
     void OnClearQueued()
     {
-        this.RuntimeApiModel.ClearQueued();
-        this.StateHasChanged();
+        RuntimeApiModel.ClearQueued();
+        StateHasChanged();
     }
 
     void OnClearExecuted()
     {
-        this.RuntimeApiModel.ClearExecuted();
-        this.StateHasChanged();
+        RuntimeApiModel.ClearExecuted();
+        StateHasChanged();
     }
 
     void OnRequeue(string awsRequestId)
     {
         EventContainer? evnt = null;
-        if (string.Equals(this.RuntimeApiModel.ActiveEvent?.AwsRequestId, awsRequestId))
+        if (string.Equals(RuntimeApiModel.ActiveEvent?.AwsRequestId, awsRequestId))
         {
-            evnt = this.RuntimeApiModel.ActiveEvent;
+            evnt = RuntimeApiModel.ActiveEvent;
         }
         else
         {
-            evnt = this.RuntimeApiModel.ExecutedEvents.FirstOrDefault(x => string.Equals(x.AwsRequestId, awsRequestId));
+            evnt = RuntimeApiModel.ExecutedEvents.FirstOrDefault(x => string.Equals(x.AwsRequestId, awsRequestId));
         }
 
         if (evnt == null)
             return;
 
-        this.RuntimeApiModel.QueueEvent(evnt.EventJson);
-        this.StateHasChanged();
+        RuntimeApiModel.QueueEvent(evnt.EventJson);
+        StateHasChanged();
     }
 
     void OnDeleteEvent(string awsRequestId)
     {
-        this.RuntimeApiModel.DeleteEvent(awsRequestId);
-        this.StateHasChanged();
+        RuntimeApiModel.DeleteEvent(awsRequestId);
+        StateHasChanged();
     }
 
     string GetStatusStyle(EventContainer.Status status) => status switch
@@ -307,5 +316,15 @@
         var parameters = new ModalParameters();
         parameters.Add(ExpandedTextDialog.PARAMETER_NAME_FULL_TEXT, text);
         Modal.Show<ExpandedTextDialog>(title, parameters);
+    }
+
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+        {
+            Language = "json",
+            GlyphMargin = true,
+            Theme = "vs-dark"
+        };
     }
 }

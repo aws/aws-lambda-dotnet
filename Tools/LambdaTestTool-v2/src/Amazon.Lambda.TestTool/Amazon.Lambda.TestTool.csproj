@@ -20,6 +20,7 @@
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.1" />
     <PackageReference Include="Blazored.Modal" Version="7.3.1" />
     <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="8.0.11" />
+    <PackageReference Include="BlazorMonaco" Version="3.2.0" />
   </ItemGroup>
 
   <ItemGroup>
