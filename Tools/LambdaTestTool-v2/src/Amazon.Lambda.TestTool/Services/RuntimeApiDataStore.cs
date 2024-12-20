@@ -6,43 +6,91 @@ using System.Collections.ObjectModel;
 
 namespace Amazon.Lambda.TestTool.Services;
 
+/// <summary>
+/// The runtime API data store is used to hold the queued, executed and active Lambda events for Lambda function.
+/// </summary>
 public interface IRuntimeApiDataStore
 {
-    EventContainer QueueEvent(string eventBody);
+    /// <summary>
+    /// Queue the event for a Lambda function to process.
+    /// </summary>
+    /// <param name="eventBody">The Lambda event body.</param>
+    /// <param name="isRequestResponseMode">If the event is for a request response mode thread syncronization code will be activated to all the response to be return for the request.</param>
+    /// <returns></returns>
+    EventContainer QueueEvent(string eventBody, bool isRequestResponseMode);
 
+    /// <summary>
+    /// The list of queued events.
+    /// </summary>
     IReadOnlyList<EventContainer> QueuedEvents { get; }
 
+    /// <summary>
+    /// The list of executed events.
+    /// </summary>
     IReadOnlyList<EventContainer> ExecutedEvents { get; }
 
+    /// <summary>
+    /// Clear the list of queued events.
+    /// </summary>
     void ClearQueued();
 
+    /// <summary>
+    /// Clear the list of executed events.
+    /// </summary>
     void ClearExecuted();
 
     void DeleteEvent(string awsRequestId);
 
-
+    /// <summary>
+    /// The active event a Lambda function has pulled from the queue and is currently processing.
+    /// </summary>
     EventContainer? ActiveEvent { get; }
 
+    /// <summary>
+    /// An event that some event or event collection has changed. This is used by the UI to
+    /// know when it should refresh.
+    /// </summary>
     event EventHandler? StateChange;
 
+    /// <summary>
+    /// Try to activate an event by grabbing the latest event from the queue.
+    /// </summary>
+    /// <param name="activeEvent"></param>
+    /// <returns></returns>
     bool TryActivateEvent(out EventContainer? activeEvent);
 
+    /// <summary>
+    /// Report the event was successfully processed. Used by the Lambda Runtime API when it gets
+    /// notification from the Lambda function.
+    /// </summary>
+    /// <param name="awsRequestId"></param>
+    /// <param name="response"></param>
     void ReportSuccess(string awsRequestId, string response);
+
+    /// <summary>
+    /// Report the processing the event failed. Used by the Lambda Runtime API when it gets
+    /// notification from the Lambda function.
+    /// </summary>
+    /// <param name="awsRequestId"></param>
+    /// <param name="response"></param>
     void ReportError(string awsRequestId, string errorType, string errorBody);
 }
 
+/// <inheritdoc/>
 public class RuntimeApiDataStore : IRuntimeApiDataStore
 {
-    private IList<EventContainer> _queuedEvents = new List<EventContainer>();
-    private IList<EventContainer> _executedEvents = new List<EventContainer>();
+    private readonly IList<EventContainer> _queuedEvents = new List<EventContainer>();
+    private readonly IList<EventContainer> _executedEvents = new List<EventContainer>();
     private int _eventCounter = 1;
-    private object _lock = new object();
+    private readonly object _lock = new object();
 
+    /// <inheritdoc/>
     public event EventHandler? StateChange;
 
-    public EventContainer QueueEvent(string eventBody)
+    /// <inheritdoc/>
+    public EventContainer QueueEvent(string eventBody, bool isRequestResponseMode)
     {
-        var evnt = new EventContainer(this, _eventCounter++, eventBody);
+        var evnt = new EventContainer(this, _eventCounter++, eventBody, isRequestResponseMode);
         lock (_lock)
         {
             _queuedEvents.Add(evnt);
@@ -52,6 +100,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
         return evnt;
     }
 
+    /// <inheritdoc/>
     public bool TryActivateEvent(out EventContainer? activeEvent)
     {
         activeEvent = null;
@@ -81,8 +130,10 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
         }
     }
 
+    /// <inheritdoc/>
     public EventContainer? ActiveEvent { get; private set; }
 
+    /// <inheritdoc/>
     public IReadOnlyList<EventContainer> QueuedEvents
     {
         get
@@ -94,6 +145,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
         }
     }
 
+    /// <inheritdoc/>
     public IReadOnlyList<EventContainer> ExecutedEvents
     {
         get
@@ -105,6 +157,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
         }
     }
 
+    /// <inheritdoc/>
     public void ReportSuccess(string awsRequestId, string response)
     {
         lock(_lock)
@@ -120,6 +173,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
         RaiseStateChanged();
     }
 
+    /// <inheritdoc/>
     public void ReportError(string awsRequestId, string errorType, string errorBody)
     {
         lock(_lock)
@@ -135,6 +189,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
         RaiseStateChanged();
     }
 
+    /// <inheritdoc/>
     public void ClearQueued()
     {
         lock(_lock)
@@ -144,6 +199,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
         RaiseStateChanged();
     }
 
+    /// <inheritdoc/>
     public void ClearExecuted()
     {
         lock(_lock)
@@ -153,6 +209,7 @@ public class RuntimeApiDataStore : IRuntimeApiDataStore
         RaiseStateChanged();
     }
 
+    /// <inheritdoc/>
     public void DeleteEvent(string awsRequestId)
     {
         lock(_lock)

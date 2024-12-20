@@ -9,20 +9,17 @@ using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestTool.Processes;
 using Amazon.Lambda.TestTool.Commands.Settings;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Amazon.Lambda.TestTool.UnitTests;
 
 public class RuntimeApiTests
 {
-    public RuntimeApiTests()
-    {
-        // Set this environment variable so anytime we start the LambdaBootstrap from RuntimeSupport it exists after processing an event.
-        System.Environment.SetEnvironmentVariable("AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE", "true");
-    }
-
     [Fact]
     public async Task AddEventToDataStore()
     {
+        const string functionName = "FunctionFoo";
+
         var cancellationTokenSource = new CancellationTokenSource();
         var options = new RunCommandSettings();
         options.Port = 9000;
@@ -32,15 +29,19 @@ public class RuntimeApiTests
             var lambdaClient = ConstructLambdaServiceClient(testToolProcess.ServiceUrl);
             var invokeFunction = new InvokeRequest
             {
-                FunctionName = "FunctionFoo",
-                Payload = "\"hello\""
+                FunctionName = functionName,
+                Payload = "\"hello\"",
+                InvocationType = InvocationType.Event
             };
 
             await lambdaClient.InvokeAsync(invokeFunction);
 
-            var dataStore = testToolProcess.Services.GetService(typeof(IRuntimeApiDataStore)) as IRuntimeApiDataStore;
+            var dataStoreManager = testToolProcess.Services.GetRequiredService<IRuntimeApiDataStoreManager>();
+            var dataStore = dataStoreManager.GetLambdaRuntimeDataStore(functionName);
             Assert.NotNull(dataStore);
             Assert.Single(dataStore.QueuedEvents);
+            Assert.Single(dataStoreManager.GetListOfFunctionNames());
+            Assert.Equal(functionName, dataStoreManager.GetListOfFunctionNames().First());
 
             var handlerCalled = false;
             var handler = (string input, ILambdaContext context) =>
@@ -49,25 +50,80 @@ public class RuntimeApiTests
                 return input.ToUpper();
             };
 
-            System.Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.Host}:{options.Port}");
-            await LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+            System.Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.Host}:{options.Port}/{functionName}");
+            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                     .Build()
-                    .RunAsync();
+                    .RunAsync(cancellationTokenSource.Token);
 
+            await Task.Delay(2000);
             Assert.True(handlerCalled);
         }
         finally
         {
             await cancellationTokenSource.CancelAsync();
-            await testToolProcess.RunningTask;
         }
+    }
+
+    [Fact]
+    public async Task InvokeRequestResponse()
+    {
+        const string functionName = "FunctionFoo";
+
+        var cancellationTokenSource = new CancellationTokenSource();
+        var options = new RunCommandSettings();
+        options.Port = 9001;
+        var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
+        try
+        {
+            var handler = (string input, ILambdaContext context) =>
+            {
+                Thread.Sleep(1000); // Add a sleep to prove the LambdaRuntimeApi waited for the completion.
+                return input.ToUpper();
+            };
+
+            System.Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.Host}:{options.Port}/{functionName}");
+            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                    .Build()
+                    .RunAsync(cancellationTokenSource.Token);
+
+            var lambdaClient = ConstructLambdaServiceClient(testToolProcess.ServiceUrl);
+
+            // Test with relying on the default value of InvocationType
+            var invokeFunction = new InvokeRequest
+            {
+                FunctionName = functionName,
+                Payload = "\"hello\""
+            };
+
+            var response = await lambdaClient.InvokeAsync(invokeFunction);
+            var responsePayloadString = System.Text.Encoding.Default.GetString(response.Payload.ToArray());
+            Assert.Equal("\"HELLO\"", responsePayloadString);
+
+            // Test with InvocationType explicilty set
+            invokeFunction = new InvokeRequest
+            {
+                FunctionName = functionName,
+                Payload = "\"hello\"",
+                InvocationType = InvocationType.RequestResponse
+            };
+
+            response = await lambdaClient.InvokeAsync(invokeFunction);
+            responsePayloadString = System.Text.Encoding.Default.GetString(response.Payload.ToArray());
+            Assert.Equal("\"HELLO\"", responsePayloadString);
+        }
+        finally
+        {
+            await cancellationTokenSource.CancelAsync();
+        }
+
     }
 
     private IAmazonLambda ConstructLambdaServiceClient(string url)
     {
         var config = new AmazonLambdaConfig
         {
-            ServiceURL = url
+            ServiceURL = url,
+            MaxErrorRetry = 0
         };
 
         // We don't need real credentials because we are not calling the real Lambda service.
