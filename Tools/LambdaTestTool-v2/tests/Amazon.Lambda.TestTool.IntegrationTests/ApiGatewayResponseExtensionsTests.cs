@@ -25,7 +25,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             await RetryHelper.RetryOperation(async () =>
             {
-                await RunV1Test(testCase, _fixture.RestApiUrl, ApiGatewayEmulatorMode.Rest);
+                await RunV1Test(testCase, _fixture.ParseAndReturnBodyRestApiUrl, ApiGatewayEmulatorMode.Rest);
                 return true;
             });
         }
@@ -37,7 +37,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             await RetryHelper.RetryOperation(async () =>
             {
-                await RunV1Test(testCase, _fixture.HttpApiV1Url, ApiGatewayEmulatorMode.HttpV1);
+                await RunV1Test(testCase, _fixture.ParseAndReturnBodyHttpApiV1Url, ApiGatewayEmulatorMode.HttpV1);
                 return true;
             });
         }
@@ -51,7 +51,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             {
                 var testResponse = testCase.Response as APIGatewayHttpApiV2ProxyResponse;
                 Assert.NotNull(testResponse);
-                var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(testResponse, _fixture.HttpApiV2Url);
+                var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(testResponse, _fixture.ParseAndReturnBodyHttpApiV2Url);
                 await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
                 await testCase.IntegrationAssertions(actualResponse, ApiGatewayEmulatorMode.HttpV2);
                 return true;
