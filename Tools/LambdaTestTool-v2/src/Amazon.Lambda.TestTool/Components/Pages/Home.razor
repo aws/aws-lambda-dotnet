@@ -23,8 +23,11 @@
 </div>
 
 <div class="row">
-    <div class="col-sm-6 gap-2 d-flex flex-column">
-        <h4>Queue Event</h4>
+    <div class="col-sm-6 gap-2 d-flex flex-column mt-1">
+        <div class="form-group d-flex">
+            <h4>Queue Event</h4>
+            <button class="btn btn-primary btn-sm ms-auto rounded-pill px-4 fw-bold" @onclick="OnAddEventClick">Invoke</button>
+        </div>
         <div class="form-floating">
             <select class="form-select" id="sample-requests" @bind="SelectedSampleRequestName">
                 <option value="@NoSampleSelectedId">Select a request</option>
@@ -54,111 +57,121 @@
         </div>
         <div class="mt-1">
             <label class="form-label" for="function-payload">Function Input</label>
-            <StandaloneCodeEditor @ref="_editor" ConstructionOptions="EditorConstructionOptions" CssClass="rounded-4 overflow-hidden border"/>
-        </div>
-        <div class="form-group">
-            <button class="btn btn-primary btn-sm" @onclick="OnAddEventClick">Queue Event</button>
+            <StandaloneCodeEditor Id="function-payload" @ref="_editor" ConstructionOptions="EditorConstructionOptions" CssClass="rounded-4 overflow-hidden border"/>
         </div>
     </div>
     <div class="col-sm-6">
-        <h3>Active Event:</h3>
-        @if (DataStore.ActiveEvent == null)
-        {
-            <h2>No active event</h2>
-        }
-        else
-        {
-            <div>
-                <div style="cursor: pointer" @onclick="() => OnRequeue(DataStore.ActiveEvent.AwsRequestId)">
-                    @((MarkupString)RebootIcon)
-                </div>
-                <p><b>Request ID:</b> @DataStore.ActiveEvent.AwsRequestId</p>
-                <p><b>Status:</b> <span style="@GetStatusStyle(DataStore.ActiveEvent.EventStatus)">@DataStore.ActiveEvent.EventStatus</span></p>
-                <p><b>Last Updated:</b> @DataStore.ActiveEvent.LastUpdated</p>
-                <p><b>Event JSON:</b><span class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(DataStore.ActiveEvent)">@CreateSnippet(DataStore.ActiveEvent.EventJson)</span></span></p>
-                @if (DataStore.ActiveEvent.EventStatus == EventContainer.Status.Failure)
+        <nav class="navbar navbar-expand-lg bd-navbar pt-0">
+            <ul class="navbar-nav nav-underline nav-fill" id="eventsTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-tab-pane" type="button" role="tab" aria-controls="home-tab-pane" aria-selected="true">Active Event</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="queued-tab" data-bs-toggle="tab" data-bs-target="#queued-tab-pane" type="button" role="tab" aria-controls="queued-tab-pane" aria-selected="false">Queued Events</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="executed-tab" data-bs-toggle="tab" data-bs-target="#executed-tab-pane" type="button" role="tab" aria-controls="executed-tab-pane" aria-selected="false">Executed Events</button>
+                </li>
+            </ul>
+        </nav>
+        <div class="tab-content" id="eventsTabContent">
+            <div class="tab-pane fade show active" id="active-tab-pane" role="tabpanel" aria-labelledby="active-tab" tabindex="0">
+                <h3>Active Event:</h3>
+                @if (DataStore.ActiveEvent == null)
                 {
-                    <p><b>Error Type:</b> @DataStore.ActiveEvent.ErrorType</p>
-                    <p>
-                        <b>Error Response:</b>
-                        <pre class="form-control" style="@Constants.ResponseErrorStyleSizeConstraint">@DataStore.ActiveEvent.ErrorResponse</pre>
-                    </p>
+                    <h2>No active event</h2>
                 }
                 else
                 {
-                    <p>
-                        <b>Response:</b>
-                        <pre class="form-control" style="@Constants.ResponseSuccessStyleSizeConstraint">@Utils.TryPrettyPrintJson(DataStore.ActiveEvent.Response)</pre>
-                    </p>
-                }
-            </div>
-        }
-    </div>
-</div>
-
-
-<div class="row">
-    <div class="col-sm-6">
-        <h3>Queued Events: <button class="btn btn-secondary btn-sm" @onclick="OnClearQueued">Clear</button></h3>
-        <div class="col-xs-5 event-list">
-            @foreach (var evnt in @DataStore.QueuedEvents)
-            {
-                <div class="event-list-item">
-                    <div class="row" style="padding: 2px">
-                        <div class="col-sm-11 row">
-                            <div class="event-label">Request ID:</div><div class="event-value"> @evnt.AwsRequestId</div>
-                            <div class="event-label">Last Updated:</div><div class="event-value">@evnt.LastUpdated</div>
-                        </div>
-                        <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
-                            @((MarkupString)CloseIcon)
-                        </div>
-                    </div>
-                    <div class="row" style="padding: 2px">
-                        <div class="event-label">Event JSON:</div><div class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></div>
-                    </div>
-                </div>
-            }
-        </div>
-    </div>
-    <div class="col-sm-6">
-        <h3>Executed Events: <button class="btn btn-secondary btn-sm" @onclick="OnClearExecuted">Clear</button></h3>
-        <div class="col-xs-5 event-list">
-            @foreach (var evnt in @DataStore.ExecutedEvents.OrderByDescending(x => x.LastUpdated))
-            {
-                <div class="event-list-item">
-                    <div class="row" style="padding: 2px">
-                        <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnRequeue(evnt.AwsRequestId)">
+                    <div>
+                        <div style="cursor: pointer" @onclick="() => OnRequeue(DataStore.ActiveEvent.AwsRequestId)">
                             @((MarkupString)RebootIcon)
                         </div>
-                        <div class="col-sm-10 row">
-                            <div class="event-label">Request ID:</div><div class="event-value"> @evnt.AwsRequestId</div>
-                            <div class="event-label">Status:</div><div class="event-value" style="@GetStatusStyle(evnt.EventStatus)">@evnt.EventStatus</div>
-                            <div class="event-label">Last Updated:</div><div class="event-value">@evnt.LastUpdated</div>
-                        </div>
-                        <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
-                            @((MarkupString)CloseIcon)
-                        </div>
+                        <p><b>Request ID:</b> @DataStore.ActiveEvent.AwsRequestId</p>
+                        <p><b>Status:</b> <span style="@GetStatusStyle(DataStore.ActiveEvent.EventStatus)">@DataStore.ActiveEvent.EventStatus</span></p>
+                        <p><b>Last Updated:</b> @DataStore.ActiveEvent.LastUpdated</p>
+                        <p><b>Event JSON:</b><span class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(DataStore.ActiveEvent)">@CreateSnippet(DataStore.ActiveEvent.EventJson)</span></span></p>
+                        @if (DataStore.ActiveEvent.EventStatus == EventContainer.Status.Failure)
+                        {
+                            <p><b>Error Type:</b> @DataStore.ActiveEvent.ErrorType</p>
+                            <p>
+                                <b>Error Response:</b>
+                                <pre class="form-control" style="@Constants.ResponseErrorStyleSizeConstraint">@DataStore.ActiveEvent.ErrorResponse</pre>
+                            </p>
+                        }
+                        else
+                        {
+                            <p>
+                                <b>Response:</b>
+                                <pre class="form-control" style="@Constants.ResponseSuccessStyleSizeConstraint">@Utils.TryPrettyPrintJson(DataStore.ActiveEvent.Response)</pre>
+                            </p>
+                        }
                     </div>
-                    <div class="row" style="padding: 2px">
-                        <div class="event-label">Event JSON:</div><div class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></div>
-                    </div>
-                    @if (evnt.EventStatus == EventContainer.Status.Success)
+                }
+            </div>
+            <div class="tab-pane fade" id="queued-tab-pane" role="tabpanel" aria-labelledby="queued-tab" tabindex="1">
+                <h3>Queued Events: <button class="btn btn-secondary btn-sm" @onclick="OnClearQueued">Clear</button></h3>
+                <div class="col-xs-5 event-list">
+                    @foreach (var evnt in @DataStore.QueuedEvents)
                     {
-                        <div class="row" style="padding: 2px">
-                            <div class="event-label">Response: </div><div class="event-value"><span class="fake-link" @onclick="() => ShowResponse(evnt)">@CreateSnippet(evnt.Response)</span></div>
-                        </div>
-                    }
-                    else if (evnt.EventStatus == EventContainer.Status.Failure)
-                    {
-                        <div class="row" style="padding: 2px">
-                            <div class="event-label">Error Type:</div><div class="event-value">@evnt.ErrorType</div>
-                        </div>
-                        <div class="row" style="padding: 2px">
-                            <div class="event-label">Error Response: </div><div class="event-value"><span class="fake-link" @onclick="() => ShowError(evnt)">@CreateSnippet(evnt.ErrorResponse)</span></div>
+                        <div class="event-list-item">
+                            <div class="row" style="padding: 2px">
+                                <div class="col-sm-11 row">
+                                    <div class="event-label">Request ID:</div><div class="event-value"> @evnt.AwsRequestId</div>
+                                    <div class="event-label">Last Updated:</div><div class="event-value">@evnt.LastUpdated</div>
+                                </div>
+                                <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
+                                    @((MarkupString)CloseIcon)
+                                </div>
+                            </div>
+                            <div class="row" style="padding: 2px">
+                                <div class="event-label">Event JSON:</div><div class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></div>
+                            </div>
                         </div>
                     }
                 </div>
-            }
+            </div>
+            <div class="tab-pane fade" id="executed-tab-pane" role="tabpanel" aria-labelledby="executed-tab" tabindex="2">
+                <h3>Executed Events: <button class="btn btn-secondary btn-sm" @onclick="OnClearExecuted">Clear</button></h3>
+                <div class="col-xs-5 event-list">
+                    @foreach (var evnt in @DataStore.ExecutedEvents.OrderByDescending(x => x.LastUpdated))
+                    {
+                        <div class="event-list-item">
+                            <div class="row" style="padding: 2px">
+                                <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnRequeue(evnt.AwsRequestId)">
+                                    @((MarkupString)RebootIcon)
+                                </div>
+                                <div class="col-sm-10 row">
+                                    <div class="event-label">Request ID:</div><div class="event-value"> @evnt.AwsRequestId</div>
+                                    <div class="event-label">Status:</div><div class="event-value" style="@GetStatusStyle(evnt.EventStatus)">@evnt.EventStatus</div>
+                                    <div class="event-label">Last Updated:</div><div class="event-value">@evnt.LastUpdated</div>
+                                </div>
+                                <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
+                                    @((MarkupString)CloseIcon)
+                                </div>
+                            </div>
+                            <div class="row" style="padding: 2px">
+                                <div class="event-label">Event JSON:</div><div class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></div>
+                            </div>
+                            @if (evnt.EventStatus == EventContainer.Status.Success)
+                            {
+                                <div class="row" style="padding: 2px">
+                                    <div class="event-label">Response: </div><div class="event-value"><span class="fake-link" @onclick="() => ShowResponse(evnt)">@CreateSnippet(evnt.Response)</span></div>
+                                </div>
+                            }
+                            else if (evnt.EventStatus == EventContainer.Status.Failure)
+                            {
+                                <div class="row" style="padding: 2px">
+                                    <div class="event-label">Error Type:</div><div class="event-value">@evnt.ErrorType</div>
+                                </div>
+                                <div class="row" style="padding: 2px">
+                                    <div class="event-label">Error Response: </div><div class="event-value"><span class="fake-link" @onclick="() => ShowError(evnt)">@CreateSnippet(evnt.ErrorResponse)</span></div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 </div>
