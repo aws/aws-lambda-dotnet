@@ -119,6 +119,45 @@ public class ApiGatewayRouteConfigServiceTests
         Assert.Null(result);
     }
 
+    [Theory]
+    [InlineData("", "", "")]
+    [InlineData("F1", "", "")]
+    [InlineData("F1", "GET", "")]
+    [InlineData("F1", "GET", "//")]
+    [InlineData("F1", "GET", "/{}")]
+    [InlineData("F1", "GET", "/{+}")]
+    [InlineData("F1", "GET", "/{proxy+}+}")]
+    public void GetRouteConfig_InvalidPath(string lambdaName, string method, string template)
+    {
+        // Arrange
+        var routeConfig = new ApiGatewayRouteConfig
+        {
+            LambdaResourceName = lambdaName,
+            HttpMethod = method,
+            Path = template
+        };
+
+        _mockEnvironmentManager
+            .Setup(m => m.GetEnvironmentVariables())
+            .Returns(new Dictionary<string, string>
+            {
+                { Constants.LambdaConfigEnvironmentVariablePrefix, JsonSerializer.Serialize(routeConfig) }
+            });
+
+        // Act
+        _ = new ApiGatewayRouteConfigService(_mockEnvironmentManager.Object, _mockLogger.Object);
+
+        // Assert
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString() == $"The route config {method} {template} is not valid. It will be skipped."),
+                It.IsAny<Exception>(),
+                ((Func<It.IsAnyType, Exception, string>)It.IsAny<object>())!),
+            Times.Once);
+    }
+
     [Fact]
     public void Constructor_LoadsAndParsesListOfConfigs()
     {
