@@ -53,3 +53,23 @@ h1:focus {
 .monaco-editor-container {
     height: 500px;
 }
+
+.tab-pane.active {
+    display: flex;
+}
+
+[data-bs-theme=dark] .logo-light-mode {
+    display: none;
+}
+
+[data-bs-theme=dark] .logo-dark-mode {
+    display: block;
+}
+
+[data-bs-theme=light] .logo-light-mode {
+    display: block;
+}
+
+[data-bs-theme=light] .logo-dark-mode {
+    display: none;
+}

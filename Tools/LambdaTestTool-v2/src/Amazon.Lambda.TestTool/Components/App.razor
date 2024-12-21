@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en" data-bs-theme="dark" style="height: 100%;">
 
 <head>
     <meta charset="utf-8" />
@@ -9,12 +9,14 @@
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="Amazon.Lambda.TestTool.styles.css" />
     <link rel="icon" type="image/ico" href="favicon.ico" />
+    <link href="bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 
-<body>
+<body class="d-flex flex-column" style="height: 100%;">
     <Routes @rendermode="InteractiveServer" />
     <script src="_framework/blazor.web.js"></script>
+    <script src="bootstrap/js/color-modes.js"></script>
     <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="_content/BlazorMonaco/jsInterop.js"></script>
     <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>

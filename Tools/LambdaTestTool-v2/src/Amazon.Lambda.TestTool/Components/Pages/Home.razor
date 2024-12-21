@@ -1,16 +1,16 @@
 @page "/"
 
-@using Amazon.Lambda.TestTool.Commands
 @using Amazon.Lambda.TestTool.Services
 @using Amazon.Lambda.TestTool.Models
 @using Amazon.Lambda.TestTool.SampleRequests;
 @using Amazon.Lambda.TestTool.Services.IO
-@using Amazon.Lambda.TestTool.Utilities
 @using Microsoft.AspNetCore.Http;
 
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IRuntimeApiDataStoreManager DataStoreManager
 @inject IDirectoryManager DirectoryManager
+@inject IThemeService ThemeService
+@inject IJSRuntime JsRuntime
 
 <PageTitle>Lambda Function Tester</PageTitle>
 
@@ -22,11 +22,14 @@
     Lambda function. More information can be found in the <a href="/documentation">documentation</a>.
 </div>
 
-<div class="row">
-    <div class="col-sm-6 gap-2 d-flex flex-column mt-1">
+<div class="row h-100">
+    <div class="col-lg-6 gap-2 d-flex flex-column mt-1 mb-3">
         <div class="form-group d-flex">
             <h4>Queue Event</h4>
-            <button class="btn btn-primary btn-sm ms-auto rounded-pill px-4 fw-bold" @onclick="OnAddEventClick">Invoke</button>
+            <button class="btn btn-primary btn-sm ms-auto rounded-pill px-4 fw-bold d-flex align-items-center gap-1" @onclick="OnAddEventClick">
+                <i class="bi bi-play-fill"></i>
+                Invoke
+            </button>
         </div>
         <div class="form-floating">
             <select class="form-select" id="sample-requests" @bind="SelectedSampleRequestName">
@@ -55,14 +58,14 @@
             </select>
             <label for="sample-requests">Example Requests</label>
         </div>
-        <div class="mt-1">
+        <div class="mt-1 flex-grow-1 flex-fill">
             <label class="form-label" for="function-payload">Function Input</label>
             <StandaloneCodeEditor Id="function-payload" @ref="_editor" ConstructionOptions="EditorConstructionOptions" CssClass="rounded-4 overflow-hidden border"/>
         </div>
     </div>
-    <div class="col-sm-6">
-        <nav class="navbar navbar-expand-lg bd-navbar pt-0">
-            <ul class="navbar-nav nav-underline nav-fill" id="eventsTab" role="tablist">
+    <div class="col-lg-6 d-flex flex-column">
+        <nav class="navbar navbar-expand-md bd-navbar pt-0">
+            <ul class="navbar-nav nav-underline nav-fill flex-row" id="eventsTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-tab-pane" type="button" role="tab" aria-controls="home-tab-pane" aria-selected="true">Active Event</button>
                 </li>
@@ -74,103 +77,145 @@
                 </li>
             </ul>
         </nav>
-        <div class="tab-content" id="eventsTabContent">
-            <div class="tab-pane fade show active" id="active-tab-pane" role="tabpanel" aria-labelledby="active-tab" tabindex="0">
-                <h3>Active Event:</h3>
+        <div class="tab-content d-flex flex-column flex-grow-1 flex-fill" id="eventsTabContent">
+            <div class="tab-pane fade flex-fill active show" id="active-tab-pane" role="tabpanel" aria-labelledby="active-tab" tabindex="0">
                 @if (DataStore.ActiveEvent == null)
                 {
-                    <h2>No active event</h2>
+                    <div class="d-flex justify-content-center flex-grow-1 align-self-center my-5">
+                        <div class="d-flex flex-column align-items-center gap-4">
+                            <i class="bi bi-journal-text" style="font-size: 96px;"></i>
+                            <span class="text-muted" style="font-size: 1.25rem;">Looks like you don't have an active event...</span>
+                        </div>
+                    </div>
                 }
                 else
                 {
-                    <div>
-                        <div style="cursor: pointer" @onclick="() => OnRequeue(DataStore.ActiveEvent.AwsRequestId)">
-                            @((MarkupString)RebootIcon)
+                    <div class="flex-grow-1">
+                        <div class="d-flex bg-body-tertiary p-2 align-items-start gap-2">
+                            <div class="d-flex flex-column gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div><b>Request ID:</b> @DataStore.ActiveEvent.AwsRequestId</div>
+                                    <span class="badge @GetStatusBadgeStyle(DataStore.ActiveEvent.EventStatus)">@DataStore.ActiveEvent.EventStatus</span>
+                                </div>
+                                <div><b>Last Updated:</b> @DataStore.ActiveEvent.LastUpdated</div>
+                                <div><b>Event JSON:</b> <span class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(DataStore.ActiveEvent)">@CreateSnippet(DataStore.ActiveEvent.EventJson)</span></span></div>
+                                @if (DataStore.ActiveEvent.EventStatus == EventContainer.Status.Failure)
+                                {
+                                    <div><b>Error Type:</b> @DataStore.ActiveEvent.ErrorType</div>
+                                }
+                            </div>
+                            <button class="btn btn-primary btn-sm rounded-pill ms-auto" @onclick="() => OnRequeue(DataStore.ActiveEvent.AwsRequestId)">
+                                <i class="bi bi-arrow-clockwise"></i>
+                                Re-Invoke
+                            </button>
                         </div>
-                        <p><b>Request ID:</b> @DataStore.ActiveEvent.AwsRequestId</p>
-                        <p><b>Status:</b> <span style="@GetStatusStyle(DataStore.ActiveEvent.EventStatus)">@DataStore.ActiveEvent.EventStatus</span></p>
-                        <p><b>Last Updated:</b> @DataStore.ActiveEvent.LastUpdated</p>
-                        <p><b>Event JSON:</b><span class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(DataStore.ActiveEvent)">@CreateSnippet(DataStore.ActiveEvent.EventJson)</span></span></p>
                         @if (DataStore.ActiveEvent.EventStatus == EventContainer.Status.Failure)
                         {
-                            <p><b>Error Type:</b> @DataStore.ActiveEvent.ErrorType</p>
-                            <p>
-                                <b>Error Response:</b>
-                                <pre class="form-control" style="@Constants.ResponseErrorStyleSizeConstraint">@DataStore.ActiveEvent.ErrorResponse</pre>
+                            <p class="mt-2">
+                                <b class="px-2">Error Response</b>
+                                <StandaloneCodeEditor Id="activeEditorError" @ref="_activeEditorError" ConstructionOptions="ActiveErrorEditorConstructionOptions" CssClass="rounded-4 overflow-hidden border"/>
                             </p>
                         }
                         else
                         {
-                            <p>
-                                <b>Response:</b>
-                                <pre class="form-control" style="@Constants.ResponseSuccessStyleSizeConstraint">@Utils.TryPrettyPrintJson(DataStore.ActiveEvent.Response)</pre>
+                            <p class="mt-2">
+                                <b class="px-2">Response</b>
+                                <StandaloneCodeEditor Id="activeEditor" @ref="_activeEditor" ConstructionOptions="ActiveEditorConstructionOptions" CssClass="rounded-4 overflow-hidden border"/>
                             </p>
                         }
                     </div>
                 }
             </div>
-            <div class="tab-pane fade" id="queued-tab-pane" role="tabpanel" aria-labelledby="queued-tab" tabindex="1">
-                <h3>Queued Events: <button class="btn btn-secondary btn-sm" @onclick="OnClearQueued">Clear</button></h3>
-                <div class="col-xs-5 event-list">
-                    @foreach (var evnt in @DataStore.QueuedEvents)
-                    {
-                        <div class="event-list-item">
-                            <div class="row" style="padding: 2px">
-                                <div class="col-sm-11 row">
-                                    <div class="event-label">Request ID:</div><div class="event-value"> @evnt.AwsRequestId</div>
-                                    <div class="event-label">Last Updated:</div><div class="event-value">@evnt.LastUpdated</div>
-                                </div>
-                                <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
-                                    @((MarkupString)CloseIcon)
-                                </div>
-                            </div>
-                            <div class="row" style="padding: 2px">
-                                <div class="event-label">Event JSON:</div><div class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></div>
-                            </div>
+            <div class="tab-pane fade flex-fill flex-column gap-2" id="queued-tab-pane" role="tabpanel" aria-labelledby="queued-tab" tabindex="1">
+                @if (!DataStore.QueuedEvents.Any())
+                {
+                    <div class="d-flex justify-content-center flex-grow-1 align-items-center my-5">
+                        <div class="d-flex flex-column align-items-center gap-4">
+                            <i class="bi bi-journal-text" style="font-size: 96px;"></i>
+                            <span class="text-muted" style="font-size: 1.25rem;">Looks like you don't have any queued events...</span>
                         </div>
-                    }
-                </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex bg-body-tertiary p-2 align-items-start gap-2">
+                        <button class="btn btn-secondary btn-sm rounded-pill ms-auto d-flex align-items-center gap-1 px-2" @onclick="OnClearQueued">
+                            <i class="bi bi-x-lg"></i>
+                            Clear
+                        </button>
+                    </div>
+                    <div class="col-xs-5 event-list">
+                        @foreach (var evnt in @DataStore.QueuedEvents)
+                        {
+                            <div class="alert alert-secondary d-flex gap-2 p-0" role="alert">
+                                <div class="d-flex flex-column gap-2 p-3">
+                                    <div><b>Request ID:</b> @evnt.AwsRequestId</div>
+                                    <div><b>Last Updated:</b> @evnt.LastUpdated</div>
+                                    <div><b>Event JSON:</b> <span class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></span></div>
+                                </div>
+                                <div class="ms-auto p-1">
+                                    <button class="btn btn-sm" style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
-            <div class="tab-pane fade" id="executed-tab-pane" role="tabpanel" aria-labelledby="executed-tab" tabindex="2">
-                <h3>Executed Events: <button class="btn btn-secondary btn-sm" @onclick="OnClearExecuted">Clear</button></h3>
-                <div class="col-xs-5 event-list">
-                    @foreach (var evnt in @DataStore.ExecutedEvents.OrderByDescending(x => x.LastUpdated))
-                    {
-                        <div class="event-list-item">
-                            <div class="row" style="padding: 2px">
-                                <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnRequeue(evnt.AwsRequestId)">
-                                    @((MarkupString)RebootIcon)
-                                </div>
-                                <div class="col-sm-10 row">
-                                    <div class="event-label">Request ID:</div><div class="event-value"> @evnt.AwsRequestId</div>
-                                    <div class="event-label">Status:</div><div class="event-value" style="@GetStatusStyle(evnt.EventStatus)">@evnt.EventStatus</div>
-                                    <div class="event-label">Last Updated:</div><div class="event-value">@evnt.LastUpdated</div>
-                                </div>
-                                <div class="col-sm-1 " style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
-                                    @((MarkupString)CloseIcon)
-                                </div>
-                            </div>
-                            <div class="row" style="padding: 2px">
-                                <div class="event-label">Event JSON:</div><div class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></div>
-                            </div>
-                            @if (evnt.EventStatus == EventContainer.Status.Success)
-                            {
-                                <div class="row" style="padding: 2px">
-                                    <div class="event-label">Response: </div><div class="event-value"><span class="fake-link" @onclick="() => ShowResponse(evnt)">@CreateSnippet(evnt.Response)</span></div>
-                                </div>
-                            }
-                            else if (evnt.EventStatus == EventContainer.Status.Failure)
-                            {
-                                <div class="row" style="padding: 2px">
-                                    <div class="event-label">Error Type:</div><div class="event-value">@evnt.ErrorType</div>
-                                </div>
-                                <div class="row" style="padding: 2px">
-                                    <div class="event-label">Error Response: </div><div class="event-value"><span class="fake-link" @onclick="() => ShowError(evnt)">@CreateSnippet(evnt.ErrorResponse)</span></div>
-                                </div>
-                            }
+            <div class="tab-pane fade flex-fill flex-column gap-2" id="executed-tab-pane" role="tabpanel" aria-labelledby="executed-tab" tabindex="2">
+                @if (!DataStore.ExecutedEvents.Any())
+                {
+                    <div class="d-flex justify-content-center flex-grow-1 align-items-center my-5">
+                        <div class="d-flex flex-column align-items-center gap-4">
+                            <i class="bi bi-journal-text" style="font-size: 96px;"></i>
+                            <span class="text-muted" style="font-size: 1.25rem;">Looks like you don't have any executed events...</span>
                         </div>
-                    }
-                </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex bg-body-tertiary p-2 align-items-start gap-2">
+                        <button class="btn btn-secondary btn-sm rounded-pill ms-auto d-flex align-items-center gap-1 px-2" @onclick="OnClearExecuted">
+                            <i class="bi bi-x-lg"></i>
+                            Clear
+                        </button>
+                    </div>
+                    <div class="col-xs-5 event-list">
+                        @foreach (var evnt in @DataStore.ExecutedEvents.OrderByDescending(x => x.LastUpdated))
+                        {
+                            <div class="event-list-item">
+                                <div class="alert alert-secondary d-flex gap-2 p-0" role="alert">
+                                    <div class="d-flex flex-column gap-2 p-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div><b>Request ID:</b> @evnt.AwsRequestId</div>
+                                            <span class="badge @GetStatusBadgeStyle(evnt.EventStatus)">@evnt.EventStatus</span>
+                                        </div>
+                                        <div><b>Last Updated:</b> @evnt.LastUpdated</div>
+                                        <div><b>Event JSON:</b> <span class="event-value"><span class="fake-link" @onclick="() => ShowEventJson(evnt)">@CreateSnippet(evnt.EventJson)</span></span></div>
+                                        @if (evnt.EventStatus == EventContainer.Status.Success)
+                                        {
+                                            <div><b>Response:</b> <span class="fake-link" @onclick="() => ShowResponse(evnt)">@CreateSnippet(evnt.Response)</span></div>
+                                        }
+                                        else if (evnt.EventStatus == EventContainer.Status.Failure)
+                                        {
+                                            <div><b>Error Type:</b> @evnt.ErrorType</div>
+                                            <div><b>Error Response:</b> <span class="fake-link" @onclick="() => ShowError(evnt)">@CreateSnippet(evnt.ErrorResponse)</span></div>
+                                        }
+                                    </div>
+                                    <div class="ms-auto p-1">
+                                        <button class="btn btn-sm" style="cursor: pointer" @onclick="() => OnRequeue(evnt.AwsRequestId)">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                        <button class="btn btn-sm" style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -181,24 +226,12 @@
 
 @code {
     private StandaloneCodeEditor _editor = null!;
-
-    private const string RebootIcon = @"
-<svg xmlns=""http://www.w3.org/2000/svg"" width=""16"" height=""16"" fill=""currentColor"" class=""bi bi-bootstrap-reboot"" viewBox=""0 0 16 16"">
-    <path d=""M1.161 8a6.84 6.84 0 1 0 6.842-6.84.58.58 0 1 1 0-1.16 8 8 0 1 1-6.556 3.412l-.663-.577a.58.58 0 0 1 .227-.997l2.52-.69a.58.58 0 0 1 .728.633l-.332 2.592a.58.58 0 0 1-.956.364l-.643-.56A6.812 6.812 0 0 0 1.16 8z""/>
-</svg>
-";
-
-    private const string CloseIcon = @"
-<svg xmlns=""http://www.w3.org/2000/svg"" width=""16"" height=""16"" fill=""currentColor"" class=""bi bi-x"" viewBox=""0 0 16 16"">
-  <path d=""M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z""/>
-</svg>
-";
+    private StandaloneCodeEditor _activeEditor = null!;
+    private StandaloneCodeEditor _activeEditorError = null!;
 
     [CascadingParameter] public IModalService Modal { get; set; } = default!;
 
     private const string NoSampleSelectedId = "void-select-request";
-
-    private string FunctionInput { get; set; } = "";
 
     private IDictionary<string, IList<LambdaRequest>> SampleRequests { get; set; } = new Dictionary<string, IList<LambdaRequest>>();
 
@@ -217,14 +250,13 @@
             if (string.IsNullOrEmpty(_selectedSampleRequestName) ||
                 string.Equals(value, NoSampleSelectedId))
             {
-                FunctionInput = string.Empty;
+                _editor.SetValue(string.Empty);
             }
             else
             {
-                FunctionInput = SampleRequestManager.GetRequest(_selectedSampleRequestName);
+                _editor.SetValue(SampleRequestManager.GetRequest(_selectedSampleRequestName));
             }
 
-            _editor.SetValue(FunctionInput);
             StateHasChanged();
         }
     }
@@ -233,20 +265,47 @@
 
     protected override void OnInitialized()
     {
+        ThemeService.OnThemeChanged += HandleThemeChanged;
         DataStore.StateChange += DataStoreOnStateChange;
         SampleRequestManager = new SampleRequestManager(DirectoryManager.GetCurrentDirectory());
         SampleRequests = SampleRequestManager.GetSampleRequests();
     }
 
-    private void DataStoreOnStateChange(object? sender, EventArgs e)
+    private void HandleThemeChanged()
     {
-        InvokeAsync(this.StateHasChanged);
+        if (ThemeService.CurrentTheme.Equals("dark"))
+        {
+            BlazorMonaco.Editor.Global.SetTheme(JsRuntime, "vs-dark");
+        }
+        else
+        {
+            BlazorMonaco.Editor.Global.SetTheme(JsRuntime, "vs");
+        }
+        InvokeAsync(StateHasChanged);
     }
 
-    void OnAddEventClick()
+    public void Dispose()
     {
-        DataStore.QueueEvent(FunctionInput, false);
-        FunctionInput = "";
+        ThemeService.OnThemeChanged -= HandleThemeChanged; // Unsubscribe to avoid memory leaks
+    }
+
+    private void DataStoreOnStateChange(object? sender, EventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            this.StateHasChanged();
+            if (_activeEditor != null)
+                _activeEditor.SetValue(DataStore.ActiveEvent?.Response);
+            if (_activeEditorError != null)
+                _activeEditorError.SetValue(DataStore.ActiveEvent?.ErrorResponse);
+        });
+    }
+
+    async Task OnAddEventClick()
+    {
+        var editorValue = await _editor.GetValue();
+        DataStore.QueueEvent(editorValue, false);
+        await _editor.SetValue(string.Empty);
         SelectedSampleRequestName = NoSampleSelectedId;
         StateHasChanged();
     }
@@ -288,11 +347,11 @@
         StateHasChanged();
     }
 
-    string GetStatusStyle(EventContainer.Status status) => status switch
+    string GetStatusBadgeStyle(EventContainer.Status status) => status switch
     {
-        EventContainer.Status.Success => "color:green",
-        EventContainer.Status.Failure => "color:red",
-        _ => "color:black"
+        EventContainer.Status.Success => "text-bg-success",
+        EventContainer.Status.Failure => "text-bg-danger",
+        _ => "text-bg-secondary"
     };
 
     string CreateSnippet(string? fullString)
@@ -338,8 +397,52 @@
         return new StandaloneEditorConstructionOptions
         {
             Language = "json",
-            GlyphMargin = true,
-            Theme = "vs-dark"
+            GlyphMargin = false,
+            Theme = ThemeService.CurrentTheme.Equals("dark") ? "vs-dark" : "vs",
+            AutomaticLayout = true,
+            ScrollBeyondLastLine = false,
+            Minimap = new EditorMinimapOptions
+            {
+                Enabled = false
+            }
+        };
+    }
+
+    private StandaloneEditorConstructionOptions ActiveEditorConstructionOptions(StandaloneCodeEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+        {
+            Language = "json",
+            GlyphMargin = false,
+            Theme = ThemeService.CurrentTheme.Equals("dark") ? "vs-dark" : "vs",
+            Value = DataStore.ActiveEvent?.Response,
+            FontSize = 12,
+            AutomaticLayout = true,
+            ScrollBeyondLastLine = false,
+            ReadOnly = true,
+            Minimap = new EditorMinimapOptions
+            {
+                Enabled = false
+            }
+        };
+    }
+
+    private StandaloneEditorConstructionOptions ActiveErrorEditorConstructionOptions(StandaloneCodeEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+        {
+            Language = "json",
+            GlyphMargin = false,
+            Theme = ThemeService.CurrentTheme.Equals("dark") ? "vs-dark" : "vs",
+            Value = DataStore.ActiveEvent?.ErrorResponse,
+            FontSize = 12,
+            AutomaticLayout = true,
+            ScrollBeyondLastLine = false,
+            ReadOnly = true,
+            Minimap = new EditorMinimapOptions
+            {
+                Enabled = false
+            }
         };
     }
 }
