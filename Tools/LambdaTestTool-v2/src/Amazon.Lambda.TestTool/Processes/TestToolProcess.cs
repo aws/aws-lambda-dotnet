@@ -38,6 +38,7 @@ public class TestToolProcess
         var builder = WebApplication.CreateBuilder();
 
         builder.Services.AddSingleton<IRuntimeApiDataStoreManager, RuntimeApiDataStoreManager>();
+        builder.Services.AddSingleton<IThemeService, ThemeService>();
 
         // Add services to the container.
         builder.Services.AddRazorComponents()

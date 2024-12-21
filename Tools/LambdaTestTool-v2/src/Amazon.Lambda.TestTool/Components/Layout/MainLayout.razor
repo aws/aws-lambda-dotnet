@@ -1,10 +1,15 @@
-﻿@using Amazon.Lambda.TestTool.Utilities
+﻿@using Amazon.Lambda.TestTool.Services
+@using Amazon.Lambda.TestTool.Utilities
 @inherits LayoutComponentBase
+
+@inject IJSRuntime Js
+@inject IThemeService ThemeService
 
 <nav class="navbar navbar-expand-lg bd-navbar sticky-top bg-body-tertiary">
     <div class="container-fluid">
         <a class="navbar-brand py-0 me-4 d-flex align-items-center gap-3" href="/">
-            <img src="aws.svg" width="42" height="42" class="d-inline-block align-text-top"/>
+            <img src="aws.svg" width="42" height="42" class="align-text-top logo-light-mode"/>
+            <img src="aws-light.svg" width="42" height="42" class="align-text-top logo-dark-mode"/>
             Lambda Test Tool
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,20 +35,45 @@
                     </NavLink>
                 </li>
             </ul>
+
+            <ul class="navbar-nav flex-row flex-wrap ms-md-auto">
+                <li class="nav-item dropdown">
+                    <button class="nav-link py-2 px-0 px-lg-2 dropdown-toggle d-flex align-items-center show" id="bd-theme" type="button" aria-expanded="true" data-bs-toggle="dropdown" data-bs-display="static" aria-label="Toggle theme (light)">
+                        <i class="bi bi-palette-fill"></i>
+                        <span class="d-lg-none ms-2" id="bd-theme-text">Toggle theme</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bd-theme-text" data-bs-popper="static">
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center gap-2" data-bs-theme-value="light" aria-pressed="true" @onclick="SetLightTheme">
+                                <i class="bi bi-sun-fill"></i>
+                                Light
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center gap-2" data-bs-theme-value="dark" aria-pressed="false" @onclick="SetDarkTheme">
+                                <i class="bi bi-moon-stars-fill"></i>
+                                Dark
+                            </button>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
         </div>
     </div>
 </nav>
-<div class="page">
+<div class="page flex-grow-1">
     <main>
         <article class="content px-4">
             @Body
-            <hr />
-            <footer>
-                <p>@Constants.ProductName (@Utils.DetermineToolVersion()) is an open source project. For issues or feedback visit the <a href="@Constants.LinkGithubTestTool">AWS Lambda for .NET Core GitHub repository.</a></p>
-            </footer>
         </article>
     </main>
 </div>
+
+<footer class="footer text-muted p-3 mt-4">
+    <div class="d-flex container justify-content-center">
+        &copy; @DateTime.Now.Year - AWS Lambda Test Tool
+    </div>
+</footer>
 
 
 <div id="blazor-error-ui">
@@ -51,3 +81,32 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (string.IsNullOrEmpty(ThemeService.CurrentTheme))
+        {
+            ThemeService.CurrentTheme = await Js.InvokeAsync<string>("getPreferredTheme");
+        }
+    }
+
+    private async Task SetLightTheme()
+    {
+        await SetTheme("light");
+    }
+
+    private async Task SetDarkTheme()
+    {
+        await SetTheme("dark");
+    }
+
+    private async Task SetTheme(string theme)
+    {
+        await Js.InvokeVoidAsync("setStoredTheme", theme);
+        await Js.InvokeVoidAsync("setTheme", theme);
+        ThemeService.CurrentTheme = theme;
+    }
+
+}
