@@ -78,7 +78,10 @@ public static class RouteTemplateUtility
         // Convert AWS-style {proxy+} to ASP.NET Core style {*proxy}
         template = Regex.Replace(template, @"\{(\w+)\+\}", "{*$1}");
 
-        // Handle AWS-style "constraints" by replacing them with temporary parameter names
+        // AWS allows you to name a route as {abc:int}, which gets parsed by AWS as the path
+        // variable abc:int. However, .NET template matcher, thinks {abc:int} means
+        // abc variable with the int constraint. So we are converting variables that have
+        // contstraints to a different name temporarily, so template matcher doesn't think they are constraints.
         return Regex.Replace(template, @"\{([^}]+):([^}]+)\}", match =>
         {
             var paramName = match.Groups[1].Value;
