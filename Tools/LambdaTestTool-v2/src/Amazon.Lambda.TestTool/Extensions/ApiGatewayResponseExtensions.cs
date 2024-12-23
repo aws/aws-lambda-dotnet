@@ -3,6 +3,7 @@
 
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Models;
+using Amazon.Lambda.TestTool.Utilities;
 using Microsoft.Extensions.Primitives;
 using System.Text;
 
@@ -102,47 +103,16 @@ public static class ApiGatewayResponseExtensions
         {
             case ApiGatewayEmulatorMode.Rest:
                 headers.Add("x-amzn-RequestId", Guid.NewGuid().ToString("D"));
-                headers.Add("x-amz-apigw-id", GenerateRequestId());
-                headers.Add("X-Amzn-Trace-Id", GenerateTraceId());
+                headers.Add("x-amz-apigw-id", HttpRequestUtility.GenerateRequestId());
+                headers.Add("X-Amzn-Trace-Id", HttpRequestUtility.GenerateTraceId());
                 break;
             case ApiGatewayEmulatorMode.HttpV1:
             case ApiGatewayEmulatorMode.HttpV2:
-                headers.Add("Apigw-Requestid", GenerateRequestId());
+                headers.Add("Apigw-Requestid", HttpRequestUtility.GenerateRequestId());
                 break;
         }
 
         return headers;
-    }
-
-    /// <summary>
-    /// Generates a random X-Amzn-Trace-Id for REST API mode.
-    /// </summary>
-    /// <returns>A string representing a random X-Amzn-Trace-Id in the format used by API Gateway for REST APIs.</returns>
-    /// <remarks>
-    /// The generated trace ID includes:
-    /// - A root ID with a timestamp and two partial GUIDs
-    /// - A parent ID
-    /// - A sampling decision (always set to 0 in this implementation)
-    /// - A lineage identifier
-    /// </remarks>
-    private static string GenerateTraceId()
-    {
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString("x");
-        var guid1 = Guid.NewGuid().ToString("N");
-        var guid2 = Guid.NewGuid().ToString("N");
-        return $"Root=1-{timestamp}-{guid1.Substring(0, 12)}{guid2.Substring(0, 12)};Parent={Guid.NewGuid().ToString("N").Substring(0, 16)};Sampled=0;Lineage=1:{Guid.NewGuid().ToString("N").Substring(0, 8)}:0";
-    }
-
-    /// <summary>
-    /// Generates a random API Gateway request ID for HTTP API v1 and v2.
-    /// </summary>
-    /// <returns>A string representing a random request ID in the format used by API Gateway for HTTP APIs.</returns>
-    /// <remarks>
-    /// The generated ID is a 15-character string consisting of lowercase letters and numbers, followed by an equals sign.
-    /// </remarks>
-    private static string GenerateRequestId()
-    {
-        return Guid.NewGuid().ToString("N").Substring(0, 8) + Guid.NewGuid().ToString("N").Substring(0, 7) + "=";
     }
 
     /// <summary>
