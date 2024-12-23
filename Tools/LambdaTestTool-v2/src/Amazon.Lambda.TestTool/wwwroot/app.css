@@ -54,6 +54,10 @@ h1:focus {
     height: 500px;
 }
 
+.monaco-modal-editor {
+    width: 466px;
+}
+
 .tab-pane.active {
     display: flex;
 }

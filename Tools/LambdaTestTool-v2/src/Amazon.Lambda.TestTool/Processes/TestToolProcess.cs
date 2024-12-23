@@ -5,7 +5,6 @@ using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Components;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Services.IO;
-using Blazored.Modal;
 using Microsoft.Extensions.Options;
 
 namespace Amazon.Lambda.TestTool.Processes;
@@ -46,8 +45,6 @@ public class TestToolProcess
             .AddHubOptions(options => options.MaximumReceiveMessageSize = null);
 
         builder.Services.AddHttpContextAccessor();
-
-        builder.Services.AddBlazoredModal();
 
         builder.Services.AddTransient<IPostConfigureOptions<StaticFileOptions>, ConfigureStaticFilesOptions>();
         builder.Services.AddSingleton<IDirectoryManager, DirectoryManager>();
