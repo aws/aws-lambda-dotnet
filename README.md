@@ -211,7 +211,7 @@ Options:
 
 The templates take two optional parameters to set the profile and region. These values are written to the aws-lambda-tools-default.json.
 
-To create a function, run the following command
+To create a function, run the following command:
 
 ```
 dotnet new lambda.EmptyFunction --name BlogFunction --profile default --region us-east-2
