@@ -94,7 +94,30 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
             };
 
             // Wait for our event to process
-            await tcs.Task;
+            // TODO: This is where we can timeout if the event was not processed in time
+            try {
+                await tcs.Task.WaitAsync(TimeSpan.FromSeconds(60));
+            } catch (TimeoutException e) {
+                eventContainer.ReportErrorResponse("Task Timed Out", "Error");
+
+                return Ok(new {
+                    StatusCode = 202,
+                    FunctionError = "Unhandled",
+                    ExecutedVersion = "$LATEST",
+                    Payload = "{\"errorMessage\":\"Task Timed Out\",\"errorType\":\"Error\"}"
+                });
+            } catch (Exception e) {
+                // This is a catch all for any other exceptions
+                // We should not get here
+                eventContainer.ReportErrorResponse("Unhandled Error", "Error");
+
+                return Ok(new {
+                    StatusCode = 202,
+                    FunctionError = "Unhandled",
+                    ExecutedVersion = "$LATEST",
+                    Payload = "{\"errorMessage\":\"Unhandled Error\",\"errorType\":\"Error\"}"
+                });
+            }
 
             if (eventContainer.ErrorResponse != null)
             {
@@ -164,6 +187,11 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
                 await Response.Body.WriteAsync(buffer, 0, buffer.Length);
                 Response.Body.Close();
             }
+
+            // TODO: The response from this function is the active event
+            // The event gets run by the lambda that called this endpoint
+
+            // This is where we need to setup a timeout for the event
         }
         
         [HttpPost("/2018-06-01/runtime/invocation/{awsRequestId}/response")]

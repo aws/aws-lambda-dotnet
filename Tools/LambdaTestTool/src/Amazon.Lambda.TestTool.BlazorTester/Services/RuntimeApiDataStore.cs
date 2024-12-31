@@ -267,9 +267,8 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
 
         public DateTime LastUpdated { get; private set; }
 
-        public Task TimeoutTask { get; set; }
         public TaskCompletionSource DispatchedTCS { get; private set; } = new ();
-        public CancellationTokenSource TimedOutCTS { get; private set; } = new (1000);
+        public CancellationTokenSource TimedOutCTS { get; private set; }
         private readonly object _statusLock = new();
         private IEventContainer.Status _status = IEventContainer.Status.Queued;
         public IEventContainer.Status EventStatus
@@ -289,6 +288,8 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
             this._dataStore = dataStore;
             this.AwsRequestId = eventCount.ToString("D12");
             this.EventJson = eventJson;
+            // TODO: Parse the JSON so we can get the timeout value
+            this.TimedOutCTS = new (1000);
         }
 
         public string FunctionArn
@@ -329,6 +330,10 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Services
                 if (EventStatus == IEventContainer.Status.Queued)
                 {
                     ReportErrorResponse("Throttled", errorBody);
+                }
+                else
+                {
+                    ReportErrorResponse("Failed", errorBody);
                 }
             }
         }
