@@ -20,6 +20,12 @@ public interface IRuntimeApiDataStoreManager
     /// </summary>
     /// <returns></returns>
     string[] GetListOfFunctionNames();
+
+    /// <summary>
+    /// An event that some event or event collection has changed. This is used by the UI to
+    /// know when it should refresh.
+    /// </summary>
+    event EventHandler? StateChange;
 }
 
 /// <inheritdoc/>
@@ -28,14 +34,32 @@ internal class RuntimeApiDataStoreManager : IRuntimeApiDataStoreManager
     private readonly ConcurrentDictionary<string, IRuntimeApiDataStore> _dataStores = new ConcurrentDictionary<string, IRuntimeApiDataStore>();
 
     /// <inheritdoc/>
+    public event EventHandler? StateChange;
+
+    /// <inheritdoc/>
     public IRuntimeApiDataStore GetLambdaRuntimeDataStore(string functionName)
     {
-        return _dataStores.GetOrAdd(functionName, name => new RuntimeApiDataStore());
+        if (_dataStores.ContainsKey(functionName))
+        {
+            return _dataStores[functionName];
+        }
+        else
+        {
+            _dataStores[functionName] = new RuntimeApiDataStore();
+            RaiseStateChanged();
+            return _dataStores[functionName];
+        }
     }
 
     /// <inheritdoc/>
     public string[] GetListOfFunctionNames()
     {
         return _dataStores.Keys.ToArray();
+    }
+
+    private void RaiseStateChanged()
+    {
+        var handler = StateChange;
+        handler?.Invoke(this, EventArgs.Empty);
     }
 }
