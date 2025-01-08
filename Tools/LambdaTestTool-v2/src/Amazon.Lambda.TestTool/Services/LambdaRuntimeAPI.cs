@@ -92,10 +92,24 @@ public class LambdaRuntimeApi
         var runtimeDataStore = _runtimeApiDataStoreManager.GetLambdaRuntimeDataStore(functionName);
 
         EventContainer? activeEvent;
-        while (!runtimeDataStore.TryActivateEvent(out activeEvent))
+
+        // A Lambda function should never call to get the next event till it was done
+        // processing the active event and there is no more active event. If there
+        // is an active event still executing that most likely means the previous debug session was
+        // killed leaving the event active. In that case resend the active event
+        // to restart debugging the event.
+        if (runtimeDataStore.ActiveEvent != null && runtimeDataStore.ActiveEvent.EventStatus == EventContainer.Status.Executing)
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(100));
+            activeEvent = runtimeDataStore.ActiveEvent;
         }
+        else
+        {
+            while (!runtimeDataStore.TryActivateEvent(out activeEvent))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
+            }
+        }
+
 
         if (activeEvent == null)
             return;
