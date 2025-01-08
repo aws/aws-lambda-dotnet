@@ -53,7 +53,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             };
 
             var httpContext = new DefaultHttpContext();
-            testResponse.ToHttpResponse(httpContext, ApiGatewayEmulatorMode.Rest);
+            testResponse.ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.Rest);
             var actualResponse = await _httpClient.PostAsync(_fixture.ReturnDecodedParseBinRestApiUrl, new StringContent(JsonSerializer.Serialize(testResponse)));
             await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpContext.Response);
             Assert.Equal(200, (int)actualResponse.StatusCode);
@@ -72,7 +72,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             };
 
             var httpContext = new DefaultHttpContext();
-            testResponse.ToHttpResponse(httpContext, ApiGatewayEmulatorMode.HttpV1);
+            testResponse.ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.HttpV1);
             var actualResponse = await _httpClient.PostAsync(_fixture.ParseAndReturnBodyHttpApiV1Url, new StringContent(JsonSerializer.Serialize(testResponse)));
 
             await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpContext.Response);

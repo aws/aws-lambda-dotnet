@@ -45,7 +45,10 @@ public static class HttpRequestUtility
         // Check if the content is binary
         bool isBinary = HttpRequestUtility.IsBinaryContent(request.ContentType);
 
-        request.Body.Position = 0;
+        if (request.Body.CanSeek)
+        {
+            request.Body.Position = 0;
+        }
 
         using (var memoryStream = new MemoryStream())
         {

@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Net.Http;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Models;
 using Microsoft.AspNetCore.Http;
@@ -294,6 +295,7 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
             Dictionary<string, StringValues>? headers = null, string? queryString = null, byte[]? body = null)
         {
             var context = new DefaultHttpContext();
+            context.Response.Body = new MemoryStream();
             var request = context.Request;
             request.Method = method;
             request.Path = path;

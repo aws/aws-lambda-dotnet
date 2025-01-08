@@ -15,11 +15,12 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
         [Theory]
         [MemberData(nameof(ApiGatewayResponseTestCases.V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
-        public void ToHttpResponse_ConvertsCorrectlyV1(string testName, ApiGatewayResponseTestCase testCase)
+        public async Task ToHttpResponse_ConvertsCorrectlyV1(string testName, ApiGatewayResponseTestCase testCase)
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            ((APIGatewayProxyResponse)testCase.Response).ToHttpResponse(httpContext, ApiGatewayEmulatorMode.HttpV1);
+            httpContext.Response.Body = new MemoryStream();
+            await ((APIGatewayProxyResponse)testCase.Response).ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.HttpV1);
 
             // Assert
             testCase.Assertions(httpContext.Response, ApiGatewayEmulatorMode.HttpV1);
@@ -28,11 +29,12 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
         [Theory]
         [MemberData(nameof(ApiGatewayResponseTestCases.V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
-        public void ToHttpResponse_ConvertsCorrectlyV1Rest(string testName, ApiGatewayResponseTestCase testCase)
+        public async Task ToHttpResponse_ConvertsCorrectlyV1Rest(string testName, ApiGatewayResponseTestCase testCase)
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            ((APIGatewayProxyResponse)testCase.Response).ToHttpResponse(httpContext, ApiGatewayEmulatorMode.Rest);
+            httpContext.Response.Body = new MemoryStream();
+            await ((APIGatewayProxyResponse)testCase.Response).ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.Rest);
 
             // Assert
             testCase.Assertions(httpContext.Response, ApiGatewayEmulatorMode.Rest);
@@ -41,11 +43,12 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
         [Theory]
         [MemberData(nameof(ApiGatewayResponseTestCases.V2TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
-        public void ToHttpResponse_ConvertsCorrectlyV2(string testName, ApiGatewayResponseTestCase testCase)
+        public async Task ToHttpResponse_ConvertsCorrectlyV2(string testName, ApiGatewayResponseTestCase testCase)
         {
             // Arrange
             var httpContext = new DefaultHttpContext();
-            ((APIGatewayHttpApiV2ProxyResponse)testCase.Response).ToHttpResponse(httpContext);
+            httpContext.Response.Body = new MemoryStream();
+            await ((APIGatewayHttpApiV2ProxyResponse)testCase.Response).ToHttpResponseAsync(httpContext);
 
             // Assert
             testCase.Assertions(httpContext.Response, ApiGatewayEmulatorMode.HttpV2);
@@ -54,7 +57,7 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
         [Theory]
         [InlineData(ApiGatewayEmulatorMode.HttpV1)]
         [InlineData(ApiGatewayEmulatorMode.Rest)]
-        public void ToHttpResponse_APIGatewayV1DecodesBase64(ApiGatewayEmulatorMode emulatorMode)
+        public async Task ToHttpResponse_APIGatewayV1DecodesBase64(ApiGatewayEmulatorMode emulatorMode)
         {
             var apiResponse = new APIGatewayProxyResponse
             {
@@ -64,7 +67,8 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
             };
 
             var httpContext = new DefaultHttpContext();
-            apiResponse.ToHttpResponse(httpContext, emulatorMode);
+            httpContext.Response.Body = new MemoryStream();
+            await apiResponse.ToHttpResponseAsync(httpContext, emulatorMode);
 
             httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
             using var reader = new StreamReader(httpContext.Response.Body);

@@ -20,7 +20,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
         public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(APIGatewayProxyResponse testResponse, string apiUrl, ApiGatewayEmulatorMode emulatorMode)
         {
             var httpContext = new DefaultHttpContext();
-            testResponse.ToHttpResponse(httpContext, emulatorMode);
+            testResponse.ToHttpResponseAsync(httpContext, emulatorMode);
             var serialized = JsonSerializer.Serialize(testResponse);
             var actualResponse = await _httpClient.PostAsync(apiUrl, new StringContent(serialized));
             return (actualResponse, httpContext.Response);
@@ -29,7 +29,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
         public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(APIGatewayHttpApiV2ProxyResponse testResponse, string apiUrl)
         {
             var httpContext = new DefaultHttpContext();
-            testResponse.ToHttpResponse(httpContext);
+            testResponse.ToHttpResponseAsync(httpContext);
             var serialized = JsonSerializer.Serialize(testResponse);
             var actualResponse = await _httpClient.PostAsync(apiUrl, new StringContent(serialized));
             return (actualResponse, httpContext.Response);

@@ -21,13 +21,13 @@ public static class ApiGatewayResponseExtensions
     /// <param name="context">The <see cref="HttpContext"/> to use for the conversion.</param>
     /// <param name="emulatorMode">The <see cref="ApiGatewayEmulatorMode"/> to use for the conversion.</param>
     /// <returns>An <see cref="HttpResponse"/> representing the API Gateway response.</returns>
-    public static void ToHttpResponse(this APIGatewayProxyResponse apiResponse, HttpContext httpContext, ApiGatewayEmulatorMode emulatorMode)
+    public static async Task ToHttpResponseAsync(this APIGatewayProxyResponse apiResponse, HttpContext httpContext, ApiGatewayEmulatorMode emulatorMode)
     {
         var response = httpContext.Response;
         response.Clear();
 
         SetResponseHeaders(response, apiResponse.Headers, emulatorMode, apiResponse.MultiValueHeaders);
-        SetResponseBody(response, apiResponse.Body, apiResponse.IsBase64Encoded);
+        await SetResponseBodyAsync(response, apiResponse.Body, apiResponse.IsBase64Encoded);
         SetContentTypeAndStatusCodeV1(response, apiResponse.Headers, apiResponse.MultiValueHeaders, apiResponse.StatusCode, emulatorMode);
     }
 
@@ -36,13 +36,12 @@ public static class ApiGatewayResponseExtensions
     /// </summary>
     /// <param name="apiResponse">The API Gateway HTTP API v2 proxy response to convert.</param>
     /// <param name="context">The <see cref="HttpContext"/> to use for the conversion.</param>
-    public static void ToHttpResponse(this APIGatewayHttpApiV2ProxyResponse apiResponse, HttpContext httpContext)
+    public static async Task ToHttpResponseAsync(this APIGatewayHttpApiV2ProxyResponse apiResponse, HttpContext httpContext)
     {
         var response = httpContext.Response;
-        response.Clear();
 
         SetResponseHeaders(response, apiResponse.Headers, ApiGatewayEmulatorMode.HttpV2);
-        SetResponseBody(response, apiResponse.Body, apiResponse.IsBase64Encoded);
+        await SetResponseBodyAsync(response, apiResponse.Body, apiResponse.IsBase64Encoded);
         SetContentTypeAndStatusCodeV2(response, apiResponse.Headers, apiResponse.StatusCode);
     }
 
@@ -121,7 +120,7 @@ public static class ApiGatewayResponseExtensions
     /// <param name="response">The <see cref="HttpResponse"/> to set the body on.</param>
     /// <param name="body">The body content.</param>
     /// <param name="isBase64Encoded">Whether the body is Base64 encoded.</param>
-    private static void SetResponseBody(HttpResponse response, string? body, bool isBase64Encoded)
+    private static async Task SetResponseBodyAsync(HttpResponse response, string? body, bool isBase64Encoded)
     {
         if (!string.IsNullOrEmpty(body))
         {
@@ -135,8 +134,8 @@ public static class ApiGatewayResponseExtensions
                 bodyBytes = Encoding.UTF8.GetBytes(body);
             }
 
-            response.Body = new MemoryStream(bodyBytes);
             response.ContentLength = bodyBytes.Length;
+            await response.Body.WriteAsync(bodyBytes, 0, bodyBytes.Length);
         }
     }
 
