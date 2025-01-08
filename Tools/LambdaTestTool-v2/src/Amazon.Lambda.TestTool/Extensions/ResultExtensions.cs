@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text;
 using Amazon.Lambda.TestTool.Models;
 
 namespace Amazon.Lambda.TestTool.Extensions;
@@ -16,18 +17,20 @@ public static class ApiGatewayResults
     /// <param name="context">The <see cref="HttpContext"/> to update.</param>
     /// <param name="emulatorMode">The API Gateway Emulator mode.</param>
     /// <returns></returns>
-    public static IResult RouteNotFound(HttpContext context, ApiGatewayEmulatorMode emulatorMode)
+    public static async Task RouteNotFoundAsync(HttpContext context, ApiGatewayEmulatorMode emulatorMode)
     {
         if (emulatorMode == ApiGatewayEmulatorMode.Rest)
         {
+            const string message = "{\"message\":\"Missing Authentication Token\"}";
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.Headers.Append("x-amzn-errortype", "MissingAuthenticationTokenException");
-            return Results.Json(new { message = "Missing Authentication Token" });
+            await context.Response.Body.WriteAsync(UTF8Encoding.UTF8.GetBytes(message));
         }
         else
         {
+            const string message = "{\"message\":\"Not Found\"}";
             context.Response.StatusCode = StatusCodes.Status404NotFound;
-            return Results.Json(new { message = "Not Found" });
+            await context.Response.Body.WriteAsync(UTF8Encoding.UTF8.GetBytes(message));
         }
     }
 }

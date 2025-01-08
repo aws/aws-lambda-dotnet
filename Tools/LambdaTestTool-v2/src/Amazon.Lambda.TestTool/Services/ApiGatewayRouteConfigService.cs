@@ -143,7 +143,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
             return false;
         }
 
-        var segments = routeConfig.Path.Trim('/').Split('/');
+        var segments = routeConfig.Path.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
         foreach (var segment in segments)
         {
             var regexPattern = "^(\\{[\\w.:-]+\\+?\\}|[a-zA-Z0-9.:_-]+)$";
@@ -186,7 +186,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
         // Route template: "/resource/{proxy+}"
         // Request path:   "/resource ---> Not a match
         // Request path:   "/resource/ ---> Is a match
-        var requestSegments = path.TrimStart('/').Split('/');
+        var requestSegments = path.TrimStart('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
 
         var candidates = new List<MatchResult>();
 
