@@ -66,6 +66,23 @@ public class InvokeResponseExtensionsTests
             invokeResponse.ToApiGatewayProxyResponse(ApiGatewayEmulatorMode.HttpV2));
     }
 
+    [Fact]
+    public void ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError()
+    {
+        // Arrange
+        var payload = "{\"statusCode\": 200.5, \"body\": \"Hello\", \"headers\": {\"Content-Type\": \"text/plain\"}}";
+        var invokeResponse = CreateInvokeResponse(payload);
+
+        // Act
+        var result = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+
+        // Assert
+        Assert.Equal(500, result.StatusCode);
+        Assert.Equal("{\"message\":\"Internal Server Error\"}", result.Body);
+        Assert.Equal("application/json", result.Headers["Content-Type"]);
+    }
+
+
     private InvokeResponse CreateInvokeResponse(string payload)
     {
         return new InvokeResponse
