@@ -3,7 +3,6 @@
 
 namespace Amazon.Lambda.TestTool.Extensions;
 
-using System.Text;
 using System.Web;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Models;
@@ -150,6 +149,13 @@ public static class HttpContextExtensions
         {
             headers["content-type"] = "text/plain; charset=utf-8";
             multiValueHeaders["content-type"] = ["text/plain; charset=utf-8"];
+        }
+
+
+        if (HttpRequestUtility.IsBinaryContent(request.ContentType) && emulatorMode == ApiGatewayEmulatorMode.Rest) // Rest mode with binary content never sends content length
+        {
+            headers.Remove("content-length");
+            multiValueHeaders.Remove("content-length");
         }
 
         // This is the decoded value

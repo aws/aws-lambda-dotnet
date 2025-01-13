@@ -101,6 +101,49 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             );
         }
 
+        [Fact]
+        public async Task BinaryContentRest()
+        {
+            var httpContext = CreateHttpContext("POST", "/test4/api/users/123/avatar",
+                         new Dictionary<string, StringValues> { { "Content-Type", "application/octet-stream" } },
+                         body: new byte[] { 1, 2, 3, 4, 5 });
+
+            var config = new ApiGatewayRouteConfig
+            {
+                LambdaResourceName = "UploadAvatarFunction",
+                Endpoint = "/test4/api/users/{userId}/avatar",
+                HttpMethod = "POST",
+                Path = "/test4/api/users/{userId}/avatar"
+            };
+
+            var testCase = new HttpContextTestCase
+            {
+                HttpContext = httpContext,
+                ApiGatewayRouteConfig = config,
+                Assertions = (actualRequest, emulatorMode) =>
+                {
+                    var typedRequest = (APIGatewayProxyRequest)actualRequest;
+                    Assert.True(typedRequest.IsBase64Encoded);
+                    Assert.Equal(Convert.ToBase64String(new byte[] { 1, 2, 3, 4, 5 }), typedRequest.Body);
+                    Assert.Equal("123", typedRequest.PathParameters["userId"]);
+                    Assert.Equal("/test4/api/users/{userId}/avatar", typedRequest.Resource);
+                    Assert.Equal("POST", typedRequest.HttpMethod);
+                }
+            };
+
+            var route = testCase.ApiGatewayRouteConfig?.Path ?? "/test";
+            var routeKey = testCase.ApiGatewayRouteConfig?.HttpMethod ?? "POST";
+            await _fixture.ApiGatewayHelper.AddRouteToRestApi(_fixture.BinaryMediaTypeRestApiId, _fixture.ReturnFullEventLambdaFunctionArn, route, routeKey);
+
+            await RunApiGatewayTest<APIGatewayProxyRequest>(
+                testCase,
+                _fixture.BinaryMediaTypeRestApiUrl,
+                _fixture.BinaryMediaTypeRestApiId,
+                async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest),
+                ApiGatewayEmulatorMode.Rest
+            );
+        }
+
         private async Task RunApiGatewayTest<T>(HttpContextTestCase testCase, string apiUrl, string apiId, Func<HttpContext, ApiGatewayRouteConfig, Task<T>> toApiGatewayRequest, ApiGatewayEmulatorMode emulatorMode)
             where T : class
         {

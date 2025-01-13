@@ -441,49 +441,57 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ReturnFullEventHttpApiV2}/*'
 
-  ReturnDecodedParseBinRestApi:
+  BinaryMediaTypeRestApi:
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
-      Name: !Sub '${AWS::StackName}-ReturnDecodedParseBinRestAPI'
+      Name: !Sub '${AWS::StackName}-BinaryMediaTypeRestApi'
       EndpointConfiguration:
         Types:
           - REGIONAL
       BinaryMediaTypes:
         - '*/*'
 
-  ReturnDecodedParseBinRestApiResource:
+  BinaryMediaTypeRestApiResource:
     Type: 'AWS::ApiGateway::Resource'
     Properties:
-      ParentId: !GetAtt ReturnDecodedParseBinRestApi.RootResourceId
+      ParentId: !GetAtt BinaryMediaTypeRestApi.RootResourceId
       PathPart: 'test'
-      RestApiId: !Ref ReturnDecodedParseBinRestApi
+      RestApiId: !Ref BinaryMediaTypeRestApi
 
-  ReturnDecodedParseBinRestApiMethod:
+  BinaryMediaTypeRestApiMethod:
     Type: 'AWS::ApiGateway::Method'
     Properties:
       HttpMethod: POST
-      ResourceId: !Ref ReturnDecodedParseBinRestApiResource
-      RestApiId: !Ref ReturnDecodedParseBinRestApi
+      ResourceId: !Ref BinaryMediaTypeRestApiResource
+      RestApiId: !Ref BinaryMediaTypeRestApi
       AuthorizationType: NONE
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReturnDecodedParseBinLambdaFunction.Arn}/invocations'
 
-  ReturnDecodedParseBinRestApiDeployment:
+  BinaryMediaTypeRestApiDeployment:
     Type: 'AWS::ApiGateway::Deployment'
-    DependsOn: ReturnDecodedParseBinRestApiMethod
+    DependsOn: BinaryMediaTypeRestApiMethod
     Properties:
-      RestApiId: !Ref ReturnDecodedParseBinRestApi
+      RestApiId: !Ref BinaryMediaTypeRestApi
       StageName: 'test'
 
-  LambdaPermissionReturnDecodedParseBinRestApi:
+  LambdaPermissionBinaryMediaTypeRestApi:
     Type: 'AWS::Lambda::Permission'
     Properties:
       Action: 'lambda:InvokeFunction'
       FunctionName: !GetAtt ReturnDecodedParseBinLambdaFunction.Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ReturnDecodedParseBinRestApi}/*'
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${BinaryMediaTypeRestApi}/*'
+
+  LambdaPermissionBinaryMediaTypeRestApi2:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ReturnFullEventLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${BinaryMediaTypeRestApi}/*'
 
 Outputs:
   ParseAndReturnBodyRestApiId:
@@ -570,10 +578,10 @@ Outputs:
     Description: 'ARN of the Return Full Event Lambda Function'
     Value: !GetAtt ReturnFullEventLambdaFunction.Arn
 
-  ReturnDecodedParseBinRestApiId:
-      Description: 'ID of the ReturnDecodedParseBin Media REST API'
-      Value: !Ref ReturnDecodedParseBinRestApi
+  BinaryMediaTypeRestApiId:
+      Description: 'ID of the BinaryMediaTypeRest Media REST API'
+      Value: !Ref BinaryMediaTypeRestApi
 
-  ReturnDecodedParseBinRestApiUrl:
-      Description: 'URL of the ReturnDecodedParseBin Media REST API'
-      Value: !Sub 'https://${ReturnDecodedParseBinRestApi}.execute-api.${AWS::Region}.amazonaws.com/test/test'
+  BinaryMediaTypeRestApiUrl:
+      Description: 'URL of the BinaryMediaTypeRest Media REST API'
+      Value: !Sub 'https://${BinaryMediaTypeRestApi}.execute-api.${AWS::Region}.amazonaws.com/test/test'
