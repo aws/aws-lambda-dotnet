@@ -3,6 +3,7 @@ namespace Amazon.Lambda.Tests
 {
     using Amazon.Lambda.APIGatewayEvents;
     using Amazon.Lambda.ApplicationLoadBalancerEvents;
+    using Amazon.Lambda.AppSyncEvents;
     using Amazon.Lambda.CloudWatchEvents.BatchEvents;
     using Amazon.Lambda.CloudWatchEvents.ECSEvents;
     using Amazon.Lambda.CloudWatchEvents.S3Events;
@@ -3906,6 +3907,40 @@ namespace Amazon.Lambda.Tests
             var serialized = JObject.Parse(json);
             Assert.Equal(123, serialized["SomeValue"]);
             Assert.Equal(JTokenType.Null, serialized["SomeOtherValue"].Type); // System.NullReferenceException is thrown if value is missing.
+        }
+        
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER        
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void AppSyncTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("appsync-event.json"))
+            {
+                var appSyncEvent = serializer.Deserialize<AppSyncEvent>(fileStream);
+                Assert.NotNull(appSyncEvent);
+                Assert.NotNull(appSyncEvent.Arguments);
+                Assert.NotNull(appSyncEvent.Arguments["input"]);
+
+                Assert.NotNull(appSyncEvent.Request);
+                Assert.NotNull(appSyncEvent.Request.Headers);
+                var headers = appSyncEvent.Request.Headers;
+                Assert.Equal("value1", headers["key1"]);
+                Assert.Equal("value2", headers["key2"]);
+
+                Assert.NotNull(appSyncEvent.Info);
+                Assert.Equal("createTodo", appSyncEvent.Info.FieldName);
+                Assert.Equal("Mutation", appSyncEvent.Info.ParentTypeName);
+                
+                Assert.NotNull(appSyncEvent.Info.SelectionSetList);
+                Assert.Equal(3, appSyncEvent.Info.SelectionSetList.Count);
+                Assert.Contains("id", appSyncEvent.Info.SelectionSetList);
+                Assert.Contains("description", appSyncEvent.Info.SelectionSetList);
+                Assert.Contains("completed", appSyncEvent.Info.SelectionSetList);
+            }
         }
 
         class ClassUsingPascalCase

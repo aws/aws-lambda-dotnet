@@ -1,0 +1,61 @@
+{
+  "arguments": {
+    "input": {
+      "title": "test title",
+      "description": "test description"
+    }
+  },
+    "identity": null,
+    "source": null,
+    "request": {
+      "headers": {
+        "key1": "value1",
+        "key2": "value2",
+        "x-forwarded-for": "223.190.85.124, 64.252.163.140",
+        "cloudfront-viewer-country": "IN",
+        "cloudfront-is-tablet-viewer": "false",
+        "x-amzn-requestid": "80abe633-c35f-4eef-911a-45582a0ff63d",
+        "via": "2.0 ba7cbe9cb489c2d3f36cb36e8ab2d0ba.cloudfront.net (CloudFront)",
+        "cloudfront-forwarded-proto": "https",
+        "origin": "https://us-east-1.console.aws.amazon.com",
+        "content-length": "227",
+        "x-forwarded-proto": "https",
+        "accept-language": "en-US,en;q=0.5",
+        "host": "hbmek2mkajdjxix7recvfrvls4.appsync-api.us-east-1.amazonaws.com",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
+        "cloudfront-is-mobile-viewer": "false",
+        "accept": "application/json, text/plain, */*",
+        "priority": "u=0",
+        "cloudfront-viewer-asn": "24560",
+        "cloudfront-is-smarttv-viewer": "false",
+        "x-amzn-appsync-is-vpce-request": "false",
+        "accept-encoding": "gzip, deflate, br, zstd",
+        "referer": "https://us-east-1.console.aws.amazon.com/",
+        "x-amzn-remote-ip": "223.190.85.124",
+        "x-api-key": "da2-2mz5t3o4zvb67iledrusv5fwne",
+        "content-type": "application/json",
+        "sec-fetch-mode": "cors",
+        "x-amzn-trace-id": "Root=1-676188b0-24a54b414e5efff525f844ed",
+        "x-amz-cf-id": "fWAr7rhMkSOcLcrEqGNU4n7uOpcm-VFHERrnYTO16O1at35i3RyyPw==",
+        "sec-fetch-dest": "empty",
+        "x-amz-user-agent": "AWS-Console-AppSync/",
+        "cloudfront-is-desktop-viewer": "true",
+        "sec-fetch-site": "cross-site",
+        "x-forwarded-port": "443"
+      },
+        "domainName": null
+    },
+    "prev": null,
+    "info": {
+        "fieldName": "createTodo",
+        "selectionSetList": [
+            "id",
+            "description",
+            "completed"
+        ],
+        "selectionSetGraphQL": "{\n  id\n  description\n  completed\n}",
+        "variables": {},
+        "parentTypeName": "Mutation"
+    },
+    "stash": {}
+}
