@@ -111,29 +111,13 @@ public class ApiGatewayEmulatorProcess
             // Convert API Gateway response object returned from Lambda to ASP.NET Core response.
             if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
             {
-                // TODO: handle the response not being in the APIGatewayHttpApiV2ProxyResponse format.
-                var lambdaResponse = JsonSerializer.Deserialize<APIGatewayHttpApiV2ProxyResponse>(response.Payload);
-                if (lambdaResponse == null)
-                {
-                    app.Logger.LogError("Unable to deserialize the response from the Lambda function.");
-                    context.Response.StatusCode = 500;
-                    return;
-                }
-
+                var lambdaResponse = response.ToApiGatewayHttpApiV2ProxyResponse();
                 await lambdaResponse.ToHttpResponseAsync(context);
                 return;
             }
             else
             {
-                // TODO: handle the response not being in the APIGatewayHttpApiV2ProxyResponse format.
-                var lambdaResponse = JsonSerializer.Deserialize<APIGatewayProxyResponse>(response.Payload);
-                if (lambdaResponse == null)
-                {
-                    app.Logger.LogError("Unable to deserialize the response from the Lambda function.");
-                    context.Response.StatusCode = 500;
-                    return;
-                }
-
+                var lambdaResponse = response.ToApiGatewayProxyResponse(settings.ApiGatewayEmulatorMode.Value);
                 await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
                 return;
             }
