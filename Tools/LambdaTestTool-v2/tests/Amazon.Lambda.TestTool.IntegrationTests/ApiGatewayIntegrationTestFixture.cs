@@ -42,8 +42,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         public string ReturnFullEventHttpApiV2Url { get; private set; }
 
         // ReturnDecodedParseBin
-        public string ReturnDecodedParseBinRestApiId { get; private set; }
-        public string ReturnDecodedParseBinRestApiUrl { get; private set; }
+        public string BinaryMediaTypeRestApiId { get; private set; }
+        public string BinaryMediaTypeRestApiUrl { get; private set; }
 
         // Lambda Function ARNs
         public string ParseAndReturnBodyLambdaFunctionArn { get; private set; }
@@ -86,9 +86,9 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             ReturnFullEventHttpApiV1Url = string.Empty;
             ReturnFullEventHttpApiV2Url = string.Empty;
 
-            // ReturnDecodedParseBin
-            ReturnDecodedParseBinRestApiId = string.Empty;
-            ReturnDecodedParseBinRestApiUrl = string.Empty;
+            // BinaryMediaTypeRestApiId
+            BinaryMediaTypeRestApiId = string.Empty;
+            BinaryMediaTypeRestApiUrl = string.Empty;
 
             // Lambda Function ARNs
             ParseAndReturnBodyLambdaFunctionArn = string.Empty;
@@ -170,8 +170,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             ReturnFullEventHttpApiV2Url = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnFullEventHttpApiV2Url");
 
             // ReturnDecodedParseBin
-            ReturnDecodedParseBinRestApiId = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnDecodedParseBinRestApiId");
-            ReturnDecodedParseBinRestApiUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnDecodedParseBinRestApiUrl");
+            BinaryMediaTypeRestApiId = await CloudFormationHelper.GetOutputValueAsync(StackName, "BinaryMediaTypeRestApiId");
+            BinaryMediaTypeRestApiUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "BinaryMediaTypeRestApiUrl");
 
             // Lambda Function ARNs
             ParseAndReturnBodyLambdaFunctionArn = await CloudFormationHelper.GetOutputValueAsync(StackName, "ParseAndReturnBodyLambdaFunctionArn");
@@ -196,7 +196,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             await ApiGatewayHelper.WaitForApiAvailability(ReturnFullEventHttpApiV1Id, ReturnFullEventHttpApiV1Url, true);
             await ApiGatewayHelper.WaitForApiAvailability(ReturnFullEventHttpApiV2Id, ReturnFullEventHttpApiV2Url, true);
 
-            await ApiGatewayHelper.WaitForApiAvailability(ReturnDecodedParseBinRestApiId, ReturnDecodedParseBinRestApiUrl, false);
+            await ApiGatewayHelper.WaitForApiAvailability(BinaryMediaTypeRestApiId, BinaryMediaTypeRestApiUrl, false);
 
         }
 
