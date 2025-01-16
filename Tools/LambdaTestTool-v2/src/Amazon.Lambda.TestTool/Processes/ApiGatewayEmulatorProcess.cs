@@ -56,8 +56,6 @@ public class ApiGatewayEmulatorProcess
 
         var app = builder.Build();
 
-        app.UseHttpsRedirection();
-
         app.MapHealthChecks("/__lambda_test_tool_apigateway_health__");
 
         app.Lifetime.ApplicationStarted.Register(() =>
@@ -95,7 +93,7 @@ public class ApiGatewayEmulatorProcess
             {
                 FunctionName = routeConfig.LambdaResourceName,
                 InvocationType = InvocationType.RequestResponse,
-                PayloadStream = lambdaRequestStream                
+                PayloadStream = lambdaRequestStream
             };
 
             using var lambdaClient = CreateLambdaServiceClient(routeConfig);
@@ -132,7 +130,7 @@ public class ApiGatewayEmulatorProcess
             ServiceUrl = serviceUrl
         };
     }
-    
+
     private static IAmazonLambda CreateLambdaServiceClient(ApiGatewayRouteConfig routeConfig)
     {
         // TODO: Handle routeConfig.Endpoint to null and use the settings versions of runtime.
