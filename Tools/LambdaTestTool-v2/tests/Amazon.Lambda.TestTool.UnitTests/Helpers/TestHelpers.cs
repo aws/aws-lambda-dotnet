@@ -38,9 +38,4 @@ internal static class TestHelpers
             return await client.GetAsync(url);
         }
     }
-
-    internal static async Task CancelAndWaitAsync(Task executeTask)
-    {
-        await Task.Delay(1000);
-    }
 }
