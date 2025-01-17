@@ -115,19 +115,19 @@ public class InvokeResponseExtensionsIntegrationTests
     /// This test demonstrates a discrepancy between the official AWS documentation
     /// and the actual observed behavior of API Gateway HTTP API v2 with Lambda
     /// proxy integrations (payload format version 2.0).
-    /// 
+    ///
     /// Official documentation states:
     /// "If your Lambda function returns valid JSON and doesn't return a statusCode,
     /// API Gateway assumes a 200 status code and treats the entire response as the body."
-    /// 
+    ///
     /// However, the observed behavior (which this test verifies) is:
     /// - API Gateway does not validate whether the returned data is valid JSON.
     /// - Any response from the Lambda function that is not a properly formatted
     ///   API Gateway response object (i.e., an object with a 'statusCode' property)
     ///   is treated as a raw body in a 200 OK response.
-    /// - This includes valid JSON objects without a statusCode, JSON arrays, 
+    /// - This includes valid JSON objects without a statusCode, JSON arrays,
     ///   primitive values, and invalid JSON strings.
-    /// 
+    ///
     /// This test ensures that our ToApiGatewayHttpApiV2ProxyResponse method
     /// correctly replicates this observed behavior, rather than the documented behavior.
     /// </remarks>
@@ -138,7 +138,7 @@ public class InvokeResponseExtensionsIntegrationTests
     [InlineData("\"Hello, World!\"")]  // String primitive
     [InlineData("42")]  // Number primitive
     [InlineData("true")]  // Boolean primitive
-    public async Task ToApiGatewayHttpApiV2ProxyResponse_VariousPayloads_ReturnsAsRawBody(string responsePayload)
+    public async Task giToApiGatewayHttpApiV2ProxyResponse_VariousPayloads_ReturnsAsRawBody(string responsePayload)
     {
         // Arrange
         var invokeResponse = new InvokeResponse

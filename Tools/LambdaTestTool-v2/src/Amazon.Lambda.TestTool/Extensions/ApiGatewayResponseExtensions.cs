@@ -18,7 +18,7 @@ public static class ApiGatewayResponseExtensions
     /// Converts an <see cref="APIGatewayProxyResponse"/> to an <see cref="HttpResponse"/>.
     /// </summary>
     /// <param name="apiResponse">The API Gateway proxy response to convert.</param>
-    /// <param name="context">The <see cref="HttpContext"/> to use for the conversion.</param>
+    /// <param name="httpContext">The <see cref="HttpContext"/> to use for the conversion.</param>
     /// <param name="emulatorMode">The <see cref="ApiGatewayEmulatorMode"/> to use for the conversion.</param>
     /// <returns>An <see cref="HttpResponse"/> representing the API Gateway response.</returns>
     public static async Task ToHttpResponseAsync(this APIGatewayProxyResponse apiResponse, HttpContext httpContext, ApiGatewayEmulatorMode emulatorMode)
@@ -28,21 +28,21 @@ public static class ApiGatewayResponseExtensions
 
         SetResponseHeaders(response, apiResponse.Headers, emulatorMode, apiResponse.MultiValueHeaders);
         await SetResponseBodyAsync(response, apiResponse.Body, apiResponse.IsBase64Encoded);
-        SetContentTypeAndStatusCodeV1(response, apiResponse.Headers, apiResponse.MultiValueHeaders, apiResponse.StatusCode, emulatorMode);
+        await SetContentTypeAndStatusCodeV1(response, apiResponse.Headers, apiResponse.MultiValueHeaders, apiResponse.StatusCode, emulatorMode);
     }
 
     /// <summary>
     /// Converts an <see cref="APIGatewayHttpApiV2ProxyResponse"/> to an <see cref="HttpResponse"/>.
     /// </summary>
     /// <param name="apiResponse">The API Gateway HTTP API v2 proxy response to convert.</param>
-    /// <param name="context">The <see cref="HttpContext"/> to use for the conversion.</param>
+    /// <param name="httpContext">The <see cref="HttpContext"/> to use for the conversion.</param>
     public static async Task ToHttpResponseAsync(this APIGatewayHttpApiV2ProxyResponse apiResponse, HttpContext httpContext)
     {
         var response = httpContext.Response;
 
         SetResponseHeaders(response, apiResponse.Headers, ApiGatewayEmulatorMode.HttpV2);
         await SetResponseBodyAsync(response, apiResponse.Body, apiResponse.IsBase64Encoded);
-        SetContentTypeAndStatusCodeV2(response, apiResponse.Headers, apiResponse.StatusCode);
+        await SetContentTypeAndStatusCodeV2(response, apiResponse.Headers, apiResponse.StatusCode);
     }
 
     /// <summary>
@@ -135,7 +135,7 @@ public static class ApiGatewayResponseExtensions
             }
 
             response.ContentLength = bodyBytes.Length;
-            await response.Body.WriteAsync(bodyBytes, 0, bodyBytes.Length);
+            await response.Body.WriteAsync(bodyBytes.AsMemory(0, bodyBytes.Length), CancellationToken.None);
         }
     }
 
@@ -147,7 +147,7 @@ public static class ApiGatewayResponseExtensions
     /// <param name="multiValueHeaders">The multi-value headers.</param>
     /// <param name="statusCode">The status code to set.</param>
     /// <param name="emulatorMode">The <see cref="ApiGatewayEmulatorMode"/> being used.</param>
-    private static void SetContentTypeAndStatusCodeV1(HttpResponse response, IDictionary<string, string>? headers, IDictionary<string, IList<string>>? multiValueHeaders, int statusCode, ApiGatewayEmulatorMode emulatorMode)
+    private static async Task SetContentTypeAndStatusCodeV1(HttpResponse response, IDictionary<string, string>? headers, IDictionary<string, IList<string>>? multiValueHeaders, int statusCode, ApiGatewayEmulatorMode emulatorMode)
     {
         string? contentType = null;
 
@@ -186,13 +186,16 @@ public static class ApiGatewayResponseExtensions
         }
         else
         {
+            response.Body.SetLength(0);
+            response.Body.Position = 0;
+
             if (emulatorMode == ApiGatewayEmulatorMode.Rest) // rest api text for this message/error code is slightly different
             {
                 response.StatusCode = 502;
                 response.ContentType = "application/json";
                 var errorBytes = Encoding.UTF8.GetBytes("{\"message\": \"Internal server error\"}");
-                response.Body = new MemoryStream(errorBytes);
                 response.ContentLength = errorBytes.Length;
+                await response.Body.WriteAsync(errorBytes.AsMemory(0, errorBytes.Length), CancellationToken.None);
                 response.Headers["x-amzn-ErrorType"] = "InternalServerErrorException";
             }
             else
@@ -200,8 +203,8 @@ public static class ApiGatewayResponseExtensions
                 response.StatusCode = 500;
                 response.ContentType = "application/json";
                 var errorBytes = Encoding.UTF8.GetBytes("{\"message\":\"Internal Server Error\"}");
-                response.Body = new MemoryStream(errorBytes);
                 response.ContentLength = errorBytes.Length;
+                await response.Body.WriteAsync(errorBytes.AsMemory(0, errorBytes.Length), CancellationToken.None);
             }
         }
     }
@@ -212,7 +215,7 @@ public static class ApiGatewayResponseExtensions
     /// <param name="response">The <see cref="HttpResponse"/> to set the content type and status code on.</param>
     /// <param name="headers">The headers.</param>
     /// <param name="statusCode">The status code to set.</param>
-    private static void SetContentTypeAndStatusCodeV2(HttpResponse response, IDictionary<string, string>? headers, int statusCode)
+    private static async Task SetContentTypeAndStatusCodeV2(HttpResponse response, IDictionary<string, string>? headers, int statusCode)
     {
         if (headers != null && headers.TryGetValue("Content-Type", out var contentType))
         {
@@ -229,11 +232,14 @@ public static class ApiGatewayResponseExtensions
         }
         else
         {
+            response.Body.SetLength(0);
+            response.Body.Position = 0;
+
             response.StatusCode = 500;
             response.ContentType = "application/json";
             var errorBytes = Encoding.UTF8.GetBytes("{\"message\":\"Internal Server Error\"}");
-            response.Body = new MemoryStream(errorBytes);
             response.ContentLength = errorBytes.Length;
+            await response.Body.WriteAsync(errorBytes.AsMemory(0, errorBytes.Length), CancellationToken.None);
         }
     }
 }

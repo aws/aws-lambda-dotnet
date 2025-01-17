@@ -72,7 +72,7 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
 
             httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
             using var reader = new StreamReader(httpContext.Response.Body);
-            var bodyContent = reader.ReadToEnd();
+            var bodyContent = await reader.ReadToEndAsync();
             Assert.Equal("test", bodyContent);
         }
     }
