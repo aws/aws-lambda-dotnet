@@ -138,7 +138,7 @@ public class InvokeResponseExtensionsIntegrationTests
     [InlineData("\"Hello, World!\"")]  // String primitive
     [InlineData("42")]  // Number primitive
     [InlineData("true")]  // Boolean primitive
-    public async Task giToApiGatewayHttpApiV2ProxyResponse_VariousPayloads_ReturnsAsRawBody(string responsePayload)
+    public async Task ToApiGatewayHttpApiV2ProxyResponse_VariousPayloads_ReturnsAsRawBody(string responsePayload)
     {
         // Arrange
         var invokeResponse = new InvokeResponse
