@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Text;
+using Amazon.Lambda.TestTool.Models;
 using Xunit.Abstractions;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
@@ -22,23 +23,22 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         _testOutputHelper = testOutputHelper;
     }
 
-    [Theory]
-    [InlineData("HTTPV2")]
-    public async Task TestLambdaToUpper(string apiGatewayMode)
+    [Fact]
+    public async Task TestLambdaToUpperV2()
     {
         var testProjectDir = Path.GetFullPath("../../../../");
         var config = new TestConfig
         {
             TestToolPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool")),
-            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunction/src/LambdaTestFunction")),
-            FunctionName = "LambdaTestFunction",
+            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunctionV2/src/LambdaTestFunctionV2")),
+            FunctionName = "LambdaTestFunctionV2",
             RouteName = "testfunction",
             HttpMethod = "Post"
         };
 
         try
         {
-            await StartTestToolProcess(apiGatewayMode, config);
+            await StartTestToolProcess(ApiGatewayEmulatorMode.HttpV2, config);
             await WaitForGatewayHealthCheck();
             await StartLambdaProcess(config);
 
@@ -54,9 +54,70 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
     }
 
-    [Theory]
-    [InlineData("HTTPV2")]
-    public async Task TestLambdaBinaryResponse(string apiGatewayMode)
+    [Fact]
+    public async Task TestLambdaToUpperRest()
+    {
+        var testProjectDir = Path.GetFullPath("../../../../");
+        var config = new TestConfig
+        {
+            TestToolPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool")),
+            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunctionV1/src/LambdaTestFunctionV1")),
+            FunctionName = "LambdaTestFunctionV1",
+            RouteName = "testfunction",
+            HttpMethod = "Post"
+        };
+
+        try
+        {
+            await StartTestToolProcess(ApiGatewayEmulatorMode.Rest, config);
+            await WaitForGatewayHealthCheck();
+            await StartLambdaProcess(config);
+
+            var response = await TestEndpoint(config);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("HELLO WORLD", responseContent);
+        }
+        finally
+        {
+            await CleanupProcesses();
+        }
+    }
+
+    [Fact]
+    public async Task TestLambdaToUpperV1()
+    {
+        var testProjectDir = Path.GetFullPath("../../../../");
+        var config = new TestConfig
+        {
+            TestToolPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool")),
+            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunctionV1/src/LambdaTestFunctionV1")),
+            FunctionName = "LambdaTestFunctionV1",
+            RouteName = "testfunction",
+            HttpMethod = "Post"
+        };
+
+        try
+        {
+            await StartTestToolProcess(ApiGatewayEmulatorMode.HttpV1, config);
+            await WaitForGatewayHealthCheck();
+            await StartLambdaProcess(config);
+
+            var response = await TestEndpoint(config);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("HELLO WORLD", responseContent);
+        }
+        finally
+        {
+            await CleanupProcesses();
+        }
+    }
+
+    [Fact]
+    public async Task TestLambdaBinaryResponse()
     {
         var testProjectDir = Path.GetFullPath("../../../../");
         var config = new TestConfig
@@ -70,7 +131,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
 
         try
         {
-            await StartTestToolProcess(apiGatewayMode, config);
+            await StartTestToolProcess(ApiGatewayEmulatorMode.HttpV2, config);
             await WaitForGatewayHealthCheck();
             await StartLambdaProcess(config);
 
@@ -92,9 +153,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
     }
 
-    [Theory]
-    [InlineData("HTTPV2")]
-    public async Task TestLambdaReturnString(string apiGatewayMode)
+    [Fact]
+    public async Task TestLambdaReturnString()
     {
         var testProjectDir = Path.GetFullPath("../../../../");
         var config = new TestConfig
@@ -108,7 +168,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
 
         try
         {
-            await StartTestToolProcess(apiGatewayMode, config);
+            await StartTestToolProcess(ApiGatewayEmulatorMode.HttpV2, config);
             await WaitForGatewayHealthCheck();
             await StartLambdaProcess(config);
 
@@ -145,7 +205,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         };
     }
 
-    private async Task StartTestToolProcess(string apiGatewayMode, TestConfig config)
+    private async Task StartTestToolProcess(ApiGatewayEmulatorMode apiGatewayMode, TestConfig config)
     {
         var startInfo = new ProcessStartInfo
         {
