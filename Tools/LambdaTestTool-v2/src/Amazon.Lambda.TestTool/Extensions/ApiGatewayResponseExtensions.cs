@@ -45,6 +45,7 @@ public static class ApiGatewayResponseExtensions
     public static async Task ToHttpResponseAsync(this APIGatewayHttpApiV2ProxyResponse apiResponse, HttpContext httpContext)
     {
         var response = httpContext.Response;
+        response.Clear();
 
         if (apiResponse.StatusCode == 0)
         {
