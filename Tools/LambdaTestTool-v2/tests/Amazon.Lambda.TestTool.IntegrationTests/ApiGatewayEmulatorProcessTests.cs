@@ -116,7 +116,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
             var responseContent = await response.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.Equal("\"HELLO WORLD\"", responseContent);
+            Assert.Equal("HELLO WORLD", responseContent);
         }
         finally
         {

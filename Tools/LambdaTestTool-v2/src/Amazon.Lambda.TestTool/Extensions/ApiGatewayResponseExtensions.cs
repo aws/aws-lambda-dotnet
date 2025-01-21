@@ -215,7 +215,7 @@ public static class ApiGatewayResponseExtensions
     /// <param name="isBase64Encoded">Whether the body is Base64 encoded.</param>
     private static async Task SetResponseBodyAsync(HttpResponse response, string? body, bool isBase64Encoded)
     {
-        if (string.IsNullOrEmpty(body))
+        if (body == null)
         {
             return;
         }
