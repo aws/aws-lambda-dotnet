@@ -15,6 +15,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.TestTool.Inte
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LambdaTestFunction", "tests\LambdaTestFunction\src\LambdaTestFunction\LambdaTestFunction.csproj", "{C446785B-BC47-4513-B37D-0C4976D6C396}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LambdaBinaryFunction", "tests\LambdaBinaryFunction\src\LambdaBinaryFunction\LambdaBinaryFunction.csproj", "{457F786A-1537-4003-8D9E-FAD0A8773437}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LambdaReturnStringFunction", "tests\LambdaReturnStringFunction\src\LambdaReturnStringFunction\LambdaReturnStringFunction.csproj", "{FADCD9E4-A5C0-4127-AA1D-EFB9833DFF5D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +41,14 @@ Global
 		{C446785B-BC47-4513-B37D-0C4976D6C396}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C446785B-BC47-4513-B37D-0C4976D6C396}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C446785B-BC47-4513-B37D-0C4976D6C396}.Release|Any CPU.Build.0 = Release|Any CPU
+		{457F786A-1537-4003-8D9E-FAD0A8773437}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{457F786A-1537-4003-8D9E-FAD0A8773437}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{457F786A-1537-4003-8D9E-FAD0A8773437}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{457F786A-1537-4003-8D9E-FAD0A8773437}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FADCD9E4-A5C0-4127-AA1D-EFB9833DFF5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FADCD9E4-A5C0-4127-AA1D-EFB9833DFF5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FADCD9E4-A5C0-4127-AA1D-EFB9833DFF5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FADCD9E4-A5C0-4127-AA1D-EFB9833DFF5D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -46,5 +58,7 @@ Global
 		{80A4F809-28B7-61EC-6539-DF3C7A0733FD} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{5C1B3E1C-DFEA-425B-8ED2-BB43BAECC3CB} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{C446785B-BC47-4513-B37D-0C4976D6C396} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{457F786A-1537-4003-8D9E-FAD0A8773437} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{FADCD9E4-A5C0-4127-AA1D-EFB9833DFF5D} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

@@ -110,7 +110,7 @@ public class InvokeResponseExtensionsIntegrationTests
     /// <summary>
     /// Tests various Lambda return values to verify API Gateway's handling of responses.
     /// </summary>
-    /// <param name="responsePayload">The payload returned by the Lambda function.</param>
+    /// <param name="expectedResponsePayload">The payload returned by the Lambda function.</param>
     /// <remarks>
     /// This test demonstrates a discrepancy between the official AWS documentation
     /// and the actual observed behavior of API Gateway HTTP API v2 with Lambda
@@ -132,36 +132,40 @@ public class InvokeResponseExtensionsIntegrationTests
     /// correctly replicates this observed behavior, rather than the documented behavior.
     /// </remarks>
     [Theory]
-    [InlineData("{\"name\": \"John Doe\", \"age\":")]  // Invalid JSON (partial object)
-    [InlineData("{\"name\": \"John Doe\", \"age\": 30}")]  // Valid JSON object without statusCode
-    [InlineData("[1, 2, 3, 4, 5]")]  // JSON array
-    [InlineData("\"Hello, World!\"")]  // String primitive
-    [InlineData("42")]  // Number primitive
-    [InlineData("true")]  // Boolean primitive
-    public async Task ToApiGatewayHttpApiV2ProxyResponse_VariousPayloads_ReturnsAsRawBody(string responsePayload)
+    [InlineData("{\"name\": \"John Doe\", \"age\":", "{\"name\": \"John Doe\", \"age\":")]  // Invalid JSON (partial object)
+    [InlineData("{\"name\": \"John Doe\", \"age\": 30}", "{\"name\": \"John Doe\", \"age\": 30}")]  // Valid JSON object without statusCode
+    [InlineData("[1, 2, 3, 4, 5]", "[1, 2, 3, 4, 5]")]  // JSON array
+    [InlineData("Hello, World!", "Hello, World!")]  // String primitive
+    [InlineData("42", "42")]  // Number primitive
+    [InlineData("true", "true")]  // Boolean primitive
+    [InlineData("\"test\"", "test")]  // JSON string that should be unescaped
+    [InlineData("\"Hello, World!\"", "Hello, World!")]  // JSON string with spaces
+    [InlineData("\"\"", "")]  // Empty JSON string
+    [InlineData("\"Special \\\"quoted\\\" text\"", "Special \"quoted\" text")]  // JSON string with escaped quotes
+    public async Task ToApiGatewayHttpApiV2ProxyResponse_VariousPayloads_ReturnsAsRawBody(string inputPayload, string expectedResponsePayload)
     {
         // Arrange
         var invokeResponse = new InvokeResponse
         {
-            Payload = new MemoryStream(Encoding.UTF8.GetBytes(responsePayload))
+            Payload = new MemoryStream(Encoding.UTF8.GetBytes(inputPayload))
         };
 
         // Act
-        var convertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+        var actualConvertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
 
         // Assert
-        Assert.Equal(200, convertedResponse.StatusCode);
-        Assert.Equal(responsePayload, convertedResponse.Body);
-        Assert.Equal("application/json", convertedResponse.Headers["Content-Type"]);
+        Assert.Equal(200, actualConvertedResponse.StatusCode);
+        Assert.Equal(expectedResponsePayload, actualConvertedResponse.Body);
+        Assert.Equal("application/json", actualConvertedResponse.Headers["Content-Type"]);
 
         // Verify against actual API Gateway behavior
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, _fixture.ParseAndReturnBodyHttpApiV2Url);
+        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(actualConvertedResponse, _fixture.ParseAndReturnBodyHttpApiV2Url);
         await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
 
         // Additional checks for API Gateway specific behavior
         Assert.Equal(200, (int)actualResponse.StatusCode);
-        var content = await actualResponse.Content.ReadAsStringAsync();
-        Assert.Equal(responsePayload, content);
+        var actualContent = await actualResponse.Content.ReadAsStringAsync();
+        Assert.Equal(expectedResponsePayload, actualContent);
         Assert.Equal("application/json", actualResponse.Content.Headers.ContentType?.ToString());
     }
 

@@ -29,12 +29,12 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
 
         public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(APIGatewayHttpApiV2ProxyResponse testResponse, string apiUrl)
         {
-            var httpContext = new DefaultHttpContext();
-            httpContext.Response.Body = new MemoryStream();
-            await testResponse.ToHttpResponseAsync(httpContext);
+            var testResponseHttpContext = new DefaultHttpContext();
+            testResponseHttpContext.Response.Body = new MemoryStream();
+            await testResponse.ToHttpResponseAsync(testResponseHttpContext);
             var serialized = JsonSerializer.Serialize(testResponse);
             var actualResponse = await _httpClient.PostAsync(apiUrl, new StringContent(serialized));
-            return (actualResponse, httpContext.Response);
+            return (actualResponse, testResponseHttpContext.Response);
         }
 
         public async Task AssertResponsesEqual(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)

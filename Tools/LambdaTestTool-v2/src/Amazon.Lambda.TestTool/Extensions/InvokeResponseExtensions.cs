@@ -89,10 +89,10 @@ public static class InvokeResponseExtensions
     /// <param name="response">The response string to convert.</param>
     /// <returns>An APIGatewayHttpApiV2ProxyResponse object.</returns>
     /// <remarks>
-    /// This method replicates the observed behavior of API Gateway's HTTP API 
-    /// with Lambda integrations using payload format version 2.0, which differs 
+    /// This method replicates the observed behavior of API Gateway's HTTP API
+    /// with Lambda integrations using payload format version 2.0, which differs
     /// from the official documentation.
-    /// 
+    ///
     /// Observed behavior:
     /// 1. If the response is a JSON object with a 'statusCode' property:
     ///    - It attempts to deserialize it as a full APIGatewayHttpApiV2ProxyResponse.
@@ -102,20 +102,20 @@ public static class InvokeResponseExtensions
     ///    - Uses the response as-is for the body
     ///    - Sets Content-Type to application/json
     ///    - Sets isBase64Encoded to false
-    /// 
+    ///
     /// This behavior contradicts the official documentation, which states:
-    /// "If your Lambda function returns valid JSON and doesn't return a statusCode, 
+    /// "If your Lambda function returns valid JSON and doesn't return a statusCode,
     /// API Gateway assumes a 200 status code and treats the entire response as the body."
-    /// 
-    /// In practice, API Gateway does not validate the JSON. It treats any response 
-    /// without a 'statusCode' property as a raw body, regardless of whether it's 
+    ///
+    /// In practice, API Gateway does not validate the JSON. It treats any response
+    /// without a 'statusCode' property as a raw body, regardless of whether it's
     /// valid JSON or not.
-    /// 
+    ///
     /// For example, if a Lambda function returns:
     ///     '{"name": "John Doe", "age":'
     /// API Gateway will treat this as a raw string body in a 200 OK response, not attempting
     /// to parse or validate the JSON structure.
-    /// 
+    ///
     /// This method replicates this observed behavior rather than the documented behavior.
     /// </remarks>
     private static APIGatewayHttpApiV2ProxyResponse ToHttpApiV2Response(string response)
@@ -149,6 +149,15 @@ public static class InvokeResponseExtensions
                     };
                 }
             }
+
+            // If it's a JSON string value, extract the actual string value.
+            // The reason this is needed is because when the lambda function returns a string by doing something like
+            // return "test", it actually comes as "\"test\"" to response. So we need to get the raw string which is what api gateway does.
+            if (jsonElement.ValueKind == JsonValueKind.String)
+            {
+                response = jsonElement.GetString();
+            }
+
         }
         catch
         {

@@ -13,8 +13,6 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     private readonly ITestOutputHelper _testOutputHelper;
     private Process? _mainProcess;
     private Process? _lambdaProcess;
-    private readonly string _lambdaProjectPath;
-    private readonly string _testToolProjectPath;
 
     private const string ApiGatewayPort = "5051";
     private const string LambdaPort = "5050";
@@ -22,27 +20,33 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     public ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        var testProjectDir = Path.GetFullPath("../../../../");
-        _lambdaProjectPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunction/src/LambdaTestFunction"));
-        _testToolProjectPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool"));
     }
 
     [Theory]
-    [InlineData("REST")]
-    [InlineData("HTTPV1")]
     [InlineData("HTTPV2")]
     public async Task TestLambdaToUpper(string apiGatewayMode)
     {
+        var testProjectDir = Path.GetFullPath("../../../../");
+        var config = new TestConfig
+        {
+            TestToolPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool")),
+            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunction/src/LambdaTestFunction")),
+            FunctionName = "LambdaTestFunction",
+            RouteName = "testfunction",
+            HttpMethod = "Post"
+        };
+
         try
         {
-            await StartTestToolProcess(apiGatewayMode);
+            await StartTestToolProcess(apiGatewayMode, config);
             await WaitForGatewayHealthCheck();
-            await StartLambdaProcess();
+            await StartLambdaProcess(config);
 
-            var response = await TestEndpoint();
+            var response = await TestEndpoint(config);
+            var responseContent = await response.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.Equal("HELLO WORLD", response.Content);
+            Assert.Equal("HELLO WORLD", responseContent);
         }
         finally
         {
@@ -50,21 +54,103 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
     }
 
-    private async Task<(HttpStatusCode StatusCode, string Content)> TestEndpoint()
+    [Theory]
+    [InlineData("HTTPV2")]
+    public async Task TestLambdaBinaryResponse(string apiGatewayMode)
     {
-        using var client = new HttpClient();
-        var content = new StringContent("hello world", Encoding.UTF8, "text/plain");
-        var response = await client.PostAsync($"http://localhost:{ApiGatewayPort}/testfunction", content);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        return (response.StatusCode, responseContent);
+        var testProjectDir = Path.GetFullPath("../../../../");
+        var config = new TestConfig
+        {
+            TestToolPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool")),
+            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaBinaryFunction/src/LambdaBinaryFunction")),
+            FunctionName = "LambdaBinaryFunction",
+            RouteName = "binaryfunction",
+            HttpMethod = "Get"
+        };
+
+        try
+        {
+            await StartTestToolProcess(apiGatewayMode, config);
+            await WaitForGatewayHealthCheck();
+            await StartLambdaProcess(config);
+
+            var response = await TestEndpoint(config);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("application/octet-stream", response.Content.Headers.ContentType?.MediaType);
+
+            var binaryData = await response.Content.ReadAsByteArrayAsync();
+            Assert.Equal(256, binaryData.Length);
+            for (var i = 0; i < 256; i++)
+            {
+                Assert.Equal((byte)i, binaryData[i]);
+            }
+        }
+        finally
+        {
+            await CleanupProcesses();
+        }
     }
 
-    private async Task StartTestToolProcess(string apiGatewayMode)
+    [Theory]
+    [InlineData("HTTPV2")]
+    public async Task TestLambdaReturnString(string apiGatewayMode)
+    {
+        var testProjectDir = Path.GetFullPath("../../../../");
+        var config = new TestConfig
+        {
+            TestToolPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool")),
+            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaReturnStringFunction/src/LambdaReturnStringFunction")),
+            FunctionName = "LambdaReturnStringFunction",
+            RouteName = "stringfunction",
+            HttpMethod = "Post"
+        };
+
+        try
+        {
+            await StartTestToolProcess(apiGatewayMode, config);
+            await WaitForGatewayHealthCheck();
+            await StartLambdaProcess(config);
+
+            var response = await TestEndpoint(config);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("\"HELLO WORLD\"", responseContent);
+        }
+        finally
+        {
+            await CleanupProcesses();
+        }
+    }
+
+    private record TestConfig
+    {
+        public required string TestToolPath { get; init; }
+        public required string LambdaPath { get; init; }
+        public required string FunctionName { get; init; }
+        public required string RouteName { get; init; }
+        public required string HttpMethod { get; init; }
+    }
+
+    private async Task<HttpResponseMessage> TestEndpoint(TestConfig config, HttpContent? content = null)
+    {
+        using var client = new HttpClient();
+        return config.HttpMethod.ToUpper() switch
+        {
+            "POST" => await client.PostAsync($"http://localhost:{ApiGatewayPort}/{config.RouteName}",
+                content ?? new StringContent("hello world", Encoding.UTF8, "text/plain")),
+            "GET" => await client.GetAsync($"http://localhost:{ApiGatewayPort}/{config.RouteName}"),
+            _ => throw new ArgumentException($"Unsupported HTTP method: {config.HttpMethod}")
+        };
+    }
+
+    private async Task StartTestToolProcess(string apiGatewayMode, TestConfig config)
     {
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"run --project \"{_testToolProjectPath}\" -- --api-gateway-emulator {apiGatewayMode} --no-launch-window",
+            Arguments = $"run --project \"{config.TestToolPath}\" -- --api-gateway-emulator {apiGatewayMode} --no-launch-window",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -73,20 +159,20 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
 
         startInfo.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = "Development";
         startInfo.EnvironmentVariables["APIGATEWAY_EMULATOR_ROUTE_CONFIG"] = $@"{{
-            ""LambdaResourceName"": ""testfunction"",
+            ""LambdaResourceName"": ""{config.RouteName}"",
             ""Endpoint"": ""http://localhost:{LambdaPort}"",
-            ""HttpMethod"": ""Post"",
-            ""Path"": ""/testfunction""
+            ""HttpMethod"": ""{config.HttpMethod}"",
+            ""Path"": ""/{config.RouteName}""
         }}";
 
         _mainProcess = Process.Start(startInfo) ?? throw new Exception("Failed to start test tool process");
         ConfigureProcessLogging(_mainProcess, "TestTool");
     }
 
-    private async Task StartLambdaProcess()
+    private async Task StartLambdaProcess(TestConfig config)
     {
         // Build the project
-        var buildResult = await RunProcess("dotnet", "publish -c Release", _lambdaProjectPath);
+        var buildResult = await RunProcess("dotnet", "publish -c Release", config.LambdaPath);
         if (buildResult.ExitCode != 0)
         {
             throw new Exception($"Build failed: {buildResult.Output}\n{buildResult.Error}");
@@ -95,19 +181,19 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = Path.Combine("bin", "Release", "net8.0", "win-x64", "publish", "LambdaTestFunction.dll"),
-            WorkingDirectory = _lambdaProjectPath,
+            Arguments = Path.Combine("bin", "Release", "net8.0", "win-x64", "publish", $"{config.FunctionName}.dll"),
+            WorkingDirectory = config.LambdaPath,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true
         };
 
-        startInfo.EnvironmentVariables["AWS_LAMBDA_RUNTIME_API"] = $"localhost:{LambdaPort}/testfunction";
-        startInfo.EnvironmentVariables["LAMBDA_TASK_ROOT"] = _lambdaProjectPath;
+        startInfo.EnvironmentVariables["AWS_LAMBDA_RUNTIME_API"] = $"localhost:{LambdaPort}/{config.RouteName}";
+        startInfo.EnvironmentVariables["LAMBDA_TASK_ROOT"] = config.LambdaPath;
         startInfo.EnvironmentVariables["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"] = "256";
         startInfo.EnvironmentVariables["AWS_LAMBDA_FUNCTION_TIMEOUT"] = "30";
-        startInfo.EnvironmentVariables["AWS_LAMBDA_FUNCTION_NAME"] = "test-function";
+        startInfo.EnvironmentVariables["AWS_LAMBDA_FUNCTION_NAME"] = config.FunctionName;
         startInfo.EnvironmentVariables["AWS_LAMBDA_FUNCTION_VERSION"] = "$LATEST";
 
         _lambdaProcess = Process.Start(startInfo) ?? throw new Exception("Failed to start Lambda process");

@@ -1,0 +1,11 @@
+{
+    "profiles": {
+        "Amazon.Lambda.TestTool": {
+            "commandName": "Project",
+            "commandLineArgs": "--api-gateway-emulator HTTPV2",
+            "environmentVariables": {
+                "APIGATEWAY_EMULATOR_ROUTE_CONFIG": "{\"LambdaResourceName\": \"testfunction\", \"Endpoint\": \"http://localhost:5050\", \"HttpMethod\": \"Get\", \"Path\": \"/testfunction\"}"
+            }
+        }
+    }
+}
