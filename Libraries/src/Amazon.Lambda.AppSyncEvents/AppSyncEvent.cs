@@ -1,7 +1,7 @@
-﻿namespace Amazon.Lambda.AppSyncEvents
+﻿using System.Collections.Generic;
+
+namespace Amazon.Lambda.AppSyncEvents
 {
-    using System.Collections.Generic;
-    
     /// <summary>
     /// Represents the event payload received from AWS AppSync.
     /// </summary>
@@ -13,8 +13,19 @@
         public Dictionary<string, object> Arguments { get; set; }
 
         /// <summary>
-        /// Gets or sets information about the identity that triggered the event.
+        /// An object that contains information about the caller.
+        /// Returns null for API_KEY authorization.
+        /// Returns AppSyncIdentityIAM for AWS_IAM authorization.
+        /// Returns AppSyncIdentityCognito for AMAZON_COGNITO_USER_POOLS authorization.
+        /// For AWS_LAMBDA authorization, returns the object returned by your Lambda authorizer function.
         /// </summary>
+        /// <remarks>
+        /// The Identity object type depends on the authorization mode:
+        /// - For API_KEY: null
+        /// - For AWS_IAM: <see cref="AppSyncIdentityIAM"/>
+        /// - For AMAZON_COGNITO_USER_POOLS: <see cref="AppSyncIdentityCognito"/>
+        /// - For AWS_LAMBDA: Dynamic object returned by Lambda authorizer
+        /// </remarks>
         public object Identity { get; set; }
 
         /// <summary>

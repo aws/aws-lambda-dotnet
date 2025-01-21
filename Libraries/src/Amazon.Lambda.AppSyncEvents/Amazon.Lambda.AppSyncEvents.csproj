@@ -4,12 +4,12 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - AWS AppSync package.</Description>
-    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+	<TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.AppSyncEvents</AssemblyTitle>
-    <Version>0.0.1</Version>
+    <Version>1.0.0</Version>
     <AssemblyName>Amazon.Lambda.AppSyncEvents</AssemblyName>
     <PackageId>Amazon.Lambda.AppSyncEvents</PackageId>
-    <PackageTags>AWS;Amazon;Lambda;AppSync</PackageTags>
+	<PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">

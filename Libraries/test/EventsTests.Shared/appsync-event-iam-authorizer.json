@@ -5,7 +5,16 @@
       "description": "Support Ticket Test"
     }
   },
-  "identity": null,
+  "identity": {
+    "accountId": "123456789012",
+    "cognitoIdentityPoolId": "us-east-1:1234abcd-1234-5678-abcd-1234567890ab",
+    "cognitoIdentityId": "us-east-1:1234abcd-1234-5678-abcd-1234567890ab",
+    "sourceIp": [ "192.0.2.1" ],
+    "username": "IAMUser",
+    "userArn": "arn:aws:iam::123456789012:user/IAMUser",
+    "cognitoIdentityAuthType": "authenticated",
+    "cognitoIdentityAuthProvider": "cognito-identity.amazonaws.com"
+  },
   "source": null,
   "request": {
     "headers": {
@@ -23,9 +32,10 @@
       "title",
       "description",
       "createdAt",
-      "updatedAt"
+      "updatedAt",
+      "__typename"
     ],
-    "selectionSetGraphQL": "{\n  ticketId\n  status\n  title\n  description\n  createdAt\n  updatedAt\n }",
+    "selectionSetGraphQL": "{\n  ticketId\n  status\n  title\n  description\n  createdAt\n  updatedAt\n  __typename\n}",
     "variables": {
       "input": {
         "title": "Support Ticket Test",
