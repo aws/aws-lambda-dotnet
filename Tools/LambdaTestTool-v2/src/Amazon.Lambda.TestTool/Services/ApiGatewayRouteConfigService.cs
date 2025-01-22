@@ -143,18 +143,10 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
             return false;
         }
 
+        // Special case for root path
+        if (routeConfig.Path == "/") return true;
 
-        // Use Split without RemoveEmptyEntries to catch invalid paths like "//"
         var segments = routeConfig.Path.Trim('/').Split('/');
-
-        // If after trimming we get empty segments, the path is invalid (like "//")
-        if (segments.Any(s => string.IsNullOrEmpty(s)))
-        {
-            _logger.LogError("The route config {Method} {Path} is not valid because it contains empty segments. It will be skipped.",
-                routeConfig.HttpMethod, routeConfig.Path);
-            return false;
-        }
-
         foreach (var segment in segments)
         {
             var regexPattern = "^(\\{[\\w.:-]+\\+?\\}|[a-zA-Z0-9.:_-]+)$";
@@ -192,50 +184,14 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
     /// <returns>An <see cref="ApiGatewayRouteConfig"/> corresponding to Lambda function with an API Gateway HTTP Method and Path.</returns>
     public ApiGatewayRouteConfig? GetRouteConfig(string httpMethod, string path)
     {
-        // Don't trim the end slash as it's significant
-        // Only trim start slash to normalize
-        var normalizedPath = path.TrimStart('/');
 
-        // Example 1: Proxy route matching with trailing slashes
-        // Route template: "/resource/{proxy+}"
-        // Request path:   "/resource"    -> Not a match (no trailing slash)
-        // Request path:   "/resource/"   -> Is a match (trailing slash indicates more segments possible)
-        // Request path:   "/resource/a"  -> Is a match (explicit segment)
-
-        // Example 2: Exact path matching
-        // Route template: "/pets/dog"
-        // Request path:   "/pets/dog"    -> Is a match
-        // Request path:   "/pets/dog/"   -> Not a match (trailing slash makes it different)
-        // Request path:   "/pets/dogs"   -> Not a match (different literal)
-
-        // Example 3: Variable path matching
-        // Route template: "/pets/{type}/{id}"
-        // Request path:   "/pets/dog/1"  -> Is a match
-        // Request path:   "/pets/dog/"   -> Not a match (missing {id})
-        // Request path:   "/pets/dog"    -> Not a match (missing {id})
-
-        // Example 4: Multiple proxy patterns
-        // Route template 1: "/api/{proxy+}"
-        // Route template 2: "/api/v1/{proxy+}"
-        // Request path:   "/api/"        -> Matches template 1
-        // Request path:   "/api/v1/"     -> Matches template 2 (more specific)
-        // Request path:   "/api/v2/"     -> Matches template 1
-
-        // Example 5: Empty and root paths
-        // Route template: "/{proxy+}"
-        // Request path:   "/"            -> Is a match
-        // Request path:   ""             -> Is a match
-        // Request path:   "//"           -> Is a match (treated as root with trailing slash)
-        var requestSegments = normalizedPath.Split('/', StringSplitOptions.None);
-        if (path.EndsWith("/") && normalizedPath.Length > 0)
-        {
-            // Adding empty segment for trailing slash to properly match proxy patterns
-            // Example:
-            // Path: "resource/" -> ["resource", ""]
-            // Path: "resource" -> ["resource"]
-            // This distinction allows proper matching of {proxy+} patterns
-            requestSegments = requestSegments.Concat(new[] { string.Empty }).ToArray();
-        }
+        // Handle root path specially to maintain consistent segment handling
+        // Example:
+        // path="/" → requestSegments = [] (empty array)
+        // path="/users/123" → requestSegments = ["users", "123"]
+        var requestSegments = path == "/"
+            ? new string[0]
+            : path.TrimStart('/').Split('/');
 
         var candidates = new List<MatchResult>();
 
@@ -256,22 +212,37 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
             _logger.LogDebug("{RequestMethod} {RequestPath}: The HTTP method matches. Checking the route {TemplatePath}.",
                 httpMethod, path, route.Path);
 
-            // Split route template into segments, removing empty entries
-            // Example route templates and their segments:
-            // "/pets/dog"      -> ["pets", "dog"]
-            // "/pets/{type}"   -> ["pets", "{type}"]
-            // "/pets/{proxy+}" -> ["pets", "{proxy+}"]
-            var routeSegments = route.Path.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+            // Split route path into segments, handling root path specially
+            // Examples:
+            // route.Path="/" → routeSegments = [] (empty array)
+            // route.Path="/users/{id}" → routeSegments = ["users", "{id}"]
+            // route.Path="/api/docs/{proxy+}" → routeSegments = ["api", "docs", "{proxy+}"]
+            var routeSegments = route.Path == "/"
+                ? Array.Empty<string>()
+                : route.Path.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
 
-            // MatchRoute determines if and how well the request matches the route template
-            // Example matches:
-            // Template              Request             Result
-            // /pets/dog            /pets/dog           Matched (2 literal matches)
-            // /pets/{type}         /pets/dog           Matched (1 literal, 1 variable)
-            // /pets/{proxy+}       /pets/dog/1         Matched (1 literal, 1 greedy)
             var matchDetail = MatchRoute(routeSegments, requestSegments);
             if (matchDetail.Matched)
             {
+                // Track matching details for route selection priority
+                // Examples with route.Path and path:
+                // 1. "/users/list" matches "/users/list":
+                //    - LiteralMatches: 2 (both segments are literal matches)
+                //    - GreedyVariables: 0
+                //    - NormalVariables: 0
+                //    - MatchedSegmentsBeforeGreedy: 2
+                //
+                // 2. "/users/{id}" matches "/users/123":
+                //    - LiteralMatches: 1 ("users")
+                //    - GreedyVariables: 0
+                //    - NormalVariables: 1 ("{id}")
+                //    - MatchedSegmentsBeforeGreedy: 2
+                //
+                // 3. "/api/{proxy+}" matches "/api/docs/index.html":
+                //    - LiteralMatches: 1 ("api")
+                //    - GreedyVariables: 1 ("{proxy+}")
+                //    - NormalVariables: 0
+                //    - MatchedSegmentsBeforeGreedy: 1
                 candidates.Add(new MatchResult
                 {
                     Route = route,
@@ -294,14 +265,18 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
         _logger.LogDebug("{RequestMethod} {RequestPath}: The following routes matched: {Routes}.",
             httpMethod, path, string.Join(", ", candidates.Select(x => x.Route.Path)));
 
-        // Route selection priority examples:
-        // Request: GET /pets/dog/1
-        // Candidate routes (in order of preference):
-        // 1. /pets/dog/1        (3 literal matches)
-        // 2. /pets/dog/{id}     (2 literal matches, 1 variable)
-        // 3. /pets/{type}/{id}  (1 literal match, 2 variables)
-        // 4. /pets/{proxy+}     (1 literal match, 1 greedy)
-        // 5. /{proxy+}          (0 literal matches, 1 greedy)
+        // Select best matching route using priority ordering
+        // Priority (highest to lowest):
+        // 1. Most literal matches (exact path segments)
+        // 2. Most matched segments before any greedy match
+        // 3. Fewer greedy variables
+        // 4. Fewer normal variables
+        // 5. Fewer total segments
+        //
+        // Examples (for path "/api/users/123"):
+        // - "/api/users/123" wins over "/api/users/{id}" (more literal matches)
+        // - "/api/users/{id}" wins over "/api/{proxy+}" (more matched segments before greedy)
+        // - "/api/{type}/{id}" wins over "/api/{proxy+}" (normal variables preferred over greedy)
         var best = candidates
             .OrderByDescending(c => c.LiteralMatches)
             .ThenByDescending(c => c.MatchedSegmentsBeforeGreedy)
@@ -354,6 +329,13 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
         int MatchedSegmentsBeforeGreedy)
         MatchRoute(string[] routeSegments, string[] requestSegments)
     {
+
+        // Special case for root path matching greedy proxy
+        if (requestSegments.Length == 0 && routeSegments.Length == 1 && IsGreedyVariable(routeSegments[0]))
+        {
+            return (true, 0, 0, 1, 0);
+        }
+
         // Example scenario:
         // Route template: "/resource/{id}/subsegment/{proxy+}"
         // Request path:   "/resource/123/subsegment/foo/bar"

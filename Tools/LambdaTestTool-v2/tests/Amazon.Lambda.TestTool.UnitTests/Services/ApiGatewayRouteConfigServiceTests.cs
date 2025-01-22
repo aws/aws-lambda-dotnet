@@ -198,6 +198,43 @@ public class ApiGatewayRouteConfigServiceTests
         Assert.Equal("Function2", result2.LambdaResourceName);
     }
 
+    [Fact]
+    public void GetRouteConfig_ReturnsCorrectConfigForRootPath()
+    {
+        // Arrange
+        var routeConfigs = new List<ApiGatewayRouteConfig>
+        {
+            new ApiGatewayRouteConfig
+            {
+                LambdaResourceName = "RootFunction",
+                HttpMethod = "GET",
+                Path = "/"
+            },
+            new ApiGatewayRouteConfig
+            {
+                LambdaResourceName = "OtherFunction",
+                HttpMethod = "GET",
+                Path = "/other"
+            }
+        };
+
+        _mockEnvironmentManager
+            .Setup(m => m.GetEnvironmentVariables())
+            .Returns(new Dictionary<string, string>
+            {
+                { Constants.LambdaConfigEnvironmentVariablePrefix, JsonSerializer.Serialize(routeConfigs) }
+            });
+
+        var service = new ApiGatewayRouteConfigService(_mockEnvironmentManager.Object, _mockLogger.Object);
+
+        // Act
+        var result = service.GetRouteConfig("GET", "/");
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("RootFunction", result.LambdaResourceName);
+    }
+
     [Theory]
     [InlineData("proxy")]
     [InlineData("anyvalue")]
