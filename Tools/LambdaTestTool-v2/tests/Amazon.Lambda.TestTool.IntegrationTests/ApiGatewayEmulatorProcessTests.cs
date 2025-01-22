@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Text;
 using Amazon.Lambda.TestTool.Models;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
@@ -26,11 +27,11 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperV2()
     {
-        var testProjectDir = Path.GetFullPath("../../../../");
+        var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
             TestToolPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool")),
-            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunctionV2/src/LambdaTestFunctionV2")),
+            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunctionV2")),
             FunctionName = "LambdaTestFunctionV2",
             RouteName = "testfunction",
             HttpMethod = "Post"
@@ -57,11 +58,11 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperRest()
     {
-        var testProjectDir = Path.GetFullPath("../../../../");
+        var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
             TestToolPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool")),
-            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunctionV1/src/LambdaTestFunctionV1")),
+            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunctionV1")),
             FunctionName = "LambdaTestFunctionV1",
             RouteName = "testfunction",
             HttpMethod = "Post"
@@ -88,11 +89,11 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperV1()
     {
-        var testProjectDir = Path.GetFullPath("../../../../");
+        var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
             TestToolPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool")),
-            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunctionV1/src/LambdaTestFunctionV1")),
+            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaTestFunctionV1")),
             FunctionName = "LambdaTestFunctionV1",
             RouteName = "testfunction",
             HttpMethod = "Post"
@@ -119,11 +120,11 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaBinaryResponse()
     {
-        var testProjectDir = Path.GetFullPath("../../../../");
+        var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
             TestToolPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool")),
-            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaBinaryFunction/src/LambdaBinaryFunction")),
+            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaBinaryFunction")),
             FunctionName = "LambdaBinaryFunction",
             RouteName = "binaryfunction",
             HttpMethod = "Get"
@@ -156,11 +157,11 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaReturnString()
     {
-        var testProjectDir = Path.GetFullPath("../../../../");
+        var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
             TestToolPath = Path.GetFullPath(Path.Combine(testProjectDir, "../src/Amazon.Lambda.TestTool")),
-            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaReturnStringFunction/src/LambdaReturnStringFunction")),
+            LambdaPath = Path.GetFullPath(Path.Combine(testProjectDir, "LambdaReturnStringFunction")),
             FunctionName = "LambdaReturnStringFunction",
             RouteName = "stringfunction",
             HttpMethod = "Post"
@@ -238,10 +239,14 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
             throw new Exception($"Build failed: {buildResult.Output}\n{buildResult.Error}");
         }
 
+        var publishFolder = Path.Combine(config.LambdaPath, "bin", "Release", "net8.0");
+        var archFolders = Directory.GetDirectories(publishFolder, "*");
+        var archFolder = Assert.Single(archFolders);
+
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = Path.Combine("bin", "Release", "net8.0", "win-x64", "publish", $"{config.FunctionName}.dll"),
+            Arguments = Path.Combine(archFolder, "publish", $"{config.FunctionName}.dll"),
             WorkingDirectory = config.LambdaPath,
             UseShellExecute = false,
             RedirectStandardOutput = true,

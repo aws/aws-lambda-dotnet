@@ -6,6 +6,7 @@ using Amazon.APIGateway;
 using Amazon.ApiGatewayV2;
 using Amazon.Lambda.TestTool.IntegrationTests.Helpers;
 using System.Reflection;
+using Xunit;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests
 {

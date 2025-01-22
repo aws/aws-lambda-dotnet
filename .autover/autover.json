@@ -135,6 +135,10 @@
     {
       "Name": "SnapshotRestore.Registry",
       "Path": "Libraries/src/SnapshotRestore.Registry/SnapshotRestore.Registry.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Path": "Tools/LambdaTestTool-v2/src/Amazon.Lambda.TestTool/Amazon.Lambda.TestTool.csproj"
     }
   ],
   "UseCommitsForChangelog": false,

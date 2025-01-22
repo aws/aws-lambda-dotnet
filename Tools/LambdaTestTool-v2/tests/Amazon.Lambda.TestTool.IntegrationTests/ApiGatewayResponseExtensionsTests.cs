@@ -4,7 +4,9 @@
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.IntegrationTests.Helpers;
 using Amazon.Lambda.TestTool.Models;
-using static ApiGatewayResponseTestCases;
+using Amazon.Lambda.TestTool.Tests.Common;
+using Xunit;
+using static Amazon.Lambda.TestTool.Tests.Common.ApiGatewayResponseTestCases;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests
 {

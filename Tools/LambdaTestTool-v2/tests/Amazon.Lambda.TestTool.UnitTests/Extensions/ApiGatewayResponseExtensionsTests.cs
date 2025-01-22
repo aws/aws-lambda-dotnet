@@ -5,8 +5,10 @@ using System.Text;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
+using Amazon.Lambda.TestTool.Tests.Common;
 using Microsoft.AspNetCore.Http;
-using static ApiGatewayResponseTestCases;
+using Xunit;
+using static Amazon.Lambda.TestTool.Tests.Common.ApiGatewayResponseTestCases;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Extensions
 {

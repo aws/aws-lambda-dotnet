@@ -4,6 +4,7 @@
 using System.Text;
 using Amazon.Lambda.Model;
 using Amazon.Lambda.TestTool.Models;
+using Xunit;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Extensions;
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Amazon.Lambda.TestTool.Commands.Settings;
+using Xunit;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Commands.Settings;
 

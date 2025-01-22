@@ -10,6 +10,8 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.TestTool.Processes;
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Microsoft.Extensions.DependencyInjection;
+using Xunit;
+using Environment = System.Environment;
 
 namespace Amazon.Lambda.TestTool.UnitTests;
 
@@ -23,6 +25,7 @@ public class RuntimeApiTests
         var cancellationTokenSource = new CancellationTokenSource();
         var options = new RunCommandSettings();
         options.Port = 9000;
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
         try
         {
@@ -72,6 +75,7 @@ public class RuntimeApiTests
         var cancellationTokenSource = new CancellationTokenSource();
         var options = new RunCommandSettings();
         options.Port = 9001;
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
         try
         {

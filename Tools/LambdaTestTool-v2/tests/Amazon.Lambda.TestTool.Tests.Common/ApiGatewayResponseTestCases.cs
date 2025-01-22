@@ -6,6 +6,9 @@ using System.Text.Json;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Models;
 using Microsoft.AspNetCore.Http;
+using Xunit;
+
+namespace Amazon.Lambda.TestTool.Tests.Common;
 
 public static class ApiGatewayResponseTestCases
 {
@@ -159,21 +162,21 @@ public static class ApiGatewayResponseTestCases
                 {
                     if (emulatorMode == ApiGatewayEmulatorMode.HttpV1)
                     {
-                      Assert.Equal("text/plain; charset=utf-8", response.ContentType);
+                        Assert.Equal("text/plain; charset=utf-8", response.ContentType);
                     } else
                     {
-                      Assert.Equal("application/json", response.ContentType);
+                        Assert.Equal("application/json", response.ContentType);
                     }
                 },
                 IntegrationAssertions = async (response, emulatorMode) =>
                 {
                     if (emulatorMode == ApiGatewayEmulatorMode.HttpV1)
                     {
-                      Assert.Equal("text/plain; charset=utf-8", response.Content.Headers.ContentType?.ToString());
-                    } 
+                        Assert.Equal("text/plain; charset=utf-8", response.Content.Headers.ContentType?.ToString());
+                    }
                     else
                     {
-                    Assert.Equal("application/json", response.Content.Headers.ContentType?.ToString());
+                        Assert.Equal("application/json", response.Content.Headers.ContentType?.ToString());
                     }
                     await Task.CompletedTask;
                 }
@@ -375,57 +378,57 @@ public static class ApiGatewayResponseTestCases
         };
         yield return new object[]
         {
-        "V1_APIHeaders",
-        new ApiGatewayResponseTestCase
-        {
-            Response = new APIGatewayProxyResponse
+            "V1_APIHeaders",
+            new ApiGatewayResponseTestCase
             {
-                StatusCode = 200,
-                Body = "Test body"
-            },
-            Assertions = (response, emulatorMode) =>
-            {
-                Assert.True(response.Headers.ContainsKey("Date"));
-
-                if (emulatorMode == ApiGatewayEmulatorMode.Rest)
+                Response = new APIGatewayProxyResponse
                 {
-                    Assert.True(response.Headers.ContainsKey("x-amzn-RequestId"));
-                    Assert.True(response.Headers.ContainsKey("x-amz-apigw-id"));
-                    Assert.True(response.Headers.ContainsKey("X-Amzn-Trace-Id"));
-
-                    Assert.Matches(@"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", response.Headers["x-amzn-RequestId"]);
-                    Assert.Matches(@"^[A-Za-z0-9_\-]{15}=$", response.Headers["x-amz-apigw-id"]);
-                    Assert.Matches(@"^Root=1-[0-9a-f]{8}-[0-9a-f]{24};Parent=[0-9a-f]{16};Sampled=0;Lineage=1:[0-9a-f]{8}:0$", response.Headers["X-Amzn-Trace-Id"]);
-                }
-                else // HttpV1 or HttpV2
+                    StatusCode = 200,
+                    Body = "Test body"
+                },
+                Assertions = (response, emulatorMode) =>
                 {
-                    Assert.True(response.Headers.ContainsKey("Apigw-Requestid"));
-                    Assert.Matches(@"^[A-Za-z0-9_\-]{15}=$", response.Headers["Apigw-Requestid"]);
-                }
-            },
-            IntegrationAssertions = async (response, emulatorMode) =>
-            {
-                Assert.True(response.Headers.Contains("Date"));
+                    Assert.True(response.Headers.ContainsKey("Date"));
 
-                if (emulatorMode == ApiGatewayEmulatorMode.Rest)
+                    if (emulatorMode == ApiGatewayEmulatorMode.Rest)
+                    {
+                        Assert.True(response.Headers.ContainsKey("x-amzn-RequestId"));
+                        Assert.True(response.Headers.ContainsKey("x-amz-apigw-id"));
+                        Assert.True(response.Headers.ContainsKey("X-Amzn-Trace-Id"));
+
+                        Assert.Matches(@"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", response.Headers["x-amzn-RequestId"]);
+                        Assert.Matches(@"^[A-Za-z0-9_\-]{15}=$", response.Headers["x-amz-apigw-id"]);
+                        Assert.Matches(@"^Root=1-[0-9a-f]{8}-[0-9a-f]{24};Parent=[0-9a-f]{16};Sampled=0;Lineage=1:[0-9a-f]{8}:0$", response.Headers["X-Amzn-Trace-Id"]);
+                    }
+                    else // HttpV1 or HttpV2
+                    {
+                        Assert.True(response.Headers.ContainsKey("Apigw-Requestid"));
+                        Assert.Matches(@"^[A-Za-z0-9_\-]{15}=$", response.Headers["Apigw-Requestid"]);
+                    }
+                },
+                IntegrationAssertions = async (response, emulatorMode) =>
                 {
-                    Assert.True(response.Headers.Contains("x-amzn-RequestId"));
-                    Assert.True(response.Headers.Contains("x-amz-apigw-id"));
-                    Assert.True(response.Headers.Contains("X-Amzn-Trace-Id"));
+                    Assert.True(response.Headers.Contains("Date"));
 
-                    Assert.Matches(@"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", response.Headers.GetValues("x-amzn-RequestId").First());
-                    Assert.Matches(@"^[A-Za-z0-9_\-]{15}=$", response.Headers.GetValues("x-amz-apigw-id").First());
-                    Assert.Matches(@"^Root=1-[0-9a-f]{8}-[0-9a-f]{24};Parent=[0-9a-f]{16};Sampled=0;Lineage=1:[0-9a-f]{8}:0$", response.Headers.GetValues("X-Amzn-Trace-Id").First());
-                }
-                else // HttpV1 or HttpV2
-                {
-                    Assert.True(response.Headers.Contains("Apigw-Requestid"));
-                    Assert.Matches(@"^[A-Za-z0-9_\-]{15}=$", response.Headers.GetValues("Apigw-Requestid").First());
-                }
+                    if (emulatorMode == ApiGatewayEmulatorMode.Rest)
+                    {
+                        Assert.True(response.Headers.Contains("x-amzn-RequestId"));
+                        Assert.True(response.Headers.Contains("x-amz-apigw-id"));
+                        Assert.True(response.Headers.Contains("X-Amzn-Trace-Id"));
 
-                await Task.CompletedTask;
+                        Assert.Matches(@"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", response.Headers.GetValues("x-amzn-RequestId").First());
+                        Assert.Matches(@"^[A-Za-z0-9_\-]{15}=$", response.Headers.GetValues("x-amz-apigw-id").First());
+                        Assert.Matches(@"^Root=1-[0-9a-f]{8}-[0-9a-f]{24};Parent=[0-9a-f]{16};Sampled=0;Lineage=1:[0-9a-f]{8}:0$", response.Headers.GetValues("X-Amzn-Trace-Id").First());
+                    }
+                    else // HttpV1 or HttpV2
+                    {
+                        Assert.True(response.Headers.Contains("Apigw-Requestid"));
+                        Assert.Matches(@"^[A-Za-z0-9_\-]{15}=$", response.Headers.GetValues("Apigw-Requestid").First());
+                    }
+
+                    await Task.CompletedTask;
+                }
             }
-        }
         };
 
     }
@@ -555,7 +558,7 @@ public static class ApiGatewayResponseTestCases
         };
 
         yield return new object[]
-{
+        {
             "V2_SetsBodyNonBase64",
             new ApiGatewayResponseTestCase
             {
@@ -575,7 +578,7 @@ public static class ApiGatewayResponseTestCases
                     Assert.Equal("{\"message\":\"Hello, API Gateway v2!\"}", content);
                 }
             }
-};
+        };
 
         yield return new object[]
         {
@@ -685,7 +688,7 @@ public static class ApiGatewayResponseTestCases
         };
 
         yield return new object[]
-       {
+        {
             "V2_HttpAPIHeaders",
             new ApiGatewayResponseTestCase
             {
@@ -710,7 +713,7 @@ public static class ApiGatewayResponseTestCases
                     await Task.CompletedTask;
                 }
             }
-       };
+        };
 
     }
 
