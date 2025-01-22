@@ -1,3 +1,64 @@
+## Release 2024-12-09
+
+### SnapshotRestore.Registry (1.0.1)
+* Added License URL to project
+* Updated project to support building the .NET 9 Lambda custom runtime image
+### Amazon.Lambda.RuntimeSupport (1.12.2)
+* Updated project to support building the .NET 9 Lambda custom runtime image
+### Amazon.Lambda.Annotations (1.6.2)
+* Added License URL to project
+
+## Release 2024-11-26
+
+### Amazon.Lambda.AspNetCoreServer (9.0.3)
+* Fixed issue '(EmptyBodyBehavior = EmptyBodyBehavior.Allow)' not being honored when request body was empty
+### Amazon.Lambda.RuntimeSupport (1.12.1)
+* Revert behavior for non SnapShot scenario to throw an exception when initialization fails
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.7.3)
+* Fixed issue '(EmptyBodyBehavior = EmptyBodyBehavior.Allow)' not being honored when request body was empty
+
+## Release 2024-11-25
+
+### Amazon.Lambda.Templates (7.4.0)
+* Update package dependencies. The significant dependency update was for Amazon.Lambda.Core and Amazon.Lambda.RuntimeSupport with added support for Lambda SnapStart.
+
+## Release 2024-11-20
+
+### Amazon.Lambda.PowerShellHost (3.0.2)
+* Update to latest version of Amazon.Lambda.Core
+### Amazon.Lambda.Logging.AspNetCore (3.1.1)
+* Update to latest version of Amazon.Lambda.Core
+### Amazon.Lambda.Annotations (1.6.1)
+* Update to latest version of Amazon.Lambda.Core
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.7.2)
+* Update to latest version of Amazon.Lambda.Core and Amazon.Lambda.RuntimeSupport
+### Amazon.Lambda.AspNetCoreServer (9.0.2)
+* Update to latest version of Amazon.Lambda.Core
+
+## Release 2024-11-18
+
+### Amazon.Lambda.Core (2.5.0)
+* Added the new `SnapshotRestore` static class for registering SnapStart hooks for before snapshot and after restore.
+
+### Amazon.Lambda.RuntimeSupport (1.12.0)
+* Added support for handling Lambda SnapStart events.
+
+### SnapshotRestore.Registry (1.0.0)
+* New package used by Amazon.Lambda.RuntimeSupport for registering and executing SnapStart hooks.
+
+## Release 2024-11-14
+
+### Amazon.Lambda.TestTool.BlazorTester (0.16.0)
+* Update Lambda Test Tool to add a .NET9 target
+* Fixed issue supporting parameterized logging APIs added to Amazon.Lambda.Core in version 2.4.0
+
+## Release 2024-11-13
+
+### Amazon.Lambda.Templates (7.3.0)
+* Update package Dependencies.
+* Custom Runtime templates target .NET 9.
+* Rework the `EntryPoint` for F# test projects.
+
 ## Release 2024-11-12
 
 ### Amazon.Lambda.Annotations (1.6.0)

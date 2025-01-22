@@ -70,6 +70,9 @@ public static class LambdaToolsHelper
 
         foreach (var subdir in dirs)
         {
+            if (string.Equals(subdir.Name, ".vs", System.StringComparison.OrdinalIgnoreCase))
+                continue;
+
             var tempPath = Path.Combine(destDirName, subdir.Name);
             var subDir = new DirectoryInfo(subdir.FullName);
             CopyDirectory(subDir, tempPath);

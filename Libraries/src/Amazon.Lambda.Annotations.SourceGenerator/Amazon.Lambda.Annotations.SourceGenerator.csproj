@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
@@ -9,6 +9,7 @@
     <PackageProjectUrl>https://github.com/aws/aws-lambda-dotnet</PackageProjectUrl>
     <PackageIcon>images\icon.png</PackageIcon>
     <PackageReadmeFile>docs\README.md</PackageReadmeFile>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     
     <!--This assembly needs to access internal methods inside the Amazon.Lambda.Annotations assembly.
     Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
@@ -19,7 +20,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     
-    <Version>1.6.0</Version>
+    <Version>1.6.2</Version>
   </PropertyGroup>
   
   <!-- Delay setting the package id till after resolving dependencies to avoid ambigious errors. -->

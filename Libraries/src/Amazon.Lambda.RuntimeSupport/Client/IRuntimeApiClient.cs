@@ -35,9 +35,10 @@ namespace Amazon.Lambda.RuntimeSupport
         /// Report an initialization error as an asynchronous operation.
         /// </summary>
         /// <param name="exception">The exception to report.</param>
+        /// <param name="errorType">An optional errorType string that can be used to log higher-context error to customer instead of generic Runtime.Unknown by the Lambda Sandbox. </param>
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        Task ReportInitializationErrorAsync(Exception exception, CancellationToken cancellationToken = default);
+        Task ReportInitializationErrorAsync(Exception exception, String errorType = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Send an initialization error with a type string but no other information as an asynchronous operation.
@@ -64,7 +65,26 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
         Task ReportInvocationErrorAsync(string awsRequestId, Exception exception, CancellationToken cancellationToken = default);
+        
+#if NET8_0_OR_GREATER
+        /// <summary>
+        ///  Triggers the snapshot to be taken, and then after resume, restores the lambda
+        /// context from the Runtime API as an asynchronous operation when SnapStart is enabled.
+        /// </summary>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        Task RestoreNextInvocationAsync(CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Report a restore error as an asynchronous operation when SnapStart is enabled.
+        /// </summary>
+        /// <param name="exception">The exception to report.</param>
+        /// <param name="errorType">An optional errorType string that can be used to log higher-context error to customer instead of generic Runtime.Unknown by the Lambda Sandbox. </param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        Task ReportRestoreErrorAsync(Exception exception, String errorType = null, CancellationToken cancellationToken = default);
+#endif
+        
         /// <summary>
         /// Send a response to a function invocation to the Runtime API as an asynchronous operation.
         /// </summary>

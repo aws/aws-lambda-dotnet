@@ -1,7 +1,7 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=9.0.0-rc.2.24474.3
-ARG ASPNET_SHA512=9370c26174cd7f1b2fef58e0a53041c94b7d5412f15ea5865fbc653a65b148b1f92e7992f147610a6ca2e92011ff28c43480ab26a6e7f8cd56f2189af0610be8
+ARG ASPNET_VERSION=9.0.0
+ARG ASPNET_SHA512=1a81023f119dd5e5b0f9d87b0e3c42df89824b9fcb73192a4670cc2c67358cd018a7c9c965245c7883de468bda88c81d64a21c60f9bc68a6559d76f32d34ce96
 
 ARG LAMBDA_RUNTIME_NAME=dotnet9
 ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
@@ -30,6 +30,7 @@ RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/a
 FROM mcr.microsoft.com/dotnet/sdk:9.0-bookworm-slim AS builder
 WORKDIR /src
 COPY ["Libraries/src/Amazon.Lambda.RuntimeSupport", "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/"]
+COPY ["Libraries/src/SnapshotRestore.Registry", "Repo/Libraries/src/SnapshotRestore.Registry/"]
 COPY ["Libraries/src/Amazon.Lambda.Core", "Repo/Libraries/src/Amazon.Lambda.Core/"]
 COPY ["buildtools/", "Repo/buildtools/"]
 RUN dotnet restore "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj" /p:TargetFrameworks=net9.0

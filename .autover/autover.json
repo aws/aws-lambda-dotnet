@@ -127,6 +127,14 @@
         "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester80-pack.csproj",
         "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester90-pack.csproj"
       ]
+    },
+    {
+      "Name": "Amazon.Lambda.Templates",
+      "Path": "Blueprints/BlueprintDefinitions/vs2022/Templates.csproj"
+    },
+    {
+      "Name": "SnapshotRestore.Registry",
+      "Path": "Libraries/src/SnapshotRestore.Registry/SnapshotRestore.Registry.csproj"
     }
   ],
   "UseCommitsForChangelog": false,

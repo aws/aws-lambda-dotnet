@@ -18,6 +18,7 @@
 **/packages
 **/launchSettings.json
 **/Debug/
+**/build/
 
 **/project.lock.json
 
