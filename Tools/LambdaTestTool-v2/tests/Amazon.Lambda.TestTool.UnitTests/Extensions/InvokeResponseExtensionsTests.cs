@@ -41,7 +41,7 @@ public class InvokeResponseExtensionsTests
     [InlineData("{\"statusCode\": \"invalid\", \"body\": \"Hello\"}", 500, "{\"message\":\"Internal Server Error\"}", "application/json")]
     [InlineData("{\"message\": \"Hello, World!\"}", 200, "{\"message\": \"Hello, World!\"}", "application/json")]
     [InlineData("test", 200, "test", "application/json")]
-    [InlineData("\"test\"", 200, "\"test\"", "application/json")]
+    [InlineData("\"test\"", 200, "test", "application/json")]
     [InlineData("42", 200, "42", "application/json")]
     [InlineData("true", 200, "true", "application/json")]
     [InlineData("[1,2,3]", 200, "[1,2,3]", "application/json")]

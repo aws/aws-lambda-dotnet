@@ -20,7 +20,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
         public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(APIGatewayProxyResponse testResponse, string apiUrl, ApiGatewayEmulatorMode emulatorMode)
         {
             var httpContext = new DefaultHttpContext();
-            testResponse.ToHttpResponse(httpContext, emulatorMode);
+            httpContext.Response.Body = new MemoryStream();
+            await testResponse.ToHttpResponseAsync(httpContext, emulatorMode);
             var serialized = JsonSerializer.Serialize(testResponse);
             var actualResponse = await _httpClient.PostAsync(apiUrl, new StringContent(serialized));
             return (actualResponse, httpContext.Response);
@@ -28,18 +29,18 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
 
         public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(APIGatewayHttpApiV2ProxyResponse testResponse, string apiUrl)
         {
-            var httpContext = new DefaultHttpContext();
-            testResponse.ToHttpResponse(httpContext);
+            var testResponseHttpContext = new DefaultHttpContext();
+            testResponseHttpContext.Response.Body = new MemoryStream();
+            await testResponse.ToHttpResponseAsync(testResponseHttpContext);
             var serialized = JsonSerializer.Serialize(testResponse);
             var actualResponse = await _httpClient.PostAsync(apiUrl, new StringContent(serialized));
-            return (actualResponse, httpContext.Response);
+            return (actualResponse, testResponseHttpContext.Response);
         }
 
         public async Task AssertResponsesEqual(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)
         {
-
-            var expectedContent = await new StreamReader(httpTestResponse.Body).ReadToEndAsync();
             httpTestResponse.Body.Seek(0, SeekOrigin.Begin);
+            var expectedContent = await new StreamReader(httpTestResponse.Body).ReadToEndAsync();
             var actualContent = await actualResponse.Content.ReadAsStringAsync();
 
             Assert.Equal(expectedContent, actualContent);

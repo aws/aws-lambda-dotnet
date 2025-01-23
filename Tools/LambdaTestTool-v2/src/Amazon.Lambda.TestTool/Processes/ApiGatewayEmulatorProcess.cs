@@ -1,10 +1,14 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Model;
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;
+
+using System.Text.Json;
 
 namespace Amazon.Lambda.TestTool.Processes;
 
@@ -28,6 +32,8 @@ public class ApiGatewayEmulatorProcess
     /// </summary>
     public required string ServiceUrl { get; init; }
 
+    private static readonly JsonSerializerOptions _jsonSerializationOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     /// <summary>
     /// Creates the Web API and runs it in the background.
     /// </summary>
@@ -50,8 +56,6 @@ public class ApiGatewayEmulatorProcess
 
         var app = builder.Build();
 
-        app.UseHttpsRedirection();
-
         app.MapHealthChecks("/__lambda_test_tool_apigateway_health__");
 
         app.Lifetime.ApplicationStarted.Register(() =>
@@ -59,26 +63,62 @@ public class ApiGatewayEmulatorProcess
             app.Logger.LogInformation("The API Gateway Emulator is available at: {ServiceUrl}", serviceUrl);
         });
 
-        app.Map("/{**catchAll}", (HttpContext context, IApiGatewayRouteConfigService routeConfigService) =>
+        app.Map("/{**catchAll}", async (HttpContext context, IApiGatewayRouteConfigService routeConfigService) =>
         {
             var routeConfig = routeConfigService.GetRouteConfig(context.Request.Method, context.Request.Path);
             if (routeConfig == null)
             {
                 app.Logger.LogInformation("Unable to find a configured Lambda route for the specified method and path: {Method} {Path}",
                     context.Request.Method, context.Request.Path);
-                return ApiGatewayResults.RouteNotFound(context, (ApiGatewayEmulatorMode) settings.ApiGatewayEmulatorMode);
+                await ApiGatewayResults.RouteNotFoundAsync(context, (ApiGatewayEmulatorMode)settings.ApiGatewayEmulatorMode);
+                return;
             }
 
+            // Convert ASP.NET Core request to API Gateway event object
+            var lambdaRequestStream = new MemoryStream();
             if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
             {
-                // TODO: Translate to APIGatewayHttpApiV2ProxyRequest
+                var lambdaRequest = await context.ToApiGatewayHttpV2Request(routeConfig);
+                JsonSerializer.Serialize<APIGatewayHttpApiV2ProxyRequest>(lambdaRequestStream, lambdaRequest, _jsonSerializationOptions);
             }
             else
             {
-                // TODO: Translate to APIGatewayProxyRequest
+                var lambdaRequest = await context.ToApiGatewayRequest(routeConfig, settings.ApiGatewayEmulatorMode.Value);
+                JsonSerializer.Serialize<APIGatewayProxyRequest>(lambdaRequestStream, lambdaRequest, _jsonSerializationOptions);
+            }
+            lambdaRequestStream.Position = 0;
+
+            // Invoke Lamdba function via the test tool's Lambda Runtime API.
+            var invokeRequest = new InvokeRequest
+            {
+                FunctionName = routeConfig.LambdaResourceName,
+                InvocationType = InvocationType.RequestResponse,
+                PayloadStream = lambdaRequestStream
+            };
+
+            using var lambdaClient = CreateLambdaServiceClient(routeConfig);
+            var response =  await lambdaClient.InvokeAsync(invokeRequest);
+
+            if (response.FunctionError != null)
+            {
+                // TODO: Mimic API Gateway's behavior when Lambda function has an exception during invocation.
+                context.Response.StatusCode = 500;
+                return;
             }
 
-            return Results.Ok();
+            // Convert API Gateway response object returned from Lambda to ASP.NET Core response.
+            if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
+            {
+                var lambdaResponse = response.ToApiGatewayHttpApiV2ProxyResponse();
+                await lambdaResponse.ToHttpResponseAsync(context);
+                return;
+            }
+            else
+            {
+                var lambdaResponse = response.ToApiGatewayProxyResponse(settings.ApiGatewayEmulatorMode.Value);
+                await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                return;
+            }
         });
 
         var runTask = app.RunAsync(cancellationToken);
@@ -89,5 +129,16 @@ public class ApiGatewayEmulatorProcess
             RunningTask = runTask,
             ServiceUrl = serviceUrl
         };
+    }
+
+    private static IAmazonLambda CreateLambdaServiceClient(ApiGatewayRouteConfig routeConfig)
+    {
+        // TODO: Handle routeConfig.Endpoint to null and use the settings versions of runtime.
+        var lambdaConfig = new AmazonLambdaConfig
+        {
+            ServiceURL = routeConfig.Endpoint
+        };
+
+        return new AmazonLambdaClient(new Amazon.Runtime.BasicAWSCredentials("accessKey", "secretKey"), lambdaConfig);
     }
 }
