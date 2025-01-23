@@ -93,7 +93,7 @@ public static class HttpRequestUtility
     /// Accept: text/html
     /// Accept: application/xhtml+xml
     /// X-Custom-Header: value1
-    /// 
+    ///
     /// The method will return:
     /// singleValueHeaders: { "Accept": "application/xhtml+xml", "X-Custom-Header": "value1" }
     /// multiValueHeaders: { "Accept": ["text/html", "application/xhtml+xml"], "X-Custom-Header": ["value1"] }
@@ -120,7 +120,7 @@ public static class HttpRequestUtility
     /// <returns>A tuple containing single-value and multi-value query parameter dictionaries.</returns>
     /// <example>
     /// For query string: ?param1=value1&amp;param2=value2&amp;param2=value3
-    /// 
+    ///
     /// The method will return:
     /// singleValueParams: { "param1": "value1", "param2": "value3" }
     /// multiValueParams: { "param1": ["value1"], "param2": ["value2", "value3"] }

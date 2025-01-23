@@ -1,9 +1,5 @@
-using System;
 using System.Diagnostics;
-using System.IO;
 using System.IO.Compression;
-using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -135,9 +131,9 @@ public class PackagingTests
         }
     }
 
-    private string FindSolutionRoot()
+    private string? FindSolutionRoot()
     {
-        string currentDirectory = Directory.GetCurrentDirectory();
+        string? currentDirectory = Directory.GetCurrentDirectory();
         while (currentDirectory != null)
         {
             // Look for the aws-lambda-dotnet directory specifically

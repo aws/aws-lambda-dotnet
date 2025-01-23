@@ -322,9 +322,9 @@ namespace Amazon.Lambda.TestTool.Tests.Common
 
         public class HttpContextTestCase
         {
-            public required DefaultHttpContext HttpContext { get; set; }
-            public required ApiGatewayRouteConfig ApiGatewayRouteConfig { get; set; }
-            public required Action<object, ApiGatewayEmulatorMode> Assertions { get; set; }
+            public required DefaultHttpContext HttpContext { get; init; }
+            public required ApiGatewayRouteConfig ApiGatewayRouteConfig { get; init; }
+            public required Action<object?, ApiGatewayEmulatorMode> Assertions { get; init; }
         }
     }
 }
