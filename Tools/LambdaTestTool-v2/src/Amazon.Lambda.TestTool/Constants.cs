@@ -13,7 +13,7 @@ public abstract class Constants
     /// <summary>
     /// The name of the dotnet CLI tool
     /// </summary>
-    public const string ToolName = "lambda-test-tool";
+    public const string ToolName = "dotnet-lambda-test-tool";
 
     /// <summary>
     /// The default port used by the Lambda Test Tool for the Lambda Runtime API and the Web Interface.

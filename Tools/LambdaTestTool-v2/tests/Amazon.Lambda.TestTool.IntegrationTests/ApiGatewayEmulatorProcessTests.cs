@@ -4,7 +4,12 @@
 using System.Diagnostics;
 using System.Net;
 using System.Text;
+using Amazon.Lambda.TestTool.Commands;
+using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Models;
+using Amazon.Lambda.TestTool.Services;
+using Moq;
+using Spectre.Console.Cli;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -12,12 +17,10 @@ namespace Amazon.Lambda.TestTool.IntegrationTests;
 
 public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
 {
+    private readonly Mock<IToolInteractiveService> _mockInteractiveService = new Mock<IToolInteractiveService>();
+    private readonly Mock<IRemainingArguments> _mockRemainingArgs = new Mock<IRemainingArguments>();
     private readonly ITestOutputHelper _testOutputHelper;
-    private Process? _mainProcess;
     private Process? _lambdaProcess;
-
-    private const string ApiGatewayPort = "5051";
-    private const string LambdaPort = "5050";
 
     public ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
     {
@@ -27,6 +30,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperV2()
     {
+        var lambdaPort = 6012;
+        var apiGatewayPort = 6013;
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -37,13 +42,15 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
             HttpMethod = "Post"
         };
 
+        var cancellationTokenSource = new CancellationTokenSource();
+
         try
         {
-            await StartTestToolProcess(ApiGatewayEmulatorMode.HttpV2, config);
-            await WaitForGatewayHealthCheck();
-            await StartLambdaProcess(config);
+            StartTestToolProcess(ApiGatewayEmulatorMode.HttpV2, config, lambdaPort, apiGatewayPort, cancellationTokenSource);
+            await WaitForGatewayHealthCheck(apiGatewayPort);
+            await StartLambdaProcess(config, lambdaPort);
 
-            var response = await TestEndpoint(config);
+            var response = await TestEndpoint(config, apiGatewayPort);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -51,6 +58,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
         finally
         {
+            await cancellationTokenSource.CancelAsync();
             await CleanupProcesses();
         }
     }
@@ -58,6 +66,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperRest()
     {
+        var lambdaPort = 6010;
+        var apiGatewayPort = 6011;
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -68,13 +78,15 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
             HttpMethod = "Post"
         };
 
+        var cancellationTokenSource = new CancellationTokenSource();
+
         try
         {
-            await StartTestToolProcess(ApiGatewayEmulatorMode.Rest, config);
-            await WaitForGatewayHealthCheck();
-            await StartLambdaProcess(config);
+            StartTestToolProcess(ApiGatewayEmulatorMode.Rest, config, lambdaPort, apiGatewayPort, cancellationTokenSource);
+            await WaitForGatewayHealthCheck(apiGatewayPort);
+            await StartLambdaProcess(config, lambdaPort);
 
-            var response = await TestEndpoint(config);
+            var response = await TestEndpoint(config, apiGatewayPort);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -82,6 +94,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
         finally
         {
+            await cancellationTokenSource.CancelAsync();
             await CleanupProcesses();
         }
     }
@@ -89,6 +102,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperV1()
     {
+        var lambdaPort = 6008;
+        var apiGatewayPort = 6009;
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -99,13 +114,15 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
             HttpMethod = "Post"
         };
 
+        var cancellationTokenSource = new CancellationTokenSource();
+
         try
         {
-            await StartTestToolProcess(ApiGatewayEmulatorMode.HttpV1, config);
-            await WaitForGatewayHealthCheck();
-            await StartLambdaProcess(config);
+            StartTestToolProcess(ApiGatewayEmulatorMode.HttpV1, config, lambdaPort, apiGatewayPort, cancellationTokenSource);
+            await WaitForGatewayHealthCheck(apiGatewayPort);
+            await StartLambdaProcess(config, lambdaPort);
 
-            var response = await TestEndpoint(config);
+            var response = await TestEndpoint(config, apiGatewayPort);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -113,6 +130,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
         finally
         {
+            await cancellationTokenSource.CancelAsync();
             await CleanupProcesses();
         }
     }
@@ -120,6 +138,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaBinaryResponse()
     {
+        var lambdaPort = 6006;
+        var apiGatewayPort = 6007;
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -130,13 +150,15 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
             HttpMethod = "Get"
         };
 
+        var cancellationTokenSource = new CancellationTokenSource();
+
         try
         {
-            await StartTestToolProcess(ApiGatewayEmulatorMode.HttpV2, config);
-            await WaitForGatewayHealthCheck();
-            await StartLambdaProcess(config);
+            StartTestToolProcess(ApiGatewayEmulatorMode.HttpV2, config, lambdaPort, apiGatewayPort, cancellationTokenSource);
+            await WaitForGatewayHealthCheck(apiGatewayPort);
+            await StartLambdaProcess(config, lambdaPort);
 
-            var response = await TestEndpoint(config);
+            var response = await TestEndpoint(config, apiGatewayPort);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal("application/octet-stream", response.Content.Headers.ContentType?.MediaType);
@@ -150,6 +172,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
         finally
         {
+            await cancellationTokenSource.CancelAsync();
             await CleanupProcesses();
         }
     }
@@ -157,6 +180,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaReturnString()
     {
+        var lambdaPort = 6004;
+        var apiGatewayPort = 6005;
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -167,13 +192,15 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
             HttpMethod = "Post"
         };
 
+        var cancellationTokenSource = new CancellationTokenSource();
+
         try
         {
-            await StartTestToolProcess(ApiGatewayEmulatorMode.HttpV2, config);
-            await WaitForGatewayHealthCheck();
-            await StartLambdaProcess(config);
+            StartTestToolProcess(ApiGatewayEmulatorMode.HttpV2, config, lambdaPort, apiGatewayPort, cancellationTokenSource);
+            await WaitForGatewayHealthCheck(apiGatewayPort);
+            await StartLambdaProcess(config, lambdaPort);
 
-            var response = await TestEndpoint(config);
+            var response = await TestEndpoint(config, apiGatewayPort);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -181,6 +208,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
         finally
         {
+            await cancellationTokenSource.CancelAsync();
             await CleanupProcesses();
         }
     }
@@ -194,43 +222,37 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         public required string HttpMethod { get; init; }
     }
 
-    private async Task<HttpResponseMessage> TestEndpoint(TestConfig config, HttpContent? content = null)
+    private async Task<HttpResponseMessage> TestEndpoint(TestConfig config, int apiGatewayPort, HttpContent? content = null)
     {
         using var client = new HttpClient();
         return config.HttpMethod.ToUpper() switch
         {
-            "POST" => await client.PostAsync($"http://localhost:{ApiGatewayPort}/{config.RouteName}",
+            "POST" => await client.PostAsync($"http://localhost:{apiGatewayPort}/{config.RouteName}",
                 content ?? new StringContent("hello world", Encoding.UTF8, "text/plain")),
-            "GET" => await client.GetAsync($"http://localhost:{ApiGatewayPort}/{config.RouteName}"),
+            "GET" => await client.GetAsync($"http://localhost:{apiGatewayPort}/{config.RouteName}"),
             _ => throw new ArgumentException($"Unsupported HTTP method: {config.HttpMethod}")
         };
     }
 
-    private async Task StartTestToolProcess(ApiGatewayEmulatorMode apiGatewayMode, TestConfig config)
+    private void StartTestToolProcess(ApiGatewayEmulatorMode apiGatewayMode, TestConfig config, int lambdaPort, int apiGatewayPort, CancellationTokenSource cancellationTokenSource)
     {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            Arguments = $"run --project \"{config.TestToolPath}\" -- --api-gateway-emulator {apiGatewayMode} --no-launch-window",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
-
-        startInfo.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = "Development";
-        startInfo.EnvironmentVariables["APIGATEWAY_EMULATOR_ROUTE_CONFIG"] = $@"{{
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+        Environment.SetEnvironmentVariable("APIGATEWAY_EMULATOR_ROUTE_CONFIG", $@"{{
             ""LambdaResourceName"": ""{config.RouteName}"",
-            ""Endpoint"": ""http://localhost:{LambdaPort}"",
+            ""Endpoint"": ""http://localhost:{lambdaPort}"",
             ""HttpMethod"": ""{config.HttpMethod}"",
             ""Path"": ""/{config.RouteName}""
-        }}";
+        }}");
+        cancellationTokenSource.CancelAfter(5000);
+        var settings = new RunCommandSettings { Port = lambdaPort, NoLaunchWindow = true, ApiGatewayEmulatorMode = apiGatewayMode,ApiGatewayEmulatorPort = apiGatewayPort};
+        var command = new RunCommand(_mockInteractiveService.Object);
+        var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
 
-        _mainProcess = Process.Start(startInfo) ?? throw new Exception("Failed to start test tool process");
-        ConfigureProcessLogging(_mainProcess, "TestTool");
+        // Act
+        _ = command.ExecuteAsync(context, settings, cancellationTokenSource);
     }
 
-    private async Task StartLambdaProcess(TestConfig config)
+    private async Task StartLambdaProcess(TestConfig config, int lambdaPort)
     {
         // Build the project
         var buildResult = await RunProcess("dotnet", "publish -c Release", config.LambdaPath);
@@ -254,7 +276,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
             CreateNoWindow = true
         };
 
-        startInfo.EnvironmentVariables["AWS_LAMBDA_RUNTIME_API"] = $"localhost:{LambdaPort}/{config.RouteName}";
+        startInfo.EnvironmentVariables["AWS_LAMBDA_RUNTIME_API"] = $"localhost:{lambdaPort}/{config.RouteName}";
         startInfo.EnvironmentVariables["LAMBDA_TASK_ROOT"] = config.LambdaPath;
         startInfo.EnvironmentVariables["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"] = "256";
         startInfo.EnvironmentVariables["AWS_LAMBDA_FUNCTION_TIMEOUT"] = "30";
@@ -308,12 +330,12 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         return (process.ExitCode, output.ToString(), error.ToString());
     }
 
-    private async Task WaitForGatewayHealthCheck()
+    private async Task WaitForGatewayHealthCheck(int apiGatewayPort)
     {
         using var client = new HttpClient();
         var startTime = DateTime.UtcNow;
         var timeout = TimeSpan.FromSeconds(10);
-        var healthUrl = $"http://localhost:{ApiGatewayPort}/__lambda_test_tool_apigateway_health__";
+        var healthUrl = $"http://localhost:{apiGatewayPort}/__lambda_test_tool_apigateway_health__";
 
         while (DateTime.UtcNow - startTime < timeout)
         {
@@ -342,7 +364,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
 
     private async Task CleanupProcesses()
     {
-        var processes = new[] { _mainProcess, _lambdaProcess };
+        var processes = new[] { _lambdaProcess };
         foreach (var process in processes.Where(p => p != null && !p.HasExited))
         {
             try
