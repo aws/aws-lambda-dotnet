@@ -107,7 +107,7 @@ public static class HttpRequestUtility
         {
             var key = lowerCaseKeyName ? header.Key.ToLower() : header.Key;
             singleValueHeaders[key] = header.Value.Last() ?? "";
-            multiValueHeaders[key] = [.. header.Value];
+            multiValueHeaders[key] = [.. header.Value!];
         }
 
         return (singleValueHeaders, multiValueHeaders);
@@ -133,7 +133,7 @@ public static class HttpRequestUtility
         foreach (var param in query)
         {
             singleValueParams[param.Key] = param.Value.Last() ?? "";
-            multiValueParams[param.Key] = [.. param.Value];
+            multiValueParams[param.Key] = [.. param.Value!];
         }
 
         return (singleValueParams, multiValueParams);

@@ -168,9 +168,11 @@ public static class HttpContextExtensions
 
         if (emulatorMode == ApiGatewayEmulatorMode.Rest) // rest uses encoded value for the path params
         {
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
             var encodedPathParameters = pathParameters.ToDictionary(
                     kvp => kvp.Key,
-                    kvp => Uri.EscapeUriString(kvp.Value)); // intentionally using EscapeURiString over EscapeDataString since EscapeURiString correctly handles reserved characters :/?#[]@!$&'()*+,;= in this case
+                    kvp => Uri.EscapeUriString(kvp.Value)); // intentionally using EscapeUriString over EscapeDataString since EscapeUriString correctly handles reserved characters :/?#[]@!$&'()*+,;= in this case
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
             pathParameters = encodedPathParameters;
         }
 

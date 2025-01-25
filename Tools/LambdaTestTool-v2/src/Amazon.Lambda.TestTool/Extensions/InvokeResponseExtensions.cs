@@ -34,7 +34,7 @@ public static class InvokeResponseExtensions
         string responseJson = reader.ReadToEnd();
         try
         {
-            return JsonSerializer.Deserialize<APIGatewayProxyResponse>(responseJson);
+            return JsonSerializer.Deserialize<APIGatewayProxyResponse>(responseJson)!;
         }
         catch
         {
@@ -132,7 +132,7 @@ public static class InvokeResponseExtensions
                 // It has a statusCode property, so try to deserialize as full response
                 try
                 {
-                    return JsonSerializer.Deserialize<APIGatewayHttpApiV2ProxyResponse>(response);
+                    return JsonSerializer.Deserialize<APIGatewayHttpApiV2ProxyResponse>(response)!;
                 }
                 catch
                 {
@@ -155,7 +155,7 @@ public static class InvokeResponseExtensions
             // return "test", it actually comes as "\"test\"" to response. So we need to get the raw string which is what api gateway does.
             if (jsonElement.ValueKind == JsonValueKind.String)
             {
-                response = jsonElement.GetString();
+                response = jsonElement.GetString()!;
             }
 
         }
