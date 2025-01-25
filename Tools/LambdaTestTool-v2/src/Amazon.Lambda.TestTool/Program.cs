@@ -19,4 +19,17 @@ app.Configure(config =>
     config.SetApplicationName(Constants.ToolName);
 });
 
-return await app.RunAsync(args);
+var arguments = new List<string>(args);
+
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LAMBDA_RUNTIME_API_PORT")))
+{
+    arguments.Add("--port");
+    arguments.Add(Environment.GetEnvironmentVariable("LAMBDA_RUNTIME_API_PORT")!);
+}
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("API_GATEWAY_EMULATOR_PORT")))
+{
+    arguments.Add("--api-gateway-emulator-port");
+    arguments.Add(Environment.GetEnvironmentVariable("API_GATEWAY_EMULATOR_PORT")!);
+}
+
+return await app.RunAsync(arguments);
