@@ -3,10 +3,12 @@
 
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
+using Amazon.Lambda.TestTool.Tests.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
-using static Amazon.Lambda.TestTool.UnitTests.Extensions.HttpContextTestCases;
+using Xunit;
+using static Amazon.Lambda.TestTool.Tests.Common.HttpContextTestCases;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Extensions
 {
@@ -126,7 +128,7 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
             Assert.Equal(["text/html", "application/json"], result.MultiValueHeaders["accept"]);
         }
 
-        
+
         [Fact]
         public async Task ToApiGatewayHttpV1_EncodedAndUnicodeHeader()
         {

@@ -8,6 +8,7 @@ using Amazon.Lambda.TestTool.Services;
 using Spectre.Console.Cli;
 using Moq;
 using Amazon.Lambda.TestTool.UnitTests.Helpers;
+using Xunit;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Commands;
 
@@ -20,6 +21,7 @@ public class RunCommandTests
     public async Task ExecuteAsync_LambdaRuntimeApi_SuccessfulLaunch()
     {
         // Arrange
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var cancellationSource = new CancellationTokenSource();
         cancellationSource.CancelAfter(5000);
         var settings = new RunCommandSettings { Port = 9001, NoLaunchWindow = true };
@@ -42,6 +44,7 @@ public class RunCommandTests
     public async Task ExecuteAsync_ApiGatewayEmulator_SuccessfulLaunch()
     {
         // Arrange
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var cancellationSource = new CancellationTokenSource();
         cancellationSource.CancelAfter(5000);
         var settings = new RunCommandSettings { Port = 9002,  ApiGatewayEmulatorMode = ApiGatewayEmulatorMode.HttpV2, NoLaunchWindow = true};

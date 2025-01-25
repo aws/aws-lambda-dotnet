@@ -6,8 +6,9 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
+using Xunit;
 
-namespace Amazon.Lambda.TestTool.UnitTests.Extensions
+namespace Amazon.Lambda.TestTool.Tests.Common
 {
     public static class HttpContextTestCases
     {

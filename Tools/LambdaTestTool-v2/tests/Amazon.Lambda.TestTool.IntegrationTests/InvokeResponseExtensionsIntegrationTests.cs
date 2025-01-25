@@ -6,6 +6,7 @@ using Amazon.Lambda.Model;
 using Amazon.Lambda.TestTool.Models;
 using System.Text;
 using System.Text.Json;
+using Xunit;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 

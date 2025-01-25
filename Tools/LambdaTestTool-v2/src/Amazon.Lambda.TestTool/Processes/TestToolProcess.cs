@@ -5,6 +5,7 @@ using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Components;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Services.IO;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 
 namespace Amazon.Lambda.TestTool.Processes;
@@ -46,7 +47,11 @@ public class TestToolProcess
 
         builder.Services.AddHttpContextAccessor();
 
-        builder.Services.AddTransient<IPostConfigureOptions<StaticFileOptions>, ConfigureStaticFilesOptions>();
+        var wwwrootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot");
+        if (builder.Environment.IsProduction())
+        {
+            builder.Services.AddSingleton<IFileProvider>(new PhysicalFileProvider(wwwrootPath));
+        }
         builder.Services.AddSingleton<IDirectoryManager, DirectoryManager>();
 
         var serviceUrl = $"http://{settings.Host}:{settings.Port}";
@@ -57,7 +62,17 @@ public class TestToolProcess
 
         app.UseDeveloperExceptionPage();
 
-        app.UseStaticFiles();
+        if (app.Environment.IsProduction())
+        {
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(wwwrootPath)
+            });
+        }
+        else
+        {
+            app.UseStaticFiles();
+        }
         app.UseAntiforgery();
 
         app.MapRazorComponents<App>()

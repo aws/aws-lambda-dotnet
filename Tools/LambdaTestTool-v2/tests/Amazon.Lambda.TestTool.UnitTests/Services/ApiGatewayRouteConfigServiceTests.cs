@@ -7,6 +7,7 @@ using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Services.IO;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Xunit;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Services;
 
