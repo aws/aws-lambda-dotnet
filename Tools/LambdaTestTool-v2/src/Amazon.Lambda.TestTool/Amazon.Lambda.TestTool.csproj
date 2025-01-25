@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
 	  <Description>A tool to help debug and test your .NET AWS Lambda functions locally.</Description>
@@ -16,7 +16,7 @@
     <Version>0.0.1-beta.1</Version>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="$(Configuration) == 'Release'">
     <None Include="$(OutputPath)\publish\wwwroot\" Pack="true" PackagePath="tools\net8.0\any\wwwroot" Visible="false" />
   </ItemGroup>
 
