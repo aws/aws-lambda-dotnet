@@ -24,7 +24,7 @@ public class RuntimeApiTests
 
         var cancellationTokenSource = new CancellationTokenSource();
         var options = new RunCommandSettings();
-        options.Port = 9000;
+        options.LambdaEmulatorPort = 9000;
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
         try
@@ -53,7 +53,7 @@ public class RuntimeApiTests
                 return input.ToUpper();
             };
 
-            System.Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.Host}:{options.Port}/{functionName}");
+            System.Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                     .Build()
                     .RunAsync(cancellationTokenSource.Token);
@@ -74,7 +74,7 @@ public class RuntimeApiTests
 
         var cancellationTokenSource = new CancellationTokenSource();
         var options = new RunCommandSettings();
-        options.Port = 9001;
+        options.LambdaEmulatorPort = 9001;
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
         try
@@ -85,7 +85,7 @@ public class RuntimeApiTests
                 return input.ToUpper();
             };
 
-            System.Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.Host}:{options.Port}/{functionName}");
+            System.Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                     .Build()
                     .RunAsync(cancellationTokenSource.Token);

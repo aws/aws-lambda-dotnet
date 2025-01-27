@@ -48,7 +48,7 @@ public class ApiGatewayEmulatorProcess
 
         builder.Services.AddApiGatewayEmulatorServices();
 
-        var serviceUrl = $"http://{settings.Host}:{settings.ApiGatewayEmulatorPort}";
+        var serviceUrl = $"http://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorPort}";
         builder.WebHost.UseUrls(serviceUrl);
         builder.WebHost.SuppressStatusMessages(true);
 

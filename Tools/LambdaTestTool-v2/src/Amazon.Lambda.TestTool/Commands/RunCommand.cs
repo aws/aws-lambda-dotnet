@@ -98,7 +98,7 @@ public sealed class RunCommand(
             var envValue = environmentVariables[LAMBDA_RUNTIME_API_PORT]?.ToString();
             if (int.TryParse(envValue, out var port))
             {
-                settings.Port = port;
+                settings.LambdaEmulatorPort = port;
             }
             else
             {

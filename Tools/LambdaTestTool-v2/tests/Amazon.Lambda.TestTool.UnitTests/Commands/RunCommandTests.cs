@@ -27,10 +27,10 @@ public class RunCommandTests
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var cancellationSource = new CancellationTokenSource();
         cancellationSource.CancelAfter(5000);
-        var settings = new RunCommandSettings { Port = 9001, NoLaunchWindow = true };
+        var settings = new RunCommandSettings { LambdaEmulatorPort = 9001, NoLaunchWindow = true };
         var command = new RunCommand(_mockInteractiveService.Object, _mockEnvironmentManager.Object);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
-        var apiUrl = $"http://{settings.Host}:{settings.Port}";
+        var apiUrl = $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
 
         // Act
         var runningTask = command.ExecuteAsync(context, settings, cancellationSource);
@@ -50,10 +50,10 @@ public class RunCommandTests
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var cancellationSource = new CancellationTokenSource();
         cancellationSource.CancelAfter(5000);
-        var settings = new RunCommandSettings { Port = 9002,  ApiGatewayEmulatorMode = ApiGatewayEmulatorMode.HttpV2, NoLaunchWindow = true};
+        var settings = new RunCommandSettings { LambdaEmulatorPort = 9002,  ApiGatewayEmulatorMode = ApiGatewayEmulatorMode.HttpV2, NoLaunchWindow = true};
         var command = new RunCommand(_mockInteractiveService.Object, _mockEnvironmentManager.Object);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
-        var apiUrl = $"http://{settings.Host}:{settings.ApiGatewayEmulatorPort}/__lambda_test_tool_apigateway_health__";
+        var apiUrl = $"http://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorPort}/__lambda_test_tool_apigateway_health__";
 
         // Act
         var runningTask = command.ExecuteAsync(context, settings, cancellationSource);
@@ -82,7 +82,7 @@ public class RunCommandTests
         var settings = new RunCommandSettings { ApiGatewayEmulatorMode = ApiGatewayEmulatorMode.HttpV2, NoLaunchWindow = true };
         var command = new RunCommand(_mockInteractiveService.Object, environmentManager);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
-        var apiUrl = $"http://{settings.Host}:9765/__lambda_test_tool_apigateway_health__";
+        var apiUrl = $"http://{settings.LambdaEmulatorHost}:9765/__lambda_test_tool_apigateway_health__";
 
         // Act
         var runningTask = command.ExecuteAsync(context, settings, cancellationSource);

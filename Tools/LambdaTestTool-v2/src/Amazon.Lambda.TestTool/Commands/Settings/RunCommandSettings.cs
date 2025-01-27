@@ -16,19 +16,19 @@ public sealed class RunCommandSettings : CommandSettings
     /// The hostname or IP address used for the test tool's web interface.
     /// Any host other than an explicit IP address or localhost (e.g. '*', '+' or 'example.com') binds to all public IPv4 and IPv6 addresses.
     /// </summary>
-    [CommandOption("--host <HOST>")]
+    [CommandOption("--lambda-emulator-host <HOST>")]
     [Description(
         "The hostname or IP address used for the test tool's web interface. Any host other than an explicit IP address or localhost (e.g. '*', '+' or 'example.com') binds to all public IPv4 and IPv6 addresses.")]
-    [DefaultValue(Constants.DefaultHost)]
-    public string Host { get; set; } = Constants.DefaultHost;
+    [DefaultValue(Constants.DefaultLambdaEmulatorHost)]
+    public string LambdaEmulatorHost { get; set; } = Constants.DefaultLambdaEmulatorHost;
 
     /// <summary>
     /// The port number used for the test tool's web interface.
     /// </summary>
-    [CommandOption("-p|--port <PORT>")]
+    [CommandOption("-p|--lambda-emulator-port <PORT>")]
     [Description("The port number used for the test tool's web interface.")]
-    [DefaultValue(Constants.DefaultLambdaRuntimeEmulatorPort)]
-    public int Port { get; set; } = Constants.DefaultLambdaRuntimeEmulatorPort;
+    [DefaultValue(Constants.DefaultLambdaEmulatorPort)]
+    public int LambdaEmulatorPort { get; set; } = Constants.DefaultLambdaEmulatorPort;
 
     /// <summary>
     /// Disable auto launching the test tool's web interface in a browser.
