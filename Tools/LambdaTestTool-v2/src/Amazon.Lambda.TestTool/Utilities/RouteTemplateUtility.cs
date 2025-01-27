@@ -40,7 +40,7 @@ public static class RouteTemplateUtility
 
             foreach (var param in template.Parameters)
             {
-                if (routeValues.TryGetValue(param.Name, out var value))
+                if (routeValues.TryGetValue(param.Name!, out var value))
                 {
                     var stringValue = value?.ToString() ?? string.Empty;
 
@@ -51,7 +51,7 @@ public static class RouteTemplateUtility
                     }
 
                     // Restore original parameter name
-                    var originalParamName = RestoreOriginalParamName(param.Name);
+                    var originalParamName = RestoreOriginalParamName(param.Name!);
                     result[originalParamName] = stringValue;
                 }
             }

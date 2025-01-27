@@ -14,7 +14,7 @@ public class ApiGatewayRouteConfigService : IApiGatewayRouteConfigService
 {
     private readonly ILogger<ApiGatewayRouteConfigService> _logger;
     private readonly IEnvironmentManager _environmentManager;
-    private List<ApiGatewayRouteConfig> _routeConfigs = new();
+    private readonly List<ApiGatewayRouteConfig> _routeConfigs = new();
 
     /// <summary>
     /// Constructs an instance of <see cref="ApiGatewayRouteConfigService"/>.
