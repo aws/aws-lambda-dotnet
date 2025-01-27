@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
     {
         serviceCollection.TryAdd(new ServiceDescriptor(typeof(IToolInteractiveService), typeof(ConsoleInteractiveService), lifetime));
         serviceCollection.TryAdd(new ServiceDescriptor(typeof(IDirectoryManager), typeof(DirectoryManager), lifetime));
+        serviceCollection.TryAdd(new ServiceDescriptor(typeof(IEnvironmentManager), typeof(EnvironmentManager), lifetime));
     }
 
     /// <summary>

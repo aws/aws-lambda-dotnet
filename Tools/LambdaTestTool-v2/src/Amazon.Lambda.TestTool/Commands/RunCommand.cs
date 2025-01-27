@@ -7,6 +7,7 @@ using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Processes;
 using Amazon.Lambda.TestTool.Services;
+using Amazon.Lambda.TestTool.Services.IO;
 using Spectre.Console.Cli;
 
 namespace Amazon.Lambda.TestTool.Commands;
@@ -15,8 +16,11 @@ namespace Amazon.Lambda.TestTool.Commands;
 /// The default command of the application which is responsible for launching the Lambda Runtime API and the API Gateway Emulator.
 /// </summary>
 public sealed class RunCommand(
-    IToolInteractiveService toolInteractiveService) : CancellableAsyncCommand<RunCommandSettings>
+    IToolInteractiveService toolInteractiveService, IEnvironmentManager environmentManager) : CancellableAsyncCommand<RunCommandSettings>
 {
+    public const string LAMBDA_RUNTIME_API_PORT = "LAMBDA_RUNTIME_API_PORT";
+    public const string API_GATEWAY_EMULATOR_PORT = "API_GATEWAY_EMULATOR_PORT";
+
     /// <summary>
     /// The method responsible for executing the <see cref="RunCommand"/>.
     /// </summary>
@@ -24,6 +28,8 @@ public sealed class RunCommand(
     {
         try
         {
+            EvaluateEnvironmentVariables(settings);
+
             var tasks = new List<Task>();
 
             var testToolProcess = TestToolProcess.Startup(settings, cancellationTokenSource.Token);
@@ -78,6 +84,38 @@ public sealed class RunCommand(
         finally
         {
             await cancellationTokenSource.CancelAsync();
+        }
+    }
+
+    private void EvaluateEnvironmentVariables(RunCommandSettings settings)
+    {
+        var environmentVariables = environmentManager.GetEnvironmentVariables();
+        if (environmentVariables == null)
+            return;
+
+        if (environmentVariables.Contains(LAMBDA_RUNTIME_API_PORT))
+        {
+            var envValue = environmentVariables[LAMBDA_RUNTIME_API_PORT]?.ToString();
+            if (int.TryParse(envValue, out var port))
+            {
+                settings.Port = port;
+            }
+            else
+            {
+                throw new ArgumentException($"Value for {LAMBDA_RUNTIME_API_PORT} environment variable was not a valid port number");
+            }
+        }
+        if (environmentVariables.Contains(API_GATEWAY_EMULATOR_PORT))
+        {
+            var envValue = environmentVariables[API_GATEWAY_EMULATOR_PORT]?.ToString();
+            if (int.TryParse(envValue, out var port))
+            {
+                settings.ApiGatewayEmulatorPort = port;
+            }
+            else
+            {
+                throw new ArgumentException($"Value for {API_GATEWAY_EMULATOR_PORT} environment variable was not a valid port number");
+            }
         }
     }
 }

@@ -8,6 +8,7 @@ using Amazon.Lambda.TestTool.Commands;
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;
+using Amazon.Lambda.TestTool.Services.IO;
 using Moq;
 using Spectre.Console.Cli;
 using Xunit;
@@ -17,6 +18,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests;
 
 public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
 {
+    private readonly Mock<IEnvironmentManager> _mockEnvironmentManager = new Mock<IEnvironmentManager>();
     private readonly Mock<IToolInteractiveService> _mockInteractiveService = new Mock<IToolInteractiveService>();
     private readonly Mock<IRemainingArguments> _mockRemainingArgs = new Mock<IRemainingArguments>();
     private readonly ITestOutputHelper _testOutputHelper;
@@ -245,7 +247,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }}");
         cancellationTokenSource.CancelAfter(5000);
         var settings = new RunCommandSettings { Port = lambdaPort, NoLaunchWindow = true, ApiGatewayEmulatorMode = apiGatewayMode,ApiGatewayEmulatorPort = apiGatewayPort};
-        var command = new RunCommand(_mockInteractiveService.Object);
+        var command = new RunCommand(_mockInteractiveService.Object, _mockEnvironmentManager.Object);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
 
         // Act
