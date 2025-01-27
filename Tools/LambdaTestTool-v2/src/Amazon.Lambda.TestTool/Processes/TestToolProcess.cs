@@ -54,7 +54,7 @@ public class TestToolProcess
         }
         builder.Services.AddSingleton<IDirectoryManager, DirectoryManager>();
 
-        var serviceUrl = $"http://{settings.Host}:{settings.Port}";
+        var serviceUrl = $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
         builder.WebHost.UseUrls(serviceUrl);
         builder.WebHost.SuppressStatusMessages(true);
 

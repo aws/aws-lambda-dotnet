@@ -22,7 +22,7 @@ public class ApiGatewayEmulatorProcessTests
         var cancellationSource = new CancellationTokenSource();
         cancellationSource.CancelAfter(5000);
         var settings = new RunCommandSettings { ApiGatewayEmulatorPort = 9003,  ApiGatewayEmulatorMode = mode, NoLaunchWindow = true};
-        var apiUrl = $"http://{settings.Host}:{settings.ApiGatewayEmulatorPort}/__lambda_test_tool_apigateway_health__";
+        var apiUrl = $"http://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorPort}/__lambda_test_tool_apigateway_health__";
 
         // Act
         var process = ApiGatewayEmulatorProcess.Startup(settings, cancellationSource.Token);

@@ -15,7 +15,7 @@ public class RunCommandSettingsTests
         var settings = new RunCommandSettings();
 
         // Assert
-        Assert.Equal(Constants.DefaultHost, settings.Host);
+        Assert.Equal(Constants.DefaultLambdaEmulatorHost, settings.LambdaEmulatorHost);
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class RunCommandSettingsTests
         var settings = new RunCommandSettings();
 
         // Assert
-        Assert.Equal(Constants.DefaultLambdaRuntimeEmulatorPort, settings.Port);
+        Assert.Equal(Constants.DefaultLambdaEmulatorPort, settings.LambdaEmulatorPort);
     }
 
     [Fact]
