@@ -1,4 +1,4 @@
-﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 using Amazon.Lambda.TestTool.Models;
@@ -23,12 +23,11 @@ public sealed class RunCommandSettings : CommandSettings
     public string LambdaEmulatorHost { get; set; } = Constants.DefaultLambdaEmulatorHost;
 
     /// <summary>
-    /// The port number used for the test tool's web interface.
+    /// The port number used for the test tool's web interface. If a port is specified the Lambda emulator will be started.
     /// </summary>
     [CommandOption("-p|--lambda-emulator-port <PORT>")]
     [Description("The port number used for the test tool's web interface.")]
-    [DefaultValue(Constants.DefaultLambdaEmulatorPort)]
-    public int LambdaEmulatorPort { get; set; } = Constants.DefaultLambdaEmulatorPort;
+    public int? LambdaEmulatorPort { get; set; }
 
     /// <summary>
     /// Disable auto launching the test tool's web interface in a browser.
@@ -58,17 +57,16 @@ public sealed class RunCommandSettings : CommandSettings
     /// and how API Gateway interprets the response from Lambda.
     /// The available modes are: Rest, HttpV1, HttpV2.
     /// </summary>
-    [CommandOption("--api-gateway-emulator <MODE>")]
+    [CommandOption("--api-gateway-emulator-mode <MODE>")]
     [Description(
         "The API Gateway Emulator Mode specifies the format of the event that API Gateway sends to a Lambda integration, and how API Gateway interprets the response from Lambda. " +
         "The available modes are: Rest, HttpV1, HttpV2.")]
     public ApiGatewayEmulatorMode? ApiGatewayEmulatorMode { get; set; }
 
     /// <summary>
-    /// The port number used for the test tool's API Gateway emulator.
+    /// The port number used for the test tool's API Gateway emulator. If a port is specified the API Gateway emulator will be started. The --api-gateway-mode muse also be set when setting the API Gateway emulator port.
     /// </summary>
     [CommandOption("--api-gateway-emulator-port <PORT>")]
     [Description("The port number used for the test tool's API Gateway emulator.")]
-    [DefaultValue(Constants.DefaultApiGatewayEmulatorPort)]
-    public int? ApiGatewayEmulatorPort { get; set; } = Constants.DefaultApiGatewayEmulatorPort;
+    public int? ApiGatewayEmulatorPort { get; set; }
 }

@@ -50,7 +50,7 @@ public class RunCommandTests
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var cancellationSource = new CancellationTokenSource();
         cancellationSource.CancelAfter(5000);
-        var settings = new RunCommandSettings { LambdaEmulatorPort = 9002,  ApiGatewayEmulatorMode = ApiGatewayEmulatorMode.HttpV2, NoLaunchWindow = true};
+        var settings = new RunCommandSettings { LambdaEmulatorPort = 9002, ApiGatewayEmulatorPort = 9003, ApiGatewayEmulatorMode = ApiGatewayEmulatorMode.HttpV2, NoLaunchWindow = true};
         var command = new RunCommand(_mockInteractiveService.Object, _mockEnvironmentManager.Object);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
         var apiUrl = $"http://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorPort}/__lambda_test_tool_apigateway_health__";

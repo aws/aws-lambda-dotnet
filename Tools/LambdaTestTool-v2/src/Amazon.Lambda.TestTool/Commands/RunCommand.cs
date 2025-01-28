@@ -30,30 +30,44 @@ public sealed class RunCommand(
         {
             EvaluateEnvironmentVariables(settings);
 
+            if (!settings.LambdaEmulatorPort.HasValue && !settings.ApiGatewayEmulatorPort.HasValue)
+            {
+                throw new ArgumentException("At least one of the following parameters must be set: " +
+                                            "--lambda-emulator-port or --api-gateway-emulator-port");
+            }
+
             var tasks = new List<Task>();
 
-            var testToolProcess = TestToolProcess.Startup(settings, cancellationTokenSource.Token);
-            tasks.Add(testToolProcess.RunningTask);
-
-            if (!settings.NoLaunchWindow)
+            if (settings.LambdaEmulatorPort.HasValue)
             {
-                try
+                var testToolProcess = TestToolProcess.Startup(settings, cancellationTokenSource.Token);
+                tasks.Add(testToolProcess.RunningTask);
+
+                if (!settings.NoLaunchWindow)
                 {
-                    var info = new ProcessStartInfo
+                    try
                     {
-                        UseShellExecute = true,
-                        FileName = testToolProcess.ServiceUrl
-                    };
-                    Process.Start(info);
-                }
-                catch (Exception e)
-                {
-                    toolInteractiveService.WriteErrorLine($"Error launching browser: {e.Message}");
+                        var info = new ProcessStartInfo
+                        {
+                            UseShellExecute = true,
+                            FileName = testToolProcess.ServiceUrl
+                        };
+                        Process.Start(info);
+                    }
+                    catch (Exception e)
+                    {
+                        toolInteractiveService.WriteErrorLine($"Error launching browser: {e.Message}");
+                    }
                 }
             }
 
-            if (settings.ApiGatewayEmulatorMode is not null)
+            if (settings.ApiGatewayEmulatorPort.HasValue)
             {
+                if (settings.ApiGatewayEmulatorMode is null)
+                {
+                    throw new ArgumentException("When --api-gateway-emulator-port is set the --api-gateway-mode must be set to configure the mode for the API Gateway emulator.");
+                }
+
                 var apiGatewayEmulatorProcess =
                     ApiGatewayEmulatorProcess.Startup(settings, cancellationTokenSource.Token);
                 tasks.Add(apiGatewayEmulatorProcess.RunningTask);

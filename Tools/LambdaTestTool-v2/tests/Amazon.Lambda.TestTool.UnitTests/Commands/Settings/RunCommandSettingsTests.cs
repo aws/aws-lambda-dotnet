@@ -1,4 +1,4 @@
-﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 using Amazon.Lambda.TestTool.Commands.Settings;
@@ -16,26 +16,6 @@ public class RunCommandSettingsTests
 
         // Assert
         Assert.Equal(Constants.DefaultLambdaEmulatorHost, settings.LambdaEmulatorHost);
-    }
-
-    [Fact]
-    public void DefaultPort_IsSetToConstantsDefaultPort()
-    {
-        // Arrange
-        var settings = new RunCommandSettings();
-
-        // Assert
-        Assert.Equal(Constants.DefaultLambdaEmulatorPort, settings.LambdaEmulatorPort);
-    }
-
-    [Fact]
-    public void ApiGatewayEmulatorPort_IsSetToConstantsDefaultApiGatewayEmulatorPort()
-    {
-        // Arrange
-        var settings = new RunCommandSettings();
-
-        // Assert
-        Assert.Equal(Constants.DefaultApiGatewayEmulatorPort, settings.ApiGatewayEmulatorPort);
     }
 
     [Fact]
