@@ -16,16 +16,6 @@ public abstract class Constants
     public const string ToolName = "dotnet-lambda-test-tool";
 
     /// <summary>
-    /// The default port used by the Lambda Test Tool for the Lambda Runtime API and the Web Interface.
-    /// </summary>
-    public const int DefaultLambdaEmulatorPort = 5050;
-
-    /// <summary>
-    /// The default port used by the API Gateway Emulator.
-    /// </summary>
-    public const int DefaultApiGatewayEmulatorPort = 5051;
-
-    /// <summary>
     /// The default hostname used for the Lambda Test Tool.
     /// </summary>
     public const string DefaultLambdaEmulatorHost = "localhost";

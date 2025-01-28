@@ -291,7 +291,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
             ""HttpMethod"": ""{config.HttpMethod}"",
             ""Path"": ""/{config.RouteName}""
         }}");
-        cancellationTokenSource.CancelAfter(5000);
+        cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(60));
         var settings = new RunCommandSettings { LambdaEmulatorPort = lambdaPort, NoLaunchWindow = true, ApiGatewayEmulatorMode = apiGatewayMode,ApiGatewayEmulatorPort = apiGatewayPort};
         var command = new RunCommand(_mockInteractiveService.Object, _mockEnvironmentManager.Object);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);

@@ -8,11 +8,14 @@ using Amazon.Lambda.TestTool.SampleRequests;
 using Amazon.Lambda.TestTool.Services.IO;
 using BlazorMonaco.Editor;
 using Microsoft.JSInterop;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace Amazon.Lambda.TestTool.Components.Pages;
 
 public partial class Home : ComponentBase, IDisposable
 {
+    [Inject] public required NavigationManager NavManager { get; set; }
+    [Inject] public required ILogger<Home> Logger { get; set; }
     [Inject] public required IHttpContextAccessor HttpContextAccessor { get; set; }
     [Inject] public required IRuntimeApiDataStoreManager DataStoreManager { get; set; }
     [Inject] public required IDirectoryManager DirectoryManager { get; set; }
@@ -87,10 +90,38 @@ public partial class Home : ComponentBase, IDisposable
 
     protected override void OnInitialized()
     {
-        DataStore = DataStoreManager.GetLambdaRuntimeDataStore(LambdaRuntimeApi.DefaultFunctionName);
+        var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+        string initialFunction = string.Empty;
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("function", out var queryValue))
+        {
+            initialFunction = queryValue.ToString();
+        }
+
+        Logger.LogDebug("Query string variable for initial Lambda function set to: {initialFunction}", initialFunction);
+
         _availableLambdaFunctions = DataStoreManager.GetListOfFunctionNames().ToList();
         if (_availableLambdaFunctions.Count > 0)
-            SelectedFunctionName = _availableLambdaFunctions.First();
+        {
+            if (!string.IsNullOrEmpty(initialFunction) && _availableLambdaFunctions.Contains(initialFunction))
+            {
+                Logger.LogDebug("Query string function found in the list of available functions");
+                SelectedFunctionName = initialFunction;
+            }
+            else
+            {
+                Logger.LogDebug("Query string function not found in the list of available functions");
+                SelectedFunctionName = _availableLambdaFunctions.First();
+            }
+
+            DataStore = DataStoreManager.GetLambdaRuntimeDataStore(SelectedFunctionName);
+        }
+        else
+        {
+            Logger.LogDebug("No functions currently registered with the test tool so default to the default function datastore");
+            DataStore = DataStoreManager.GetLambdaRuntimeDataStore(LambdaRuntimeApi.DefaultFunctionName);
+        }
+
+
         ThemeService.OnThemeChanged += HandleThemeChanged;
         DataStoreManager.StateChange += DataStoreManagerOnStateChange;
         SampleRequestManager = new SampleRequestManager(DirectoryManager.GetCurrentDirectory());
