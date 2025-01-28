@@ -96,7 +96,7 @@ public class ApiGatewayEmulatorProcess
                 PayloadStream = lambdaRequestStream
             };
 
-            using var lambdaClient = CreateLambdaServiceClient(routeConfig);
+            using var lambdaClient = CreateLambdaServiceClient(routeConfig, settings);
             var response =  await lambdaClient.InvokeAsync(invokeRequest);
 
             if (response.FunctionError != null)
@@ -111,13 +111,11 @@ public class ApiGatewayEmulatorProcess
             {
                 var lambdaResponse = response.ToApiGatewayHttpApiV2ProxyResponse();
                 await lambdaResponse.ToHttpResponseAsync(context);
-                return;
             }
             else
             {
                 var lambdaResponse = response.ToApiGatewayProxyResponse(settings.ApiGatewayEmulatorMode.Value);
                 await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
-                return;
             }
         });
 
@@ -131,12 +129,27 @@ public class ApiGatewayEmulatorProcess
         };
     }
 
-    private static IAmazonLambda CreateLambdaServiceClient(ApiGatewayRouteConfig routeConfig)
+    /// <summary>
+    /// Creates an Amazon Lambda service client with the specified configuration.
+    /// </summary>
+    /// <param name="routeConfig">The API Gateway route configuration containing the endpoint information.
+    /// If the endpoint is specified in routeConfig, it will be used as the service URL.</param>
+    /// <param name="settings">The run command settings containing host and port information.
+    /// If routeConfig endpoint is null, the service URL will be constructed using settings.Host and settings.Port.</param>
+    /// <returns>An instance of IAmazonLambda configured with the specified endpoint and credentials.</returns>
+    /// <remarks>
+    /// The function uses hard-coded AWS credentials ("accessKey", "secretKey") for authentication since they are not actually being used.
+    /// The service URL is determined by either:
+    /// - Using routeConfig.Endpoint if it's not null
+    /// - Combining settings.Host and settings.Port if routeConfig.Endpoint is null
+    /// </remarks>
+    private static IAmazonLambda CreateLambdaServiceClient(ApiGatewayRouteConfig routeConfig, RunCommandSettings settings)
     {
-        // TODO: Handle routeConfig.Endpoint to null and use the settings versions of runtime.
+        var endpoint = routeConfig.Endpoint ?? $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
+
         var lambdaConfig = new AmazonLambdaConfig
         {
-            ServiceURL = routeConfig.Endpoint
+            ServiceURL = endpoint
         };
 
         return new AmazonLambdaClient(new Amazon.Runtime.BasicAWSCredentials("accessKey", "secretKey"), lambdaConfig);
