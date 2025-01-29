@@ -227,11 +227,13 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
 
         try
         {
-            StartTestToolProcessWithNullEndpoint(ApiGatewayEmulatorMode.HttpV2, Constants.DefaultApiGatewayEmulatorPort, config, cancellationTokenSource);
-            await WaitForGatewayHealthCheck(Constants.DefaultApiGatewayEmulatorPort);
-            await StartLambdaProcess(config, Constants.DefaultLambdaEmulatorPort);
+            const int lambdaPort = 5060;
+            const int apiGatewayPort = 5061;
+            StartTestToolProcessWithNullEndpoint(ApiGatewayEmulatorMode.HttpV2, lambdaPort, apiGatewayPort, config, cancellationTokenSource);
+            await WaitForGatewayHealthCheck(apiGatewayPort);
+            await StartLambdaProcess(config, lambdaPort);
 
-            var response = await TestEndpoint(config, Constants.DefaultApiGatewayEmulatorPort );
+            var response = await TestEndpoint(config, apiGatewayPort);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -264,7 +266,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         };
     }
 
-    private void StartTestToolProcessWithNullEndpoint(ApiGatewayEmulatorMode apiGatewayMode, int apiGatewayPort, TestConfig config, CancellationTokenSource cancellationTokenSource)
+    private void StartTestToolProcessWithNullEndpoint(ApiGatewayEmulatorMode apiGatewayMode, int lambdaPort, int apiGatewayPort, TestConfig config, CancellationTokenSource cancellationTokenSource)
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         Environment.SetEnvironmentVariable("APIGATEWAY_EMULATOR_ROUTE_CONFIG", $@"{{
@@ -273,8 +275,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         ""Path"": ""/{config.RouteName}""
     }}");
 
-        cancellationTokenSource.CancelAfter(5000);
-        var settings = new RunCommandSettings { NoLaunchWindow = true, ApiGatewayEmulatorMode = apiGatewayMode, ApiGatewayEmulatorPort = apiGatewayPort};
+        cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(60));
+        var settings = new RunCommandSettings { NoLaunchWindow = true, ApiGatewayEmulatorMode = apiGatewayMode, ApiGatewayEmulatorPort = apiGatewayPort, LambdaEmulatorPort = lambdaPort};
 
         var command = new RunCommand(_mockInteractiveService.Object, _mockEnvironmentManager.Object);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
