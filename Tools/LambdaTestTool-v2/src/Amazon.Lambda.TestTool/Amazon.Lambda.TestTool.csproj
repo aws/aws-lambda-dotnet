@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
 	  <Description>A tool to help debug and test your .NET AWS Lambda functions locally.</Description>
@@ -13,7 +13,7 @@
     <PackAsTool>true</PackAsTool>
     <PackageId>Amazon.Lambda.TestTool</PackageId>
     <ToolCommandName>dotnet-lambda-test-tool</ToolCommandName>
-    <Version>0.0.1-beta.1</Version>
+    <Version>0.0.1-preview</Version>
     <NoWarn>NU5100</NoWarn>
   </PropertyGroup>
 
@@ -40,8 +40,7 @@
     <ItemGroup>
       <TempFrameworks Include="$(RuntimeSupportTargetFrameworks.Split(';'))" />
 
-      <TargetFrameworks Include="@(TempFrameworks)"
-                        Condition="'%(Identity)' != 'netstandard2.0'" />
+      <TargetFrameworks Include="@(TempFrameworks)" Condition="'%(Identity)' != 'netstandard2.0'" />
     </ItemGroup>
 
     <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj&quot; -c $(Configuration) -f %(TargetFrameworks.Identity) /p:ExecutableOutputType=true" />
