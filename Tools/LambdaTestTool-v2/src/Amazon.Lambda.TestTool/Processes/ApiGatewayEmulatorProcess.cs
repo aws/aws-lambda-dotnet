@@ -99,24 +99,35 @@ public class ApiGatewayEmulatorProcess
             using var lambdaClient = CreateLambdaServiceClient(routeConfig, settings);
             var response =  await lambdaClient.InvokeAsync(invokeRequest);
 
-            if (response.FunctionError != null)
+            if (response.FunctionError == null) // response is successful
             {
-                // TODO: Mimic API Gateway's behavior when Lambda function has an exception during invocation.
-                context.Response.StatusCode = 500;
-                return;
-            }
-
-            // Convert API Gateway response object returned from Lambda to ASP.NET Core response.
-            if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
-            {
-                var lambdaResponse = response.ToApiGatewayHttpApiV2ProxyResponse();
-                await lambdaResponse.ToHttpResponseAsync(context);
+                if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
+                {
+                    var lambdaResponse = response.ToApiGatewayHttpApiV2ProxyResponse();
+                    await lambdaResponse.ToHttpResponseAsync(context);
+                }
+                else
+                {
+                    var lambdaResponse = response.ToApiGatewayProxyResponse(settings.ApiGatewayEmulatorMode.Value);
+                    await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                }
             }
             else
             {
-                var lambdaResponse = response.ToApiGatewayProxyResponse(settings.ApiGatewayEmulatorMode.Value);
-                await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                // For function errors, api gateway just displays them as an internal server error, so we convert them to the correct error response here.
+
+                if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
+                {
+                    var lambdaResponse = InvokeResponseExtensions.ToHttpApiV2ErrorResponse();
+                    await lambdaResponse.ToHttpResponseAsync(context);
+                }
+                else
+                {
+                    var lambdaResponse = InvokeResponseExtensions.ToApiGatewayErrorResponse(settings.ApiGatewayEmulatorMode.Value);
+                    await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                }
             }
+
         });
 
         var runTask = app.RunAsync(cancellationToken);

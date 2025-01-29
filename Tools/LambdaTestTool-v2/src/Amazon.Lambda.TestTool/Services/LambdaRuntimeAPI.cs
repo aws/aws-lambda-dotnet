@@ -63,16 +63,31 @@ public class LambdaRuntimeApi
         if (isRequestResponseMode)
         {
             evnt.WaitForCompletion();
-            var result = Results.Ok(evnt.Response);
-            ctx.Response.StatusCode = 200;
 
-            if (!string.IsNullOrEmpty(evnt.Response))
+            if (evnt.EventStatus == EventContainer.Status.Success)
             {
-                var responseData = Encoding.UTF8.GetBytes(evnt.Response);
-                ctx.Response.Headers.ContentType = "application/json";
-                ctx.Response.Headers.ContentLength = responseData.Length;
+                var result = Results.Ok(evnt.Response);
+                ctx.Response.StatusCode = 200;
 
-                await ctx.Response.Body.WriteAsync(responseData);
+                if (!string.IsNullOrEmpty(evnt.Response))
+                {
+                    var responseData = Encoding.UTF8.GetBytes(evnt.Response);
+                    ctx.Response.Headers.ContentType = "application/json";
+                    ctx.Response.Headers.ContentLength = responseData.Length;
+                    await ctx.Response.Body.WriteAsync(responseData);
+                }
+            }
+            else
+            {
+                ctx.Response.StatusCode = 200;
+                ctx.Response.Headers["X-Amz-Function-Error"] = evnt.ErrorType;
+                if (!string.IsNullOrEmpty(evnt.ErrorResponse))
+                {
+                    var errorData = Encoding.UTF8.GetBytes(evnt.ErrorResponse);
+                    ctx.Response.Headers.ContentType = "application/json";
+                    ctx.Response.Headers.ContentLength = errorData.Length;
+                    await ctx.Response.Body.WriteAsync(errorData);
+                }
             }
             evnt.Dispose();
         }
