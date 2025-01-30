@@ -9,6 +9,7 @@ using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.TestTool.Processes;
 using Amazon.Lambda.TestTool.Commands.Settings;
+using Amazon.Lambda.TestTool.UnitTests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Environment = System.Environment;
@@ -22,9 +23,11 @@ public class RuntimeApiTests
     {
         const string functionName = "FunctionFoo";
 
+        var lambdaPort = TestHelpers.GetNextLambdaRuntimePort();
         var cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.CancelAfter(15_000);
         var options = new RunCommandSettings();
-        options.LambdaEmulatorPort = 9000;
+        options.LambdaEmulatorPort = lambdaPort;
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
         try
@@ -37,7 +40,7 @@ public class RuntimeApiTests
                 InvocationType = InvocationType.Event
             };
 
-            await lambdaClient.InvokeAsync(invokeFunction);
+            await lambdaClient.InvokeAsync(invokeFunction, cancellationTokenSource.Token);
 
             var dataStoreManager = testToolProcess.Services.GetRequiredService<IRuntimeApiDataStoreManager>();
             var dataStore = dataStoreManager.GetLambdaRuntimeDataStore(functionName);
@@ -50,15 +53,16 @@ public class RuntimeApiTests
             var handler = (string input, ILambdaContext context) =>
             {
                 handlerCalled = true;
+                Thread.Sleep(1000); // Add a sleep to prove the LambdaRuntimeApi waited for the completion.
                 return input.ToUpper();
             };
 
-            System.Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}");
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                     .Build()
                     .RunAsync(cancellationTokenSource.Token);
 
-            await Task.Delay(2000);
+            await Task.Delay(2_000, cancellationTokenSource.Token);
             Assert.True(handlerCalled);
         }
         finally
@@ -72,9 +76,11 @@ public class RuntimeApiTests
     {
         const string functionName = "FunctionFoo";
 
+        var lambdaPort = TestHelpers.GetNextLambdaRuntimePort();
         var cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.CancelAfter(15_000);
         var options = new RunCommandSettings();
-        options.LambdaEmulatorPort = 9001;
+        options.LambdaEmulatorPort = lambdaPort;
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
         try
@@ -85,7 +91,7 @@ public class RuntimeApiTests
                 return input.ToUpper();
             };
 
-            System.Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}");
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                     .Build()
                     .RunAsync(cancellationTokenSource.Token);
@@ -99,7 +105,7 @@ public class RuntimeApiTests
                 Payload = "\"hello\""
             };
 
-            var response = await lambdaClient.InvokeAsync(invokeFunction);
+            var response = await lambdaClient.InvokeAsync(invokeFunction, cancellationTokenSource.Token);
             var responsePayloadString = System.Text.Encoding.Default.GetString(response.Payload.ToArray());
             Assert.Equal("\"HELLO\"", responsePayloadString);
 
@@ -111,7 +117,7 @@ public class RuntimeApiTests
                 InvocationType = InvocationType.RequestResponse
             };
 
-            response = await lambdaClient.InvokeAsync(invokeFunction);
+            response = await lambdaClient.InvokeAsync(invokeFunction, cancellationTokenSource.Token);
             responsePayloadString = System.Text.Encoding.Default.GetString(response.Payload.ToArray());
             Assert.Equal("\"HELLO\"", responsePayloadString);
         }

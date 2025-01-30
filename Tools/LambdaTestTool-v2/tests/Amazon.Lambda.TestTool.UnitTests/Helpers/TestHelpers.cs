@@ -1,6 +1,8 @@
 ﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Collections.Concurrent;
+
 namespace Amazon.Lambda.TestTool.UnitTests.Helpers;
 
 internal static class TestHelpers
@@ -37,5 +39,18 @@ internal static class TestHelpers
         {
             return await client.GetAsync(url);
         }
+    }
+
+    private static int _maxLambdaRuntimePort = 6000;
+    private static int _maxApiGatewayPort = 9000;
+
+    public static int GetNextLambdaRuntimePort()
+    {
+        return Interlocked.Increment(ref _maxLambdaRuntimePort);
+    }
+
+    public static int GetNextApiGatewayPort()
+    {
+        return Interlocked.Increment(ref _maxApiGatewayPort);
     }
 }
