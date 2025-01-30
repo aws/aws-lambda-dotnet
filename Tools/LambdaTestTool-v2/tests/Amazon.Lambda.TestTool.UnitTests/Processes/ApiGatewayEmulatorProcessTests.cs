@@ -19,9 +19,11 @@ public class ApiGatewayEmulatorProcessTests
     public async Task RouteNotFound(ApiGatewayEmulatorMode mode, HttpStatusCode statusCode, string body)
     {
         // Arrange
+        var lambdaPort = TestHelpers.GetNextLambdaRuntimePort();
+        var gatewayPort = TestHelpers.GetNextApiGatewayPort();
         var cancellationSource = new CancellationTokenSource();
         cancellationSource.CancelAfter(5000);
-        var settings = new RunCommandSettings { ApiGatewayEmulatorPort = 9003,  ApiGatewayEmulatorMode = mode, NoLaunchWindow = true};
+        var settings = new RunCommandSettings { LambdaEmulatorPort = lambdaPort, ApiGatewayEmulatorPort = gatewayPort,  ApiGatewayEmulatorMode = mode, NoLaunchWindow = true};
         var apiUrl = $"http://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorPort}/__lambda_test_tool_apigateway_health__";
 
         // Act
