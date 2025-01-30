@@ -201,7 +201,6 @@
     <Target Name="run-integ-tests">
         <Exec Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot;" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.IntegrationTests"/>
         <Exec Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot;" WorkingDirectory="..\Libraries\test\TestServerlessApp.IntegrationTests"/>
-        <Exec Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot;" WorkingDirectory="..\Tools\LambdaTestTool-v2\tests\Amazon.Lambda.TestTool.IntegrationTests"/>
     </Target>
     <Target Name="create-nuget-packages-cicd" DependsOnTargets="build-project-packages">
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>

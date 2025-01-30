@@ -56,7 +56,11 @@ public class PackagingTests : IDisposable
         return output.Trim();
     }
 
+#if DEBUG
+    [Fact]
+#else
     [Fact(Skip = "Skipping this test as it is not working properly.")]
+#endif
     public void VerifyPackageContentsHasRuntimeSupport()
     {
         var projectPath = Path.Combine(_workingDirectory, "Tools", "LambdaTestTool-v2", "src", "Amazon.Lambda.TestTool", "Amazon.Lambda.TestTool.csproj");
