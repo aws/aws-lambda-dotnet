@@ -38,32 +38,48 @@ public static class InvokeResponseExtensions
         }
         catch
         {
-            if (emulatorMode == ApiGatewayEmulatorMode.Rest)
+            return ToApiGatewayErrorResponse(emulatorMode);
+        }
+    }
+
+    /// <summary>
+    /// Creates an API Gateway error response based on the emulator mode.
+    /// </summary>
+    /// <param name="emulatorMode">The API Gateway emulator mode (Rest or Http).</param>
+    /// <returns>An APIGatewayProxyResponse object representing the error response.</returns>
+    /// <remarks>
+    /// This method generates different error responses based on the API Gateway emulator mode:
+    /// - For Rest mode: Returns a response with StatusCode 502 and a generic error message.
+    /// - For Http mode: Returns a response with StatusCode 500 and a generic error message.
+    /// Both responses include a Content-Type header set to application/json.
+    /// </remarks>
+    public static APIGatewayProxyResponse ToApiGatewayErrorResponse(ApiGatewayEmulatorMode emulatorMode)
+    {
+        if (emulatorMode == ApiGatewayEmulatorMode.Rest)
+        {
+            return new APIGatewayProxyResponse
             {
-                return new APIGatewayProxyResponse
-                {
-                    StatusCode = 502,
-                    Body = "{\"message\":\"Internal server error\"}",
-                    Headers = new Dictionary<string, string>
+                StatusCode = 502,
+                Body = "{\"message\":\"Internal server error\"}",
+                Headers = new Dictionary<string, string>
                 {
                     { "Content-Type", "application/json" }
                 },
-                    IsBase64Encoded = false
-                };
-            }
-            else
+                IsBase64Encoded = false
+            };
+        }
+        else
+        {
+            return new APIGatewayProxyResponse
             {
-                return new APIGatewayProxyResponse
-                {
-                    StatusCode = 500,
-                    Body = "{\"message\":\"Internal Server Error\"}",
-                    Headers = new Dictionary<string, string>
+                StatusCode = 500,
+                Body = "{\"message\":\"Internal Server Error\"}",
+                Headers = new Dictionary<string, string>
                 {
                     { "Content-Type", "application/json" }
                 },
-                    IsBase64Encoded = false
-                };
-            }
+                IsBase64Encoded = false
+            };
         }
     }
 
@@ -137,16 +153,7 @@ public static class InvokeResponseExtensions
                 catch
                 {
                     // If deserialization fails, return Internal Server Error
-                    return new APIGatewayHttpApiV2ProxyResponse
-                    {
-                        StatusCode = 500,
-                        Body = "{\"message\":\"Internal Server Error\"}",
-                        Headers = new Dictionary<string, string>
-                    {
-                        { "Content-Type", "application/json" }
-                    },
-                        IsBase64Encoded = false
-                    };
+                    return ToHttpApiV2ErrorResponse();
                 }
             }
 
@@ -173,6 +180,31 @@ public static class InvokeResponseExtensions
         {
             { "Content-Type", "application/json" }
         },
+            IsBase64Encoded = false
+        };
+    }
+
+    /// <summary>
+    /// Creates a standard HTTP API v2 error response.
+    /// </summary>
+    /// <returns>An APIGatewayHttpApiV2ProxyResponse object representing the error response.</returns>
+    /// <remarks>
+    /// This method generates a standard error response for HTTP API v2:
+    /// - StatusCode is set to 500 (Internal Server Error).
+    /// - Body contains a JSON string with a generic error message.
+    /// - Headers include a Content-Type set to application/json.
+    /// - IsBase64Encoded is set to false.
+    /// </remarks>
+    public static APIGatewayHttpApiV2ProxyResponse ToHttpApiV2ErrorResponse()
+    {
+        return new APIGatewayHttpApiV2ProxyResponse
+        {
+            StatusCode = 500,
+            Body = "{\"message\":\"Internal Server Error\"}",
+            Headers = new Dictionary<string, string>
+            {
+                { "Content-Type", "application/json" }
+            },
             IsBase64Encoded = false
         };
     }
