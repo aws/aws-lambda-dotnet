@@ -1,12 +1,9 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 using System.Text;
 using Amazon.Lambda.TestTool.Models;
 using Microsoft.AspNetCore.Mvc;
-[assembly: InternalsVisibleTo("Amazon.Lambda.TestTool.UnitTests")]
 
 namespace Amazon.Lambda.TestTool.Services;
 
