@@ -1,8 +1,10 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using Amazon.Lambda.TestTool.Commands;
 using Amazon.Lambda.TestTool.Commands.Settings;
@@ -22,6 +24,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     private readonly Mock<IToolInteractiveService> _mockInteractiveService = new Mock<IToolInteractiveService>();
     private readonly Mock<IRemainingArguments> _mockRemainingArgs = new Mock<IRemainingArguments>();
     private readonly ITestOutputHelper _testOutputHelper;
+    private readonly ConcurrentQueue<string> _logMessages = new ConcurrentQueue<string>();
+    private readonly SemaphoreSlim _logSemaphore = new SemaphoreSlim(1, 1);
     private Process? _lambdaProcess;
 
     public ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
@@ -32,8 +36,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperV2()
     {
-        var lambdaPort = 6012;
-        var apiGatewayPort = 6013;
+        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -67,8 +71,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperRest()
     {
-        var lambdaPort = 6010;
-        var apiGatewayPort = 6011;
+        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -102,8 +106,9 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperV1()
     {
-        var lambdaPort = 6008;
-        var apiGatewayPort = 6009;
+        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+
+
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -137,8 +142,9 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaBinaryResponse()
     {
-        var lambdaPort = 6006;
-        var apiGatewayPort = 6007;
+        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+
+
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -178,8 +184,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaReturnString()
     {
-        var lambdaPort = 6004;
-        var apiGatewayPort = 6005;
+        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -227,8 +233,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
 
         try
         {
-            const int lambdaPort = 5060;
-            const int apiGatewayPort = 5061;
+            var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+
             StartTestToolProcessWithNullEndpoint(ApiGatewayEmulatorMode.HttpV2, lambdaPort, apiGatewayPort, config, cancellationTokenSource);
             await WaitForGatewayHealthCheck(apiGatewayPort);
             await StartLambdaProcess(config, lambdaPort);
@@ -302,6 +308,34 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         _ = command.ExecuteAsync(context, settings, cancellationTokenSource);
     }
 
+    private async Task<(int lambdaPort, int apiGatewayPort)> GetFreePorts()
+    {
+        // Get two different ports
+        var lambdaPort = GetFreePort();
+        int apiGatewayPort;
+        do
+        {
+            apiGatewayPort = GetFreePort();
+        } while (apiGatewayPort == lambdaPort);
+
+        return (lambdaPort, apiGatewayPort);
+    }
+
+    private int GetFreePort()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        try
+        {
+            listener.Start();
+            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            return port;
+        }
+        finally
+        {
+            listener.Stop();
+        }
+    }
+
     private async Task StartLambdaProcess(TestConfig config, int lambdaPort)
     {
         // Build the project
@@ -339,13 +373,13 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
 
     private void ConfigureProcessLogging(Process process, string prefix)
     {
-        process.OutputDataReceived += (_, e) =>
+        process.OutputDataReceived += async (_, e) =>
         {
-            if (e.Data != null) LogMessage($"{prefix}: {e.Data}");
+            if (e.Data != null) await LogMessage($"{prefix}: {e.Data}");
         };
-        process.ErrorDataReceived += (_, e) =>
+        process.ErrorDataReceived += async (_, e) =>
         {
-            if (e.Data != null) LogMessage($"{prefix} Error: {e.Data}");
+            if (e.Data != null) await LogMessage($"{prefix} Error: {e.Data}");
         };
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
@@ -406,10 +440,18 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         throw new TimeoutException("API Gateway failed to start within timeout period");
     }
 
-    private void LogMessage(string message)
+    private async Task LogMessage(string message)
     {
-        Console.WriteLine(message);
-        _testOutputHelper.WriteLine(message);
+        await _logSemaphore.WaitAsync();
+        try
+        {
+            Console.WriteLine(message); // Still write to console for debugging
+            _logMessages.Enqueue(message);
+        }
+        finally
+        {
+            _logSemaphore.Release();
+        }
     }
 
     private async Task CleanupProcesses()
@@ -435,6 +477,13 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        // Write all queued messages before disposing
+        while (_logMessages.TryDequeue(out var message))
+        {
+            _testOutputHelper.WriteLine(message);
+        }
+
         await CleanupProcesses();
+        _logSemaphore.Dispose();
     }
 }
