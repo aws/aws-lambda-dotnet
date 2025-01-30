@@ -3920,7 +3920,7 @@ namespace Amazon.Lambda.Tests
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("appsync-event.json"))
             {
-                var appSyncEvent = serializer.Deserialize<AppSyncEvent>(fileStream);
+                var appSyncEvent = serializer.Deserialize<AppSyncEvent<Dictionary<string, object>>>(fileStream);
                 Assert.NotNull(appSyncEvent);
                 Assert.NotNull(appSyncEvent.Arguments);
                 Assert.NotNull(appSyncEvent.Arguments["input"]);
@@ -3964,7 +3964,7 @@ namespace Amazon.Lambda.Tests
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("appsync-event-cognito-authorizer.json"))
             {
-                var request = serializer.Deserialize<AppSyncEvent>(fileStream);
+                var request = serializer.Deserialize<AppSyncEvent<Dictionary<string, object>>>(fileStream);
 
                 Assert.NotNull(request.Identity);
 
@@ -4014,7 +4014,7 @@ namespace Amazon.Lambda.Tests
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
             using (var fileStream = LoadJsonTestFile("appsync-event-iam-authorizer.json"))
             {
-                var request = serializer.Deserialize<AppSyncEvent>(fileStream);
+                var request = serializer.Deserialize<AppSyncEvent<Dictionary<string, object>>>(fileStream);
 
                 Assert.NotNull(request.Identity);
 
