@@ -1,4 +1,4 @@
-﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Reflection;
@@ -40,6 +40,14 @@ public static class Utils
         }
 
         return version ?? unknownVersion;
+    }
+
+    /// <summary>
+    /// If true it means the test tool was launched via an Aspire AppHost.
+    /// </summary>
+    internal static bool IsAspireHosted
+    {
+        get { return string.Equals(Environment.GetEnvironmentVariable("ASPIRE_HOSTED"), "true", StringComparison.OrdinalIgnoreCase); }
     }
 
     /// <summary>

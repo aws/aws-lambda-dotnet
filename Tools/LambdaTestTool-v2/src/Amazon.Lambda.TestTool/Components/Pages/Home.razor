@@ -3,6 +3,7 @@
 @using Amazon.Lambda.TestTool.Models
 @using Amazon.Lambda.TestTool.SampleRequests
 @using Amazon.Lambda.TestTool.Services
+@using Amazon.Lambda.TestTool.Utilities
 
 <PageTitle>Lambda Function Tester</PageTitle>
 
@@ -26,11 +27,14 @@
     </div>
 </div>
 
-<div class="alert alert-secondary" role="alert">
-    For Lambda functions written as executable assemblies, i.e. custom runtimes functions and top level statement functions, this page can be used for testing the functions locally.
-    Set the <b>AWS_LAMBDA_RUNTIME_API</b> environment variable to <b>@HttpContextAccessor.HttpContext?.Request.Host</b> while debugging executable assembly
-    Lambda function. More information can be found in the <a href="/documentation">documentation</a>.
-</div>
+@if (!Utils.IsAspireHosted)
+{
+    <div class="alert alert-secondary" role="alert">
+        For Lambda functions written as executable assemblies, i.e. custom runtimes functions and top level statement functions, this page can be used for testing the functions locally.
+        Set the <b>AWS_LAMBDA_RUNTIME_API</b> environment variable to <b>@HttpContextAccessor.HttpContext?.Request.Host</b> while debugging executable assembly
+        Lambda function. More information can be found in the <a href="/documentation">documentation</a>.
+    </div>
+}
 
 @if (DataStore == null)
 {
