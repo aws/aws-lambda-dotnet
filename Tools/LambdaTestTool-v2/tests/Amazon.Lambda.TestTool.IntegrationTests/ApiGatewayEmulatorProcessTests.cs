@@ -9,6 +9,7 @@ using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Services.IO;
+using Amazon.Lambda.TestTool.Tests.Common.Helpers;
 using Moq;
 using Spectre.Console.Cli;
 using Xunit;
@@ -32,8 +33,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperV2()
     {
-        var lambdaPort = 6012;
-        var apiGatewayPort = 6013;
+        var lambdaPort = TestHelpers.GetNextLambdaRuntimePort();
+        var apiGatewayPort = TestHelpers.GetNextApiGatewayPort();
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -67,8 +68,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperRest()
     {
-        var lambdaPort = 6010;
-        var apiGatewayPort = 6011;
+        var lambdaPort = TestHelpers.GetNextLambdaRuntimePort();
+        var apiGatewayPort = TestHelpers.GetNextApiGatewayPort();
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -102,8 +103,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaToUpperV1()
     {
-        var lambdaPort = 6008;
-        var apiGatewayPort = 6009;
+        var lambdaPort = TestHelpers.GetNextLambdaRuntimePort();
+        var apiGatewayPort = TestHelpers.GetNextApiGatewayPort();
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -137,8 +138,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaBinaryResponse()
     {
-        var lambdaPort = 6006;
-        var apiGatewayPort = 6007;
+        var lambdaPort = TestHelpers.GetNextLambdaRuntimePort();
+        var apiGatewayPort = TestHelpers.GetNextApiGatewayPort();
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -178,8 +179,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
     [Fact]
     public async Task TestLambdaReturnString()
     {
-        var lambdaPort = 6004;
-        var apiGatewayPort = 6005;
+        var lambdaPort = TestHelpers.GetNextLambdaRuntimePort();
+        var apiGatewayPort = TestHelpers.GetNextApiGatewayPort();
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
         var config = new TestConfig
         {
@@ -227,8 +228,8 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
 
         try
         {
-            const int lambdaPort = 5060;
-            const int apiGatewayPort = 5061;
+            var lambdaPort = TestHelpers.GetNextLambdaRuntimePort();
+            var apiGatewayPort = TestHelpers.GetNextApiGatewayPort();
             StartTestToolProcessWithNullEndpoint(ApiGatewayEmulatorMode.HttpV2, lambdaPort, apiGatewayPort, config, cancellationTokenSource);
             await WaitForGatewayHealthCheck(apiGatewayPort);
             await StartLambdaProcess(config, lambdaPort);

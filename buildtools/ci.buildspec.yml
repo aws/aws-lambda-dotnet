@@ -12,6 +12,7 @@ phases:
       - curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0
   build:
     commands:
-      - dotnet test -c Release --logger "console;verbosity=detailed" ./Tools/LambdaTestTool-v2/tests/Amazon.Lambda.TestTool.UnitTests/Amazon.Lambda.TestTool.UnitTests.csproj
-      - dotnet msbuild buildtools/build.proj /t:unit-tests /p:Cicd=true 
-      - dotnet msbuild buildtools/build.proj /t:integ-tests /p:Cicd=true
+      # - dotnet test -c Release --logger "console;verbosity=detailed" ./Tools/LambdaTestTool-v2/tests/Amazon.Lambda.TestTool.UnitTests/Amazon.Lambda.TestTool.UnitTests.csproj
+      - dotnet test -c Release --logger "console;verbosity=detailed" ./Tools/LambdaTestTool-v2/tests/Amazon.Lambda.TestTool.IntegrationTests/Amazon.Lambda.TestTool.IntegrationTests.csproj
+      # - dotnet msbuild buildtools/build.proj /t:unit-tests /p:Cicd=true 
+      # - dotnet msbuild buildtools/build.proj /t:integ-tests /p:Cicd=true

@@ -1,9 +1,7 @@
 ﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Collections.Concurrent;
-
-namespace Amazon.Lambda.TestTool.UnitTests.Helpers;
+namespace Amazon.Lambda.TestTool.Tests.Common.Helpers;
 
 internal static class TestHelpers
 {
