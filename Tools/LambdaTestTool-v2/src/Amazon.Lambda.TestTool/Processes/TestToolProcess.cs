@@ -60,8 +60,6 @@ public class TestToolProcess
 
         var app = builder.Build();
 
-        app.UseDeveloperExceptionPage();
-
         if (app.Environment.IsProduction())
         {
             app.UseStaticFiles(new StaticFileOptions
@@ -71,8 +69,10 @@ public class TestToolProcess
         }
         else
         {
+            app.UseDeveloperExceptionPage();
             app.UseStaticFiles();
         }
+
         app.UseAntiforgery();
 
         app.MapRazorComponents<App>()

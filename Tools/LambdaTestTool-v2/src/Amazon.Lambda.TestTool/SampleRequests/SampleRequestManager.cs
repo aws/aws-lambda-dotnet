@@ -95,7 +95,8 @@ public class SampleRequestManager(string preferenceDirectory)
         if(name.StartsWith(SavedRequestDirectory + "@"))
         {
             name = name.Substring(name.IndexOf("@") + 1);
-            var path = Path.Combine(GetSavedRequestDirectory(), name);
+            var savedRequestDirectory = GetSavedRequestDirectory();
+            var path = Path.Combine(savedRequestDirectory, name);
             return File.ReadAllText(path);
         }
         return GetEmbeddedResource(name);
