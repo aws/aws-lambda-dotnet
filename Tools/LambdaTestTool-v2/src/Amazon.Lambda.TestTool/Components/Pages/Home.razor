@@ -1,0 +1,254 @@
+@page "/"
+
+@using Amazon.Lambda.TestTool.Models
+@using Amazon.Lambda.TestTool.SampleRequests
+@using Amazon.Lambda.TestTool.Services
+@using Amazon.Lambda.TestTool.Utilities
+
+<PageTitle>Lambda Function Tester</PageTitle>
+
+<div class="d-flex align-items-center mb-2">
+    <h3 class="me-auto">Lambda Function Tester</h3>
+    <div class="form-floating @(_availableLambdaFunctions.Count <= 1 ? "d-none" : "")" style="min-width: 300px;">
+        <select class="form-select" id="selectedFunctionName" @bind="SelectedFunctionName">
+            @foreach (var functionName in _availableLambdaFunctions)
+            {
+                if (functionName.Equals(LambdaRuntimeApi.DefaultFunctionName))
+                {
+                    <option value="@functionName">Default Lambda</option>
+                }
+                else
+                {
+                    <option value="@functionName">@functionName</option>
+                }
+            }
+        </select>
+        <label for="sample-requests">Lambda Functions</label>
+    </div>
+</div>
+
+@if (!Utils.IsAspireHosted)
+{
+    <div class="alert alert-secondary" role="alert">
+        For Lambda functions written as executable assemblies, i.e. custom runtimes functions and top level statement functions, this page can be used for testing the functions locally.
+        Set the <b>AWS_LAMBDA_RUNTIME_API</b> environment variable to <b>@HttpContextAccessor.HttpContext?.Request.Host</b> while debugging executable assembly
+        Lambda function. More information can be found in the <a href="/documentation">documentation</a>.
+    </div>
+}
+
+@if (DataStore == null)
+{
+    <div class="d-flex justify-content-center flex-grow-1 align-items-center">
+        <div class="d-flex flex-column align-items-center gap-4">
+            <i class="bi bi-journal-text" style="font-size: 96px;"></i>
+            <span class="text-muted" style="font-size: 1.25rem;">Looks like you haven't registered any Lambda functions...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-lg-6 gap-2 d-flex flex-column mt-1 mb-3">
+            <div class="form-group d-flex">
+                <h4>Queue Event</h4>
+                <button class="btn btn-primary btn-sm ms-auto rounded-pill px-4 fw-bold d-flex align-items-center gap-1" @onclick="OnAddEventClick">
+                    <i class="bi bi-play-fill"></i>
+                    Invoke
+                </button>
+            </div>
+            <div class="form-floating">
+                <select class="form-select" id="sample-requests" @bind="SelectedSampleRequestName">
+                    <option value="@NoSampleSelectedId">Select a request</option>
+                    @if (@SampleRequests.ContainsKey(SampleRequestManager.SavedRequestGroup))
+                    {
+                        <optgroup id="saved-select-request-group" label="@SampleRequestManager.SavedRequestGroup">
+                            @foreach (var request in SampleRequests[SampleRequestManager.SavedRequestGroup])
+                            {
+                                <option value="@request.Filename">@request.Name</option>
+                            }
+                        </optgroup>
+                    }
+                    @foreach (var group in SampleRequests.Keys)
+                    {
+                        @if (!string.Equals(group, SampleRequestManager.SavedRequestGroup))
+                        {
+                            <optgroup label="@group">
+                                @foreach (var request in SampleRequests[group])
+                                {
+                                    <option value="@request.Filename">@request.Name</option>
+                                }
+                            </optgroup>
+                        }
+                    }
+                </select>
+                <label for="sample-requests">Example Requests</label>
+            </div>
+            <div class="mt-1 flex-grow-1 flex-fill">
+                <label class="form-label" for="function-payload">Function Input</label>
+                <StandaloneCodeEditor Id="function-payload" @ref="_editor" ConstructionOptions="EditorConstructionOptions" CssClass="rounded-4 overflow-hidden border"/>
+            </div>
+        </div>
+        <div class="col-lg-6 d-flex flex-column">
+            <nav class="navbar navbar-expand-md bd-navbar pt-0 justify-content-center">
+                <ul class="navbar-nav nav-underline nav-fill flex-row" id="eventsTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-tab-pane" type="button" role="tab" aria-controls="home-tab-pane" aria-selected="true">
+                            <i class="bi bi-person-walking"></i>
+                            Active Event
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="queued-tab" data-bs-toggle="tab" data-bs-target="#queued-tab-pane" type="button" role="tab" aria-controls="queued-tab-pane" aria-selected="false">
+                            <i class="bi bi-hourglass-split"></i>
+                            Queued <span class="badge text-bg-secondary rounded-5">@_queuedEventsCount</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="executed-tab" data-bs-toggle="tab" data-bs-target="#executed-tab-pane" type="button" role="tab" aria-controls="executed-tab-pane" aria-selected="false">
+                            <i class="bi bi-clock-history"></i>
+                            History <span class="badge text-bg-secondary rounded-5">@_pastEventsCount</span>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+            <div class="tab-content d-flex flex-column flex-grow-1 flex-fill" id="eventsTabContent">
+                <div class="tab-pane fade flex-grow-1 flex-fill flex-column active show" id="active-tab-pane" role="tabpanel" aria-labelledby="active-tab" tabindex="0">
+                    @if (DataStore?.ActiveEvent == null)
+                    {
+                        <div class="d-flex justify-content-center flex-grow-1 align-items-center my-5">
+                            <div class="d-flex flex-column align-items-center gap-4">
+                                <i class="bi bi-journal-text" style="font-size: 96px;"></i>
+                                <span class="text-muted" style="font-size: 1.25rem;">Looks like you don't have an active event...</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex bg-body-tertiary p-2 align-items-start gap-2 rounded-4 rounded-bottom-0 border border-bottom-0">
+                            <div class="d-flex flex-column gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div><b>Request ID:</b> @DataStore.ActiveEvent.AwsRequestId</div>
+                                    <span class="badge @GetStatusBadgeStyle(DataStore.ActiveEvent.EventStatus)">@DataStore.ActiveEvent.EventStatus</span>
+                                </div>
+                                <div><b>Last Updated:</b> @DataStore.ActiveEvent.LastUpdated</div>
+                                <div><b>Event JSON:</b> <span class="event-value"><span class="fake-link" @onclick="() => ShowEvent(DataStore.ActiveEvent)">@CreateSnippet(DataStore.ActiveEvent.EventJson)</span></span></div>
+                                @if (DataStore.ActiveEvent.EventStatus == EventContainer.Status.Failure)
+                                {
+                                    <div><b>Error Type:</b> @DataStore.ActiveEvent.ErrorType</div>
+                                }
+                            </div>
+                            <button class="btn btn-primary btn-sm rounded-pill ms-auto" @onclick="() => OnRequeue(DataStore.ActiveEvent.AwsRequestId)">
+                                <i class="bi bi-arrow-clockwise"></i>
+                                Re-Invoke
+                            </button>
+                        </div>
+                        @if (DataStore.ActiveEvent.EventStatus == EventContainer.Status.Failure)
+                        {
+                            <StandaloneCodeEditor Id="activeEditorError" @ref="_activeEditorError" ConstructionOptions="ActiveErrorEditorConstructionOptions" CssClass="overflow-hidden rounded-4 rounded-top-0 border border-top-0"/>
+                        }
+                        else
+                        {
+                            <StandaloneCodeEditor Id="activeEditor" @ref="_activeEditor" ConstructionOptions="ActiveEditorConstructionOptions" CssClass="overflow-hidden rounded-4 rounded-top-0 border border-top-0"/>
+                        }
+                    }
+                </div>
+                <div class="tab-pane fade flex-fill flex-column gap-2" id="queued-tab-pane" role="tabpanel" aria-labelledby="queued-tab" tabindex="1">
+                    @if (!DataStore?.QueuedEvents.Any() ?? true)
+                    {
+                        <div class="d-flex justify-content-center flex-grow-1 align-items-center my-5">
+                            <div class="d-flex flex-column align-items-center gap-4">
+                                <i class="bi bi-journal-text" style="font-size: 96px;"></i>
+                                <span class="text-muted" style="font-size: 1.25rem;">Looks like you don't have any queued events...</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex bg-body-tertiary p-2 align-items-start gap-2 rounded">
+                            <button class="btn btn-secondary btn-sm rounded-pill ms-auto d-flex align-items-center gap-1 px-2" @onclick="OnClearQueued">
+                                <i class="bi bi-x-lg"></i>
+                                Clear
+                            </button>
+                        </div>
+                        <div class="col-xs-5 event-list">
+                            @foreach (var evnt in DataStore?.QueuedEvents ?? new List<EventContainer>())
+                            {
+                                <div class="alert alert-secondary d-flex gap-2 p-0" role="alert">
+                                    <div class="d-flex flex-column gap-2 p-3">
+                                        <div><b>Request ID:</b> @evnt.AwsRequestId</div>
+                                        <div><b>Last Updated:</b> @evnt.LastUpdated</div>
+                                        <div><b>Event JSON:</b> <span class="event-value"><span class="fake-link" @onclick="() => ShowEvent(evnt)">@CreateSnippet(evnt.EventJson)</span></span></div>
+                                    </div>
+                                    <div class="ms-auto p-1">
+                                        <button class="btn btn-sm" style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="tab-pane fade flex-fill flex-column gap-2" id="executed-tab-pane" role="tabpanel" aria-labelledby="executed-tab" tabindex="2">
+                    @if (!DataStore?.ExecutedEvents.Any() ?? true)
+                    {
+                        <div class="d-flex justify-content-center flex-grow-1 align-items-center my-5">
+                            <div class="d-flex flex-column align-items-center gap-4">
+                                <i class="bi bi-journal-text" style="font-size: 96px;"></i>
+                                <span class="text-muted" style="font-size: 1.25rem;">Looks like you don't have any past events...</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex bg-body-tertiary p-2 align-items-start gap-2 rounded">
+                            <button class="btn btn-secondary btn-sm rounded-pill ms-auto d-flex align-items-center gap-1 px-2" @onclick="OnClearExecuted">
+                                <i class="bi bi-x-lg"></i>
+                                Clear
+                            </button>
+                        </div>
+                        <div class="col-xs-5 event-list">
+                            @foreach (var evnt in (DataStore?.ExecutedEvents ?? new List<EventContainer>()).OrderByDescending(x => x.LastUpdated))
+                            {
+                                <div class="event-list-item">
+                                    <div class="alert alert-secondary d-flex gap-2 p-0" role="alert">
+                                        <div class="d-flex flex-column gap-2 p-3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div><b>Request ID:</b> @evnt.AwsRequestId</div>
+                                                <span class="badge @GetStatusBadgeStyle(evnt.EventStatus)">@evnt.EventStatus</span>
+                                            </div>
+                                            <div><b>Last Updated:</b> @evnt.LastUpdated</div>
+                                            <div><b>Request:</b> <span class="event-value"><span class="fake-link">@CreateSnippet(evnt.EventJson)</span></span></div>
+                                            @if (evnt.EventStatus == EventContainer.Status.Success)
+                                            {
+                                                <div><b>Response:</b> <span class="fake-link">@CreateSnippet(evnt.Response)</span></div>
+                                            }
+                                            else if (evnt.EventStatus == EventContainer.Status.Failure)
+                                            {
+                                                <div><b>Error Type:</b> @evnt.ErrorType</div>
+                                                <div><b>Error Response:</b> <span class="fake-link">@CreateSnippet(evnt.ErrorResponse)</span></div>
+                                            }
+                                        </div>
+                                        <div class="ms-auto p-1">
+                                            <button type="button" data-bs-toggle="modal" data-bs-target="#eventModal" class="btn btn-sm shadow-none" style="cursor: pointer" @onclick="() => ShowEvent(evnt)">
+                                                <i class="bi bi-arrows-angle-expand"></i>
+                                            </button>
+                                            <button class="btn btn-sm shadow-none" style="cursor: pointer" @onclick="() => OnRequeue(evnt.AwsRequestId)">
+                                                <i class="bi bi-arrow-clockwise"></i>
+                                            </button>
+                                            <button class="btn btn-sm shadow-none" style="cursor: pointer" @onclick="() => OnDeleteEvent(evnt.AwsRequestId)">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<EventDialog @ref="_eventDialog"/>
