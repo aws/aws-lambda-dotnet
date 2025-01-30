@@ -69,6 +69,7 @@ public class TestToolProcess
         }
         else
         {
+            // nosemgrep: csharp.lang.security.stacktrace-disclosure.stacktrace-disclosure
             app.UseDeveloperExceptionPage();
             app.UseStaticFiles();
         }
