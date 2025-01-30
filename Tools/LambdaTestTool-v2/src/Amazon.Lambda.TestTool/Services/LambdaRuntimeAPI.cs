@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Amazon.Lambda.TestTool.Models;
 using Microsoft.AspNetCore.Mvc;
+[assembly: InternalsVisibleTo("Amazon.Lambda.TestTool.UnitTests")]
 
 namespace Amazon.Lambda.TestTool.Services;
 
@@ -15,7 +17,7 @@ public class LambdaRuntimeApi
 
     private readonly IRuntimeApiDataStoreManager _runtimeApiDataStoreManager;
 
-    private LambdaRuntimeApi(WebApplication app)
+    internal LambdaRuntimeApi(WebApplication app)
     {
         _runtimeApiDataStoreManager = app.Services.GetRequiredService<IRuntimeApiDataStoreManager>();
 
