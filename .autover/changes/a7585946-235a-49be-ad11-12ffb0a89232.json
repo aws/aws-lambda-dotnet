@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool.BlazorTester",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update AWS dependencies. This address issues when attempting to use SnapStart APIs from Amazon.Lambda.Core in Lambda functions."
+      ]
+    }
+  ]
+}
