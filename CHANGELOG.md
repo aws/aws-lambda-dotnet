@@ -1,3 +1,8 @@
+## Release 2025-01-31
+
+### Amazon.Lambda.TestTool (0.0.1-preview)
+* Initial preview release
+
 ## Release 2024-12-09
 
 ### SnapshotRestore.Registry (1.0.1)
