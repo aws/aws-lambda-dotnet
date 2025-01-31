@@ -1,3 +1,8 @@
+## Release 2025-01-31 #2
+
+### Amazon.Lambda.TestTool.BlazorTester (0.16.1)
+* Update AWS dependencies. This address issues when attempting to use SnapStart APIs from Amazon.Lambda.Core in Lambda functions.
+
 ## Release 2025-01-31
 
 ### Amazon.Lambda.TestTool (0.0.1-preview)
