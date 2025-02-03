@@ -172,13 +172,13 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 
             CompareApiGatewayRequests(expectedApiGatewayRequest, actualApiGatewayRequest);
 
-            testCase.Assertions(actualApiGatewayRequest, emulatorMode);
+            testCase.Assertions(actualApiGatewayRequest!, emulatorMode);
 
             await Task.Delay(1000); // Small delay between requests
         }
 
 
-        private void CompareApiGatewayRequests<T>(T expected, T actual) where T : class
+        private void CompareApiGatewayRequests<T>(T expected, T actual) where T : class?
         {
             if (expected is APIGatewayProxyRequest v1Expected && actual is APIGatewayProxyRequest v1Actual)
             {
@@ -261,23 +261,25 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             }
         }
 
-        private IDictionary<TKey, TValue> FilterHeaders<TKey, TValue>(IDictionary<TKey, TValue> headers)
+        private IDictionary<TKey, TValue> FilterHeaders<TKey, TValue>(IDictionary<TKey, TValue> headers) where TKey : notnull
         {
             return headers.Where(kvp =>
-                !(kvp.Key.ToString().StartsWith("x-forwarded-", StringComparison.OrdinalIgnoreCase) || // ignore these for now
-                  kvp.Key.ToString().StartsWith("cloudfront-", StringComparison.OrdinalIgnoreCase) || // ignore these for now
-                  kvp.Key.ToString().StartsWith("via-", StringComparison.OrdinalIgnoreCase) || // ignore these for now
-                  kvp.Key.ToString().Equals("x-amzn-trace-id", StringComparison.OrdinalIgnoreCase) || // this is dynamic so ignoring for now
-                  kvp.Key.ToString().Equals("cookie", StringComparison.OrdinalIgnoreCase) || // TODO may have to have api gateway v2 not set this in headers
-                  kvp.Key.ToString().Equals("host", StringComparison.OrdinalIgnoreCase))) // TODO we may want to set this
+                !(kvp.Key.ToString()!.StartsWith("x-forwarded-", StringComparison.OrdinalIgnoreCase) || // ignore these for now
+                  kvp.Key.ToString()!.StartsWith("cloudfront-", StringComparison.OrdinalIgnoreCase) || // ignore these for now
+                  kvp.Key.ToString()!.StartsWith("via-", StringComparison.OrdinalIgnoreCase) || // ignore these for now
+                  kvp.Key.ToString()!.Equals("x-amzn-trace-id", StringComparison.OrdinalIgnoreCase) || // this is dynamic so ignoring for now
+                  kvp.Key.ToString()!.Equals("cookie", StringComparison.OrdinalIgnoreCase) || // TODO may have to have api gateway v2 not set this in headers
+                  kvp.Key.ToString()!.Equals("host", StringComparison.OrdinalIgnoreCase))) // TODO we may want to set this
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
 
 
-        private void CompareDictionaries<TKey, TValue>(IDictionary<TKey, TValue> expected, IDictionary<TKey, TValue> actual)
+        private void CompareDictionaries<TKey, TValue>(IDictionary<TKey, TValue>? expected, IDictionary<TKey, TValue>? actual)
         {
             if (expected == null && actual == null) return;
-            Assert.Equal(expected.Count, actual.Count);
+            if (expected == null && actual != null) Assert.Fail();
+            if (expected != null && actual == null) Assert.Fail();
+            Assert.Equal(expected!.Count, actual!.Count);
 
             foreach (var kvp in expected)
             {
@@ -291,7 +293,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             Assert.Equal(expected?.Length, actual?.Length);
             if (expected != null)
             {
-                Assert.Equal(expected.OrderBy(x => x), actual.OrderBy(x => x));
+                Assert.Equal(expected.OrderBy(x => x), actual?.OrderBy(x => x));
             }
         }
 
