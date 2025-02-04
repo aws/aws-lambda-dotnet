@@ -38,8 +38,4 @@
 		<ProjectReference Include="..\Amazon.Lambda.TestTool.Tests.Common\Amazon.Lambda.TestTool.Tests.Common.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<EmbeddedResource Include="cloudformation-template-apigateway.yaml" />
-	</ItemGroup>
-
 </Project>
