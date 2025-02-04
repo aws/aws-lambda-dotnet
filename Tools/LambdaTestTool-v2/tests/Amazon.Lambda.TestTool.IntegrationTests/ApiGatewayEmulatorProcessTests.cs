@@ -33,11 +33,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         _testOutputHelper = testOutputHelper;
     }
 
-#if DEBUG
     [Fact]
-#else
-    [Fact(Skip = "Skipping this test as it is not working properly.")]
-#endif
     public async Task TestLambdaToUpperV2()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
@@ -72,11 +68,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
     }
 
-#if DEBUG
     [Fact]
-#else
-    [Fact(Skip = "Skipping this test as it is not working properly.")]
-#endif
     public async Task TestLambdaToUpperRest()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
@@ -111,11 +103,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
     }
 
-#if DEBUG
     [Fact]
-#else
-    [Fact(Skip = "Skipping this test as it is not working properly.")]
-#endif
     public async Task TestLambdaToUpperV1()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
@@ -151,11 +139,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
     }
 
-#if DEBUG
     [Fact]
-#else
-    [Fact(Skip = "Skipping this test as it is not working properly.")]
-#endif
     public async Task TestLambdaBinaryResponse()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
@@ -197,11 +181,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
     }
 
-#if DEBUG
     [Fact]
-#else
-    [Fact(Skip = "Skipping this test as it is not working properly.")]
-#endif
     public async Task TestLambdaReturnString()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
@@ -236,11 +216,7 @@ public class ApiGatewayEmulatorProcessTests : IAsyncDisposable
         }
     }
 
-#if DEBUG
     [Fact]
-#else
-    [Fact(Skip = "Skipping this test as it is not working properly.")]
-#endif
     public async Task TestLambdaWithNullEndpoint()
     {
         var testProjectDir = Path.GetFullPath("../../../../../testapps");
