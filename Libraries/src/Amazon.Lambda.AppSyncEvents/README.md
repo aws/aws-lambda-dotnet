@@ -22,10 +22,10 @@ public void Handler(AppSyncEvent<Dictionary<string, object>> appSyncEvent, ILamb
         using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(appSyncEvent.Identity.ToString()!)))
         {
             // When using AMAZON_COGNITO_USER_POOLS authorization
-            var cognitoIdentity = lambdaSerializer.Deserialize<AppSyncIdentityCognito>(stream);
+            var cognitoIdentity = lambdaSerializer.Deserialize<AppSyncCognitoIdentity>(stream);
 
             // When using AWS_IAM authorization
-            var iamIdentity = lambdaSerializer.Deserialize<AppSyncIdentityIAM>(stream);
+            var iamIdentity = lambdaSerializer.Deserialize<AppSyncIamIdentity>(stream);
         }
     }
 }

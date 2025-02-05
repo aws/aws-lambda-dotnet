@@ -3970,7 +3970,7 @@ namespace Amazon.Lambda.Tests
 
                 using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(request.Identity.ToString())))
                 {
-                    var identity = serializer.Deserialize<AppSyncIdentityCognito>(stream);
+                    var identity = serializer.Deserialize<AppSyncCognitoIdentity>(stream);
                     Assert.NotNull(identity);
 
                     // Claims
@@ -4020,7 +4020,7 @@ namespace Amazon.Lambda.Tests
 
                 using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(request.Identity.ToString())))
                 {
-                    var identity = serializer.Deserialize<AppSyncIdentityIAM>(stream);
+                    var identity = serializer.Deserialize<AppSyncIamIdentity>(stream);
                     Assert.NotNull(identity);
 
                     // AccountId

@@ -5,7 +5,7 @@ namespace Amazon.Lambda.AppSyncEvents
     /// <summary>
     /// Represents AWS IAM authorization identity for AppSync
     /// </summary>
-    public class AppSyncIdentityIAM
+    public class AppSyncIamIdentity
     {
         /// <summary>
         /// The source IP address of the caller received by AWS AppSync

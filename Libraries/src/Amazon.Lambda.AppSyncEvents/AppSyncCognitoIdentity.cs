@@ -5,7 +5,7 @@ namespace Amazon.Lambda.AppSyncEvents
     /// <summary>
     /// Represents Amazon Cognito User Pools authorization identity for AppSync
     /// </summary>
-    public class AppSyncIdentityCognito
+    public class AppSyncCognitoIdentity
     {
         /// <summary>
         /// The source IP address of the caller received by AWS AppSync

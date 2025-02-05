@@ -15,15 +15,15 @@ namespace Amazon.Lambda.AppSyncEvents
         /// <summary>
         /// An object that contains information about the caller.
         /// Returns null for API_KEY authorization.
-        /// Returns AppSyncIdentityIAM for AWS_IAM authorization.
-        /// Returns AppSyncIdentityCognito for AMAZON_COGNITO_USER_POOLS authorization.
+        /// Returns AppSyncIamIdentity for AWS_IAM authorization.
+        /// Returns AppSyncCognitoIdentity for AMAZON_COGNITO_USER_POOLS authorization.
         /// For AWS_LAMBDA authorization, returns the object returned by your Lambda authorizer function.
         /// </summary>
         /// <remarks>
         /// The Identity object type depends on the authorization mode:
         /// - For API_KEY: null
-        /// - For AWS_IAM: <see cref="AppSyncIdentityIAM"/>
-        /// - For AMAZON_COGNITO_USER_POOLS: <see cref="AppSyncIdentityCognito"/>
+        /// - For AWS_IAM: <see cref="AppSyncIamIdentity"/>
+        /// - For AMAZON_COGNITO_USER_POOLS: <see cref="AppSyncCognitoIdentity"/>
         /// - For AWS_LAMBDA: Dynamic object returned by Lambda authorizer
         /// </remarks>
         public object Identity { get; set; }
