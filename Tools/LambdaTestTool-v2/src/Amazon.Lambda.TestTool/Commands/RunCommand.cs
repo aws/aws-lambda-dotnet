@@ -110,11 +110,7 @@ public sealed class RunCommand(
 
     private void PrintVersionInfo()
     {
-        Utf8JsonWriter utf8JsonWriter = new Utf8JsonWriter(Console.OpenStandardOutput());
-        utf8JsonWriter.WriteStartObject();
-        utf8JsonWriter.WriteString("version", Utilities.Utils.DetermineToolVersion());
-        utf8JsonWriter.WriteEndObject();
-        utf8JsonWriter.Flush();
+        toolInteractiveService.WriteLine(Utilities.Utils.GenerateVersionJson());
     }
 
     private void EvaluateEnvironmentVariables(RunCommandSettings settings)
