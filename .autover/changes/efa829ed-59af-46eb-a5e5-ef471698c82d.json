@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Add --version switch to allow integrators to check what version is installed"
+      ]
+    }
+  ]
+}

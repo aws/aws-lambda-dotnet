@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Diagnostics;
+using System.Text.Json;
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
@@ -28,6 +29,12 @@ public sealed class RunCommand(
     {
         try
         {
+            if (settings.PrintVersionInfo)
+            {
+                PrintVersionInfo();
+                return CommandReturnCodes.Success;
+            }
+
             EvaluateEnvironmentVariables(settings);
 
             if (!settings.LambdaEmulatorPort.HasValue && !settings.ApiGatewayEmulatorPort.HasValue)
@@ -99,6 +106,15 @@ public sealed class RunCommand(
         {
             await cancellationTokenSource.CancelAsync();
         }
+    }
+
+    private void PrintVersionInfo()
+    {
+        Utf8JsonWriter utf8JsonWriter = new Utf8JsonWriter(Console.OpenStandardOutput());
+        utf8JsonWriter.WriteStartObject();
+        utf8JsonWriter.WriteString("version", Utilities.Utils.DetermineToolVersion());
+        utf8JsonWriter.WriteEndObject();
+        utf8JsonWriter.Flush();
     }
 
     private void EvaluateEnvironmentVariables(RunCommandSettings settings)

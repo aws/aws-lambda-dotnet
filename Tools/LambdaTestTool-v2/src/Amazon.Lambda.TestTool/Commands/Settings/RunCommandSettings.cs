@@ -69,4 +69,11 @@ public sealed class RunCommandSettings : CommandSettings
     [CommandOption("--api-gateway-emulator-port <PORT>")]
     [Description("The port number used for the test tool's API Gateway emulator.")]
     public int? ApiGatewayEmulatorPort { get; set; }
+
+    /// <summary>
+    /// When set the tool prints version information as a JSON document and then exits.
+    /// </summary>
+    [CommandOption("--version")]
+    [Description("When set the tool prints version information as a JSON document and then exits.")]
+    public bool PrintVersionInfo { get; set; }
 }
