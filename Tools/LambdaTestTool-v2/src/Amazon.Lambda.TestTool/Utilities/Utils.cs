@@ -42,7 +42,7 @@ public static class Utils
         return version ?? unknownVersion;
     }
 
-    public static string GenerateVersionJson()
+    public static string GenerateToolInfoJson()
     {
         var stream = new MemoryStream();
         Utf8JsonWriter utf8JsonWriter = new Utf8JsonWriter(stream, options: new JsonWriterOptions()
@@ -51,6 +51,7 @@ public static class Utils
         });
         utf8JsonWriter.WriteStartObject();
         utf8JsonWriter.WriteString("version", Utilities.Utils.DetermineToolVersion());
+        utf8JsonWriter.WriteString("install-path", Directory.GetParent(typeof(Utils).Assembly.Location)!.FullName);
         utf8JsonWriter.WriteEndObject();
         utf8JsonWriter.Flush();
 

@@ -71,9 +71,9 @@ public sealed class RunCommandSettings : CommandSettings
     public int? ApiGatewayEmulatorPort { get; set; }
 
     /// <summary>
-    /// When set the tool prints version information as a JSON document and then exits.
+    /// When set the tool prints metadata for the including the version number as a JSON document and then exits.
     /// </summary>
-    [CommandOption("--version")]
-    [Description("When set the tool prints version information as a JSON document and then exits.")]
-    public bool PrintVersionInfo { get; set; }
+    [CommandOption("--tool-info")]
+    [Description("When set the tool prints metadata for the including the version number as a JSON document and then exits.")]
+    public bool PrintToolInfo { get; set; }
 }

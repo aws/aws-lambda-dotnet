@@ -103,7 +103,7 @@ public class RunCommandTests
     }
 
     [Fact]
-    public async Task VerifyVersionInfo()
+    public async Task VerifyToolInfo()
     {
         var writeCalls = 0;
         string? versionInfo = null;
@@ -116,7 +116,7 @@ public class RunCommandTests
             });
 
         var cancellationSource = new CancellationTokenSource();
-        var settings = new RunCommandSettings { PrintVersionInfo = true };
+        var settings = new RunCommandSettings { PrintToolInfo = true };
         var command = new RunCommand(mockInteractiveService.Object, _mockEnvironmentManager.Object);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
         await command.ExecuteAsync(context, settings, cancellationSource);
@@ -133,5 +133,10 @@ public class RunCommandTests
         // The Version.TryParse does not like the preview suffix
         version = version.Replace("-preview", "");
         Assert.True(Version.TryParse(version, out var _));
+
+        var installPath = jsonNode["install-path"]?.ToString();
+        Assert.NotNull(installPath);
+        Assert.True(Directory.Exists(installPath));
+        Assert.True(Path.IsPathFullyQualified(installPath));
     }
 }

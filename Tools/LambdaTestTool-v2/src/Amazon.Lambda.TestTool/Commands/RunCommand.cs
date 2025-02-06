@@ -29,9 +29,9 @@ public sealed class RunCommand(
     {
         try
         {
-            if (settings.PrintVersionInfo)
+            if (settings.PrintToolInfo)
             {
-                PrintVersionInfo();
+                PrintToolInfo();
                 return CommandReturnCodes.Success;
             }
 
@@ -108,9 +108,9 @@ public sealed class RunCommand(
         }
     }
 
-    private void PrintVersionInfo()
+    private void PrintToolInfo()
     {
-        toolInteractiveService.WriteLine(Utilities.Utils.GenerateVersionJson());
+        toolInteractiveService.WriteLine(Utilities.Utils.GenerateToolInfoJson());
     }
 
     private void EvaluateEnvironmentVariables(RunCommandSettings settings)
