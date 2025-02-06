@@ -4,7 +4,8 @@
       "Name": "Amazon.Lambda.TestTool",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Add --version switch to allow integrators to check what version is installed"
+        "Breaking change: Switch to use commands to invoke the tool. For example to run the Lambda emulator use the command 'dotnet lambda-test-tool start --lambda-emulator-port 5050'",
+		"Add new info command to get metadata about the tool. For example getting the version number of the tool."
       ]
     }
   ]
