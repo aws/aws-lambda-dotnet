@@ -13,9 +13,14 @@ serviceCollection.AddCustomServices();
 
 var registrar = new TypeRegistrar(serviceCollection);
 
-var app = new CommandApp<RunCommand>(registrar);
+var app = new CommandApp(registrar);
 app.Configure(config =>
 {
+    config.AddCommand<RunCommand>("start")
+        .WithDescription("Start the Lambda and/or API Gateway emulator.");
+    config.AddCommand<ToolInfoCommand>("info")
+        .WithDescription("Display information about the tool including the version number.");
+
     config.SetApplicationName(Constants.ToolName);
 });
 

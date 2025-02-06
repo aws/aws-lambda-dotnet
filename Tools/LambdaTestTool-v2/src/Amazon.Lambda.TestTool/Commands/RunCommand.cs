@@ -29,12 +29,6 @@ public sealed class RunCommand(
     {
         try
         {
-            if (settings.PrintToolInfo)
-            {
-                PrintToolInfo();
-                return CommandReturnCodes.Success;
-            }
-
             EvaluateEnvironmentVariables(settings);
 
             if (!settings.LambdaEmulatorPort.HasValue && !settings.ApiGatewayEmulatorPort.HasValue)
@@ -106,11 +100,6 @@ public sealed class RunCommand(
         {
             await cancellationTokenSource.CancelAsync();
         }
-    }
-
-    private void PrintToolInfo()
-    {
-        toolInteractiveService.WriteLine(Utilities.Utils.GenerateToolInfoJson());
     }
 
     private void EvaluateEnvironmentVariables(RunCommandSettings settings)

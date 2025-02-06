@@ -8,7 +8,7 @@ using System.ComponentModel;
 namespace Amazon.Lambda.TestTool.Commands.Settings;
 
 /// <summary>
-/// Represents the settings for configuring the <see cref="RunCommand"/>, which is the default command.
+/// Represents the settings for configuring the <see cref="RunCommand"/>.
 /// </summary>
 public sealed class RunCommandSettings : CommandSettings
 {
@@ -37,22 +37,6 @@ public sealed class RunCommandSettings : CommandSettings
     public bool NoLaunchWindow { get; set; }
 
     /// <summary>
-    /// If set to true the test tool will pause waiting for a key input before exiting.
-    /// The is useful when executing from an IDE so you can avoid having the output window immediately disappear after executing the Lambda code.
-    /// The default value is true.
-    /// </summary>
-    [CommandOption("--pause-exit")]
-    [Description("If set to true the test tool will pause waiting for a key input before exiting. The is useful when executing from an IDE so you can avoid having the output window immediately disappear after executing the Lambda code. The default value is true.")]
-    public bool PauseExit { get; set; }
-
-    /// <summary>
-    /// Disables logging in the application
-    /// </summary>
-    [CommandOption("--disable-logs")]
-    [Description("Disables logging in the application")]
-    public bool DisableLogs { get; set; }
-
-    /// <summary>
     /// The API Gateway Emulator Mode specifies the format of the event that API Gateway sends to a Lambda integration,
     /// and how API Gateway interprets the response from Lambda.
     /// The available modes are: Rest, HttpV1, HttpV2.
@@ -69,11 +53,4 @@ public sealed class RunCommandSettings : CommandSettings
     [CommandOption("--api-gateway-emulator-port <PORT>")]
     [Description("The port number used for the test tool's API Gateway emulator.")]
     public int? ApiGatewayEmulatorPort { get; set; }
-
-    /// <summary>
-    /// When set the tool prints metadata for the including the version number as a JSON document and then exits.
-    /// </summary>
-    [CommandOption("--tool-info")]
-    [Description("When set the tool prints metadata for the including the version number as a JSON document and then exits.")]
-    public bool PrintToolInfo { get; set; }
 }

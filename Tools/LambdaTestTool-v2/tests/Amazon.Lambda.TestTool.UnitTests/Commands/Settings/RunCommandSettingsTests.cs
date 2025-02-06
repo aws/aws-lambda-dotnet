@@ -29,26 +29,6 @@ public class RunCommandSettingsTests
     }
 
     [Fact]
-    public void DisableLogs_DefaultsToFalse()
-    {
-        // Arrange
-        var settings = new RunCommandSettings();
-
-        // Assert
-        Assert.False(settings.DisableLogs);
-    }
-
-    [Fact]
-    public void PauseExit_DefaultsToFalse()
-    {
-        // Arrange
-        var settings = new RunCommandSettings();
-
-        // Assert
-        Assert.False(settings.PauseExit);
-    }
-
-    [Fact]
     public void ApiGatewayEmulatorMode_DefaultsToNull()
     {
         // Arrange

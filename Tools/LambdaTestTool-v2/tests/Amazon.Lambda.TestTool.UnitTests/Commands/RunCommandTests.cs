@@ -103,7 +103,7 @@ public class RunCommandTests
     }
 
     [Fact]
-    public async Task VerifyToolInfo()
+    public void VerifyToolInfo()
     {
         var writeCalls = 0;
         string? versionInfo = null;
@@ -115,11 +115,10 @@ public class RunCommandTests
                 versionInfo = message;
             });
 
-        var cancellationSource = new CancellationTokenSource();
-        var settings = new RunCommandSettings { PrintToolInfo = true };
-        var command = new RunCommand(mockInteractiveService.Object, _mockEnvironmentManager.Object);
+        var settings = new ToolInfoCommandSettings { Format = ToolInfoCommandSettings.InfoFormat.Json };
+        var command = new ToolInfoCommand(mockInteractiveService.Object);
         var context = new CommandContext(new List<string>(), _mockRemainingArgs.Object, "run", null);
-        await command.ExecuteAsync(context, settings, cancellationSource);
+        command.Execute(context, settings);
 
         Assert.Equal(1, writeCalls);
         Assert.True(!string.IsNullOrEmpty(versionInfo));
@@ -127,14 +126,14 @@ public class RunCommandTests
         JsonNode? jsonNode = JsonNode.Parse(versionInfo);
         Assert.NotNull(jsonNode);
 
-        var version = jsonNode["version"]?.ToString();
+        var version = jsonNode["Version"]?.ToString();
         Assert.NotNull(version);
 
         // The Version.TryParse does not like the preview suffix
         version = version.Replace("-preview", "");
         Assert.True(Version.TryParse(version, out var _));
 
-        var installPath = jsonNode["install-path"]?.ToString();
+        var installPath = jsonNode["InstallPath"]?.ToString();
         Assert.NotNull(installPath);
         Assert.True(Directory.Exists(installPath));
         Assert.True(Path.IsPathFullyQualified(installPath));
