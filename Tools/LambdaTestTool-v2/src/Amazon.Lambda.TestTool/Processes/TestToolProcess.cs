@@ -3,6 +3,7 @@
 
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Components;
+using Amazon.Lambda.TestTool.Configuration;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Services.IO;
 using Microsoft.Extensions.FileProviders;
@@ -36,6 +37,13 @@ public class TestToolProcess
     public static TestToolProcess Startup(RunCommandSettings settings, CancellationToken cancellationToken = default)
     {
         var builder = WebApplication.CreateBuilder();
+
+        var configuration = ConfigurationSetup.GetConfiguration();
+        builder.Configuration.AddConfiguration(configuration);
+
+        builder.Logging.ClearProviders();
+        builder.Logging.AddConfiguration(configuration.GetSection("Logging"));
+        builder.Logging.AddConsole();
 
         builder.Services.AddSingleton<IRuntimeApiDataStoreManager, RuntimeApiDataStoreManager>();
         builder.Services.AddSingleton<IThemeService, ThemeService>();

@@ -4,63 +4,59 @@
 namespace Amazon.Lambda.TestTool.Configuration;
 
 /// <summary>
-/// Provides configuration setup functionality for the Lambda Test Tool.
+/// Provides functionality to set up and retrieve configuration settings for the Lambda Test Tool.
 /// </summary>
+/// <remarks>
+/// This class handles the configuration setup by loading settings from JSON files located in the assembly's directory.
+/// It supports both base configuration (appsettings.json) and environment-specific configuration files.
+/// </remarks>
 public static class ConfigurationSetup
 {
     /// <summary>
-    /// Configures essential services for the application, including logging and configuration.
+    /// Retrieves the application configuration by loading settings from JSON configuration files.
     /// </summary>
-    /// <param name="services">The service collection to configure services in.</param>
+    /// <returns>An <see cref="IConfiguration"/> instance containing the application settings.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when unable to determine the assembly's location.</exception>
     /// <remarks>
-    /// This method:
-    /// 1. Retrieves the configuration from appsettings files
-    /// 2. Sets up logging with console provider
-    /// 3. Registers the configuration as a singleton service
+    /// The method performs the following:
+    /// <list type="bullet">
+    /// <item>
+    ///     <description>Locates the directory containing the assembly</description>
+    /// </item>
+    /// <item>
+    ///     <description>Loads the base configuration from appsettings.json</description>
+    /// </item>
+    /// <item>
+    ///     <description>Loads environment-specific configuration from appsettings.{environment}.json if available</description>
+    /// </item>
+    /// </list>
+    /// The environment is determined by the ASPNETCORE_ENVIRONMENT environment variable, defaulting to "Production" if not set.
     /// </remarks>
-    public static void ConfigureServices(IServiceCollection services)
+    /// <example>
+    /// Usage example:
+    /// <code>
+    /// IConfiguration configuration = ConfigurationSetup.GetConfiguration();
+    /// var setting = configuration["SectionName:SettingName"];
+    /// </code>
+    /// </example>
+    public static IConfiguration GetConfiguration()
     {
-        var configuration = GetConfiguration();
-
-        services.AddLogging(builder =>
-        {
-            builder.ClearProviders();
-            builder.AddConfiguration(configuration.GetSection("Logging"));
-            builder.AddConsole();
-        });
-
-        services.AddSingleton<IConfiguration>(configuration);
-    }
-
-    /// <summary>
-    /// Builds and returns the application configuration from JSON files.
-    /// </summary>
-    /// <returns>An IConfiguration instance containing application settings.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when unable to determine the assembly location.</exception>
-    /// <remarks>
-    /// The configuration is built using:
-    /// 1. Base settings from appsettings.json
-    /// 2. Environment-specific settings from appsettings.{environment}.json
-    ///
-    /// The environment is determined by the ASPNETCORE_ENVIRONMENT environment variable,
-    /// defaulting to "Production" if not set.
-    /// </remarks>
-    private static IConfiguration GetConfiguration()
-    {
-        // Get the directory where your package DLL is located
+        // Get the directory where the assembly is located
         var assemblyLocation = typeof(ConfigurationSetup).Assembly.Location;
-        var packageDirectory = Path.GetDirectoryName(assemblyLocation);
+        var packageDirectory = Path.GetDirectoryName(assemblyLocation)
+                               ?? throw new InvalidOperationException("Unable to determine assembly location");
 
-        if (string.IsNullOrEmpty(packageDirectory))
+        // Construct path to configuration file
+        var appsettingsPath = Path.Combine(packageDirectory, "appsettings.json");
+        if (!File.Exists(appsettingsPath))
         {
-            throw new InvalidOperationException("Unable to determine assembly location");
+            Console.WriteLine($"Warning: appsettings.json not found at {appsettingsPath}");
         }
 
-        // Determine environment
-        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-                          ?? "Production";
+        // Determine the current environment
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
 
-        // Build configuration
+        // Build and return the configuration
         var builder = new ConfigurationBuilder()
             .SetBasePath(packageDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)

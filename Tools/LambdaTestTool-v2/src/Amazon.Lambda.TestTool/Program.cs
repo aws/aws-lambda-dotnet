@@ -3,14 +3,11 @@
 
 using Amazon.Lambda.TestTool;
 using Amazon.Lambda.TestTool.Commands;
-using Amazon.Lambda.TestTool.Configuration;
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Services;
 using Spectre.Console.Cli;
 
 var serviceCollection = new ServiceCollection();
-
-ConfigurationSetup.ConfigureServices(serviceCollection);
 
 serviceCollection.AddCustomServices();
 
