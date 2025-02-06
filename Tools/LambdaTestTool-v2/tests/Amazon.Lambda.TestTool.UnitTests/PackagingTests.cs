@@ -94,7 +94,7 @@ public class PackagingTests : IDisposable
 
         Assert.Equal(0, packProcess.ExitCode);
 
-        var packageDir = Path.Combine(Path.GetDirectoryName(projectPath), "bin", "Release");
+        var packageDir = Path.Combine(Path.GetDirectoryName(projectPath)!, "bin", "Release");
         _output.WriteLine($"Looking for package in: {packageDir}");
 
         var packageFiles = Directory.GetFiles(packageDir, "*.nupkg", SearchOption.AllDirectories);
@@ -143,7 +143,7 @@ public class PackagingTests : IDisposable
     private string FindSolutionRoot()
     {
         Console.WriteLine("Looking for solution root...");
-        string currentDirectory = Directory.GetCurrentDirectory();
+        string? currentDirectory = Directory.GetCurrentDirectory();
         while (currentDirectory != null)
         {
             // Look for the aws-lambda-dotnet directory specifically
