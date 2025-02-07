@@ -1,48 +1,34 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Reflection;
+
 namespace Amazon.Lambda.TestTool.Configuration;
 
 /// <summary>
-/// Provides functionality to set up and retrieve configuration settings for the Lambda Test Tool.
+/// Handles the configuration setup for the Lambda Test Tool by loading settings from JSON files.
 /// </summary>
 /// <remarks>
-/// This class handles the configuration setup by loading settings from JSON files located in the assembly's directory.
-/// It supports both base configuration (appsettings.json) and environment-specific configuration files.
+/// This class uses dependency injection to receive an Assembly instance, allowing for better testability
+/// and flexibility in determining the configuration file locations.
 /// </remarks>
-public static class ConfigurationSetup
+public class ConfigurationSetup(Assembly assembly)
 {
     /// <summary>
     /// Retrieves the application configuration by loading settings from JSON configuration files.
     /// </summary>
-    /// <returns>An <see cref="IConfiguration"/> instance containing the application settings.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when unable to determine the assembly's location.</exception>
+    /// <returns>An IConfiguration instance containing the application settings.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when unable to determine the assembly location.</exception>
     /// <remarks>
-    /// The method performs the following:
-    /// <list type="bullet">
-    /// <item>
-    ///     <description>Locates the directory containing the assembly</description>
-    /// </item>
-    /// <item>
-    ///     <description>Loads the base configuration from appsettings.json</description>
-    /// </item>
-    /// <item>
-    ///     <description>Loads environment-specific configuration from appsettings.{environment}.json if available</description>
-    /// </item>
-    /// </list>
-    /// The environment is determined by the ASPNETCORE_ENVIRONMENT environment variable, defaulting to "Production" if not set.
+    /// The method performs the following steps:
+    /// 1. Locates the directory containing the assembly
+    /// 2. Loads the base configuration from appsettings.json
+    /// 3. Loads environment-specific configuration from appsettings.{environment}.json if available
     /// </remarks>
-    /// <example>
-    /// Usage example:
-    /// <code>
-    /// IConfiguration configuration = ConfigurationSetup.GetConfiguration();
-    /// var setting = configuration["SectionName:SettingName"];
-    /// </code>
-    /// </example>
-    public static IConfiguration GetConfiguration()
+    public IConfiguration GetConfiguration()
     {
         // Get the directory where the assembly is located
-        var assemblyLocation = typeof(ConfigurationSetup).Assembly.Location;
+        var assemblyLocation = assembly.Location;
         var packageDirectory = Path.GetDirectoryName(assemblyLocation)
                                ?? throw new InvalidOperationException("Unable to determine assembly location");
 
