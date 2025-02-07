@@ -172,8 +172,13 @@ Download this repository and create/modify the launch settings `Properties/launc
 
 ## Example Lambda Function Setup
 
+Here's a simple Lambda function that adds two numbers together. This can be implemented in two ways:
+
 ### 1. Lambda Function Code
 Here's a simple Lambda function that adds two numbers together:
+
+#### Option 1: Using Top-Level Statements
+
 
 ```csharp
 using Amazon.Lambda.APIGatewayEvents;
@@ -195,6 +200,24 @@ await LambdaBootstrapBuilder.Create(Add, new CamelCaseLambdaJsonSerializer())
 
 ```
 
+#### Option 2: Using Class Library
+```
+using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Core;
+
+namespace MyLambdaFunction;
+
+public class Function
+{
+    public int Add(APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
+    {
+        var x = int.Parse(request.PathParameters["x"]);
+        var y = int.Parse(request.PathParameters["y"]);
+        return x + y;
+    }
+}
+```
+
 ### 2. Configuration Files
 **Properties/launchSettings.json**
 Configure the Lambda function to use the test tool:
@@ -213,6 +236,8 @@ Configure the Lambda function to use the test tool:
 ```
 
 **aws-lambda-tools-defaults.json**
+
+For top-level statements, your `aws-lambda-tools-defaults.json` should be:
 ```
 {
     "profile": "default",
@@ -224,6 +249,22 @@ Configure the Lambda function to use the test tool:
     "function-handler": "AddLambdaFunction"
 }
 ```
+
+For the class library approach, your `aws-lambda-tools-defaults.json` should be:
+
+```
+{
+    "profile": "default",
+    "region": "us-west-2",
+    "configuration": "Release",
+    "function-runtime": "dotnet8",
+    "function-memory-size": 512,
+    "function-timeout": 30,
+    "function-handler": "MyLambdaFunction::MyLambdaFunction.Function::Add"
+}
+
+```
+
 
 ### 3. API Gateway Configuration
 To expose this Lambda function through API Gateway, set the APIGATEWAY_EMULATOR_ROUTE_CONFIG:
