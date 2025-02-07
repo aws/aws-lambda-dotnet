@@ -1,0 +1,11 @@
+{
+  "Projects": [
+  {
+    "Name": "Amazon.Lambda.TestTool",
+    "Type": "Patch",
+    "ChangelogMessages": [
+      "Fix exception method when not setting --api-gateway-emulator-mode"
+    ]
+  }
+ ]
+}
