@@ -1,3 +1,11 @@
+## Release 2025-02-07
+
+### Amazon.Lambda.TestTool (0.0.2-preview)
+* Update default log level to be ERROR in production and INFORMATION in debug mode.
+* Fix exception method when not setting --api-gateway-emulator-mode
+* Breaking change: Switch to use commands to invoke the tool. For example to run the Lambda emulator use the command 'dotnet lambda-test-tool start --lambda-emulator-port 5050'
+* Add new info command to get metadata about the tool. For example getting the version number of the tool.
+
 ## Release 2025-01-31 #2
 
 ### Amazon.Lambda.TestTool.BlazorTester (0.16.1)
