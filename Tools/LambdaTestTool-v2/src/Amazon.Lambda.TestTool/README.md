@@ -7,11 +7,18 @@ The AWS Lambda Test Tool provides local testing capabilities for .NET Lambda fun
 2. API Gateway Emulator Mode
 3. Combined Mode (both emulators)
 
-# AWS Lambda Test Tool
+## Comparison with Previous Test Tool
+
+The AWS Lambda Test Tool is an evolution of the previous AWS .NET Mock Lambda Test Tool, with several key improvements:
+
+### New Features
+- **API Gateway Emulation**: Direct support for testing API Gateway integrations locally
 
 # AWS Lambda Test Tool
 
 - [Overview](#overview)
+- [Comparison with Previous Test Tool](#comparison-with-previous-test-tool)
+  - [New Features](#new-features)
 - [Getting help](#getting-help)
 - [Installing](#installing)
 - [Running the Test Tool](#running-the-test-tool)
