@@ -1,10 +1,13 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Reflection;
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Components;
+using Amazon.Lambda.TestTool.Configuration;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Services.IO;
+using Amazon.Lambda.TestTool.Utilities;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 
@@ -36,6 +39,8 @@ public class TestToolProcess
     public static TestToolProcess Startup(RunCommandSettings settings, CancellationToken cancellationToken = default)
     {
         var builder = WebApplication.CreateBuilder();
+
+        Utils.ConfigureWebApplicationBuilder(builder);
 
         builder.Services.AddSingleton<IRuntimeApiDataStoreManager, RuntimeApiDataStoreManager>();
         builder.Services.AddSingleton<IThemeService, ThemeService>();

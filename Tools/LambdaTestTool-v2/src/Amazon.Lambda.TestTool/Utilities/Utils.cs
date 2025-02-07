@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Text.Json;
+using Amazon.Lambda.TestTool.Configuration;
 
 namespace Amazon.Lambda.TestTool.Utilities;
 
@@ -73,5 +74,33 @@ public static class Utils
         {
             return data ?? string.Empty;
         }
+    }
+
+    /// <summary>
+    /// Configures the web application builder with necessary services, configuration, and logging setup.
+    /// </summary>
+    /// <param name="builder">The WebApplicationBuilder instance to be configured</param>
+    /// <remarks>
+    /// This method performs the following configurations:
+    /// 1. Registers the current assembly as a singleton service
+    /// 2. Registers ConfigurationSetup as a singleton service
+    /// 3. Builds and applies custom configuration
+    /// 4. Sets up logging providers with console output
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when ConfigurationSetup service cannot be resolved from the service provider
+    /// </exception>
+    public static void ConfigureWebApplicationBuilder(WebApplicationBuilder builder)
+    {
+        builder.Services.AddSingleton(typeof(Assembly), typeof(ConfigurationSetup).Assembly);
+        builder.Services.AddSingleton<ConfigurationSetup>();
+
+        var configSetup = builder.Services.BuildServiceProvider().GetRequiredService<ConfigurationSetup>();
+        var configuration = configSetup.GetConfiguration();
+        builder.Configuration.AddConfiguration(configuration);
+
+        builder.Logging.ClearProviders();
+        builder.Logging.AddConfiguration(configuration.GetSection("Logging"));
+        builder.Logging.AddConsole();
     }
 }

@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update default log level to be ERROR in production and INFORMATION in debug mode."
+      ]
+    }
+  ]
+}

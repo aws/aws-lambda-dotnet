@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Reflection;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Model;
 using Amazon.Lambda.TestTool.Commands.Settings;
@@ -9,6 +10,8 @@ using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;
 
 using System.Text.Json;
+using Amazon.Lambda.TestTool.Configuration;
+using Amazon.Lambda.TestTool.Utilities;
 
 namespace Amazon.Lambda.TestTool.Processes;
 
@@ -45,6 +48,8 @@ public class ApiGatewayEmulatorProcess
         }
 
         var builder = WebApplication.CreateBuilder();
+
+        Utils.ConfigureWebApplicationBuilder(builder);
 
         builder.Services.AddApiGatewayEmulatorServices();
 
