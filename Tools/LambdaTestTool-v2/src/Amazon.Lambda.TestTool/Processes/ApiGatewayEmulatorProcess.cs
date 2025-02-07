@@ -11,6 +11,7 @@ using Amazon.Lambda.TestTool.Services;
 
 using System.Text.Json;
 using Amazon.Lambda.TestTool.Configuration;
+using Amazon.Lambda.TestTool.Utilities;
 
 namespace Amazon.Lambda.TestTool.Processes;
 
@@ -48,16 +49,7 @@ public class ApiGatewayEmulatorProcess
 
         var builder = WebApplication.CreateBuilder();
 
-        builder.Services.AddSingleton(typeof(Assembly), typeof(ConfigurationSetup).Assembly);
-        builder.Services.AddSingleton<ConfigurationSetup>();
-
-        var configSetup = builder.Services.BuildServiceProvider().GetRequiredService<ConfigurationSetup>();
-        var configuration = configSetup.GetConfiguration();
-        builder.Configuration.AddConfiguration(configuration);
-
-        builder.Logging.ClearProviders();
-        builder.Logging.AddConfiguration(configuration.GetSection("Logging"));
-        builder.Logging.AddConsole();
+        Utils.ConfigureWebApplicationBuilder(builder);
 
         builder.Services.AddApiGatewayEmulatorServices();
 
