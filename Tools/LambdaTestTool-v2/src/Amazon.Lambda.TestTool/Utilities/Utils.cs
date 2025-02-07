@@ -21,7 +21,7 @@ public static class Utils
         AssemblyInformationalVersionAttribute? attribute = null;
         try
         {
-            var assembly = Assembly.GetEntryAssembly();
+            var assembly = typeof(Utils).Assembly;
             if (assembly == null)
                 return unknownVersion;
             attribute = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();

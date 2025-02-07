@@ -8,7 +8,7 @@ using System.ComponentModel;
 namespace Amazon.Lambda.TestTool.Commands.Settings;
 
 /// <summary>
-/// Represents the settings for configuring the <see cref="RunCommand"/>, which is the default command.
+/// Represents the settings for configuring the <see cref="RunCommand"/>.
 /// </summary>
 public sealed class RunCommandSettings : CommandSettings
 {
@@ -35,22 +35,6 @@ public sealed class RunCommandSettings : CommandSettings
     [CommandOption("--no-launch-window")]
     [Description("Disable auto launching the test tool's web interface in a browser.")]
     public bool NoLaunchWindow { get; set; }
-
-    /// <summary>
-    /// If set to true the test tool will pause waiting for a key input before exiting.
-    /// The is useful when executing from an IDE so you can avoid having the output window immediately disappear after executing the Lambda code.
-    /// The default value is true.
-    /// </summary>
-    [CommandOption("--pause-exit")]
-    [Description("If set to true the test tool will pause waiting for a key input before exiting. The is useful when executing from an IDE so you can avoid having the output window immediately disappear after executing the Lambda code. The default value is true.")]
-    public bool PauseExit { get; set; }
-
-    /// <summary>
-    /// Disables logging in the application
-    /// </summary>
-    [CommandOption("--disable-logs")]
-    [Description("Disables logging in the application")]
-    public bool DisableLogs { get; set; }
 
     /// <summary>
     /// The API Gateway Emulator Mode specifies the format of the event that API Gateway sends to a Lambda integration,
