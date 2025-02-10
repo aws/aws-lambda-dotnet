@@ -15,6 +15,7 @@
     <ToolCommandName>dotnet-lambda-test-tool</ToolCommandName>
     <Version>0.0.2-preview</Version>
     <NoWarn>NU5100</NoWarn>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup Condition="$(Configuration) == 'Release'">
@@ -56,6 +57,11 @@
   <ItemGroup>
 	  <EmbeddedResource Include="Resources\**" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
