@@ -7,40 +7,51 @@ The AWS Lambda Test Tool provides local testing capabilities for .NET Lambda fun
 2. API Gateway Emulator Mode
 3. Combined Mode (both emulators)
 
+![img.png](img.png)
+
 ## Comparison with Previous Test Tool
 
 The AWS Lambda Test Tool is an evolution of the previous AWS .NET Mock Lambda Test Tool, with several key improvements:
 
 ### New Features
 - **API Gateway Emulation**: Direct support for testing API Gateway integrations locally
+- New flow for loading Lambda functions that mimic's closer to the Lambda service. This solves many of the issues with the older tool when it came to loading dependencies.
+- Ability to have multiple Lambda functions use the same instance of the test tool.
+- UI refresh
+- [Support for integration with .NET Aspire](https://github.com/aws/integrations-on-dotnet-aspire-for-aws/issues/17)
 
 # AWS Lambda Test Tool
 
 - [Overview](#overview)
 - [Comparison with Previous Test Tool](#comparison-with-previous-test-tool)
-  - [New Features](#new-features)
+    - [New Features](#new-features)
 - [Getting help](#getting-help)
 - [Installing](#installing)
 - [Running the Test Tool](#running-the-test-tool)
-  - [Lambda Emulator Mode](#lambda-emulator-mode)
-  - [API Gateway Emulator Mode](#api-gateway-emulator-mode)
-    - [Required Configuration](#required-configuration)
-  - [Combined Mode](#combined-mode)
+    - [Lambda Emulator Mode](#lambda-emulator-mode)
+    - [API Gateway Emulator Mode](#api-gateway-emulator-mode)
+        - [Required Configuration](#required-configuration)
+    - [Combined Mode](#combined-mode)
 - [Command Line Options](#command-line-options)
 - [API Gateway Configuration](#api-gateway-configuration)
-  - [Single Route Configuration](#single-route-configuration)
-  - [Multiple Routes Configuration](#multiple-routes-configuration)
-- [Running the Test Tool Project via an IDE](#running-the-test-tool-project-via-an-ide)
+    - [Single Route Configuration](#single-route-configuration)
+    - [Multiple Routes Configuration](#multiple-routes-configuration)
 - [Example Lambda Function Setup](#example-lambda-function-setup)
-  - [1. Lambda Function Code](#1-lambda-function-code)
-  - [2. Configuration Files](#2-configuration-files)
-  - [3. API Gateway Configuration](#3-api-gateway-configuration)
-  - [4. Testing the Function](#4-testing-the-function)
+    - [1. Lambda Function Code](#1-lambda-function-code)
+    - [2. Configuration Files](#2-configuration-files)
+    - [3. AWS_LAMBDA_RUNTIME_API](#3-aws_lambda_runtime_api)
+    - [4. API Gateway Configuration](#4-api-gateway-configuration)
+    - [5. Testing the Function](#5-testing-the-function)
 
 
 ## Getting help
 
 This tool is currently in preview and there are some known limitations. For questions and problems please open a GitHub issue in this repository.
+
+## .NET Aspire integration
+The easiest way to get started using the features of the new test tool is with .NET Aspire. The integration takes care of installing the tool and provides .NET Aspire extension methods for configuring your Lambda functions and API Gateway emulator in the .NET Aspire AppHost. It avoids all steps list below for installing the tooling and setting up environment variables.
+
+Check out the following tracker issue for information on the .NET Aspire integration and steps for getting started. https://github.com/aws/integrations-on-dotnet-aspire-for-aws/issues/17
 
 ## Installing
 
@@ -147,35 +158,12 @@ When using API Gateway mode, you need to configure the route mapping using the A
 
 ```
 
-## Running the Test Tool Project via an IDE
-
-Download this repository and create/modify the launch settings `Properties/launchSettings.json` to startup the test tool
-
-```json
-{
-    "profiles": {
-        "Lambda Test Tool": {
-          "commandName": "Project",
-            "commandLineArgs": "start --lambda-emulator-port 5050 --api-gateway-emulator-port 5051 --api-gateway-emulator-mode Rest",
-            "environmentVariables": {
-                "APIGATEWAY_EMULATOR_ROUTE_CONFIG": {
-                    "LambdaResourceName": "AddLambdaFunction",
-                    "HttpMethod": "Get",
-                    "Path": "/add/{x}/{y}"
-                }
-            }
-        }
-    }
-}
-
-```
-
 ## Example Lambda Function Setup
 
-Here's a simple Lambda function that adds two numbers together. This can be implemented in two ways:
+Here's a simple Lambda function that adds two numbers together.
 
 ### 1. Lambda Function Code
-Here's a simple Lambda function that adds two numbers together:
+This can be implemented in two ways:
 
 #### Option 1: Using Top-Level Statements
 
@@ -200,6 +188,22 @@ await LambdaBootstrapBuilder.Create(Add, new CamelCaseLambdaJsonSerializer())
 
 ```
 
+Configure the Lambda function to use the test tool:
+
+**Properties/launchSettings.json**
+```
+{
+  "profiles": {
+    "AspireTestFunction": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AWS_LAMBDA_RUNTIME_API": "localhost:5050/AddLambdaFunction"
+      }
+    }
+  }
+}
+```
+
 #### Option 2: Using Class Library
 ```
 using Amazon.Lambda.APIGatewayEvents;
@@ -218,15 +222,17 @@ public class Function
 }
 ```
 
-### 2. Configuration Files
-**Properties/launchSettings.json**
 Configure the Lambda function to use the test tool:
 
+**Properties/launchSettings.json**
 ```
 {
   "profiles": {
-    "AspireTestFunction": {
-      "commandName": "Project",
+    "LambdaRuntimeClient_FunctionHandler": {
+      "workingDirectory": ".\\bin\\$(Configuration)\\net8.0",
+      "commandName": "Executable",
+      "commandLineArgs": "exec --depsfile ./MyLambdaFunction.deps.json  --runtimeconfig ./MyLambdaFunction.runtimeconfig.json %USERPROFILE%/.dotnet/tools/.store/amazon.lambda.testtool/0.0.2-preview/amazon.lambda.testtool/0.0.2-preview/content/Amazon.Lambda.RuntimeSupport/net8.0/Amazon.Lambda.RuntimeSupport.dll MyLambdaFunction::MyLambdaFunction.Function::Add",
+      "executablePath": "dotnet",
       "environmentVariables": {
         "AWS_LAMBDA_RUNTIME_API": "localhost:5050/AddLambdaFunction"
       }
@@ -235,38 +241,23 @@ Configure the Lambda function to use the test tool:
 }
 ```
 
-**aws-lambda-tools-defaults.json**
+There are three variables you may need to replace:
 
-For top-level statements, your `aws-lambda-tools-defaults.json` should be:
-```
-{
-    "profile": "default",
-    "region": "us-west-2",
-    "configuration": "Release",
-    "function-runtime": "dotnet8",
-    "function-memory-size": 512,
-    "function-timeout": 30,
-    "function-handler": "AddLambdaFunction"
-}
-```
+1. The test tool version `0.0.2-preview` in the above path to the `Amazon.Lambda.RuntimeSupport.dll` should be updated to the current test tool version.
+2. The .net version `net8.0` should be the same version that your lambda project is using.
+3. The function hanadler `MyLambdaFunction::MyLambdaFunction.Function::Add` needs to be in the format of `<project_name>::<namespace>.<class>::<method_name>`
 
-For the class library approach, your `aws-lambda-tools-defaults.json` should be:
+3. ### AWS_LAMBDA_RUNTIME_API
 
-```
-{
-    "profile": "default",
-    "region": "us-west-2",
-    "configuration": "Release",
-    "function-runtime": "dotnet8",
-    "function-memory-size": 512,
-    "function-timeout": 30,
-    "function-handler": "MyLambdaFunction::MyLambdaFunction.Function::Add"
-}
+The `AWS_LAMBDA_RUNTIME_API` environment variable tells the Lambda function where to find the Lambda runtime API endpoint. It has the following format:
 
-```
+`host:port/functionName`
 
 
-### 3. API Gateway Configuration
+The host and port should match the port that the lambda emulator is running on.
+In this example we will be running the lambda runtime api emulator on `localhost` on port `5050` and our function name will be `AddLambdaFunction`.
+
+### 4. API Gateway Configuration
 To expose this Lambda function through API Gateway, set the APIGATEWAY_EMULATOR_ROUTE_CONFIG:
 
 ```
@@ -277,7 +268,7 @@ To expose this Lambda function through API Gateway, set the APIGATEWAY_EMULATOR_
 }
 ```
 
-### 4. Testing the Function
+### 5. Testing the Function
 1. Start the test tool with both Lambda and API Gateway emulators:
 ```
 dotnet lambda-test-tool start \
@@ -289,7 +280,6 @@ dotnet lambda-test-tool start \
 2. Send a test request:
 ```
 curl -X GET "http://localhost:5051/add/5/3" -H "Content-Type: application/json" -d '"hello world"'
-
 ```
 
 Expected response:
