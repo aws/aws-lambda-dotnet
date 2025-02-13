@@ -273,7 +273,7 @@ namespace Amazon.Lambda.TestTool.Runtime
                 
                 if (handler == null) continue;
                 if (string.IsNullOrEmpty(handler)) continue;
-
+                
                 
                 var functionInfo = new LambdaFunctionInfo
                 {
