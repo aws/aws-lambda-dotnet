@@ -291,11 +291,6 @@ namespace Amazon.Lambda.TestTool.Runtime
                             functionInfo.EnvironmentVariables[keyNode.Value] = valueNode.Value;
                         }
                     }
-    
-                    if (functionInfo.EnvironmentVariables.Any())
-                    {
-                        Console.WriteLine($"In total, {functionInfo.EnvironmentVariables.Count()} EnvVars were added to lambda: {functionInfo.Name}");
-                    }
                 }
 
                 configInfo.FunctionInfos.Add(functionInfo);
