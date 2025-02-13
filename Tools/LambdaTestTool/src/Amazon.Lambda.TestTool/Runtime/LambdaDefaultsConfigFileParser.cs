@@ -262,40 +262,42 @@ namespace Amazon.Lambda.TestTool.Runtime
         {
             if (resources == null)
                 return;
-
+    
             foreach (var resource in resources.Children)
             {
                 var resourceBody = (YamlMappingNode) resource.Value;
-
+    
                 var handler = resourceBody.Children.ContainsKey("handler")
                     ? ((YamlScalarNode) resourceBody.Children["handler"])?.Value
                     : null;
-                
+    
                 if (handler == null) continue;
                 if (string.IsNullOrEmpty(handler)) continue;
-                
-                
+    
+    
                 var functionInfo = new LambdaFunctionInfo
                 {
                     Name = resource.Key.ToString(),
                     Handler = handler
                 };
-
+    
                 if (resourceBody.Children.TryGetValue("Environment", out var environmentProperty) && environmentProperty is YamlMappingNode)
                 {
-                    if (((YamlMappingNode)environmentProperty).Children.TryGetValue("Environment", out var variableProperty) && variableProperty is YamlMappingNode)
+                    foreach (var kvp in ((YamlMappingNode)environmentProperty).Children)
                     {
-                        foreach(var kvp in ((YamlMappingNode)variableProperty).Children) 
+                        if(kvp.Key is YamlScalarNode keyNode && keyNode.Value != null &&
+    kvp.Value is YamlScalarNode valueNode && valueNode.Value != null)
                         {
-                            if(kvp.Key is YamlScalarNode keyNode && keyNode.Value != null && 
-                                kvp.Value is YamlScalarNode valueNode && valueNode.Value != null)
-                            {
-                                functionInfo.EnvironmentVariables[keyNode.Value] = valueNode.Value;
-                            }
+                            functionInfo.EnvironmentVariables[keyNode.Value] = valueNode.Value;
                         }
                     }
+    
+                    if (functionInfo.EnvironmentVariables.Any())
+                    {
+                        Console.WriteLine($"In total, {functionInfo.EnvironmentVariables.Count()} EnvVars were added to lambda: {functionInfo.Name}");
+                    }
                 }
-
+    
                 configInfo.FunctionInfos.Add(functionInfo);
             }
         }
