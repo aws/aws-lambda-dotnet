@@ -5,7 +5,7 @@ using System.Net;
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Processes;
-using Amazon.Lambda.TestTool.UnitTests.Helpers;
+using Amazon.Lambda.TestTool.Tests.Common.Helpers;
 using Xunit;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Processes;
