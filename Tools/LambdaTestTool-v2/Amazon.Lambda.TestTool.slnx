@@ -2,12 +2,6 @@
   <Folder Name="/src/">
     <Project Path="src\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
   </Folder>
-  <Folder Name="/testapps/">
-    <Project Path="testapps\LambdaBinaryFunction\LambdaBinaryFunction.csproj" />
-    <Project Path="testapps\LambdaReturnStringFunction\LambdaReturnStringFunction.csproj" />
-    <Project Path="testapps\LambdaTestFunctionV1\LambdaTestFunctionV1.csproj" />
-    <Project Path="testapps\LambdaTestFunctionV2\LambdaTestFunctionV2.csproj" />
-  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests\Amazon.Lambda.TestTool.IntegrationTests\Amazon.Lambda.TestTool.IntegrationTests.csproj" />
     <Project Path="tests\Amazon.Lambda.TestTool.Tests.Common\Amazon.Lambda.TestTool.Tests.Common.csproj" Type="Classic C#" />
