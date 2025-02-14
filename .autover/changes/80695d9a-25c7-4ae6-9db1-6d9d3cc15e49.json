@@ -6,13 +6,6 @@
         "ChangelogMessages": [
             "Fixed yaml function-based serverless.template Environment Variable parsing and adding to functioninfo"
         ]
-    },
-    {
-        "Name": "Amazon.Lambda.TestTool",
-        "Type": "Patch",
-        "ChangelogMessages": [
-            "Fixed yaml function-based serverless.template Environment Variable parsing and adding to functioninfo"
-        ]
     }
   ]
 }
