@@ -45,6 +45,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private InternalLogger _logger = InternalLogger.GetDefaultLogger();
 
         private HttpClient _httpClient;
+        private LambdaBootstrapConfiguration _configuration;
         internal IRuntimeApiClient Client { get; set; }
 
         /// <summary>
@@ -65,7 +66,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         /// <returns></returns>
         public LambdaBootstrap(LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer = null)
-            : this(ConstructHttpClient(), handler, initializer, ownsHttpClient: true)
+            : this(ConstructHttpClient(), handler, initializer, ownsHttpClient: true )
         { }
 
         /// <summary>
@@ -88,6 +89,18 @@ namespace Amazon.Lambda.RuntimeSupport
         public LambdaBootstrap(HttpClient httpClient, HandlerWrapper handlerWrapper, LambdaBootstrapInitializer initializer = null)
             : this(httpClient, handlerWrapper.Handler, initializer, ownsHttpClient: false)
         { }
+        
+        /// <summary>
+        /// Create a LambdaBootstrap that will call the given initializer and handler with custom configuration.
+        /// </summary>
+        /// <param name="handler">Delegate called for each invocation of the Lambda function.</param>
+        /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
+        /// <param name="configuration"> Get configuration to check if Invoke is with Pre JIT or SnapStart enabled </param>
+        /// <returns></returns>
+        internal LambdaBootstrap(LambdaBootstrapHandler handler,
+            LambdaBootstrapInitializer initializer,
+            LambdaBootstrapConfiguration configuration) : this(ConstructHttpClient(), handler, initializer, false, configuration)
+        { }
 
         /// <summary>
         /// Create a LambdaBootstrap that will call the given initializer and handler.
@@ -97,7 +110,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         /// <param name="ownsHttpClient">Whether the instance owns the HTTP client and should dispose of it.</param>
         /// <returns></returns>
-        private LambdaBootstrap(HttpClient httpClient, LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer, bool ownsHttpClient)
+        private LambdaBootstrap(HttpClient httpClient, LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer, bool ownsHttpClient, LambdaBootstrapConfiguration configuration = null)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
@@ -105,6 +118,7 @@ namespace Amazon.Lambda.RuntimeSupport
             _initializer = initializer;
             _httpClient.Timeout = RuntimeApiHttpTimeout;
             Client = new RuntimeApiClient(new SystemEnvironmentVariables(), _httpClient);
+            _configuration = configuration ?? LambdaBootstrapConfiguration.GetDefaultConfiguration();
         }
 
         /// <summary>
@@ -124,7 +138,7 @@ namespace Amazon.Lambda.RuntimeSupport
             AdjustMemorySettings();
 #endif
 
-            if (UserCodeInit.IsCallPreJit())
+            if (_configuration.IsCallPreJit)
             {
                 this._logger.LogInformation("PreJit: CultureInfo");
                 UserCodeInit.LoadStringCultureInfo();
@@ -137,10 +151,41 @@ namespace Amazon.Lambda.RuntimeSupport
             // and then shut down cleanly. Useful for profiling or running local tests with the .NET Lambda Test Tool. This environment
             // variable should never be set when function is deployed to Lambda.
             var runOnce = string.Equals(Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE), "true", StringComparison.OrdinalIgnoreCase);
+            
+            
+            if (_initializer != null && !(await InitializeAsync()))
+            {
+                return;
+            }
+#if NET8_0_OR_GREATER
+            // Check if Initialization type is SnapStart, and invoke the snapshot restore logic.
+            if (_configuration.IsInitTypeSnapstart)
+            {
+                InternalLogger.GetDefaultLogger().LogInformation($"In LambdaBootstrap, Initializing with SnapStart.");
 
-            bool doStartInvokeLoop = _initializer == null || await InitializeAsync();
+                object registry = null;
+                try
+                {
+                    registry = SnapstartHelperCopySnapshotCallbacksIsolated.CopySnapshotCallbacks();
+                }
+                catch (TypeLoadException ex)
+                {
+                    Client.ConsoleLogger.FormattedWriteLine(
+                        Amazon.Lambda.RuntimeSupport.Helpers.LogLevelLoggerWriter.LogLevel.Error.ToString(),
+                        $"Failed to retrieve snapshot hooks from Amazon.Lambda.Core.SnapshotRestore, " +
+                        $"this can be fixed by updating the version of Amazon.Lambda.Core: {ex}",
+                        null);
+                }
+                // no exceptions in calling SnapStart hooks or /restore/next RAPID endpoint
+                if (!(await SnapstartHelperInitializeWithSnapstartIsolatedAsync.InitializeWithSnapstartAsync(Client,
+                        registry)))
+                {
+                    return;
+                };
+            }
+#endif
 
-            while (doStartInvokeLoop && !cancellationToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -168,6 +213,12 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 WriteUnhandledExceptionToLog(exception);
                 await Client.ReportInitializationErrorAsync(exception);
+#if NET8_0_OR_GREATER
+                if (_configuration.IsInitTypeSnapstart)
+                {
+                    System.Environment.Exit(1); // This needs to be non-zero for Lambda Sandbox to know that Runtime client encountered an exception
+                }
+#endif
                 throw;
             }
         }
@@ -254,7 +305,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private void WriteUnhandledExceptionToLog(Exception exception)
         {
 #if NET6_0_OR_GREATER
-            Client.ConsoleLogger.FormattedWriteLine(LogLevel.Error.ToString(), exception, null);
+            Client.ConsoleLogger.FormattedWriteLine(Amazon.Lambda.RuntimeSupport.Helpers.LogLevelLoggerWriter.LogLevel.Error.ToString(), exception, null);
 #else
             Console.Error.WriteLine(exception);
 #endif

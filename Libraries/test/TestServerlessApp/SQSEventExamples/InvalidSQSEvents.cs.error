@@ -12,21 +12,21 @@ namespace TestServerlessApp.SQSEventExamples
 
     public class InvalidSQSEvents
     {
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [SQSEvent("@testQueue", BatchSize = 0, MaximumBatchingWindowInSeconds = 302, MaximumConcurrency = 1)]
         public void ProcessMessageWithInvalidSQSEventAttributes(SQSEvent evnt)
         {
             Console.WriteLine($"Event processed: {evnt}");
         }
 
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [SQSEvent("@testQueue")]
         public void ProcessMessageWithInvalidParameters(SQSEvent evnt, bool invalidParameter1, int invalidParameter2)
         {
             Console.WriteLine($"Event processed: {evnt}");
         }
 
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [SQSEvent("@testQueue")]
         public bool ProcessMessageWithInvalidReturnType(SQSEvent evnt)
         {
@@ -34,7 +34,7 @@ namespace TestServerlessApp.SQSEventExamples
             return true;
         }
 
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [RestApi(LambdaHttpMethod.Get, "/")]
         [SQSEvent("@testQueue")]
         public void ProcessMessageWithMultipleEventTypes(SQSEvent evnt)
@@ -42,42 +42,42 @@ namespace TestServerlessApp.SQSEventExamples
             Console.WriteLine($"Event processed: {evnt}");
         }
 
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [SQSEvent("test-queue")]
         public void ProcessMessageWithInvalidQueueArn(SQSEvent evnt)
         {
             Console.WriteLine($"Event processed: {evnt}");
         }
 
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [SQSEvent("@testQueue", ResourceName = "sqs-event-source")]
         public void ProcessMessageWithInvalidResourceName(SQSEvent evnt)
         {
             Console.WriteLine($"Event processed: {evnt}");
         }
 
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [SQSEvent("@testQueue", ResourceName = "")]
         public void ProcessMessageWithEmptyResourceName(SQSEvent evnt)
         {
             Console.WriteLine($"Event processed: {evnt}");
         }
 
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [SQSEvent("@testQueue", BatchSize = 100)]
         public void ProcessMessageWithMaximumBatchingWindowInSecondsNotSpecified(SQSEvent evnt)
         {
             Console.WriteLine($"Event processed: {evnt}");
         }
 
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [SQSEvent("@testQueue", BatchSize = 100, MaximumBatchingWindowInSeconds = 0)]
         public void ProcessMessageWithMaximumBatchingWindowInSecondsLessThanOne(SQSEvent evnt)
         {
             Console.WriteLine($"Event processed: {evnt}");
         }
 
-        [LambdaFunction]
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
         [SQSEvent("arn:aws:sqs:us-east-2:444455556666:test-queue.fifo", BatchSize = 100, MaximumBatchingWindowInSeconds = 5)]
         public void ProcessMessageWithFifoQueue(SQSEvent evnt)
         {

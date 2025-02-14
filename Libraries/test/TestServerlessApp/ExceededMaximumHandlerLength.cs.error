@@ -1,0 +1,15 @@
+﻿using System;
+using Amazon.Lambda.Annotations;
+
+namespace TestServerlessApp
+{
+    public class ExceededMaximumHandlerLength
+    {
+        // This fails because generated handler is longer than 127 characters
+        [LambdaFunction]
+        public string SayHelloXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX()
+        {
+            return "Hello, World!";
+        }
+    }
+}

@@ -38,6 +38,10 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         public bool GetNextInvocationAsyncCalled { get; private set; }
+        public bool RestoreNextInvocationAsyncCalled { get; private set; }
+        public bool ReportRestoreErrorAsyncCalled { get; private set; }
+
+
         public bool ReportInitializationErrorAsyncExceptionCalled { get; private set; }
         public bool ReportInitializationErrorAsyncTypeCalled { get; private set; }
         public bool ReportInvocationErrorAsyncExceptionCalled { get; private set; }
@@ -98,8 +102,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                     new TestDateTimeHelper(), new Helpers.SimpleLoggerWriter())
             });
         }
+        
+        public Task RestoreNextInvocationAsync(CancellationToken cancellationToken = default)
+        {
+            RestoreNextInvocationAsyncCalled = true;
+            return Task.Run(() => { });
+        }
 
-        public Task ReportInitializationErrorAsync(Exception exception, CancellationToken cancellationToken = default)
+        public Task ReportInitializationErrorAsync(Exception exception, String errorType = null, CancellationToken cancellationToken = default)
         {
             LastRecordedException = exception;
             ReportInitializationErrorAsyncExceptionCalled = true;
@@ -124,6 +134,13 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             ReportInvocationErrorAsyncTypeCalled = true;
             return Task.Run(() => { });
         }
+        
+        public Task ReportRestoreErrorAsync(Exception exception, String errorType = null, CancellationToken cancellationToken = default)
+        {
+            ReportRestoreErrorAsyncCalled = true;
+
+
+            return Task.Run(() => { });        }
 
         public Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
         {

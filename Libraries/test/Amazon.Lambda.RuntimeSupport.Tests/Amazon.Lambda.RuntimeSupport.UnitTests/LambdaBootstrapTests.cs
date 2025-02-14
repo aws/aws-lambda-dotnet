@@ -83,15 +83,23 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
-        public async Task InitializerThrowsException()
+        public async Task InitializerHandlesExceptions()
         {
+            bool exceptionThrown = false;
             using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerAsync, _testInitializer.InitializeThrowAsync))
             {
                 bootstrap.Client = _testRuntimeApiClient;
-                var exception = await Assert.ThrowsAsync<Exception>(async () => { await bootstrap.RunAsync(); });
-                Assert.Equal(TestInitializer.InitializeExceptionMessage, exception.Message);
+                try
+                {
+                    await bootstrap.RunAsync();
+                }
+                catch
+                {
+                    exceptionThrown = true;
+                }
             }
 
+            Assert.True(exceptionThrown);
             Assert.True(_testRuntimeApiClient.ReportInitializationErrorAsyncExceptionCalled);
             Assert.True(_testInitializer.InitializerWasCalled);
             Assert.False(_testFunction.HandlerWasCalled);

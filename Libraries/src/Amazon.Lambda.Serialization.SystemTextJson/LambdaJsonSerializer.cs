@@ -95,7 +95,7 @@ namespace Amazon.Lambda.Serialization.SystemTextJson
         {
             try
             {
-                if (_debug)
+                if (_debug && response != null)
                 {
                     using (var debugWriter = new StringWriter())
                     using (var utf8Writer = new Utf8JsonWriter(responseStream, WriterOptions))

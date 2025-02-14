@@ -72,21 +72,22 @@ namespace Amazon.Lambda.RuntimeSupport
         /// Report an initialization error as an asynchronous operation.
         /// </summary>
         /// <param name="exception">The exception to report.</param>
+        /// <param name="errorType">An optional errorType string that can be used to log higher-context error to customer instead of generic Runtime.Unknown by the Lambda Sandbox. </param>
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        public Task ReportInitializationErrorAsync(Exception exception, CancellationToken cancellationToken = default)
+        public Task ReportInitializationErrorAsync(Exception exception, String errorType = null, CancellationToken cancellationToken = default)
         {
             if (exception == null)
                 throw new ArgumentNullException(nameof(exception));
 
-            return _internalClient.ErrorAsync(null, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)), cancellationToken);
+            return _internalClient.ErrorAsync(errorType, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)), cancellationToken);
         }
 
         /// <summary>
         /// Send an initialization error with a type string but no other information as an asynchronous operation.
         /// This can be used to directly control flow in Step Functions without creating an Exception class and throwing it.
         /// </summary>
-        /// <param name="errorType">The type of the error to report to Lambda.  This does not need to be a .NET type name.</param>
+        /// <param name="errorType">The type of the error to report to Lambda. This does not need to be a .NET type name.</param>
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
         public Task ReportInitializationErrorAsync(string errorType, CancellationToken cancellationToken = default)
@@ -140,6 +141,35 @@ namespace Amazon.Lambda.RuntimeSupport
 
             return _internalClient.ErrorWithXRayCauseAsync(awsRequestId, exceptionInfo.ErrorType, exceptionInfoJson, exceptionInfoXRayJson, cancellationToken);
         }
+        
+#if NET8_0_OR_GREATER
+
+        /// <summary>
+        ///  Triggers the snapshot to be taken, and then after resume, restores the lambda
+        /// context from the Runtime API as an asynchronous operation when SnapStart is enabled.
+        /// </summary>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        public async Task RestoreNextInvocationAsync(CancellationToken cancellationToken = default)
+        {
+            await _internalClient.RestoreNextAsync(cancellationToken);
+        }
+        
+        /// <summary>
+        /// Report a restore error as an asynchronous operation when SnapStart is enabled.
+        /// </summary>
+        /// <param name="exception">The exception to report.</param>
+        /// <param name="errorType">An optional errorType string that can be used to log higher-context error to customer instead of generic Runtime.Unknown by the Lambda Sandbox. </param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        public Task ReportRestoreErrorAsync(Exception exception, String errorType = null, CancellationToken cancellationToken = default)
+        {
+            if (exception == null)
+                throw new ArgumentNullException(nameof(exception));
+
+            return _internalClient.RestoreErrorAsync(errorType, LambdaJsonExceptionWriter.WriteJson(ExceptionInfo.GetExceptionInfo(exception)), cancellationToken);
+        }
+#endif
 
 
         /// <summary>

@@ -1,0 +1,112 @@
+# This GitHub Workflow will create a new release branch that contains the updated C# project versions and changelog.
+# The workflow will also create a PR that targets `dev` from the release branch.
+name: Create Release PR
+
+# This workflow is manually triggered when in preparation for a release. The workflow should be dispatched from the `dev` branch.
+on:
+  workflow_dispatch:
+    inputs:
+      OVERRIDE_VERSION:
+        description: "Override Version"
+        type: string
+        required: false
+
+permissions:
+  id-token: write
+
+jobs:
+  release-pr:
+    name: Release PR
+    runs-on: ubuntu-latest
+
+    env:
+      INPUT_OVERRIDE_VERSION: ${{ github.event.inputs.OVERRIDE_VERSION }}
+
+    steps:
+      # Assume an AWS Role that provides access to the Access Token
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 #v4
+        with:
+          role-to-assume: ${{ secrets.RELEASE_WORKFLOW_ACCESS_TOKEN_ROLE_ARN }}
+          aws-region: us-west-2
+      # Retrieve the Access Token from Secrets Manager
+      - name: Retrieve secret from AWS Secrets Manager
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            AWS_SECRET, ${{ secrets.RELEASE_WORKFLOW_ACCESS_TOKEN_NAME }}
+          parse-json-secrets: true
+      # Checkout a full clone of the repo
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+          token: ${{ env.AWS_SECRET_TOKEN }}
+      # Install .NET9 which is needed for AutoVer
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      # Install AutoVer to automate versioning and changelog creation
+      - name: Install AutoVer
+        run: dotnet tool install --global AutoVer --version 0.0.24
+      # Set up a git user to be able to run git commands later on
+      - name: Setup Git User
+        run: |
+          git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
+          git config --global user.name "aws-sdk-dotnet-automation"
+      # Create the release branch which will contain the version changes and updated changelog
+      - name: Create Release Branch
+        id: create-release-branch
+        run: |
+          branch=releases/next-release
+          git checkout -b $branch
+          echo "BRANCH=$branch" >> $GITHUB_OUTPUT
+      # Update the version of projects based on the change files
+      - name: Increment Version
+        run: autover version
+        if: env.INPUT_OVERRIDE_VERSION == ''
+      # Update the version of projects based on the override version
+      - name: Increment Version
+        run: autover version --use-version "$INPUT_OVERRIDE_VERSION"
+        if: env.INPUT_OVERRIDE_VERSION != ''
+      # Build the solution for the Source Generator to update the CloudFormation templates
+      - name: Commit Template Changes
+        run: |
+          dotnet build Libraries/Libraries.sln -c Release
+          git add "*.template"
+          
+          if git diff --cached --quiet; then
+            echo "No .template files were staged; skipping commit."
+          else
+            git commit -m "Update test app CloudFormation templates"
+          fi
+      # Update the changelog based on the change files
+      - name: Update Changelog
+        run: autover changelog
+      # Push the release branch up as well as the created tag
+      - name: Push Changes
+        run: |
+          branch=${{ steps.create-release-branch.outputs.BRANCH }}
+          git push origin $branch
+          git push origin $branch --tags
+      # Get the release name that will be used to create a PR
+      - name: Read Release Name
+        id: read-release-name
+        run: |
+          version=$(autover changelog --release-name)
+          echo "VERSION=$version" >> $GITHUB_OUTPUT
+      # Get the changelog that will be used to create a PR
+      - name: Read Changelog
+        id: read-changelog
+        run: |
+          changelog=$(autover changelog --output-to-console)
+          echo "CHANGELOG<<EOF"$'\n'"$changelog"$'\n'EOF >> "$GITHUB_OUTPUT"
+      # Create the Release PR and label it
+      - name: Create Pull Request
+        env:
+          GITHUB_TOKEN: ${{ env.AWS_SECRET_TOKEN }}
+        run: |
+          pr_url="$(gh pr create --title "${{ steps.read-release-name.outputs.VERSION }}" --body "${{ steps.read-changelog.outputs.CHANGELOG }}" --base dev --head ${{ steps.create-release-branch.outputs.BRANCH }})"
+          gh label create "Release PR" --description "A Release PR that includes versioning and changelog changes" -c "#FF0000" -f
+          gh pr edit $pr_url --add-label "Release PR"

@@ -127,6 +127,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestPutNoBody()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-put-no-body-request.json");
+
+            Assert.Equal(string.Empty, response.Body);
+            Assert.Equal(202, response.StatusCode);
+        }
+
+        [Fact]
         public async Task TestDefaultResponseErrorCode()
         {
             var response = await this.InvokeAPIGatewayRequest("values-get-error-apigateway-request.json");

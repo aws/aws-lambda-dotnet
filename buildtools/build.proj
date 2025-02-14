@@ -38,11 +38,8 @@
         <Exec Command="dotnet restore BlueprintPackager.sln" WorkingDirectory="..\Blueprints\BlueprintPackager"/>
     </Target>
     <Target Name="package-blueprints" DependsOnTargets="init;run-blueprint-packager">
-        <Exec Condition=" '$(OS)' != 'Windows_NT' " Command="mono $(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2022"/>
-		<Exec Condition=" '$(OS)' != 'Windows_NT' " Command="mono $(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2019"/>
-
-        <Exec Condition=" '$(OS)' == 'Windows_NT' " Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2022"/>
-		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command="$(MSBuildThisFileDirectory)nuget.exe pack template.nuspec -OutputDirectory ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2019"/>
+        <Exec Command="dotnet pack Templates.csproj --output ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2022"/>
+		<Exec Command="dotnet pack Templates.csproj --output ../../../Deployment/nuget-packages" WorkingDirectory="../Blueprints/BlueprintDefinitions/vs2019"/>
     </Target>
     <Target Name="run-blueprint-packager">
         <Exec Command="dotnet run -c $(Configuration) $(BlueprintPackagerArguments)" WorkingDirectory="..\Blueprints\BlueprintPackager"/>
@@ -196,13 +193,31 @@
     <Target Name="build-project-packages">
         <Exec Command="dotnet msbuild -restore /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>
     </Target>
+    <Target Name="testtoolv2-tests" DependsOnTargets="testtoolv2-unit-tests;testtoolv2-integ-tests"></Target>
+    <Target Name="testtoolv2-build">
+        <Exec Command="dotnet build -c $(Configuration) Amazon.Lambda.TestTool.sln" WorkingDirectory="..\Tools\LambdaTestTool-v2" ConsoleToMSBuild="true"/>
+    </Target>
+    <Target Name="testtoolv2-unit-tests" DependsOnTargets="testtoolv2-build">
+        <Exec Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot; 2>&amp;1" 
+        WorkingDirectory="..\Tools\LambdaTestTool-v2\tests\Amazon.Lambda.TestTool.UnitTests" 
+        ConsoleToMSBuild="true" 
+        IgnoreStandardErrorWarningFormat="true"/>
+    </Target>
+    <Target Name="testtoolv2-integ-tests" DependsOnTargets="testtoolv2-build">
+        <Exec 
+        Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot; 2>&amp;1" 
+        WorkingDirectory="..\Tools\LambdaTestTool-v2\tests\Amazon.Lambda.TestTool.IntegrationTests" 
+        ConsoleToMSBuild="true"
+        IgnoreStandardErrorWarningFormat="true"/>
+    </Target>
     <Target Name="run-unit-tests">
+        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\SnapshotRestore.Registry.Tests"/>
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.UnitTests"/>
         <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.Annotations.SourceGenerators.Tests"/>
     </Target>
     <Target Name="run-integ-tests">
-        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.IntegrationTests"/>
-        <Exec Command="dotnet test -c $(Configuration)" WorkingDirectory="..\Libraries\test\TestServerlessApp.IntegrationTests"/>
+        <Exec Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot;" WorkingDirectory="..\Libraries\test\Amazon.Lambda.RuntimeSupport.Tests\Amazon.Lambda.RuntimeSupport.IntegrationTests"/>
+        <Exec Command="dotnet test -c $(Configuration) --logger &quot;console;verbosity=detailed&quot;" WorkingDirectory="..\Libraries\test\TestServerlessApp.IntegrationTests"/>
     </Target>
     <Target Name="create-nuget-packages-cicd" DependsOnTargets="build-project-packages">
         <Exec Command="$(PackCommand)" WorkingDirectory="..\Libraries\src\%(LibraryName.FileName)"/>

@@ -20,12 +20,13 @@ public class FunctionTest
         var json = File.ReadAllText("sample-event.json");
 
         var kinesisEvent = JsonConvert.DeserializeObject<KinesisFirehoseEvent>(json);
+        Assert.NotNull(kinesisEvent);
 
         var function = new Function();
         var context = new TestLambdaContext();
         var kinesisResponse = function.FunctionHandler(kinesisEvent, context);
 
-        Assert.Equal(1, kinesisResponse.Records.Count);
+        Assert.Single(kinesisResponse.Records);
         Assert.Equal("49572672223665514422805246926656954630972486059535892482", kinesisResponse.Records[0].RecordId);
         Assert.Equal(KinesisFirehoseResponse.TRANSFORMED_STATE_OK, kinesisResponse.Records[0].Result);
         Assert.Equal("SEVMTE8gV09STEQ=", kinesisResponse.Records[0].Base64EncodedData);

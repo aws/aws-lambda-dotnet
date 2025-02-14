@@ -19,9 +19,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             _output = output;
         }
 
-#if DEBUG // Only running this test right now in local environment because CI system doesn't have Native AOT prereqs installed.
         [Fact]
-#endif
         public void EnsureNoTrimWarningsDuringPublish()
         {
             var projectDirectory = FindProject("NativeAOTFunction");

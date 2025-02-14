@@ -33,6 +33,10 @@ namespace TestServerlessApp.Sub1
             var startup = new TestServerlessApp.Startup();
             startup.ConfigureServices(services);
             serviceProvider = services.BuildServiceProvider();
+
+            // Intentionally eagerly build FunctionsZipOutput and its dependencies.
+            // This causes time spent in the Constructor to appear on INIT_REPORTs
+            _ = serviceProvider.GetRequiredService<FunctionsZipOutput>();
         }
 
         /// <summary>
@@ -63,7 +67,7 @@ namespace TestServerlessApp.Sub1
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("lib/amazon-lambda-annotations#1.5.0.0");
+            envValue.Append("lib/amazon-lambda-annotations#{ANNOTATIONS_ASSEMBLY_VERSION}");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

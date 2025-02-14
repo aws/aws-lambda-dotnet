@@ -391,7 +391,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             get
             {
                 var requestFeature = (IHttpRequestFeature)this;
-                return requestFeature.Body != null;
+                return requestFeature.Body != null && requestFeature.Body.Length > 0;
             }
         }
 

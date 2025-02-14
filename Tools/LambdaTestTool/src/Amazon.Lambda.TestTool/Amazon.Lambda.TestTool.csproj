@@ -3,45 +3,45 @@
   <Import Project="..\..\..\..\buildtools\common.props" />
   
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;net8.0;net9.0</TargetFrameworks>
     <Description>Common code for the AWS .NET Core Lambda Mock Test Tool.</Description>
     <NoWarn>1701;1702;1591;1587;3021;NU5100;CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
-    <PackageReference Include="AWSSDK.SSO" Version="3.7.300.80" />
-    <PackageReference Include="AWSSDK.SSOOIDC" Version="3.7.301.75" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.5.0" />
+    <PackageReference Include="AWSSDK.SSO" Version="3.7.400.85" />
+    <PackageReference Include="AWSSDK.SSOOIDC" Version="3.7.400.86" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="YamlDotNet.Signed" Version="5.2.1" />
 
-    <PackageReference Include="AWSSDK.Core" Version="3.7.303.20" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.300.80" />
+    <PackageReference Include="AWSSDK.Core" Version="3.7.401.5" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.400.85" />
   </ItemGroup>
 
 	
   <PropertyGroup Condition=" '$(Configuration)' == 'PackNET60' ">
     <TargetFramework>net6.0</TargetFramework>
-  </PropertyGroup>  	
-  
-  <PropertyGroup Condition=" '$(Configuration)' == 'PackNET70' ">
-    <TargetFramework>net7.0</TargetFramework>
-  </PropertyGroup> 
-
+  </PropertyGroup>
+	
   <PropertyGroup Condition=" '$(Configuration)' == 'PackNET80' ">
     <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup> 
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'PackNET90' ">
+    <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>   
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
-		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="6.0.1" />
 	</ItemGroup>
 
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
-		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="7.0.0" />
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
+		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="8.0.2" />
 	</ItemGroup>
 	
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
-		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="8.0.0-rc.2.23479.6" />
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net9.0' ">
+		<PackageReference Include="Microsoft.Extensions.DependencyModel" Version="9.0.0-rc.2.24473.5" />
 	</ItemGroup>	
 
 	<ItemGroup>

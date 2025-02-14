@@ -18,6 +18,7 @@ using System.Text.Json;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
+    [Collection("Integration Tests")]
     public class CustomRuntimeAspNetCoreMinimalApiTest : BaseCustomRuntimeTest
     {
         public CustomRuntimeAspNetCoreMinimalApiTest()
