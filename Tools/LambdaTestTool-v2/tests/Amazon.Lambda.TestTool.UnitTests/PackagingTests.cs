@@ -9,7 +9,6 @@ namespace Amazon.Lambda.TestTool.UnitTests;
 public class PackagingTests : IDisposable
 {
     private readonly ITestOutputHelper _output;
-    private readonly string[] _expectedFrameworks;
     private readonly string _workingDirectory;
 
     public PackagingTests(ITestOutputHelper output)
@@ -17,61 +16,20 @@ public class PackagingTests : IDisposable
         _output = output;
         var solutionRoot = FindSolutionRoot();
         _workingDirectory = DirectoryHelpers.GetTempTestAppDirectory(solutionRoot);
-        _expectedFrameworks = GetRuntimeSupportTargetFrameworks()
-            .Split([';'], StringSplitOptions.RemoveEmptyEntries)
-            .Where(f => f != "netstandard2.0")
-            .ToArray();
     }
 
-    private string GetRuntimeSupportTargetFrameworks()
-    {
-        Console.WriteLine("Getting the expected list of target frameworks...");
-        var runtimeSupportPath = Path.Combine(_workingDirectory, "Libraries", "src", "Amazon.Lambda.RuntimeSupport", "Amazon.Lambda.RuntimeSupport.csproj");
-
-        var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                Arguments = $"msbuild {runtimeSupportPath} --getProperty:TargetFrameworks",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            }
-        };
-
-        process.Start();
-        var output = process.StandardOutput.ReadToEnd();
-        var error = process.StandardError.ReadToEnd();
-        process.WaitForExit(int.MaxValue);
-
-        Console.WriteLine(output);
-        Console.WriteLine(error);
-        if (process.ExitCode != 0)
-        {
-            throw new Exception($"Failed to get TargetFrameworks: {error}");
-        }
-
-        return output.Trim();
-    }
-
-#if DEBUG
     [Fact]
-#else
-    [Fact(Skip = "Skipping this test as it is not working properly.")]
-#endif
     public void VerifyPackageContentsHasRuntimeSupport()
     {
         var projectPath = Path.Combine(_workingDirectory, "Tools", "LambdaTestTool-v2", "src", "Amazon.Lambda.TestTool", "Amazon.Lambda.TestTool.csproj");
-
-        _output.WriteLine("\nPacking TestTool...");
+        var expectedFrameworks = new string[] { "net6.0", "net8.0", "net9.0" };
+        _output.WriteLine("Packing TestTool...");
         var packProcess = new Process
         {
             StartInfo = new ProcessStartInfo
             {
                 FileName = "dotnet",
-                Arguments = $"pack {projectPath} -c Release",
+                Arguments = $"pack -c Release --no-build --no-restore {projectPath}",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -105,7 +63,7 @@ public class PackagingTests : IDisposable
 
         using var archive = ZipFile.OpenRead(packagePath);
         // Verify each framework has its required files
-        foreach (var framework in _expectedFrameworks)
+        foreach (var framework in expectedFrameworks)
         {
             _output.WriteLine($"\nChecking framework: {framework}");
 
@@ -146,14 +104,17 @@ public class PackagingTests : IDisposable
         string? currentDirectory = Directory.GetCurrentDirectory();
         while (currentDirectory != null)
         {
-            // Look for the aws-lambda-dotnet directory specifically
-            if (Path.GetFileName(currentDirectory) == "aws-lambda-dotnet")
+            // Look for the "Tools" directory specifically and then go up one level to the root of the repository.
+            // The reason we do this is because the source directory "aws-lambda-dotnet" does not always exist in the CI.
+            // In CodeBuild, the contents of "aws-lambda-dotnet" get copied to a temp location,
+            // so the path does not contain the name "aws-lambda-dotnet".
+            if (Path.GetFileName(currentDirectory) == "Tools")
             {
-                return currentDirectory;
+                return Path.Combine(currentDirectory, "..");
             }
             currentDirectory = Directory.GetParent(currentDirectory)?.FullName;
         }
-        throw new Exception("Could not find the aws-lambda-dotnet root directory.");
+        throw new Exception("Could not find the 'Tools' root directory.");
     }
 
     public void Dispose()
