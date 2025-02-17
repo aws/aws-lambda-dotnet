@@ -5,7 +5,7 @@ namespace Amazon.Lambda.AppSyncEvents
     /// <summary>
     /// Represents the event payload received from AWS AppSync.
     /// </summary>
-    public class AppSyncEvent<TArguments>
+    public class AppSyncResolverEvent<TArguments>
     {
         /// <summary>
         /// Gets or sets the input arguments for the GraphQL operation.
@@ -66,7 +66,7 @@ namespace Amazon.Lambda.AppSyncEvents
             /// <summary>
             /// Gets or sets the domain name associated with the request.
             /// </summary>
-            public object DomainName { get; set; }
+            public string DomainName { get; set; }
         }
 
         /// <summary>
