@@ -42,10 +42,10 @@ namespace TestServerlessApp
         /// <summary>
         /// The generated Lambda function handler for <see cref="Randoms(TestServerlessApp.SimpleCalculator.RandomsInput, Amazon.Lambda.Core.ILambdaContext)"/>
         /// </summary>
-        /// <param name="input">The request object that will be processed by the Lambda function handler.</param>
+        /// <param name="__input__">The request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public System.Collections.Generic.IList<int> Randoms(TestServerlessApp.SimpleCalculator.RandomsInput input, Amazon.Lambda.Core.ILambdaContext __context__)
+        public System.Collections.Generic.IList<int> Randoms(TestServerlessApp.SimpleCalculator.RandomsInput __input__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
@@ -53,7 +53,7 @@ namespace TestServerlessApp
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
             var serializer = scope.ServiceProvider.GetRequiredService<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
-            return simpleCalculator.Randoms(input, __context__);
+            return simpleCalculator.Randoms(__input__, __context__);
         }
 
         private static void SetExecutionEnvironment()

@@ -30,12 +30,12 @@ namespace TestServerlessApp
         /// <summary>
         /// The generated Lambda function handler for <see cref="DynamicInput(dynamic, Amazon.Lambda.Core.ILambdaContext)"/>
         /// </summary>
-        /// <param name="text">The request object that will be processed by the Lambda function handler.</param>
+        /// <param name="__text__">The request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public string DynamicInput(dynamic text, Amazon.Lambda.Core.ILambdaContext __context__)
+        public string DynamicInput(dynamic __text__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
-            return dynamicExample.DynamicInput(text, __context__);
+            return dynamicExample.DynamicInput(__text__, __context__);
         }
 
         private static void SetExecutionEnvironment()
