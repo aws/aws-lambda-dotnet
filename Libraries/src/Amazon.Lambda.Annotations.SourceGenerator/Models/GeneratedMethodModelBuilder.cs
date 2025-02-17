@@ -215,6 +215,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                     }
                     else
                     {
+                        // Somehow, Roslyn doesn't include @ character when using with reserved keyword. Add a check just in case Roslyn fix is implemented in later versions.
+                        if (!param.Name.StartsWith("@"))
+                        {
+                            param.Name = "__" + param.Name + "__";
+                        }
                         param.Documentation = "The request object that will be processed by the Lambda function handler.";
                     }
 
