@@ -11,11 +11,11 @@ The AWS Lambda Test Tool provides local testing capabilities for .NET Lambda fun
 
 ## Comparison with Previous Test Tool
 
-The AWS Lambda Test Tool is an evolution of the previous AWS .NET Mock Lambda Test Tool, with several key improvements:
+The AWS Lambda Test Tool is an evolution of the previous [AWS .NET Mock Lambda Test Tool](https://github.com/aws/aws-lambda-dotnet/tree/master/Tools/LambdaTestTool), with several key improvements:
 
 ### New Features
 - **API Gateway Emulation**: Direct support for testing API Gateway integrations locally
-- New flow for loading Lambda functions that mimic's closer to the Lambda service. This solves many of the issues with the older tool when it came to loading dependencies.
+- Updated to use a new flow for loading Lambda functions that mimics closer to the Lambda service. This solves many of the issues with the older tool when it came to loading dependencies.
 - Ability to have multiple Lambda functions use the same instance of the test tool.
 - UI refresh
 - [Support for integration with .NET Aspire](https://github.com/aws/integrations-on-dotnet-aspire-for-aws/issues/17)
@@ -26,6 +26,7 @@ The AWS Lambda Test Tool is an evolution of the previous AWS .NET Mock Lambda Te
 - [Comparison with Previous Test Tool](#comparison-with-previous-test-tool)
     - [New Features](#new-features)
 - [Getting help](#getting-help)
+- [.NET Aspire integration](#net-aspire-integration)
 - [Installing](#installing)
 - [Running the Test Tool](#running-the-test-tool)
     - [Lambda Emulator Mode](#lambda-emulator-mode)
@@ -38,24 +39,24 @@ The AWS Lambda Test Tool is an evolution of the previous AWS .NET Mock Lambda Te
     - [Multiple Routes Configuration](#multiple-routes-configuration)
 - [Example Lambda Function Setup](#example-lambda-function-setup)
     - [1. Lambda Function Code](#1-lambda-function-code)
-    - [2. Configuration Files](#2-configuration-files)
-    - [3. AWS_LAMBDA_RUNTIME_API](#3-aws_lambda_runtime_api)
-    - [4. API Gateway Configuration](#4-api-gateway-configuration)
-    - [5. Testing the Function](#5-testing-the-function)
-
+        - [Option 1: Using Top-Level Statements](#option-1-using-top-level-statements)
+        - [Option 2: Using Class Library](#option-2-using-class-library)
+    - [2. AWS_LAMBDA_RUNTIME_API](#2-aws_lambda_runtime_api)
+    - [3. API Gateway Configuration](#3-api-gateway-configuration)
+    - [4. Testing the Function](#4-testing-the-function)
 
 ## Getting help
 
 This tool is currently in preview and there are some known limitations. For questions and problems please open a GitHub issue in this repository.
 
 ## .NET Aspire integration
-The easiest way to get started using the features of the new test tool is with .NET Aspire. The integration takes care of installing the tool and provides .NET Aspire extension methods for configuring your Lambda functions and API Gateway emulator in the .NET Aspire AppHost. It avoids all steps list below for installing the tooling and setting up environment variables.
+The easiest way to get started using the features of the new test tool is with .NET Aspire. The integration takes care of installing the tool and provides .NET Aspire extension methods for configuring your Lambda functions and API Gateway emulator in the .NET Aspire AppHost. It avoids all of the steps list below for installing the tooling and setting up environment variables.
 
 Check out the following tracker issue for information on the .NET Aspire integration and steps for getting started. https://github.com/aws/integrations-on-dotnet-aspire-for-aws/issues/17
 
 ## Installing
 
-The tool is distributed as .NET Global Tools via the NuGet packages. To install the tool execute the following command:
+The tool is distributed as .NET Global Tool. To install the tool execute the following command:
 
 ```
 dotnet tool install -g amazon.lambda.testtool --prerelease
@@ -78,7 +79,7 @@ dotnet lambda-test-tool start --lambda-emulator-port 5050
 ```
 
 ### API Gateway Emulator Mode
-Use this mode when you want to test Lambda functions through API Gateway endpoints. This mode requires additional configuration through environment variables.
+Use this mode when you want to test Lambda functions through API Gateway endpoints. **Note: Running this mode by itself will not work, you will still need have the lambda runtime client running elsewhere and reference it in the `Endpoint` parameter in the `APIGATEWAY_EMULATOR_ROUTE_CONFIG` env varible (see below [Required Configuration](#required-configuration))** Api gateway mode requires additional configuration through environment variables.
 
 ```
 # Start API Gateway emulator on port 5051 in REST mode
@@ -92,20 +93,26 @@ When running via command line, you must set the environment variable for API Gat
 
 Linux/macOS:
 ```bash
-export APIGATEWAY_EMULATOR_ROUTE_CONFIG='{"LambdaResourceName":"AddLambdaFunction","HttpMethod":"Get","Path":"/add/{x}/{y}"}'
+export APIGATEWAY_EMULATOR_ROUTE_CONFIG='{"LambdaResourceName":"AddLambdaFunction","HttpMethod":"Get","Path":"/add/{x}/{y}","Endpoint":"{LAMBDA_RUNTIME_API}"}'
+
 ```
 
 Windows (Command Prompt):
 
 ```
-set APIGATEWAY_EMULATOR_ROUTE_CONFIG={"LambdaResourceName":"AddLambdaFunction","HttpMethod":"Get","Path":"/add/{x}/{y}"}
+set APIGATEWAY_EMULATOR_ROUTE_CONFIG={"LambdaResourceName":"AddLambdaFunction","HttpMethod":"Get","Path":"/add/{x}/{y}","Endpoint":"{LAMBDA_RUNTIME_API}"}
+
 ```
 
 Windows (PowerShell):
 
 ```
-$env:APIGATEWAY_EMULATOR_ROUTE_CONFIG='{"LambdaResourceName":"AddLambdaFunction","HttpMethod":"Get","Path":"/add/{x}/{y}"}'
+$env:APIGATEWAY_EMULATOR_ROUTE_CONFIG='{"LambdaResourceName":"AddLambdaFunction","HttpMethod":"Get","Path":"/add/{x}/{y}","Endpoint":"{LAMBDA_RUNTIME_API}"}'
+
 ```
+
+Replace `{LAMBDA_RUNTIME_API}` with your Lambda runtime API endpoint (e.g., "http://localhost:5050/AddLambdaFunction" or the endpoint specified in your `AWS_LAMBDA_RUNTIME_API` environment variable).
+
 
 ### Combined Mode
 Use this mode when you want to run both Lambda and API Gateway emulators simultaneously.
@@ -231,7 +238,7 @@ Configure the Lambda function to use the test tool:
     "LambdaRuntimeClient_FunctionHandler": {
       "workingDirectory": ".\\bin\\$(Configuration)\\net8.0",
       "commandName": "Executable",
-      "commandLineArgs": "exec --depsfile ./MyLambdaFunction.deps.json  --runtimeconfig ./MyLambdaFunction.runtimeconfig.json %USERPROFILE%/.dotnet/tools/.store/amazon.lambda.testtool/0.0.2-preview/amazon.lambda.testtool/0.0.2-preview/content/Amazon.Lambda.RuntimeSupport/net8.0/Amazon.Lambda.RuntimeSupport.dll MyLambdaFunction::MyLambdaFunction.Function::Add",
+      "commandLineArgs": "exec --depsfile ./MyLambdaFunction.deps.json  --runtimeconfig ./MyLambdaFunction.runtimeconfig.json %USERPROFILE%/.dotnet/tools/.store/amazon.lambda.testtool/{TEST_TOOL_VERSION}/amazon.lambda.testtool/{TEST_TOOL_VERSION}/content/Amazon.Lambda.RuntimeSupport/{TARGET_FRAMEWORK}/Amazon.Lambda.RuntimeSupport.dll MyLambdaFunction::MyLambdaFunction.Function::Add",
       "executablePath": "dotnet",
       "environmentVariables": {
         "AWS_LAMBDA_RUNTIME_API": "localhost:5050/AddLambdaFunction"
@@ -243,11 +250,22 @@ Configure the Lambda function to use the test tool:
 
 There are three variables you may need to replace:
 
-1. The test tool version `0.0.2-preview` in the above path to the `Amazon.Lambda.RuntimeSupport.dll` should be updated to the current test tool version.
-2. The .net version `net8.0` should be the same version that your lambda project is using.
-3. The function hanadler `MyLambdaFunction::MyLambdaFunction.Function::Add` needs to be in the format of `<project_name>::<namespace>.<class>::<method_name>`
+There are three variables you need to update in the launch settings:
 
-3. ### AWS_LAMBDA_RUNTIME_API
+1. `{TEST_TOOL_VERSION}` - Replace with the current Amazon.Lambda.TestTool version (e.g., `0.0.2-preview` in the example above)
+   - This appears in the path: `.store/amazon.lambda.testtool/{TEST_TOOL_VERSION}/amazon.lambda.testtool/{TEST_TOOL_VERSION}/content/`
+
+2. `{TARGET_FRAMEWORK}` - Replace with your Lambda project's target framework version (e.g., `net8.0` in the example above)
+   - This appears in two places:
+     - The working directory: `.\\bin\\$(Configuration)\\{TARGET_FRAMEWORK}`
+     - The runtime support DLL path: `Amazon.Lambda.RuntimeSupport/{TARGET_FRAMEWORK}/Amazon.Lambda.RuntimeSupport.dll`
+
+3. `{FUNCTION_HANDLER}` - Replace with your function's handler using the format: `<project_name>::<namespace>.<class>::<method_name>`
+   - Example: `MyLambdaFunction::MyLambdaFunction.Function::Add`
+
+
+
+### 2. AWS_LAMBDA_RUNTIME_API
 
 The `AWS_LAMBDA_RUNTIME_API` environment variable tells the Lambda function where to find the Lambda runtime API endpoint. It has the following format:
 
@@ -257,7 +275,7 @@ The `AWS_LAMBDA_RUNTIME_API` environment variable tells the Lambda function wher
 The host and port should match the port that the lambda emulator is running on.
 In this example we will be running the lambda runtime api emulator on `localhost` on port `5050` and our function name will be `AddLambdaFunction`.
 
-### 4. API Gateway Configuration
+### 3. API Gateway Configuration
 To expose this Lambda function through API Gateway, set the APIGATEWAY_EMULATOR_ROUTE_CONFIG:
 
 ```
@@ -268,7 +286,7 @@ To expose this Lambda function through API Gateway, set the APIGATEWAY_EMULATOR_
 }
 ```
 
-### 5. Testing the Function
+### 4. Testing the Function
 1. Start the test tool with both Lambda and API Gateway emulators:
 ```
 dotnet lambda-test-tool start \
