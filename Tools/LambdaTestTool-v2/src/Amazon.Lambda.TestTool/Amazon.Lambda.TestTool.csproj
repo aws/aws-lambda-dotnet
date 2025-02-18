@@ -1,14 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
+  <Import Project="..\..\..\..\buildtools\common.props" />
   <PropertyGroup>
-	  <Description>A tool to help debug and test your .NET AWS Lambda functions locally.</Description>
+    <OutputType>Exe</OutputType>  
+    <Description>A tool to help debug and test your .NET AWS Lambda functions locally.</Description>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Product>AWS .NET Lambda Test Tool</Product>
     <Copyright>Apache 2</Copyright>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-	  <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
     <PackageId>Amazon.Lambda.TestTool</PackageId>
@@ -16,6 +18,7 @@
     <Version>0.0.2-preview</Version>
     <NoWarn>NU5100</NoWarn>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RollForward>Major</RollForward>	
   </PropertyGroup>
 
   <ItemGroup Condition="$(Configuration) == 'Release'">
@@ -35,17 +38,18 @@
     <Exec Command="dotnet msbuild ../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj --getProperty:TargetFrameworks" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="RuntimeSupportTargetFrameworks" />
     </Exec>
+    
+    <ItemGroup>
+      <TempFrameworks Include="$(RuntimeSupportTargetFrameworks.Split(';'))" />
+      <TargetFrameworks Include="@(TempFrameworks)" Condition="'%(Identity)' != 'netstandard2.0'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PublishRuntimeSupportFiles" DependsOnTargets="GetRuntimeSupportTargetFrameworks" BeforeTargets="Build">
+    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj&quot; -c $(Configuration) -f %(TargetFrameworks.Identity) /p:ExecutableOutputType=true" />
   </Target>
 
   <Target Name="CopyRuntimeSupportFiles" DependsOnTargets="GetRuntimeSupportTargetFrameworks" BeforeTargets="_GetPackageFiles">
-    <ItemGroup>
-      <TempFrameworks Include="$(RuntimeSupportTargetFrameworks.Split(';'))" />
-
-      <TargetFrameworks Include="@(TempFrameworks)" Condition="'%(Identity)' != 'netstandard2.0'" />
-    </ItemGroup>
-
-    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj&quot; -c $(Configuration) -f %(TargetFrameworks.Identity) /p:ExecutableOutputType=true" />
-
     <ItemGroup>
       <None Include="$(MSBuildThisFileDirectory)../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/bin/$(Configuration)/%(TargetFrameworks.Identity)/publish/**/*.*">
         <Pack>true</Pack>

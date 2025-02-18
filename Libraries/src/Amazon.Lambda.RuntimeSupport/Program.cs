@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -23,6 +23,8 @@ namespace Amazon.Lambda.RuntimeSupport
 {
     class Program
     {
+
+#if ExecutableOutputType
 #if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(
             "The Main entry point is used in the managed runtime which loads Lambda functions as a class library. " + 
@@ -42,6 +44,7 @@ namespace Amazon.Lambda.RuntimeSupport
             RuntimeSupportInitializer runtimeSupportInitializer = new RuntimeSupportInitializer(handler);
             await runtimeSupportInitializer.RunLambdaBootstrap();
         }
+#endif
 
 #if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("This code is only exercised in the class library programming model. Native AOT will not use this code path.")]

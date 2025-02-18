@@ -8,23 +8,16 @@
 <PageTitle>Lambda Function Tester</PageTitle>
 
 <div class="d-flex align-items-center mb-2">
-    <h3 class="me-auto">Lambda Function Tester</h3>
-    <div class="form-floating @(_availableLambdaFunctions.Count <= 1 ? "d-none" : "")" style="min-width: 300px;">
-        <select class="form-select" id="selectedFunctionName" @bind="SelectedFunctionName">
-            @foreach (var functionName in _availableLambdaFunctions)
-            {
-                if (functionName.Equals(LambdaRuntimeApi.DefaultFunctionName))
-                {
-                    <option value="@functionName">Default Lambda</option>
-                }
-                else
-                {
-                    <option value="@functionName">@functionName</option>
-                }
-            }
-        </select>
-        <label for="sample-requests">Lambda Functions</label>
-    </div>
+    <h3 class="me-auto my-auto" type="button" data-bs-toggle="offcanvas" data-bs-target="#switchFunctionOffCanvas">@GetLambdaFunctionName(SelectedFunctionName)</h3>
+    <button
+        type="button"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#switchFunctionOffCanvas"
+        class="btn btn-primary btn-sm rounded-pill @(_availableLambdaFunctions.Count <= 1 ? "d-none" : "d-flex") align-items-center gap-1 ps-3 pe-2 @(functionUpdated ? "btn-glow": "")"
+        onclick="@(() => { functionUpdated = false; })">
+        <span>Switch function</span>
+        <span class="badge text-bg-secondary rounded-circle me-1" style="top: 0;">@_availableLambdaFunctions.Count</span>
+    </button>
 </div>
 
 @if (!Utils.IsAspireHosted)
@@ -252,3 +245,29 @@ else
 }
 
 <EventDialog @ref="_eventDialog"/>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="switchFunctionOffCanvas">
+    <nav class="navbar navbar-expand-lg bd-navbar sticky-top bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand py-0 me-4 d-flex align-items-center gap-3" href="/">
+                <img src="aws.svg" width="42" height="42" class="align-text-top logo-light-mode"/>
+                <img src="aws-light.svg" width="42" height="42" class="align-text-top logo-dark-mode"/>
+                Lambda Test Tool
+            </a>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+    </nav>
+    <div class="offcanvas-body">
+        <h5 class="mb-3">Available Functions</h5>
+        <div class="d-flex flex-column gap-2">
+            @foreach (var functionName in _availableLambdaFunctions)
+            {
+                <div type="button" data-bs-dismiss="offcanvas"
+                     class="btn @(functionName.Equals(_selectedFunctionName) ? "btn-primary" : "btn-outline-secondary") rounded-pill px-3 py-2 text-start"
+                     @onclick="() => SetActiveLambdaFunction(functionName)">
+                    @GetLambdaFunctionName(functionName)
+                </div>
+            }
+        </div>
+    </div>
+</div>

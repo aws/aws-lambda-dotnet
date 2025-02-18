@@ -58,6 +58,9 @@ public partial class Home : ComponentBase, IDisposable
             if (_activeEditorError != null && !string.IsNullOrEmpty(DataStore?.ActiveEvent?.ErrorResponse))
                 _activeEditorError.SetValue(DataStore.ActiveEvent?.ErrorResponse);
 
+            _queuedEventsCount = DataStore?.QueuedEvents.Count ?? 0;
+            _pastEventsCount = DataStore?.ExecutedEvents.Count ?? 0;
+
             StateHasChanged();
         }
     }
@@ -128,7 +131,6 @@ public partial class Home : ComponentBase, IDisposable
         SampleRequests = SampleRequestManager.GetSampleRequests();
         _queuedEventsCount = DataStore?.QueuedEvents.Count ?? 0;
         _pastEventsCount = DataStore?.ExecutedEvents.Count ?? 0;
-
     }
 
     private void HandleThemeChanged()
@@ -163,12 +165,15 @@ public partial class Home : ComponentBase, IDisposable
         });
     }
 
+    private bool functionUpdated = false;
+
     private void DataStoreManagerOnStateChange(object? sender, EventArgs e)
     {
         InvokeAsync(() =>
         {
             _availableLambdaFunctions = DataStoreManager.GetListOfFunctionNames().ToList();
             SelectedFunctionName = _availableLambdaFunctions.FirstOrDefault();
+            functionUpdated = true;
             StateHasChanged();
         });
     }
@@ -252,6 +257,17 @@ public partial class Home : ComponentBase, IDisposable
         _eventDialog?.ShowDialog(evnt);
     }
 
+    string GetLambdaFunctionName(string? functionId)
+    {
+        if (string.IsNullOrEmpty(functionId))
+            return string.Empty;
+
+        if (LambdaRuntimeApi.DefaultFunctionName.Equals(functionId))
+            return "Default Lambda Function";
+
+        return functionId;
+    }
+
     private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
     {
         return new StandaloneEditorConstructionOptions
@@ -285,6 +301,11 @@ public partial class Home : ComponentBase, IDisposable
                 Enabled = false
             }
         };
+    }
+
+    void SetActiveLambdaFunction(string function)
+    {
+        SelectedFunctionName = function;
     }
 
     private StandaloneEditorConstructionOptions ActiveErrorEditorConstructionOptions(StandaloneCodeEditor editor)

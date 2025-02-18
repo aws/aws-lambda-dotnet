@@ -29,6 +29,9 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
     /// <summary>
     /// Builds user delegate from the handler information.
     /// </summary>
+#if NET8_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("InvokeDelegateBuilder does not support trimming and is meant to be used in class library based Lambda functions.")]
+#endif
     internal class InvokeDelegateBuilder
     {
         private readonly InternalLogger _logger;

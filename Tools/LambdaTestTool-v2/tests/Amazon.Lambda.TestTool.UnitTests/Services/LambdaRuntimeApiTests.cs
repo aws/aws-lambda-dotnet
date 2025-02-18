@@ -151,8 +151,6 @@ public class LambdaRuntimeApiTests
         Assert.Empty(responseBody);
     }
 
-
-
     [Fact]
     public async Task GetNextInvocation_Returns_Event()
     {
@@ -190,75 +188,99 @@ public class LambdaRuntimeApiTests
     [Fact]
     public void PostInitError_Logs_Error()
     {
-        // Arrange
-        var functionName = "testFunction";
-        var errorType = "InitializationError";
-        var error = "Failed to initialize";
+        var consoleError = Console.Error;
+        try
+        {
+            Console.SetError(TextWriter.Null);
+            // Arrange
+            var functionName = "testFunction";
+            var errorType = "InitializationError";
+            var error = "Failed to initialize";
 
-        // Act
-        var result = new LambdaRuntimeApi(_app).PostInitError(functionName, errorType, error);
+            // Act
+            var result = new LambdaRuntimeApi(_app).PostInitError(functionName, errorType, error);
 
-        // Assert
-        Assert.NotNull(result);
-        var statusResponse = Assert.IsType<StatusResponse>((result as IValueHttpResult)?.Value);
-        Assert.Equal("success", statusResponse.Status);
+            // Assert
+            Assert.NotNull(result);
+            var statusResponse = Assert.IsType<StatusResponse>((result as IValueHttpResult)?.Value);
+            Assert.Equal("success", statusResponse.Status);
+        }
+        finally
+        {
+            Console.SetError(consoleError);
+        }
     }
 
     [Fact]
     public async Task PostInvocationResponse_Reports_Success()
     {
-        // Arrange
-        var functionName = "testFunction";
-        var awsRequestId = "request123";
-        var response = "{\"result\":\"success\"}";
+        var consoleError = Console.Error;
+        try
+        {
+            Console.SetError(TextWriter.Null);
+            // Arrange
+            var functionName = "testFunction";
+            var awsRequestId = "request123";
+            var response = "{\"result\":\"success\"}";
 
-        var context = new DefaultHttpContext();
-        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(response));
-        context.Response.Body = new MemoryStream();
+            var context = new DefaultHttpContext();
+            context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(response));
+            context.Response.Body = new MemoryStream();
 
-        _mockRuntimeDataStore
-            .Setup(x => x.ReportSuccess(awsRequestId, response));
+            _mockRuntimeDataStore
+                .Setup(x => x.ReportSuccess(awsRequestId, response));
 
-        // Act
-        var result = await new LambdaRuntimeApi(_app).PostInvocationResponse(context, functionName, awsRequestId);
+            // Act
+            var result = await new LambdaRuntimeApi(_app).PostInvocationResponse(context, functionName, awsRequestId);
 
-        // Assert
-        Assert.NotNull(result);
-        var statusResponse = Assert.IsType<StatusResponse>((result as IValueHttpResult)?.Value);
-        Assert.Equal("success", statusResponse.Status);
+            // Assert
+            Assert.NotNull(result);
+            var statusResponse = Assert.IsType<StatusResponse>((result as IValueHttpResult)?.Value);
+            Assert.Equal("success", statusResponse.Status);
 
-        _mockRuntimeDataStore.Verify(x => x.ReportSuccess(awsRequestId, response), Times.Once);
+            _mockRuntimeDataStore.Verify(x => x.ReportSuccess(awsRequestId, response), Times.Once);
+        }
+        finally
+        {
+            Console.SetError(consoleError);
+        }
     }
 
     [Fact]
     public async Task PostError_Reports_Error()
     {
-        // Arrange
-        var functionName = "testFunction";
-        var awsRequestId = "request123";
-        var errorType = "HandlerError";
-        var errorBody = "Function execution failed";
+        var consoleError = Console.Error;
+        try
+        {
+            Console.SetError(TextWriter.Null);
+            // Arrange
+            var functionName = "testFunction";
+            var awsRequestId = "request123";
+            var errorType = "HandlerError";
+            var errorBody = "Function execution failed";
 
-        var context = new DefaultHttpContext();
-        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(errorBody));
-        context.Response.Body = new MemoryStream();
+            var context = new DefaultHttpContext();
+            context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(errorBody));
+            context.Response.Body = new MemoryStream();
 
-        _mockRuntimeDataStore
-            .Setup(x => x.ReportError(awsRequestId, errorType, errorBody));
+            _mockRuntimeDataStore
+                .Setup(x => x.ReportError(awsRequestId, errorType, errorBody));
 
-        // Act
-        var result = await new LambdaRuntimeApi(_app).PostError(context, functionName, awsRequestId, errorType);
+            // Act
+            var result = await new LambdaRuntimeApi(_app).PostError(context, functionName, awsRequestId, errorType);
 
-        // Assert
-        Assert.NotNull(result);
-        var statusResponse = Assert.IsType<StatusResponse>((result as IValueHttpResult)?.Value);
-        Assert.Equal("success", statusResponse.Status);
+            // Assert
+            Assert.NotNull(result);
+            var statusResponse = Assert.IsType<StatusResponse>((result as IValueHttpResult)?.Value);
+            Assert.Equal("success", statusResponse.Status);
 
-        _mockRuntimeDataStore.Verify(x => x.ReportError(awsRequestId, errorType, errorBody), Times.Once);
+            _mockRuntimeDataStore.Verify(x => x.ReportError(awsRequestId, errorType, errorBody), Times.Once);
+        }
+        finally
+        {
+            Console.SetError(consoleError);
+        }
     }
-
-
-
 }
 
 // Helper class to prevent stream from being closed

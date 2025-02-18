@@ -63,7 +63,7 @@ public static class DirectoryHelpers
             File.SetAttributes(tempPath, FileAttributes.Normal);
         }
 
-        foreach (var subdir in dirs)
+        foreach (var subdir in dirs.Where(x => !x.Name.Equals(".git")))
         {
             var tempPath = Path.Combine(destDirName, subdir.Name);
             var subDir = new DirectoryInfo(subdir.FullName);

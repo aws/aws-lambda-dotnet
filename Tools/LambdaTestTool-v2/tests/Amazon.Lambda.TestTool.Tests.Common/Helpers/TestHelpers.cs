@@ -1,13 +1,11 @@
-﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Collections.Concurrent;
+namespace Amazon.Lambda.TestTool.Tests.Common.Helpers;
 
-namespace Amazon.Lambda.TestTool.UnitTests.Helpers;
-
-internal static class TestHelpers
+public static class TestHelpers
 {
-    internal static async Task<bool> WaitForApiToStartAsync(string url, int maxRetries = 5, int delayMilliseconds = 1000)
+    public static async Task<bool> WaitForApiToStartAsync(string url, int maxRetries = 5, int delayMilliseconds = 1000)
     {
         using (var client = new HttpClient())
         {
@@ -33,7 +31,7 @@ internal static class TestHelpers
         }
     }
 
-    internal static async Task<HttpResponseMessage> SendRequest(string url)
+    public static async Task<HttpResponseMessage> SendRequest(string url)
     {
         using (var client = new HttpClient())
         {

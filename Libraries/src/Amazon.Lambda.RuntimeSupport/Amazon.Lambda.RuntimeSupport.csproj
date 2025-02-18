@@ -18,6 +18,7 @@
 
   <PropertyGroup Condition=" '$(ExecutableOutputType)'=='true' ">
     <OutputType>Exe</OutputType>
+    <DefineConstants>$(DefineConstants);ExecutableOutputType</DefineConstants>
   </PropertyGroup>
 	
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net9.0'">
