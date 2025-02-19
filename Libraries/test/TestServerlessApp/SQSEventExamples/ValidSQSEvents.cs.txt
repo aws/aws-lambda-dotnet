@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations;
 using Amazon.Lambda.Annotations.SQS;
 using Amazon.Lambda.SQSEvents;
 using System;
@@ -20,6 +20,13 @@ namespace TestServerlessApp.SQSEventExamples
         public void ProcessMessages(SQSEvent evnt)
         {
             Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [SQSEvent("arn:aws:sqs:us-east-2:444455556666:my-queue")]
+        public void ProcessMessagesWithReservedParameterName(SQSEvent @event)
+        {
+            Console.WriteLine($"Event processed: {@event}");
         }
 
         [LambdaFunction(PackageType = LambdaPackageType.Image)]

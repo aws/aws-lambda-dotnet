@@ -30,11 +30,11 @@ namespace TestServerlessApp.SQSEventExamples
         /// <summary>
         /// The generated Lambda function handler for <see cref="ProcessMessagesWithBatchFailureReporting(Amazon.Lambda.SQSEvents.SQSEvent)"/>
         /// </summary>
-        /// <param name="evnt">The request object that will be processed by the Lambda function handler.</param>
+        /// <param name="__evnt__">The request object that will be processed by the Lambda function handler.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public async System.Threading.Tasks.Task<Amazon.Lambda.SQSEvents.SQSBatchResponse> ProcessMessagesWithBatchFailureReporting(Amazon.Lambda.SQSEvents.SQSEvent evnt)
+        public async System.Threading.Tasks.Task<Amazon.Lambda.SQSEvents.SQSBatchResponse> ProcessMessagesWithBatchFailureReporting(Amazon.Lambda.SQSEvents.SQSEvent __evnt__)
         {
-            return await validSQSEvents.ProcessMessagesWithBatchFailureReporting(evnt);
+            return await validSQSEvents.ProcessMessagesWithBatchFailureReporting(__evnt__);
         }
 
         private static void SetExecutionEnvironment()

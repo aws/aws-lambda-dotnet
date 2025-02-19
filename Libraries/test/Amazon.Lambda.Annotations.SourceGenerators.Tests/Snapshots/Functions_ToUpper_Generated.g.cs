@@ -30,11 +30,11 @@ namespace TestServerlessApp.Sub1
         /// <summary>
         /// The generated Lambda function handler for <see cref="ToUpper(string)"/>
         /// </summary>
-        /// <param name="text">The request object that will be processed by the Lambda function handler.</param>
+        /// <param name="__text__">The request object that will be processed by the Lambda function handler.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public string ToUpper(string text)
+        public string ToUpper(string __text__)
         {
-            return functions.ToUpper(text);
+            return functions.ToUpper(__text__);
         }
 
         private static void SetExecutionEnvironment()

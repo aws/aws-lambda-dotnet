@@ -97,6 +97,42 @@
         }
       }
     },
+    "TestServerlessAppSQSEventExamplesValidSQSEventsProcessMessagesWithReservedParameterNameGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "myqueue"
+        ],
+        "SyncedEventProperties": {
+          "myqueue": [
+            "Queue"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.SQSEventExamples.ValidSQSEvents_ProcessMessagesWithReservedParameterName_Generated::ProcessMessagesWithReservedParameterName"
+          ]
+        },
+        "Events": {
+          "myqueue": {
+            "Type": "SQS",
+            "Properties": {
+              "Queue": "arn:aws:sqs:us-east-2:444455556666:my-queue"
+            }
+          }
+        }
+      }
+    },
     "TestServerlessAppSQSEventExamplesValidSQSEventsProcessMessagesWithBatchFailureReportingGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
