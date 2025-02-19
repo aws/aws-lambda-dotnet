@@ -180,10 +180,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             set;
         }
 
-        bool IHttpResponseFeature.HasStarted
-        {
-            get;
-        }
+        bool _hasStarted;
+        bool IHttpResponseFeature.HasStarted => _hasStarted;
 
         IHeaderDictionary IHttpResponseFeature.Headers
         {
@@ -320,6 +318,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
         Task IHttpResponseBodyFeature.StartAsync(CancellationToken cancellationToken)
         {
+            _hasStarted = true;
             return Task.CompletedTask;
         }
         #endregion
