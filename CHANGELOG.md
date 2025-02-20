@@ -1,3 +1,10 @@
+## Release 2025-02-20
+
+### Amazon.Lambda.TestTool.BlazorTester (0.16.2)
+* Fixed yaml function-based serverless.template Environment Variable parsing and adding to functioninfo
+### Amazon.Lambda.TestTool (0.0.3)
+* Add missing icon for NuGet package
+
 ## Release 2025-02-07
 
 ### Amazon.Lambda.TestTool (0.0.2-preview)
