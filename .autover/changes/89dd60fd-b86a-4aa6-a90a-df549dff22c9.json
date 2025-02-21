@@ -1,0 +1,18 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fixed issue with marking the response body started. This is required for writing trailing headers"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update Amazon.Lambda.AspNetCoreServer dependency to latest."
+      ]
+    }	
+  ]
+}
