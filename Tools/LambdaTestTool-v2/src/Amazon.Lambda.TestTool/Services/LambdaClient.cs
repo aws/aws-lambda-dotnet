@@ -1,17 +1,16 @@
-using Amazon.Lambda;
 using Amazon.Lambda.Model;
 using Amazon.Lambda.TestTool.Commands.Settings;
-using Amazon.Lambda.TestTool.Services;
 using Microsoft.Extensions.Options;
+
+namespace Amazon.Lambda.TestTool.Services;
 
 /// <summary>
 /// Implementation of ILambdaClient that manages Lambda client instances for different endpoints.
 /// </summary>
 public class LambdaClient : ILambdaClient, IDisposable
 {
-    internal Dictionary<string, IAmazonLambda> Clients => _clients;
+    internal Dictionary<string, IAmazonLambda> Clients => _clients; // used for unit tests only
     private readonly Dictionary<string, IAmazonLambda> _clients;
-    private readonly RunCommandSettings _settings;
     private string _currentEndpoint;
 
     /// <summary>
@@ -20,9 +19,8 @@ public class LambdaClient : ILambdaClient, IDisposable
     /// <param name="settings">The run command settings containing Lambda emulator configuration.</param>
     public LambdaClient(IOptions<RunCommandSettings> settings)
     {
-        _settings = settings.Value;
         _clients = new Dictionary<string, IAmazonLambda>();
-        _currentEndpoint = $"http://{_settings.LambdaEmulatorHost}:{_settings.LambdaEmulatorPort}";
+        _currentEndpoint = $"http://{settings.Value.LambdaEmulatorHost}:{settings.Value.LambdaEmulatorPort}";
         _clients[_currentEndpoint] = CreateClient(_currentEndpoint);
     }
 

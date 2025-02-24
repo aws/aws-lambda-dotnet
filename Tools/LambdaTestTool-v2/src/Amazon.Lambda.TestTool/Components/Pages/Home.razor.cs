@@ -350,7 +350,9 @@ public partial class Home : ComponentBase, IDisposable
         }
         catch (AmazonLambdaException e)
         {
-            _errorMessage = e.Message;
+            // lambda client automatically adds some extra verbiage: "The service returned an error with Error Code xxxx and HTTP Body: <bodyhere>".
+            // removing the extra verbiage to make the error message smaller and look better on the ui.
+            _errorMessage = e.Message.Split("HTTP Body: ")[0];
         }
         return false;
     }

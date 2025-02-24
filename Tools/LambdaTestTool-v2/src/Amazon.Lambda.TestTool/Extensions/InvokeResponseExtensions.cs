@@ -6,6 +6,8 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Model;
 using Amazon.Lambda.TestTool.Models;
 
+namespace Amazon.Lambda.TestTool.Extensions;
+
 /// <summary>
 /// Provides extension methods for converting Lambda InvokeResponse to API Gateway response types.
 /// </summary>

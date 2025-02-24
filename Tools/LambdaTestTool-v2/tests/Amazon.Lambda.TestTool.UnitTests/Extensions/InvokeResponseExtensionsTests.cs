@@ -3,6 +3,7 @@
 
 using System.Text;
 using Amazon.Lambda.Model;
+using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
 using Xunit;
 

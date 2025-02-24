@@ -1,5 +1,6 @@
 using Amazon.Lambda.Model;
 using Amazon.Lambda.TestTool.Commands.Settings;
+using Amazon.Lambda.TestTool.Services;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
