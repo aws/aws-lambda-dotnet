@@ -190,7 +190,7 @@ public class LambdaRuntimeApi
 
         if (Encoding.UTF8.GetByteCount(response) > MaxResponseSize)
         {
-            runtimeDataStore.ReportError(awsRequestId, "ResponseSizeTooLarge", $"Response payload size exceeded maximum allowed payload size ({MaxResponseSize} bytes),");
+            runtimeDataStore.ReportError(awsRequestId, "ResponseSizeTooLarge", $"Response payload size exceeded maximum allowed payload size ({MaxResponseSize} bytes)");
 
             Console.WriteLine(HeaderBreak);
             Console.WriteLine($"Response for request {awsRequestId}");
