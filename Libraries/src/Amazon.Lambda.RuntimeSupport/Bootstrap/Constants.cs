@@ -46,6 +46,10 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         internal const string LAMBDA_ERROR_TYPE_BEFORE_SNAPSHOT = "Runtime.BeforeSnapshotError";
         internal const string LAMBDA_ERROR_TYPE_AFTER_RESTORE = "Runtime.AfterRestoreError";
 
+        // For testing purposes only, this command line arg can be used to specify the Lambda Runtime API endpoint
+        // instead of using environment variables.
+        internal const string CMDLINE_ARG_RUNTIME_API_CLIENT = "--runtime-api-endpoint";
+
         internal enum AwsLambdaDotNetPreJit
         {
             Never,

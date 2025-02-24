@@ -15,6 +15,7 @@
 
 using System.Linq;
 using System.Reflection;
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -43,7 +44,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public LambdaEnvironment() : this(new SystemEnvironmentVariables()) { }
 
-        internal LambdaEnvironment(IEnvironmentVariables environmentVariables)
+        internal LambdaEnvironment(IEnvironmentVariables environmentVariables, LambdaBootstrapOptions lambdaBootstrapOptions = null)
         {
             _environmentVariables = environmentVariables;
 
@@ -52,7 +53,10 @@ namespace Amazon.Lambda.RuntimeSupport
             FunctionVersion = environmentVariables.GetEnvironmentVariable(EnvVarFunctionVersion) as string;
             LogGroupName = environmentVariables.GetEnvironmentVariable(EnvVarLogGroupName) as string;
             LogStreamName = environmentVariables.GetEnvironmentVariable(EnvVarLogStreamName) as string;
-            RuntimeServerHostAndPort = environmentVariables.GetEnvironmentVariable(EnvVarServerHostAndPort) as string;
+            RuntimeServerHostAndPort =
+                !string.IsNullOrEmpty(lambdaBootstrapOptions?.RuntimeApiEndpoint) ?
+                    lambdaBootstrapOptions.RuntimeApiEndpoint :
+                    environmentVariables.GetEnvironmentVariable(EnvVarServerHostAndPort) as string;
             Handler = environmentVariables.GetEnvironmentVariable(EnvVarHandler) as string;
 
             SetExecutionEnvironment();

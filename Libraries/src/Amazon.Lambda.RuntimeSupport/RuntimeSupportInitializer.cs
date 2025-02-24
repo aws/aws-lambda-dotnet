@@ -29,13 +29,19 @@ namespace Amazon.Lambda.RuntimeSupport
     public class RuntimeSupportInitializer
     {
         private readonly string _handler;
+        private readonly LambdaBootstrapOptions _lambdaBootstrapOptions;
         private readonly InternalLogger _logger;
         private readonly RuntimeSupportDebugAttacher _debugAttacher;
 
         /// <summary>
         /// Class constructor that takes a Function Handler and initializes the class.
         /// </summary>
-        public RuntimeSupportInitializer(string handler)
+        public RuntimeSupportInitializer(string handler) : this(handler, new LambdaBootstrapOptions()) { }
+
+        /// <summary>
+        /// Class constructor that takes a Function Handler and Lambda Bootstrap Options and initializes the class.
+        /// </summary>
+        public RuntimeSupportInitializer(string handler, LambdaBootstrapOptions lambdaBootstrapOptions)
         {
             if (string.IsNullOrWhiteSpace(handler))
             {
@@ -46,6 +52,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
             _handler = handler;
             _debugAttacher = new RuntimeSupportDebugAttacher();
+            _lambdaBootstrapOptions = lambdaBootstrapOptions;
         }
 
         /// <summary>
@@ -58,7 +65,7 @@ namespace Amazon.Lambda.RuntimeSupport
             var userCodeLoader = new UserCodeLoader(_handler, _logger);
             var initializer = new UserCodeInitializer(userCodeLoader, _logger);
             using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(userCodeLoader.Invoke))
-            using (var bootstrap = new LambdaBootstrap(handlerWrapper, initializer.InitializeAsync))
+            using (var bootstrap = new LambdaBootstrap(handlerWrapper, _lambdaBootstrapOptions, initializer.InitializeAsync))
             {
                 await bootstrap.RunAsync();
             }
