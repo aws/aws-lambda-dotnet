@@ -156,7 +156,7 @@ public class ApiGatewayEmulatorProcess
                     }
                     else
                     {
-                        var lambdaResponse = InvokeResponseExtensions.ToApiGatewayErrorResponseRequestTooLargeResponse();
+                        var lambdaResponse = InvokeResponseExtensions.ToHttpApiRequestTooLargeResponse();
                         await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
                     }
                 }

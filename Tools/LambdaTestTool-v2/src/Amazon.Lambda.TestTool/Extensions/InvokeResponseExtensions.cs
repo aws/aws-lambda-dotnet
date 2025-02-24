@@ -83,7 +83,15 @@ public static class InvokeResponseExtensions
         }
     }
 
-    public static APIGatewayProxyResponse ToApiGatewayErrorResponseRequestTooLargeResponse()
+    /// <summary>
+    /// Creates a standard API Gateway response for a "Request Entity Too Large" (413) error.
+    /// </summary>
+    /// <returns>An APIGatewayProxyResponse configured with:
+    /// - Status code 413
+    /// - JSON error message
+    /// - Content-Type header set to application/json
+    /// </returns>
+    public static APIGatewayProxyResponse ToHttpApiRequestTooLargeResponse()
     {
         return new APIGatewayProxyResponse
         {
@@ -223,6 +231,14 @@ public static class InvokeResponseExtensions
         };
     }
 
+    /// <summary>
+    /// Creates a standard HTTP API v2 response for a "Request Entity Too Large" (413) error.
+    /// </summary>
+    /// <returns>An APIGatewayHttpApiV2ProxyResponse configured with:
+    /// - Status code 413
+    /// - JSON error message
+    /// - Content-Type header set to application/json
+    /// </returns>
     public static APIGatewayHttpApiV2ProxyResponse ToHttpApiV2RequestTooLargeResponse()
     {
         return new APIGatewayHttpApiV2ProxyResponse
@@ -236,5 +252,4 @@ public static class InvokeResponseExtensions
             IsBase64Encoded = false
         };
     }
-
 }
