@@ -284,8 +284,55 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
         }
     }
 
-    [RetryFact]
-    public async Task TestLambdaWithLargeRequestPayload()
+    [Theory]
+    [InlineData(ApiGatewayEmulatorMode.Rest)]
+    [InlineData(ApiGatewayEmulatorMode.HttpV1)]
+    public async Task TestLambdaWithLargeRequestPayload_RestAndV1(ApiGatewayEmulatorMode mode)
+    {
+        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+        _cancellationTokenSource = new CancellationTokenSource();
+        _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
+        var consoleError = Console.Error;
+        try
+        {
+            Console.SetError(TextWriter.Null);
+            await StartTestToolProcessAsync(mode, "largerequestfunction", lambdaPort, apiGatewayPort, _cancellationTokenSource);
+            await WaitForGatewayHealthCheck(apiGatewayPort);
+
+            var handler = (APIGatewayProxyRequest request, ILambdaContext context) =>
+            {
+                var env = Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API");
+                testOutputHelper.WriteLine($"TestLambdaWithLargeRequestPayload {mode}: {env}");
+                return new APIGatewayProxyResponse
+                {
+                    StatusCode = 200,
+                    Body = request.Body.Length.ToString()
+                };
+            };
+
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{lambdaPort}/largerequestfunction");
+            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                .Build()
+                .RunAsync(_cancellationTokenSource.Token);
+
+            // Create a payload just over 6MB
+            var largePayload = new string('X', 6 * 1024 * 1024 + 1024); // 6MB + 1KB
+
+            var response = await TestEndpoint("largerequestfunction", apiGatewayPort, payload: largePayload);
+
+            Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Assert.Contains(mode == ApiGatewayEmulatorMode.Rest ? "Request Too Long" : "Request Entity Too Large", responseContent);
+        }
+        finally
+        {
+            await _cancellationTokenSource.CancelAsync();
+            Console.SetError(consoleError);
+        }
+    }
+
+    [Fact]
+    public async Task TestLambdaWithLargeRequestPayload_HttpV2()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
         _cancellationTokenSource = new CancellationTokenSource();
@@ -296,10 +343,11 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
             Console.SetError(TextWriter.Null);
             await StartTestToolProcessAsync(ApiGatewayEmulatorMode.HttpV2, "largerequestfunction", lambdaPort, apiGatewayPort, _cancellationTokenSource);
             await WaitForGatewayHealthCheck(apiGatewayPort);
+
             var handler = (APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context) =>
             {
                 var env = Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API");
-                testOutputHelper.WriteLine($"TestLambdaWithLargeRequestPayload: {env}");
+                testOutputHelper.WriteLine($"TestLambdaWithLargeRequestPayload HttpV2: {env}");
                 return new APIGatewayHttpApiV2ProxyResponse
                 {
                     StatusCode = 200,
@@ -312,8 +360,8 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
                 .Build()
                 .RunAsync(_cancellationTokenSource.Token);
 
-            // Create a payload larger than 6MB
-            var largePayload = new string('X', 7 * 1024 * 1024);
+            // Create a payload just over 6MB
+            var largePayload = new string('X', 6 * 1024 * 1024 + 1024); // 6MB + 1KB
 
             var response = await TestEndpoint("largerequestfunction", apiGatewayPort, payload: largePayload);
 
@@ -327,50 +375,6 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
             Console.SetError(consoleError);
         }
     }
-
-    [RetryFact]
-    public async Task TestLambdaWithLargeResponsePayload()
-    {
-        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
-        _cancellationTokenSource = new CancellationTokenSource();
-        _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
-        var consoleError = Console.Error;
-        try
-        {
-            Console.SetError(TextWriter.Null);
-            await StartTestToolProcessAsync(ApiGatewayEmulatorMode.HttpV2, "largeresponsefunction", lambdaPort, apiGatewayPort, _cancellationTokenSource);
-            await WaitForGatewayHealthCheck(apiGatewayPort);
-            var handler = (APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context) =>
-            {
-                var env = Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API");
-                testOutputHelper.WriteLine($"TestLambdaWithLargeResponsePayload: {env}");
-                // Generate a response larger than 6MB
-                var largeResponse = new string('Y',  7 * 1024 * 1024);
-                return new APIGatewayHttpApiV2ProxyResponse
-                {
-                    StatusCode = 200,
-                    Body = largeResponse
-                };
-            };
-
-            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{lambdaPort}/largeresponsefunction");
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .Build()
-                .RunAsync(_cancellationTokenSource.Token);
-
-            var response = await TestEndpoint("largeresponsefunction", apiGatewayPort);
-
-            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-            var responseContent = await response.Content.ReadAsStringAsync();
-            Assert.Contains("Internal Server Error", responseContent);
-        }
-        finally
-        {
-            await _cancellationTokenSource.CancelAsync();
-            Console.SetError(consoleError);
-        }
-    }
-
 
     private async Task<HttpResponseMessage> TestEndpoint(string routeName, int apiGatewayPort, string httpMethod = "POST", string? payload = null)
     {

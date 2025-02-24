@@ -86,23 +86,41 @@ public static class InvokeResponseExtensions
     /// <summary>
     /// Creates a standard API Gateway response for a "Request Entity Too Large" (413) error.
     /// </summary>
+    /// <param name="emulatorMode">The API Gateway emulator mode (Rest or Http).</param>
     /// <returns>An APIGatewayProxyResponse configured with:
     /// - Status code 413
     /// - JSON error message
     /// - Content-Type header set to application/json
     /// </returns>
-    public static APIGatewayProxyResponse ToHttpApiRequestTooLargeResponse()
+    public static APIGatewayProxyResponse ToHttpApiRequestTooLargeResponse(ApiGatewayEmulatorMode emulatorMode)
     {
-        return new APIGatewayProxyResponse
+        if (emulatorMode == ApiGatewayEmulatorMode.Rest)
         {
-            StatusCode = 413,
-            Body = "{\"message\":\"Request Entity Too Large\"}",
-            Headers = new Dictionary<string, string>
+            return new APIGatewayProxyResponse
             {
-                { "Content-Type", "application/json" }
-            },
-            IsBase64Encoded = false
-        };
+                StatusCode = 413,
+                Body = "{\"message\":\"Request Too Long\"}",
+                Headers = new Dictionary<string, string>
+                {
+                    { "Content-Type", "application/json" }
+                },
+                IsBase64Encoded = false
+            };
+        }
+        if (emulatorMode == ApiGatewayEmulatorMode.HttpV1)
+        {
+            return new APIGatewayProxyResponse
+            {
+                StatusCode = 413,
+                Body = "{\"message\":\"Request Entity Too Large\"}",
+                Headers = new Dictionary<string, string>
+                {
+                    { "Content-Type", "application/json" }
+                },
+                IsBase64Encoded = false
+            };
+        }
+        throw new InvalidOperationException();
     }
 
     /// <summary>
