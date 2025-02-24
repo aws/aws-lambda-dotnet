@@ -102,37 +102,43 @@ public class ApiGatewayEmulatorProcess
             };
 
             using var lambdaClient = CreateLambdaServiceClient(routeConfig, settings);
-            var response =  await lambdaClient.InvokeAsync(invokeRequest);
-
-            if (response.FunctionError == null) // response is successful
+            try
             {
-                if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
+                var response =  await lambdaClient.InvokeAsync(invokeRequest);
+
+                if (response.FunctionError == null) // response is successful
                 {
-                    var lambdaResponse = response.ToApiGatewayHttpApiV2ProxyResponse();
-                    await lambdaResponse.ToHttpResponseAsync(context);
+                    if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
+                    {
+                        var lambdaResponse = response.ToApiGatewayHttpApiV2ProxyResponse();
+                        await lambdaResponse.ToHttpResponseAsync(context);
+                    }
+                    else
+                    {
+                        var lambdaResponse = response.ToApiGatewayProxyResponse(settings.ApiGatewayEmulatorMode.Value);
+                        await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                    }
                 }
                 else
                 {
-                    var lambdaResponse = response.ToApiGatewayProxyResponse(settings.ApiGatewayEmulatorMode.Value);
-                    await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                    // For function errors, api gateway just displays them as an internal server error, so we convert them to the correct error response here.
+                    if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
+                    {
+                        var lambdaResponse = InvokeResponseExtensions.ToHttpApiV2ErrorResponse();
+                        await lambdaResponse.ToHttpResponseAsync(context);
+                    }
+                    else
+                    {
+                        var lambdaResponse = InvokeResponseExtensions.ToApiGatewayErrorResponse(settings.ApiGatewayEmulatorMode.Value);
+                        await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                    }
                 }
             }
-            else
+            catch (Exception e)
             {
-                // For function errors, api gateway just displays them as an internal server error, so we convert them to the correct error response here.
+                // TODO handle payload too large
 
-                if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
-                {
-                    var lambdaResponse = InvokeResponseExtensions.ToHttpApiV2ErrorResponse();
-                    await lambdaResponse.ToHttpResponseAsync(context);
-                }
-                else
-                {
-                    var lambdaResponse = InvokeResponseExtensions.ToApiGatewayErrorResponse(settings.ApiGatewayEmulatorMode.Value);
-                    await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
-                }
             }
-
         });
 
         var runTask = app.RunAsync(cancellationToken);

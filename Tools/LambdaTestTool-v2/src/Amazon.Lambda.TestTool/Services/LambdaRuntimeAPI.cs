@@ -11,6 +11,8 @@ public class LambdaRuntimeApi
 {
     internal const string DefaultFunctionName = "__DefaultFunction__";
     private const string HeaderBreak = "-----------------------------------";
+    private const int MaxPayloadSize = 6 * 1024 * 1024;
+    private const int MaxResponseSize = 6 * 1024 * 1024;
 
     private readonly IRuntimeApiDataStoreManager _runtimeApiDataStoreManager;
 
@@ -57,6 +59,18 @@ public class LambdaRuntimeApi
 
         using var reader = new StreamReader(ctx.Request.Body);
         var testEvent = await reader.ReadToEndAsync();
+
+        if (Encoding.UTF8.GetByteCount(testEvent) > 1)
+        {
+            ctx.Response.StatusCode = 413;
+            ctx.Response.Headers.ContentType = "application/json";
+            ctx.Response.Headers["X-Amzn-Errortype"] = "RequestEntityTooLargeException"; // TODO double check this
+            var errorData = Encoding.UTF8.GetBytes($"Request must be smaller than {MaxPayloadSize} bytes for the InvokeFunction operation");
+            ctx.Response.Headers.ContentLength = errorData.Length;
+            await ctx.Response.Body.WriteAsync(errorData);
+            return;
+        }
+
         var evnt = runtimeDataStore.QueueEvent(testEvent, isRequestResponseMode);
 
         if (isRequestResponseMode)
@@ -173,6 +187,17 @@ public class LambdaRuntimeApi
 
         using var reader = new StreamReader(ctx.Request.Body);
         var response = await reader.ReadToEndAsync();
+
+        if (Encoding.UTF8.GetByteCount(response) > MaxResponseSize)
+        {
+            runtimeDataStore.ReportError(awsRequestId, "ResponseSizeTooLarge", $"Response payload size exceeded maximum allowed payload size ({MaxResponseSize} bytes),");
+
+            Console.WriteLine(HeaderBreak);
+            Console.WriteLine($"Response for request {awsRequestId}");
+            Console.WriteLine(response);
+
+            return Results.Accepted(null, new StatusResponse { Status = "success" });
+        }
 
         runtimeDataStore.ReportSuccess(awsRequestId, response);
 

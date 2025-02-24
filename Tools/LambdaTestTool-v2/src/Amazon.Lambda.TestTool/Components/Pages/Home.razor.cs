@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.Model;
 using Microsoft.AspNetCore.Components;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Models;
@@ -184,7 +185,35 @@ public partial class Home : ComponentBase, IDisposable
             DataStore is null)
             return;
         var editorValue = await _editor.GetValue();
-        DataStore.QueueEvent(editorValue, false);
+
+
+        var lambdaConfig = new AmazonLambdaConfig
+        {
+            ServiceURL = "http://localhost:5050"
+        };
+
+        var lambdaClient =  new AmazonLambdaClient(new Amazon.Runtime.BasicAWSCredentials("accessKey", "secretKey"), lambdaConfig);
+
+        var invokeRequest = new InvokeRequest
+        {
+            FunctionName = SelectedFunctionName,
+            Payload = editorValue,
+            InvocationType  = InvocationType.Event
+        };
+
+        try
+        {
+            await lambdaClient.InvokeAsync(invokeRequest);
+
+        }
+        catch (AmazonLambdaException e)
+        {
+            if (e.ErrorCode == "RequestEntityTooLargeException")
+            {
+                // TODO update UI
+            }
+        }
+
         await _editor.SetValue(string.Empty);
         SelectedSampleRequestName = NoSampleSelectedId;
         StateHasChanged();
@@ -219,7 +248,32 @@ public partial class Home : ComponentBase, IDisposable
         if (evnt == null)
             return;
 
-        DataStore.QueueEvent(evnt.EventJson, false);
+        var lambdaConfig = new AmazonLambdaConfig
+        {
+            ServiceURL = "http://localhost:5050"
+        };
+
+        var lambdaClient =  new AmazonLambdaClient(new Amazon.Runtime.BasicAWSCredentials("accessKey", "secretKey"), lambdaConfig);
+
+        var invokeRequest = new InvokeRequest
+        {
+            FunctionName = SelectedFunctionName,
+            Payload = evnt.EventJson,
+            InvocationType  = InvocationType.Event
+        };
+
+        try
+        {
+            lambdaClient.InvokeAsync(invokeRequest);
+        }
+        catch (AmazonLambdaException e)
+        {
+            if (e.ErrorCode == "RequestEntityTooLargeException")
+            {
+                // TODO update UI
+            }
+        }
+
         StateHasChanged();
     }
 
