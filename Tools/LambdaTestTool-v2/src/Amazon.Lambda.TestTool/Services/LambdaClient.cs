@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 /// </summary>
 public class LambdaClient : ILambdaClient, IDisposable
 {
+    internal Dictionary<string, IAmazonLambda> Clients => _clients;
     private readonly Dictionary<string, IAmazonLambda> _clients;
     private readonly RunCommandSettings _settings;
     private string _currentEndpoint;
