@@ -346,6 +346,7 @@ public partial class Home : ComponentBase, IDisposable
         try
         {
             await LambdaClient.InvokeAsync(invokeRequest);
+            _errorMessage = string.Empty;
             return true;
         }
         catch (AmazonLambdaException e)

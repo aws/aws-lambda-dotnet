@@ -381,7 +381,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
         testOutputHelper.WriteLine($"Testing endpoint: http://localhost:{apiGatewayPort}/{routeName}");
         using (var client = new HttpClient())
         {
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromSeconds(2);
 
             var startTime = DateTime.UtcNow;
             var timeout = TimeSpan.FromSeconds(45);
