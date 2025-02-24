@@ -19,6 +19,7 @@ using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -51,19 +52,19 @@ namespace Amazon.Lambda.RuntimeSupport
         {
         }
 
-        internal RuntimeApiClient(IEnvironmentVariables environmentVariables, HttpClient httpClient)
+        internal RuntimeApiClient(IEnvironmentVariables environmentVariables, HttpClient httpClient, LambdaBootstrapOptions lambdaBootstrapOptions = null)
         {
             ExceptionConverter = ExceptionInfo.GetExceptionInfo;
             _httpClient = httpClient;
-            LambdaEnvironment = new LambdaEnvironment(environmentVariables);
+            LambdaEnvironment = new LambdaEnvironment(environmentVariables, lambdaBootstrapOptions);
             var internalClient = new InternalRuntimeApiClient(httpClient);
             internalClient.BaseUrl = "http://" + LambdaEnvironment.RuntimeServerHostAndPort + internalClient.BaseUrl;
             _internalClient = internalClient;
         }
 
-        internal RuntimeApiClient(IEnvironmentVariables environmentVariables, IInternalRuntimeApiClient internalClient)
+        internal RuntimeApiClient(IEnvironmentVariables environmentVariables, IInternalRuntimeApiClient internalClient, LambdaBootstrapOptions lambdaBootstrapOptions = null)
         {
-            LambdaEnvironment = new LambdaEnvironment(environmentVariables);
+            LambdaEnvironment = new LambdaEnvironment(environmentVariables, lambdaBootstrapOptions);
             _internalClient = internalClient;
             ExceptionConverter = ExceptionInfo.GetExceptionInfo;
         }
@@ -141,7 +142,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
             return _internalClient.ErrorWithXRayCauseAsync(awsRequestId, exceptionInfo.ErrorType, exceptionInfoJson, exceptionInfoXRayJson, cancellationToken);
         }
-        
+
 #if NET8_0_OR_GREATER
 
         /// <summary>
@@ -154,7 +155,7 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             await _internalClient.RestoreNextAsync(cancellationToken);
         }
-        
+
         /// <summary>
         /// Report a restore error as an asynchronous operation when SnapStart is enabled.
         /// </summary>

@@ -15,33 +15,36 @@
 
 using Amazon.Lambda.RuntimeSupport.Helpers;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
     class Program
     {
-
 #if ExecutableOutputType
 #if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(
-            "The Main entry point is used in the managed runtime which loads Lambda functions as a class library. " + 
+            "The Main entry point is used in the managed runtime which loads Lambda functions as a class library. " +
             "The class library mode does not support Native AOT and trimming.")]
 #endif
         private static async Task Main(string[] args)
         {
 #if NET8_0_OR_GREATER
             AssemblyLoadContext.Default.Resolving += ResolveSnapshotRestoreAssembly;
+#endif
             if (args.Length == 0)
             {
                 throw new ArgumentException("The function handler was not provided via command line arguments.", nameof(args));
             }
-#endif
             var handler = args[0];
 
-            RuntimeSupportInitializer runtimeSupportInitializer = new RuntimeSupportInitializer(handler);
+            var lambdaBootstrapOptions = ParseCommandLineArguments(args);
+
+            RuntimeSupportInitializer runtimeSupportInitializer = new RuntimeSupportInitializer(handler, lambdaBootstrapOptions);
             await runtimeSupportInitializer.RunLambdaBootstrap();
         }
 #endif
@@ -60,5 +63,49 @@ namespace Amazon.Lambda.RuntimeSupport
             return null;
         }
 #endif
+
+        /// <summary>
+        /// Parse the command line args to create a <see cref="LambdaBootstrapOptions"/> object
+        /// which contains configuration that overrides the use of Environment Variables.
+        /// This is only for testing purposes and should not be used in production environments.
+        /// </summary>
+        /// <param name="args">Command line arguments</param>
+        /// <returns><see cref="LambdaBootstrapOptions"/> object which contains configuration
+        /// that overrides the use of Environment Variables</returns>
+        /// <exception cref="ArgumentException">Thrown if a command line argument is invalid</exception>
+        private static LambdaBootstrapOptions ParseCommandLineArguments(string[] args)
+        {
+            var option = new LambdaBootstrapOptions();
+            if (args.Length <= 1)
+                return option;
+
+            var arguments = new Dictionary<string, string>();
+            for (int i = 1; i < args.Length; i++)
+            {
+                if (string.IsNullOrEmpty(args[i]))
+                    throw new ArgumentException("The command line argument cannot be null or empty.", nameof(args));
+
+                var key = args[i];
+                var valueIndex = i + 1;
+
+                if (!key.StartsWith("-"))
+                    throw new ArgumentException($"The command line argument '{key}' is invalid.", nameof(args));
+
+                string value = null;
+                if (valueIndex < args.Length  &&
+                    !args[valueIndex].StartsWith("-"))
+                {
+                    value = args[valueIndex];
+                    i++;
+                }
+
+                arguments[key] = value;
+            }
+
+            if (arguments.TryGetValue(Constants.CMDLINE_ARG_RUNTIME_API_CLIENT, out var argument))
+                option.RuntimeApiEndpoint = argument;
+
+            return option;
+        }
     }
 }

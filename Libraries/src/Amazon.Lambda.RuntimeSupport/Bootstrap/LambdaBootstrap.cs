@@ -70,6 +70,16 @@ namespace Amazon.Lambda.RuntimeSupport
         { }
 
         /// <summary>
+        /// Create a LambdaBootstrap that will call the given handler, initializer and options.
+        /// </summary>
+        /// <param name="handler">Delegate called for each invocation of the Lambda function.</param>
+        /// <param name="lambdaBootstrapOptions">Lambda bootstrap configuration options.</param>
+        /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
+        public LambdaBootstrap(LambdaBootstrapHandler handler, LambdaBootstrapOptions lambdaBootstrapOptions, LambdaBootstrapInitializer initializer = null)
+            : this(ConstructHttpClient(), handler, initializer, ownsHttpClient: true, lambdaBootstrapOptions: lambdaBootstrapOptions )
+        { }
+
+        /// <summary>
         /// Create a LambdaBootstrap that will call the given initializer and handler.
         /// </summary>
         /// <param name="handlerWrapper">The HandlerWrapper to call for each invocation of the Lambda function.</param>
@@ -77,6 +87,16 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <returns></returns>
         public LambdaBootstrap(HandlerWrapper handlerWrapper, LambdaBootstrapInitializer initializer = null)
             : this(handlerWrapper.Handler, initializer)
+        { }
+
+        /// <summary>
+        /// Create a LambdaBootstrap that will call the given handler, initializer and options.
+        /// </summary>
+        /// <param name="handlerWrapper">The HandlerWrapper to call for each invocation of the Lambda function.</param>
+        /// <param name="lambdaBootstrapOptions">Lambda bootstrap configuration options.</param>
+        /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
+        public LambdaBootstrap(HandlerWrapper handlerWrapper, LambdaBootstrapOptions lambdaBootstrapOptions, LambdaBootstrapInitializer initializer = null)
+            : this(handlerWrapper.Handler, lambdaBootstrapOptions, initializer)
         { }
 
         /// <summary>
@@ -89,7 +109,18 @@ namespace Amazon.Lambda.RuntimeSupport
         public LambdaBootstrap(HttpClient httpClient, HandlerWrapper handlerWrapper, LambdaBootstrapInitializer initializer = null)
             : this(httpClient, handlerWrapper.Handler, initializer, ownsHttpClient: false)
         { }
-        
+
+        /// <summary>
+        /// Create a LambdaBootstrap that will call the given handler, initializer and options.
+        /// </summary>
+        /// <param name="httpClient">The HTTP client to use with the Lambda runtime.</param>
+        /// <param name="handlerWrapper">The HandlerWrapper to call for each invocation of the Lambda function.</param>
+        /// <param name="lambdaBootstrapOptions">Lambda bootstrap configuration options.</param>
+        /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
+        public LambdaBootstrap(HttpClient httpClient, HandlerWrapper handlerWrapper, LambdaBootstrapOptions lambdaBootstrapOptions, LambdaBootstrapInitializer initializer = null)
+            : this(httpClient, handlerWrapper.Handler, initializer, ownsHttpClient: false, lambdaBootstrapOptions: lambdaBootstrapOptions)
+        { }
+
         /// <summary>
         /// Create a LambdaBootstrap that will call the given initializer and handler with custom configuration.
         /// </summary>
@@ -109,15 +140,16 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="handler">Delegate called for each invocation of the Lambda function.</param>
         /// <param name="initializer">Delegate called to initialize the Lambda function.  If not provided the initialization step is skipped.</param>
         /// <param name="ownsHttpClient">Whether the instance owns the HTTP client and should dispose of it.</param>
-        /// <returns></returns>
-        private LambdaBootstrap(HttpClient httpClient, LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer, bool ownsHttpClient, LambdaBootstrapConfiguration configuration = null)
+        /// <param name="configuration"> Get configuration to check if Invoke is with Pre JIT or SnapStart enabled </param>
+        /// <param name="lambdaBootstrapOptions">Lambda bootstrap configuration options.</param>
+        private LambdaBootstrap(HttpClient httpClient, LambdaBootstrapHandler handler, LambdaBootstrapInitializer initializer, bool ownsHttpClient, LambdaBootstrapConfiguration configuration = null, LambdaBootstrapOptions lambdaBootstrapOptions = null)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
             _ownsHttpClient = ownsHttpClient;
             _initializer = initializer;
             _httpClient.Timeout = RuntimeApiHttpTimeout;
-            Client = new RuntimeApiClient(new SystemEnvironmentVariables(), _httpClient);
+            Client = new RuntimeApiClient(new SystemEnvironmentVariables(), _httpClient, lambdaBootstrapOptions);
             _configuration = configuration ?? LambdaBootstrapConfiguration.GetDefaultConfiguration();
         }
 
@@ -151,8 +183,8 @@ namespace Amazon.Lambda.RuntimeSupport
             // and then shut down cleanly. Useful for profiling or running local tests with the .NET Lambda Test Tool. This environment
             // variable should never be set when function is deployed to Lambda.
             var runOnce = string.Equals(Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE), "true", StringComparison.OrdinalIgnoreCase);
-            
-            
+
+
             if (_initializer != null && !(await InitializeAsync()))
             {
                 return;
@@ -316,7 +348,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// The .NET runtime does not recognize the memory limits placed by Lambda via Lambda's cgroups. This method is run during startup to inform the
         /// .NET runtime the max memory configured for Lambda function. The max memory can be determined using the AWS_LAMBDA_FUNCTION_MEMORY_SIZE environment variable
         /// which has the memory in MB.
-        /// 
+        ///
         /// For additional context on setting the heap size refer to this GitHub issue:
         /// https://github.com/dotnet/runtime/issues/70601
         /// </summary>
@@ -324,7 +356,7 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             try
             {
-                // Check the environment variable to see if the user has opted out of RuntimeSupport adjusting 
+                // Check the environment variable to see if the user has opted out of RuntimeSupport adjusting
                 // the heap memory limit to match the Lambda configured environment. This can be useful for situations
                 // where the Lambda environment is being emulated for testing and more then just single Lambda function
                 // is running in the process. For example running a test runner over a series of Lambda emulated invocations.
@@ -339,7 +371,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
                 ulong memoryInBytes = (ulong)lambdaMemoryInMb * LambdaEnvironment.OneMegabyte;
 
-                // If the user has already configured the hard heap limit to something lower then is available 
+                // If the user has already configured the hard heap limit to something lower then is available
                 // then make no adjustments to honor the user's setting.
                 if ((ulong)GC.GetGCMemoryInfo().TotalAvailableMemoryBytes < memoryInBytes)
                     return;
