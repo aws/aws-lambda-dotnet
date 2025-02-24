@@ -23,6 +23,8 @@ public partial class Home : ComponentBase, IDisposable
     [Inject] public required IThemeService ThemeService { get; set; }
     [Inject] public required IJSRuntime JsRuntime { get; set; }
 
+    [Inject] public required ILambdaClient LambdaClient { get; set; }
+
     private StandaloneCodeEditor? _editor;
     private StandaloneCodeEditor? _activeEditor;
     private StandaloneCodeEditor? _activeEditorError;
@@ -33,6 +35,8 @@ public partial class Home : ComponentBase, IDisposable
     private int _pastEventsCount;
 
     private const string NoSampleSelectedId = "void-select-request";
+
+    private string _errorMessage = string.Empty;
 
     private IDictionary<string, IList<LambdaRequest>> SampleRequests { get; set; } = new Dictionary<string, IList<LambdaRequest>>();
 
@@ -185,37 +189,12 @@ public partial class Home : ComponentBase, IDisposable
             DataStore is null)
             return;
         var editorValue = await _editor.GetValue();
-
-
-        var lambdaConfig = new AmazonLambdaConfig
+        var success = await InvokeLambdaFunction(editorValue);
+        if (success)
         {
-            ServiceURL = "http://localhost:5050"
-        };
-
-        var lambdaClient =  new AmazonLambdaClient(new Amazon.Runtime.BasicAWSCredentials("accessKey", "secretKey"), lambdaConfig);
-
-        var invokeRequest = new InvokeRequest
-        {
-            FunctionName = SelectedFunctionName,
-            Payload = editorValue,
-            InvocationType  = InvocationType.Event
-        };
-
-        try
-        {
-            await lambdaClient.InvokeAsync(invokeRequest);
-
+            await _editor.SetValue(string.Empty);
+            SelectedSampleRequestName = NoSampleSelectedId;
         }
-        catch (AmazonLambdaException e)
-        {
-            if (e.ErrorCode == "RequestEntityTooLargeException")
-            {
-                // TODO update UI
-            }
-        }
-
-        await _editor.SetValue(string.Empty);
-        SelectedSampleRequestName = NoSampleSelectedId;
         StateHasChanged();
     }
 
@@ -231,7 +210,7 @@ public partial class Home : ComponentBase, IDisposable
         StateHasChanged();
     }
 
-    void OnRequeue(string awsRequestId)
+    async Task OnRequeue(string awsRequestId)
     {
         if (DataStore is null)
             return;
@@ -247,33 +226,7 @@ public partial class Home : ComponentBase, IDisposable
 
         if (evnt == null)
             return;
-
-        var lambdaConfig = new AmazonLambdaConfig
-        {
-            ServiceURL = "http://localhost:5050"
-        };
-
-        var lambdaClient =  new AmazonLambdaClient(new Amazon.Runtime.BasicAWSCredentials("accessKey", "secretKey"), lambdaConfig);
-
-        var invokeRequest = new InvokeRequest
-        {
-            FunctionName = SelectedFunctionName,
-            Payload = evnt.EventJson,
-            InvocationType  = InvocationType.Event
-        };
-
-        try
-        {
-            lambdaClient.InvokeAsync(invokeRequest);
-        }
-        catch (AmazonLambdaException e)
-        {
-            if (e.ErrorCode == "RequestEntityTooLargeException")
-            {
-                // TODO update UI
-            }
-        }
-
+        await InvokeLambdaFunction(evnt.EventJson);
         StateHasChanged();
     }
 
@@ -379,5 +332,26 @@ public partial class Home : ComponentBase, IDisposable
                 Enabled = false
             }
         };
+    }
+
+    private async Task<bool> InvokeLambdaFunction(string payload)
+    {
+        var invokeRequest = new InvokeRequest
+        {
+            FunctionName = SelectedFunctionName,
+            Payload = payload,
+            InvocationType = InvocationType.Event
+        };
+
+        try
+        {
+            await LambdaClient.InvokeAsync(invokeRequest);
+            return true;
+        }
+        catch (AmazonLambdaException e)
+        {
+            _errorMessage = e.Message;
+        }
+        return false;
     }
 }

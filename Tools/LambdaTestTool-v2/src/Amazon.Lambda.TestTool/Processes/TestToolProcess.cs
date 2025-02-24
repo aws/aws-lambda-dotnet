@@ -44,6 +44,13 @@ public class TestToolProcess
 
         builder.Services.AddSingleton<IRuntimeApiDataStoreManager, RuntimeApiDataStoreManager>();
         builder.Services.AddSingleton<IThemeService, ThemeService>();
+        builder.Services.Configure<RunCommandSettings>(options =>
+        {
+            options.LambdaEmulatorHost = settings.LambdaEmulatorHost;
+            options.LambdaEmulatorPort = settings.LambdaEmulatorPort;
+        });
+
+        builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
 
         // Add services to the container.
         builder.Services.AddRazorComponents()

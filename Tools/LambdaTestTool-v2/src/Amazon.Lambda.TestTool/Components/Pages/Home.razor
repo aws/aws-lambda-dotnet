@@ -77,9 +77,21 @@ else
                 <label for="sample-requests">Example Requests</label>
             </div>
             <div class="mt-1 flex-grow-1 flex-fill">
-                <label class="form-label" for="function-payload">Function Input</label>
-                <StandaloneCodeEditor Id="function-payload" @ref="_editor" ConstructionOptions="EditorConstructionOptions" CssClass="rounded-4 overflow-hidden border"/>
-            </div>
+                <div class="d-flex justify-content-start align-items-center">
+                    <label class="form-label mb-0" for="function-payload">Function Input</label>
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="text-danger ms-2">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            @_errorMessage
+                        </div>
+                    }
+                </div>
+                <StandaloneCodeEditor
+                    Id="function-payload"
+                    @ref="_editor"
+                    ConstructionOptions="EditorConstructionOptions"
+                    CssClass="@($"rounded-4 overflow-hidden border {(!string.IsNullOrEmpty(_errorMessage) ? "border-danger border-2" : "")}")"/>            </div>
         </div>
         <div class="col-lg-6 d-flex flex-column">
             <nav class="navbar navbar-expand-md bd-navbar pt-0 justify-content-center">

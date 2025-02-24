@@ -83,6 +83,20 @@ public static class InvokeResponseExtensions
         }
     }
 
+    public static APIGatewayProxyResponse ToApiGatewayErrorResponseRequestTooLargeResponse()
+    {
+        return new APIGatewayProxyResponse
+        {
+            StatusCode = 413,
+            Body = "{\"message\":\"Request Entity Too Large\"}",
+            Headers = new Dictionary<string, string>
+            {
+                { "Content-Type", "application/json" }
+            },
+            IsBase64Encoded = false
+        };
+    }
+
     /// <summary>
     /// Converts an Amazon Lambda InvokeResponse to an APIGatewayHttpApiV2ProxyResponse.
     /// </summary>
@@ -201,6 +215,20 @@ public static class InvokeResponseExtensions
         {
             StatusCode = 500,
             Body = "{\"message\":\"Internal Server Error\"}",
+            Headers = new Dictionary<string, string>
+            {
+                { "Content-Type", "application/json" }
+            },
+            IsBase64Encoded = false
+        };
+    }
+
+    public static APIGatewayHttpApiV2ProxyResponse ToHttpApiV2RequestTooLargeResponse()
+    {
+        return new APIGatewayHttpApiV2ProxyResponse
+        {
+            StatusCode = 413,
+            Body = "{\"message\":\"Request Entity Too Large\"}",
             Headers = new Dictionary<string, string>
             {
                 { "Content-Type", "application/json" }

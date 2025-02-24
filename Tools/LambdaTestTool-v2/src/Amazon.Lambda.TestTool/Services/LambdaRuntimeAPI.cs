@@ -60,11 +60,11 @@ public class LambdaRuntimeApi
         using var reader = new StreamReader(ctx.Request.Body);
         var testEvent = await reader.ReadToEndAsync();
 
-        if (Encoding.UTF8.GetByteCount(testEvent) > 1)
+        if (Encoding.UTF8.GetByteCount(testEvent) > MaxPayloadSize)
         {
             ctx.Response.StatusCode = 413;
             ctx.Response.Headers.ContentType = "application/json";
-            ctx.Response.Headers["X-Amzn-Errortype"] = "RequestEntityTooLargeException"; // TODO double check this
+            ctx.Response.Headers["X-Amzn-Errortype"] = "RequestEntityTooLargeException";
             var errorData = Encoding.UTF8.GetBytes($"Request must be smaller than {MaxPayloadSize} bytes for the InvokeFunction operation");
             ctx.Response.Headers.ContentLength = errorData.Length;
             await ctx.Response.Body.WriteAsync(errorData);
