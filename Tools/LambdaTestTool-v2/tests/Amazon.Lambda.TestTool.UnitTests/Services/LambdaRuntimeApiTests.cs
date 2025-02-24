@@ -281,6 +281,77 @@ public class LambdaRuntimeApiTests
             Console.SetError(consoleError);
         }
     }
+
+    [Fact]
+    public async Task PostEvent_RequestTooLarge_Returns413()
+    {
+        // Arrange
+        var functionName = "testFunction";
+        // Create a large payload that exceeds 6MB
+        var largePayload = new string('x', 6 * 1024 * 1024 + 1);
+
+        var context = new DefaultHttpContext();
+        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(largePayload));
+        context.Response.Body = new MemoryStream();
+
+        // Act
+        await new LambdaRuntimeApi(_app).PostEvent(context, functionName);
+
+        // Assert
+        Assert.Equal(413, context.Response.StatusCode);
+        Assert.Equal("application/json", context.Response.Headers.ContentType);
+        Assert.Equal("RequestEntityTooLargeException", context.Response.Headers["X-Amzn-Errortype"]);
+
+        context.Response.Body.Position = 0;
+        var responseBody = await new StreamReader(context.Response.Body).ReadToEndAsync();
+        Assert.Contains("Request must be smaller than", responseBody);
+        Assert.Contains("bytes for the InvokeFunction operation", responseBody);
+    }
+
+    [Fact]
+    public async Task PostInvocationResponse_ResponseTooLarge_ReportsError()
+    {
+        var consoleOut = Console.Out;
+        try
+        {
+            Console.SetOut(TextWriter.Null);
+            // Arrange
+            var functionName = "testFunction";
+            var awsRequestId = "request123";
+            // Create a large response that exceeds 6MB
+            var largeResponse = new string('x', 6 * 1024 * 1024 + 1);
+
+            var context = new DefaultHttpContext();
+            context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(largeResponse));
+            context.Response.Body = new MemoryStream();
+
+            _mockRuntimeDataStore
+                .Setup(x => x.ReportError(
+                    awsRequestId,
+                    "ResponseSizeTooLarge",
+                    It.Is<string>(s => s.Contains("Response payload size exceeded maximum allowed payload size"))))
+                .Verifiable();
+
+            // Act
+            var result = await new LambdaRuntimeApi(_app).PostInvocationResponse(context, functionName, awsRequestId);
+
+            // Assert
+            Assert.NotNull(result);
+            var statusResponse = Assert.IsType<StatusResponse>((result as IValueHttpResult)?.Value);
+            Assert.Equal("success", statusResponse.Status);
+
+            _mockRuntimeDataStore.Verify(
+                x => x.ReportError(
+                    awsRequestId,
+                    "ResponseSizeTooLarge",
+                    It.Is<string>(s => s.Contains("Response payload size exceeded maximum allowed payload size"))),
+                Times.Once);
+        }
+        finally
+        {
+            Console.SetOut(consoleOut);
+        }
+    }
 }
 
 // Helper class to prevent stream from being closed
