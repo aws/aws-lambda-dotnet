@@ -353,7 +353,7 @@ public partial class Home : ComponentBase, IDisposable
         {
             // lambda client automatically adds some extra verbiage: "The service returned an error with Error Code xxxx and HTTP Body: <bodyhere>".
             // removing the extra verbiage to make the error message smaller and look better on the ui.
-            _errorMessage = e.Message.Split("HTTP Body: ")[0];
+            _errorMessage = e.Message.Split("HTTP Body: ")[1];
         }
         return false;
     }
