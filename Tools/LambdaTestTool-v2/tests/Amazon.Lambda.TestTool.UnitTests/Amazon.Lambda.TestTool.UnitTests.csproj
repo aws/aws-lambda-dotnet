@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.12.2" />
+    <PackageReference Include="Amazon.Lambda.RuntimeSupport" Version="1.12.3" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
     <PackageReference Include="AWSSDK.Lambda" Version="3.7.411.18" />
     <PackageReference Include="coverlet.collector" Version="6.0.3">

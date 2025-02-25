@@ -42,8 +42,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
             await WaitForGatewayHealthCheck(apiGatewayPort);
             var handler = (APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context) =>
             {
-                var env = Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API");
-                testOutputHelper.WriteLine($"TestLambdaToUpperV2: {env}");
+                testOutputHelper.WriteLine($"TestLambdaToUpperV2");
                 return new APIGatewayHttpApiV2ProxyResponse
                 {
                     StatusCode = 200,
@@ -51,8 +50,8 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
                 };
             };
 
-            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{lambdaPort}/testfunction");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/testfunction")
                 .Build()
                 .RunAsync(_cancellationTokenSource.Token);
 
@@ -83,8 +82,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
             await WaitForGatewayHealthCheck(apiGatewayPort);
             var handler = (APIGatewayProxyRequest request, ILambdaContext context) =>
             {
-                var env = Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API");
-                testOutputHelper.WriteLine($"TestLambdaToUpperRest: {env}");
+                testOutputHelper.WriteLine($"TestLambdaToUpperRest");
                 return new APIGatewayProxyResponse()
                 {
                     StatusCode = 200,
@@ -93,8 +91,8 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
                 };
             };
 
-            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{lambdaPort}/testfunction");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/testfunction")
                 .Build()
                 .RunAsync(_cancellationTokenSource.Token);
 
@@ -125,8 +123,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
             await WaitForGatewayHealthCheck(apiGatewayPort);
             var handler = (APIGatewayProxyRequest request, ILambdaContext context) =>
             {
-                var env = Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API");
-                testOutputHelper.WriteLine($"TestLambdaToUpperV1: {env}");
+                testOutputHelper.WriteLine($"TestLambdaToUpperV1");
                 return new APIGatewayProxyResponse()
                 {
                     StatusCode = 200,
@@ -135,8 +132,8 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
                 };
             };
 
-            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{lambdaPort}/testfunction");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/testfunction")
                 .Build()
                 .RunAsync(_cancellationTokenSource.Token);
 
@@ -167,8 +164,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
             await WaitForGatewayHealthCheck(apiGatewayPort);
             var handler = (APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context) =>
             {
-                var env = Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API");
-                testOutputHelper.WriteLine($"TestLambdaBinaryResponse: {env}");
+                testOutputHelper.WriteLine($"TestLambdaBinaryResponse");
                 // Create a simple binary pattern (for example, counting bytes from 0 to 255)
                 byte[] binaryData = new byte[256];
                 for (int i = 0; i < 256; i++)
@@ -188,8 +184,8 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
                 };
             };
 
-            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{lambdaPort}/binaryfunction");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/binaryfunction")
                 .Build()
                 .RunAsync(_cancellationTokenSource.Token);
 
@@ -226,13 +222,12 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
             await WaitForGatewayHealthCheck(apiGatewayPort);
             var handler = (APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context) =>
             {
-                var env = Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API");
-                testOutputHelper.WriteLine($"TestLambdaReturnString: {env}");
+                testOutputHelper.WriteLine($"TestLambdaReturnString");
                 return request.Body.ToUpper();
             };
 
-            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{lambdaPort}/stringfunction");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/stringfunction")
                 .Build()
                 .RunAsync(_cancellationTokenSource.Token);
 
@@ -263,8 +258,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
             await WaitForGatewayHealthCheck(apiGatewayPort);
             var handler = (APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context) =>
             {
-                var env = Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API");
-                testOutputHelper.WriteLine($"TestLambdaWithNullEndpoint: {env}");
+                testOutputHelper.WriteLine($"TestLambdaWithNullEndpoint");
                 return new APIGatewayHttpApiV2ProxyResponse
                 {
                     StatusCode = 200,
@@ -272,8 +266,8 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
                 };
             };
 
-            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{lambdaPort}/testfunction");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/testfunction")
                 .Build()
                 .RunAsync(_cancellationTokenSource.Token);
 
