@@ -11,7 +11,7 @@ public class LambdaRuntimeApi
 {
     internal const string DefaultFunctionName = "__DefaultFunction__";
     private const string HeaderBreak = "-----------------------------------";
-    private const int MaxPayloadSize = 6 * 1024 * 1024;
+    private const int MaxRequestSize = 6 * 1024 * 1024;
     private const int MaxResponseSize = 6 * 1024 * 1024;
 
     private readonly IRuntimeApiDataStoreManager _runtimeApiDataStoreManager;
@@ -60,12 +60,12 @@ public class LambdaRuntimeApi
         using var reader = new StreamReader(ctx.Request.Body);
         var testEvent = await reader.ReadToEndAsync();
 
-        if (Encoding.UTF8.GetByteCount(testEvent) > MaxPayloadSize)
+        if (Encoding.UTF8.GetByteCount(testEvent) > MaxRequestSize)
         {
             ctx.Response.StatusCode = 413;
             ctx.Response.Headers.ContentType = "application/json";
             ctx.Response.Headers["X-Amzn-Errortype"] = Exceptions.RequestEntityTooLargeException;
-            var errorData = Encoding.UTF8.GetBytes($"Request must be smaller than {MaxPayloadSize} bytes for the InvokeFunction operation");
+            var errorData = Encoding.UTF8.GetBytes($"Request must be smaller than {MaxRequestSize} bytes for the InvokeFunction operation");
             ctx.Response.Headers.ContentLength = errorData.Length;
             await ctx.Response.Body.WriteAsync(errorData);
             return;
