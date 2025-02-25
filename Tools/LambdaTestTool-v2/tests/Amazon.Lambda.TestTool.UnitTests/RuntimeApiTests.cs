@@ -19,11 +19,7 @@ namespace Amazon.Lambda.TestTool.UnitTests;
 
 public class RuntimeApiTests
 {
-#if DEBUG
-    [Fact]
-#else
-    [Fact(Skip = "Skipping this test as it is not working properly.")]
-#endif
+    [RetryFact]
     public async Task AddEventToDataStore()
     {
         const string functionName = "FunctionFoo";
@@ -62,10 +58,10 @@ public class RuntimeApiTests
                 return input.ToUpper();
             };
 
-            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                    .Build()
-                    .RunAsync(cancellationTokenSource.Token);
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}")
+                .Build()
+                .RunAsync(cancellationTokenSource.Token);
 
             await Task.Delay(2_000, cancellationTokenSource.Token);
             Assert.True(handlerCalled);
@@ -96,10 +92,10 @@ public class RuntimeApiTests
                 return input.ToUpper();
             };
 
-            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                    .Build()
-                    .RunAsync(cancellationTokenSource.Token);
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}")
+                .Build()
+                .RunAsync(cancellationTokenSource.Token);
 
             var lambdaClient = ConstructLambdaServiceClient(testToolProcess.ServiceUrl);
 
