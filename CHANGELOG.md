@@ -1,3 +1,12 @@
+## Release 2025-02-25
+
+### Amazon.Lambda.AspNetCoreServer (9.0.4)
+* Fixed issue with marking the response body started. This is required for writing trailing headers
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.7.4)
+* Update Amazon.Lambda.AspNetCoreServer dependency to latest.
+### Amazon.Lambda.RuntimeSupport (1.12.3)
+* Add ability to specify configuration using command line args
+
 ## Release 2025-02-20
 
 ### Amazon.Lambda.TestTool.BlazorTester (0.16.2)
