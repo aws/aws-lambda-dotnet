@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System.Text;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;
