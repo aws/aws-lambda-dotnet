@@ -59,13 +59,13 @@ Check out the following tracker issue for information on the .NET Aspire integra
 The tool is distributed as .NET Global Tool. To install the tool execute the following command:
 
 ```
-dotnet tool install -g amazon.lambda.testtool --prerelease
+dotnet tool install -g amazon.lambda.testtool
 ```
 
 To update the tool run the following command:
 
 ```
-dotnet tool update -g amazon.lambda.testtool --prerelease
+dotnet tool update -g amazon.lambda.testtool
 ```
 
 ## Running the Test Tool
@@ -165,6 +165,35 @@ When using API Gateway mode, you need to configure the route mapping using the A
 
 ```
 
+
+#### Wildcard Paths
+The API Gateway emulator supports the use of wildcard path. To define a wildcard path, you can use the `{proxy+}` syntax in the route pattern. See [here](https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html) for a more detailed explanation on how proxies work.
+
+Here's an example of how to set up an API Gateway emulator with a wildcard path:
+
+```
+[
+    {
+        "LambdaResourceName": "RootFunction",
+        "HttpMethod": "Get",
+        "Path": "/root"
+    },
+    {
+        "LambdaResourceName": "MyOtherLambdaFunction",
+        "HttpMethod": "Get",
+        "Path": "/root/{proxy+}"
+    }
+]
+
+```
+
+This JSON configuration sets up two API Gateway resources:
+
+1. `/root` that is mapped to the `RootFunction` Lambda function.
+2. `/root/{proxy+}` that is a proxy resource mapped to the `MyOtherLambdaFunction` Lambda function.
+
+The `{proxy+}` syntax in the second path allows the API Gateway to proxy any additional path segments to the integrated Lambda function.
+
 ## Example Lambda Function Setup
 
 Here's a simple Lambda function that adds two numbers together.
@@ -252,7 +281,7 @@ There are three variables you may need to replace:
 
 There are three variables you need to update in the launch settings:
 
-1. `{TEST_TOOL_VERSION}` - Replace with the current Amazon.Lambda.TestTool version (e.g., `0.0.2-preview` in the example above)
+1. `{TEST_TOOL_VERSION}` - Replace with the current Amazon.Lambda.TestTool version (e.g., `0.0.3` in the example above)
    - This appears in the path: `.store/amazon.lambda.testtool/{TEST_TOOL_VERSION}/amazon.lambda.testtool/{TEST_TOOL_VERSION}/content/`
 
 2. `{TARGET_FRAMEWORK}` - Replace with your Lambda project's target framework version (e.g., `net8.0` in the example above)
@@ -273,7 +302,7 @@ The `AWS_LAMBDA_RUNTIME_API` environment variable tells the Lambda function wher
 
 
 The host and port should match the port that the lambda emulator is running on.
-In this example we will be running the lambda runtime api emulator on `localhost` on port `5050` and our function name will be `AddLambdaFunction`.
+In this example we will be running the lambda runtime api emulator on `localhost` on port `5050` and our function name will be `AddLambdaFunction`. **Warning**: You should *not* add `http://` prefix to the host (if you do the lambda will fail to connect).
 
 ### 3. API Gateway Configuration
 To expose this Lambda function through API Gateway, set the APIGATEWAY_EMULATOR_ROUTE_CONFIG:
