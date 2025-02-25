@@ -303,7 +303,7 @@ public class LambdaRuntimeApiTests
         // Assert
         Assert.Equal(413, context.Response.StatusCode);
         Assert.Equal("application/json", context.Response.Headers.ContentType);
-        Assert.Equal("RequestEntityTooLargeException", context.Response.Headers["X-Amzn-Errortype"]);
+        Assert.Equal(Exceptions.RequestEntityTooLargeException, context.Response.Headers["X-Amzn-Errortype"]);
 
         context.Response.Body.Position = 0;
         var responseBody = await new StreamReader(context.Response.Body).ReadToEndAsync();

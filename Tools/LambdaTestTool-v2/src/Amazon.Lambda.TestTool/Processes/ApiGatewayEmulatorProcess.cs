@@ -147,7 +147,7 @@ public class ApiGatewayEmulatorProcess
             }
             catch (AmazonLambdaException e)
             {
-                if (e.ErrorCode == "RequestEntityTooLargeException")
+                if (e.ErrorCode == Exceptions.RequestEntityTooLargeException)
                 {
                     if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
                     {
