@@ -5,6 +5,7 @@ using System.Reflection;
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Components;
 using Amazon.Lambda.TestTool.Configuration;
+using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Services.IO;
 using Amazon.Lambda.TestTool.Utilities;
@@ -44,13 +45,13 @@ public class TestToolProcess
 
         builder.Services.AddSingleton<IRuntimeApiDataStoreManager, RuntimeApiDataStoreManager>();
         builder.Services.AddSingleton<IThemeService, ThemeService>();
-        builder.Services.Configure<RunCommandSettings>(options =>
+        builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
+
+        builder.Services.Configure<LambdaOptions>(options =>
         {
-            options.LambdaEmulatorHost = settings.LambdaEmulatorHost;
-            options.LambdaEmulatorPort = settings.LambdaEmulatorPort;
+            options.Endpoint = $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
         });
 
-        builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
 
         // Add services to the container.
         builder.Services.AddRazorComponents()

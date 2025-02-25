@@ -1,6 +1,5 @@
+using System.Collections.Concurrent;
 using Amazon.Lambda.Model;
-using Amazon.Lambda.TestTool.Commands.Settings;
-using Microsoft.Extensions.Options;
 
 namespace Amazon.Lambda.TestTool.Services;
 
@@ -9,35 +8,21 @@ namespace Amazon.Lambda.TestTool.Services;
 /// </summary>
 public class LambdaClient : ILambdaClient, IDisposable
 {
-    internal Dictionary<string, IAmazonLambda> Clients => _clients; // used for unit tests only
-    private readonly Dictionary<string, IAmazonLambda> _clients;
-    private string _currentEndpoint;
+    internal ConcurrentDictionary<string, IAmazonLambda> Clients => _clients; // used for unit tests only
+    private readonly ConcurrentDictionary<string, IAmazonLambda> _clients;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LambdaClient"/> class.
     /// </summary>
-    /// <param name="settings">The run command settings containing Lambda emulator configuration.</param>
-    public LambdaClient(IOptions<RunCommandSettings> settings)
+    public LambdaClient()
     {
-        _clients = new Dictionary<string, IAmazonLambda>();
-        _currentEndpoint = $"http://{settings.Value.LambdaEmulatorHost}:{settings.Value.LambdaEmulatorPort}";
-        _clients[_currentEndpoint] = CreateClient(_currentEndpoint);
+        _clients = new ConcurrentDictionary<string, IAmazonLambda>();
     }
 
     /// <inheritdoc />
-    public Task<InvokeResponse> InvokeAsync(InvokeRequest request)
+    public Task<InvokeResponse> InvokeAsync(InvokeRequest request, string endpoint)
     {
-        return _clients[_currentEndpoint].InvokeAsync(request);
-    }
-
-    /// <inheritdoc />
-    public void SetEndpoint(string endpoint)
-    {
-        if (!_clients.ContainsKey(endpoint))
-        {
-            _clients[endpoint] = CreateClient(endpoint);
-        }
-        _currentEndpoint = endpoint;
+        return _clients.GetOrAdd(endpoint, CreateClient(endpoint)).InvokeAsync(request);
     }
 
     /// <summary>

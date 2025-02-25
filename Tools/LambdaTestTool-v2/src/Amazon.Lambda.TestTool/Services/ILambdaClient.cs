@@ -14,12 +14,7 @@ public interface ILambdaClient
     /// Invokes a Lambda function asynchronously.
     /// </summary>
     /// <param name="request">The request object containing details for the Lambda function invocation.</param>
+    /// <param name="endpoint">The endpoint for the lambda to connect invoke.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the response from the Lambda function invocation.</returns>
-    Task<InvokeResponse> InvokeAsync(InvokeRequest request);
-
-    /// <summary>
-    /// Sets the endpoint for the Lambda client.
-    /// </summary>
-    /// <param name="endpoint">The URL of the endpoint to be used for Lambda operations.</param>
-    void SetEndpoint(string endpoint);
+    Task<InvokeResponse> InvokeAsync(InvokeRequest request, string endpoint);
 }

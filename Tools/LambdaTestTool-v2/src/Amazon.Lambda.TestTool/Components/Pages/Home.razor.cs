@@ -10,6 +10,7 @@ using Amazon.Lambda.TestTool.Services.IO;
 using BlazorMonaco.Editor;
 using Microsoft.JSInterop;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
 
 namespace Amazon.Lambda.TestTool.Components.Pages;
 
@@ -22,8 +23,8 @@ public partial class Home : ComponentBase, IDisposable
     [Inject] public required IDirectoryManager DirectoryManager { get; set; }
     [Inject] public required IThemeService ThemeService { get; set; }
     [Inject] public required IJSRuntime JsRuntime { get; set; }
-
     [Inject] public required ILambdaClient LambdaClient { get; set; }
+    [Inject] public IOptions<LambdaOptions> LambdaOptions { get; set; }
 
     private StandaloneCodeEditor? _editor;
     private StandaloneCodeEditor? _activeEditor;
@@ -345,7 +346,7 @@ public partial class Home : ComponentBase, IDisposable
 
         try
         {
-            await LambdaClient.InvokeAsync(invokeRequest);
+            await LambdaClient.InvokeAsync(invokeRequest, LambdaOptions.Value.Endpoint);
             _errorMessage = string.Empty;
             return true;
         }
@@ -353,8 +354,9 @@ public partial class Home : ComponentBase, IDisposable
         {
             // lambda client automatically adds some extra verbiage: "The service returned an error with Error Code xxxx and HTTP Body: <bodyhere>".
             // removing the extra verbiage to make the error message smaller and look better on the ui.
-            _errorMessage = e.Message.Split("HTTP Body: ")[1];
-        }
+            _errorMessage = e.Message.Contains("HTTP Body: ")
+                ? e.Message.Split("HTTP Body: ")[1]
+                : e.Message;        }
         return false;
     }
 }

@@ -1,107 +1,118 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+
 using Amazon.Lambda.Model;
-using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Services;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Services
 {
-    public class LambdaClientTests : IDisposable
+     public class LambdaClientTests : IDisposable
     {
-        private readonly Mock<IOptions<RunCommandSettings>> _mockSettings;
-        private readonly RunCommandSettings _settings;
-        private readonly LambdaClient _client;
+        private readonly LambdaClient _lambdaClient;
+        private readonly InvokeRequest _validRequest;
 
         public LambdaClientTests()
         {
-            _settings = new RunCommandSettings
+            _lambdaClient = new LambdaClient();
+            _validRequest = new InvokeRequest
             {
-                LambdaEmulatorHost = "localhost",
-                LambdaEmulatorPort = 5050
+                FunctionName = "TestFunction",
+                Payload = "{}"
             };
-            _mockSettings = new Mock<IOptions<RunCommandSettings>>();
-            _mockSettings.Setup(s => s.Value).Returns(_settings);
-            _client = new LambdaClient(_mockSettings.Object);
         }
 
         [Fact]
-        public void Constructor_InitializesCorrectly()
-        {
-            // Assert
-            var expectedEndpoint = $"http://{_settings.LambdaEmulatorHost}:{_settings.LambdaEmulatorPort}";
-            Assert.Single(_client.Clients);
-            Assert.True(_client.Clients.ContainsKey(expectedEndpoint));
-        }
-
-        [Fact]
-        public async Task InvokeAsync_UsesCurrentEndpoint()
+        public void InvokeAsync_CreatesNewClientForNewEndpoint()
         {
             // Arrange
-            var request = new InvokeRequest();
-
-            // Act & Assert
-            await Assert.ThrowsAsync<AmazonLambdaException>(
-                async () => await _client.InvokeAsync(request));
-        }
-
-        [Fact]
-        public void SetEndpoint_CreatesNewClientForNewEndpoint()
-        {
-            // Arrange
-            var newEndpoint = "http://newhost:1234";
-            var initialCount = _client.Clients.Count;
+            var endpoint = "invalid://example.com";
 
             // Act
-            _client.SetEndpoint(newEndpoint);
+            _lambdaClient.InvokeAsync(_validRequest, endpoint);
 
             // Assert
-            Assert.True(_client.Clients.ContainsKey(newEndpoint));
-            Assert.Equal(initialCount + 1, _client.Clients.Count);
+            Assert.Single(_lambdaClient.Clients);
+            Assert.True(_lambdaClient.Clients.ContainsKey(endpoint));
         }
 
         [Fact]
-        public void SetEndpoint_ReuseExistingClientForSameEndpoint()
+        public void InvokeAsync_ReuseExistingClientForSameEndpoint()
         {
             // Arrange
-            var initialEndpoint = $"http://{_settings.LambdaEmulatorHost}:{_settings.LambdaEmulatorPort}";
-            var initialCount = _client.Clients.Count;
+            var endpoint = "invalid://example.com";
 
             // Act
-            _client.SetEndpoint(initialEndpoint);
+            _lambdaClient.InvokeAsync(_validRequest, endpoint);
+            _lambdaClient.InvokeAsync(_validRequest, endpoint);
 
             // Assert
-            Assert.Equal(initialCount, _client.Clients.Count);
-            Assert.True(_client.Clients.ContainsKey(initialEndpoint));
+            Assert.Single(_lambdaClient.Clients);
+            Assert.True(_lambdaClient.Clients.ContainsKey(endpoint));
         }
 
         [Fact]
-        public void Dispose_ClearsAllClients()
-        {
-            // Act
-            _client.Dispose();
-
-            // Assert
-            Assert.Empty(_client.Clients);
-        }
-
-        [Fact]
-        public async Task Dispose_PreventsSubsequentOperations()
+        public void InvokeAsync_CreatesSeparateClientsForDifferentEndpoints()
         {
             // Arrange
-            _client.Dispose();
+            var endpoint1 = "invalid://example1.com";
+            var endpoint2 = "invalid://example2.com";
 
-            // Act & Assert
-            await Assert.ThrowsAnyAsync<Exception>(
-                async () => await _client.InvokeAsync(new InvokeRequest()));
+            // Act
+            _lambdaClient.InvokeAsync(_validRequest, endpoint1);
+            _lambdaClient.InvokeAsync(_validRequest, endpoint2);
+
+            // Assert
+            Assert.Equal(2, _lambdaClient.Clients.Count);
+            Assert.True(_lambdaClient.Clients.ContainsKey(endpoint1));
+            Assert.True(_lambdaClient.Clients.ContainsKey(endpoint2));
+        }
+
+        [Fact]
+        public void Dispose_ClearsClientDictionary()
+        {
+            // Arrange
+            var endpoint = "invalid://example.com";
+            _lambdaClient.InvokeAsync(_validRequest, endpoint);
+            Assert.Single(_lambdaClient.Clients);
+
+            // Act
+            _lambdaClient.Dispose();
+
+            // Assert
+            Assert.Empty(_lambdaClient.Clients);
+        }
+
+        [Fact]
+        public void MultipleEndpoints_CreateCorrectNumberOfClients()
+        {
+            // Arrange
+            var endpoints = new[]
+            {
+                "invalid://example1.com",
+                "invalid://example2.com",
+                "invalid://example3.com",
+                "invalid://example1.com" // Duplicate to test reuse
+            };
+
+            // Act
+            foreach (var endpoint in endpoints)
+            {
+                _lambdaClient.InvokeAsync(_validRequest, endpoint);
+            }
+
+            // Assert
+            Assert.Equal(3, _lambdaClient.Clients.Count);
+            Assert.True(_lambdaClient.Clients.ContainsKey("invalid://example1.com"));
+            Assert.True(_lambdaClient.Clients.ContainsKey("invalid://example2.com"));
+            Assert.True(_lambdaClient.Clients.ContainsKey("invalid://example3.com"));
         }
 
         public void Dispose()
         {
-            _client?.Dispose();
+            _lambdaClient.Dispose();
         }
     }
 }

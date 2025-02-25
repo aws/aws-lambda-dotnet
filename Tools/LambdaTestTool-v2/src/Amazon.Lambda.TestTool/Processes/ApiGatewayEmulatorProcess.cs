@@ -52,14 +52,7 @@ public class ApiGatewayEmulatorProcess
         Utils.ConfigureWebApplicationBuilder(builder);
 
         builder.Services.AddApiGatewayEmulatorServices();
-        builder.Services.Configure<RunCommandSettings>(options =>
-        {
-            options.LambdaEmulatorHost = settings.LambdaEmulatorHost;
-            options.LambdaEmulatorPort = settings.LambdaEmulatorPort;
-        });
-
         builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
-
 
         var serviceUrl = $"http://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorPort}";
         builder.WebHost.UseUrls(serviceUrl);
@@ -112,9 +105,7 @@ public class ApiGatewayEmulatorProcess
             try
             {
                 var endpoint = routeConfig.Endpoint ?? $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
-                lambdaClient.SetEndpoint(endpoint);
-
-                var response = await lambdaClient.InvokeAsync(invokeRequest);
+                var response = await lambdaClient.InvokeAsync(invokeRequest, endpoint);
 
                 if (response.FunctionError == null) // response is successful
                 {
