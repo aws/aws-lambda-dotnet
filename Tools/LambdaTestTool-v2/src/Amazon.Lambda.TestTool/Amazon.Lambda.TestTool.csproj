@@ -18,6 +18,7 @@
     <Version>0.0.3</Version>
     <NoWarn>NU5100</NoWarn>
     <RollForward>Major</RollForward>	
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup Condition="$(Configuration) == 'Release'">
@@ -69,4 +70,8 @@
     </None>
   </ItemGroup>
 
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>
