@@ -284,15 +284,103 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
         }
     }
 
-    private async Task<HttpResponseMessage> TestEndpoint(string routeName, int apiGatewayPort, string httpMethod = "POST")
+    [Theory]
+    [InlineData(ApiGatewayEmulatorMode.Rest)]
+    [InlineData(ApiGatewayEmulatorMode.HttpV1)]
+    public async Task TestLambdaWithLargeRequestPayload_RestAndV1(ApiGatewayEmulatorMode mode)
+    {
+        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+        _cancellationTokenSource = new CancellationTokenSource();
+        _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
+        var consoleError = Console.Error;
+        try
+        {
+            Console.SetError(TextWriter.Null);
+            await StartTestToolProcessAsync(mode, "largerequestfunction", lambdaPort, apiGatewayPort, _cancellationTokenSource);
+            await WaitForGatewayHealthCheck(apiGatewayPort);
+
+            var handler = (APIGatewayProxyRequest request, ILambdaContext context) =>
+            {
+                return new APIGatewayProxyResponse
+                {
+                    StatusCode = 200,
+                    Body = request.Body.Length.ToString()
+                };
+            };
+
+            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/largerequestfunction")
+                .Build()
+                .RunAsync(_cancellationTokenSource.Token);
+
+            // Create a payload just over 6MB
+            var largePayload = new string('X', 6 * 1024 * 1024 + 1024); // 6MB + 1KB
+
+            var response = await TestEndpoint("largerequestfunction", apiGatewayPort, payload: largePayload);
+
+            Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Assert.Contains(mode == ApiGatewayEmulatorMode.Rest ? "Request Too Long" : "Request Entity Too Large", responseContent);
+        }
+        finally
+        {
+            await _cancellationTokenSource.CancelAsync();
+            Console.SetError(consoleError);
+        }
+    }
+
+    [Fact]
+    public async Task TestLambdaWithLargeRequestPayload_HttpV2()
+    {
+        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+        _cancellationTokenSource = new CancellationTokenSource();
+        _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
+        var consoleError = Console.Error;
+        try
+        {
+            Console.SetError(TextWriter.Null);
+            await StartTestToolProcessAsync(ApiGatewayEmulatorMode.HttpV2, "largerequestfunction", lambdaPort, apiGatewayPort, _cancellationTokenSource);
+            await WaitForGatewayHealthCheck(apiGatewayPort);
+
+            var handler = (APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context) =>
+            {
+                return new APIGatewayHttpApiV2ProxyResponse
+                {
+                    StatusCode = 200,
+                    Body = request.Body.Length.ToString()
+                };
+            };
+
+            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/largerequestfunction")
+                .Build()
+                .RunAsync(_cancellationTokenSource.Token);
+
+            // Create a payload just over 6MB
+            var largePayload = new string('X', 6 * 1024 * 1024 + 1024); // 6MB + 1KB
+
+            var response = await TestEndpoint("largerequestfunction", apiGatewayPort, payload: largePayload);
+
+            Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Assert.Contains("Request Entity Too Large", responseContent);
+        }
+        finally
+        {
+            await _cancellationTokenSource.CancelAsync();
+            Console.SetError(consoleError);
+        }
+    }
+
+    private async Task<HttpResponseMessage> TestEndpoint(string routeName, int apiGatewayPort, string httpMethod = "POST", string? payload = null)
     {
         testOutputHelper.WriteLine($"Testing endpoint: http://localhost:{apiGatewayPort}/{routeName}");
         using (var client = new HttpClient())
         {
-            client.Timeout = TimeSpan.FromSeconds(2);
+            client.Timeout = TimeSpan.FromSeconds(60);
 
             var startTime = DateTime.UtcNow;
-            var timeout = TimeSpan.FromSeconds(45);
+            var timeout = TimeSpan.FromSeconds(90);
             Exception? lastException = null;
 
             while (DateTime.UtcNow - startTime < timeout)
@@ -305,7 +393,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
                     {
                         "POST" => await client.PostAsync(
                             $"http://localhost:{apiGatewayPort}/{routeName}",
-                            new StringContent("hello world", Encoding.UTF8, "text/plain")),
+                            new StringContent(payload ?? "hello world", Encoding.UTF8, "text/plain")),
                         "GET" => await client.GetAsync($"http://localhost:{apiGatewayPort}/{routeName}"),
                         _ => throw new ArgumentException($"Unsupported HTTP method: {httpMethod}")
                     };
@@ -319,9 +407,10 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
                 }
             }
 
-            throw new TimeoutException($"Failed to complete request within timeout period: z{lastException?.Message}", lastException);
+            throw new TimeoutException($"Failed to complete request within timeout period: {lastException?.Message}", lastException);
         }
     }
+
 
     private async Task StartTestToolProcessAsync(ApiGatewayEmulatorMode apiGatewayMode, string routeName, int lambdaPort, int apiGatewayPort, CancellationTokenSource cancellationTokenSource, string httpMethod = "POST")
     {

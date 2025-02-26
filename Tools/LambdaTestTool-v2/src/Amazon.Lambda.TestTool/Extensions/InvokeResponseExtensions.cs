@@ -6,6 +6,8 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Model;
 using Amazon.Lambda.TestTool.Models;
 
+namespace Amazon.Lambda.TestTool.Extensions;
+
 /// <summary>
 /// Provides extension methods for converting Lambda InvokeResponse to API Gateway response types.
 /// </summary>
@@ -81,6 +83,52 @@ public static class InvokeResponseExtensions
                 IsBase64Encoded = false
             };
         }
+    }
+
+    /// <summary>
+    /// Creates a standard API Gateway response for a "Request Entity Too Large" (413) error.
+    /// Not compatible with HTTP V2 API Gateway mode.
+    /// </summary>
+    /// <param name="emulatorMode">The API Gateway emulator mode (Rest or HttpV1 only).</param>
+    /// <returns>An APIGatewayProxyResponse configured with:
+    /// - Status code 413
+    /// - JSON error message ("Request Too Long" for REST, "Request Entity Too Large" for HTTP V1)
+    /// - Content-Type header set to application/json
+    /// </returns>
+    /// <exception cref="InvalidOperationException">Thrown when emulatorMode is HttpV2 or invalid value</exception>
+    /// <remarks>
+    /// This method only supports REST and HTTP V1 API Gateway modes. For HTTP V2,
+    /// use <seealso cref="ToHttpApiV2RequestTooLargeResponse"/>.
+    /// </remarks>
+    public static APIGatewayProxyResponse ToHttpApiRequestTooLargeResponse(ApiGatewayEmulatorMode emulatorMode)
+    {
+        if (emulatorMode == ApiGatewayEmulatorMode.Rest)
+        {
+            return new APIGatewayProxyResponse
+            {
+                StatusCode = 413,
+                Body = "{\"message\":\"Request Too Long\"}",
+                Headers = new Dictionary<string, string>
+                {
+                    { "Content-Type", "application/json" }
+                },
+                IsBase64Encoded = false
+            };
+        }
+        if (emulatorMode == ApiGatewayEmulatorMode.HttpV1)
+        {
+            return new APIGatewayProxyResponse
+            {
+                StatusCode = 413,
+                Body = "{\"message\":\"Request Entity Too Large\"}",
+                Headers = new Dictionary<string, string>
+                {
+                    { "Content-Type", "application/json" }
+                },
+                IsBase64Encoded = false
+            };
+        }
+        throw new ArgumentException($"Unsupported API Gateway emulator mode: {emulatorMode}. Only Rest and HttpV1 modes are supported.");
     }
 
     /// <summary>
@@ -209,4 +257,25 @@ public static class InvokeResponseExtensions
         };
     }
 
+    /// <summary>
+    /// Creates a standard HTTP API v2 response for a "Request Entity Too Large" (413) error.
+    /// </summary>
+    /// <returns>An APIGatewayHttpApiV2ProxyResponse configured with:
+    /// - Status code 413
+    /// - JSON error message
+    /// - Content-Type header set to application/json
+    /// </returns>
+    public static APIGatewayHttpApiV2ProxyResponse ToHttpApiV2RequestTooLargeResponse()
+    {
+        return new APIGatewayHttpApiV2ProxyResponse
+        {
+            StatusCode = 413,
+            Body = "{\"message\":\"Request Entity Too Large\"}",
+            Headers = new Dictionary<string, string>
+            {
+                { "Content-Type", "application/json" }
+            },
+            IsBase64Encoded = false
+        };
+    }
 }

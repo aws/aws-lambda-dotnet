@@ -52,6 +52,7 @@ public class ApiGatewayEmulatorProcess
         Utils.ConfigureWebApplicationBuilder(builder);
 
         builder.Services.AddApiGatewayEmulatorServices();
+        builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
 
         var serviceUrl = $"http://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorPort}";
         builder.WebHost.UseUrls(serviceUrl);
@@ -68,7 +69,7 @@ public class ApiGatewayEmulatorProcess
             app.Logger.LogInformation("The API Gateway Emulator is available at: {ServiceUrl}", serviceUrl);
         });
 
-        app.Map("/{**catchAll}", async (HttpContext context, IApiGatewayRouteConfigService routeConfigService) =>
+        app.Map("/{**catchAll}", async (HttpContext context, IApiGatewayRouteConfigService routeConfigService, ILambdaClient lambdaClient) =>
         {
             var routeConfig = routeConfigService.GetRouteConfig(context.Request.Method, context.Request.Path);
             if (routeConfig == null)
@@ -101,38 +102,56 @@ public class ApiGatewayEmulatorProcess
                 PayloadStream = lambdaRequestStream
             };
 
-            using var lambdaClient = CreateLambdaServiceClient(routeConfig, settings);
-            var response =  await lambdaClient.InvokeAsync(invokeRequest);
-
-            if (response.FunctionError == null) // response is successful
+            try
             {
-                if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
+                var endpoint = routeConfig.Endpoint ?? $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
+                var response = await lambdaClient.InvokeAsync(invokeRequest, endpoint);
+
+                if (response.FunctionError == null) // response is successful
                 {
-                    var lambdaResponse = response.ToApiGatewayHttpApiV2ProxyResponse();
-                    await lambdaResponse.ToHttpResponseAsync(context);
+                    if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
+                    {
+                        var lambdaResponse = response.ToApiGatewayHttpApiV2ProxyResponse();
+                        await lambdaResponse.ToHttpResponseAsync(context);
+                    }
+                    else
+                    {
+                        var lambdaResponse = response.ToApiGatewayProxyResponse(settings.ApiGatewayEmulatorMode.Value);
+                        await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                    }
                 }
                 else
                 {
-                    var lambdaResponse = response.ToApiGatewayProxyResponse(settings.ApiGatewayEmulatorMode.Value);
-                    await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                    // For errors that happen within the function they still come back as 200 status code (they dont throw exception) but have FunctionError populated.
+                    // Api gateway just displays them as an internal server error, so we convert them to the correct error response here.
+                    if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
+                    {
+                        var lambdaResponse = InvokeResponseExtensions.ToHttpApiV2ErrorResponse();
+                        await lambdaResponse.ToHttpResponseAsync(context);
+                    }
+                    else
+                    {
+                        var lambdaResponse = InvokeResponseExtensions.ToApiGatewayErrorResponse(settings.ApiGatewayEmulatorMode.Value);
+                        await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                    }
                 }
             }
-            else
+            catch (AmazonLambdaException e)
             {
-                // For function errors, api gateway just displays them as an internal server error, so we convert them to the correct error response here.
-
-                if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
+                if (e.ErrorCode == Exceptions.RequestEntityTooLargeException)
                 {
-                    var lambdaResponse = InvokeResponseExtensions.ToHttpApiV2ErrorResponse();
-                    await lambdaResponse.ToHttpResponseAsync(context);
-                }
-                else
-                {
-                    var lambdaResponse = InvokeResponseExtensions.ToApiGatewayErrorResponse(settings.ApiGatewayEmulatorMode.Value);
-                    await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                    if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
+                    {
+                        var lambdaResponse = InvokeResponseExtensions.ToHttpApiV2RequestTooLargeResponse();
+                        await lambdaResponse.ToHttpResponseAsync(context);
+                    }
+                    else
+                    {
+                        var lambdaResponse = InvokeResponseExtensions.ToHttpApiRequestTooLargeResponse(settings.ApiGatewayEmulatorMode.Value);
+                        await lambdaResponse.ToHttpResponseAsync(context, settings.ApiGatewayEmulatorMode.Value);
+                    }
                 }
             }
-
         });
 
         var runTask = app.RunAsync(cancellationToken);
@@ -143,31 +162,5 @@ public class ApiGatewayEmulatorProcess
             RunningTask = runTask,
             ServiceUrl = serviceUrl
         };
-    }
-
-    /// <summary>
-    /// Creates an Amazon Lambda service client with the specified configuration.
-    /// </summary>
-    /// <param name="routeConfig">The API Gateway route configuration containing the endpoint information.
-    /// If the endpoint is specified in routeConfig, it will be used as the service URL.</param>
-    /// <param name="settings">The run command settings containing host and port information.
-    /// If routeConfig endpoint is null, the service URL will be constructed using settings.Host and settings.Port.</param>
-    /// <returns>An instance of IAmazonLambda configured with the specified endpoint and credentials.</returns>
-    /// <remarks>
-    /// The function uses hard-coded AWS credentials ("accessKey", "secretKey") for authentication since they are not actually being used.
-    /// The service URL is determined by either:
-    /// - Using routeConfig.Endpoint if it's not null
-    /// - Combining settings.Host and settings.Port if routeConfig.Endpoint is null
-    /// </remarks>
-    private static IAmazonLambda CreateLambdaServiceClient(ApiGatewayRouteConfig routeConfig, RunCommandSettings settings)
-    {
-        var endpoint = routeConfig.Endpoint ?? $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
-
-        var lambdaConfig = new AmazonLambdaConfig
-        {
-            ServiceURL = endpoint
-        };
-
-        return new AmazonLambdaClient(new Amazon.Runtime.BasicAWSCredentials("accessKey", "secretKey"), lambdaConfig);
     }
 }

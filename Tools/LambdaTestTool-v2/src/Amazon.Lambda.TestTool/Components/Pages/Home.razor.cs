@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using Amazon.Lambda.Model;
 using Microsoft.AspNetCore.Components;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Models;
@@ -9,6 +10,7 @@ using Amazon.Lambda.TestTool.Services.IO;
 using BlazorMonaco.Editor;
 using Microsoft.JSInterop;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
 
 namespace Amazon.Lambda.TestTool.Components.Pages;
 
@@ -21,6 +23,8 @@ public partial class Home : ComponentBase, IDisposable
     [Inject] public required IDirectoryManager DirectoryManager { get; set; }
     [Inject] public required IThemeService ThemeService { get; set; }
     [Inject] public required IJSRuntime JsRuntime { get; set; }
+    [Inject] public required ILambdaClient LambdaClient { get; set; }
+    [Inject] public IOptions<LambdaOptions> LambdaOptions { get; set; }
 
     private StandaloneCodeEditor? _editor;
     private StandaloneCodeEditor? _activeEditor;
@@ -32,6 +36,8 @@ public partial class Home : ComponentBase, IDisposable
     private int _pastEventsCount;
 
     private const string NoSampleSelectedId = "void-select-request";
+
+    private string _errorMessage = string.Empty;
 
     private IDictionary<string, IList<LambdaRequest>> SampleRequests { get; set; } = new Dictionary<string, IList<LambdaRequest>>();
 
@@ -184,9 +190,12 @@ public partial class Home : ComponentBase, IDisposable
             DataStore is null)
             return;
         var editorValue = await _editor.GetValue();
-        DataStore.QueueEvent(editorValue, false);
-        await _editor.SetValue(string.Empty);
-        SelectedSampleRequestName = NoSampleSelectedId;
+        var success = await InvokeLambdaFunction(editorValue);
+        if (success)
+        {
+            await _editor.SetValue(string.Empty);
+            SelectedSampleRequestName = NoSampleSelectedId;
+        }
         StateHasChanged();
     }
 
@@ -202,7 +211,7 @@ public partial class Home : ComponentBase, IDisposable
         StateHasChanged();
     }
 
-    void OnRequeue(string awsRequestId)
+    async Task OnRequeue(string awsRequestId)
     {
         if (DataStore is null)
             return;
@@ -218,8 +227,7 @@ public partial class Home : ComponentBase, IDisposable
 
         if (evnt == null)
             return;
-
-        DataStore.QueueEvent(evnt.EventJson, false);
+        await InvokeLambdaFunction(evnt.EventJson);
         StateHasChanged();
     }
 
@@ -325,5 +333,33 @@ public partial class Home : ComponentBase, IDisposable
                 Enabled = false
             }
         };
+    }
+
+    private async Task<bool> InvokeLambdaFunction(string payload)
+    {
+        var invokeRequest = new InvokeRequest
+        {
+            FunctionName = SelectedFunctionName,
+            Payload = payload,
+            InvocationType = InvocationType.Event
+        };
+
+        try
+        {
+            await LambdaClient.InvokeAsync(invokeRequest, LambdaOptions.Value.Endpoint);
+            _errorMessage = string.Empty;
+            return true;
+        }
+        catch (AmazonLambdaException e)
+        {
+            Logger.LogInformation(e.Message);
+
+            // lambda client automatically adds some extra verbiage: "The service returned an error with Error Code xxxx and HTTP Body: <bodyhere>".
+            // removing the extra verbiage to make the error message smaller and look better on the ui.
+            _errorMessage = e.Message.Contains("HTTP Body: ")
+                ? e.Message.Split("HTTP Body: ")[1]
+                : e.Message;
+        }
+        return false;
     }
 }
