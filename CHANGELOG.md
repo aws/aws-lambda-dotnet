@@ -1,3 +1,9 @@
+## Release 2025-02-26 #2
+
+### Amazon.Lambda.TestTool (0.9.0)
+* Add README
+* Add 6MB request and response size validation.
+
 ## Release 2025-02-25
 
 ### Amazon.Lambda.AspNetCoreServer (9.0.4)
