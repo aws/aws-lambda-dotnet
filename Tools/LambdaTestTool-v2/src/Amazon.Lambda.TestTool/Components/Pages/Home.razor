@@ -81,9 +81,8 @@ else
                     <label class="form-label mb-0" for="function-payload">Function Input</label>
                     @if (!string.IsNullOrEmpty(_errorMessage))
                     {
-                        <div class="text-danger ms-2">
+                        <div class="text-danger ms-auto">
                             <i class="bi bi-exclamation-triangle-fill"></i>
-                            @_errorMessage
                         </div>
                     }
                 </div>
@@ -91,7 +90,14 @@ else
                     Id="function-payload"
                     @ref="_editor"
                     ConstructionOptions="EditorConstructionOptions"
-                    CssClass="@($"rounded-4 overflow-hidden border {(!string.IsNullOrEmpty(_errorMessage) ? "border-danger border-2" : "")}")"/>            </div>
+                    CssClass="@($"rounded-4 overflow-hidden border {(!string.IsNullOrEmpty(_errorMessage) ? "border-danger border-2" : "")}")"/>
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="text-danger">
+                        @_errorMessage
+                    </div>
+                }
+            </div>
         </div>
         <div class="col-lg-6 d-flex flex-column">
             <nav class="navbar navbar-expand-md bd-navbar pt-0 justify-content-center">
