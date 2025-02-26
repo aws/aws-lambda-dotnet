@@ -1,3 +1,8 @@
+## Release 2025-02-26 #3
+
+### Amazon.Lambda.Annotations (1.6.3)
+* fix: implemented change to always use __ as prefix and suffix for parameter names generated for a LambdaFunction.
+
 ## Release 2025-02-26 #2
 
 ### Amazon.Lambda.TestTool (0.9.0)
