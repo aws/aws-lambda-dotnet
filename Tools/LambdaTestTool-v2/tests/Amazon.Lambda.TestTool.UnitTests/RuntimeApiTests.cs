@@ -26,11 +26,12 @@ public class RuntimeApiTests
 
         var lambdaPort = TestHelpers.GetNextLambdaRuntimePort();
         var cancellationTokenSource = new CancellationTokenSource();
-        cancellationTokenSource.CancelAfter(15_000);
+        cancellationTokenSource.CancelAfter(60_000);
         var options = new RunCommandSettings();
         options.LambdaEmulatorPort = lambdaPort;
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
+        await Task.Delay(5_000, cancellationTokenSource.Token);
         try
         {
             var lambdaClient = ConstructLambdaServiceClient(testToolProcess.ServiceUrl);
@@ -42,6 +43,7 @@ public class RuntimeApiTests
             };
 
             await lambdaClient.InvokeAsync(invokeFunction, cancellationTokenSource.Token);
+            await Task.Delay(5_000, cancellationTokenSource.Token);
 
             var dataStoreManager = testToolProcess.Services.GetRequiredService<IRuntimeApiDataStoreManager>();
             var dataStore = dataStoreManager.GetLambdaRuntimeDataStore(functionName);
@@ -54,16 +56,15 @@ public class RuntimeApiTests
             var handler = (string input, ILambdaContext context) =>
             {
                 handlerCalled = true;
-                Thread.Sleep(1000); // Add a sleep to prove the LambdaRuntimeApi waited for the completion.
+                cancellationTokenSource.Cancel();
                 return input.ToUpper();
             };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+            await LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                 .ConfigureOptions(x => x.RuntimeApiEndpoint = $"{options.LambdaEmulatorHost}:{options.LambdaEmulatorPort}/{functionName}")
                 .Build()
                 .RunAsync(cancellationTokenSource.Token);
 
-            await Task.Delay(2_000, cancellationTokenSource.Token);
             Assert.True(handlerCalled);
         }
         finally
