@@ -301,8 +301,6 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
 
             var handler = (APIGatewayProxyRequest request, ILambdaContext context) =>
             {
-                var env = Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API");
-                testOutputHelper.WriteLine($"TestLambdaWithLargeRequestPayload {mode}: {env}");
                 return new APIGatewayProxyResponse
                 {
                     StatusCode = 200,
@@ -310,8 +308,8 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
                 };
             };
 
-            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{lambdaPort}/largerequestfunction");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/largerequestfunction")
                 .Build()
                 .RunAsync(_cancellationTokenSource.Token);
 
@@ -346,8 +344,6 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
 
             var handler = (APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context) =>
             {
-                var env = Environment.GetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API");
-                testOutputHelper.WriteLine($"TestLambdaWithLargeRequestPayload HttpV2: {env}");
                 return new APIGatewayHttpApiV2ProxyResponse
                 {
                     StatusCode = 200,
@@ -355,8 +351,8 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
                 };
             };
 
-            Environment.SetEnvironmentVariable("AWS_LAMBDA_RUNTIME_API", $"localhost:{lambdaPort}/largerequestfunction");
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/largerequestfunction")
                 .Build()
                 .RunAsync(_cancellationTokenSource.Token);
 

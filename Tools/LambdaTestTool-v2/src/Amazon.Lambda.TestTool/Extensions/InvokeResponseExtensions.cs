@@ -87,13 +87,19 @@ public static class InvokeResponseExtensions
 
     /// <summary>
     /// Creates a standard API Gateway response for a "Request Entity Too Large" (413) error.
+    /// Not compatible with HTTP V2 API Gateway mode.
     /// </summary>
-    /// <param name="emulatorMode">The API Gateway emulator mode (Rest or Http).</param>
+    /// <param name="emulatorMode">The API Gateway emulator mode (Rest or HttpV1 only).</param>
     /// <returns>An APIGatewayProxyResponse configured with:
     /// - Status code 413
-    /// - JSON error message
+    /// - JSON error message ("Request Too Long" for REST, "Request Entity Too Large" for HTTP V1)
     /// - Content-Type header set to application/json
     /// </returns>
+    /// <exception cref="InvalidOperationException">Thrown when emulatorMode is HttpV2 or invalid value</exception>
+    /// <remarks>
+    /// This method only supports REST and HTTP V1 API Gateway modes. For HTTP V2,
+    /// use <seealso cref="ToHttpApiV2RequestTooLargeResponse"/>.
+    /// </remarks>
     public static APIGatewayProxyResponse ToHttpApiRequestTooLargeResponse(ApiGatewayEmulatorMode emulatorMode)
     {
         if (emulatorMode == ApiGatewayEmulatorMode.Rest)
@@ -122,7 +128,7 @@ public static class InvokeResponseExtensions
                 IsBase64Encoded = false
             };
         }
-        throw new InvalidOperationException();
+        throw new ArgumentException($"Unsupported API Gateway emulator mode: {emulatorMode}. Only Rest and HttpV1 modes are supported.");
     }
 
     /// <summary>
