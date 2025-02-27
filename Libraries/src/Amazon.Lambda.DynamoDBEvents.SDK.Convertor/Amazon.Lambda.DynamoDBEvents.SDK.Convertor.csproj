@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support -  DynamoDBEvents SDK Convertor package.</Description>
-    <TargetFrameworks>netcoreapp3.1;net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.DynamoDBEvents.SDK.Convertor</AssemblyTitle>
     <AssemblyName>Amazon.Lambda.DynamoDBEvents.SDK.Convertor</AssemblyName>
     <PackageId>Amazon.Lambda.DynamoDBEvents.SDK.Convertor</PackageId>
