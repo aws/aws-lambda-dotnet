@@ -2,7 +2,7 @@
   "Projects": [
     {
       "Name": "Amazon.Lambda.DynamoDBEvents.SDK.Convertor",
-      "Type": "Patch",
+      "Type": "Major",
       "ChangelogMessages": [
         "Implement DynamoDBEvents SDK Convertor package for DynamoDBEvent images to DynamoDBv2.Document"
       ]
