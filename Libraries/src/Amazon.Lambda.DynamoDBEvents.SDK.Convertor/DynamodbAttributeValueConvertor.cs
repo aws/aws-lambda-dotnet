@@ -43,19 +43,19 @@ namespace Amazon.Lambda.DynamoDBEvents.SDK.Convertor
                 sdkAttribute.B = lambdaAttribute.B;
 
             // String Set
-            else if (lambdaAttribute.SS != null && lambdaAttribute.SS.Count > 0)
+            else if (lambdaAttribute.SS != null)
                 sdkAttribute.SS = new List<string>(lambdaAttribute.SS);
 
             // Number Set
-            else if (lambdaAttribute.NS != null && lambdaAttribute.NS.Count > 0)
+            else if (lambdaAttribute.NS != null)
                 sdkAttribute.NS = new List<string>(lambdaAttribute.NS);
 
             // Binary Set
-            else if (lambdaAttribute.BS != null && lambdaAttribute.BS.Count > 0)
+            else if (lambdaAttribute.BS != null)
                 sdkAttribute.BS = lambdaAttribute.BS;
 
             // List
-            else if (lambdaAttribute.L != null && lambdaAttribute.L.Count > 0)
+            else if (lambdaAttribute.L != null)
             {
                 sdkAttribute.L = new List<Amazon.DynamoDBv2.Model.AttributeValue>();
                 foreach (var item in lambdaAttribute.L)
@@ -65,7 +65,7 @@ namespace Amazon.Lambda.DynamoDBEvents.SDK.Convertor
             }
 
             // Map
-            else if (lambdaAttribute.M != null && lambdaAttribute.M.Count > 0)
+            else if (lambdaAttribute.M != null)
             {
                 sdkAttribute.M = new Dictionary<string, Amazon.DynamoDBv2.Model.AttributeValue>();
                 foreach (var kvp in lambdaAttribute.M)
