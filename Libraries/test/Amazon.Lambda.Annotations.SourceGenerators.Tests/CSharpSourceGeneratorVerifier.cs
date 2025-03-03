@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Testing.Verifiers;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Immutable;
 using System.IO;
@@ -40,6 +41,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(HostApplicationBuilder).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IHost).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
                     });
 
@@ -55,6 +58,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ServiceProvider).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(RestApiAttribute).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(DefaultLambdaJsonSerializer).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(HostApplicationBuilder).Assembly.Location))
+                            .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IHost).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(LambdaBootstrapBuilder).Assembly.Location));
                     });
                 }

@@ -29,6 +29,7 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeRefactoring.Testing.XUnit" Version="1.1.1" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="1.1.1" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
 		<PackageReference Include="YamlDotNet" Version="12.3.1" />
 	</ItemGroup>
 
@@ -40,6 +41,15 @@
         <Content Remove="..\TestServerlessApp\obj\**" />
         <Content Remove="..\TestServerlessApp\bin\**" />
         <Content Remove="..\TestServerlessApp\serverless.template" />
+
+        <Content Include="..\TestHostBuilderApp\**">
+          <Link>TestHostBuilderApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+
+        <Content Remove="..\TestHostBuilderApp\obj\**" />
+        <Content Remove="..\TestHostBuilderApp\bin\**" />
+        <Content Remove="..\TestHostBuilderApp\serverless.template" />
 
         <Content Include="..\TestServerlessApp.NET8\**">
             <Link>TestServerlessApp.NET8\%(RecursiveDir)/%(FileName)%(Extension)</Link>
@@ -113,6 +123,10 @@
 		<Content Update="Snapshots\ParameterlessMethodWithResponse_ToUpper_Generated.g.cs">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
+
+    <Content Update="Snapshots\HostBuilderFunctions_Add_Generated.g.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
 
 		<Content Update="Snapshots\ProgramParameterlessWithResponse.g.cs">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
