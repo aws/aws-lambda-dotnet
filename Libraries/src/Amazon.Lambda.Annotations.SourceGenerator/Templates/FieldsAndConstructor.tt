@@ -9,14 +9,14 @@
     {
 #>
         private readonly ServiceProvider serviceProvider;
-        <#
+<#
         if (_model.LambdaMethod.UsingHostBuilderForDependencyInjection)
         {
-            #>
+#>
         private readonly IHost host;
-        <#
+<#
         }
-        #>
+#>
 <#
     }
     else
@@ -42,7 +42,7 @@
 
         if (_model.LambdaMethod.UsingHostBuilderForDependencyInjection)
         {
-        #>
+#>
             var startup = new <#= _model.StartupType.FullName #>();
             var hostBuilder = startup.ConfigureHostBuilder();
 
@@ -59,11 +59,11 @@
             // Intentionally eagerly build <#= _model.LambdaMethod.ContainingType.Name #> and its dependencies.
             // This causes time spent in the Constructor to appear on INIT_REPORTs
             _ = serviceProvider.GetRequiredService<<#= _model.LambdaMethod.ContainingType.Name #>>();
-        <#
+<#
         }
         else
         {
-            #>
+#>
             var services = new ServiceCollection();
 
             // By default, Lambda function class is added to the service container using the singleton lifetime
@@ -78,8 +78,8 @@
             // Intentionally eagerly build <#= _model.LambdaMethod.ContainingType.Name #> and its dependencies.
             // This causes time spent in the Constructor to appear on INIT_REPORTs
             _ = serviceProvider.GetRequiredService<<#= _model.LambdaMethod.ContainingType.Name #>>();
-        <#
-        }
+<#
+    }
     }
     else
     {
@@ -87,5 +87,6 @@
             <#= _model.LambdaMethod.ContainingType.Name.ToCamelCase() #> = new <#= _model.LambdaMethod.ContainingType.Name #>();
             serializer = new <#= _model.SerializerInfo.SerializerName #>();
 <#
-    }#>
+    }
+#>
         }
