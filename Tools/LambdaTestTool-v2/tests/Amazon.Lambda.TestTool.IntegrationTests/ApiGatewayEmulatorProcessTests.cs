@@ -21,6 +21,7 @@ using Amazon.Lambda.TestTool.Tests.Common.Retries;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
+[Collection("Serial")]
 public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
 {
     private readonly Mock<IEnvironmentManager> _mockEnvironmentManager = new();
@@ -28,7 +29,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
     private readonly Mock<IRemainingArguments> _mockRemainingArgs = new();
     private CancellationTokenSource _cancellationTokenSource = new();
 
-    [RetryFact]
+    [Fact]
     public async Task TestLambdaToUpperV2()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
@@ -68,7 +69,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
         }
     }
 
-    [RetryFact]
+    [Fact]
     public async Task TestLambdaToUpperRest()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
@@ -109,7 +110,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
         }
     }
 
-    [RetryFact]
+    [Fact]
     public async Task TestLambdaToUpperV1()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
@@ -150,7 +151,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
         }
     }
 
-    [RetryFact]
+    [Fact]
     public async Task TestLambdaBinaryResponse()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
@@ -208,7 +209,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
         }
     }
 
-    [RetryFact]
+    [Fact]
     public async Task TestLambdaReturnString()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
@@ -244,7 +245,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
         }
     }
 
-    [RetryFact]
+    [Fact]
     public async Task TestLambdaWithNullEndpoint()
     {
         var (lambdaPort, apiGatewayPort) = await GetFreePorts();
