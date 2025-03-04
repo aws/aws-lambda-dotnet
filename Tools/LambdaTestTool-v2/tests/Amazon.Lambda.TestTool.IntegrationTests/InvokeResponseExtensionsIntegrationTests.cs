@@ -53,8 +53,8 @@ public class InvokeResponseExtensionsIntegrationTests
 
         // Assert
         var apiUrl = emulatorMode == ApiGatewayEmulatorMode.Rest
-            ? _fixture.ParseAndReturnBodyRestApiUrl
-            : _fixture.ParseAndReturnBodyHttpApiV1Url;
+            ? _fixture.GetRouteUrl(_fixture.MainRestApiBaseUrl, TestRoutes.Ids.ParseAndReturnBody)
+            : _fixture.GetRouteUrl(_fixture.MainHttpApiV1BaseUrl, TestRoutes.Ids.ParseAndReturnBody);
         var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, apiUrl, emulatorMode);
         await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
     }
@@ -78,7 +78,8 @@ public class InvokeResponseExtensionsIntegrationTests
         var convertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
 
         // Assert
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, _fixture.ParseAndReturnBodyHttpApiV2Url);
+        var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV2BaseUrl, TestRoutes.Ids.ParseAndReturnBody);
+        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, url);
         await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
     }
 
@@ -101,8 +102,8 @@ public class InvokeResponseExtensionsIntegrationTests
         Assert.Contains(expectedErrorMessage, convertedResponse.Body);
 
         var apiUrl = emulatorMode == ApiGatewayEmulatorMode.Rest
-            ? _fixture.ParseAndReturnBodyRestApiUrl
-            : _fixture.ParseAndReturnBodyHttpApiV1Url;
+            ? _fixture.GetRouteUrl(_fixture.MainRestApiBaseUrl, TestRoutes.Ids.ParseAndReturnBody)
+            : _fixture.GetRouteUrl(_fixture.MainHttpApiV1BaseUrl, TestRoutes.Ids.ParseAndReturnBody);
         var (actualResponse, _) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, apiUrl, emulatorMode);
         Assert.Equal(expectedStatusCode, (int)actualResponse.StatusCode);
         var content = await actualResponse.Content.ReadAsStringAsync();
@@ -161,7 +162,8 @@ public class InvokeResponseExtensionsIntegrationTests
         Assert.Equal("application/json", actualConvertedResponse.Headers["Content-Type"]);
 
         // Verify against actual API Gateway behavior
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(actualConvertedResponse, _fixture.ParseAndReturnBodyHttpApiV2Url);
+        var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV2BaseUrl, TestRoutes.Ids.ParseAndReturnBody);
+        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(actualConvertedResponse, url);
         await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
 
         // Additional checks for API Gateway specific behavior
@@ -190,7 +192,8 @@ public class InvokeResponseExtensionsIntegrationTests
         Assert.Equal("application/json", convertedResponse.Headers["Content-Type"]);
 
         // Verify against actual API Gateway behavior
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, _fixture.ParseAndReturnBodyHttpApiV2Url);
+        var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV2BaseUrl, TestRoutes.Ids.ParseAndReturnBody);
+        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, url);
         await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
 
         // Additional checks for API Gateway specific behavior

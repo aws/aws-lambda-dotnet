@@ -12,39 +12,23 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 {
     public class ApiGatewayIntegrationTestFixture : IAsyncLifetime
     {
+        private readonly Dictionary<string, TestRouteConfig> _testRoutes;
+        
         public CloudFormationHelper CloudFormationHelper { get; private set; }
         public ApiGatewayHelper ApiGatewayHelper { get; private set; }
         public ApiGatewayTestHelper ApiGatewayTestHelper { get; private set; }
 
         public string StackName { get; private set; }
 
-        // ParseAndReturnBody
-        public string ParseAndReturnBodyRestApiId { get; private set; }
-        public string ParseAndReturnBodyHttpApiV1Id { get; private set; }
-        public string ParseAndReturnBodyHttpApiV2Id { get; private set; }
-        public string ParseAndReturnBodyRestApiUrl { get; private set; }
-        public string ParseAndReturnBodyHttpApiV1Url { get; private set; }
-        public string ParseAndReturnBodyHttpApiV2Url { get; private set; }
+        // Main API Gateway IDs
+        public string MainRestApiId { get; private set; }
+        public string MainHttpApiV1Id { get; private set; }
+        public string MainHttpApiV2Id { get; private set; }
 
-        // ReturnRawBody
-        public string ReturnRawBodyRestApiId { get; private set; }
-        public string ReturnRawBodyHttpApiV1Id { get; private set; }
-        public string ReturnRawBodyHttpApiV2Id { get; private set; }
-        public string ReturnRawBodyRestApiUrl { get; private set; }
-        public string ReturnRawBodyHttpApiV1Url { get; private set; }
-        public string ReturnRawBodyHttpApiV2Url { get; private set; }
-
-        // ReturnFullEvent
-        public string ReturnFullEventRestApiId { get; private set; }
-        public string ReturnFullEventHttpApiV1Id { get; private set; }
-        public string ReturnFullEventHttpApiV2Id { get; private set; }
-        public string ReturnFullEventRestApiUrl { get; private set; }
-        public string ReturnFullEventHttpApiV1Url { get; private set; }
-        public string ReturnFullEventHttpApiV2Url { get; private set; }
-
-        // ReturnDecodedParseBin
-        public string BinaryMediaTypeRestApiId { get; private set; }
-        public string BinaryMediaTypeRestApiUrl { get; private set; }
+        // Base URLs
+        public string MainRestApiBaseUrl { get; private set; }
+        public string MainHttpApiV1BaseUrl { get; private set; }
+        public string MainHttpApiV2BaseUrl { get; private set; }
 
         // Lambda Function ARNs
         public string ParseAndReturnBodyLambdaFunctionArn { get; private set; }
@@ -60,41 +44,32 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 new AmazonApiGatewayV2Client(regionEndpoint)
             );
             ApiGatewayTestHelper = new ApiGatewayTestHelper();
+            _testRoutes = new Dictionary<string, TestRouteConfig>();
 
             StackName = string.Empty;
-
-            // ParseAndReturnBody
-            ParseAndReturnBodyRestApiId = string.Empty;
-            ParseAndReturnBodyHttpApiV1Id = string.Empty;
-            ParseAndReturnBodyHttpApiV2Id = string.Empty;
-            ParseAndReturnBodyRestApiUrl = string.Empty;
-            ParseAndReturnBodyHttpApiV1Url = string.Empty;
-            ParseAndReturnBodyHttpApiV2Url = string.Empty;
-
-            // ReturnRawBody
-            ReturnRawBodyRestApiId = string.Empty;
-            ReturnRawBodyHttpApiV1Id = string.Empty;
-            ReturnRawBodyHttpApiV2Id = string.Empty;
-            ReturnRawBodyRestApiUrl = string.Empty;
-            ReturnRawBodyHttpApiV1Url = string.Empty;
-            ReturnRawBodyHttpApiV2Url = string.Empty;
-
-            // ReturnFullEvent
-            ReturnFullEventRestApiId = string.Empty;
-            ReturnFullEventHttpApiV1Id = string.Empty;
-            ReturnFullEventHttpApiV2Id = string.Empty;
-            ReturnFullEventRestApiUrl = string.Empty;
-            ReturnFullEventHttpApiV1Url = string.Empty;
-            ReturnFullEventHttpApiV2Url = string.Empty;
-
-            // BinaryMediaTypeRestApiId
-            BinaryMediaTypeRestApiId = string.Empty;
-            BinaryMediaTypeRestApiUrl = string.Empty;
-
-            // Lambda Function ARNs
+            MainRestApiId = string.Empty;
+            MainHttpApiV1Id = string.Empty;
+            MainHttpApiV2Id = string.Empty;
+            MainRestApiBaseUrl = string.Empty;
+            MainHttpApiV1BaseUrl = string.Empty;
+            MainHttpApiV2BaseUrl = string.Empty;
             ParseAndReturnBodyLambdaFunctionArn = string.Empty;
             ReturnRawBodyLambdaFunctionArn = string.Empty;
             ReturnFullEventLambdaFunctionArn = string.Empty;
+        }
+
+        public void RegisterTestRoute(string routeId, TestRouteConfig config)
+        {
+            _testRoutes[routeId] = config;
+        }
+
+        public string GetRouteUrl(string baseUrl, string routeId)
+        {
+            if (!_testRoutes.TryGetValue(routeId, out var config))
+            {
+                throw new KeyNotFoundException($"Route {routeId} not found");
+            }
+            return baseUrl.TrimEnd('/') + config.Path;
         }
 
         public async Task InitializeAsync()
@@ -106,7 +81,59 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 
             await WaitForStackCreationComplete();
             await RetrieveStackOutputs();
-            await WaitForApisAvailability();
+
+            // Register all test routes
+            foreach (var route in TestRoutes.GetDefaultRoutes(this))
+            {
+                RegisterTestRoute(route.Key, route.Value);
+            }
+
+            // Setup all routes
+            await SetupTestRoutes();
+            await WaitForRoutesAvailability();
+        }
+
+        private async Task SetupTestRoutes()
+        {
+            foreach (var (routeId, config) in _testRoutes)
+            {
+                // Add route to REST API
+                await ApiGatewayHelper.AddRouteToRestApi(
+                    MainRestApiId,
+                    config.LambdaFunctionArn,
+                    config.Path,
+                    config.HttpMethod);
+
+                // Add route to HTTP API v1
+                await ApiGatewayHelper.AddRouteToHttpApi(
+                    MainHttpApiV1Id,
+                    config.LambdaFunctionArn,
+                    "1.0",
+                    config.Path,
+                    config.HttpMethod);
+
+                // Add route to HTTP API v2
+                await ApiGatewayHelper.AddRouteToHttpApi(
+                    MainHttpApiV2Id,
+                    config.LambdaFunctionArn,
+                    "2.0",
+                    config.Path,
+                    config.HttpMethod);
+            }
+        }
+
+        private async Task WaitForRoutesAvailability()
+        {
+            foreach (var config in _testRoutes.Values)
+            {
+                var restUrl = MainRestApiBaseUrl.TrimEnd('/') + config.Path;
+                var httpV1Url = MainHttpApiV1BaseUrl.TrimEnd('/') + config.Path;
+                var httpV2Url = MainHttpApiV2BaseUrl.TrimEnd('/') + config.Path;
+
+                await ApiGatewayHelper.WaitForApiAvailability(MainRestApiId, restUrl, false);
+                await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV1Id, httpV1Url, true);
+                await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV2Id, httpV2Url, true);
+            }
         }
 
         private string ReadCloudFormationTemplate(string fileName)
@@ -146,59 +173,17 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 
         private async Task RetrieveStackOutputs()
         {
-            // ParseAndReturnBody
-            ParseAndReturnBodyRestApiId = await CloudFormationHelper.GetOutputValueAsync(StackName, "ParseAndReturnBodyRestApiId");
-            ParseAndReturnBodyHttpApiV1Id = await CloudFormationHelper.GetOutputValueAsync(StackName, "ParseAndReturnBodyHttpApiV1Id");
-            ParseAndReturnBodyHttpApiV2Id = await CloudFormationHelper.GetOutputValueAsync(StackName, "ParseAndReturnBodyHttpApiV2Id");
-            ParseAndReturnBodyRestApiUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "ParseAndReturnBodyRestApiUrl");
-            ParseAndReturnBodyHttpApiV1Url = await CloudFormationHelper.GetOutputValueAsync(StackName, "ParseAndReturnBodyHttpApiV1Url");
-            ParseAndReturnBodyHttpApiV2Url = await CloudFormationHelper.GetOutputValueAsync(StackName, "ParseAndReturnBodyHttpApiV2Url");
+            MainRestApiId = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainRestApiId");
+            MainHttpApiV1Id = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainHttpApiV1Id");
+            MainHttpApiV2Id = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainHttpApiV2Id");
+            
+            MainRestApiBaseUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainRestApiBaseUrl");
+            MainHttpApiV1BaseUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainHttpApiV1BaseUrl");
+            MainHttpApiV2BaseUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainHttpApiV2BaseUrl");
 
-            // ReturnRawBody
-            ReturnRawBodyRestApiId = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnRawBodyRestApiId");
-            ReturnRawBodyHttpApiV1Id = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnRawBodyHttpApiV1Id");
-            ReturnRawBodyHttpApiV2Id = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnRawBodyHttpApiV2Id");
-            ReturnRawBodyRestApiUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnRawBodyRestApiUrl");
-            ReturnRawBodyHttpApiV1Url = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnRawBodyHttpApiV1Url");
-            ReturnRawBodyHttpApiV2Url = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnRawBodyHttpApiV2Url");
-
-            // ReturnFullEvent
-            ReturnFullEventRestApiId = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnFullEventRestApiId");
-            ReturnFullEventHttpApiV1Id = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnFullEventHttpApiV1Id");
-            ReturnFullEventHttpApiV2Id = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnFullEventHttpApiV2Id");
-            ReturnFullEventRestApiUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnFullEventRestApiUrl");
-            ReturnFullEventHttpApiV1Url = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnFullEventHttpApiV1Url");
-            ReturnFullEventHttpApiV2Url = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnFullEventHttpApiV2Url");
-
-            // ReturnDecodedParseBin
-            BinaryMediaTypeRestApiId = await CloudFormationHelper.GetOutputValueAsync(StackName, "BinaryMediaTypeRestApiId");
-            BinaryMediaTypeRestApiUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "BinaryMediaTypeRestApiUrl");
-
-            // Lambda Function ARNs
             ParseAndReturnBodyLambdaFunctionArn = await CloudFormationHelper.GetOutputValueAsync(StackName, "ParseAndReturnBodyLambdaFunctionArn");
             ReturnRawBodyLambdaFunctionArn = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnRawBodyLambdaFunctionArn");
             ReturnFullEventLambdaFunctionArn = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnFullEventLambdaFunctionArn");
-        }
-
-        private async Task WaitForApisAvailability()
-        {
-            // ParseAndReturnBody
-            await ApiGatewayHelper.WaitForApiAvailability(ParseAndReturnBodyRestApiId, ParseAndReturnBodyRestApiUrl, false);
-            await ApiGatewayHelper.WaitForApiAvailability(ParseAndReturnBodyHttpApiV1Id, ParseAndReturnBodyHttpApiV1Url, true);
-            await ApiGatewayHelper.WaitForApiAvailability(ParseAndReturnBodyHttpApiV2Id, ParseAndReturnBodyHttpApiV2Url, true);
-
-            // ReturnRawBody
-            await ApiGatewayHelper.WaitForApiAvailability(ReturnRawBodyRestApiId, ReturnRawBodyRestApiUrl, false);
-            await ApiGatewayHelper.WaitForApiAvailability(ReturnRawBodyHttpApiV1Id, ReturnRawBodyHttpApiV1Url, true);
-            await ApiGatewayHelper.WaitForApiAvailability(ReturnRawBodyHttpApiV2Id, ReturnRawBodyHttpApiV2Url, true);
-
-            // ReturnFullEvent
-            await ApiGatewayHelper.WaitForApiAvailability(ReturnFullEventRestApiId, ReturnFullEventRestApiUrl, false);
-            await ApiGatewayHelper.WaitForApiAvailability(ReturnFullEventHttpApiV1Id, ReturnFullEventHttpApiV1Url, true);
-            await ApiGatewayHelper.WaitForApiAvailability(ReturnFullEventHttpApiV2Id, ReturnFullEventHttpApiV2Url, true);
-
-            await ApiGatewayHelper.WaitForApiAvailability(BinaryMediaTypeRestApiId, BinaryMediaTypeRestApiUrl, false);
-
         }
 
         public async Task DisposeAsync()

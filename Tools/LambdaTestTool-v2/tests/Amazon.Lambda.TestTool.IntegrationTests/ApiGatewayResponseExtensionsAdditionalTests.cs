@@ -36,7 +36,9 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             var httpContext = new DefaultHttpContext();
             httpContext.Response.Body = new MemoryStream();
             await testResponse.ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.Rest);
-            var actualResponse = await _httpClient.PostAsync(_fixture.BinaryMediaTypeRestApiUrl, new StringContent(JsonSerializer.Serialize(testResponse)));
+            
+            var url = _fixture.GetRouteUrl(_fixture.MainRestApiBaseUrl, TestRoutes.Ids.BinaryMediaType);
+            var actualResponse = await _httpClient.PostAsync(url, new StringContent(JsonSerializer.Serialize(testResponse)));
             await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpContext.Response);
             Assert.Equal(200, (int)actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
@@ -56,7 +58,9 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             var httpContext = new DefaultHttpContext();
             httpContext.Response.Body = new MemoryStream();
             await testResponse.ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.HttpV1);
-            var actualResponse = await _httpClient.PostAsync(_fixture.ParseAndReturnBodyHttpApiV1Url, new StringContent(JsonSerializer.Serialize(testResponse)));
+            
+            var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV1BaseUrl, TestRoutes.Ids.ParseAndReturnBody);
+            var actualResponse = await _httpClient.PostAsync(url, new StringContent(JsonSerializer.Serialize(testResponse)));
 
             await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpContext.Response);
             Assert.Equal(200, (int)actualResponse.StatusCode);

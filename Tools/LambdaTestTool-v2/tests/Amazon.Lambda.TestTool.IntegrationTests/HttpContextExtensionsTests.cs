@@ -29,10 +29,10 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV1_REST(string testName, HttpContextTestCase testCase)
         {
-            var route = testCase.ApiGatewayRouteConfig?.Path ?? "/test";
-            await _fixture.ApiGatewayHelper.AddRouteToRestApi(_fixture.ReturnFullEventRestApiId, _fixture.ReturnFullEventLambdaFunctionArn, route);
-            await RunApiGatewayTest<APIGatewayProxyRequest>(testCase, _fixture.ReturnFullEventRestApiUrl, _fixture.ReturnFullEventRestApiId,
-                async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.Rest), ApiGatewayEmulatorMode.Rest);
+            var url = _fixture.GetRouteUrl(_fixture.MainRestApiBaseUrl, TestRoutes.Ids.ReturnFullEvent);
+            await RunApiGatewayTest<APIGatewayProxyRequest>(testCase, url, _fixture.MainRestApiId,
+                async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.Rest),
+                ApiGatewayEmulatorMode.Rest);
         }
 
         [Theory]
@@ -40,11 +40,10 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV1_HTTP(string testName, HttpContextTestCase testCase)
         {
-            var route = testCase.ApiGatewayRouteConfig?.Path ?? "/test";
-            var routeKey = testCase.ApiGatewayRouteConfig?.HttpMethod ?? "POST";
-            await _fixture.ApiGatewayHelper.AddRouteToHttpApi(_fixture.ReturnFullEventHttpApiV1Id, _fixture.ReturnFullEventLambdaFunctionArn, "1.0", route, routeKey);
-            await RunApiGatewayTest<APIGatewayProxyRequest>(testCase, _fixture.ReturnFullEventHttpApiV1Url, _fixture.ReturnFullEventHttpApiV1Id,
-                async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.HttpV1), ApiGatewayEmulatorMode.HttpV1);
+            var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV1BaseUrl, TestRoutes.Ids.ReturnFullEvent);
+            await RunApiGatewayTest<APIGatewayProxyRequest>(testCase, url, _fixture.MainHttpApiV1Id,
+                async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.HttpV1),
+                ApiGatewayEmulatorMode.HttpV1);
         }
 
         [Theory]
@@ -52,11 +51,10 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV2(string testName, HttpContextTestCase testCase)
         {
-            var route = testCase.ApiGatewayRouteConfig?.Path ?? "/test";
-            var routeKey = testCase.ApiGatewayRouteConfig?.HttpMethod ?? "POST";
-            await _fixture.ApiGatewayHelper.AddRouteToHttpApi(_fixture.ReturnFullEventHttpApiV2Id, _fixture.ReturnFullEventLambdaFunctionArn, "2.0", route, routeKey);
-            await RunApiGatewayTest<APIGatewayHttpApiV2ProxyRequest>(testCase, _fixture.ReturnFullEventHttpApiV2Url, _fixture.ReturnFullEventHttpApiV2Id,
-                async (context, config) => await context.ToApiGatewayHttpV2Request(config), ApiGatewayEmulatorMode.HttpV2);
+            var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV2BaseUrl, TestRoutes.Ids.ReturnFullEvent);
+            await RunApiGatewayTest<APIGatewayHttpApiV2ProxyRequest>(testCase, url, _fixture.MainHttpApiV2Id,
+                async (context, config) => await context.ToApiGatewayHttpV2Request(config),
+                ApiGatewayEmulatorMode.HttpV2);
         }
 
         [Fact]
@@ -89,14 +87,11 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 }
             };
 
-            var route = testCase.ApiGatewayRouteConfig?.Path ?? "/test";
-            var routeKey = testCase.ApiGatewayRouteConfig?.HttpMethod ?? "POST";
-            await _fixture.ApiGatewayHelper.AddRouteToHttpApi(_fixture.ReturnFullEventHttpApiV1Id, _fixture.ReturnFullEventLambdaFunctionArn, "1.0", route, routeKey);
-
+            var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV1BaseUrl, TestRoutes.Ids.BinaryMediaType);
             await RunApiGatewayTest<APIGatewayProxyRequest>(
                 testCase,
-                _fixture.ReturnFullEventHttpApiV1Url,
-                _fixture.ReturnFullEventHttpApiV1Id,
+                url,
+                _fixture.MainHttpApiV1Id,
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.HttpV1),
                 ApiGatewayEmulatorMode.HttpV1
             );
@@ -132,14 +127,11 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 }
             };
 
-            var route = testCase.ApiGatewayRouteConfig?.Path ?? "/test";
-            var routeKey = testCase.ApiGatewayRouteConfig?.HttpMethod ?? "POST";
-            await _fixture.ApiGatewayHelper.AddRouteToRestApi(_fixture.BinaryMediaTypeRestApiId, _fixture.ReturnFullEventLambdaFunctionArn, route, routeKey);
-
+            var url = _fixture.GetRouteUrl(_fixture.MainRestApiBaseUrl, TestRoutes.Ids.BinaryMediaType);
             await RunApiGatewayTest<APIGatewayProxyRequest>(
                 testCase,
-                _fixture.BinaryMediaTypeRestApiUrl,
-                _fixture.BinaryMediaTypeRestApiId,
+                url,
+                _fixture.MainRestApiId,
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest),
                 ApiGatewayEmulatorMode.Rest
             );
