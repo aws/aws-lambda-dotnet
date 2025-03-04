@@ -20,44 +20,88 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             _fixture = fixture;
         }
 
+        private string GetUniqueRoutePath() => $"/test-{Guid.NewGuid():N}";
+
         [Theory]
         [MemberData(nameof(ApiGatewayResponseTestCases.V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV1_REST(string testName, ApiGatewayResponseTestCase testCase)
         {
-            await RetryHelper.RetryOperation(async () =>
+            var uniqueRoute = GetUniqueRoutePath();
+            var routeId = await _fixture.ApiGatewayHelper.AddRouteToRestApi(
+                _fixture.BaseRestApiId,
+                _fixture.ParseAndReturnBodyLambdaFunctionArn,
+                uniqueRoute);
+
+            try
             {
-                await RunV1Test(testCase, _fixture.ParseAndReturnBodyRestApiUrl, ApiGatewayEmulatorMode.Rest);
-                return true;
-            });
+                await RetryHelper.RetryOperation(async () =>
+                {
+                    await RunV1Test(testCase, _fixture.BaseRestApiUrl + uniqueRoute, ApiGatewayEmulatorMode.Rest);
+                    return true;
+                });
+            }
+            finally
+            {
+                await _fixture.ApiGatewayHelper.DeleteRouteFromRestApi(_fixture.BaseRestApiId, routeId);
+            }
         }
 
         [Theory]
         [MemberData(nameof(ApiGatewayResponseTestCases.V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV1_HTTP(string testName, ApiGatewayResponseTestCase testCase)
         {
-            await RetryHelper.RetryOperation(async () =>
+            var uniqueRoute = GetUniqueRoutePath();
+            var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
+                _fixture.BaseHttpApiV1Id,
+                _fixture.ParseAndReturnBodyLambdaFunctionArn,
+                "1.0",
+                uniqueRoute,
+                "POST");
+
+            try
             {
-                await RunV1Test(testCase, _fixture.ParseAndReturnBodyHttpApiV1Url, ApiGatewayEmulatorMode.HttpV1);
-                return true;
-            });
+                await RetryHelper.RetryOperation(async () =>
+                {
+                    await RunV1Test(testCase, _fixture.BaseHttpApiV1Url + uniqueRoute, ApiGatewayEmulatorMode.HttpV1);
+                    return true;
+                });
+            }
+            finally
+            {
+                await _fixture.ApiGatewayHelper.DeleteRouteFromHttpApi(_fixture.BaseHttpApiV1Id, routeId);
+            }
         }
 
         [Theory]
         [MemberData(nameof(ApiGatewayResponseTestCases.V2TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV2(string testName, ApiGatewayResponseTestCase testCase)
         {
-            await RetryHelper.RetryOperation(async () =>
+            var uniqueRoute = GetUniqueRoutePath();
+            var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
+                _fixture.BaseHttpApiV2Id,
+                _fixture.ParseAndReturnBodyLambdaFunctionArn,
+                "2.0",
+                uniqueRoute,
+                "POST");
+
+            try
             {
-                var testResponse = testCase.Response as APIGatewayHttpApiV2ProxyResponse;
-                Assert.NotNull(testResponse);
-                var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(testResponse, _fixture.ParseAndReturnBodyHttpApiV2Url);
-                await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
-                await testCase.IntegrationAssertions(actualResponse, ApiGatewayEmulatorMode.HttpV2);
-                return true;
-            });
+                await RetryHelper.RetryOperation(async () =>
+                {
+                    var testResponse = testCase.Response as APIGatewayHttpApiV2ProxyResponse;
+                    Assert.NotNull(testResponse);
+                    var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(
+                        testResponse, 
+                        _fixture.BaseHttpApiV2Url + uniqueRoute);
+                    await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
+                    await testCase.IntegrationAssertions(actualResponse, ApiGatewayEmulatorMode.HttpV2);
+                    return true;
+                });
+            }
+            finally
+            {
+                await _fixture.ApiGatewayHelper.DeleteRouteFromHttpApi(_fixture.BaseHttpApiV2Id, routeId);
+            }
         }
 
         private async Task RunV1Test(ApiGatewayResponseTestCase testCase, string apiUrl, ApiGatewayEmulatorMode emulatorMode)

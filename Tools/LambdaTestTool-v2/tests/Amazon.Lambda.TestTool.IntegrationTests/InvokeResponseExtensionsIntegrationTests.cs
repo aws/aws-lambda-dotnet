@@ -31,82 +31,178 @@ public class InvokeResponseExtensionsIntegrationTests
         _fixture = fixture;
     }
 
+    private string GetUniqueRoutePath() => $"/test-{Guid.NewGuid():N}";
+
     [Theory]
     [InlineData(ApiGatewayEmulatorMode.Rest)]
     [InlineData(ApiGatewayEmulatorMode.HttpV1)]
     public async Task ToApiGatewayProxyResponse_ValidResponse_MatchesDirectConversion(ApiGatewayEmulatorMode emulatorMode)
     {
-        // Arrange
-        var testResponse = new APIGatewayProxyResponse
+        var uniqueRoute = GetUniqueRoutePath();
+        string routeId;
+        string apiUrl;
+        if (emulatorMode == ApiGatewayEmulatorMode.Rest)
         {
-            StatusCode = 200,
-            Body = JsonSerializer.Serialize(new { message = "Hello, World!" }),
-            Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-        };
-        var invokeResponse = new InvokeResponse
+            routeId = await _fixture.ApiGatewayHelper.AddRouteToRestApi(
+                _fixture.BaseRestApiId,
+                _fixture.ParseAndReturnBodyLambdaFunctionArn,
+                uniqueRoute);
+            apiUrl = _fixture.BaseRestApiUrl + uniqueRoute;
+        }
+        else
         {
-            Payload = new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(testResponse)))
-        };
+            routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
+                _fixture.BaseHttpApiV1Id,
+                _fixture.ParseAndReturnBodyLambdaFunctionArn,
+                "1.0",
+                uniqueRoute,
+                "POST");
+            apiUrl = _fixture.BaseHttpApiV1Url + uniqueRoute;
+        }
 
-        // Act
-        var convertedResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
+        try
+        {
+            // Arrange
+            var testResponse = new APIGatewayProxyResponse
+            {
+                StatusCode = 200,
+                Body = JsonSerializer.Serialize(new { message = "Hello, World!" }),
+                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+            };
+            var invokeResponse = new InvokeResponse
+            {
+                Payload = new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(testResponse)))
+            };
 
-        // Assert
-        var apiUrl = emulatorMode == ApiGatewayEmulatorMode.Rest
-            ? _fixture.ParseAndReturnBodyRestApiUrl
-            : _fixture.ParseAndReturnBodyHttpApiV1Url;
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, apiUrl, emulatorMode);
-        await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
+            // Act
+            var convertedResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
+
+            // Assert
+            var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(
+                convertedResponse, 
+                apiUrl, 
+                emulatorMode);
+            await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
+        }
+        finally
+        {
+            // Cleanup
+            if (emulatorMode == ApiGatewayEmulatorMode.Rest)
+            {
+                await _fixture.ApiGatewayHelper.DeleteRouteFromRestApi(_fixture.BaseRestApiId, routeId);
+            }
+            else
+            {
+                await _fixture.ApiGatewayHelper.DeleteRouteFromHttpApi(_fixture.BaseHttpApiV1Id, routeId);
+            }
+        }
     }
 
     [Fact]
     public async Task ToApiGatewayHttpApiV2ProxyResponse_ValidResponse_MatchesDirectConversion()
     {
-        // Arrange
-        var testResponse = new APIGatewayHttpApiV2ProxyResponse
-        {
-            StatusCode = 200,
-            Body = JsonSerializer.Serialize(new { message = "Hello, World!" }),
-            Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-        };
-        var invokeResponse = new InvokeResponse
-        {
-            Payload = new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(testResponse)))
-        };
+        var uniqueRoute = GetUniqueRoutePath();
+        var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
+            _fixture.BaseHttpApiV2Id,
+            _fixture.ParseAndReturnBodyLambdaFunctionArn,
+            "2.0",
+            uniqueRoute,
+            "POST");
 
-        // Act
-        var convertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+        try
+        {
+            // Arrange
+            var testResponse = new APIGatewayHttpApiV2ProxyResponse
+            {
+                StatusCode = 200,
+                Body = JsonSerializer.Serialize(new { message = "Hello, World!" }),
+                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+            };
+            var invokeResponse = new InvokeResponse
+            {
+                Payload = new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(testResponse)))
+            };
 
-        // Assert
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, _fixture.ParseAndReturnBodyHttpApiV2Url);
-        await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
+            // Act
+            var convertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+
+            // Assert
+            var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(
+                convertedResponse, 
+                _fixture.BaseHttpApiV2Url + uniqueRoute);
+            await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
+        }
+        finally
+        {
+            await _fixture.ApiGatewayHelper.DeleteRouteFromHttpApi(_fixture.BaseHttpApiV2Id, routeId);
+        }
     }
 
     [Theory]
     [InlineData(ApiGatewayEmulatorMode.Rest, 502, "Internal server error")]
     [InlineData(ApiGatewayEmulatorMode.HttpV1, 500, "Internal Server Error")]
-    public async Task ToApiGatewayProxyResponse_InvalidJson_ReturnsErrorResponse(ApiGatewayEmulatorMode emulatorMode, int expectedStatusCode, string expectedErrorMessage)
+    public async Task ToApiGatewayProxyResponse_InvalidJson_ReturnsErrorResponse(
+        ApiGatewayEmulatorMode emulatorMode, 
+        int expectedStatusCode, 
+        string expectedErrorMessage)
     {
-        // Arrange
-        var invokeResponse = new InvokeResponse
+        var uniqueRoute = GetUniqueRoutePath();
+        string routeId;
+        string apiUrl;
+        if (emulatorMode == ApiGatewayEmulatorMode.Rest)
         {
-            Payload = new MemoryStream(Encoding.UTF8.GetBytes("Not a valid proxy response object"))
-        };
+            routeId = await _fixture.ApiGatewayHelper.AddRouteToRestApi(
+                _fixture.BaseRestApiId,
+                _fixture.ParseAndReturnBodyLambdaFunctionArn,
+                uniqueRoute);
+            apiUrl = _fixture.BaseRestApiUrl + uniqueRoute;
+        }
+        else
+        {
+            routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
+                _fixture.BaseHttpApiV1Id,
+                _fixture.ParseAndReturnBodyLambdaFunctionArn,
+                "1.0",
+                uniqueRoute,
+                "POST");
+            apiUrl = _fixture.BaseHttpApiV1Url + uniqueRoute;
+        }
 
-        // Act
-        var convertedResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
+        try
+        {
+            // Arrange
+            var invokeResponse = new InvokeResponse
+            {
+                Payload = new MemoryStream(Encoding.UTF8.GetBytes("Not a valid proxy response object"))
+            };
 
-        // Assert
-        Assert.Equal(expectedStatusCode, convertedResponse.StatusCode);
-        Assert.Contains(expectedErrorMessage, convertedResponse.Body);
+            // Act
+            var convertedResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
 
-        var apiUrl = emulatorMode == ApiGatewayEmulatorMode.Rest
-            ? _fixture.ParseAndReturnBodyRestApiUrl
-            : _fixture.ParseAndReturnBodyHttpApiV1Url;
-        var (actualResponse, _) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, apiUrl, emulatorMode);
-        Assert.Equal(expectedStatusCode, (int)actualResponse.StatusCode);
-        var content = await actualResponse.Content.ReadAsStringAsync();
-        Assert.Contains(expectedErrorMessage, content);
+            // Assert
+            Assert.Equal(expectedStatusCode, convertedResponse.StatusCode);
+            Assert.Contains(expectedErrorMessage, convertedResponse.Body);
+
+            var (actualResponse, _) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(
+                convertedResponse, 
+                apiUrl, 
+                emulatorMode);
+            Assert.Equal(expectedStatusCode, (int)actualResponse.StatusCode);
+            var content = await actualResponse.Content.ReadAsStringAsync();
+            Assert.Contains(expectedErrorMessage, content);
+        }
+        finally
+        {
+            // Cleanup
+            if (emulatorMode == ApiGatewayEmulatorMode.Rest)
+            {
+                await _fixture.ApiGatewayHelper.DeleteRouteFromRestApi(_fixture.BaseRestApiId, routeId);
+            }
+            else
+            {
+                await _fixture.ApiGatewayHelper.DeleteRouteFromHttpApi(_fixture.BaseHttpApiV1Id, routeId);
+            }
+        }
     }
 
     /// <summary>
@@ -144,59 +240,91 @@ public class InvokeResponseExtensionsIntegrationTests
     [InlineData("\"Hello, World!\"", "Hello, World!")]  // JSON string with spaces
     [InlineData("\"\"", "")]  // Empty JSON string
     [InlineData("\"Special \\\"quoted\\\" text\"", "Special \"quoted\" text")]  // JSON string with escaped quotes
-    public async Task ToApiGatewayHttpApiV2ProxyResponse_VariousPayloads_ReturnsAsRawBody(string inputPayload, string expectedResponsePayload)
+    public async Task ToApiGatewayHttpApiV2ProxyResponse_VariousPayloads_ReturnsAsRawBody(
+        string inputPayload, 
+        string expectedResponsePayload)
     {
-        // Arrange
-        var invokeResponse = new InvokeResponse
+        var uniqueRoute = GetUniqueRoutePath();
+        var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
+            _fixture.BaseHttpApiV2Id,
+            _fixture.ParseAndReturnBodyLambdaFunctionArn,
+            "2.0",
+            uniqueRoute,
+            "POST");
+
+        try
         {
-            Payload = new MemoryStream(Encoding.UTF8.GetBytes(inputPayload))
-        };
+            // Arrange
+            var invokeResponse = new InvokeResponse
+            {
+                Payload = new MemoryStream(Encoding.UTF8.GetBytes(inputPayload))
+            };
 
-        // Act
-        var actualConvertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+            // Act
+            var actualConvertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
 
-        // Assert
-        Assert.Equal(200, actualConvertedResponse.StatusCode);
-        Assert.Equal(expectedResponsePayload, actualConvertedResponse.Body);
-        Assert.Equal("application/json", actualConvertedResponse.Headers["Content-Type"]);
+            // Assert
+            Assert.Equal(200, actualConvertedResponse.StatusCode);
+            Assert.Equal(expectedResponsePayload, actualConvertedResponse.Body);
+            Assert.Equal("application/json", actualConvertedResponse.Headers["Content-Type"]);
 
-        // Verify against actual API Gateway behavior
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(actualConvertedResponse, _fixture.ParseAndReturnBodyHttpApiV2Url);
-        await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
+            var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(
+                actualConvertedResponse, 
+                _fixture.BaseHttpApiV2Url + uniqueRoute);
+            await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
 
-        // Additional checks for API Gateway specific behavior
-        Assert.Equal(200, (int)actualResponse.StatusCode);
-        var actualContent = await actualResponse.Content.ReadAsStringAsync();
-        Assert.Equal(expectedResponsePayload, actualContent);
-        Assert.Equal("application/json", actualResponse.Content.Headers.ContentType?.ToString());
+            Assert.Equal(200, (int)actualResponse.StatusCode);
+            var actualContent = await actualResponse.Content.ReadAsStringAsync();
+            Assert.Equal(expectedResponsePayload, actualContent);
+            Assert.Equal("application/json", actualResponse.Content.Headers.ContentType?.ToString());
+        }
+        finally
+        {
+            await _fixture.ApiGatewayHelper.DeleteRouteFromHttpApi(_fixture.BaseHttpApiV2Id, routeId);
+        }
     }
 
     [Fact]
     public async Task ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError()
     {
-        // Arrange
-        var responsePayload = "{\"statusCode\": 200.5, \"body\": \"Hello\", \"headers\": {\"Content-Type\": \"text/plain\"}}";
-        var invokeResponse = new InvokeResponse
+        var uniqueRoute = GetUniqueRoutePath();
+        var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
+            _fixture.BaseHttpApiV2Id,
+            _fixture.ParseAndReturnBodyLambdaFunctionArn,
+            "2.0",
+            uniqueRoute,
+            "POST");
+
+        try
         {
-            Payload = new MemoryStream(Encoding.UTF8.GetBytes(responsePayload))
-        };
+            // Arrange
+            var responsePayload = "{\"statusCode\": 200.5, \"body\": \"Hello\", \"headers\": {\"Content-Type\": \"text/plain\"}}";
+            var invokeResponse = new InvokeResponse
+            {
+                Payload = new MemoryStream(Encoding.UTF8.GetBytes(responsePayload))
+            };
 
-        // Act
-        var convertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+            // Act
+            var convertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
 
-        // Assert
-        Assert.Equal(500, convertedResponse.StatusCode);
-        Assert.Equal("{\"message\":\"Internal Server Error\"}", convertedResponse.Body);
-        Assert.Equal("application/json", convertedResponse.Headers["Content-Type"]);
+            // Assert
+            Assert.Equal(500, convertedResponse.StatusCode);
+            Assert.Equal("{\"message\":\"Internal Server Error\"}", convertedResponse.Body);
+            Assert.Equal("application/json", convertedResponse.Headers["Content-Type"]);
 
-        // Verify against actual API Gateway behavior
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, _fixture.ParseAndReturnBodyHttpApiV2Url);
-        await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
+            var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(
+                convertedResponse, 
+                _fixture.BaseHttpApiV2Url + uniqueRoute);
+            await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
 
-        // Additional checks for API Gateway specific behavior
-        Assert.Equal(500, (int)actualResponse.StatusCode);
-        var content = await actualResponse.Content.ReadAsStringAsync();
-        Assert.Equal("{\"message\":\"Internal Server Error\"}", content);
-        Assert.Equal("application/json", actualResponse.Content.Headers.ContentType?.ToString());
+            Assert.Equal(500, (int)actualResponse.StatusCode);
+            var content = await actualResponse.Content.ReadAsStringAsync();
+            Assert.Equal("{\"message\":\"Internal Server Error\"}", content);
+            Assert.Equal("application/json", actualResponse.Content.Headers.ContentType?.ToString());
+        }
+        finally
+        {
+            await _fixture.ApiGatewayHelper.DeleteRouteFromHttpApi(_fixture.BaseHttpApiV2Id, routeId);
+        }
     }
 }

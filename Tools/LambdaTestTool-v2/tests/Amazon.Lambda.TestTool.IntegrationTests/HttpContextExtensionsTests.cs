@@ -24,15 +24,33 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             _fixture = fixture;
         }
 
+        private string GetUniqueRoutePath() => $"/test-{Guid.NewGuid():N}";
+
         [Theory]
         [MemberData(nameof(HttpContextTestCases.V1TestCases), MemberType = typeof(HttpContextTestCases))]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV1_REST(string testName, HttpContextTestCase testCase)
         {
-            var route = testCase.ApiGatewayRouteConfig?.Path ?? "/test";
-            await _fixture.ApiGatewayHelper.AddRouteToRestApi(_fixture.ReturnFullEventRestApiId, _fixture.ReturnFullEventLambdaFunctionArn, route);
-            await RunApiGatewayTest<APIGatewayProxyRequest>(testCase, _fixture.ReturnFullEventRestApiUrl, _fixture.ReturnFullEventRestApiId,
-                async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.Rest), ApiGatewayEmulatorMode.Rest);
+            var uniqueRoute = GetUniqueRoutePath();
+            var routeId = await _fixture.ApiGatewayHelper.AddRouteToRestApi(
+                _fixture.BaseRestApiId, 
+                _fixture.ReturnFullEventLambdaFunctionArn, 
+                uniqueRoute);
+
+            try 
+            {
+                await RunApiGatewayTest<APIGatewayProxyRequest>(
+                    testCase, 
+                    _fixture.BaseRestApiUrl + uniqueRoute, 
+                    _fixture.BaseRestApiId,
+                    async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.Rest), 
+                    ApiGatewayEmulatorMode.Rest);
+            }
+            finally 
+            {
+                // Clean up the route
+                await _fixture.ApiGatewayHelper.DeleteRouteFromRestApi(_fixture.BaseRestApiId, routeId);
+            }
         }
 
         [Theory]
@@ -62,16 +80,24 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [Fact]
         public async Task BinaryContentHttpV1()
         {
-            var httpContext = CreateHttpContext("POST", "/test3/api/users/123/avatar",
+            var uniqueRoute = GetUniqueRoutePath();
+            var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
+                _fixture.BaseHttpApiV1Id,
+                _fixture.ReturnFullEventLambdaFunctionArn,
+                "1.0",
+                uniqueRoute,
+                "POST");
+
+            var httpContext = CreateHttpContext("POST", uniqueRoute,
                          new Dictionary<string, StringValues> { { "Content-Type", "application/octet-stream" } },
                          body: new byte[] { 1, 2, 3, 4, 5 });
 
             var config = new ApiGatewayRouteConfig
             {
                 LambdaResourceName = "UploadAvatarFunction",
-                Endpoint = "/test3/api/users/{userId}/avatar",
+                Endpoint = uniqueRoute,
                 HttpMethod = "POST",
-                Path = "/test3/api/users/{userId}/avatar"
+                Path = uniqueRoute
             };
 
             var testCase = new HttpContextTestCase
@@ -84,18 +110,14 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                     Assert.True(typedRequest.IsBase64Encoded);
                     Assert.Equal(Convert.ToBase64String(new byte[] { 1, 2, 3, 4, 5 }), typedRequest.Body);
                     Assert.Equal("123", typedRequest.PathParameters["userId"]);
-                    Assert.Equal("/test3/api/users/{userId}/avatar", typedRequest.Resource);
+                    Assert.Equal(uniqueRoute, typedRequest.Resource);
                     Assert.Equal("POST", typedRequest.HttpMethod);
                 }
             };
 
-            var route = testCase.ApiGatewayRouteConfig?.Path ?? "/test";
-            var routeKey = testCase.ApiGatewayRouteConfig?.HttpMethod ?? "POST";
-            await _fixture.ApiGatewayHelper.AddRouteToHttpApi(_fixture.ReturnFullEventHttpApiV1Id, _fixture.ReturnFullEventLambdaFunctionArn, "1.0", route, routeKey);
-
             await RunApiGatewayTest<APIGatewayProxyRequest>(
                 testCase,
-                _fixture.ReturnFullEventHttpApiV1Url,
+                _fixture.ReturnFullEventHttpApiV1Url + uniqueRoute,
                 _fixture.ReturnFullEventHttpApiV1Id,
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.HttpV1),
                 ApiGatewayEmulatorMode.HttpV1
@@ -105,16 +127,23 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [Fact]
         public async Task BinaryContentRest()
         {
-            var httpContext = CreateHttpContext("POST", "/test4/api/users/123/avatar",
+            var uniqueRoute = GetUniqueRoutePath();
+            var routeId = await _fixture.ApiGatewayHelper.AddRouteToRestApi(
+                _fixture.BaseRestApiId,
+                _fixture.ReturnFullEventLambdaFunctionArn,
+                uniqueRoute,
+                binaryMediaTypes: new[] { "*/*" });
+
+            var httpContext = CreateHttpContext("POST", uniqueRoute,
                          new Dictionary<string, StringValues> { { "Content-Type", "application/octet-stream" } },
                          body: new byte[] { 1, 2, 3, 4, 5 });
 
             var config = new ApiGatewayRouteConfig
             {
                 LambdaResourceName = "UploadAvatarFunction",
-                Endpoint = "/test4/api/users/{userId}/avatar",
+                Endpoint = uniqueRoute,
                 HttpMethod = "POST",
-                Path = "/test4/api/users/{userId}/avatar"
+                Path = uniqueRoute
             };
 
             var testCase = new HttpContextTestCase
@@ -127,18 +156,14 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                     Assert.True(typedRequest.IsBase64Encoded);
                     Assert.Equal(Convert.ToBase64String(new byte[] { 1, 2, 3, 4, 5 }), typedRequest.Body);
                     Assert.Equal("123", typedRequest.PathParameters["userId"]);
-                    Assert.Equal("/test4/api/users/{userId}/avatar", typedRequest.Resource);
+                    Assert.Equal(uniqueRoute, typedRequest.Resource);
                     Assert.Equal("POST", typedRequest.HttpMethod);
                 }
             };
 
-            var route = testCase.ApiGatewayRouteConfig?.Path ?? "/test";
-            var routeKey = testCase.ApiGatewayRouteConfig?.HttpMethod ?? "POST";
-            await _fixture.ApiGatewayHelper.AddRouteToRestApi(_fixture.BinaryMediaTypeRestApiId, _fixture.ReturnFullEventLambdaFunctionArn, route, routeKey);
-
             await RunApiGatewayTest<APIGatewayProxyRequest>(
                 testCase,
-                _fixture.BinaryMediaTypeRestApiUrl,
+                _fixture.BinaryMediaTypeRestApiUrl + uniqueRoute,
                 _fixture.BinaryMediaTypeRestApiId,
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest),
                 ApiGatewayEmulatorMode.Rest
