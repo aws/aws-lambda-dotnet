@@ -65,6 +65,31 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 
         public void RegisterTestRoute(string routeId, TestRouteConfig config)
         {
+            if (string.IsNullOrEmpty(routeId))
+            {
+                throw new ArgumentNullException(nameof(routeId));
+            }
+
+            if (config == null)
+            {
+                throw new ArgumentNullException(nameof(config));
+            }
+
+            if (string.IsNullOrEmpty(config.Path))
+            {
+                throw new ArgumentException("Route path cannot be empty", nameof(config));
+            }
+
+            if (string.IsNullOrEmpty(config.HttpMethod))
+            {
+                throw new ArgumentException("HTTP method cannot be empty", nameof(config));
+            }
+
+            if (string.IsNullOrEmpty(config.LambdaFunctionArn))
+            {
+                throw new ArgumentException("Lambda function ARN cannot be empty", nameof(config));
+            }
+
             _testRoutes[routeId] = config;
         }
 
@@ -104,10 +129,10 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             await WaitForStackCreationComplete();
             await RetrieveStackOutputs();
 
-            // Register all test routes
-            foreach (var route in TestRoutes.GetDefaultRoutes(this))
+            // Register all test routes using RegisterTestRoute
+            foreach (var (routeId, config) in TestRoutes.GetDefaultRoutes(this))
             {
-                _testRoutes[route.Key] = route.Value;
+                RegisterTestRoute(routeId, config);
             }
 
             // Setup all routes
