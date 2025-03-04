@@ -31,24 +31,23 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV1_REST(string testName, HttpContextTestCase testCase)
         {
-            var uniqueRoute = GetUniqueRoutePath();
+            var uniqueRoute = TestUtils.GetUniqueRoutePath();
             var routeId = await _fixture.ApiGatewayHelper.AddRouteToRestApi(
-                _fixture.BaseRestApiId, 
-                _fixture.ReturnFullEventLambdaFunctionArn, 
+                _fixture.BaseRestApiId,
+                _fixture.ReturnFullEventLambdaFunctionArn,
                 uniqueRoute);
 
-            try 
+            try
             {
                 await RunApiGatewayTest<APIGatewayProxyRequest>(
-                    testCase, 
-                    _fixture.BaseRestApiUrl + uniqueRoute, 
+                    testCase,
+                    _fixture.BaseRestApiUrl + uniqueRoute,
                     _fixture.BaseRestApiId,
-                    async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.Rest), 
+                    async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.Rest),
                     ApiGatewayEmulatorMode.Rest);
             }
-            finally 
+            finally
             {
-                // Clean up the route
                 await _fixture.ApiGatewayHelper.DeleteRouteFromRestApi(_fixture.BaseRestApiId, routeId);
             }
         }
@@ -58,11 +57,27 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV1_HTTP(string testName, HttpContextTestCase testCase)
         {
-            var route = testCase.ApiGatewayRouteConfig?.Path ?? "/test";
-            var routeKey = testCase.ApiGatewayRouteConfig?.HttpMethod ?? "POST";
-            await _fixture.ApiGatewayHelper.AddRouteToHttpApi(_fixture.ReturnFullEventHttpApiV1Id, _fixture.ReturnFullEventLambdaFunctionArn, "1.0", route, routeKey);
-            await RunApiGatewayTest<APIGatewayProxyRequest>(testCase, _fixture.ReturnFullEventHttpApiV1Url, _fixture.ReturnFullEventHttpApiV1Id,
-                async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.HttpV1), ApiGatewayEmulatorMode.HttpV1);
+            var uniqueRoute = TestUtils.GetUniqueRoutePath();
+            var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
+                _fixture.BaseHttpApiV1Id,
+                _fixture.ReturnFullEventLambdaFunctionArn,
+                "1.0",
+                uniqueRoute,
+                "POST");
+
+            try
+            {
+                await RunApiGatewayTest<APIGatewayProxyRequest>(
+                    testCase,
+                    _fixture.BaseHttpApiV1Url + uniqueRoute,
+                    _fixture.BaseHttpApiV1Id,
+                    async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.HttpV1),
+                    ApiGatewayEmulatorMode.HttpV1);
+            }
+            finally
+            {
+                await _fixture.ApiGatewayHelper.DeleteRouteFromHttpApi(_fixture.BaseHttpApiV1Id, routeId);
+            }
         }
 
         [Theory]
@@ -70,17 +85,33 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV2(string testName, HttpContextTestCase testCase)
         {
-            var route = testCase.ApiGatewayRouteConfig?.Path ?? "/test";
-            var routeKey = testCase.ApiGatewayRouteConfig?.HttpMethod ?? "POST";
-            await _fixture.ApiGatewayHelper.AddRouteToHttpApi(_fixture.ReturnFullEventHttpApiV2Id, _fixture.ReturnFullEventLambdaFunctionArn, "2.0", route, routeKey);
-            await RunApiGatewayTest<APIGatewayHttpApiV2ProxyRequest>(testCase, _fixture.ReturnFullEventHttpApiV2Url, _fixture.ReturnFullEventHttpApiV2Id,
-                async (context, config) => await context.ToApiGatewayHttpV2Request(config), ApiGatewayEmulatorMode.HttpV2);
+            var uniqueRoute = TestUtils.GetUniqueRoutePath();
+            var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
+                _fixture.BaseHttpApiV2Id,
+                _fixture.ReturnFullEventLambdaFunctionArn,
+                "2.0",
+                uniqueRoute,
+                "POST");
+
+            try
+            {
+                await RunApiGatewayTest<APIGatewayHttpApiV2ProxyRequest>(
+                    testCase,
+                    _fixture.BaseHttpApiV2Url + uniqueRoute,
+                    _fixture.BaseHttpApiV2Id,
+                    async (context, config) => await context.ToApiGatewayHttpV2Request(config),
+                    ApiGatewayEmulatorMode.HttpV2);
+            }
+            finally
+            {
+                await _fixture.ApiGatewayHelper.DeleteRouteFromHttpApi(_fixture.BaseHttpApiV2Id, routeId);
+            }
         }
 
         [Fact]
         public async Task BinaryContentHttpV1()
         {
-            var uniqueRoute = GetUniqueRoutePath();
+            var uniqueRoute = TestUtils.GetUniqueRoutePath();
             var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
                 _fixture.BaseHttpApiV1Id,
                 _fixture.ReturnFullEventLambdaFunctionArn,
@@ -115,19 +146,26 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 }
             };
 
-            await RunApiGatewayTest<APIGatewayProxyRequest>(
-                testCase,
-                _fixture.ReturnFullEventHttpApiV1Url + uniqueRoute,
-                _fixture.ReturnFullEventHttpApiV1Id,
-                async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.HttpV1),
-                ApiGatewayEmulatorMode.HttpV1
-            );
+            try
+            {
+                await RunApiGatewayTest<APIGatewayProxyRequest>(
+                    testCase,
+                    _fixture.BaseHttpApiV1Url + uniqueRoute,
+                    _fixture.BaseHttpApiV1Id,
+                    async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.HttpV1),
+                    ApiGatewayEmulatorMode.HttpV1
+                );
+            }
+            finally
+            {
+                await _fixture.ApiGatewayHelper.DeleteRouteFromHttpApi(_fixture.BaseHttpApiV1Id, routeId);
+            }
         }
 
         [Fact]
         public async Task BinaryContentRest()
         {
-            var uniqueRoute = GetUniqueRoutePath();
+            var uniqueRoute = TestUtils.GetUniqueRoutePath();
             var routeId = await _fixture.ApiGatewayHelper.AddRouteToRestApi(
                 _fixture.BaseRestApiId,
                 _fixture.ReturnFullEventLambdaFunctionArn,
@@ -161,13 +199,20 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 }
             };
 
-            await RunApiGatewayTest<APIGatewayProxyRequest>(
-                testCase,
-                _fixture.BinaryMediaTypeRestApiUrl + uniqueRoute,
-                _fixture.BinaryMediaTypeRestApiId,
-                async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest),
-                ApiGatewayEmulatorMode.Rest
-            );
+            try
+            {
+                await RunApiGatewayTest<APIGatewayProxyRequest>(
+                    testCase,
+                    _fixture.BaseRestApiUrl + uniqueRoute,
+                    _fixture.BaseRestApiId,
+                    async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest),
+                    ApiGatewayEmulatorMode.Rest
+                );
+            }
+            finally
+            {
+                await _fixture.ApiGatewayHelper.DeleteRouteFromRestApi(_fixture.BaseRestApiId, routeId);
+            }
         }
 
         private async Task RunApiGatewayTest<T>(HttpContextTestCase testCase, string apiUrl, string apiId, Func<HttpContext, ApiGatewayRouteConfig, Task<T>> toApiGatewayRequest, ApiGatewayEmulatorMode emulatorMode)

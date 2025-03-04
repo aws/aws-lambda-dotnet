@@ -26,7 +26,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [MemberData(nameof(ApiGatewayResponseTestCases.V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
         public async Task IntegrationTest_APIGatewayV1_REST(string testName, ApiGatewayResponseTestCase testCase)
         {
-            var uniqueRoute = GetUniqueRoutePath();
+            var uniqueRoute = TestUtils.GetUniqueRoutePath();
             var routeId = await _fixture.ApiGatewayHelper.AddRouteToRestApi(
                 _fixture.BaseRestApiId,
                 _fixture.ParseAndReturnBodyLambdaFunctionArn,
@@ -50,7 +50,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [MemberData(nameof(ApiGatewayResponseTestCases.V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
         public async Task IntegrationTest_APIGatewayV1_HTTP(string testName, ApiGatewayResponseTestCase testCase)
         {
-            var uniqueRoute = GetUniqueRoutePath();
+            var uniqueRoute = TestUtils.GetUniqueRoutePath();
             var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
                 _fixture.BaseHttpApiV1Id,
                 _fixture.ParseAndReturnBodyLambdaFunctionArn,
@@ -76,7 +76,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [MemberData(nameof(ApiGatewayResponseTestCases.V2TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
         public async Task IntegrationTest_APIGatewayV2(string testName, ApiGatewayResponseTestCase testCase)
         {
-            var uniqueRoute = GetUniqueRoutePath();
+            var uniqueRoute = TestUtils.GetUniqueRoutePath();
             var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
                 _fixture.BaseHttpApiV2Id,
                 _fixture.ParseAndReturnBodyLambdaFunctionArn,

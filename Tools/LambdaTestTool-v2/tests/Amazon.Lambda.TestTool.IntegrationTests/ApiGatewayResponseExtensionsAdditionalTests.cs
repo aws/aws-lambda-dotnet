@@ -28,7 +28,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [Fact]
         public async Task ToHttpResponse_RestAPIGatewayV1DecodesBase64()
         {
-            var uniqueRoute = GetUniqueRoutePath();
+            var uniqueRoute = TestUtils.GetUniqueRoutePath();
             var routeId = await _fixture.ApiGatewayHelper.AddRouteToRestApi(
                 _fixture.BaseRestApiId,
                 _fixture.ReturnDecodedParseBinLambdaFunctionArn,
@@ -65,7 +65,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [Fact]
         public async Task ToHttpResponse_HttpV1APIGatewayV1DecodesBase64()
         {
-            var uniqueRoute = GetUniqueRoutePath();
+            var uniqueRoute = TestUtils.GetUniqueRoutePath();
             var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
                 _fixture.BaseHttpApiV1Id,
                 _fixture.ParseAndReturnBodyLambdaFunctionArn,
