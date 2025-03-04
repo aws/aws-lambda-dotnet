@@ -2,9 +2,9 @@
   "Projects": [
     {
       "Name": "Amazon.Lambda.Annotations",
-      "Type": "Patch",
+      "Type": "Minor",
       "ChangelogMessages": [
-        "Add ConfigureHostBuilder function"
+        "Add ConfigureHostBuilder function to `Startup` class for allowing the Lambda function to configure an `IHostApplicationBuilder`."
       ]
     }
   ]

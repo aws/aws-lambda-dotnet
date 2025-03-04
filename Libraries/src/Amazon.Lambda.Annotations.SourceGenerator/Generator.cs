@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
+using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
@@ -137,6 +137,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var configureHostBuilderMethodSymbol = semanticModelProvider.GetConfigureHostBuilderMethodModel(receiver.StartupClasses.FirstOrDefault());
                 var configureServicesMethodSymbol = semanticModelProvider.GetConfigureServicesMethodModel(receiver.StartupClasses.FirstOrDefault());
                 var configureMethodSymbol = configureServicesMethodSymbol;
+
+                if (configureServicesMethodSymbol != null && configureHostBuilderMethodSymbol != null)
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MultipleConfigureMethodsNotAllowed, Location.None, configureServicesMethodSymbol.Name, configureHostBuilderMethodSymbol.Name));
+                }
 
                 if (configureHostBuilderMethodSymbol != null)
                 {

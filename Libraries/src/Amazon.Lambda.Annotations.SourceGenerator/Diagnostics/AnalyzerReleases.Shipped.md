@@ -1,6 +1,12 @@
 ; Shipped analyzer releases
 ; https://github.com/dotnet/roslyn-analyzers/blob/master/src/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md
 
+## Release 1.7.3
+### New Rules
+Rule ID | Category | Severity | Notes
+--------|----------|----------|-------
+AWSLambda0119 | AWSLambdaCSharpGenerator | Error | Conflicting Service Configuration Methods Detected
+
 ## Release 1.5.1
 ### New Rules
 
