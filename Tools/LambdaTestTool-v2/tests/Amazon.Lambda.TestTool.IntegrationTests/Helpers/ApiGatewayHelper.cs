@@ -111,6 +111,9 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             {
                 currentPath += "/" + part;
 
+                // Check if this part is a path parameter
+                var pathPart = part.StartsWith("{") && part.EndsWith("}") ? part : part;
+
                 // Check if the resource already exists
                 var existingResource = resources.Items.FirstOrDefault(r => r.Path == currentPath);
                 if (existingResource == null)
@@ -120,7 +123,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                     {
                         RestApiId = restApiId,
                         ParentId = parentResourceId,
-                        PathPart = part
+                        PathPart = pathPart
                     });
                     parentResourceId = createResourceResponse.Id;
                 }
@@ -130,35 +133,40 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                 }
             }
 
-            // Create the method for the final resource
-            await _apiGatewayV1Client.PutMethodAsync(new PutMethodRequest
+            // Create the method and integration
+            try 
             {
-                RestApiId = restApiId,
-                ResourceId = parentResourceId,
-                HttpMethod = httpMethod,
-                AuthorizationType = "NONE"
-            });
+                await _apiGatewayV1Client.PutMethodAsync(new PutMethodRequest
+                {
+                    RestApiId = restApiId,
+                    ResourceId = parentResourceId,
+                    HttpMethod = httpMethod,
+                    AuthorizationType = "NONE"
+                });
 
-            // Create the integration for the method
-            await _apiGatewayV1Client.PutIntegrationAsync(new PutIntegrationRequest
+                await _apiGatewayV1Client.PutIntegrationAsync(new PutIntegrationRequest
+                {
+                    RestApiId = restApiId,
+                    ResourceId = parentResourceId,
+                    HttpMethod = httpMethod,
+                    Type = IntegrationType.AWS_PROXY,
+                    IntegrationHttpMethod = "POST",
+                    Uri = $"arn:aws:apigateway:{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}:lambda:path/2015-03-31/functions/{lambdaArn}/invocations"
+                });
+            }
+            catch (ConflictException)
             {
-                RestApiId = restApiId,
-                ResourceId = parentResourceId,
-                HttpMethod = httpMethod,
-                Type = APIGateway.IntegrationType.AWS_PROXY,
-                IntegrationHttpMethod = "POST",
-                Uri = $"arn:aws:apigateway:{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}:lambda:path/2015-03-31/functions/{lambdaArn}/invocations"
-            });
+                // Method/Integration already exists
+            }
 
-            // Deploy the API
-            var deploymentResponse = await _apiGatewayV1Client.CreateDeploymentAsync(new APIGateway.Model.CreateDeploymentRequest
+            // Create deployment
+            await _apiGatewayV1Client.CreateDeploymentAsync(new CreateDeploymentRequest
             {
                 RestApiId = restApiId,
                 StageName = "test"
             });
 
-            var url = $"https://{restApiId}.execute-api.{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}.amazonaws.com/test{route}";
-            return url;
+            return $"https://{restApiId}.execute-api.{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}.amazonaws.com/test{route}";
         }
 
         public async Task<string> AddRouteToHttpApi(string httpApiId, string lambdaArn, string version, string route = "/test", string routeKey = "ANY")

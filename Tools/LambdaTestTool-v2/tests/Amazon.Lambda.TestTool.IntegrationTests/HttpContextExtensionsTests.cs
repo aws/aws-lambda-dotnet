@@ -108,12 +108,13 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                          new Dictionary<string, StringValues> { { "Content-Type", "application/octet-stream" } },
                          body: new byte[] { 1, 2, 3, 4, 5 });
 
-            var config = new ApiGatewayRouteConfig
+            var config = new TestRouteConfig
             {
-                LambdaResourceName = "UploadAvatarFunction",
-                Endpoint = "/test4/api/users/{userId}/avatar",
+                Path = "/test4/api/users/{userId}/avatar",  // Template path with parameter
+                Endpoint = "/test4/api/users/{userId}/avatar",  // Same as path for this case
                 HttpMethod = "POST",
-                Path = "/test4/api/users/{userId}/avatar"
+                LambdaFunctionArn = _fixture.ReturnFullEventLambdaFunctionArn,
+                UsesBinaryMediaTypes = true
             };
 
             var testCase = new HttpContextTestCase
@@ -131,49 +132,64 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 }
             };
 
+            // Create the route for this specific test
             var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.BinaryMediaType, ApiGatewayEmulatorMode.Rest);
-            var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.BinaryMediaType);
+            await _fixture.ApiGatewayHelper.AddRouteToRestApi(
+                _fixture.BinaryMediaTypeRestApiId,
+                config.LambdaFunctionArn,
+                config.Path,
+                config.HttpMethod
+            );
+
+            // Run the test
             await RunApiGatewayTest<APIGatewayProxyRequest>(
                 testCase,
-                url,
+                baseUrl,
                 _fixture.BinaryMediaTypeRestApiId,
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest),
                 ApiGatewayEmulatorMode.Rest
             );
         }
 
-        private async Task RunApiGatewayTest<T>(HttpContextTestCase testCase, string apiUrl, string apiId, Func<HttpContext, ApiGatewayRouteConfig, Task<T>> toApiGatewayRequest, ApiGatewayEmulatorMode emulatorMode)
+        private async Task RunApiGatewayTest<T>(HttpContextTestCase testCase, string baseUrl, string apiId, 
+            Func<HttpContext, TestRouteConfig, Task<T>> toApiGatewayRequest, ApiGatewayEmulatorMode emulatorMode)
             where T : class
         {
-            var httpClient = new HttpClient();
-
-            var uri = new Uri(apiUrl);
-            var baseUrl = $"{uri.Scheme}://{uri.Authority}";
-            var stageName = emulatorMode == ApiGatewayEmulatorMode.Rest ? "/test" : ""; // matching hardcoded test stage name for rest api. TODO update this logic later to not be hardcoded
+            var stageName = emulatorMode == ApiGatewayEmulatorMode.Rest ? "/test" : "";
             var actualPath = ResolveActualPath(testCase.ApiGatewayRouteConfig.Path, testCase.HttpContext.Request.Path);
-            var fullUrl = baseUrl + stageName + actualPath + testCase.HttpContext.Request.QueryString;
+            var fullUrl = baseUrl.TrimEnd('/') + stageName + actualPath + testCase.HttpContext.Request.QueryString;
+            
+            // Wait for the API to be available
             await _fixture.ApiGatewayHelper.WaitForApiAvailability(apiId, fullUrl, emulatorMode != ApiGatewayEmulatorMode.Rest);
 
-            var httpRequest = CreateHttpRequestMessage(testCase.HttpContext, fullUrl);
-
-            var response = await httpClient.SendAsync(httpRequest);
-            var responseContent = await response.Content.ReadAsStringAsync();
+            // Execute the test request
+            var apiGatewayRequest = await toApiGatewayRequest(testCase.HttpContext, testCase.ApiGatewayRouteConfig);
 
             Assert.Equal(200, (int)response.StatusCode);
             Assert.Equal("application/json", response.Content.Headers.ContentType?.ToString());
 
+            var response = await httpClient.SendAsync(httpRequest);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
             var actualApiGatewayRequest = JsonSerializer.Deserialize<T>(responseContent,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-            var expectedApiGatewayRequest = await toApiGatewayRequest(testCase.HttpContext, testCase.ApiGatewayRouteConfig);
-
-            CompareApiGatewayRequests(expectedApiGatewayRequest, actualApiGatewayRequest);
+            CompareApiGatewayRequests(apiGatewayRequest, actualApiGatewayRequest);
 
             testCase.Assertions(actualApiGatewayRequest!, emulatorMode);
 
             await Task.Delay(1000); // Small delay between requests
         }
 
+        private string ResolveActualPath(string templatePath, string requestPath)
+        {
+            // If the template path has parameters (e.g., {userId}), use the actual request path
+            if (templatePath.Contains("{"))
+            {
+                return requestPath.Value ?? templatePath;
+            }
+            return templatePath;
+        }
 
         private void CompareApiGatewayRequests<T>(T expected, T actual) where T : class?
         {
@@ -270,7 +286,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
 
-
         private void CompareDictionaries<TKey, TValue>(IDictionary<TKey, TValue>? expected, IDictionary<TKey, TValue>? actual)
         {
             if (expected == null && actual == null) return;
@@ -304,32 +319,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             Assert.Equal(expected.Http.UserAgent, actual.Http.UserAgent);
         }
 
-        private string ResolveActualPath(string routeWithPlaceholders, string actualPath)
-        {
-            var routeParts = routeWithPlaceholders.Split('/');
-            var actualParts = actualPath.Split('/');
-
-            if (routeParts.Length != actualParts.Length)
-            {
-                throw new ArgumentException("Route and actual path have different number of segments");
-            }
-
-            var resolvedParts = new List<string>();
-            for (int i = 0; i < routeParts.Length; i++)
-            {
-                if (routeParts[i].StartsWith("{") && routeParts[i].EndsWith("}"))
-                {
-                    resolvedParts.Add(actualParts[i]);
-                }
-                else
-                {
-                    resolvedParts.Add(routeParts[i]);
-                }
-            }
-
-            return string.Join("/", resolvedParts);
-        }
-
         private HttpRequestMessage CreateHttpRequestMessage(HttpContext context, string fullUrl)
         {
             var request = context.Request;
@@ -357,8 +346,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             {
                 httpRequest.Content = new StringContent(string.Empty);
             }
-
-
 
             httpRequest.Version = HttpVersion.Version11;
 
