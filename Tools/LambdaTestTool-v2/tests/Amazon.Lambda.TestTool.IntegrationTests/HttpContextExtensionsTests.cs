@@ -25,8 +25,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             _fixture = fixture;
         }
 
-        private string GetUniqueRoutePath() => $"/test-{Guid.NewGuid():N}";
-
         [Theory]
         [MemberData(nameof(HttpContextTestCases.V1TestCases), MemberType = typeof(HttpContextTestCases))]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
