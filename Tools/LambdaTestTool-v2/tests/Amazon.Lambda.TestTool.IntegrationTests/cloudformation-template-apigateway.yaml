@@ -88,6 +88,15 @@ Resources:
       BinaryMediaTypes:
         - '*/*'
 
+  # Add default method for REST API
+  BaseRestApiRootMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      RestApiId: !Ref BaseRestApi
+      ResourceId: !GetAtt BaseRestApi.RootResourceId
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+
   BaseRestApiDeployment:
     Type: 'AWS::ApiGateway::Deployment'
     Properties:
@@ -100,6 +109,23 @@ Resources:
     Properties:
       Name: !Sub '${AWS::StackName}-BaseHttpAPIv1'
       ProtocolType: HTTP
+
+  # Add default integration for HTTP API v1
+  BaseHttpApiV1Integration:
+    Type: 'AWS::ApiGatewayV2::Integration'
+    Properties:
+      ApiId: !Ref BaseHttpApiV1
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ParseAndReturnBodyLambdaFunction.Arn
+      PayloadFormatVersion: '1.0'
+
+  # Add default route for HTTP API v1
+  BaseHttpApiV1Route:
+    Type: 'AWS::ApiGatewayV2::Route'
+    Properties:
+      ApiId: !Ref BaseHttpApiV1
+      RouteKey: 'OPTIONS /'
+      Target: !Sub 'integrations/${BaseHttpApiV1Integration}'
 
   BaseHttpApiV1Stage:
     Type: 'AWS::ApiGatewayV2::Stage'
@@ -114,6 +140,23 @@ Resources:
     Properties:
       Name: !Sub '${AWS::StackName}-BaseHttpAPIv2'
       ProtocolType: HTTP
+
+  # Add default integration for HTTP API v2
+  BaseHttpApiV2Integration:
+    Type: 'AWS::ApiGatewayV2::Integration'
+    Properties:
+      ApiId: !Ref BaseHttpApiV2
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ParseAndReturnBodyLambdaFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  # Add default route for HTTP API v2
+  BaseHttpApiV2Route:
+    Type: 'AWS::ApiGatewayV2::Route'
+    Properties:
+      ApiId: !Ref BaseHttpApiV2
+      RouteKey: 'OPTIONS /'
+      Target: !Sub 'integrations/${BaseHttpApiV2Integration}'
 
   BaseHttpApiV2Stage:
     Type: 'AWS::ApiGatewayV2::Stage'
