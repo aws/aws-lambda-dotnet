@@ -74,8 +74,22 @@ Resources:
       BinaryMediaTypes:
         - '*/*'
 
+  # Add a dummy root method for the initial deployment
+  MainRestApiRootMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      HttpMethod: GET
+      ResourceId: !GetAtt MainRestApi.RootResourceId
+      RestApiId: !Ref MainRestApi
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReturnFullEventLambdaFunction.Arn}/invocations'
+
   MainRestApiDeployment:
     Type: 'AWS::ApiGateway::Deployment'
+    DependsOn: MainRestApiRootMethod  # Add explicit dependency
     Properties:
       RestApiId: !Ref MainRestApi
       StageName: 'test'
