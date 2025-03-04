@@ -29,7 +29,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV1_REST(string testName, HttpContextTestCase testCase)
         {
-            var url = _fixture.GetRouteUrl(_fixture.MainRestApiBaseUrl, TestRoutes.Ids.ReturnFullEvent);
+            var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.ReturnFullEvent, ApiGatewayEmulatorMode.Rest);
+            var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ReturnFullEvent);
             await RunApiGatewayTest<APIGatewayProxyRequest>(testCase, url, _fixture.MainRestApiId,
                 async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.Rest),
                 ApiGatewayEmulatorMode.Rest);
@@ -40,7 +41,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV1_HTTP(string testName, HttpContextTestCase testCase)
         {
-            var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV1BaseUrl, TestRoutes.Ids.ReturnFullEvent);
+            var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.ReturnFullEvent, ApiGatewayEmulatorMode.HttpV1);
+            var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ReturnFullEvent);
             await RunApiGatewayTest<APIGatewayProxyRequest>(testCase, url, _fixture.MainHttpApiV1Id,
                 async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.HttpV1),
                 ApiGatewayEmulatorMode.HttpV1);
@@ -51,7 +53,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public async Task IntegrationTest_APIGatewayV2(string testName, HttpContextTestCase testCase)
         {
-            var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV2BaseUrl, TestRoutes.Ids.ReturnFullEvent);
+            var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.ReturnFullEvent, ApiGatewayEmulatorMode.HttpV2);
+            var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ReturnFullEvent);
             await RunApiGatewayTest<APIGatewayHttpApiV2ProxyRequest>(testCase, url, _fixture.MainHttpApiV2Id,
                 async (context, config) => await context.ToApiGatewayHttpV2Request(config),
                 ApiGatewayEmulatorMode.HttpV2);
@@ -87,7 +90,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 }
             };
 
-            var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV1BaseUrl, TestRoutes.Ids.BinaryMediaType);
+            var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.BinaryMediaType, ApiGatewayEmulatorMode.HttpV1);
+            var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.BinaryMediaType);
             await RunApiGatewayTest<APIGatewayProxyRequest>(
                 testCase,
                 url,
@@ -127,11 +131,12 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 }
             };
 
-            var url = _fixture.GetRouteUrl(_fixture.MainRestApiBaseUrl, TestRoutes.Ids.BinaryMediaType);
+            var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.BinaryMediaType, ApiGatewayEmulatorMode.Rest);
+            var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.BinaryMediaType);
             await RunApiGatewayTest<APIGatewayProxyRequest>(
                 testCase,
                 url,
-                _fixture.MainRestApiId,
+                _fixture.BinaryMediaTypeRestApiId,
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest),
                 ApiGatewayEmulatorMode.Rest
             );

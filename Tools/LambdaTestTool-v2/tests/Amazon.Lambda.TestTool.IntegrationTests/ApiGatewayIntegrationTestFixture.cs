@@ -20,20 +20,22 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 
         public string StackName { get; private set; }
 
-        // Main API Gateway IDs
+        // Main API Gateway IDs and Base URLs
         public string MainRestApiId { get; private set; }
         public string MainHttpApiV1Id { get; private set; }
         public string MainHttpApiV2Id { get; private set; }
+        public string BinaryMediaTypeRestApiId { get; private set; }
 
-        // Base URLs
         public string MainRestApiBaseUrl { get; private set; }
         public string MainHttpApiV1BaseUrl { get; private set; }
         public string MainHttpApiV2BaseUrl { get; private set; }
+        public string BinaryMediaTypeRestApiBaseUrl { get; private set; }
 
         // Lambda Function ARNs
         public string ParseAndReturnBodyLambdaFunctionArn { get; private set; }
         public string ReturnRawBodyLambdaFunctionArn { get; private set; }
         public string ReturnFullEventLambdaFunctionArn { get; private set; }
+        public string ReturnDecodedParseBinLambdaFunctionArn { get; private set; }
 
         public ApiGatewayIntegrationTestFixture()
         {
@@ -50,12 +52,15 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             MainRestApiId = string.Empty;
             MainHttpApiV1Id = string.Empty;
             MainHttpApiV2Id = string.Empty;
+            BinaryMediaTypeRestApiId = string.Empty;
             MainRestApiBaseUrl = string.Empty;
             MainHttpApiV1BaseUrl = string.Empty;
             MainHttpApiV2BaseUrl = string.Empty;
+            BinaryMediaTypeRestApiBaseUrl = string.Empty;
             ParseAndReturnBodyLambdaFunctionArn = string.Empty;
             ReturnRawBodyLambdaFunctionArn = string.Empty;
             ReturnFullEventLambdaFunctionArn = string.Empty;
+            ReturnDecodedParseBinLambdaFunctionArn = string.Empty;
         }
 
         public void RegisterTestRoute(string routeId, TestRouteConfig config)
@@ -72,6 +77,23 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             return baseUrl.TrimEnd('/') + config.Path;
         }
 
+        public string GetAppropriateBaseUrl(string routeId, ApiGatewayEmulatorMode emulatorMode)
+        {
+            var config = _testRoutes[routeId];
+            if (config.UsesBinaryMediaTypes && emulatorMode == ApiGatewayEmulatorMode.Rest)
+            {
+                return BinaryMediaTypeRestApiBaseUrl;
+            }
+
+            return emulatorMode switch
+            {
+                ApiGatewayEmulatorMode.Rest => MainRestApiBaseUrl,
+                ApiGatewayEmulatorMode.HttpV1 => MainHttpApiV1BaseUrl,
+                ApiGatewayEmulatorMode.HttpV2 => MainHttpApiV2BaseUrl,
+                _ => throw new ArgumentException($"Unsupported emulator mode: {emulatorMode}")
+            };
+        }
+
         public async Task InitializeAsync()
         {
             StackName = $"Test-{Guid.NewGuid().ToString("N").Substring(0, 5)}";
@@ -85,7 +107,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             // Register all test routes
             foreach (var route in TestRoutes.GetDefaultRoutes(this))
             {
-                RegisterTestRoute(route.Key, route.Value);
+                _testRoutes[route.Key] = route.Value;
             }
 
             // Setup all routes
@@ -97,28 +119,38 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             foreach (var (routeId, config) in _testRoutes)
             {
-                // Add route to REST API
-                await ApiGatewayHelper.AddRouteToRestApi(
-                    MainRestApiId,
-                    config.LambdaFunctionArn,
-                    config.Path,
-                    config.HttpMethod);
+                if (config.UsesBinaryMediaTypes)
+                {
+                    // Add route only to binary media type REST API
+                    await ApiGatewayHelper.AddRouteToRestApi(
+                        BinaryMediaTypeRestApiId,
+                        config.LambdaFunctionArn,
+                        config.Path,
+                        config.HttpMethod);
+                }
+                else
+                {
+                    // Add route to all main APIs
+                    await ApiGatewayHelper.AddRouteToRestApi(
+                        MainRestApiId,
+                        config.LambdaFunctionArn,
+                        config.Path,
+                        config.HttpMethod);
 
-                // Add route to HTTP API v1
-                await ApiGatewayHelper.AddRouteToHttpApi(
-                    MainHttpApiV1Id,
-                    config.LambdaFunctionArn,
-                    "1.0",
-                    config.Path,
-                    config.HttpMethod);
+                    await ApiGatewayHelper.AddRouteToHttpApi(
+                        MainHttpApiV1Id,
+                        config.LambdaFunctionArn,
+                        "1.0",
+                        config.Path,
+                        config.HttpMethod);
 
-                // Add route to HTTP API v2
-                await ApiGatewayHelper.AddRouteToHttpApi(
-                    MainHttpApiV2Id,
-                    config.LambdaFunctionArn,
-                    "2.0",
-                    config.Path,
-                    config.HttpMethod);
+                    await ApiGatewayHelper.AddRouteToHttpApi(
+                        MainHttpApiV2Id,
+                        config.LambdaFunctionArn,
+                        "2.0",
+                        config.Path,
+                        config.HttpMethod);
+                }
             }
         }
 
@@ -126,13 +158,21 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             foreach (var config in _testRoutes.Values)
             {
-                var restUrl = MainRestApiBaseUrl.TrimEnd('/') + config.Path;
-                var httpV1Url = MainHttpApiV1BaseUrl.TrimEnd('/') + config.Path;
-                var httpV2Url = MainHttpApiV2BaseUrl.TrimEnd('/') + config.Path;
+                if (config.UsesBinaryMediaTypes)
+                {
+                    var binaryUrl = BinaryMediaTypeRestApiBaseUrl.TrimEnd('/') + config.Path;
+                    await ApiGatewayHelper.WaitForApiAvailability(BinaryMediaTypeRestApiId, binaryUrl, false);
+                }
+                else
+                {
+                    var restUrl = MainRestApiBaseUrl.TrimEnd('/') + config.Path;
+                    var httpV1Url = MainHttpApiV1BaseUrl.TrimEnd('/') + config.Path;
+                    var httpV2Url = MainHttpApiV2BaseUrl.TrimEnd('/') + config.Path;
 
-                await ApiGatewayHelper.WaitForApiAvailability(MainRestApiId, restUrl, false);
-                await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV1Id, httpV1Url, true);
-                await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV2Id, httpV2Url, true);
+                    await ApiGatewayHelper.WaitForApiAvailability(MainRestApiId, restUrl, false);
+                    await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV1Id, httpV1Url, true);
+                    await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV2Id, httpV2Url, true);
+                }
             }
         }
 
@@ -176,14 +216,17 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             MainRestApiId = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainRestApiId");
             MainHttpApiV1Id = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainHttpApiV1Id");
             MainHttpApiV2Id = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainHttpApiV2Id");
-            
+            BinaryMediaTypeRestApiId = await CloudFormationHelper.GetOutputValueAsync(StackName, "BinaryMediaTypeRestApiId");
+
             MainRestApiBaseUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainRestApiBaseUrl");
             MainHttpApiV1BaseUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainHttpApiV1BaseUrl");
             MainHttpApiV2BaseUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "MainHttpApiV2BaseUrl");
+            BinaryMediaTypeRestApiBaseUrl = await CloudFormationHelper.GetOutputValueAsync(StackName, "BinaryMediaTypeRestApiBaseUrl");
 
             ParseAndReturnBodyLambdaFunctionArn = await CloudFormationHelper.GetOutputValueAsync(StackName, "ParseAndReturnBodyLambdaFunctionArn");
             ReturnRawBodyLambdaFunctionArn = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnRawBodyLambdaFunctionArn");
             ReturnFullEventLambdaFunctionArn = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnFullEventLambdaFunctionArn");
+            ReturnDecodedParseBinLambdaFunctionArn = await CloudFormationHelper.GetOutputValueAsync(StackName, "ReturnDecodedParseBinLambdaFunctionArn");
         }
 
         public async Task DisposeAsync()

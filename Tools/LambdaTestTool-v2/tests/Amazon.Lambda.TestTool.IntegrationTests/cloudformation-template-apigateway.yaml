@@ -16,6 +16,21 @@ Resources:
           };
       Runtime: nodejs20.x
 
+  ReturnDecodedParseBinLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-ReturnDecodedParseBinFunction'
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            const decodedBody = atob(event.body);
+            const parsedBody = JSON.parse(decodedBody.toString('utf8'));
+            return parsedBody;
+          };
+      Runtime: nodejs20.x
+
   ReturnRawBodyLambdaFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
@@ -63,11 +78,34 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
 
-  # Main REST API Gateway
+  # Main REST API Gateway (without binary media types)
   MainRestApi:
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
       Name: !Sub '${AWS::StackName}-MainRestAPI'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # Main HTTP API v1
+  MainHttpApiV1:
+    Type: 'AWS::ApiGatewayV2::Api'
+    Properties:
+      Name: !Sub '${AWS::StackName}-MainHttpAPIv1'
+      ProtocolType: HTTP
+
+  # Main HTTP API v2
+  MainHttpApiV2:
+    Type: 'AWS::ApiGatewayV2::Api'
+    Properties:
+      Name: !Sub '${AWS::StackName}-MainHttpAPIv2'
+      ProtocolType: HTTP
+
+  # Special REST API for binary media type tests
+  BinaryMediaTypeRestApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: !Sub '${AWS::StackName}-BinaryMediaTypeRestApi'
       EndpointConfiguration:
         Types:
           - REGIONAL
@@ -94,26 +132,12 @@ Resources:
       RestApiId: !Ref MainRestApi
       StageName: 'test'
 
-  # Main HTTP API v1
-  MainHttpApiV1:
-    Type: 'AWS::ApiGatewayV2::Api'
-    Properties:
-      Name: !Sub '${AWS::StackName}-MainHttpAPIv1'
-      ProtocolType: HTTP
-
   MainHttpV1Stage:
     Type: 'AWS::ApiGatewayV2::Stage'
     Properties:
       ApiId: !Ref MainHttpApiV1
       StageName: '$default'
       AutoDeploy: true
-
-  # Main HTTP API v2
-  MainHttpApiV2:
-    Type: 'AWS::ApiGatewayV2::Api'
-    Properties:
-      Name: !Sub '${AWS::StackName}-MainHttpAPIv2'
-      ProtocolType: HTTP
 
   MainHttpV2Stage:
     Type: 'AWS::ApiGatewayV2::Stage'
@@ -197,6 +221,23 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MainHttpApiV2}/*'
 
+  # Lambda Permissions for Binary Media Type REST API
+  LambdaPermissionBinaryMediaTypeRestApi:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ReturnDecodedParseBinLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${BinaryMediaTypeRestApi}/*'
+
+  LambdaPermissionBinaryMediaTypeRestApi2:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ReturnFullEventLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${BinaryMediaTypeRestApi}/*'
+
 Outputs:
   MainRestApiId:
     Description: 'ID of the Main REST API'
@@ -222,6 +263,14 @@ Outputs:
     Description: 'Base URL of the Main HTTP API v2'
     Value: !Sub 'https://${MainHttpApiV2}.execute-api.${AWS::Region}.amazonaws.com'
 
+  BinaryMediaTypeRestApiId:
+    Description: 'ID of the Binary Media Type REST API'
+    Value: !Ref BinaryMediaTypeRestApi
+
+  BinaryMediaTypeRestApiBaseUrl:
+    Description: 'Base URL of the Binary Media Type REST API'
+    Value: !Sub 'https://${BinaryMediaTypeRestApi}.execute-api.${AWS::Region}.amazonaws.com/test'
+
   ParseAndReturnBodyLambdaFunctionArn:
     Description: 'ARN of the Parse and Return Body Lambda Function'
     Value: !GetAtt ParseAndReturnBodyLambdaFunction.Arn
@@ -233,3 +282,7 @@ Outputs:
   ReturnFullEventLambdaFunctionArn:
     Description: 'ARN of the Return Full Event Lambda Function'
     Value: !GetAtt ReturnFullEventLambdaFunction.Arn
+
+  ReturnDecodedParseBinLambdaFunctionArn:
+    Description: 'ARN of the Return Decoded Parse Bin Lambda Function'
+    Value: !GetAtt ReturnDecodedParseBinLambdaFunction.Arn

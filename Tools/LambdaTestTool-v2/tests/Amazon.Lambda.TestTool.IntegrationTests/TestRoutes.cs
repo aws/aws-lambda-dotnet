@@ -9,6 +9,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         public string HttpMethod { get; set; }
         public string LambdaFunctionArn { get; set; }
         public string Description { get; set; }
+        public bool UsesBinaryMediaTypes { get; set; }
     }
 
     public static class TestRoutes
@@ -38,28 +39,32 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                     Path = Paths.ParseAndReturnBody,
                     HttpMethod = "POST",
                     LambdaFunctionArn = fixture.ParseAndReturnBodyLambdaFunctionArn,
-                    Description = "Test parsing and returning body"
+                    Description = "Test parsing and returning body",
+                    UsesBinaryMediaTypes = false
                 },
                 [Ids.ReturnRawBody] = new TestRouteConfig
                 {
                     Path = Paths.ReturnRawBody,
                     HttpMethod = "POST",
                     LambdaFunctionArn = fixture.ReturnRawBodyLambdaFunctionArn,
-                    Description = "Test returning raw body"
+                    Description = "Test returning raw body",
+                    UsesBinaryMediaTypes = false
                 },
                 [Ids.ReturnFullEvent] = new TestRouteConfig
                 {
                     Path = Paths.ReturnFullEvent,
                     HttpMethod = "POST",
                     LambdaFunctionArn = fixture.ReturnFullEventLambdaFunctionArn,
-                    Description = "Test returning full event"
+                    Description = "Test returning full event",
+                    UsesBinaryMediaTypes = false
                 },
                 [Ids.BinaryMediaType] = new TestRouteConfig
                 {
                     Path = Paths.BinaryMediaType,
                     HttpMethod = "POST",
-                    LambdaFunctionArn = fixture.ReturnFullEventLambdaFunctionArn,
-                    Description = "Test binary media type handling"
+                    LambdaFunctionArn = fixture.ReturnDecodedParseBinLambdaFunctionArn,
+                    Description = "Test binary media type handling",
+                    UsesBinaryMediaTypes = true
                 }
             };
         }

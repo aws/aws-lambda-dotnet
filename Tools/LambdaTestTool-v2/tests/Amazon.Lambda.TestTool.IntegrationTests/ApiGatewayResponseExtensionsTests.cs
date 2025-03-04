@@ -27,7 +27,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             await RetryHelper.RetryOperation(async () =>
             {
-                var url = _fixture.GetRouteUrl(_fixture.MainRestApiBaseUrl, TestRoutes.Ids.ParseAndReturnBody);
+                var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.ParseAndReturnBody, ApiGatewayEmulatorMode.Rest);
+                var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
                 await RunV1Test(testCase, url, ApiGatewayEmulatorMode.Rest);
                 return true;
             });
@@ -40,7 +41,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             await RetryHelper.RetryOperation(async () =>
             {
-                var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV1BaseUrl, TestRoutes.Ids.ParseAndReturnBody);
+                var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.ParseAndReturnBody, ApiGatewayEmulatorMode.HttpV1);
+                var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
                 await RunV1Test(testCase, url, ApiGatewayEmulatorMode.HttpV1);
                 return true;
             });
@@ -53,7 +55,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             await RetryHelper.RetryOperation(async () =>
             {
-                var url = _fixture.GetRouteUrl(_fixture.MainHttpApiV2BaseUrl, TestRoutes.Ids.ParseAndReturnBody);
+                var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.ParseAndReturnBody, ApiGatewayEmulatorMode.HttpV2);
+                var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
                 var testResponse = testCase.Response as APIGatewayHttpApiV2ProxyResponse;
                 Assert.NotNull(testResponse);
                 var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(testResponse, url);
