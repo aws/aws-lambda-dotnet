@@ -1,16 +1,14 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
-using Amazon.Lambda.TestTool.Tests.Common.Retries;
 using Xunit;
 using Xunit.Abstractions;
 using Amazon.Lambda.TestTool.Models;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Net.Http;
-using System.Net.Http.Headers;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
