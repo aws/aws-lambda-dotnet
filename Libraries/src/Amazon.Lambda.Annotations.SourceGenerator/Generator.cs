@@ -140,7 +140,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
                 if (configureServicesMethodSymbol != null && configureHostBuilderMethodSymbol != null)
                 {
-                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MultipleConfigureMethodsNotAllowed, Location.None, configureServicesMethodSymbol.Name, configureHostBuilderMethodSymbol.Name));
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MultipleConfigureMethodsNotAllowed, configureServicesMethodSymbol.Locations.FirstOrDefault(), configureServicesMethodSymbol.Name, configureHostBuilderMethodSymbol.Name));
                 }
 
                 if (configureHostBuilderMethodSymbol != null)

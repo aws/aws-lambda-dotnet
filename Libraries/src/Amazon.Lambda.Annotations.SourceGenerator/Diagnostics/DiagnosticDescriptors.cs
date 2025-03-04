@@ -149,7 +149,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly DiagnosticDescriptor MultipleConfigureMethodsNotAllowed = new DiagnosticDescriptor(
             id: "AWSLambda0119",
             title: "Conflicting Service Configuration Methods Detected",
-            messageFormat: "Both '{0}' and '{1}' methods are present. Only {1} will be used. The {0} method will be ignored. Please consolidate your service configuration into {1}.",
+            messageFormat: "Both '{0}' and '{1}' methods are present. Only {1} will be used. Please consolidate your service configuration into {1}.",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
