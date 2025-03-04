@@ -20,8 +20,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             _fixture = fixture;
         }
 
-        private string GetUniqueRoutePath() => $"/test-{Guid.NewGuid():N}";
-
         [Theory]
         [MemberData(nameof(ApiGatewayResponseTestCases.V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
         public async Task IntegrationTest_APIGatewayV1_REST(string testName, ApiGatewayResponseTestCase testCase)

@@ -7,6 +7,7 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Tests.Common;
+using Amazon.Lambda.TestTool.IntegrationTests.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using Xunit;

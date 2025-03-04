@@ -12,14 +12,14 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
 {
     public class ApiGatewayHelper
     {
-        private readonly IAmazonAPIGateway _apiGatewayV1Client;
-        private readonly IAmazonApiGatewayV2 _apiGatewayV2Client;
+        private readonly IAmazonAPIGateway _apiGateway;
+        private readonly IAmazonApiGatewayV2 _apiGatewayV2;
         private readonly HttpClient _httpClient;
 
-        public ApiGatewayHelper(IAmazonAPIGateway apiGatewayV1Client, IAmazonApiGatewayV2 apiGatewayV2Client)
+        public ApiGatewayHelper(IAmazonAPIGateway apiGateway, IAmazonApiGatewayV2 apiGatewayV2)
         {
-            _apiGatewayV1Client = apiGatewayV1Client;
-            _apiGatewayV2Client = apiGatewayV2Client;
+            _apiGateway = apiGateway;
+            _apiGatewayV2 = apiGatewayV2;
             _httpClient = new HttpClient();
         }
 
@@ -37,12 +37,12 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                     // Check if the API exists
                     if (isHttpApi)
                     {
-                        var response = await _apiGatewayV2Client.GetApiAsync(new GetApiRequest { ApiId = apiId });
+                        var response = await _apiGatewayV2.GetApiAsync(new GetApiRequest { ApiId = apiId });
                         if (response.ApiEndpoint == null) continue;
                     }
                     else
                     {
-                        var response = await _apiGatewayV1Client.GetRestApiAsync(new GetRestApiRequest { RestApiId = apiId });
+                        var response = await _apiGateway.GetRestApiAsync(new GetRestApiRequest { RestApiId = apiId });
                         if (response.Id == null) continue;
                     }
 
@@ -94,113 +94,127 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             throw new TimeoutException($"API {apiId} did not become consistently available within {maxWaitTimeSeconds} seconds");
         }
 
-
-        public async Task<string> AddRouteToRestApi(string restApiId, string lambdaArn, string route = "/test", string httpMethod = "ANY")
+        public async Task<string> AddRouteToRestApi(string apiId, string lambdaArn, string path, string[]? binaryMediaTypes = null)
         {
-            // Get all resources and find the root resource
-            var resources = await _apiGatewayV1Client.GetResourcesAsync(new GetResourcesRequest { RestApiId = restApiId });
-            var rootResource = resources.Items.First(r => r.Path == "/");
-            var rootResourceId = rootResource.Id;
-
-            // Split the route into parts and create each part
-            var routeParts = route.Trim('/').Split('/');
-            string currentPath = "";
-            string parentResourceId = rootResourceId;
-
-            foreach (var part in routeParts)
+            // Create resource
+            var createResourceRequest = new CreateResourceRequest
             {
-                currentPath += "/" + part;
+                RestApiId = apiId,
+                ParentId = await GetRootResourceId(apiId),
+                PathPart = path.TrimStart('/')
+            };
+            var resource = await _apiGateway.CreateResourceAsync(createResourceRequest);
 
-                // Check if the resource already exists
-                var existingResource = resources.Items.FirstOrDefault(r => r.Path == currentPath);
-                if (existingResource == null)
-                {
-                    // Create the resource if it doesn't exist
-                    var createResourceResponse = await _apiGatewayV1Client.CreateResourceAsync(new CreateResourceRequest
-                    {
-                        RestApiId = restApiId,
-                        ParentId = parentResourceId,
-                        PathPart = part
-                    });
-                    parentResourceId = createResourceResponse.Id;
-                }
-                else
-                {
-                    parentResourceId = existingResource.Id;
-                }
-            }
-
-            // Create the method for the final resource
-            await _apiGatewayV1Client.PutMethodAsync(new PutMethodRequest
+            // Create method
+            var putMethodRequest = new PutMethodRequest
             {
-                RestApiId = restApiId,
-                ResourceId = parentResourceId,
-                HttpMethod = httpMethod,
+                RestApiId = apiId,
+                ResourceId = resource.Id,
+                HttpMethod = "POST",
                 AuthorizationType = "NONE"
-            });
+            };
+            await _apiGateway.PutMethodAsync(putMethodRequest);
 
-            // Create the integration for the method
-            await _apiGatewayV1Client.PutIntegrationAsync(new PutIntegrationRequest
+            // Create integration
+            var putIntegrationRequest = new PutIntegrationRequest
             {
-                RestApiId = restApiId,
-                ResourceId = parentResourceId,
-                HttpMethod = httpMethod,
-                Type = APIGateway.IntegrationType.AWS_PROXY,
+                RestApiId = apiId,
+                ResourceId = resource.Id,
+                HttpMethod = "POST",
+                Type = "AWS_PROXY",
                 IntegrationHttpMethod = "POST",
-                Uri = $"arn:aws:apigateway:{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}:lambda:path/2015-03-31/functions/{lambdaArn}/invocations"
-            });
+                Uri = lambdaArn
+            };
+            await _apiGateway.PutIntegrationAsync(putIntegrationRequest);
 
-            // Deploy the API
-            var deploymentResponse = await _apiGatewayV1Client.CreateDeploymentAsync(new APIGateway.Model.CreateDeploymentRequest
+            // If binary media types are specified, update the API
+            if (binaryMediaTypes != null && binaryMediaTypes.Length > 0)
             {
-                RestApiId = restApiId,
-                StageName = "test"
-            });
+                var updateRestApiRequest = new UpdateRestApiRequest
+                {
+                    RestApiId = apiId,
+                    PatchOperations = new List<PatchOperation>
+                    {
+                        new PatchOperation
+                        {
+                            Op = "replace",
+                            Path = "/binaryMediaTypes",
+                            Value = string.Join(",", binaryMediaTypes)
+                        }
+                    }
+                };
+                await _apiGateway.UpdateRestApiAsync(updateRestApiRequest);
+            }
 
-            var url = $"https://{restApiId}.execute-api.{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}.amazonaws.com/test{route}";
-            return url;
+            return resource.Id;
         }
 
-        public async Task<string> AddRouteToHttpApi(string httpApiId, string lambdaArn, string version, string route = "/test", string routeKey = "ANY")
+        public async Task DeleteRouteFromRestApi(string apiId, string resourceId)
         {
-            var createIntegrationResponse = await _apiGatewayV2Client.CreateIntegrationAsync(new CreateIntegrationRequest
+            try
             {
-                ApiId = httpApiId,
-                IntegrationType = ApiGatewayV2.IntegrationType.AWS_PROXY,
-                IntegrationUri = lambdaArn,
-                PayloadFormatVersion = version
-            });
-            string integrationId = createIntegrationResponse.IntegrationId;
-
-            // Split the route into parts and create each part
-            var routeParts = route.Trim('/').Split('/');
-            var currentPath = "";
-            foreach (var part in routeParts)
-            {
-                currentPath += "/" + part;
-                await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
+                // Delete the resource
+                var deleteResourceRequest = new DeleteResourceRequest
                 {
-                    ApiId = httpApiId,
-                    RouteKey = $"{routeKey} {currentPath}",
-                    Target = $"integrations/{integrationId}"
-                });
+                    RestApiId = apiId,
+                    ResourceId = resourceId
+                };
+                await _apiGateway.DeleteResourceAsync(deleteResourceRequest);
             }
-
-            // Create the final route (if it's not already created)
-            if (currentPath != "/" + route.Trim('/'))
+            catch (Exception ex)
             {
-                await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
-                {
-                    ApiId = httpApiId,
-                    RouteKey = $"{routeKey} {route}",
-                    Target = $"integrations/{integrationId}"
-                });
+                // Log the error but don't throw to ensure cleanup continues
+                Console.WriteLine($"Error deleting REST API route: {ex.Message}");
             }
-
-            var url = $"https://{httpApiId}.execute-api.{_apiGatewayV2Client.Config.RegionEndpoint.SystemName}.amazonaws.com{route}";
-            return url ;
         }
 
+        public async Task<string> AddRouteToHttpApi(string apiId, string lambdaArn, string payloadFormatVersion, string path, string httpMethod)
+        {
+            // Create integration
+            var createIntegrationRequest = new CreateIntegrationRequest
+            {
+                ApiId = apiId,
+                IntegrationType = "AWS_PROXY",
+                IntegrationUri = lambdaArn,
+                PayloadFormatVersion = payloadFormatVersion
+            };
+            var integration = await _apiGatewayV2.CreateIntegrationAsync(createIntegrationRequest);
 
+            // Create route
+            var createRouteRequest = new CreateRouteRequest
+            {
+                ApiId = apiId,
+                RouteKey = $"{httpMethod} {path}",
+                Target = $"integrations/{integration.IntegrationId}"
+            };
+            var route = await _apiGatewayV2.CreateRouteAsync(createRouteRequest);
+
+            return route.RouteId;
+        }
+
+        public async Task DeleteRouteFromHttpApi(string apiId, string routeId)
+        {
+            try
+            {
+                // Delete the route
+                var deleteRouteRequest = new DeleteRouteRequest
+                {
+                    ApiId = apiId,
+                    RouteId = routeId
+                };
+                await _apiGatewayV2.DeleteRouteAsync(deleteRouteRequest);
+            }
+            catch (Exception ex)
+            {
+                // Log the error but don't throw to ensure cleanup continues
+                Console.WriteLine($"Error deleting HTTP API route: {ex.Message}");
+            }
+        }
+
+        private async Task<string> GetRootResourceId(string apiId)
+        {
+            var resources = await _apiGateway.GetResourcesAsync(new GetResourcesRequest { RestApiId = apiId });
+            return resources.Items.First(r => r.Path == "/").Id;
+        }
     }
 }

@@ -7,6 +7,7 @@ using Amazon.Lambda.TestTool.Models;
 using System.Text;
 using System.Text.Json;
 using Amazon.Lambda.TestTool.Extensions;
+using Amazon.Lambda.TestTool.IntegrationTests.Helpers;
 using Xunit;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
@@ -31,14 +32,12 @@ public class InvokeResponseExtensionsIntegrationTests
         _fixture = fixture;
     }
 
-    private string GetUniqueRoutePath() => $"/test-{Guid.NewGuid():N}";
-
     [Theory]
     [InlineData(ApiGatewayEmulatorMode.Rest)]
     [InlineData(ApiGatewayEmulatorMode.HttpV1)]
     public async Task ToApiGatewayProxyResponse_ValidResponse_MatchesDirectConversion(ApiGatewayEmulatorMode emulatorMode)
     {
-        var uniqueRoute = GetUniqueRoutePath();
+        var uniqueRoute = TestUtils.GetUniqueRoutePath();
         string routeId;
         string apiUrl;
         if (emulatorMode == ApiGatewayEmulatorMode.Rest)
@@ -101,7 +100,7 @@ public class InvokeResponseExtensionsIntegrationTests
     [Fact]
     public async Task ToApiGatewayHttpApiV2ProxyResponse_ValidResponse_MatchesDirectConversion()
     {
-        var uniqueRoute = GetUniqueRoutePath();
+        var uniqueRoute = TestUtils.GetUniqueRoutePath();
         var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
             _fixture.BaseHttpApiV2Id,
             _fixture.ParseAndReturnBodyLambdaFunctionArn,
@@ -146,7 +145,7 @@ public class InvokeResponseExtensionsIntegrationTests
         int expectedStatusCode, 
         string expectedErrorMessage)
     {
-        var uniqueRoute = GetUniqueRoutePath();
+        var uniqueRoute = TestUtils.GetUniqueRoutePath();
         string routeId;
         string apiUrl;
         if (emulatorMode == ApiGatewayEmulatorMode.Rest)
@@ -244,7 +243,7 @@ public class InvokeResponseExtensionsIntegrationTests
         string inputPayload, 
         string expectedResponsePayload)
     {
-        var uniqueRoute = GetUniqueRoutePath();
+        var uniqueRoute = TestUtils.GetUniqueRoutePath();
         var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
             _fixture.BaseHttpApiV2Id,
             _fixture.ParseAndReturnBodyLambdaFunctionArn,
@@ -287,7 +286,7 @@ public class InvokeResponseExtensionsIntegrationTests
     [Fact]
     public async Task ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError()
     {
-        var uniqueRoute = GetUniqueRoutePath();
+        var uniqueRoute = TestUtils.GetUniqueRoutePath();
         var routeId = await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
             _fixture.BaseHttpApiV2Id,
             _fixture.ParseAndReturnBodyLambdaFunctionArn,

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
+using Amazon.Lambda.TestTool.IntegrationTests.Helpers;
 using System.Text;
 using Xunit;
 
@@ -22,8 +23,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             _fixture = fixture;
             _httpClient = new HttpClient();
         }
-
-        private string GetUniqueRoutePath() => $"/test-{Guid.NewGuid():N}";
 
         [Fact]
         public async Task ToHttpResponse_RestAPIGatewayV1DecodesBase64()
