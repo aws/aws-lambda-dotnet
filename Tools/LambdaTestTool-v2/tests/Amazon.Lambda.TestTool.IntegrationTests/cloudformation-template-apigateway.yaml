@@ -97,6 +97,52 @@ Resources:
       HttpMethod: OPTIONS
       AuthorizationType: NONE
 
+  # Add method response for REST API
+  BaseRestApiMethodResponse:
+    Type: 'AWS::ApiGateway::MethodResponse'
+    Properties:
+      RestApiId: !Ref BaseRestApi
+      ResourceId: !GetAtt BaseRestApi.RootResourceId
+      HttpMethod: OPTIONS
+      StatusCode: '200'
+      ResponseParameters:
+        method.response.header.Access-Control-Allow-Headers: true
+        method.response.header.Access-Control-Allow-Methods: true
+        method.response.header.Access-Control-Allow-Origin: true
+        method.response.header.Access-Control-Max-Age: true
+
+  # Add integration for REST API
+  BaseRestApiIntegration:
+    Type: 'AWS::ApiGateway::Integration'
+    Properties:
+      RestApiId: !Ref BaseRestApi
+      ResourceId: !GetAtt BaseRestApi.RootResourceId
+      HttpMethod: OPTIONS
+      Type: MOCK
+      RequestTemplates:
+        application/json: '{"statusCode": 200}'
+      ResponseTemplates:
+        application/json: ''
+      ResponseParameters:
+        method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+        method.response.header.Access-Control-Allow-Origin: "'*'"
+        method.response.header.Access-Control-Max-Age: "'7200'"
+
+  # Add integration response for REST API
+  BaseRestApiIntegrationResponse:
+    Type: 'AWS::ApiGateway::IntegrationResponse'
+    Properties:
+      RestApiId: !Ref BaseRestApi
+      ResourceId: !GetAtt BaseRestApi.RootResourceId
+      HttpMethod: OPTIONS
+      StatusCode: '200'
+      ResponseParameters:
+        method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+        method.response.header.Access-Control-Allow-Origin: "'*'"
+        method.response.header.Access-Control-Max-Age: "'7200'"
+
   BaseRestApiDeployment:
     Type: 'AWS::ApiGateway::Deployment'
     Properties:
