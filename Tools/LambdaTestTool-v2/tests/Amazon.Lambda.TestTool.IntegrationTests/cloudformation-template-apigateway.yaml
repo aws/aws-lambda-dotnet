@@ -145,6 +145,11 @@ Resources:
 
   BaseRestApiDeployment:
     Type: 'AWS::ApiGateway::Deployment'
+    DependsOn:
+      - BaseRestApiRootMethod
+      - BaseRestApiMethodResponse
+      - BaseRestApiIntegration
+      - BaseRestApiIntegrationResponse
     Properties:
       RestApiId: !Ref BaseRestApi
       StageName: 'test'
