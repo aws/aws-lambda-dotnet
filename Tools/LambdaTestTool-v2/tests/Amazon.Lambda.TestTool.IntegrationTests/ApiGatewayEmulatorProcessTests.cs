@@ -32,7 +32,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task TestLambdaToUpperV2()
     {
-        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+        var (lambdaPort, apiGatewayPort) = GetFreePorts();
         _cancellationTokenSource = new CancellationTokenSource();
         _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
         var consoleError = Console.Error;
@@ -72,7 +72,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task TestLambdaToUpperRest()
     {
-        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+        var (lambdaPort, apiGatewayPort) = GetFreePorts();
         _cancellationTokenSource = new CancellationTokenSource();
         _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
         var consoleError = Console.Error;
@@ -113,7 +113,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task TestLambdaToUpperV1()
     {
-        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+        var (lambdaPort, apiGatewayPort) = GetFreePorts();
         _cancellationTokenSource = new CancellationTokenSource();
         _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
         var consoleError = Console.Error;
@@ -154,7 +154,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task TestLambdaBinaryResponse()
     {
-        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+        var (lambdaPort, apiGatewayPort) = GetFreePorts();
         _cancellationTokenSource = new CancellationTokenSource();
         _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
         var consoleError = Console.Error;
@@ -212,7 +212,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task TestLambdaReturnString()
     {
-        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+        var (lambdaPort, apiGatewayPort) = GetFreePorts();
         _cancellationTokenSource = new CancellationTokenSource();
         _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
         var consoleError = Console.Error;
@@ -248,7 +248,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task TestLambdaWithNullEndpoint()
     {
-        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+        var (lambdaPort, apiGatewayPort) = GetFreePorts();
         _cancellationTokenSource = new CancellationTokenSource();
         _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
         var consoleError = Console.Error;
@@ -290,7 +290,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
     [InlineData(ApiGatewayEmulatorMode.HttpV1)]
     public async Task TestLambdaWithLargeRequestPayload_RestAndV1(ApiGatewayEmulatorMode mode)
     {
-        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+        var (lambdaPort, apiGatewayPort) = GetFreePorts();
         _cancellationTokenSource = new CancellationTokenSource();
         _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
         var consoleError = Console.Error;
@@ -333,7 +333,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task TestLambdaWithLargeRequestPayload_HttpV2()
     {
-        var (lambdaPort, apiGatewayPort) = await GetFreePorts();
+        var (lambdaPort, apiGatewayPort) = GetFreePorts();
         _cancellationTokenSource = new CancellationTokenSource();
         _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(120));
         var consoleError = Console.Error;
@@ -496,7 +496,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
         }
     }
 
-    private async Task<(int lambdaPort, int apiGatewayPort)> GetFreePorts()
+    private  (int lambdaPort, int apiGatewayPort) GetFreePorts()
     {
         var lambdaPort = GetFreePort();
         int apiGatewayPort;
