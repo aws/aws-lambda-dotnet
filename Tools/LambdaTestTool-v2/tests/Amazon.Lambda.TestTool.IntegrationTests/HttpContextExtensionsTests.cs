@@ -32,7 +32,11 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.ReturnFullEvent, ApiGatewayEmulatorMode.Rest);
             var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ReturnFullEvent);
-            await RunApiGatewayTest<APIGatewayProxyRequest>(testCase, url, _fixture.MainRestApiId,
+            await RunApiGatewayTest<APIGatewayProxyRequest>(
+                testCase, 
+                url, 
+                _fixture.MainRestApiId,
+                TestRoutes.Ids.ReturnFullEvent,  // Added route ID
                 async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.Rest),
                 ApiGatewayEmulatorMode.Rest);
         }
@@ -44,7 +48,11 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.ReturnFullEvent, ApiGatewayEmulatorMode.HttpV1);
             var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ReturnFullEvent);
-            await RunApiGatewayTest<APIGatewayProxyRequest>(testCase, url, _fixture.MainHttpApiV1Id,
+            await RunApiGatewayTest<APIGatewayProxyRequest>(
+                testCase, 
+                url, 
+                _fixture.MainHttpApiV1Id,
+                TestRoutes.Ids.ReturnFullEvent,  // Added route ID
                 async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.HttpV1),
                 ApiGatewayEmulatorMode.HttpV1);
         }
@@ -56,7 +64,11 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.ReturnFullEvent, ApiGatewayEmulatorMode.HttpV2);
             var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ReturnFullEvent);
-            await RunApiGatewayTest<APIGatewayHttpApiV2ProxyRequest>(testCase, url, _fixture.MainHttpApiV2Id,
+            await RunApiGatewayTest<APIGatewayHttpApiV2ProxyRequest>(
+                testCase, 
+                url, 
+                _fixture.MainHttpApiV2Id,
+                TestRoutes.Ids.ReturnFullEvent,  // Added route ID
                 async (context, config) => await context.ToApiGatewayHttpV2Request(config),
                 ApiGatewayEmulatorMode.HttpV2);
         }
@@ -97,6 +109,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 testCase,
                 url,
                 _fixture.MainHttpApiV1Id,
+                TestRoutes.Ids.BinaryMediaType,  // Added route ID
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.HttpV1),
                 ApiGatewayEmulatorMode.HttpV1
             );
@@ -146,22 +159,31 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 testCase,
                 baseUrl,
                 _fixture.BinaryMediaTypeRestApiId,
+                TestRoutes.Ids.BinaryMediaType,  // Added route ID
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest),
                 ApiGatewayEmulatorMode.Rest
             );
         }
 
-        private async Task RunApiGatewayTest<T>(HttpContextTestCase testCase, string baseUrl, string apiId, 
-            Func<HttpContext, ApiGatewayRouteConfig, Task<T>> toApiGatewayRequest, ApiGatewayEmulatorMode emulatorMode)
+        private async Task RunApiGatewayTest<T>(
+            HttpContextTestCase testCase, 
+            string baseUrl, 
+            string apiId,
+            string routeId,  // This is the TestRoutes.Ids value
+            Func<HttpContext, ApiGatewayRouteConfig, Task<T>> toApiGatewayRequest, 
+            ApiGatewayEmulatorMode emulatorMode)
             where T : class
         {
+            // Get the route config which has the path prefix
+            var routeConfig = TestRoutes.GetDefaultRoutes(_fixture)[routeId];
+            
             // Create the route for this specific test
             if (emulatorMode == ApiGatewayEmulatorMode.Rest)
             {
                 await _fixture.ApiGatewayHelper.AddRouteToRestApi(
                     apiId,
-                    _fixture.ReturnFullEventLambdaFunctionArn,
-                    testCase.ApiGatewayRouteConfig.Path,
+                    routeConfig.LambdaFunctionArn,
+                    routeConfig.Path + testCase.ApiGatewayRouteConfig.Path,  // e.g. "/return-full/test1/api/users/{userId}/orders"
                     testCase.ApiGatewayRouteConfig.HttpMethod
                 );
             }
@@ -169,9 +191,9 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             {
                 await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
                     apiId,
-                    _fixture.ReturnFullEventLambdaFunctionArn,
+                    routeConfig.LambdaFunctionArn,
                     emulatorMode == ApiGatewayEmulatorMode.HttpV2 ? "2.0" : "1.0",
-                    testCase.ApiGatewayRouteConfig.Path,
+                    routeConfig.Path + testCase.ApiGatewayRouteConfig.Path,
                     testCase.ApiGatewayRouteConfig.HttpMethod
                 );
             }
