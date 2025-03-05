@@ -183,7 +183,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 await _fixture.ApiGatewayHelper.AddRouteToRestApi(
                     apiId,
                     routeConfig.LambdaFunctionArn,
-                    routeConfig.Path + testCase.ApiGatewayRouteConfig.Path,  // e.g. "/return-full/test1/api/users/{userId}/orders"
+                    routeConfig.Path + testCase.ApiGatewayRouteConfig.Path,
                     testCase.ApiGatewayRouteConfig.HttpMethod
                 );
             }
@@ -199,9 +199,10 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             }
 
             var httpClient = new HttpClient();
-            var stageName = emulatorMode == ApiGatewayEmulatorMode.Rest ? "/test" : "";
             var actualPath = ResolveActualPath(testCase.ApiGatewayRouteConfig.Path, testCase.HttpContext.Request.Path.Value ?? "");
-            var fullUrl = baseUrl.TrimEnd('/') + stageName + actualPath + testCase.HttpContext.Request.QueryString.Value;
+            
+            var stageName = emulatorMode == ApiGatewayEmulatorMode.Rest ? "/test" : "";
+            var fullUrl = baseUrl.TrimEnd('/') + stageName + routeConfig.Path + actualPath + testCase.HttpContext.Request.QueryString.Value;
             
             // Wait for the API to be available
             await _fixture.ApiGatewayHelper.WaitForApiAvailability(apiId, fullUrl, emulatorMode != ApiGatewayEmulatorMode.Rest);
@@ -237,6 +238,12 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 
         private string ResolveActualPath(string templatePath, string requestPath)
         {
+            // Remove the stage name (/test/) from the request path if it exists
+            if (requestPath.StartsWith("/test/"))
+            {
+                requestPath = requestPath.Substring("/test".Length);
+            }
+
             // If the template path has parameters (e.g., {userId}), use the actual request path
             if (templatePath.Contains("{"))
             {
