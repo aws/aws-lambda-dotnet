@@ -149,18 +149,18 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                     RestApiId = restApiId,
                     ResourceId = parentResourceId,
                     HttpMethod = httpMethod,
-                    Type = IntegrationType.AWS_PROXY,
+                    Type = Amazon.APIGateway.IntegrationType.AWS_PROXY,
                     IntegrationHttpMethod = "POST",
                     Uri = $"arn:aws:apigateway:{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}:lambda:path/2015-03-31/functions/{lambdaArn}/invocations"
                 });
             }
-            catch (ConflictException)
+            catch (Amazon.APIGateway.Model.ConflictException)
             {
-                // Method/Integration already exists
+                // Integration already exists, continue
             }
 
-            // Create deployment
-            await _apiGatewayV1Client.CreateDeploymentAsync(new CreateDeploymentRequest
+            // Create and wait for deployment
+            var deploymentResponse = await _apiGatewayV1Client.CreateDeploymentAsync(new Amazon.APIGateway.Model.CreateDeploymentRequest
             {
                 RestApiId = restApiId,
                 StageName = "test"
@@ -169,14 +169,15 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             return $"https://{restApiId}.execute-api.{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}.amazonaws.com/test{route}";
         }
 
-        public async Task<string> AddRouteToHttpApi(string httpApiId, string lambdaArn, string version, string route = "/test", string routeKey = "ANY")
+        public async Task<string> AddRouteToHttpApi(string httpApiId, string lambdaArn, string version, string route = "/test", string httpMethod = "ANY")
         {
             var createIntegrationResponse = await _apiGatewayV2Client.CreateIntegrationAsync(new CreateIntegrationRequest
             {
                 ApiId = httpApiId,
-                IntegrationType = ApiGatewayV2.IntegrationType.AWS_PROXY,
+                IntegrationType = Amazon.ApiGatewayV2.IntegrationType.AWS_PROXY,
                 IntegrationUri = lambdaArn,
-                PayloadFormatVersion = version
+                PayloadFormatVersion = version,
+                IntegrationMethod = "POST"
             });
             string integrationId = createIntegrationResponse.IntegrationId;
 
@@ -189,7 +190,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                 await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
                 {
                     ApiId = httpApiId,
-                    RouteKey = $"{routeKey} {currentPath}",
+                    RouteKey = $"{httpMethod} {currentPath}",
                     Target = $"integrations/{integrationId}"
                 });
             }
@@ -200,9 +201,30 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                 await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
                 {
                     ApiId = httpApiId,
-                    RouteKey = $"{routeKey} {route}",
+                    RouteKey = $"{httpMethod} {route}",
                     Target = $"integrations/{integrationId}"
                 });
+            }
+
+            // Create and wait for deployment
+            var deployment = await _apiGatewayV2Client.CreateDeploymentAsync(new Amazon.ApiGatewayV2.Model.CreateDeploymentRequest
+            {
+                ApiId = httpApiId
+            });
+
+            // Create stage if it doesn't exist
+            try 
+            {
+                await _apiGatewayV2Client.CreateStageAsync(new Amazon.ApiGatewayV2.Model.CreateStageRequest
+                {
+                    ApiId = httpApiId,
+                    StageName = "$default",
+                    AutoDeploy = true
+                });
+            }
+            catch (Amazon.ApiGatewayV2.Model.ConflictException)
+            {
+                // Stage already exists, continue
             }
 
             var url = $"https://{httpApiId}.execute-api.{_apiGatewayV2Client.Config.RegionEndpoint.SystemName}.amazonaws.com{route}";

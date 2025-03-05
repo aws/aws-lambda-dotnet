@@ -5,6 +5,7 @@ using Amazon.CloudFormation;
 using Amazon.APIGateway;
 using Amazon.ApiGatewayV2;
 using Amazon.Lambda.TestTool.IntegrationTests.Helpers;
+using Amazon.Lambda.TestTool.Models;
 using System.Reflection;
 using Xunit;
 
