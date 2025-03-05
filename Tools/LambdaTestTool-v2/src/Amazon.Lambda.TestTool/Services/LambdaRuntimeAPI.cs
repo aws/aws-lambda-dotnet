@@ -145,6 +145,9 @@ public class LambdaRuntimeApi
         Console.WriteLine(HeaderBreak);
         Console.WriteLine($"Next invocation returned: {activeEvent.AwsRequestId}");
 
+        // Set the deadline to the Lambda max length of 15 minutes. Formatted as Epoch MS.
+        long deadline = ((long)(DateTime.UtcNow.AddMinutes(15) - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds);
+        ctx.Response.Headers["Lambda-Runtime-Deadline-Ms"] = deadline.ToString();
 
         ctx.Response.Headers["Lambda-Runtime-Aws-Request-Id"] = activeEvent.AwsRequestId;
         ctx.Response.Headers["Lambda-Runtime-Trace-Id"] = Guid.NewGuid().ToString();
