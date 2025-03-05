@@ -25,7 +25,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         public string MainRestApiId { get; private set; }
         public string MainHttpApiV1Id { get; private set; }
         public string MainHttpApiV2Id { get; private set; }
-        public string BinaryMediaTypeRestApiId { get; private set; }
+        public string BinaryMediaTypeRestApiId { get; private set; } // this is the rest api that has binary media types of */* enabled
 
         public string MainRestApiBaseUrl { get; private set; }
         public string MainHttpApiV1BaseUrl { get; private set; }

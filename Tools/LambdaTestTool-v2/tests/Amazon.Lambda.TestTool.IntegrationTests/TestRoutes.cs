@@ -19,7 +19,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             public const string ParseAndReturnBody = "ParseAndReturnBody";
             public const string ReturnRawBody = "ReturnRawBody";
             public const string ReturnFullEvent = "ReturnFullEvent";
-            public const string BinaryMediaType = "BinaryMediaType";
+            public const string DecodeParseBinary = "BinaryMediaType";
         }
 
         public static class Paths
@@ -58,7 +58,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                     Description = "Test returning full event",
                     UsesBinaryMediaTypes = false
                 },
-                [Ids.BinaryMediaType] = new TestRouteConfig
+                [Ids.DecodeParseBinary] = new TestRouteConfig
                 {
                     Path = Paths.BinaryMediaType,
                     HttpMethod = "POST",

@@ -142,14 +142,14 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             };
 
             // Create the route for this specific test
-            var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.BinaryMediaType, ApiGatewayEmulatorMode.Rest);
+            var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.DecodeParseBinary, ApiGatewayEmulatorMode.Rest);
 
             // Run the test
             await RunApiGatewayTest<APIGatewayProxyRequest>(
                 testCase,
                 baseUrl,
                 _fixture.BinaryMediaTypeRestApiId,
-                TestRoutes.Ids.BinaryMediaType,
+                TestRoutes.Ids.DecodeParseBinary,
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest),
                 ApiGatewayEmulatorMode.Rest
             );

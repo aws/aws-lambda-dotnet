@@ -37,8 +37,8 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             httpContext.Response.Body = new MemoryStream();
             await testResponse.ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.Rest);
             
-            var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.BinaryMediaType, ApiGatewayEmulatorMode.Rest);
-            var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.BinaryMediaType);
+            var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.DecodeParseBinary, ApiGatewayEmulatorMode.Rest);
+            var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.DecodeParseBinary);
             var actualResponse = await _httpClient.PostAsync(url, new StringContent(JsonSerializer.Serialize(testResponse)));
             await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpContext.Response);
             Assert.Equal(200, (int)actualResponse.StatusCode);
