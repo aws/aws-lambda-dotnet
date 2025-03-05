@@ -202,7 +202,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             var actualPath = ResolveActualPath(testCase.ApiGatewayRouteConfig.Path, testCase.HttpContext.Request.Path.Value ?? "");
             
             var stageName = emulatorMode == ApiGatewayEmulatorMode.Rest ? "/test" : "";
-            var fullUrl = baseUrl.TrimEnd('/') + stageName + routeConfig.Path + actualPath + testCase.HttpContext.Request.QueryString.Value;
+            var fullUrl = baseUrl.TrimEnd('/') + actualPath + testCase.HttpContext.Request.QueryString.Value;
             
             // Wait for the API to be available
             await _fixture.ApiGatewayHelper.WaitForApiAvailability(apiId, fullUrl, emulatorMode != ApiGatewayEmulatorMode.Rest);
