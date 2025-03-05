@@ -9,7 +9,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         public string HttpMethod { get; set; }
         public string LambdaFunctionArn { get; set; }
         public string Description { get; set; }
-        public bool UsesBinaryMediaTypes { get; set; }
     }
 
     public static class TestRoutes
@@ -40,7 +39,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                     HttpMethod = "POST",
                     LambdaFunctionArn = fixture.ParseAndReturnBodyLambdaFunctionArn,
                     Description = "Test parsing and returning body",
-                    UsesBinaryMediaTypes = false
                 },
                 [Ids.ReturnRawBody] = new TestRouteConfig
                 {
@@ -48,7 +46,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                     HttpMethod = "POST",
                     LambdaFunctionArn = fixture.ReturnRawBodyLambdaFunctionArn,
                     Description = "Test returning raw body",
-                    UsesBinaryMediaTypes = false
                 },
                 [Ids.ReturnFullEvent] = new TestRouteConfig
                 {
@@ -56,7 +53,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                     HttpMethod = "POST",
                     LambdaFunctionArn = fixture.ReturnFullEventLambdaFunctionArn,
                     Description = "Test returning full event",
-                    UsesBinaryMediaTypes = false
                 },
                 [Ids.DecodeParseBinary] = new TestRouteConfig
                 {
@@ -64,7 +60,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                     HttpMethod = "POST",
                     LambdaFunctionArn = fixture.ReturnDecodedParseBinLambdaFunctionArn,
                     Description = "Test binary media type handling",
-                    UsesBinaryMediaTypes = true
                 }
             };
         }

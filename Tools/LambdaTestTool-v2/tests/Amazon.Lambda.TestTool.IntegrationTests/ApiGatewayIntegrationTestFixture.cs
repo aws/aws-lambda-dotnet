@@ -164,38 +164,31 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             foreach (var (routeId, config) in _testRoutes)
             {
-                if (config.UsesBinaryMediaTypes)
-                {
-                    // Add route only to binary media type REST API
-                    await ApiGatewayHelper.AddRouteToRestApi(
-                        BinaryMediaTypeRestApiId,
-                        config.LambdaFunctionArn,
-                        config.Path,
-                        config.HttpMethod);
-                }
-                else
-                {
-                    // Add route to all main APIs
-                    await ApiGatewayHelper.AddRouteToRestApi(
-                        MainRestApiId,
-                        config.LambdaFunctionArn,
-                        config.Path,
-                        config.HttpMethod);
+                await ApiGatewayHelper.AddRouteToRestApi(
+                       MainRestApiId,
+                       config.LambdaFunctionArn,
+                       config.Path,
+                       config.HttpMethod);
 
-                    await ApiGatewayHelper.AddRouteToHttpApi(
-                        MainHttpApiV1Id,
-                        config.LambdaFunctionArn,
-                        "1.0",
-                        config.Path,
-                        config.HttpMethod);
+                await ApiGatewayHelper.AddRouteToHttpApi(
+                    MainHttpApiV1Id,
+                    config.LambdaFunctionArn,
+                    "1.0",
+                    config.Path,
+                    config.HttpMethod);
 
-                    await ApiGatewayHelper.AddRouteToHttpApi(
-                        MainHttpApiV2Id,
-                        config.LambdaFunctionArn,
-                        "2.0",
-                        config.Path,
-                        config.HttpMethod);
-                }
+                await ApiGatewayHelper.AddRouteToHttpApi(
+                    MainHttpApiV2Id,
+                    config.LambdaFunctionArn,
+                    "2.0",
+                    config.Path,
+                    config.HttpMethod);
+
+                await ApiGatewayHelper.AddRouteToRestApi(
+                    BinaryMediaTypeRestApiId,
+                    config.LambdaFunctionArn,
+                    config.Path,
+                    config.HttpMethod);
             }
         }
 
@@ -203,21 +196,16 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             foreach (var config in _testRoutes.Values)
             {
-                if (config.UsesBinaryMediaTypes)
-                {
-                    var binaryUrl = BinaryMediaTypeRestApiBaseUrl.TrimEnd('/') + config.Path;
-                    await ApiGatewayHelper.WaitForApiAvailability(BinaryMediaTypeRestApiId, binaryUrl, false);
-                }
-                else
-                {
-                    var restUrl = MainRestApiBaseUrl.TrimEnd('/') + config.Path;
-                    var httpV1Url = MainHttpApiV1BaseUrl.TrimEnd('/') + config.Path;
-                    var httpV2Url = MainHttpApiV2BaseUrl.TrimEnd('/') + config.Path;
+                var restUrl = MainRestApiBaseUrl.TrimEnd('/') + config.Path;
+                var httpV1Url = MainHttpApiV1BaseUrl.TrimEnd('/') + config.Path;
+                var httpV2Url = MainHttpApiV2BaseUrl.TrimEnd('/') + config.Path;
+                var binaryUrl = BinaryMediaTypeRestApiBaseUrl.TrimEnd('/') + config.Path;
 
-                    await ApiGatewayHelper.WaitForApiAvailability(MainRestApiId, restUrl, false);
-                    await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV1Id, httpV1Url, true);
-                    await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV2Id, httpV2Url, true);
-                }
+                await ApiGatewayHelper.WaitForApiAvailability(BinaryMediaTypeRestApiId, binaryUrl, false);
+
+                await ApiGatewayHelper.WaitForApiAvailability(MainRestApiId, restUrl, false);
+                await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV1Id, httpV1Url, true);
+                await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV2Id, httpV2Url, true);
             }
         }
 
