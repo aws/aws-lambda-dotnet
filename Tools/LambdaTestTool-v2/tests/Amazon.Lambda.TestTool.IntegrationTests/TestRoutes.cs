@@ -10,7 +10,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         public string LambdaFunctionArn { get; set; }
         public string Description { get; set; }
         public bool UsesBinaryMediaTypes { get; set; }
-        public string Endpoint { get; set; } // The actual endpoint with path parameters
     }
 
     public static class TestRoutes
