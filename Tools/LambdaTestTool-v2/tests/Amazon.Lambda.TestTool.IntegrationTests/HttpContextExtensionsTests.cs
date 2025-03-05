@@ -50,7 +50,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 testCase, 
                 baseUrl, 
                 _fixture.MainHttpApiV1Id,
-                TestRoutes.Ids.ReturnFullEvent,  // Added route ID
+                TestRoutes.Ids.ReturnFullEvent,
                 async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.HttpV1),
                 ApiGatewayEmulatorMode.HttpV1);
         }
@@ -149,7 +149,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 testCase,
                 baseUrl,
                 _fixture.BinaryMediaTypeRestApiId,
-                TestRoutes.Ids.BinaryMediaType,  // Added route ID
+                TestRoutes.Ids.BinaryMediaType,
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest),
                 ApiGatewayEmulatorMode.Rest
             );
@@ -218,14 +218,30 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             await Task.Delay(1000); // Small delay between requests
         }
 
-        private string ResolveActualPath(string templatePath, string requestPath)
+        private string ResolveActualPath(string routeWithPlaceholders, string actualPath)
         {
-            // If the template path has parameters (e.g., {userId}), use the actual request path
-            if (templatePath.Contains("{"))
+            var routeParts = routeWithPlaceholders.Split('/');
+            var actualParts = actualPath.Split('/');
+
+            if (routeParts.Length != actualParts.Length)
             {
-                return requestPath;
+                throw new ArgumentException("Route and actual path have different number of segments");
             }
-            return templatePath;
+
+            var resolvedParts = new List<string>();
+            for (int i = 0; i < routeParts.Length; i++)
+            {
+                if (routeParts[i].StartsWith("{") && routeParts[i].EndsWith("}"))
+                {
+                    resolvedParts.Add(actualParts[i]);
+                }
+                else
+                {
+                    resolvedParts.Add(routeParts[i]);
+                }
+            }
+
+            return string.Join("/", resolvedParts);
         }
 
         private void CompareApiGatewayRequests<T>(T expected, T actual) where T : class?
