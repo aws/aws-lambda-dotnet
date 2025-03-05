@@ -109,7 +109,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 testCase,
                 url,
                 _fixture.MainHttpApiV1Id,
-                TestRoutes.Ids.BinaryMediaType,  // Added route ID
+                TestRoutes.Ids.BinaryMediaType,
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.HttpV1),
                 ApiGatewayEmulatorMode.HttpV1
             );
@@ -124,10 +124,10 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 
             var config = new ApiGatewayRouteConfig
             {
-                Path = "/test4/api/users/{userId}/avatar",  // Template path with parameter
-                Endpoint = "/test4/api/users/{userId}/avatar",  // Same as path for this case
+                Path = "/test4/api/users/{userId}/avatar",
+                Endpoint = "/test4/api/users/{userId}/avatar",
                 HttpMethod = "POST",
-                LambdaResourceName = "ReturnFullEventLambdaFunction"  // This maps to the function ARN
+                LambdaResourceName = "ReturnFullEventLambdaFunction"
             };
 
             var testCase = new HttpContextTestCase
