@@ -120,6 +120,23 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             };
         }
 
+        public string GetAppropriateApiId(string routeId, ApiGatewayEmulatorMode mode)
+        {
+            var config = _testRoutes[routeId];
+            if (config.UsesBinaryMediaTypes && mode == ApiGatewayEmulatorMode.Rest)
+            {
+                return BinaryMediaTypeRestApiId;
+            }
+
+            return mode switch
+            {
+                ApiGatewayEmulatorMode.Rest => MainRestApiId,
+                ApiGatewayEmulatorMode.HttpV1 => MainHttpApiV1Id,
+                ApiGatewayEmulatorMode.HttpV2 => MainHttpApiV2Id,
+                _ => throw new ArgumentException($"Unsupported emulator mode: {mode}")
+            };
+        }
+
         public async Task InitializeAsync()
         {
             StackName = $"Test-{Guid.NewGuid().ToString("N").Substring(0, 5)}";
