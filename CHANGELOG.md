@@ -1,3 +1,8 @@
+## Release 2025-03-05
+
+### Amazon.Lambda.TestTool (0.9.1)
+* Add Lambda-Runtime-Deadline-Ms response header
+
 ## Release 2025-02-26 #3
 
 ### Amazon.Lambda.Annotations (1.6.3)
