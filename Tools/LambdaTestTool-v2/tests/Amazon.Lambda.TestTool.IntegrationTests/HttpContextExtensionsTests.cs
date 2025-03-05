@@ -155,6 +155,27 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             Func<HttpContext, ApiGatewayRouteConfig, Task<T>> toApiGatewayRequest, ApiGatewayEmulatorMode emulatorMode)
             where T : class
         {
+            // Create the route for this specific test
+            if (emulatorMode == ApiGatewayEmulatorMode.Rest)
+            {
+                await _fixture.ApiGatewayHelper.AddRouteToRestApi(
+                    apiId,
+                    _fixture.ReturnFullEventLambdaFunctionArn,
+                    testCase.ApiGatewayRouteConfig.Path,
+                    testCase.ApiGatewayRouteConfig.HttpMethod
+                );
+            }
+            else // HTTP API v1 or v2
+            {
+                await _fixture.ApiGatewayHelper.AddRouteToHttpApi(
+                    apiId,
+                    _fixture.ReturnFullEventLambdaFunctionArn,
+                    emulatorMode == ApiGatewayEmulatorMode.HttpV2 ? "2.0" : "1.0",
+                    testCase.ApiGatewayRouteConfig.Path,
+                    testCase.ApiGatewayRouteConfig.HttpMethod
+                );
+            }
+
             var httpClient = new HttpClient();
             var stageName = emulatorMode == ApiGatewayEmulatorMode.Rest ? "/test" : "";
             var actualPath = ResolveActualPath(testCase.ApiGatewayRouteConfig.Path, testCase.HttpContext.Request.Path.Value ?? "");
