@@ -147,12 +147,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 
             // Create the route for this specific test
             var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.BinaryMediaType, ApiGatewayEmulatorMode.Rest);
-            await _fixture.ApiGatewayHelper.AddRouteToRestApi(
-                _fixture.BinaryMediaTypeRestApiId,
-                _fixture.ReturnFullEventLambdaFunctionArn,  // Use the ARN from the fixture
-                config.Path,
-                config.HttpMethod
-            );
 
             // Run the test
             await RunApiGatewayTest<APIGatewayProxyRequest>(

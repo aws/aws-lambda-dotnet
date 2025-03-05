@@ -7,6 +7,7 @@ using Amazon.APIGateway.Model;
 using Amazon.ApiGatewayV2.Model;
 using System.Net;
 using Amazon.Runtime.Internal.Endpoints.StandardLibrary;
+using ConflictException = Amazon.ApiGatewayV2.Model.ConflictException;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
 {
@@ -111,9 +112,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             {
                 currentPath += "/" + part;
 
-                // Check if this part is a path parameter
-                var pathPart = part.StartsWith("{") && part.EndsWith("}") ? part : part;
-
                 // Check if the resource already exists
                 var existingResource = resources.Items.FirstOrDefault(r => r.Path == currentPath);
                 if (existingResource == null)
@@ -123,7 +121,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                     {
                         RestApiId = restApiId,
                         ParentId = parentResourceId,
-                        PathPart = pathPart
+                        PathPart = part
                     });
                     parentResourceId = createResourceResponse.Id;
                 }
@@ -187,23 +185,39 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             foreach (var part in routeParts)
             {
                 currentPath += "/" + part;
-                await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
+                try
                 {
-                    ApiId = httpApiId,
-                    RouteKey = $"{httpMethod} {currentPath}",
-                    Target = $"integrations/{integrationId}"
-                });
+                    await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
+                    {
+                        ApiId = httpApiId,
+                        RouteKey = $"{httpMethod} {currentPath}",
+                        Target = $"integrations/{integrationId}"
+                    });
+                }
+                catch (ConflictException e)
+                {
+                    // ignore route already exists
+                }
+               
             }
 
             // Create the final route (if it's not already created)
             if (currentPath != "/" + route.Trim('/'))
             {
-                await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
+                try
                 {
-                    ApiId = httpApiId,
-                    RouteKey = $"{httpMethod} {route}",
-                    Target = $"integrations/{integrationId}"
-                });
+                    await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
+                    {
+                        ApiId = httpApiId,
+                        RouteKey = $"{httpMethod} {route}",
+                        Target = $"integrations/{integrationId}"
+                    });
+                }
+                catch(ConflictException e)
+                {
+                    // ignore
+                }
+               
             }
 
             // Create and wait for deployment
