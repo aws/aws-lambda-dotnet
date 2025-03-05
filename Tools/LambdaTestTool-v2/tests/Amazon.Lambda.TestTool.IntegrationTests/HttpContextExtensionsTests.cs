@@ -108,13 +108,12 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                          new Dictionary<string, StringValues> { { "Content-Type", "application/octet-stream" } },
                          body: new byte[] { 1, 2, 3, 4, 5 });
 
-            var config = new TestRouteConfig
+            var config = new ApiGatewayRouteConfig
             {
                 Path = "/test4/api/users/{userId}/avatar",  // Template path with parameter
                 Endpoint = "/test4/api/users/{userId}/avatar",  // Same as path for this case
                 HttpMethod = "POST",
-                LambdaFunctionArn = _fixture.ReturnFullEventLambdaFunctionArn,
-                UsesBinaryMediaTypes = true
+                LambdaResourceName = "ReturnFullEventLambdaFunction"  // This maps to the function ARN
             };
 
             var testCase = new HttpContextTestCase
@@ -136,7 +135,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.BinaryMediaType, ApiGatewayEmulatorMode.Rest);
             await _fixture.ApiGatewayHelper.AddRouteToRestApi(
                 _fixture.BinaryMediaTypeRestApiId,
-                config.LambdaFunctionArn,
+                _fixture.ReturnFullEventLambdaFunctionArn,  // Use the ARN from the fixture
                 config.Path,
                 config.HttpMethod
             );
@@ -152,7 +151,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         }
 
         private async Task RunApiGatewayTest<T>(HttpContextTestCase testCase, string baseUrl, string apiId, 
-            Func<HttpContext, TestRouteConfig, Task<T>> toApiGatewayRequest, ApiGatewayEmulatorMode emulatorMode)
+            Func<HttpContext, ApiGatewayRouteConfig, Task<T>> toApiGatewayRequest, ApiGatewayEmulatorMode emulatorMode)
             where T : class
         {
             var stageName = emulatorMode == ApiGatewayEmulatorMode.Rest ? "/test" : "";
