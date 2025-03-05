@@ -103,13 +103,13 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 }
             };
 
-            var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.BinaryMediaType, ApiGatewayEmulatorMode.HttpV1);
-            var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.BinaryMediaType);
+            var baseUrl = _fixture.GetAppropriateBaseUrl(TestRoutes.Ids.ReturnFullEvent, ApiGatewayEmulatorMode.HttpV1);
+            var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ReturnFullEvent);
             await RunApiGatewayTest<APIGatewayProxyRequest>(
                 testCase,
                 url,
                 _fixture.MainHttpApiV1Id,
-                TestRoutes.Ids.BinaryMediaType,
+                TestRoutes.Ids.ReturnFullEvent,
                 async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.HttpV1),
                 ApiGatewayEmulatorMode.HttpV1
             );
@@ -163,7 +163,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             HttpContextTestCase testCase, 
             string baseUrl, 
             string apiId,
-            string routeId,  // This is the TestRoutes.Ids value
+            string routeId,
             Func<HttpContext, ApiGatewayRouteConfig, Task<T>> toApiGatewayRequest, 
             ApiGatewayEmulatorMode emulatorMode)
             where T : class
