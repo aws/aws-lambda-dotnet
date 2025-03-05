@@ -1,4 +1,4 @@
-﻿<#@ template language="C#" #>
+<#@ template language="C#" #>
 <#@ assembly name="System.Core" #>
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
@@ -9,6 +9,14 @@
     {
 #>
         private readonly ServiceProvider serviceProvider;
+<#
+        if (_model.LambdaMethod.UsingHostBuilderForDependencyInjection)
+        {
+#>
+        private readonly IHost host;
+<#
+        }
+#>
 <#
     }
     else
@@ -31,6 +39,30 @@
 <#
     if (_model.LambdaMethod.UsingDependencyInjection)
     {
+
+        if (_model.LambdaMethod.UsingHostBuilderForDependencyInjection)
+        {
+#>
+            var startup = new <#= _model.StartupType.FullName #>();
+            var hostBuilder = startup.ConfigureHostBuilder();
+
+            // By default, Lambda function class is added to the service container using the singleton lifetime
+            // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
+            hostBuilder.Services.AddSingleton<<#= _model.LambdaMethod.ContainingType.Name #>>();
+            hostBuilder.Services.AddSingleton<<#= _model.SerializerInfo.SerializerName #>>();
+
+            serviceProvider = hostBuilder.Services.BuildServiceProvider();
+
+            host = hostBuilder.Build();
+            host.RunAsync();
+
+            // Intentionally eagerly build <#= _model.LambdaMethod.ContainingType.Name #> and its dependencies.
+            // This causes time spent in the Constructor to appear on INIT_REPORTs
+            _ = serviceProvider.GetRequiredService<<#= _model.LambdaMethod.ContainingType.Name #>>();
+<#
+        }
+        else
+        {
 #>
             var services = new ServiceCollection();
 
@@ -47,6 +79,7 @@
             // This causes time spent in the Constructor to appear on INIT_REPORTs
             _ = serviceProvider.GetRequiredService<<#= _model.LambdaMethod.ContainingType.Name #>>();
 <#
+    }
     }
     else
     {

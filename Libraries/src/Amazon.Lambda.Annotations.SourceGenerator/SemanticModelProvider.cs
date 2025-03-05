@@ -20,14 +20,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         /// If <see cref="startupSyntax"/> is null, returns null.
         /// </summary>
         /// <param name="startupSyntax">LambdaStartup attributed class syntax</param>
-        public IMethodSymbol GetConfigureMethodModel(ClassDeclarationSyntax startupSyntax)
+        public IMethodSymbol GetConfigureServicesMethodModel(ClassDeclarationSyntax startupSyntax)
         {
             if (startupSyntax == null)
             {
                 return null;
             }
 
-            IMethodSymbol configureMethodSymbol = null;
+            IMethodSymbol configureServicesMethodSymbol = null;
 
             var iServiceCollectionSymbol = _context.Compilation.GetTypeByMetadataName("Microsoft.Extensions.DependencyInjection.IServiceCollection");
 
@@ -35,7 +35,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
             // Filter the methods which can potentially have Configure(IServiceCollection) parameter signature
             var members = startupSyntax.Members.Where(member => member.Kind() == SyntaxKind.MethodDeclaration);
-
 
             foreach (var member in members)
             {
@@ -47,12 +46,37 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     && methodSymbol.Parameters[0].Type
                         .Equals(iServiceCollectionSymbol, SymbolEqualityComparer.Default))
                 {
-                    configureMethodSymbol = methodSymbol;
+                    configureServicesMethodSymbol = methodSymbol;
                     break;
                 }
             }
 
-            return configureMethodSymbol;
+            return configureServicesMethodSymbol;
+        }
+
+        public IMethodSymbol GetConfigureHostBuilderMethodModel(ClassDeclarationSyntax startupSyntax)
+        {
+            if (startupSyntax == null)
+            {
+                return null;
+            }
+
+            IMethodSymbol configureHostBuilderMethodSymbol = null;
+
+            var classModel = _context.Compilation.GetSemanticModel(startupSyntax.SyntaxTree);
+
+            foreach (var member in startupSyntax.Members.Where(member => member.Kind() == SyntaxKind.MethodDeclaration))
+            {
+                var methodSyntax = (MethodDeclarationSyntax)member;
+                var methodSymbol = classModel.GetDeclaredSymbol(methodSyntax);
+                if (methodSymbol != null && methodSymbol.Name == "ConfigureHostBuilder")
+                {
+                    configureHostBuilderMethodSymbol = methodSymbol;
+                    break;
+                }
+            }
+
+            return configureHostBuilderMethodSymbol;
         }
 
         /// <summary>

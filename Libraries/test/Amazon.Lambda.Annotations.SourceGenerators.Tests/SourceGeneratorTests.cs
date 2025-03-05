@@ -1364,6 +1364,42 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             }.RunAsync();
         }
 
+        [Fact]
+        public async Task HostBuilder()
+        {
+            var expectedAddGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "HostBuilderFunctions_Add_Generated.g.cs"));
+            var expectedTemplate = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "hostbuild.serverless.template"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestHostBuilderApp", "HostBuilderFunctions.cs"), await File.ReadAllTextAsync(Path.Combine("TestHostBuilderApp", "HostBuilderFunctions.cs"))),
+                        (Path.Combine("TestHostBuilderApp", "Startup.cs"), await File.ReadAllTextAsync(Path.Combine("TestHostBuilderApp", "Startup.cs"))),
+                        (Path.Combine("TestHostBuilderApp", "CalculatorService", "ICalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestHostBuilderApp", "CalculatorService", "ICalculatorService.cs"))),
+                        (Path.Combine("TestHostBuilderApp", "CalculatorService", "CalculatorService.cs"), await File.ReadAllTextAsync(Path.Combine("TestHostBuilderApp", "CalculatorService", "CalculatorService.cs"))),
+
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "HostBuilderFunctions_Add_Generated.g.cs",
+                            SourceText.From(expectedAddGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("HostBuilderFunctions_Add_Generated.g.cs", expectedAddGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestHostBuilderApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplate),
+                    }
+                }
+            }.RunAsync();
+        }
+
         public void Dispose()
         {
             File.Delete(Path.Combine("TestServerlessApp", "serverless.template"));
