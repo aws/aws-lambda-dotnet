@@ -30,11 +30,11 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public Task IntegrationTest_APIGatewayV1_REST(string testName, HttpContextTestCase testCase)
         {
-            return RunApiGatewayTest<APIGatewayProxyRequest>(
-                testCase,
-                TestRoutes.Ids.ReturnFullEvent,
-                ApiGatewayEmulatorMode.Rest,
-                async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.Rest));
+            return RunApiGatewayTest<APIGatewayProxyRequest>(testCase, new ApiGatewayTestConfig
+            {
+                RouteId = TestRoutes.Ids.ReturnFullEvent,
+                GatewayType = ApiGatewayType.Rest
+            });
         }
 
         [Theory]
@@ -42,11 +42,11 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public Task IntegrationTest_APIGatewayV1_HTTP(string testName, HttpContextTestCase testCase)
         {
-            return RunApiGatewayTest<APIGatewayProxyRequest>(
-                testCase,
-                TestRoutes.Ids.ReturnFullEvent,
-                ApiGatewayEmulatorMode.HttpV1,
-                async (context, config) => await context.ToApiGatewayRequest(config, ApiGatewayEmulatorMode.HttpV1));
+            return RunApiGatewayTest<APIGatewayProxyRequest>(testCase, new ApiGatewayTestConfig
+            {
+                RouteId = TestRoutes.Ids.ReturnFullEvent,
+                GatewayType = ApiGatewayType.HttpV1
+            });
         }
 
         [Theory]
@@ -54,11 +54,11 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
         public Task IntegrationTest_APIGatewayV2(string testName, HttpContextTestCase testCase)
         {
-            return RunApiGatewayTest<APIGatewayHttpApiV2ProxyRequest>(
-                testCase,
-                TestRoutes.Ids.ReturnFullEvent,
-                ApiGatewayEmulatorMode.HttpV2,
-                async (context, config) => await context.ToApiGatewayHttpV2Request(config));
+            return RunApiGatewayTest<APIGatewayHttpApiV2ProxyRequest>(testCase,  new ApiGatewayTestConfig
+            {
+                RouteId = TestRoutes.Ids.ReturnFullEvent,
+                GatewayType = ApiGatewayType.HttpV2
+            });
         }
 
         [Fact]
@@ -93,9 +93,11 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 
             return RunApiGatewayTest<APIGatewayProxyRequest>(
                 testCase,
-                TestRoutes.Ids.ReturnFullEvent,
-                ApiGatewayEmulatorMode.HttpV1,
-                async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.HttpV1));
+                new ApiGatewayTestConfig
+            {
+                RouteId = TestRoutes.Ids.ReturnFullEvent,
+                GatewayType = ApiGatewayType.HttpV1
+            });
         }
 
         [Fact]
@@ -128,26 +130,39 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 }
             };
 
-            return RunApiGatewayTest<APIGatewayProxyRequest>(
-                testCase,
-                TestRoutes.Ids.DecodeParseBinary,
-                ApiGatewayEmulatorMode.Rest,
-                async (context, cfg) => await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest));
+            return RunApiGatewayTest<APIGatewayProxyRequest>(testCase, new ApiGatewayTestConfig
+            {
+                RouteId = TestRoutes.Ids.ReturnFullEvent,
+                GatewayType = ApiGatewayType.RestWithBinarySupport
+            });
         }
 
-        private async Task RunApiGatewayTest<T>(
-            HttpContextTestCase testCase,
-            string routeId,
-            ApiGatewayEmulatorMode emulatorMode,
-            Func<HttpContext, ApiGatewayRouteConfig, Task<T>> toApiGatewayRequest) where T : class
+        private async Task RunApiGatewayTest<T>(HttpContextTestCase testCase, ApiGatewayTestConfig config) where T : class
         {
+
+            var baseUrl = _fixture.GetAppropriateBaseUrl(config.GatewayType);
+            var apiId = _fixture.GetAppropriateApiId(config.GatewayType);
+            var emulatorMode = ApiGatewayIntegrationTestFixture.GetEmulatorMode(config.GatewayType);
+
+
+            Func<HttpContext, ApiGatewayRouteConfig, Task<T>> converter = config.GatewayType switch
+            {
+                ApiGatewayType.Rest or ApiGatewayType.RestWithBinarySupport => 
+                    async (context, cfg) => (T)(object)await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.Rest),
+                ApiGatewayType.HttpV1 => 
+                    async (context, cfg) => (T)(object)await context.ToApiGatewayRequest(cfg, ApiGatewayEmulatorMode.HttpV1),
+                ApiGatewayType.HttpV2 => 
+                    async (context, cfg) => (T)(object)await context.ToApiGatewayHttpV2Request(cfg),
+                _ => throw new ArgumentException($"Unsupported gateway type: {config.GatewayType}")
+            };
+
             await RunApiGatewayTestInternal(
-                testCase,
-                _fixture.GetAppropriateBaseUrl(routeId, emulatorMode),
-                _fixture.GetAppropriateApiId(routeId, emulatorMode),
-                routeId,
-                toApiGatewayRequest,
-                emulatorMode);
+                    testCase,
+                    baseUrl,
+                    apiId,
+                    config.RouteId,
+                    converter,
+                    emulatorMode);
         }
 
         private async Task RunApiGatewayTestInternal<T>(

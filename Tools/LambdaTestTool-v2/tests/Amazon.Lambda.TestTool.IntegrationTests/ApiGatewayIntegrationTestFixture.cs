@@ -103,39 +103,41 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             return baseUrl.TrimEnd('/') + config.Path;
         }
 
-        public string GetAppropriateBaseUrl(string routeId, ApiGatewayEmulatorMode emulatorMode)
+        public string GetAppropriateBaseUrl(ApiGatewayType gatewayType)
         {
-            var config = _testRoutes[routeId];
-            if (config.UsesBinaryMediaTypes && emulatorMode == ApiGatewayEmulatorMode.Rest)
+            return gatewayType switch
             {
-                return BinaryMediaTypeRestApiBaseUrl;
-            }
-
-            return emulatorMode switch
-            {
-                ApiGatewayEmulatorMode.Rest => MainRestApiBaseUrl,
-                ApiGatewayEmulatorMode.HttpV1 => MainHttpApiV1BaseUrl,
-                ApiGatewayEmulatorMode.HttpV2 => MainHttpApiV2BaseUrl,
-                _ => throw new ArgumentException($"Unsupported emulator mode: {emulatorMode}")
+                ApiGatewayType.Rest => MainRestApiBaseUrl,
+                ApiGatewayType.RestWithBinarySupport => BinaryMediaTypeRestApiBaseUrl,
+                ApiGatewayType.HttpV1 => MainHttpApiV1BaseUrl,
+                ApiGatewayType.HttpV2 => MainHttpApiV2BaseUrl,
+                _ => throw new ArgumentException($"Unsupported gateway type: {gatewayType}")
             };
         }
 
-        public string GetAppropriateApiId(string routeId, ApiGatewayEmulatorMode mode)
+        public string GetAppropriateApiId(ApiGatewayType gatewayType)
         {
-            var config = _testRoutes[routeId];
-            if (config.UsesBinaryMediaTypes && mode == ApiGatewayEmulatorMode.Rest)
+            return gatewayType switch
             {
-                return BinaryMediaTypeRestApiId;
-            }
-
-            return mode switch
-            {
-                ApiGatewayEmulatorMode.Rest => MainRestApiId,
-                ApiGatewayEmulatorMode.HttpV1 => MainHttpApiV1Id,
-                ApiGatewayEmulatorMode.HttpV2 => MainHttpApiV2Id,
-                _ => throw new ArgumentException($"Unsupported emulator mode: {mode}")
+                ApiGatewayType.Rest => MainRestApiId,
+                ApiGatewayType.RestWithBinarySupport => BinaryMediaTypeRestApiId,
+                ApiGatewayType.HttpV1 => MainHttpApiV1Id,
+                ApiGatewayType.HttpV2 => MainHttpApiV2Id,
+                _ => throw new ArgumentException($"Unsupported gateway type: {gatewayType}")
             };
         }
+
+        public static ApiGatewayEmulatorMode GetEmulatorMode(ApiGatewayType gatewayType)
+        {
+            return gatewayType switch
+            {
+                ApiGatewayType.Rest or ApiGatewayType.RestWithBinarySupport => ApiGatewayEmulatorMode.Rest,
+                ApiGatewayType.HttpV1 => ApiGatewayEmulatorMode.HttpV1,
+                ApiGatewayType.HttpV2 => ApiGatewayEmulatorMode.HttpV2,
+                _ => throw new ArgumentException($"Unsupported gateway type: {gatewayType}")
+            };
+        }
+        
 
         public async Task InitializeAsync()
         {
@@ -276,5 +278,19 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             await CloudFormationHelper.DeleteStackAsync(StackName);
         }
+    }
+
+    public enum ApiGatewayType
+    {
+        Rest,
+        RestWithBinarySupport,
+        HttpV1,
+        HttpV2
+    }
+
+    public class ApiGatewayTestConfig
+    {
+        public required string RouteId { get; init; }
+        public required ApiGatewayType GatewayType { get; init; }
     }
 }
