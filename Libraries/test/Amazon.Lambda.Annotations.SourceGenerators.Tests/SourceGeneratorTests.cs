@@ -1394,7 +1394,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("HostBuilderFunctions_Add_Generated.g.cs", expectedAddGenerated),
-                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("TestHostBuilderApp\\serverless.template", expectedTemplate),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestHostBuilderApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplate),
                     }
                 }
             }.RunAsync();
