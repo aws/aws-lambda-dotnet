@@ -132,30 +132,23 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             }
 
             // Create the method and integration
-            try 
+            await _apiGatewayV1Client.PutMethodAsync(new PutMethodRequest
             {
-                await _apiGatewayV1Client.PutMethodAsync(new PutMethodRequest
-                {
-                    RestApiId = restApiId,
-                    ResourceId = parentResourceId,
-                    HttpMethod = httpMethod,
-                    AuthorizationType = "NONE"
-                });
+                RestApiId = restApiId,
+                ResourceId = parentResourceId,
+                HttpMethod = httpMethod,
+                AuthorizationType = "NONE"
+            });
 
-                await _apiGatewayV1Client.PutIntegrationAsync(new PutIntegrationRequest
-                {
-                    RestApiId = restApiId,
-                    ResourceId = parentResourceId,
-                    HttpMethod = httpMethod,
-                    Type = Amazon.APIGateway.IntegrationType.AWS_PROXY,
-                    IntegrationHttpMethod = "POST",
-                    Uri = $"arn:aws:apigateway:{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}:lambda:path/2015-03-31/functions/{lambdaArn}/invocations"
-                });
-            }
-            catch (Amazon.APIGateway.Model.ConflictException)
+            await _apiGatewayV1Client.PutIntegrationAsync(new PutIntegrationRequest
             {
-                // Integration already exists, continue
-            }
+                RestApiId = restApiId,
+                ResourceId = parentResourceId,
+                HttpMethod = httpMethod,
+                Type = Amazon.APIGateway.IntegrationType.AWS_PROXY,
+                IntegrationHttpMethod = "POST",
+                Uri = $"arn:aws:apigateway:{_apiGatewayV1Client.Config.RegionEndpoint.SystemName}:lambda:path/2015-03-31/functions/{lambdaArn}/invocations"
+            });
 
             // Create and wait for deployment
             var deploymentResponse = await _apiGatewayV1Client.CreateDeploymentAsync(new Amazon.APIGateway.Model.CreateDeploymentRequest
@@ -185,39 +178,23 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             foreach (var part in routeParts)
             {
                 currentPath += "/" + part;
-                try
+                await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
                 {
-                    await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
-                    {
-                        ApiId = httpApiId,
-                        RouteKey = $"{httpMethod} {currentPath}",
-                        Target = $"integrations/{integrationId}"
-                    });
-                }
-                catch (ConflictException)
-                {
-                    // ignore route already exists
-                }
-               
+                    ApiId = httpApiId,
+                    RouteKey = $"{httpMethod} {currentPath}",
+                    Target = $"integrations/{integrationId}"
+                });
             }
 
             // Create the final route (if it's not already created)
             if (currentPath != "/" + route.Trim('/'))
             {
-                try
+                await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
                 {
-                    await _apiGatewayV2Client.CreateRouteAsync(new CreateRouteRequest
-                    {
-                        ApiId = httpApiId,
-                        RouteKey = $"{httpMethod} {route}",
-                        Target = $"integrations/{integrationId}"
-                    });
-                }
-                catch(ConflictException)
-                {
-                    // ignore
-                }
-               
+                    ApiId = httpApiId,
+                    RouteKey = $"{httpMethod} {route}",
+                    Target = $"integrations/{integrationId}"
+                });
             }
 
             // Create and wait for deployment
