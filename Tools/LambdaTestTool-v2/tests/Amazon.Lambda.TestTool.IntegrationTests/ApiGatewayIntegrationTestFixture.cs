@@ -202,7 +202,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 var binaryUrl = BinaryMediaTypeRestApiBaseUrl.TrimEnd('/') + config.Path;
 
                 await ApiGatewayHelper.WaitForApiAvailability(BinaryMediaTypeRestApiId, binaryUrl, false);
-
                 await ApiGatewayHelper.WaitForApiAvailability(MainRestApiId, restUrl, false);
                 await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV1Id, httpV1Url, true);
                 await ApiGatewayHelper.WaitForApiAvailability(MainHttpApiV2Id, httpV2Url, true);
