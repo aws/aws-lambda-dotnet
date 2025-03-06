@@ -5,10 +5,10 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
 {
     public class TestRouteConfig
     {
-        public string Path { get; set; }
-        public string HttpMethod { get; set; }
-        public string LambdaFunctionArn { get; set; }
-        public string Description { get; set; }
+        public required string Path { get; set; }
+        public required string HttpMethod { get; set; }
+        public required string LambdaFunctionArn { get; set; }
+        public required string Description { get; set; }
     }
 
     public static class TestRoutes

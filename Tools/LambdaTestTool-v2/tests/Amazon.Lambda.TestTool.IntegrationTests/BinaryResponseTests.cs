@@ -23,7 +23,7 @@ public class BinaryResponseTests : BaseApiGatewayTest
     [RetryFact]
     public async Task TestLambdaBinaryResponse()
     {
-        var ports = await GetFreePorts();
+        var ports = GetFreePorts();
         var lambdaPort = ports.lambdaPort;
         var apiGatewayPort = ports.apiGatewayPort;
         

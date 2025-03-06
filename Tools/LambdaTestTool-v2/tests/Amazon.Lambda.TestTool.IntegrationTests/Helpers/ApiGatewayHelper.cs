@@ -194,7 +194,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                         Target = $"integrations/{integrationId}"
                     });
                 }
-                catch (ConflictException e)
+                catch (ConflictException)
                 {
                     // ignore route already exists
                 }
@@ -213,7 +213,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                         Target = $"integrations/{integrationId}"
                     });
                 }
-                catch(ConflictException e)
+                catch(ConflictException)
                 {
                     // ignore
                 }
