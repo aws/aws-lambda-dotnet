@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.AspNetCoreServer.Hosting;
+using Amazon.Lambda.AspNetCoreServer.Hosting;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
 using Amazon.Lambda.Core;
@@ -88,6 +88,46 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
+        /// <summary>
+        /// Adds a function meant to initialize the asp.net and lambda pipelines during <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>
+        /// improving the performance gains offered by SnapStart.
+        /// <para />
+        /// Use the passed <see cref="HttpClient"/> to invoke one or more Routes in your lambda function.
+        /// Be aware that this will invoke your applications function handler code
+        /// multiple times.  It uses a mock <see cref="ILambdaContext"/> which may not be fully populated.
+        /// <para />
+        /// This method automatically registers with <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>.
+        /// <para />
+        /// If SnapStart is not enabled, then this method is ignored and <paramref name="beforeSnapStartRequest"/> is never invoked.
+        /// <para />
+        /// Example:
+        /// <para />
+        /// <code>
+        /// <![CDATA[
+        /// // Example Minimal Api
+        /// var builder = WebApplication.CreateSlimBuilder(args);
+        ///
+        /// // Initialize asp.net pipeline before Snapshot
+        /// builder.Services.AddAWSLambdaBeforeSnapshotRequest(async httpClient =>
+        /// {
+        ///     await httpClient.GetAsync($"/test");
+        /// });
+        /// 
+        /// var app = builder.Build();
+        /// 
+        /// app.MapGet($"/test", () => "Success");
+        /// 
+        /// app.Run(); 
+        /// ]]>
+        /// </code>
+        /// </summary>
+        public static IServiceCollection AddAWSLambdaBeforeSnapshotRequest(this IServiceCollection services, Func<HttpClient, Task> beforeSnapStartRequest)
+        {
+            LambdaSnapstartExecuteRequestsBeforeSnapshotHelper.Registrar.Register(beforeSnapStartRequest);
+
+            return services;
+        }
+
         private static bool TryLambdaSetup(IServiceCollection services, LambdaEventSource eventSource, Action<HostingOptions>? configure, out HostingOptions? hostingOptions)
         {
             hostingOptions = null;
@@ -110,6 +150,9 @@ namespace Microsoft.Extensions.DependencyInjection
             };
 
             Utilities.EnsureLambdaServerRegistered(services, serverType);
+
+            // register a LambdaSnapStartInitializerHttpMessageHandler
+            services.AddSingleton<LambdaSnapstartExecuteRequestsBeforeSnapshotHelper>(new LambdaSnapstartExecuteRequestsBeforeSnapshotHelper(eventSource));
 
             return true;
         }
