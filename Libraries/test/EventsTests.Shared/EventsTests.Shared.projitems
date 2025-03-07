@@ -12,6 +12,8 @@
     <Content Include="$(MSBuildThisFileDirectory)alb-request-multi-value.json" />
     <Content Include="$(MSBuildThisFileDirectory)alb-request-single-value.json" />
     <Content Include="$(MSBuildThisFileDirectory)amazonmq-rabbitmq.json" />
+    <Content Include="$(MSBuildThisFileDirectory)appsync-event-lambda-authorizer.json" />
+    <Content Include="$(MSBuildThisFileDirectory)appsync-event-oidc-authorizer.json" />
     <Content Include="$(MSBuildThisFileDirectory)appsync-event-cognito-authorizer.json" />
     <Content Include="$(MSBuildThisFileDirectory)appsync-event.json" />
     <Content Include="$(MSBuildThisFileDirectory)batch-job-state-change-event.json" />

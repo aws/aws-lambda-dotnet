@@ -4051,6 +4051,64 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void AppSyncTestLambdaAuthorizer(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("appsync-event-lambda-authorizer.json"))
+            {
+                var request = serializer.Deserialize<AppSyncResolverEvent<Dictionary<string, object>>>(fileStream);
+
+                Assert.NotNull(request.Identity);
+
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(request.Identity.ToString())))
+                {
+                    var identity = serializer.Deserialize<AppSyncLambdaIdentity>(stream);
+                    Assert.NotNull(identity);
+
+                    // ResolverContext
+                    Assert.NotNull(identity.ResolverContext);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void AppSyncTestOidcAuthorizer(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("appsync-event-oidc-authorizer.json"))
+            {
+                var request = serializer.Deserialize<AppSyncResolverEvent<Dictionary<string, object>>>(fileStream);
+
+                Assert.NotNull(request.Identity);
+
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(request.Identity.ToString())))
+                {
+                    var identity = serializer.Deserialize<AppSyncOidcIdentity>(stream);
+                    Assert.NotNull(identity);
+
+                    // Claims
+                    Assert.NotNull(identity.Claims);
+                    Assert.True(identity.Claims.ContainsKey("client_id"));
+
+                    // Issuer
+                    Assert.NotEmpty(identity.Issuer);
+
+                    // Sub
+                    Assert.NotEmpty(identity.Sub);
+                }
+            }
+        }
 
         class ClassUsingPascalCase
         {

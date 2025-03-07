@@ -26,6 +26,12 @@ public void Handler(AppSyncResolverEvent<Dictionary<string, object>> appSyncReso
 
             // When using AWS_IAM authorization
             var iamIdentity = lambdaSerializer.Deserialize<AppSyncIamIdentity>(stream);
+
+            // When using AWS_LAMBDA authorization
+            var lambdaIdentity = lambdaSerializer.Deserialize<AppSyncLambdaIdentity>(stream);
+
+            // When using OPENID_CONNECT authorization
+            var oidcIdentity = lambdaSerializer.Deserialize<AppSyncOidcIdentity>(stream);
         }
     }
 }
