@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AppSyncEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Added AppSyncResolverEvent to support direct lambda resolver"
+      ]
+    }
+  ]
+}
