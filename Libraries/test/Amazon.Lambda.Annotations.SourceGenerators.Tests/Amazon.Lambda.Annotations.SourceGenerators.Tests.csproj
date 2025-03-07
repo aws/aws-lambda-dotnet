@@ -189,6 +189,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Update="Snapshots\SQS\ValidSQSEvents_ProcessMessagesWithReservedParameterName_Generated.g.cs">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
       <Content Update="Snapshots\VoidExample_VoidReturn_Generated.g.cs">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>

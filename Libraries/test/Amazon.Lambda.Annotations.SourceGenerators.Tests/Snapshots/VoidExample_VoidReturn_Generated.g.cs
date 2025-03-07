@@ -30,12 +30,12 @@ namespace TestServerlessApp
         /// <summary>
         /// The generated Lambda function handler for <see cref="VoidReturn(string, Amazon.Lambda.Core.ILambdaContext)"/>
         /// </summary>
-        /// <param name="text">The request object that will be processed by the Lambda function handler.</param>
+        /// <param name="__text__">The request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public void VoidReturn(string text, Amazon.Lambda.Core.ILambdaContext __context__)
+        public void VoidReturn(string __text__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
-            voidExample.VoidReturn(text, __context__);
+            voidExample.VoidReturn(__text__, __context__);
         }
 
         private static void SetExecutionEnvironment()

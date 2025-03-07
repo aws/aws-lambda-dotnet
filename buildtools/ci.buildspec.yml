@@ -12,5 +12,6 @@ phases:
       - curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0
   build:
     commands:
+      - dotnet msbuild buildtools/build.proj /t:testtoolv2-tests /p:Cicd=true
       - dotnet msbuild buildtools/build.proj /t:unit-tests /p:Cicd=true 
       - dotnet msbuild buildtools/build.proj /t:integ-tests /p:Cicd=true

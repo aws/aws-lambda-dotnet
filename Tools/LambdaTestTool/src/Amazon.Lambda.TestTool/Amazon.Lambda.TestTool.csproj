@@ -9,14 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.4.0" />
-    <PackageReference Include="AWSSDK.SSO" Version="3.7.300.80" />
-    <PackageReference Include="AWSSDK.SSOOIDC" Version="3.7.301.75" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.5.0" />
+    <PackageReference Include="AWSSDK.SSO" Version="3.7.400.85" />
+    <PackageReference Include="AWSSDK.SSOOIDC" Version="3.7.400.86" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="YamlDotNet.Signed" Version="5.2.1" />
 
-    <PackageReference Include="AWSSDK.Core" Version="3.7.303.20" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.300.80" />
+    <PackageReference Include="AWSSDK.Core" Version="3.7.401.5" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.400.85" />
   </ItemGroup>
 
 	

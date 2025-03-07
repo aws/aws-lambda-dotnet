@@ -42,10 +42,10 @@ namespace TestServerlessApp
         /// <summary>
         /// The generated Lambda function handler for <see cref="Random(int, Amazon.Lambda.Core.ILambdaContext)"/>
         /// </summary>
-        /// <param name="maxValue">The request object that will be processed by the Lambda function handler.</param>
+        /// <param name="__maxValue__">The request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public async System.Threading.Tasks.Task<int> Random(int maxValue, Amazon.Lambda.Core.ILambdaContext __context__)
+        public async System.Threading.Tasks.Task<int> Random(int __maxValue__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
@@ -53,7 +53,7 @@ namespace TestServerlessApp
             var simpleCalculator = scope.ServiceProvider.GetRequiredService<SimpleCalculator>();
             var serializer = scope.ServiceProvider.GetRequiredService<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
-            return await simpleCalculator.Random(maxValue, __context__);
+            return await simpleCalculator.Random(__maxValue__, __context__);
         }
 
         private static void SetExecutionEnvironment()

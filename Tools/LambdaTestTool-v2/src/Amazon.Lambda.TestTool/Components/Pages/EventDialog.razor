@@ -1,0 +1,59 @@
+@using Amazon.Lambda.TestTool.Models
+
+<div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div><b>Request ID:</b> @_eventContainer?.AwsRequestId</div>
+                    <span class="badge @GetStatusBadgeStyle(_eventContainer?.EventStatus)">@_eventContainer?.EventStatus</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <nav class="navbar navbar-expand-md bd-navbar pt-0">
+                    <ul class="navbar-nav nav-underline nav-fill flex-row" id="eventsModalTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#request-tab-pane" type="button" role="tab" aria-controls="request-tab-pane" aria-selected="true" @onclick="ShowRequestTab">
+                                <i class="bi bi-file-earmark"></i>
+                                Request
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="queued-tab" data-bs-toggle="tab" data-bs-target="#response-tab-pane" type="button" role="tab" aria-controls="response-tab-pane" aria-selected="false" @onclick="ShowResponseTab">
+                                <i class="bi bi-file-earmark-fill"></i>
+                                Response
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="tab-content d-flex flex-column flex-grow-1 flex-fill" id="eventsModalTabContent">
+                    <div class="tab-pane fade flex-fill active show" id="request-tab-pane" role="tabpanel" aria-labelledby="request-tab" tabindex="0">
+                        <StandaloneCodeEditor Id="request-body" @ref="_requestEditor" ConstructionOptions="EditorConstructionOptions" CssClass="monaco-modal-editor rounded-4 overflow-hidden border"/>
+                    </div>
+                    <div class="tab-pane fade flex-fill flex-column gap-2" id="response-tab-pane" role="tabpanel" aria-labelledby="response-tab" tabindex="1">
+                        <div class="flex-grow-1">
+                            <div class="d-flex bg-body-tertiary p-2 align-items-start gap-2 rounded-4 rounded-bottom-0 border border-bottom-0">
+                                <div class="d-flex flex-column gap-2">
+                                    <div><b>Last Updated:</b> @_eventContainer?.LastUpdated</div>
+                                    @if (_eventContainer?.EventStatus == EventContainer.Status.Failure)
+                                    {
+                                        <div><b>Error Type:</b> @_eventContainer?.ErrorType</div>
+                                    }
+                                </div>
+                            </div>
+                            @if (_eventContainer?.EventStatus == EventContainer.Status.Failure)
+                            {
+                                <StandaloneCodeEditor Id="response-error-body" @ref="_responseErrorEditor" ConstructionOptions="EditorConstructionOptions" CssClass="monaco-editor-container monaco-modal-editor rounded-4 rounded-top-0 border border-top-0 overflow-hidden"/>
+                            }
+                            else
+                            {
+                                <StandaloneCodeEditor Id="response-body" @ref="_responseEditor" ConstructionOptions="EditorConstructionOptions" CssClass="monaco-editor-container monaco-modal-editor rounded-4 rounded-top-0 border border-top-0 overflow-hidden"/>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

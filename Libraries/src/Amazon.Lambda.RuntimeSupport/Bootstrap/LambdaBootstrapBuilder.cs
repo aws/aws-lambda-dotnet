@@ -19,6 +19,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.Core;
+using Amazon.Lambda.RuntimeSupport.Bootstrap;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -31,6 +32,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private HandlerWrapper _handlerWrapper;
         private HttpClient _httpClient;
         private LambdaBootstrapInitializer _lambdaBootstrapInitializer;
+        private LambdaBootstrapOptions _lambdaBootstrapOptions = new LambdaBootstrapOptions();
 
         private LambdaBootstrapBuilder(HandlerWrapper handlerWrapper)
         {
@@ -449,14 +451,28 @@ namespace Amazon.Lambda.RuntimeSupport
             return this;
         }
 
+        /// <summary>
+        /// Configure Lambda Bootstrap options
+        /// This is for testing purposes and should not be used in production.
+        /// </summary>
+        /// <param name="options">Action to configure options.</param>
+        /// <returns><see cref="LambdaBootstrapBuilder"/></returns>
+        public LambdaBootstrapBuilder ConfigureOptions(Action<LambdaBootstrapOptions> options = null)
+        {
+            if (options != null)
+                options.Invoke(_lambdaBootstrapOptions);
+
+            return this;
+        }
+
         public LambdaBootstrap Build()
         {
             if(_httpClient == null)
             {
-                return new LambdaBootstrap(_handlerWrapper, _lambdaBootstrapInitializer);
+                return new LambdaBootstrap(_handlerWrapper, _lambdaBootstrapOptions, _lambdaBootstrapInitializer);
             }
 
-            return new LambdaBootstrap(_httpClient, _handlerWrapper, _lambdaBootstrapInitializer);
+            return new LambdaBootstrap(_httpClient, _handlerWrapper, _lambdaBootstrapOptions, _lambdaBootstrapInitializer);
         }
     }
 }

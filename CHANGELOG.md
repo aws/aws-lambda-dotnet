@@ -1,3 +1,53 @@
+## Release 2025-03-05
+
+### Amazon.Lambda.TestTool (0.9.1)
+* Add Lambda-Runtime-Deadline-Ms response header
+
+## Release 2025-02-26 #3
+
+### Amazon.Lambda.Annotations (1.6.3)
+* fix: implemented change to always use __ as prefix and suffix for parameter names generated for a LambdaFunction.
+
+## Release 2025-02-26 #2
+
+### Amazon.Lambda.TestTool (0.9.0)
+* Add README
+* Add 6MB request and response size validation.
+
+## Release 2025-02-25
+
+### Amazon.Lambda.AspNetCoreServer (9.0.4)
+* Fixed issue with marking the response body started. This is required for writing trailing headers
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.7.4)
+* Update Amazon.Lambda.AspNetCoreServer dependency to latest.
+### Amazon.Lambda.RuntimeSupport (1.12.3)
+* Add ability to specify configuration using command line args
+
+## Release 2025-02-20
+
+### Amazon.Lambda.TestTool.BlazorTester (0.16.2)
+* Fixed yaml function-based serverless.template Environment Variable parsing and adding to functioninfo
+### Amazon.Lambda.TestTool (0.0.3)
+* Add missing icon for NuGet package
+
+## Release 2025-02-07
+
+### Amazon.Lambda.TestTool (0.0.2-preview)
+* Update default log level to be ERROR in production and INFORMATION in debug mode.
+* Fix exception method when not setting --api-gateway-emulator-mode
+* Breaking change: Switch to use commands to invoke the tool. For example to run the Lambda emulator use the command 'dotnet lambda-test-tool start --lambda-emulator-port 5050'
+* Add new info command to get metadata about the tool. For example getting the version number of the tool.
+
+## Release 2025-01-31 #2
+
+### Amazon.Lambda.TestTool.BlazorTester (0.16.1)
+* Update AWS dependencies. This address issues when attempting to use SnapStart APIs from Amazon.Lambda.Core in Lambda functions.
+
+## Release 2025-01-31
+
+### Amazon.Lambda.TestTool (0.0.1-preview)
+* Initial preview release
+
 ## Release 2024-12-09
 
 ### SnapshotRestore.Registry (1.0.1)

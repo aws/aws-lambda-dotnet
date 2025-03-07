@@ -30,12 +30,12 @@ namespace TestServerlessApp
         /// <summary>
         /// The generated Lambda function handler for <see cref="TaskReturn(string, Amazon.Lambda.Core.ILambdaContext)"/>
         /// </summary>
-        /// <param name="text">The request object that will be processed by the Lambda function handler.</param>
+        /// <param name="__text__">The request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public async System.Threading.Tasks.Task TaskReturn(string text, Amazon.Lambda.Core.ILambdaContext __context__)
+        public async System.Threading.Tasks.Task TaskReturn(string __text__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
-            await taskExample.TaskReturn(text, __context__);
+            await taskExample.TaskReturn(__text__, __context__);
         }
 
         private static void SetExecutionEnvironment()

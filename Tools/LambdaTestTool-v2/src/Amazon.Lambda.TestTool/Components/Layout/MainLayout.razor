@@ -1,0 +1,125 @@
+﻿@using Amazon.Lambda.TestTool.Services
+@inherits LayoutComponentBase
+
+@inject IJSRuntime Js
+@inject IThemeService ThemeService
+
+<nav class="navbar navbar-expand-lg bd-navbar sticky-top bg-body-tertiary">
+    <div class="container-fluid">
+        <a class="navbar-brand py-0 me-4 d-flex align-items-center gap-3" href="/">
+            <img src="aws.svg" width="42" height="42" class="align-text-top logo-light-mode"/>
+            <img src="aws-light.svg" width="42" height="42" class="align-text-top logo-dark-mode"/>
+            Lambda Test Tool
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav nav-underline me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <NavLink class="nav-link d-flex align-items-center gap-1" href="/" Match="NavLinkMatch.All">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-house-fill" viewBox="0 0 16 16">
+                            <path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L8 2.207l6.646 6.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293z"/>
+                            <path d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293z"/>
+                        </svg>
+                        Function Tester
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link d-flex align-items-center gap-1" href="/documentation">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-file-text-fill" viewBox="0 0 16 16">
+                            <path d="M12 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2M5 4h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1 0-1m-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5M5 8h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1 0-1m0 2h3a.5.5 0 0 1 0 1H5a.5.5 0 0 1 0-1"/>
+                        </svg>
+                        Documentation
+                    </NavLink>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav flex-row flex-wrap ms-md-auto">
+                <li class="nav-item col-6 col-lg-auto">
+                    <a class="nav-link py-2 px-0 px-lg-2" href="@Constants.LinkGithubTestTool" target="_blank" rel="noopener">
+                        <i class="bi bi-github"></i>
+                        <small class="d-lg-none ms-2">GitHub</small>
+                    </a>
+                </li>
+                <li class="nav-item py-2 py-lg-1 col-12 col-lg-auto">
+                    <div class="vr d-none d-lg-flex h-100 mx-lg-2"></div>
+                    <hr class="d-lg-none my-2 text-white-50">
+                </li>
+                <li class="nav-item dropdown">
+                    <button class="nav-link py-2 px-0 px-lg-2 dropdown-toggle d-flex align-items-center show" id="bd-theme" type="button" aria-expanded="true" data-bs-toggle="dropdown" data-bs-display="static" aria-label="Toggle theme (light)">
+                        @if (ThemeService.CurrentTheme.Equals("dark"))
+                        {
+                            <i class="bi bi-moon-stars-fill"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-sun-fill"></i>
+                        }
+                        <span class="d-lg-none ms-2" id="bd-theme-text">Toggle theme</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bd-theme-text" data-bs-popper="static">
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center gap-2" data-bs-theme-value="light" aria-pressed="true" @onclick="SetLightTheme">
+                                <i class="bi bi-sun-fill"></i>
+                                Light
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item d-flex align-items-center gap-2" data-bs-theme-value="dark" aria-pressed="false" @onclick="SetDarkTheme">
+                                <i class="bi bi-moon-stars-fill"></i>
+                                Dark
+                            </button>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid content d-flex flex-column flex-grow-1 px-4">
+    @Body
+</div>
+
+<footer class="footer text-muted p-3 mt-4">
+    <div class="d-flex container justify-content-center">
+        &copy; @DateTime.Now.Year - AWS Lambda Test Tool
+    </div>
+</footer>
+
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (string.IsNullOrEmpty(ThemeService.CurrentTheme))
+        {
+            ThemeService.CurrentTheme = await Js.InvokeAsync<string>("getPreferredTheme");
+        }
+    }
+
+    private async Task SetLightTheme()
+    {
+        await SetTheme("light");
+    }
+
+    private async Task SetDarkTheme()
+    {
+        await SetTheme("dark");
+    }
+
+    private async Task SetTheme(string theme)
+    {
+        await Js.InvokeVoidAsync("setStoredTheme", theme);
+        await Js.InvokeVoidAsync("setTheme", theme);
+        ThemeService.CurrentTheme = theme;
+    }
+
+}
