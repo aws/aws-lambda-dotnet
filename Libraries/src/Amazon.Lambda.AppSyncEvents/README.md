@@ -4,7 +4,7 @@ This package contains classes that can be used as input types for Lambda functio
 
 # Sample Function
 
-The following is a sample class and Lambda function that receives AppSync event record data as an `appSyncResolverEvent` and logs some of the incoming event data. (Note that by default anything written to Console will be logged as CloudWatch Logs events.)
+The following is a sample class and Lambda function that receives AppSync resolver event record data as an `appSyncResolverEvent` and logs some of the incoming event data. (Note that by default anything written to Console will be logged as CloudWatch Logs events.)
 
 ```csharp
 public void Handler(AppSyncResolverEvent<Dictionary<string, object>> appSyncResolverEvent, ILambdaContext context)
