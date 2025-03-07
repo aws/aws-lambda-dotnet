@@ -27,7 +27,9 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             await RetryHelper.RetryOperation(async () =>
             {
-                await RunV1Test(testCase, _fixture.ParseAndReturnBodyRestApiUrl, ApiGatewayEmulatorMode.Rest);
+                var baseUrl = _fixture.GetAppropriateBaseUrl(ApiGatewayType.Rest);
+                var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
+                await RunV1Test(testCase, url, ApiGatewayEmulatorMode.Rest);
                 return true;
             });
         }
@@ -39,7 +41,9 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             await RetryHelper.RetryOperation(async () =>
             {
-                await RunV1Test(testCase, _fixture.ParseAndReturnBodyHttpApiV1Url, ApiGatewayEmulatorMode.HttpV1);
+                var baseUrl = _fixture.GetAppropriateBaseUrl(ApiGatewayType.HttpV1);
+                var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
+                await RunV1Test(testCase, url, ApiGatewayEmulatorMode.HttpV1);
                 return true;
             });
         }
@@ -51,9 +55,11 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
         {
             await RetryHelper.RetryOperation(async () =>
             {
+                var baseUrl = _fixture.GetAppropriateBaseUrl(ApiGatewayType.HttpV2);
+                var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
                 var testResponse = testCase.Response as APIGatewayHttpApiV2ProxyResponse;
                 Assert.NotNull(testResponse);
-                var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(testResponse, _fixture.ParseAndReturnBodyHttpApiV2Url);
+                var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(testResponse, url);
                 await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
                 await testCase.IntegrationAssertions(actualResponse, ApiGatewayEmulatorMode.HttpV2);
                 return true;

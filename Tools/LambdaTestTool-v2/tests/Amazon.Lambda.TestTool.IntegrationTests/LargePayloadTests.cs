@@ -24,7 +24,7 @@ public class LargePayloadTests : BaseApiGatewayTest
     [InlineData(ApiGatewayEmulatorMode.HttpV1)]
     public async Task TestLambdaWithLargeRequestPayload_RestAndV1(ApiGatewayEmulatorMode mode)
     {
-        var ports = await GetFreePorts();
+        var ports = GetFreePorts();
         var lambdaPort = ports.lambdaPort;
         var apiGatewayPort = ports.apiGatewayPort;
         
@@ -71,7 +71,7 @@ public class LargePayloadTests : BaseApiGatewayTest
     [Fact]
     public async Task TestLambdaWithLargeRequestPayload_HttpV2()
     {
-        var ports = await GetFreePorts();
+        var ports = GetFreePorts();
         var lambdaPort = ports.lambdaPort;
         var apiGatewayPort = ports.apiGatewayPort;
         

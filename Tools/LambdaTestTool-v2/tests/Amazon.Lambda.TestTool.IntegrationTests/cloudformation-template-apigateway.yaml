@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'CloudFormation template for API Gateway and Lambda integration tests'
 
 Resources:
-
+  # Lambda Functions
   ParseAndReturnBodyLambdaFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
@@ -64,6 +64,7 @@ Resources:
           };
       Runtime: nodejs20.x
 
+  # IAM Role for Lambda Functions
   LambdaExecutionRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -77,370 +78,30 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
 
-  # ParseAndReturnBody APIs
-  ParseAndReturnBodyRestApi:
+  # Main REST API Gateway (without binary media types)
+  MainRestApi:
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
-      Name: !Sub '${AWS::StackName}-ParseAndReturnBodyRestAPI'
+      Name: !Sub '${AWS::StackName}-MainRestAPI'
       EndpointConfiguration:
         Types:
           - REGIONAL
 
-  ParseAndReturnBodyRestApiResource:
-    Type: 'AWS::ApiGateway::Resource'
-    Properties:
-      ParentId: !GetAtt ParseAndReturnBodyRestApi.RootResourceId
-      PathPart: 'test'
-      RestApiId: !Ref ParseAndReturnBodyRestApi
-
-  ParseAndReturnBodyRestApiMethod:
-    Type: 'AWS::ApiGateway::Method'
-    Properties:
-      HttpMethod: POST
-      ResourceId: !Ref ParseAndReturnBodyRestApiResource
-      RestApiId: !Ref ParseAndReturnBodyRestApi
-      AuthorizationType: NONE
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ParseAndReturnBodyLambdaFunction.Arn}/invocations'
-
-  ParseAndReturnBodyRestApiDeployment:
-    Type: 'AWS::ApiGateway::Deployment'
-    DependsOn: ParseAndReturnBodyRestApiMethod
-    Properties:
-      RestApiId: !Ref ParseAndReturnBodyRestApi
-      StageName: 'test'
-
-  ParseAndReturnBodyHttpApiV1:
+  # Main HTTP API v1
+  MainHttpApiV1:
     Type: 'AWS::ApiGatewayV2::Api'
     Properties:
-      Name: !Sub '${AWS::StackName}-ParseAndReturnBodyHttpAPIv1'
+      Name: !Sub '${AWS::StackName}-MainHttpAPIv1'
       ProtocolType: HTTP
 
-  ParseAndReturnBodyHttpApiV1Integration:
-    Type: 'AWS::ApiGatewayV2::Integration'
-    Properties:
-      ApiId: !Ref ParseAndReturnBodyHttpApiV1
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt ParseAndReturnBodyLambdaFunction.Arn
-      PayloadFormatVersion: '1.0'
-
-  ParseAndReturnBodyHttpApiV1Route:
-    Type: 'AWS::ApiGatewayV2::Route'
-    Properties:
-      ApiId: !Ref ParseAndReturnBodyHttpApiV1
-      RouteKey: 'POST /test'
-      Target: !Join
-        - /
-        - - integrations
-          - !Ref ParseAndReturnBodyHttpApiV1Integration
-
-  ParseAndReturnBodyHttpApiV1Stage:
-    Type: 'AWS::ApiGatewayV2::Stage'
-    Properties:
-      ApiId: !Ref ParseAndReturnBodyHttpApiV1
-      StageName: '$default'
-      AutoDeploy: true
-
-  ParseAndReturnBodyHttpApiV2:
+  # Main HTTP API v2
+  MainHttpApiV2:
     Type: 'AWS::ApiGatewayV2::Api'
     Properties:
-      Name: !Sub '${AWS::StackName}-ParseAndReturnBodyHttpAPIv2'
+      Name: !Sub '${AWS::StackName}-MainHttpAPIv2'
       ProtocolType: HTTP
 
-  ParseAndReturnBodyHttpApiV2Integration:
-    Type: 'AWS::ApiGatewayV2::Integration'
-    Properties:
-      ApiId: !Ref ParseAndReturnBodyHttpApiV2
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt ParseAndReturnBodyLambdaFunction.Arn
-      PayloadFormatVersion: '2.0'
-
-  ParseAndReturnBodyHttpApiV2Route:
-    Type: 'AWS::ApiGatewayV2::Route'
-    Properties:
-      ApiId: !Ref ParseAndReturnBodyHttpApiV2
-      RouteKey: 'POST /test'
-      Target: !Join
-        - /
-        - - integrations
-          - !Ref ParseAndReturnBodyHttpApiV2Integration
-
-  ParseAndReturnBodyHttpApiV2Stage:
-    Type: 'AWS::ApiGatewayV2::Stage'
-    Properties:
-      ApiId: !Ref ParseAndReturnBodyHttpApiV2
-      StageName: '$default'
-      AutoDeploy: true
-
-  # ReturnRawBody APIs
-  ReturnRawBodyRestApi:
-    Type: 'AWS::ApiGateway::RestApi'
-    Properties:
-      Name: !Sub '${AWS::StackName}-ReturnRawBodyRestAPI'
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
-
-  ReturnRawBodyRestApiResource:
-    Type: 'AWS::ApiGateway::Resource'
-    Properties:
-      ParentId: !GetAtt ReturnRawBodyRestApi.RootResourceId
-      PathPart: 'test'
-      RestApiId: !Ref ReturnRawBodyRestApi
-
-  ReturnRawBodyRestApiMethod:
-    Type: 'AWS::ApiGateway::Method'
-    Properties:
-      HttpMethod: POST
-      ResourceId: !Ref ReturnRawBodyRestApiResource
-      RestApiId: !Ref ReturnRawBodyRestApi
-      AuthorizationType: NONE
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReturnRawBodyLambdaFunction.Arn}/invocations'
-
-  ReturnRawBodyRestApiDeployment:
-    Type: 'AWS::ApiGateway::Deployment'
-    DependsOn: ReturnRawBodyRestApiMethod
-    Properties:
-      RestApiId: !Ref ReturnRawBodyRestApi
-      StageName: 'test'
-
-  ReturnRawBodyHttpApiV1:
-    Type: 'AWS::ApiGatewayV2::Api'
-    Properties:
-      Name: !Sub '${AWS::StackName}-ReturnRawBodyHttpAPIv1'
-      ProtocolType: HTTP
-
-  ReturnRawBodyHttpApiV1Integration:
-    Type: 'AWS::ApiGatewayV2::Integration'
-    Properties:
-      ApiId: !Ref ReturnRawBodyHttpApiV1
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt ReturnRawBodyLambdaFunction.Arn
-      PayloadFormatVersion: '1.0'
-
-  ReturnRawBodyHttpApiV1Route:
-    Type: 'AWS::ApiGatewayV2::Route'
-    Properties:
-      ApiId: !Ref ReturnRawBodyHttpApiV1
-      RouteKey: 'POST /test'
-      Target: !Join
-        - /
-        - - integrations
-          - !Ref ReturnRawBodyHttpApiV1Integration
-
-  ReturnRawBodyHttpApiV1Stage:
-    Type: 'AWS::ApiGatewayV2::Stage'
-    Properties:
-      ApiId: !Ref ReturnRawBodyHttpApiV1
-      StageName: '$default'
-      AutoDeploy: true
-
-  ReturnRawBodyHttpApiV2:
-    Type: 'AWS::ApiGatewayV2::Api'
-    Properties:
-      Name: !Sub '${AWS::StackName}-ReturnRawBodyHttpAPIv2'
-      ProtocolType: HTTP
-
-  ReturnRawBodyHttpApiV2Integration:
-    Type: 'AWS::ApiGatewayV2::Integration'
-    Properties:
-      ApiId: !Ref ReturnRawBodyHttpApiV2
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt ReturnRawBodyLambdaFunction.Arn
-      PayloadFormatVersion: '2.0'
-
-  ReturnRawBodyHttpApiV2Route:
-    Type: 'AWS::ApiGatewayV2::Route'
-    Properties:
-      ApiId: !Ref ReturnRawBodyHttpApiV2
-      RouteKey: 'POST /test'
-      Target: !Join
-        - /
-        - - integrations
-          - !Ref ReturnRawBodyHttpApiV2Integration
-
-  ReturnRawBodyHttpApiV2Stage:
-    Type: 'AWS::ApiGatewayV2::Stage'
-    Properties:
-      ApiId: !Ref ReturnRawBodyHttpApiV2
-      StageName: '$default'
-      AutoDeploy: true
-
-  # ReturnFullEvent APIs
-  ReturnFullEventRestApi:
-    Type: 'AWS::ApiGateway::RestApi'
-    Properties:
-      Name: !Sub '${AWS::StackName}-ReturnFullEventRestAPI'
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
-
-  ReturnFullEventRestApiResource:
-    Type: 'AWS::ApiGateway::Resource'
-    Properties:
-      ParentId: !GetAtt ReturnFullEventRestApi.RootResourceId
-      PathPart: 'test'
-      RestApiId: !Ref ReturnFullEventRestApi
-
-  ReturnFullEventRestApiMethod:
-    Type: 'AWS::ApiGateway::Method'
-    Properties:
-      HttpMethod: POST
-      ResourceId: !Ref ReturnFullEventRestApiResource
-      RestApiId: !Ref ReturnFullEventRestApi
-      AuthorizationType: NONE
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReturnFullEventLambdaFunction.Arn}/invocations'
-
-  ReturnFullEventRestApiDeployment:
-    Type: 'AWS::ApiGateway::Deployment'
-    DependsOn: ReturnFullEventRestApiMethod
-    Properties:
-      RestApiId: !Ref ReturnFullEventRestApi
-      StageName: 'test'
-
-  ReturnFullEventHttpApiV1:
-    Type: 'AWS::ApiGatewayV2::Api'
-    Properties:
-      Name: !Sub '${AWS::StackName}-ReturnFullEventHttpAPIv1'
-      ProtocolType: HTTP
-
-  ReturnFullEventHttpApiV1Integration:
-    Type: 'AWS::ApiGatewayV2::Integration'
-    Properties:
-      ApiId: !Ref ReturnFullEventHttpApiV1
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt ReturnFullEventLambdaFunction.Arn
-      PayloadFormatVersion: '1.0'
-
-  ReturnFullEventHttpApiV1Route:
-    Type: 'AWS::ApiGatewayV2::Route'
-    Properties:
-      ApiId: !Ref ReturnFullEventHttpApiV1
-      RouteKey: 'POST /test'
-      Target: !Join
-        - /
-        - - integrations
-          - !Ref ReturnFullEventHttpApiV1Integration
-
-  ReturnFullEventHttpApiV1Stage:
-    Type: 'AWS::ApiGatewayV2::Stage'
-    Properties:
-      ApiId: !Ref ReturnFullEventHttpApiV1
-      StageName: '$default'
-      AutoDeploy: true
-
-  ReturnFullEventHttpApiV2:
-    Type: 'AWS::ApiGatewayV2::Api'
-    Properties:
-      Name: !Sub '${AWS::StackName}-ReturnFullEventHttpAPIv2'
-      ProtocolType: HTTP
-
-  ReturnFullEventHttpApiV2Integration:
-    Type: 'AWS::ApiGatewayV2::Integration'
-    Properties:
-      ApiId: !Ref ReturnFullEventHttpApiV2
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt ReturnFullEventLambdaFunction.Arn
-      PayloadFormatVersion: '2.0'
-
-  ReturnFullEventHttpApiV2Route:
-    Type: 'AWS::ApiGatewayV2::Route'
-    Properties:
-      ApiId: !Ref ReturnFullEventHttpApiV2
-      RouteKey: 'POST /test'
-      Target: !Join
-        - /
-        - - integrations
-          - !Ref ReturnFullEventHttpApiV2Integration
-
-  ReturnFullEventHttpApiV2Stage:
-    Type: 'AWS::ApiGatewayV2::Stage'
-    Properties:
-      ApiId: !Ref ReturnFullEventHttpApiV2
-      StageName: '$default'
-      AutoDeploy: true
-
-  # Lambda Permissions
-  LambdaPermissionParseAndReturnBodyRestApi:
-    Type: 'AWS::Lambda::Permission'
-    Properties:
-      Action: 'lambda:InvokeFunction'
-      FunctionName: !GetAtt ParseAndReturnBodyLambdaFunction.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ParseAndReturnBodyRestApi}/*'
-
-  LambdaPermissionParseAndReturnBodyHttpApiV1:
-    Type: 'AWS::Lambda::Permission'
-    Properties:
-      Action: 'lambda:InvokeFunction'
-      FunctionName: !GetAtt ParseAndReturnBodyLambdaFunction.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ParseAndReturnBodyHttpApiV1}/*'
-
-  LambdaPermissionParseAndReturnBodyHttpApiV2:
-    Type: 'AWS::Lambda::Permission'
-    Properties:
-      Action: 'lambda:InvokeFunction'
-      FunctionName: !GetAtt ParseAndReturnBodyLambdaFunction.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ParseAndReturnBodyHttpApiV2}/*'
-
-  LambdaPermissionReturnRawBodyRestApi:
-    Type: 'AWS::Lambda::Permission'
-    Properties:
-      Action: 'lambda:InvokeFunction'
-      FunctionName: !GetAtt ReturnRawBodyLambdaFunction.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ReturnRawBodyRestApi}/*'
-
-  LambdaPermissionReturnRawBodyHttpApiV1:
-    Type: 'AWS::Lambda::Permission'
-    Properties:
-      Action: 'lambda:InvokeFunction'
-      FunctionName: !GetAtt ReturnRawBodyLambdaFunction.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ReturnRawBodyHttpApiV1}/*'
-
-  LambdaPermissionReturnRawBodyHttpApiV2:
-    Type: 'AWS::Lambda::Permission'
-    Properties:
-      Action: 'lambda:InvokeFunction'
-      FunctionName: !GetAtt ReturnRawBodyLambdaFunction.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ReturnRawBodyHttpApiV2}/*'
-
-  LambdaPermissionReturnFullEventRestApi:
-    Type: 'AWS::Lambda::Permission'
-    Properties:
-      Action: 'lambda:InvokeFunction'
-      FunctionName: !GetAtt ReturnFullEventLambdaFunction.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ReturnFullEventRestApi}/*'
-
-  LambdaPermissionReturnFullEventHttpApiV1:
-    Type: 'AWS::Lambda::Permission'
-    Properties:
-      Action: 'lambda:InvokeFunction'
-      FunctionName: !GetAtt ReturnFullEventLambdaFunction.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ReturnFullEventHttpApiV1}/*'
-
-  LambdaPermissionReturnFullEventHttpApiV2:
-    Type: 'AWS::Lambda::Permission'
-    Properties:
-      Action: 'lambda:InvokeFunction'
-      FunctionName: !GetAtt ReturnFullEventLambdaFunction.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ReturnFullEventHttpApiV2}/*'
-
+  # Special REST API for binary media type tests
   BinaryMediaTypeRestApi:
     Type: 'AWS::ApiGateway::RestApi'
     Properties:
@@ -451,32 +112,116 @@ Resources:
       BinaryMediaTypes:
         - '*/*'
 
-  BinaryMediaTypeRestApiResource:
-    Type: 'AWS::ApiGateway::Resource'
-    Properties:
-      ParentId: !GetAtt BinaryMediaTypeRestApi.RootResourceId
-      PathPart: 'test'
-      RestApiId: !Ref BinaryMediaTypeRestApi
-
-  BinaryMediaTypeRestApiMethod:
+  # Add a dummy root method for the initial deployment
+  MainRestApiRootMethod:
     Type: 'AWS::ApiGateway::Method'
     Properties:
-      HttpMethod: POST
-      ResourceId: !Ref BinaryMediaTypeRestApiResource
-      RestApiId: !Ref BinaryMediaTypeRestApi
+      HttpMethod: GET
+      ResourceId: !GetAtt MainRestApi.RootResourceId
+      RestApiId: !Ref MainRestApi
       AuthorizationType: NONE
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
-        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReturnDecodedParseBinLambdaFunction.Arn}/invocations'
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReturnFullEventLambdaFunction.Arn}/invocations'
 
-  BinaryMediaTypeRestApiDeployment:
+  MainRestApiDeployment:
     Type: 'AWS::ApiGateway::Deployment'
-    DependsOn: BinaryMediaTypeRestApiMethod
+    DependsOn: MainRestApiRootMethod  # Add explicit dependency
     Properties:
-      RestApiId: !Ref BinaryMediaTypeRestApi
+      RestApiId: !Ref MainRestApi
       StageName: 'test'
 
+  MainHttpV1Stage:
+    Type: 'AWS::ApiGatewayV2::Stage'
+    Properties:
+      ApiId: !Ref MainHttpApiV1
+      StageName: '$default'
+      AutoDeploy: true
+
+  MainHttpV2Stage:
+    Type: 'AWS::ApiGatewayV2::Stage'
+    Properties:
+      ApiId: !Ref MainHttpApiV2
+      StageName: '$default'
+      AutoDeploy: true
+
+  # Lambda Permissions for REST API
+  LambdaPermissionMainRestApi:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ParseAndReturnBodyLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MainRestApi}/*'
+
+  LambdaPermissionMainRestApi2:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ReturnRawBodyLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MainRestApi}/*'
+
+  LambdaPermissionMainRestApi3:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ReturnFullEventLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MainRestApi}/*'
+
+  # Lambda Permissions for HTTP API v1
+  LambdaPermissionMainHttpApiV1:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ParseAndReturnBodyLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MainHttpApiV1}/*'
+
+  LambdaPermissionMainHttpApiV12:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ReturnRawBodyLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MainHttpApiV1}/*'
+
+  LambdaPermissionMainHttpApiV13:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ReturnFullEventLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MainHttpApiV1}/*'
+
+  # Lambda Permissions for HTTP API v2
+  LambdaPermissionMainHttpApiV2:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ParseAndReturnBodyLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MainHttpApiV2}/*'
+
+  LambdaPermissionMainHttpApiV22:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ReturnRawBodyLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MainHttpApiV2}/*'
+
+  LambdaPermissionMainHttpApiV23:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt ReturnFullEventLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MainHttpApiV2}/*'
+
+  # Lambda Permissions for Binary Media Type REST API
   LambdaPermissionBinaryMediaTypeRestApi:
     Type: 'AWS::Lambda::Permission'
     Properties:
@@ -494,77 +239,37 @@ Resources:
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${BinaryMediaTypeRestApi}/*'
 
 Outputs:
-  ParseAndReturnBodyRestApiId:
-    Description: 'ID of the Parse and Return Body REST API'
-    Value: !Ref ParseAndReturnBodyRestApi
+  MainRestApiId:
+    Description: 'ID of the Main REST API'
+    Value: !Ref MainRestApi
 
-  ParseAndReturnBodyRestApiUrl:
-    Description: 'URL of the Parse and Return Body REST API'
-    Value: !Sub 'https://${ParseAndReturnBodyRestApi}.execute-api.${AWS::Region}.amazonaws.com/test/test'
+  MainRestApiBaseUrl:
+    Description: 'Base URL of the Main REST API'
+    Value: !Sub 'https://${MainRestApi}.execute-api.${AWS::Region}.amazonaws.com/test'
 
-  ParseAndReturnBodyHttpApiV1Id:
-    Description: 'ID of the Parse and Return Body HTTP API v1'
-    Value: !Ref ParseAndReturnBodyHttpApiV1
+  MainHttpApiV1Id:
+    Description: 'ID of the Main HTTP API v1'
+    Value: !Ref MainHttpApiV1
 
-  ParseAndReturnBodyHttpApiV1Url:
-    Description: 'URL of the Parse and Return Body HTTP API v1'
-    Value: !Sub 'https://${ParseAndReturnBodyHttpApiV1}.execute-api.${AWS::Region}.amazonaws.com/test'
+  MainHttpApiV1BaseUrl:
+    Description: 'Base URL of the Main HTTP API v1'
+    Value: !Sub 'https://${MainHttpApiV1}.execute-api.${AWS::Region}.amazonaws.com'
 
-  ParseAndReturnBodyHttpApiV2Id:
-    Description: 'ID of the Parse and Return Body HTTP API v2'
-    Value: !Ref ParseAndReturnBodyHttpApiV2
+  MainHttpApiV2Id:
+    Description: 'ID of the Main HTTP API v2'
+    Value: !Ref MainHttpApiV2
 
-  ParseAndReturnBodyHttpApiV2Url:
-    Description: 'URL of the Parse and Return Body HTTP API v2'
-    Value: !Sub 'https://${ParseAndReturnBodyHttpApiV2}.execute-api.${AWS::Region}.amazonaws.com/test'
+  MainHttpApiV2BaseUrl:
+    Description: 'Base URL of the Main HTTP API v2'
+    Value: !Sub 'https://${MainHttpApiV2}.execute-api.${AWS::Region}.amazonaws.com'
 
-  ReturnRawBodyRestApiId:
-    Description: 'ID of the Return Raw Body REST API'
-    Value: !Ref ReturnRawBodyRestApi
+  BinaryMediaTypeRestApiId:
+    Description: 'ID of the Binary Media Type REST API'
+    Value: !Ref BinaryMediaTypeRestApi
 
-  ReturnRawBodyRestApiUrl:
-    Description: 'URL of the Return Raw Body REST API'
-    Value: !Sub 'https://${ReturnRawBodyRestApi}.execute-api.${AWS::Region}.amazonaws.com/test/test'
-
-  ReturnRawBodyHttpApiV1Id:
-    Description: 'ID of the Return Raw Body HTTP API v1'
-    Value: !Ref ReturnRawBodyHttpApiV1
-
-  ReturnRawBodyHttpApiV1Url:
-    Description: 'URL of the Return Raw Body HTTP API v1'
-    Value: !Sub 'https://${ReturnRawBodyHttpApiV1}.execute-api.${AWS::Region}.amazonaws.com/test'
-
-  ReturnRawBodyHttpApiV2Id:
-    Description: 'ID of the Return Raw Body HTTP API v2'
-    Value: !Ref ReturnRawBodyHttpApiV2
-
-  ReturnRawBodyHttpApiV2Url:
-    Description: 'URL of the Return Raw Body HTTP API v2'
-    Value: !Sub 'https://${ReturnRawBodyHttpApiV2}.execute-api.${AWS::Region}.amazonaws.com/test'
-
-  ReturnFullEventRestApiId:
-    Description: 'ID of the Return Full Event REST API'
-    Value: !Ref ReturnFullEventRestApi
-
-  ReturnFullEventRestApiUrl:
-    Description: 'URL of the Return Full Event REST API'
-    Value: !Sub 'https://${ReturnFullEventRestApi}.execute-api.${AWS::Region}.amazonaws.com/test/test'
-
-  ReturnFullEventHttpApiV1Id:
-    Description: 'ID of the Return Full Event HTTP API v1'
-    Value: !Ref ReturnFullEventHttpApiV1
-
-  ReturnFullEventHttpApiV1Url:
-    Description: 'URL of the Return Full Event HTTP API v1'
-    Value: !Sub 'https://${ReturnFullEventHttpApiV1}.execute-api.${AWS::Region}.amazonaws.com/test'
-
-  ReturnFullEventHttpApiV2Id:
-    Description: 'ID of the Return Full Event HTTP API v2'
-    Value: !Ref ReturnFullEventHttpApiV2
-
-  ReturnFullEventHttpApiV2Url:
-    Description: 'URL of the Return Full Event HTTP API v2'
-    Value: !Sub 'https://${ReturnFullEventHttpApiV2}.execute-api.${AWS::Region}.amazonaws.com/test'
+  BinaryMediaTypeRestApiBaseUrl:
+    Description: 'Base URL of the Binary Media Type REST API'
+    Value: !Sub 'https://${BinaryMediaTypeRestApi}.execute-api.${AWS::Region}.amazonaws.com/test'
 
   ParseAndReturnBodyLambdaFunctionArn:
     Description: 'ARN of the Parse and Return Body Lambda Function'
@@ -578,10 +283,6 @@ Outputs:
     Description: 'ARN of the Return Full Event Lambda Function'
     Value: !GetAtt ReturnFullEventLambdaFunction.Arn
 
-  BinaryMediaTypeRestApiId:
-      Description: 'ID of the BinaryMediaTypeRest Media REST API'
-      Value: !Ref BinaryMediaTypeRestApi
-
-  BinaryMediaTypeRestApiUrl:
-      Description: 'URL of the BinaryMediaTypeRest Media REST API'
-      Value: !Sub 'https://${BinaryMediaTypeRestApi}.execute-api.${AWS::Region}.amazonaws.com/test/test'
+  ReturnDecodedParseBinLambdaFunctionArn:
+    Description: 'ARN of the Return Decoded Parse Bin Lambda Function'
+    Value: !GetAtt ReturnDecodedParseBinLambdaFunction.Arn
