@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.Core;
+using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using System;
@@ -47,6 +47,9 @@ namespace CustomRuntimeFunctionTest
                         break;
                     case nameof(LoggingStressTest):
                         bootstrap = new LambdaBootstrap(LoggingStressTest);
+                        break;
+                    case nameof(GlobalLoggingTest):
+                        bootstrap = new LambdaBootstrap(GlobalLoggingTest);
                         break;
                     case nameof(LoggingTest):
                         bootstrap = new LambdaBootstrap(LoggingTest);
@@ -167,6 +170,15 @@ namespace CustomRuntimeFunctionTest
             Task.WaitAll(task1, task2, task3);
 
             return Task.FromResult(GetInvocationResponse(nameof(LoggingStressTest), "success"));
+        }
+
+
+        private static Task<InvocationResponse> GlobalLoggingTest(InvocationRequest invocation)
+        {
+#pragma warning disable CA2252
+            LambdaLogger.Log(LogLevel.Information, "This is a global log message with {argument} as an argument", "foobar");
+#pragma warning restore CA2252
+            return Task.FromResult(GetInvocationResponse(nameof(GlobalLoggingTest), true));
         }
 
         private static Task<InvocationResponse> LoggingTest(InvocationRequest invocation)
