@@ -53,4 +53,11 @@ public sealed class RunCommandSettings : CommandSettings
     [CommandOption("--api-gateway-emulator-port <PORT>")]
     [Description("The port number used for the test tool's API Gateway emulator.")]
     public int? ApiGatewayEmulatorPort { get; set; }
+
+    /// <summary>
+    /// JSON configuration for an SQS event source that will poll messages from a queue and forward the messages to the events.
+    /// </summary>
+    [CommandOption("--sqs-eventsource-config <JSON>")]
+    [Description("The JSON configuration for an SQS event source that will poll messages from a queue and forward the messages to the events. If the value is a file path the file will be read as the JSON value.")]
+    public string? SQSEventSourceConfig { get; set; }
 }

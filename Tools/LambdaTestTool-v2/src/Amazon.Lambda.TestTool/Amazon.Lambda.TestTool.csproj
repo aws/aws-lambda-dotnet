@@ -26,7 +26,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.0" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.400" />
     <PackageReference Include="AWSSDK.Lambda" Version="3.7.411.17" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.400.109" />
     <PackageReference Include="Spectre.Console" Version="0.49.1" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.1" />
