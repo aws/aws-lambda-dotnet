@@ -1,0 +1,21 @@
+{
+  "messageVersion": "1.0",
+  "agent": {
+    "name": "TestAgent",
+    "id": "agent-12345",
+    "alias": "TestAlias",
+    "version": "1.0"
+  },
+  "inputText": "Get all values",
+  "sessionId": "session-12345",
+  "actionGroup": "ValuesApi",
+  "apiPath": "/api/values",
+  "httpMethod": "GET",
+  "parameters": [],
+  "sessionAttributes": {
+    "key1": "value1"
+  },
+  "promptSessionAttributes": {
+    "key2": "value2"
+  }
+} 

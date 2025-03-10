@@ -1,0 +1,27 @@
+{
+  "messageVersion": "1.0",
+  "agent": {
+    "name": "TestAgent",
+    "id": "agent-12345",
+    "alias": "TestAlias",
+    "version": "1.0"
+  },
+  "inputText": "Get value with path param",
+  "sessionId": "session-12345",
+  "actionGroup": "PathParamApi",
+  "apiPath": "/api/resourcepath/{id}",
+  "httpMethod": "GET",
+    "parameters": [
+        {
+            "name": "id",
+            "type": "string",
+            "value": "testid"
+        }
+    ],
+  "sessionAttributes": {
+    "key1": "value1"
+  },
+  "promptSessionAttributes": {
+    "key2": "value2"
+  }
+} 
