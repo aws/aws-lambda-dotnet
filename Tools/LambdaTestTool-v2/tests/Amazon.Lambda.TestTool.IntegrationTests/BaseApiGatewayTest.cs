@@ -16,6 +16,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using Amazon.Lambda.TestTool.Tests.Common.Helpers;
+using Microsoft.AspNetCore.Hosting.Server;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
@@ -161,6 +162,11 @@ public abstract class BaseApiGatewayTest
         try
         {
             listener.Start();
+            using TcpClient client = new TcpClient("127.0.0.1", port);
+            using NetworkStream stream = client.GetStream();
+            stream.WriteByte(0x01);
+            stream.Flush();
+
             return port;
         }
         catch (SocketException)
