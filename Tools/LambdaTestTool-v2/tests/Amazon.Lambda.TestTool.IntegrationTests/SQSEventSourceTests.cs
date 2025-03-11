@@ -351,6 +351,8 @@ public class SQSEventSourceTests : BaseApiGatewayTest
 
     private async Task<int> GetNumberOfMessagesInQueueAsync(IAmazonSQS sqsClient, string queueUrl)
     {
+        // Add a delay to handle SQS eventual consistency.
+        await Task.Delay(5000); 
         var response = await sqsClient.GetQueueAttributesAsync(queueUrl, new List<string> { "All" });
         return response.ApproximateNumberOfMessages + response.ApproximateNumberOfMessagesNotVisible;
     }
