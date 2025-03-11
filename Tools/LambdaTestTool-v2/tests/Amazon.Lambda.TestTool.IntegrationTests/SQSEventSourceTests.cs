@@ -16,6 +16,7 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.SQSEvents;
 using Amazon.SQS.Model;
 using Amazon.Lambda.TestTool.Tests.Common;
+using Amazon.Lambda.TestTool.Tests.Common.Retries;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
@@ -27,7 +28,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
     {
     }
 
-    [Fact]
+    [RetryFact]
     public async Task ProcessSingleMessage()
     {
         var sqsClient = new AmazonSQSClient();
@@ -75,7 +76,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
     }
 
-    [Fact]
+    [RetryFact]
     public async Task SQSEventSourceComesFromEnvironmentVariable()
     {
         var sqsClient = new AmazonSQSClient();
@@ -123,7 +124,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
     }
 
-    [Fact]
+    [RetryFact]
     public async Task ProcessMessagesFromMultipleEventSources()
     {
         var sqsClient = new AmazonSQSClient();
@@ -189,7 +190,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
     }
 
-    [Fact]
+    [RetryFact]
     public async Task MessageNotDeleted()
     {
         var sqsClient = new AmazonSQSClient();
@@ -237,7 +238,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
     }
 
-    [Fact]
+    [RetryFact]
     public async Task LambdaThrowsErrorAndMessageNotDeleted()
     {
         var sqsClient = new AmazonSQSClient();
@@ -287,7 +288,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
     }
 
-    [Fact]
+    [RetryFact]
     public async Task PartialFailureResponse()
     {
         var sqsClient = new AmazonSQSClient();

@@ -23,7 +23,7 @@ public class EdgeCaseTests : BaseApiGatewayTest
     [RetryFact]
     public async Task TestLambdaReturnString()
     {
-        var ports = await GetFreePorts();
+        var ports = GetFreePorts();
         var lambdaPort = ports.lambdaPort;
         var apiGatewayPort = ports.apiGatewayPort;
         
@@ -64,7 +64,7 @@ public class EdgeCaseTests : BaseApiGatewayTest
     [RetryFact]
     public async Task TestLambdaWithNullEndpoint()
     {
-        var ports = await GetFreePorts();
+        var ports = GetFreePorts();
         var lambdaPort = ports.lambdaPort;
         var apiGatewayPort = ports.apiGatewayPort;
         

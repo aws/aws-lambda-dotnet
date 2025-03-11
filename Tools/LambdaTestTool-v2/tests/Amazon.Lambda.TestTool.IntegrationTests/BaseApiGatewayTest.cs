@@ -142,7 +142,7 @@ public abstract class BaseApiGatewayTest
         }
     }
 
-    protected async Task<(int lambdaPort, int apiGatewayPort)> GetFreePorts()
+    protected (int lambdaPort, int apiGatewayPort) GetFreePorts()
     {
         var lambdaPort = GetFreePort();
         int apiGatewayPort;
