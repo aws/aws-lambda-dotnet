@@ -55,9 +55,10 @@ public sealed class RunCommandSettings : CommandSettings
     public int? ApiGatewayEmulatorPort { get; set; }
 
     /// <summary>
-    /// JSON configuration for an SQS event source that will poll messages from a queue and forward the messages to the events.
+    /// The configuration for the SQS event source. The format of the config is a comma delimited key pairs. For example \"QueueUrl=queue-url,FunctionName=function-name,VisibilityTimeout=100\".
+    /// Possible keys are: BatchSize, DisableMessageDelete, FunctionName, LambdaRuntimeApi, Profile, QueueUrl, Region, VisibilityTimeout
     /// </summary>
-    [CommandOption("--sqs-eventsource-config <JSON>")]
-    [Description("The JSON configuration for an SQS event source that will poll messages from a queue and forward the messages to the events. If the value is a file path the file will be read as the JSON value.")]
+    [CommandOption("--sqs-eventsource-config <CONFIG>")]
+    [Description("The configuration for the SQS event source. The format of the config is a comma delimited key pairs. For example \"QueueUrl=<queue-url>,FunctionName=<function-name>,VisibilityTimeout=100\". Possible keys are: BatchSize, DisableMessageDelete, FunctionName, LambdaRuntimeApi, Profile, QueueUrl, Region, VisibilityTimeout")]
     public string? SQSEventSourceConfig { get; set; }
 }
