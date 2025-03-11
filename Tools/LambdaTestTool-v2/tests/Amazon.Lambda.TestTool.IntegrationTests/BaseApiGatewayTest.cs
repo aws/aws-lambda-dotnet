@@ -156,7 +156,7 @@ public abstract class BaseApiGatewayTest
     {
         var random = new Random();
         var port = random.Next(49152, 65535);
-        var listener = new TcpListener(IPAddress.Loopback, port);
+        using var listener = new TcpListener(IPAddress.Loopback, port);
         try
         {
             listener.Start();
