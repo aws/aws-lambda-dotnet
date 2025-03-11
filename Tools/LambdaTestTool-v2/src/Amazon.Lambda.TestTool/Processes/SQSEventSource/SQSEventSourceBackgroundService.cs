@@ -93,7 +93,6 @@ public class SQSEventSourceBackgroundService : BackgroundService
                     continue;
                 }
 
-
                 var lambdaPayload = new
                 {
                     Records = ConvertToLambdaMessages(response.Messages, _sqsClient.Config.RegionEndpoint.SystemName, queueArn)
@@ -141,7 +140,7 @@ public class SQSEventSourceBackgroundService : BackgroundService
                             messagesToDelete = new List<Message>();
                             foreach (var message in response.Messages)
                             {
-                                if (partialResponse.BatchItemFailures.FirstOrDefault(x => string.Equals(x.ItemIdentifier, message.MessageId)) == null)
+                                if (!partialResponse.BatchItemFailures.Any(x => string.Equals(x.ItemIdentifier, message.MessageId)))
                                 {
                                     messagesToDelete.Add(message);
                                 }
@@ -154,14 +153,17 @@ public class SQSEventSourceBackgroundService : BackgroundService
                         messagesToDelete = response.Messages;
                     }
 
-                    var deleteRequest = new DeleteMessageBatchRequest
+                    if (messagesToDelete.Count > 0)
                     {
-                        QueueUrl = _config.QueueUrl,
-                        Entries = messagesToDelete.Select(m => new DeleteMessageBatchRequestEntry { Id = m.MessageId, ReceiptHandle = m.ReceiptHandle }).ToList()
-                    };
+                        var deleteRequest = new DeleteMessageBatchRequest
+                        {
+                            QueueUrl = _config.QueueUrl,
+                            Entries = messagesToDelete.Select(m => new DeleteMessageBatchRequestEntry { Id = m.MessageId, ReceiptHandle = m.ReceiptHandle }).ToList()
+                        };
 
-                    _logger.LogDebug("Deleting {messageCount} messages from queue", deleteRequest.Entries.Count);
-                    await _sqsClient.DeleteMessageBatchAsync(deleteRequest, stoppingToken);
+                        _logger.LogDebug("Deleting {messageCount} messages from queue", deleteRequest.Entries.Count);
+                        await _sqsClient.DeleteMessageBatchAsync(deleteRequest, stoppingToken);
+                    }
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

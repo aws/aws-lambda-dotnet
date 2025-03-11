@@ -89,5 +89,5 @@ public abstract class Constants
     /// Prefix used for values of command line arguments that support the value being stored in an environment variable.
     /// This used in the Aspire integration where it is often easier to pass configuration via environment variables.
     /// </summary>
-    public const string ARGUMENT_ENVIRONMENT_VARIABLE_PREFIX = "env:";
+    public const string ArgumentEnvironmentVariablePrefix = "env:";
 }

@@ -139,5 +139,15 @@ public sealed class RunCommand(
                 throw new ArgumentException($"Value for {API_GATEWAY_EMULATOR_PORT} environment variable was not a valid port number");
             }
         }
+
+        if (settings.SQSEventSourceConfig != null && settings.SQSEventSourceConfig.StartsWith(Constants.ArgumentEnvironmentVariablePrefix, StringComparison.CurrentCultureIgnoreCase))
+        {
+            var envVariable = settings.SQSEventSourceConfig.Substring(Constants.ArgumentEnvironmentVariablePrefix.Length);
+            if (!environmentVariables.Contains(envVariable))
+            {
+                throw new InvalidOperationException($"Environment variable {envVariable} for the SQS event source config was empty");
+            }
+            settings.SQSEventSourceConfig = environmentVariables[envVariable]?.ToString();
+        }
     }
 }

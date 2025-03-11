@@ -110,26 +110,13 @@ public class SQSEventSourceProcess
     ///
     /// If the value of sqsEventSourceConfigString points to a file that exists the contents of the file
     /// will be read and sued for the value for SQS event source config.
-    ///
-    /// If the value of sqsEventSourceConfigString starts with "env:" then it assume the suffix of the value
-    /// is an environment variable containing the config. This is used by the .NET Aspire integration because
-    /// the values required for the config are resolved after command line arguments are setup in Aspire.
     /// </summary>
     /// <param name="sqsEventSourceConfigString"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
     internal static List<SQSEventSourceConfig> LoadSQSEventSourceConfig(string sqsEventSourceConfigString)
     {
-        if (sqsEventSourceConfigString.StartsWith(Constants.ARGUMENT_ENVIRONMENT_VARIABLE_PREFIX, StringComparison.CurrentCultureIgnoreCase))
-        {
-            var envVariable = sqsEventSourceConfigString.Substring(Constants.ARGUMENT_ENVIRONMENT_VARIABLE_PREFIX.Length);            
-            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envVariable)))
-            {
-                throw new InvalidOperationException($"Environment variable {envVariable} for the SQS event source config was empty");
-            }
-            sqsEventSourceConfigString = Environment.GetEnvironmentVariable(envVariable)!;
-        }
-        else if (File.Exists(sqsEventSourceConfigString))
+        if (File.Exists(sqsEventSourceConfigString))
         {
             sqsEventSourceConfigString = File.ReadAllText(sqsEventSourceConfigString);
         }
