@@ -19,6 +19,7 @@ using Amazon.Lambda.TestTool.Tests.Common;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
+[Collection("SQSEventSourceTests")]
 public class SQSEventSourceTests : BaseApiGatewayTest
 {
     public SQSEventSourceTests(ITestOutputHelper testOutputHelper)
