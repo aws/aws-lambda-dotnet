@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace Amazon.Lambda.AppSyncEvents
 {
@@ -11,6 +11,6 @@ namespace Amazon.Lambda.AppSyncEvents
         /// Optional context information that will be passed to subsequent resolvers
         /// Can contain user information, claims, or any other contextual data
         /// </summary>
-        public Dictionary<string, object> ResolverContext { get; set; }
+        public Dictionary<string, string> ResolverContext { get; set; }
     }
 }

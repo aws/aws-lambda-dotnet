@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace Amazon.Lambda.AppSyncEvents
 {
@@ -24,7 +24,8 @@ namespace Amazon.Lambda.AppSyncEvents
         /// - For API_KEY: null
         /// - For AWS_IAM: <see cref="AppSyncIamIdentity"/>
         /// - For AMAZON_COGNITO_USER_POOLS: <see cref="AppSyncCognitoIdentity"/>
-        /// - For AWS_LAMBDA: Dynamic object returned by Lambda authorizer
+        /// - For AWS_LAMBDA: <see cref="AppSyncLambdaIdentity"/>
+        /// - For OPENID_CONNECT: <see cref="AppSyncOidcIdentity"/>
         /// </remarks>
         public object Identity { get; set; }
 
