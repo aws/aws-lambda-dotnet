@@ -17,7 +17,7 @@ public class SQSEventSourceProcess
     internal const int DefaultVisiblityTimeout = 30;
 
     /// <summary>
-    /// The API Gateway emulator task that was started.
+    /// The Parent task for all of the tasks started for each list SQS event source.
     /// </summary>
     public required Task RunningTask { get; init; }
 
@@ -39,7 +39,7 @@ public class SQSEventSourceProcess
 
         var tasks = new List<Task>();
 
-        // Spin up a separate SQSEventSourceBackgroundService for each SQS event source config listed in the SQSEventSourceConfig
+        // Create a separate SQSEventSourceBackgroundService for each SQS event source config listed in the SQSEventSourceConfig
         foreach (var sqsEventSourceConfig in sqsEventSourceConfigs)
         {
             var builder = Host.CreateApplicationBuilder();
@@ -94,23 +94,47 @@ public class SQSEventSourceProcess
             tasks.Add(task);
         }
 
-        var combinedTask = Task.WhenAll(tasks);
-
-
         return new SQSEventSourceProcess
         {
-            RunningTask = combinedTask
+            RunningTask = Task.WhenAll(tasks)
         };
     }
 
-    internal static List<SQSEventSourceConfig> LoadSQSEventSourceConfig(string sqsEventSourceConfigJson)
+    /// <summary>
+    /// Load the SQS event source configs. The format of the config can be either JSON or comma delimited key pairs.
+    /// With the JSON format it is possible to configure multiple event sources but special care is required
+    /// escaping the quotes. The JSON format also provides consistency with the API Gateway configuration.
+    ///
+    /// The comma delimited key pairs allows users to configure a single SQS event source without having
+    /// to deal with escaping quotes.
+    ///
+    /// If the value of sqsEventSourceConfigString points to a file that exists the contents of the file
+    /// will be read and sued for the value for SQS event source config.
+    ///
+    /// If the value of sqsEventSourceConfigString starts with "env:" then it assume the suffix of the value
+    /// is an environment variable containing the config. This is used by the .NET Aspire integration because
+    /// the values required for the config are resolved after command line arguments are setup in Aspire.
+    /// </summary>
+    /// <param name="sqsEventSourceConfigString"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    internal static List<SQSEventSourceConfig> LoadSQSEventSourceConfig(string sqsEventSourceConfigString)
     {
-        if (File.Exists(sqsEventSourceConfigJson))
+        if (sqsEventSourceConfigString.StartsWith(Constants.ARGUMENT_ENVIRONMENT_VARIABLE_PREFIX, StringComparison.CurrentCultureIgnoreCase))
         {
-            sqsEventSourceConfigJson = File.ReadAllText(sqsEventSourceConfigJson);
+            var envVariable = sqsEventSourceConfigString.Substring(Constants.ARGUMENT_ENVIRONMENT_VARIABLE_PREFIX.Length);            
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(envVariable)))
+            {
+                throw new InvalidOperationException($"Environment variable {envVariable} for the SQS event source config was empty");
+            }
+            sqsEventSourceConfigString = Environment.GetEnvironmentVariable(envVariable)!;
+        }
+        else if (File.Exists(sqsEventSourceConfigString))
+        {
+            sqsEventSourceConfigString = File.ReadAllText(sqsEventSourceConfigString);
         }
 
-        sqsEventSourceConfigJson = sqsEventSourceConfigJson.Trim();
+        sqsEventSourceConfigString = sqsEventSourceConfigString.Trim();
 
         List<SQSEventSourceConfig>? configs = null;
 
@@ -119,33 +143,55 @@ public class SQSEventSourceProcess
             PropertyNameCaseInsensitive = true
         };
 
-
-        if (sqsEventSourceConfigJson.StartsWith('['))
+        // Check to see if the config is in JSON array format.
+        // The JSON format provides consistency with the API Gateway config style.
+        if (sqsEventSourceConfigString.StartsWith('['))
         {
-            configs = JsonSerializer.Deserialize<List<SQSEventSourceConfig>>(sqsEventSourceConfigJson, jsonOptions);
-            if (configs == null)
+            try
             {
-                throw new InvalidOperationException("Failed to parse SQS event source JSON config: " + sqsEventSourceConfigJson);
+                configs = JsonSerializer.Deserialize<List<SQSEventSourceConfig>>(sqsEventSourceConfigString, jsonOptions);
+                if (configs == null)
+                {
+                    throw new InvalidOperationException("Failed to parse SQS event source JSON config: " + sqsEventSourceConfigString);
+                }
+            }
+            catch(JsonException e)
+            {
+                throw new InvalidOperationException("Failed to parse SQS event source JSON config: " + sqsEventSourceConfigString, e);
             }
         }
-        else if (sqsEventSourceConfigJson.StartsWith('{'))
+        // Config is a single object JSON document.
+        // The JSON format provides consistency with the API Gateway config style.
+        else if (sqsEventSourceConfigString.StartsWith('{'))
         {
-            var config = JsonSerializer.Deserialize<SQSEventSourceConfig>(sqsEventSourceConfigJson, jsonOptions);
-            if (config == null)
+            try
             {
-                throw new InvalidOperationException("Failed to parse SQS event source JSON config: " + sqsEventSourceConfigJson);
-            }
+                var config = JsonSerializer.Deserialize<SQSEventSourceConfig>(sqsEventSourceConfigString, jsonOptions);
+                if (config == null)
+                {
+                    throw new InvalidOperationException("Failed to parse SQS event source JSON config: " + sqsEventSourceConfigString);
+                }
 
-            configs = new List<SQSEventSourceConfig> { config };
+                configs = new List<SQSEventSourceConfig> { config };
+            }
+            catch (JsonException e)
+            {
+                throw new InvalidOperationException("Failed to parse SQS event source JSON config: " + sqsEventSourceConfigString, e);
+            }
         }
-        else if (Uri.TryCreate(sqsEventSourceConfigJson, UriKind.Absolute, out _))
+        // Config is a QueueUrl only. The current test tool instance will be assumed the Lambda runtime api and the
+        // messages will be sent to the default function. Support this format allows for an
+        // simple CLI experience of just providing a single value for the default scenario.
+        else if (Uri.TryCreate(sqsEventSourceConfigString, UriKind.Absolute, out _))
         {
-            configs = new List<SQSEventSourceConfig> { new SQSEventSourceConfig { QueueUrl = sqsEventSourceConfigJson } };
+            configs = new List<SQSEventSourceConfig> { new SQSEventSourceConfig { QueueUrl = sqsEventSourceConfigString } };
         }
+        // Config is in comma delimited key value pair format. This format allows setting all the parameters without having
+        // to deal with escaping quotes like the JSON format.
         else
         {
             var config = new SQSEventSourceConfig();
-            var tokens = sqsEventSourceConfigJson.Split(',');            
+            var tokens = sqsEventSourceConfigString.Split(',');
             foreach(var token in tokens)
             {
                 if (string.IsNullOrWhiteSpace(token))

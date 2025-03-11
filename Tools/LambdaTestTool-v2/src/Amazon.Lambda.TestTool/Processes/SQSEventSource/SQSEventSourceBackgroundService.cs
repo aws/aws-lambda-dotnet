@@ -63,6 +63,7 @@ public class SQSEventSourceBackgroundService : BackgroundService
     /// <returns></returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // The queue arn is needed for creating the Lambda event.
         var queueArn = await GetQueueArn(stoppingToken);
         while (!stoppingToken.IsCancellationRequested)
         {
