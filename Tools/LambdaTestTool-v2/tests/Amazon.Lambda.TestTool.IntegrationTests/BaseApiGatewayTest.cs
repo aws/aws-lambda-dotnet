@@ -14,6 +14,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using Amazon.Lambda.TestTool.Tests.Common.Helpers;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
@@ -154,8 +156,7 @@ public abstract class BaseApiGatewayTest
 
     protected int GetFreePort()
     {
-        var random = new Random();
-        var port = random.Next(49152, 65535);
+        var port = TestHelpers.GetRandomIntegerInRange(49152, 65535);
         using var listener = new TcpListener(IPAddress.Loopback, port);
         try
         {
