@@ -1,17 +1,11 @@
 using Amazon.Lambda.TestTool.Commands;
 using Amazon.Lambda.TestTool.Commands.Settings;
-using Amazon.Lambda.TestTool.Models;
-using Amazon.Lambda.TestTool.Services.IO;
-using Amazon.Lambda.TestTool.Services;
 using Amazon.SQS;
-using Moq;
 using Spectre.Console.Cli;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Sdk;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
-using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.SQSEvents;
 using Amazon.SQS.Model;
@@ -45,7 +39,8 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
             var handler = (SQSEvent evnt, ILambdaContext context) =>
             {
-                foreach(var message in evnt.Records)
+                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
+                foreach (var message in evnt.Records)
                 {
                     listOfProcessedMessages.Add(message);
                 }
@@ -93,6 +88,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
             var handler = (SQSEvent evnt, ILambdaContext context) =>
             {
+                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
                 foreach (var message in evnt.Records)
                 {
                     listOfProcessedMessages.Add(message);
@@ -158,6 +154,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
             var handler = (SQSEvent evnt, ILambdaContext context) =>
             {
+                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
                 foreach (var message in evnt.Records)
                 {
                     listOfProcessedMessages.Add(message);
@@ -207,6 +204,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
             var handler = (SQSEvent evnt, ILambdaContext context) =>
             {
+                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
                 foreach (var message in evnt.Records)
                 {
                     listOfProcessedMessages.Add(message);
@@ -248,13 +246,13 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         try
         {
             Console.SetError(TextWriter.Null);
-
             var lambdaPort = GetFreePort();
             var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor", CancellationTokenSource);
 
             var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
             var handler = (SQSEvent evnt, ILambdaContext context) =>
             {
+                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
                 foreach (var message in evnt.Records)
                 {
                     listOfProcessedMessages.Add(message);
@@ -308,6 +306,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
             var handler = (SQSEvent evnt, ILambdaContext context) =>
             {
+                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
                 foreach (var message in evnt.Records)
                 {
                     listOfProcessedMessages.Add(message);
@@ -384,7 +383,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             SQSEventSourceConfig = sqsEventSourceConfig
         };
 
-        var command = new RunCommand(MockInteractiveService.Object, new TestEnvironmentManager(environmentVariables));
+        var command = new RunCommand(InteractiveService, new TestEnvironmentManager(environmentVariables));
         var context = new CommandContext(new List<string>(), MockRemainingArgs.Object, "run", null);
         _ = command.ExecuteAsync(context, settings, cancellationTokenSource);
 

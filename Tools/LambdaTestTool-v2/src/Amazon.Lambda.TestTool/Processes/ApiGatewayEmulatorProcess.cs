@@ -40,7 +40,7 @@ public class ApiGatewayEmulatorProcess
     /// <summary>
     /// Creates the Web API and runs it in the background.
     /// </summary>
-    public static ApiGatewayEmulatorProcess Startup(RunCommandSettings settings, CancellationToken cancellationToken = default)
+    public static ApiGatewayEmulatorProcess Startup(RunCommandSettings settings, IToolInteractiveService toolInteractiveService, CancellationToken cancellationToken = default)
     {
         if (settings.ApiGatewayEmulatorMode is null)
         {
@@ -61,6 +61,11 @@ public class ApiGatewayEmulatorProcess
         builder.Services.AddHealthChecks();
 
         var app = builder.Build();
+
+        if (!app.Environment.IsProduction())
+        {
+            app.Services.GetRequiredService<ILoggerFactory>().AddProvider(new ToolInteractiveLoggerProvider(toolInteractiveService));
+        }
 
         app.MapHealthChecks("/__lambda_test_tool_apigateway_health__");
 

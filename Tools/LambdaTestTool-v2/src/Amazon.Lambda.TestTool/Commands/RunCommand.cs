@@ -42,7 +42,7 @@ public sealed class RunCommand(
 
             if (settings.LambdaEmulatorPort.HasValue)
             {
-                var testToolProcess = TestToolProcess.Startup(settings, cancellationTokenSource.Token);
+                var testToolProcess = TestToolProcess.Startup(settings, toolInteractiveService, cancellationTokenSource.Token);
                 tasks.Add(testToolProcess.RunningTask);
 
                 if (!settings.NoLaunchWindow)
@@ -71,7 +71,7 @@ public sealed class RunCommand(
                 }
 
                 var apiGatewayEmulatorProcess =
-                    ApiGatewayEmulatorProcess.Startup(settings, cancellationTokenSource.Token);
+                    ApiGatewayEmulatorProcess.Startup(settings, toolInteractiveService, cancellationTokenSource.Token);
                 tasks.Add(apiGatewayEmulatorProcess.RunningTask);
             }
 

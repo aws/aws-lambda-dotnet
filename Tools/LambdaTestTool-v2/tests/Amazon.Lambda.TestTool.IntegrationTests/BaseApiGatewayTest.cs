@@ -17,24 +17,29 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using Amazon.Lambda.TestTool.Tests.Common.Helpers;
 using Microsoft.AspNetCore.Hosting.Server;
+using Amazon.Lambda.TestTool.Tests.Common;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
 public abstract class BaseApiGatewayTest
 {
     protected readonly ITestOutputHelper TestOutputHelper;
+    protected readonly TestOutputToolInteractiveService InteractiveService;
     protected readonly Mock<IEnvironmentManager> MockEnvironmentManager;
-    protected readonly Mock<IToolInteractiveService> MockInteractiveService;
     protected readonly Mock<IRemainingArguments> MockRemainingArgs;
     protected CancellationTokenSource CancellationTokenSource;
     protected static readonly object TestLock = new();
 
     protected BaseApiGatewayTest(ITestOutputHelper testOutputHelper)
     {
+        // Enable the intneral logging of runtime support.
+        Environment.SetEnvironmentVariable("LAMBDA_RUNTIMESUPPORT_DEBUG", "true");
+
         TestOutputHelper = testOutputHelper;
         MockEnvironmentManager = new Mock<IEnvironmentManager>();
-        MockInteractiveService = new Mock<IToolInteractiveService>();
         MockRemainingArgs = new Mock<IRemainingArguments>();
+
+        InteractiveService = new TestOutputToolInteractiveService(testOutputHelper);
         CancellationTokenSource = new CancellationTokenSource();
     }
 
@@ -66,7 +71,7 @@ public abstract class BaseApiGatewayTest
             ApiGatewayEmulatorPort = apiGatewayPort
         };
 
-        var command = new RunCommand(MockInteractiveService.Object, MockEnvironmentManager.Object);
+        var command = new RunCommand(InteractiveService, MockEnvironmentManager.Object);
         var context = new CommandContext(new List<string>(), MockRemainingArgs.Object, "run", null);
         _ = command.ExecuteAsync(context, settings, cancellationTokenSource);
 
@@ -196,7 +201,7 @@ public abstract class BaseApiGatewayTest
             ApiGatewayEmulatorPort = apiGatewayPort
         };
 
-        var command = new RunCommand(MockInteractiveService.Object, MockEnvironmentManager.Object);
+        var command = new RunCommand(InteractiveService, MockEnvironmentManager.Object);
         var context = new CommandContext(new List<string>(), MockRemainingArgs.Object, "run", null);
         _ = command.ExecuteAsync(context, settings, cancellationTokenSource);
 
