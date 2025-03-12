@@ -1,10 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
-using System.Text.Json;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
-using Amazon.Lambda.RuntimeSupport.Helpers;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.Extensions.DependencyInjection;
 
