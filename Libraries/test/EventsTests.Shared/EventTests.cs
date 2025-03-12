@@ -4073,6 +4073,9 @@ namespace Amazon.Lambda.Tests
 
                     // ResolverContext
                     Assert.NotNull(identity.ResolverContext);
+                    Assert.NotEmpty(identity.ResolverContext["userid"]);
+                    Assert.NotEmpty(identity.ResolverContext["info"]);
+                    Assert.NotEmpty(identity.ResolverContext["more_info"]);
                 }
             }
         }
