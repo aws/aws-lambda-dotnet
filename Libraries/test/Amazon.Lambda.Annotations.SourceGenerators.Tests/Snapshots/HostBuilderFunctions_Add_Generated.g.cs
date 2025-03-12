@@ -128,7 +128,7 @@ namespace TestHostBuilderApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("lib/amazon-lambda-annotations#1.6.3.0");
+            envValue.Append("lib/amazon-lambda-annotations#{ANNOTATIONS_ASSEMBLY_VERSION}");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }
