@@ -4,17 +4,30 @@
 
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - AWS AppSync package.</Description>
-	<TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.AppSyncEvents</AssemblyTitle>
     <Version>0.0.1</Version>
     <AssemblyName>Amazon.Lambda.AppSyncEvents</AssemblyName>
     <PackageId>Amazon.Lambda.AppSyncEvents</PackageId>
-	<PackageTags>AWS;Amazon;Lambda</PackageTags>
+    <PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
 
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
-		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
-		<IsTrimmable>true</IsTrimmable>
+  <!-- .NET Standard 2.0 specific settings -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <DefineConstants>NETSTANDARD_2_0</DefineConstants>
+    <WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
+    <IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-	</PropertyGroup>
+  </PropertyGroup>
+
+  <!-- Newtonsoft.Json only for .NET Standard 2.0 -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <!-- System.Text.Json for .NET Core 3.1 and .NET 8.0 -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1' OR '$(TargetFramework)' == 'net8.0'">
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
 </Project>
