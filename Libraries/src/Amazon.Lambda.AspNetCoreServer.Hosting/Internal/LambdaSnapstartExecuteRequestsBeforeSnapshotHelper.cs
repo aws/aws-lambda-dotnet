@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.RuntimeSupport;
@@ -61,7 +62,6 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
             {
                 var json = JsonSerializer.Serialize(req);
 
-                // TODO - inline
                 await SnapstartHelperLambdaRequests.ExecuteSnapstartInitRequests(json, times: 5, handlerWrapper);
             }
         });
@@ -85,6 +85,46 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
         {
             foreach (var f in beforeSnapstartFuncs)
                 await f(client);
+        }
+    }
+
+    private static class SnapstartHelperLambdaRequests
+    {
+        private static InternalLogger _logger = InternalLogger.GetDefaultLogger();
+
+        private static readonly RuntimeApiHeaders _fakeRuntimeApiHeaders = new(new Dictionary<string, IEnumerable<string>>
+        {
+            { RuntimeApiHeaders.HeaderAwsRequestId, new List<string>() },
+            { RuntimeApiHeaders.HeaderTraceId, new List<string>() },
+            { RuntimeApiHeaders.HeaderClientContext, new List<string>() },
+            { RuntimeApiHeaders.HeaderCognitoIdentity, new List<string>() },
+            { RuntimeApiHeaders.HeaderDeadlineMs, new List<string>() },
+            { RuntimeApiHeaders.HeaderInvokedFunctionArn, new List<string>() },
+        });
+
+        public static async Task ExecuteSnapstartInitRequests(string jsonRequest, int times, HandlerWrapper handlerWrapper)
+        {
+            var dummyRequest = new InvocationRequest
+            {
+                InputStream = new MemoryStream(Encoding.UTF8.GetBytes(jsonRequest)),
+                LambdaContext = new LambdaContext(
+                    _fakeRuntimeApiHeaders,
+                    new LambdaEnvironment(),
+                    new SimpleLoggerWriter())
+            };
+
+            for (var i = 0; i < times; i++)
+            {
+                try
+                {
+                    _ = await handlerWrapper.Handler.Invoke(dummyRequest);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("StartAsync: " + e.Message + e.StackTrace);
+                    _logger.LogError(e, "StartAsync: Custom Warmup Failure: " + e.Message + e.StackTrace);
+                }
+            }
         }
     }
 
