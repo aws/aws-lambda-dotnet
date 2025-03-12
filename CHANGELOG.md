@@ -1,3 +1,8 @@
+## Release 2025-03-12
+
+### Amazon.Lambda.Annotations (1.7.0)
+* Add ConfigureHostBuilder function to `Startup` class for allowing the Lambda function to configure an `IHostApplicationBuilder`.
+
 ## Release 2025-03-05
 
 ### Amazon.Lambda.TestTool (0.9.1)
