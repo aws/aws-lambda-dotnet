@@ -6,8 +6,10 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.ApplicationLoadBalancerEvents;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.RuntimeSupport.Helpers;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
@@ -141,20 +143,66 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
             _lambdaEventSource = lambdaEventSource;
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            // Copy request to correct request, ie APIGatewayProxyRequest
+            if (null == request?.RequestUri)
+                return new HttpResponseMessage(HttpStatusCode.OK);
 
-            // TODO - IMPLEMENT
-            var translatedRequest = new APIGatewayProxyRequest
+            var duckRequest = new
             {
-                Path = request.RequestUri.MakeRelativeUri(BaseUri).ToString(),
-                HttpMethod = request.Method.ToString()
+                Body = await ReadContent(request),
+                Headers = request.Headers
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value.FirstOrDefault(),
+                        StringComparer.OrdinalIgnoreCase),
+                HttpMethod = request.Method.ToString(),
+                Path = request.RequestUri?.MakeRelativeUri(BaseUri).ToString() ?? string.Empty,
+                RawQuery = request.RequestUri?.Query,
+                Query = QueryHelpers.ParseNullableQuery(request.RequestUri?.Query)
+            };
+            
+            object translatedRequest = _lambdaEventSource switch
+            {
+                LambdaEventSource.ApplicationLoadBalancer => new ApplicationLoadBalancerRequest
+                {
+                    Body = duckRequest.Body,
+                    Headers = duckRequest.Headers,
+                    Path = duckRequest.Path,
+                    HttpMethod = duckRequest.HttpMethod,
+                    QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString())
+                },
+                LambdaEventSource.HttpApi => new APIGatewayProxyRequest
+                {
+                    Body = duckRequest.Body,
+                    Headers = duckRequest.Headers,
+                    Path = duckRequest.Path,
+                    HttpMethod = duckRequest.HttpMethod,
+                    QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString())
+                },
+                LambdaEventSource.RestApi => new APIGatewayHttpApiV2ProxyRequest
+                {
+                    Body = duckRequest.Body,
+                    Headers = duckRequest.Headers,
+                    RawPath = duckRequest.Path,
+                    QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString()),
+                    RawQueryString = duckRequest.RawQuery
+                },
+                _ => throw new NotImplementedException(
+                    $"Unknown {nameof(LambdaEventSource)}: {Enum.GetName(_lambdaEventSource)}")
             };
 
             CapturedHttpRequests.Add(translatedRequest);
 
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        }
+
+        private async Task<string> ReadContent(HttpRequestMessage r)
+        {
+            if (r.Content == null)
+                return string.Empty;
+
+            return await r.Content.ReadAsStringAsync();
         }
     }
 }
