@@ -12,7 +12,7 @@ namespace Amazon.Lambda.Core
     /// </summary>
     public static class LambdaLogger
     {
-        // The name of this field must not change or be readonly because Amazon.Runtime.Support will use reflection to replace the
+        // The name of this field must not change or be readonly because Amazon.Lambda.RuntimeSupport will use reflection to replace the
         // value with an Action that directs the logging into its logging system.
 #pragma warning disable IDE0044 // Add readonly modifier
         private static Action<string> _loggingAction = LogToConsole;
@@ -38,7 +38,7 @@ namespace Amazon.Lambda.Core
 
 #if NET6_0_OR_GREATER
 
-        // The name of this field must not change or be readonly because Amazon.Runtime.Support will use reflection to replace the
+        // The name of this field must not change or be readonly because Amazon.Lambda.RuntimeSupport will use reflection to replace the
         // value with an Action that directs the logging into its logging system.
 #pragma warning disable IDE0044 // Add readonly modifier
         private static Action<string, string, object[]> _loggingWithLevelAction = LogWithLevelToConsole;
@@ -48,7 +48,7 @@ namespace Amazon.Lambda.Core
         private static void LogWithLevelToConsole(string level, string message, params object[] args)
         {
             // Formatting here is not important, it is used for debugging Amazon.Lambda.Core only.
-            // In a real scenario Amazon.Runtime.Support will change the value of _loggingWithLevelAction
+            // In a real scenario Amazon.Lambda.RuntimeSupport will change the value of _loggingWithLevelAction
             // to an Action inside it's logging system to handle the real formatting.
             var sb = new StringBuilder();
             sb.Append(level).Append(": ").Append(message);
@@ -67,7 +67,7 @@ namespace Amazon.Lambda.Core
 
         private const string ParameterizedPreviewMessage =
             "This method has been mark as preview till the Lambda .NET Managed runtime has been updated with the backing implementation of this method. " +
-            "It is possible to use this method whilein preview if the Lambda function is deployed as an executable and uses the latest version of Amazon.Lambda.RuntimeSupport.";
+            "It is possible to use this method while in preview if the Lambda function is deployed as an executable and uses the latest version of Amazon.Lambda.RuntimeSupport.";
 
         /// <summary>
         /// Logs a message to AWS CloudWatch Logs.
