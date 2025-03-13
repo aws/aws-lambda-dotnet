@@ -65,6 +65,7 @@ public class SQSEventSourceBackgroundService : BackgroundService
     {
         // The queue arn is needed for creating the Lambda event.
         var queueArn = await GetQueueArn(stoppingToken);
+        _logger.LogInformation("Starting polling for messages on SQS queue: {queueArn}", queueArn);
         while (!stoppingToken.IsCancellationRequested)
         {
             try
