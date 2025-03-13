@@ -107,6 +107,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// // Example Minimal Api
         /// var builder = WebApplication.CreateSlimBuilder(args);
         ///
+        /// builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
+        /// 
         /// // Initialize asp.net pipeline before Snapshot
         /// builder.Services.AddAWSLambdaBeforeSnapshotRequest(async httpClient =>
         /// {
