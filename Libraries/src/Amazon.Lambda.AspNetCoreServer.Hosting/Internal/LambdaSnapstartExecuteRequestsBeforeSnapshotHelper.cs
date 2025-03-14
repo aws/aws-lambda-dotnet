@@ -132,7 +132,7 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
 
     private class LambdaSnapstartInitializerHttpMessageHandler : HttpMessageHandler
     {
-        private LambdaEventSource _lambdaEventSource;
+        private readonly LambdaEventSource _lambdaEventSource;
 
         public static Uri BaseUri { get; } = new Uri("http://localhost");
 
@@ -145,7 +145,7 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (null == request?.RequestUri)
+            if (null == request.RequestUri)
                 return new HttpResponseMessage(HttpStatusCode.OK);
 
             var duckRequest = new
@@ -157,7 +157,7 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
                         kvp => kvp.Value.FirstOrDefault(),
                         StringComparer.OrdinalIgnoreCase),
                 HttpMethod = request.Method.ToString(),
-                Path = request.RequestUri?.MakeRelativeUri(BaseUri).ToString() ?? string.Empty,
+                Path = "/" + BaseUri.MakeRelativeUri(request.RequestUri),
                 RawQuery = request.RequestUri?.Query,
                 Query = QueryHelpers.ParseNullableQuery(request.RequestUri?.Query)
             };
@@ -172,21 +172,33 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
                     HttpMethod = duckRequest.HttpMethod,
                     QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString())
                 },
-                LambdaEventSource.HttpApi => new APIGatewayProxyRequest
+                LambdaEventSource.HttpApi => new APIGatewayHttpApiV2ProxyRequest
+                {
+                    Body = duckRequest.Body,
+                    Headers = duckRequest.Headers,
+                    RawPath = duckRequest.Path,
+                    RequestContext = new APIGatewayHttpApiV2ProxyRequest.ProxyRequestContext
+                    {
+                        Http = new APIGatewayHttpApiV2ProxyRequest.HttpDescription
+                        {
+                            Method = duckRequest.HttpMethod,
+                            Path = duckRequest.Path
+                        }
+                    },
+                    QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString()),
+                    RawQueryString = duckRequest.RawQuery
+                },
+                LambdaEventSource.RestApi => new APIGatewayProxyRequest
                 {
                     Body = duckRequest.Body,
                     Headers = duckRequest.Headers,
                     Path = duckRequest.Path,
                     HttpMethod = duckRequest.HttpMethod,
+                    RequestContext = new APIGatewayProxyRequest.ProxyRequestContext
+                    {
+                        HttpMethod = duckRequest.HttpMethod
+                    },
                     QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString())
-                },
-                LambdaEventSource.RestApi => new APIGatewayHttpApiV2ProxyRequest
-                {
-                    Body = duckRequest.Body,
-                    Headers = duckRequest.Headers,
-                    RawPath = duckRequest.Path,
-                    QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString()),
-                    RawQueryString = duckRequest.RawQuery
                 },
                 _ => throw new NotImplementedException(
                     $"Unknown {nameof(LambdaEventSource)}: {Enum.GetName(_lambdaEventSource)}")
