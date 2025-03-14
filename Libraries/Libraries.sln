@@ -139,6 +139,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.DynamoDBEvent
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests", "test\Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests\Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests.csproj", "{074DB940-82BA-47D4-B888-C213D4220A82}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.AspNetCoreServer.Hosting.Tests", "test\Amazon.Lambda.AspNetCoreServer.Hosting.Tests\Amazon.Lambda.AspNetCoreServer.Hosting.Tests.csproj", "{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -381,6 +383,10 @@ Global
 		{074DB940-82BA-47D4-B888-C213D4220A82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{074DB940-82BA-47D4-B888-C213D4220A82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{074DB940-82BA-47D4-B888-C213D4220A82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -449,6 +455,7 @@ Global
 		{A699E183-D0D4-4F26-A0A7-88DA5607F455} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{3400F4E9-BA12-4D3D-9BA1-2798AA8D0AFC} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{074DB940-82BA-47D4-B888-C213D4220A82} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}
