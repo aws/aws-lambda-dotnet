@@ -86,6 +86,7 @@ The available projects are:
 * Amazon.Lambda.ConnectEvents
 * Amazon.Lambda.Core
 * Amazon.Lambda.DynamoDBEvents
+* Amazon.Lambda.DynamoDBEvents.SDK.Convertor
 * Amazon.Lambda.KafkaEvents
 * Amazon.Lambda.KinesisAnalyticsEvents
 * Amazon.Lambda.KinesisEvents
