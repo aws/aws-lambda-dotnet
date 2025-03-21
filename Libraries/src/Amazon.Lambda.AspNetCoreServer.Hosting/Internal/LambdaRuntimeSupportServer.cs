@@ -1,9 +1,8 @@
-﻿using Amazon.Lambda.AspNetCoreServer.Internal;
+using System.Diagnostics.CodeAnalysis;
+using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
-using Amazon.Lambda.Serialization.SystemTextJson;
 using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
@@ -16,7 +15,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
     /// </summary>
     public abstract class LambdaRuntimeSupportServer : LambdaServer
     {
-        IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly LambdaSnapstartExecuteRequestsBeforeSnapshotHelper _snapstartInitHelper;
+
         internal ILambdaSerializer Serializer;
 
         /// <summary>
@@ -26,6 +27,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         public LambdaRuntimeSupportServer(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
+            _snapstartInitHelper = _serviceProvider.GetRequiredService<LambdaSnapstartExecuteRequestsBeforeSnapshotHelper>();
             Serializer = serviceProvider.GetRequiredService<ILambdaSerializer>();
         }
 
@@ -36,11 +38,19 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <param name="application"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
+        [RequiresUnreferencedCode("_snapstartInitHelper Serializes objects to Json")]
         public override Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken)
         {
             base.StartAsync(application, cancellationToken);
 
             var handlerWrapper = CreateHandlerWrapper(_serviceProvider);
+
+            #if NET8_0_OR_GREATER
+
+            _snapstartInitHelper.RegisterInitializerRequests(handlerWrapper);
+
+            #endif
+
             var bootStrap = new LambdaBootstrap(handlerWrapper);
             return bootStrap.RunAsync();
         }
