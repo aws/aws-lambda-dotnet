@@ -1,0 +1,39 @@
+{
+    "messageVersion": "1.0",
+    "agent": {
+        "name": "TestAgent",
+        "id": "agent-12345",
+        "alias": "TestAlias",
+        "version": "1.0"
+    },
+    "inputText": "Update values",
+    "sessionId": "session-12345",
+    "actionGroup": "ValuesApi",
+    "apiPath": "/api/bodytests",
+    "httpMethod": "PUT",
+    "parameters": [],
+    "requestBody": {
+        "content": {
+            "application/json": {
+                "properties": [
+                    {
+                        "name": "firstName",
+                        "type": "string",
+                        "value": "Smith"
+                    },
+                    {
+                        "name": "lastName",
+                        "type": "string",
+                        "value": "Agent"
+                    }
+                ]
+            }
+        }
+    },
+    "sessionAttributes": {
+        "key1": "value1"
+    },
+    "promptSessionAttributes": {
+        "key2": "value2"
+    }
+}

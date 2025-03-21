@@ -175,4 +175,45 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             }
         }
     }
+
+    /// <summary>
+    /// IServer for handling Lambda events from Amazon Bedrock Agent API.
+    /// </summary>
+    public class BedrockAgentApiLambdaRuntimeSupportServer : LambdaRuntimeSupportServer
+    {
+        /// <summary>
+        /// Create instances
+        /// </summary>
+        /// <param name="serviceProvider">The IServiceProvider created for the ASP.NET Core application</param>
+        public BedrockAgentApiLambdaRuntimeSupportServer(IServiceProvider serviceProvider)
+            : base(serviceProvider)
+        {
+        }
+
+        /// <summary>
+        /// Creates HandlerWrapper for processing events from Bedrock Agent API
+        /// </summary>
+        /// <param name="serviceProvider"></param>
+        /// <returns></returns>
+        protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
+        {
+            var handler = new BedrockAgentApiMinimalApi(serviceProvider).FunctionHandlerAsync;
+            return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
+        }
+
+        /// <summary>
+        /// Create the BedrockAgentApiFunction passing in the ASP.NET Core application's IServiceProvider
+        /// </summary>
+        public class BedrockAgentApiMinimalApi : BedrockAgentApiFunction
+        {
+            /// <summary>
+            /// Create instances
+            /// </summary>
+            /// <param name="serviceProvider">The IServiceProvider created for the ASP.NET Core application</param>
+            public BedrockAgentApiMinimalApi(IServiceProvider serviceProvider)
+                : base(serviceProvider)
+            {
+            }
+        }
+    }
 }

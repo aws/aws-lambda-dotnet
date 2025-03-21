@@ -29,5 +29,29 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var feature = new InvokeFeatures() as IHttpResponseFeature;
             Assert.Equal(200, feature.StatusCode);
         }
+
+        [Fact]
+        public void TestExtractPathParamsNoParams()
+        {
+            var pathParams = Utilities.ExtractPathParams("/api/values");
+            Assert.Empty(pathParams);
+        }
+
+        [Fact]
+        public void TestExtractPathParamsOneParam()
+        {
+            var pathParams = Utilities.ExtractPathParams("/api/values/{id}");
+            Assert.Single(pathParams);
+            Assert.Equal("id", pathParams[0]);
+        }
+
+        [Fact]
+        public void TestExtractPathParamsMultipleParams()
+        {
+            var pathParams = Utilities.ExtractPathParams("/api/category/{categoryId}/values/{id}");
+            Assert.Equal(2, pathParams.Count);
+            Assert.Equal("categoryId", pathParams[0]);
+            Assert.Equal("id", pathParams[1]);
+        }
     }
 }
