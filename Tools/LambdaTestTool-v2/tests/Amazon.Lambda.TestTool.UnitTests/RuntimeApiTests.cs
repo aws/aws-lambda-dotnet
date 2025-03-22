@@ -14,10 +14,12 @@ using Amazon.Lambda.TestTool.Tests.Common.Retries;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Environment = System.Environment;
+using Xunit.Abstractions;
+using Amazon.Lambda.TestTool.Tests.Common;
 
 namespace Amazon.Lambda.TestTool.UnitTests;
 
-public class RuntimeApiTests
+public class RuntimeApiTests(ITestOutputHelper testOutputHelper)
 {
 #if DEBUG
     [Fact]
@@ -34,7 +36,7 @@ public class RuntimeApiTests
         var options = new RunCommandSettings();
         options.LambdaEmulatorPort = lambdaPort;
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
-        var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
+        var testToolProcess = TestToolProcess.Startup(options, new TestOutputToolInteractiveService(testOutputHelper), cancellationTokenSource.Token);
         try
         {
             var lambdaClient = ConstructLambdaServiceClient(testToolProcess.ServiceUrl);
@@ -87,7 +89,7 @@ public class RuntimeApiTests
         var options = new RunCommandSettings();
         options.LambdaEmulatorPort = lambdaPort;
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
-        var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
+        var testToolProcess = TestToolProcess.Startup(options, new TestOutputToolInteractiveService(testOutputHelper), cancellationTokenSource.Token);
         try
         {
             var handler = (string input, ILambdaContext context) =>
