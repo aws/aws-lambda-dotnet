@@ -17,17 +17,17 @@ public class SQSEventSourceProcess
     internal const int DefaultVisiblityTimeout = 30;
 
     /// <summary>
-    /// The Parent task for all of the tasks started for each list SQS event source.
+    /// The Parent task for all the tasks started for each list SQS event source.
     /// </summary>
     public required Task RunningTask { get; init; }
 
     /// <summary>
     /// Startup SQS event sources
     /// </summary>
-    /// <param name="settings"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
+    /// <param name="settings">The settings to launch the tool.</param>
+    /// <param name="cancellationToken">CancellationToken to end <see cref="SQSEventSourceProcess"/></param>
+    /// <returns>This instance of <see cref="SQSEventSourceProcess"/> that was started.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the config is invalid.</exception>
     public static SQSEventSourceProcess Startup(RunCommandSettings settings, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(settings.SQSEventSourceConfig))
@@ -57,6 +57,7 @@ public class SQSEventSourceProcess
 
             var sqsClient = new AmazonSQSClient(sqsConfig);
             builder.Services.AddSingleton<IAmazonSQS>(sqsClient);
+            builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
 
             var queueUrl = sqsEventSourceConfig.QueueUrl;
             if (string.IsNullOrEmpty(queueUrl))
@@ -105,15 +106,15 @@ public class SQSEventSourceProcess
     /// With the JSON format it is possible to configure multiple event sources but special care is required
     /// escaping the quotes. The JSON format also provides consistency with the API Gateway configuration.
     ///
-    /// The comma delimited key pairs allows users to configure a single SQS event source without having
+    /// The comma-delimited key pairs allows users to configure a single SQS event source without having
     /// to deal with escaping quotes.
     ///
     /// If the value of sqsEventSourceConfigString points to a file that exists the contents of the file
     /// will be read and sued for the value for SQS event source config.
     /// </summary>
-    /// <param name="sqsEventSourceConfigString"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
+    /// <param name="sqsEventSourceConfigString">The SQS event source config to load.</param>
+    /// <returns>The list of SQS event source configs.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the config is invalid.</exception>
     internal static List<SQSEventSourceConfig> LoadSQSEventSourceConfig(string sqsEventSourceConfigString)
     {
         if (File.Exists(sqsEventSourceConfigString))

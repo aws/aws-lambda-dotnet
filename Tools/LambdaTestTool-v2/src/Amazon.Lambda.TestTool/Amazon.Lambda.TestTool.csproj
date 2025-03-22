@@ -2,7 +2,7 @@
 
   <Import Project="..\..\..\..\buildtools\common.props" />
   <PropertyGroup>
-    <OutputType>Exe</OutputType>  
+    <OutputType>Exe</OutputType>
     <Description>A tool to help debug and test your .NET AWS Lambda functions locally.</Description>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -15,9 +15,9 @@
     <PackAsTool>true</PackAsTool>
     <PackageId>Amazon.Lambda.TestTool</PackageId>
     <ToolCommandName>dotnet-lambda-test-tool</ToolCommandName>
-    <Version>0.9.888</Version>
+    <Version>0.9.1</Version>
     <NoWarn>NU5100</NoWarn>
-    <RollForward>Major</RollForward>	
+    <RollForward>Major</RollForward>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
@@ -41,7 +41,7 @@
     <Exec Command="dotnet msbuild ../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj --getProperty:TargetFrameworks" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="RuntimeSupportTargetFrameworks" />
     </Exec>
-    
+
     <ItemGroup>
       <TempFrameworks Include="$(RuntimeSupportTargetFrameworks.Split(';'))" />
       <TargetFrameworks Include="@(TempFrameworks)" Condition="'%(Identity)' != 'netstandard2.0'" />

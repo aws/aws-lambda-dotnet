@@ -4,18 +4,18 @@
 namespace Amazon.Lambda.TestTool.Processes.SQSEventSource;
 
 /// <summary>
-/// Configuration for the SQSEventSourceBackgroundService service.
+/// Configuration for the <see cref="SQSEventSourceBackgroundService"/> service.
 /// </summary>
 public class SQSEventSourceBackgroundServiceConfig
 {
     /// <summary>
     /// The batch size to read and send to Lambda function. This is the upper bound of messages to read and send.
-    /// SQS will return with less then batch size if there are not enough messages in the queue.
+    /// SQS will return with less than batch size if there are not enough messages in the queue.
     /// </summary>
     public required int BatchSize { get; init; } = SQSEventSourceProcess.DefaultBatchSize;
 
     /// <summary>
-    /// If true the SQSEventSourceBackgroundService will skip deleting messages from the queue after the Lambda function returns.
+    /// If true the <see cref="SQSEventSourceBackgroundService"/> will skip deleting messages from the queue after the Lambda function returns.
     /// </summary>
     public required bool DisableMessageDelete { get; init; }
 
