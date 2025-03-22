@@ -1,3 +1,12 @@
+## Release 2025-03-13
+
+### Amazon.Lambda.Annotations (1.7.0)
+* Add ConfigureHostBuilder function to `Startup` class for allowing the Lambda function to configure an `IHostApplicationBuilder`.
+### Amazon.Lambda.RuntimeSupport (1.13.0)
+* Add support for parameterized logging method to global logger LambdaLogger in Amazon.Lambda.Core
+### Amazon.Lambda.Core (2.5.1)
+* Add support for parameterized logging method to global logger LambdaLogger. Method is marked as preview till new version of Amazon.Lambda.RuntimeSupport is deployed to managed runtime.
+
 ## Release 2025-03-05
 
 ### Amazon.Lambda.TestTool (0.9.1)
