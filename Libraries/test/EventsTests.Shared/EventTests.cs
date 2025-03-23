@@ -4113,6 +4113,73 @@ namespace Amazon.Lambda.Tests
             }
         }
 
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+        #if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        #endif
+        public void AppSyncTestLambdaAuthorizerRequestEvent(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("appsync-event-lambda-authorizer-request.json"))
+            {
+                var request = serializer.Deserialize<AppSyncAuthorizerEvent>(fileStream);
+
+                // Assert Authorization Token
+                Assert.Equal("custom-token", request.AuthorizationToken);
+
+                // Assert Request Context
+                Assert.NotNull(request.RequestContext);
+                Assert.Equal("xxxxxxxx", request.RequestContext.ApiId);
+                Assert.Equal("112233445566", request.RequestContext.AccountId);
+                Assert.Equal("36307622-97fe-4dfa-bd71-b15b1d03ce97", request.RequestContext.RequestId);
+                Assert.Equal("MyQuery", request.RequestContext.OperationName);
+                Assert.NotNull(request.RequestContext.Variables);
+                Assert.Empty(request.RequestContext.Variables);
+                Assert.Contains("listTodos", request.RequestContext.QueryString);
+
+                // Assert Request Headers
+                Assert.NotNull(request.RequestHeaders);
+                Assert.Equal("This is test token", request.RequestHeaders["authorization"]);
+                Assert.Equal("application/json", request.RequestHeaders["content-type"]);
+                Assert.Equal("https://ap-south-1.console.aws.amazon.com", request.RequestHeaders["origin"]);
+            }
+        }
+ 
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
+        public void AppSyncTestLambdaAuthorizerResponseEvent(Type serializerType)
+        {
+            var response = new AppSyncAuthorizerResult
+            {
+                IsAuthorized = true,
+                ResolverContext = new Dictionary<string, string>
+                {
+                    { "userid", "test-user-id" },
+                    { "info", "contextual information A" },
+                    { "more_info", "contextual information B" }
+                },
+                DeniedFields = new List<string>
+                {
+                    "arn:aws:appsync:us-east-1:1234567890:apis/xxxxxx/types/Event/fields/comments",
+                    "Mutation.createEvent"
+                },
+                TtlOverride = 10
+            };
+
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            var json = SerializeJson(serializer, response);
+            var actualObject = JObject.Parse(json);
+            var expectedJObject = JObject.Parse(File.ReadAllText("appsync-event-lambda-authorizer-response.json"));
+
+            Assert.True(JToken.DeepEquals(actualObject, expectedJObject));
+        }
+
         class ClassUsingPascalCase
         {
             public int SomeValue { get; set; }
