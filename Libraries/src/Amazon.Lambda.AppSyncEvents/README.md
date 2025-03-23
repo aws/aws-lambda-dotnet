@@ -42,7 +42,7 @@ This example demonstrates how to implement a custom Lambda authorizer for AppSyn
 
 The function also provides some data in the `resolverContext` object. This information is available in the AppSync resolver’s context `identity` object.
 
-```
+```csharp
 public async Task<AppSyncAuthorizerResult> CustomLambdaAuthorizerHandler(AppSyncAuthorizerEvent appSyncAuthorizerEvent)
 {
     var authorizationToken = appSyncAuthorizerEvent.AuthorizationToken;
