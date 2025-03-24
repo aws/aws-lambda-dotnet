@@ -40,7 +40,8 @@ public void Handler(AppSyncResolverEvent<Dictionary<string, object>> appSyncReso
 ## Example of Custom Lambda Authorizer
 This example demonstrates how to implement a custom Lambda authorizer for AppSync using the AppSync Events package. The authorizer function receives an `AppSyncAuthorizerEvent` containing the authorization token and request context. It returns an `AppSyncAuthorizerResult` that determines whether the request is authorized and includes additional context.
 
-The function also provides some data in the `resolverContext` object. This information is available in the AppSync resolver’s context `identity` object.
+The function provides contextual data through the `ResolverContext` property of the `AppSyncAuthorizerResult` instance. This information can be accessed via the `Identity` property of the `AppSyncResolverEvent` instance. Since the `Identity` property is of type `object`, you can deserialize it to `AppSyncLambdaIdentity` (as shown above) to get strong typing support.
+
 
 ```csharp
 public async Task<AppSyncAuthorizerResult> CustomLambdaAuthorizerHandler(AppSyncAuthorizerEvent appSyncAuthorizerEvent)
