@@ -88,6 +88,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
+#if NET8_0_OR_GREATER
         /// <summary>
         /// Adds a function meant to initialize the asp.net and lambda pipelines during <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>
         /// improving the performance gains offered by SnapStart.
@@ -123,9 +124,17 @@ namespace Microsoft.Extensions.DependencyInjection
         /// ]]>
         /// </code>
         /// </summary>
+        #else
+        /// <summary>
+        /// Snapstart requires your application to target .NET 8 or above.
+        /// </summary>
+        #endif
         public static IServiceCollection AddAWSLambdaBeforeSnapshotRequest(this IServiceCollection services, Func<HttpClient, Task> beforeSnapStartRequest)
         {
+
+            #if NET8_0_OR_GREATER
             LambdaSnapstartExecuteRequestsBeforeSnapshotHelper.Registrar.Register(beforeSnapStartRequest);
+            #endif
 
             return services;
         }
@@ -153,8 +162,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
             Utilities.EnsureLambdaServerRegistered(services, serverType);
 
+            #if NET8_0_OR_GREATER
             // register a LambdaSnapStartInitializerHttpMessageHandler
             services.AddSingleton<LambdaSnapstartExecuteRequestsBeforeSnapshotHelper>(new LambdaSnapstartExecuteRequestsBeforeSnapshotHelper(eventSource));
+            #endif
 
             return true;
         }

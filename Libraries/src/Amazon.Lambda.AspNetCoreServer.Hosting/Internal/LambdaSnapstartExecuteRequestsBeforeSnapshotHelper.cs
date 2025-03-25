@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.ApplicationLoadBalancerEvents;
 using Amazon.Lambda.RuntimeSupport;
@@ -14,6 +15,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
 
+#if NET8_0_OR_GREATER
+
 /// <summary>
 /// Contains the plumbing to register a user provided <see cref="Func{HttpClient, Task}"/> inside
 /// <see cref="Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot"/>.
@@ -22,7 +25,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
 /// performance gains offered by SnapStart.
 /// <para />
 /// It works by construction a specialized <see cref="HttpClient" /> that will intercept requests
-/// and saved them inside <see cref="LambdaSnapstartInitializerHttpMessageHandler.CapturedHttpRequests" />.
+/// and saved them inside <see cref="LambdaSnapstartInitializerHttpMessageHandler.CapturedHttpRequestsJson" />.
 /// <para /> 
 /// Intercepted requests are then be processed later by <see cref="SnapstartHelperLambdaRequests.ExecuteSnapstartInitRequests"/>
 /// which will route them correctly through a simulated asp.net/lambda pipeline.
@@ -37,11 +40,8 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
     }
 
     /// <inheritdoc cref="RegisterInitializerRequests"/>
-    [RequiresUnreferencedCode("Serializes object to json")]
     public void RegisterInitializerRequests(HandlerWrapper handlerWrapper)
     {
-        #if NET8_0_OR_GREATER
-
         Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot(async () =>
         {
             // Construct specialized HttpClient that will intercept requests and saved them inside
@@ -60,39 +60,36 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
 
             // Request are now in CapturedHttpRequests.  Serialize each one into a json object
             // and execute the request through the lambda pipeline (ie handlerWrapper).
-            foreach (var req in LambdaSnapstartInitializerHttpMessageHandler.CapturedHttpRequests)
+            foreach (var json in LambdaSnapstartInitializerHttpMessageHandler.CapturedHttpRequestsJson)
             {
-                var json = JsonSerializer.Serialize(req);
-
                 await SnapstartHelperLambdaRequests.ExecuteSnapstartInitRequests(json, times: 5, handlerWrapper);
             }
         });
-
-        #endif
     }
 
+    
     /// <inheritdoc cref="ServiceCollectionExtensions.AddAWSLambdaBeforeSnapshotRequest"/>
     internal static BeforeSnapstartRequestRegistrar Registrar = new();
 
     internal class BeforeSnapstartRequestRegistrar
     {
-        private List<Func<HttpClient, Task>> beforeSnapstartFuncs = new();
+        private readonly List<Func<HttpClient, Task>> _beforeSnapstartFuncs = new();
 
         public void Register(Func<HttpClient, Task> beforeSnapstartRequest)
         {
-            beforeSnapstartFuncs.Add(beforeSnapstartRequest);
+            _beforeSnapstartFuncs.Add(beforeSnapstartRequest);
         }
 
         internal async Task Execute(HttpClient client)
         {
-            foreach (var f in beforeSnapstartFuncs)
+            foreach (var f in _beforeSnapstartFuncs)
                 await f(client);
         }
     }
 
     private static class SnapstartHelperLambdaRequests
     {
-        private static InternalLogger _logger = InternalLogger.GetDefaultLogger();
+        private static readonly InternalLogger _logger = InternalLogger.GetDefaultLogger();
 
         private static readonly RuntimeApiHeaders _fakeRuntimeApiHeaders = new(new Dictionary<string, IEnumerable<string>>
         {
@@ -136,7 +133,7 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
 
         public static Uri BaseUri { get; } = new Uri("http://localhost");
 
-        public static List<object> CapturedHttpRequests { get; } = new();
+        public static List<string> CapturedHttpRequestsJson { get; } = new();
 
         public LambdaSnapstartInitializerHttpMessageHandler(LambdaEventSource lambdaEventSource)
         {
@@ -162,49 +159,60 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
                 Query = QueryHelpers.ParseNullableQuery(request.RequestUri?.Query)
             };
             
-            object translatedRequest = _lambdaEventSource switch
+            string translatedRequestJson = _lambdaEventSource switch
             {
-                LambdaEventSource.ApplicationLoadBalancer => new ApplicationLoadBalancerRequest
-                {
-                    Body = duckRequest.Body,
-                    Headers = duckRequest.Headers,
-                    Path = duckRequest.Path,
-                    HttpMethod = duckRequest.HttpMethod,
-                    QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString())
-                },
-                LambdaEventSource.HttpApi => new APIGatewayHttpApiV2ProxyRequest
-                {
-                    Body = duckRequest.Body,
-                    Headers = duckRequest.Headers,
-                    RawPath = duckRequest.Path,
-                    RequestContext = new APIGatewayHttpApiV2ProxyRequest.ProxyRequestContext
-                    {
-                        Http = new APIGatewayHttpApiV2ProxyRequest.HttpDescription
+                LambdaEventSource.ApplicationLoadBalancer =>
+                    JsonSerializer.Serialize(
+                        new ApplicationLoadBalancerRequest
                         {
-                            Method = duckRequest.HttpMethod,
-                            Path = duckRequest.Path
-                        }
-                    },
-                    QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString()),
-                    RawQueryString = duckRequest.RawQuery
-                },
-                LambdaEventSource.RestApi => new APIGatewayProxyRequest
-                {
-                    Body = duckRequest.Body,
-                    Headers = duckRequest.Headers,
-                    Path = duckRequest.Path,
-                    HttpMethod = duckRequest.HttpMethod,
-                    RequestContext = new APIGatewayProxyRequest.ProxyRequestContext
-                    {
-                        HttpMethod = duckRequest.HttpMethod
-                    },
-                    QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString())
-                },
+                            Body = duckRequest.Body,
+                            Headers = duckRequest.Headers,
+                            Path = duckRequest.Path,
+                            HttpMethod = duckRequest.HttpMethod,
+                            QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString())
+                        },
+                        LambdaRequestTypeClasses.Default.ApplicationLoadBalancerRequest),
+                LambdaEventSource.HttpApi =>
+                    JsonSerializer.Serialize(
+                        new APIGatewayHttpApiV2ProxyRequest
+                        {
+                            Body = duckRequest.Body,
+                            Headers = duckRequest.Headers,
+                            RawPath = duckRequest.Path,
+                            RequestContext = new APIGatewayHttpApiV2ProxyRequest.ProxyRequestContext
+                            {
+                                Http = new APIGatewayHttpApiV2ProxyRequest.HttpDescription
+                                {
+                                    Method = duckRequest.HttpMethod,
+                                    Path = duckRequest.Path
+                                }
+                            },
+                            QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString()),
+                            RawQueryString = duckRequest.RawQuery
+                        },
+                        LambdaRequestTypeClasses.Default.APIGatewayHttpApiV2ProxyRequest),
+                LambdaEventSource.RestApi =>
+                    JsonSerializer.Serialize(
+                        new APIGatewayProxyRequest
+                        {
+                            Body = duckRequest.Body,
+                            Headers = duckRequest.Headers,
+                            Path = duckRequest.Path,
+                            HttpMethod = duckRequest.HttpMethod,
+                            RequestContext = new APIGatewayProxyRequest.ProxyRequestContext
+                            {
+                                HttpMethod = duckRequest.HttpMethod
+                            },
+                            QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString())
+                        },
+                        LambdaRequestTypeClasses.Default.APIGatewayProxyRequest),
                 _ => throw new NotImplementedException(
                     $"Unknown {nameof(LambdaEventSource)}: {Enum.GetName(_lambdaEventSource)}")
             };
 
-            CapturedHttpRequests.Add(translatedRequest);
+            // NOTE: Any object added to CapturedHttpRequests must have it's type added
+            // to the 
+            CapturedHttpRequestsJson.Add(translatedRequestJson);
 
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
@@ -218,3 +226,18 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
         }
     }
 }
+
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(ApplicationLoadBalancerRequest))]
+[JsonSerializable(typeof(APIGatewayHttpApiV2ProxyRequest))]
+[JsonSerializable(typeof(APIGatewayProxyRequest))]
+[JsonSerializable(typeof(APIGatewayProxyRequest.ClientCertValidity))]
+[JsonSerializable(typeof(APIGatewayProxyRequest.ProxyRequestClientCert))]
+[JsonSerializable(typeof(APIGatewayProxyRequest.ProxyRequestContext))]
+[JsonSerializable(typeof(APIGatewayProxyRequest.RequestIdentity))]
+
+internal partial class LambdaRequestTypeClasses : JsonSerializerContext
+{
+}
+#endif
