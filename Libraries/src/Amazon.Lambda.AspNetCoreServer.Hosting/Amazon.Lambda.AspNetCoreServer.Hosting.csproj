@@ -21,12 +21,6 @@
     <None Include="README.md" Pack="true" PackagePath="\" />		
   </ItemGroup>
 
-  <PropertyGroup>
-    <!--This assembly contains some internal methods that need to be accessed by the Amazon.Lambda.Annotations.SourceGenerator assembly.
-      Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
-    <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
 
    <ItemGroup>
     <ProjectReference Include="..\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />	  
