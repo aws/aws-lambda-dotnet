@@ -16,7 +16,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
     public abstract class LambdaRuntimeSupportServer : LambdaServer
     {
         private readonly IServiceProvider _serviceProvider;
+
+        #if NET8_0_OR_GREATER
         private readonly LambdaSnapstartExecuteRequestsBeforeSnapshotHelper _snapstartInitHelper;
+        #endif
 
         internal ILambdaSerializer Serializer;
 
@@ -27,7 +30,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         public LambdaRuntimeSupportServer(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
+
+            #if NET8_0_OR_GREATER
             _snapstartInitHelper = _serviceProvider.GetRequiredService<LambdaSnapstartExecuteRequestsBeforeSnapshotHelper>();
+            #endif
+
             Serializer = serviceProvider.GetRequiredService<ILambdaSerializer>();
         }
 
@@ -38,7 +45,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <param name="application"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        [RequiresUnreferencedCode("_snapstartInitHelper Serializes objects to Json")]
         public override Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken)
         {
             base.StartAsync(application, cancellationToken);
