@@ -1,5 +1,6 @@
 using Amazon.Lambda.Annotations;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace BlueprintBaseName._1;
 
@@ -14,10 +15,14 @@ public class Startup
     /// the lifetime of the Lambda compute container. Services injected as parameters are created within the scope
     /// of the function invocation.
     /// </summary>
-    public void ConfigureServices(IServiceCollection services)
+    public HostApplicationBuilder ConfigureHostBuilder()
     {
+
+        var builder = new HostApplicationBuilder();
+
+
         // Here we'll configure the AWS Message Processing Framework for .NET.
-        services.AddAWSMessageBus(builder =>
+        builder.Services.AddAWSMessageBus(builder =>
         {
             // Register that you'll publish messages of type "GreetingMessage" to the specified queue URL.
             //  1. When deployed, the QUEUE_URL variable will be set to the queue that is defined in serverless.template
@@ -33,6 +38,8 @@ public class Startup
 
             // You can register additional message type and handler mappings here as well.
         });
+
+        return builder;
     }
 }
 

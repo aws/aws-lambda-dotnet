@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Templates",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update message processing framework template."
+      ]
+    }
+  ]
+}
