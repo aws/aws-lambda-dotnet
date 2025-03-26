@@ -23,14 +23,14 @@ The framework supports Open Telemetry via the [AWS.Messaging.Telemetry.OpenTelem
 ## Local Testing Guide
 
 ### Prerequisites
-The functions can be tested with the [Mock Lambda Test Tool](https://github.com/aws/aws-lambda-dotnet/tree/master/Tools/LambdaTestTool-v2).
+The functions can be tested with the [Lambda Test Tool](https://github.com/aws/aws-lambda-dotnet/tree/master/Tools/LambdaTestTool-v2).
 
-1. Install the AWS Lambda Test Tool:
+1. Install the Lambda Test Tool:
 ```bash
 dotnet tool install -g amazon.lambda.testtool
 ```
 
-2. Get the test tool version:
+2. Get the Lambda Test Tool version:
 
 ```
 dotnet lambda-test-tool info
@@ -52,7 +52,7 @@ dotnet lambda-test-tool start --lambda-emulator-port 5050
 ```
 
 3. Configure the project:
-* Update Properties/launchSettings.json with the test tool version and function handler name.
+* Update Properties/launchSettings.json with the Lambda Test Tool version and function handler name.
 
 ###$ Example launchSettings.json
 
@@ -78,7 +78,7 @@ dotnet lambda-test-tool start --lambda-emulator-port 5050
 ### Running the project
 
 ### Option 1: Using Visual Studio
-1. Update launchSettings.json with the correct test tool version
+1. Update launchSettings.json with the correct Lambda Test Tool version
 2. Run the project from Visual Studio
 
 

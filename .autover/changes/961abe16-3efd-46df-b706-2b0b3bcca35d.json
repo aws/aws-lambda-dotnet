@@ -4,7 +4,7 @@
       "Name": "Amazon.Lambda.Templates",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Update message processing framework template."
+        "Update the AWS Message Processing Framework for .NET project template."
       ]
     }
   ]
