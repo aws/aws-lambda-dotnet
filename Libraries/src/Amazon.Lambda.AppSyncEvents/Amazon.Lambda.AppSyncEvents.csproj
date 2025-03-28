@@ -3,18 +3,14 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <Description>Amazon Lambda .NET Core support - AWS AppSync package.</Description>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
+    <Description>Amazon Lambda .NET support - AWS AppSync package.</Description>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.AppSyncEvents</AssemblyTitle>
     <Version>0.0.1</Version>
     <AssemblyName>Amazon.Lambda.AppSyncEvents</AssemblyName>
     <PackageId>Amazon.Lambda.AppSyncEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
-		<WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
-		<IsTrimmable>true</IsTrimmable>
-    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-	</PropertyGroup>
+  
 </Project>

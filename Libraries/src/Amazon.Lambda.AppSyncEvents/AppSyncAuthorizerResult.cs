@@ -1,49 +1,33 @@
-using System.Collections.Generic;
-using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
+namespace Amazon.Lambda.AppSyncEvents;
 
-
-namespace Amazon.Lambda.AppSyncEvents
+/// <summary>
+/// Represents the authorization result returned by a Lambda authorizer to AWS AppSync 
+/// containing authorization decisions and optional context for the GraphQL API.
+/// </summary>
+public class AppSyncAuthorizerResult
 {
-        /// <summary>
-        /// Represents the result returned by an AWS AppSync Lambda authorizer.
-        /// </summary>
-        [DataContract]
-        public class AppSyncAuthorizerResult
-        {
-                /// <summary>
-                /// Indicates if the request is authorized
-                /// </summary>
-                [DataMember(Name = "isAuthorized")]
-#if NETCOREAPP3_1_OR_GREATER
-                [System.Text.Json.Serialization.JsonPropertyName("isAuthorized")]
-#endif
-                public bool IsAuthorized { get; set; }
+    /// <summary>
+    /// Indicates if the request is authorized
+    /// </summary>
+    [JsonPropertyName("isAuthorized")]
+    public bool IsAuthorized { get; set; }
 
-                /// <summary>
-                /// Custom context to pass to resolvers, only supports key-value pairs.
-                /// </summary>
-                [DataMember(Name = "resolverContext")]
-#if NETCOREAPP3_1_OR_GREATER
-                [System.Text.Json.Serialization.JsonPropertyName("resolverContext")]
-#endif
-                public Dictionary<string, string> ResolverContext { get; set; }
+    /// <summary>
+    /// Custom context to pass to resolvers, only supports key-value pairs.
+    /// </summary>
+    [JsonPropertyName("resolverContext")]
+    public Dictionary<string, string> ResolverContext { get; set; }
 
-                /// <summary>
-                /// List of fields that are denied access
-                /// </summary>
-                [DataMember(Name = "deniedFields")]
-#if NETCOREAPP3_1_OR_GREATER
-                [System.Text.Json.Serialization.JsonPropertyName("deniedFields")]
-#endif
-                public IEnumerable<string> DeniedFields { get; set; }
+    /// <summary>
+    /// List of fields that are denied access
+    /// </summary>
+    [JsonPropertyName("deniedFields")]
+    public IEnumerable<string> DeniedFields { get; set; }
 
-                /// <summary>
-                /// The number of seconds that the response should be cached for
-                /// </summary>
-                [DataMember(Name = "ttlOverride")]
-#if NETCOREAPP3_1_OR_GREATER
-                [System.Text.Json.Serialization.JsonPropertyName("ttlOverride")]
-#endif
-                public int? TtlOverride { get; set; }
-        }
+    /// <summary>
+    /// The number of seconds that the response should be cached for
+    /// </summary>
+    [JsonPropertyName("ttlOverride")]
+    public int? TtlOverride { get; set; }
 }

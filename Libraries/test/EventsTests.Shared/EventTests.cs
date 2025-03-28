@@ -3910,11 +3910,8 @@ namespace Amazon.Lambda.Tests
         }
 
         [Theory]
-        [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void AppSyncTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -3954,11 +3951,8 @@ namespace Amazon.Lambda.Tests
         }
 
         [Theory]
-        [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void AppSyncTestCognitoAuthorizer(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -4005,10 +3999,6 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
-        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
-        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void AppSyncTestIAMAuthorizer(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -4052,11 +4042,8 @@ namespace Amazon.Lambda.Tests
         }
 
         [Theory]
-        [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void AppSyncTestLambdaAuthorizer(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -4081,11 +4068,8 @@ namespace Amazon.Lambda.Tests
         }
 
         [Theory]
-        [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void AppSyncTestOidcAuthorizer(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -4114,11 +4098,8 @@ namespace Amazon.Lambda.Tests
         }
 
         [Theory]
-        [InlineData(typeof(JsonSerializer))]
-        #if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-        #endif
         public void AppSyncTestLambdaAuthorizerRequestEvent(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
@@ -4148,11 +4129,8 @@ namespace Amazon.Lambda.Tests
         }
  
         [Theory]
-        [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-#endif
         public void AppSyncTestLambdaAuthorizerResponseEvent(Type serializerType)
         {
             var response = new AppSyncAuthorizerResult
