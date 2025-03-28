@@ -3,6 +3,9 @@ namespace Amazon.Lambda.Tests
 {
     using Amazon.Lambda.APIGatewayEvents;
     using Amazon.Lambda.ApplicationLoadBalancerEvents;
+#if NET8_0_OR_GREATER
+    using Amazon.Lambda.AppSyncEvents;
+#endif
     using Amazon.Lambda.CloudWatchEvents.BatchEvents;
     using Amazon.Lambda.CloudWatchEvents.ECSEvents;
     using Amazon.Lambda.CloudWatchEvents.S3Events;
@@ -201,7 +204,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -245,7 +248,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -291,7 +294,7 @@ namespace Amazon.Lambda.Tests
 
         [Theory]
         [InlineData(typeof(JsonSerializer))]
-#if NETCOREAPP3_1_OR_GREATER        
+#if NETCOREAPP3_1_OR_GREATER
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
@@ -951,7 +954,7 @@ namespace Amazon.Lambda.Tests
                 Assert.True(session0.ChallengeResult);
 
                 Assert.Equal("challenge_metadata1", session0.ChallengeMetadata);
-                
+
                 var session1 = cognitoDefineAuthChallengeEvent.Request.Session[1];
                 Assert.Equal("challenge2", session1.ChallengeName);
                 Assert.False(session1.ChallengeResult);
@@ -1109,7 +1112,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("private_value_2", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[1].Value);
 
                 Assert.True(cognitoVerifyAuthChallengeEvent.Request.UserNotFound);
-            
+
                 Assert.True(cognitoVerifyAuthChallengeEvent.Response.AnswerCorrect);
 
                 MemoryStream ms = new MemoryStream();
@@ -1253,11 +1256,11 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("attribute_value_1", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[0].Value);
                 Assert.Equal("attribute_2", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[1].Key);
                 Assert.Equal("attribute_value_2", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[1].Value);
-                
+
                 Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.Scopes.Count);
                 Assert.Equal("scope_1", cognitoPreTokenGenerationV2Event.Request.Scopes.ToArray()[0]);
                 Assert.Equal("scope_2", cognitoPreTokenGenerationV2Event.Request.Scopes.ToArray()[1]);
-                
+
                 // Value comparison would vary across different serializers. Skip it for now and validate the complete JSON later.
                 Assert.Equal(5, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.Count);
                 Assert.Equal("id_claim_1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[0].Key);
@@ -1265,7 +1268,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("id_claim_3", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[2].Key);
                 Assert.Equal("id_claim_4", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[3].Key);
                 Assert.Equal("id_claim_5", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[4].Key);
-                
+
                 Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress.Count);
                 Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress[0]);
                 Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress[1]);
@@ -1277,7 +1280,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("access_claim_3", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[2].Key);
                 Assert.Equal("access_claim_4", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[3].Key);
                 Assert.Equal("access_claim_5", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[4].Key);
-                
+
                 Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress.Count);
                 Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress[0]);
                 Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress[1]);
@@ -1287,7 +1290,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress.Count);
                 Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress[0]);
                 Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress[1]);
-                
+
                 Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride.Count);
                 Assert.Equal("group1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride[0]);
                 Assert.Equal("group2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride[1]);
@@ -1308,7 +1311,7 @@ namespace Amazon.Lambda.Tests
                 Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
             }
         }
-        
+
         [Theory]
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP3_1_OR_GREATER
@@ -2049,7 +2052,7 @@ namespace Amazon.Lambda.Tests
                             Condition = new Dictionary<string, IDictionary<string, object>>()
                             {
                                 {  "StringEquals", new Dictionary<string, object>()
-                                    { 
+                                    {
                                         { "aws:PrincipalTag/job-category", "iamuser-admin" }
                                     }
                                 }
@@ -2112,16 +2115,16 @@ namespace Amazon.Lambda.Tests
                             Resource = new HashSet<string>{ "*" },
                             Condition = new Dictionary<string, IDictionary<string, object>>()
                             {
-                                {  
-                                    "StringEquals", 
+                                {
+                                    "StringEquals",
                                     new Dictionary<string, object>()
                                     {
                                         { "aws:PrincipalTag/department", new List<string>{ "finance", "hr", "legal" } },
                                         { "aws:PrincipalTag/role", new List<string>{ "audit", "security" } }
                                     }
                                 },
-                                { 
-                                    "ArnLike", 
+                                {
+                                    "ArnLike",
                                     new Dictionary<string, object>()
                                     {
                                         { "aws:PrincipalArn", new List<string>{ "arn:aws:iam::XXXXXXXXXXXX:user/User1", "arn:aws:iam::XXXXXXXXXXXX:user/User2" } }
@@ -3907,6 +3910,258 @@ namespace Amazon.Lambda.Tests
             Assert.Equal(123, serialized["SomeValue"]);
             Assert.Equal(JTokenType.Null, serialized["SomeOtherValue"].Type); // System.NullReferenceException is thrown if value is missing.
         }
+
+#if NET8_0_OR_GREATER
+        [Theory]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        public void AppSyncTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("appsync-event.json"))
+            {
+                var appSyncEvent = serializer.Deserialize<AppSyncResolverEvent<Dictionary<string, object>>>(fileStream);
+                Assert.NotNull(appSyncEvent);
+                Assert.NotNull(appSyncEvent.Arguments);
+                Assert.NotNull(appSyncEvent.Arguments["input"]);
+
+                Assert.NotNull(appSyncEvent.Request);
+                Assert.NotNull(appSyncEvent.Request.Headers);
+                var headers = appSyncEvent.Request.Headers;
+                Assert.Equal("value1", headers["key1"]);
+                Assert.Equal("value2", headers["key2"]);
+
+                Assert.NotNull(appSyncEvent.Info);
+                Assert.Equal("openSupportTicket", appSyncEvent.Info.FieldName);
+                Assert.Equal("Mutation", appSyncEvent.Info.ParentTypeName);
+
+                Assert.NotNull(appSyncEvent.Info.SelectionSetList);
+                Assert.Equal(6, appSyncEvent.Info.SelectionSetList.Count);
+                Assert.Contains("ticketId", appSyncEvent.Info.SelectionSetList);
+                Assert.Contains("status", appSyncEvent.Info.SelectionSetList);
+                Assert.Contains("title", appSyncEvent.Info.SelectionSetList);
+                Assert.Contains("description", appSyncEvent.Info.SelectionSetList);
+                Assert.Contains("createdAt", appSyncEvent.Info.SelectionSetList);
+                Assert.Contains("updatedAt", appSyncEvent.Info.SelectionSetList);
+
+                Assert.NotNull(appSyncEvent.Info.SelectionSetGraphQL);
+                Assert.NotNull(appSyncEvent.Info.Variables);
+                Assert.NotNull(appSyncEvent.Info.Variables["input"]);
+
+                Assert.NotNull(appSyncEvent.Stash);
+                Assert.Empty(appSyncEvent.Stash);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        public void AppSyncTestCognitoAuthorizer(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("appsync-event-cognito-authorizer.json"))
+            {
+                var request = serializer.Deserialize<AppSyncResolverEvent<Dictionary<string, object>>>(fileStream);
+
+                Assert.NotNull(request.Identity);
+
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(request.Identity.ToString())))
+                {
+                    var identity = serializer.Deserialize<AppSyncCognitoIdentity>(stream);
+                    Assert.NotNull(identity);
+
+                    // Claims
+                    Assert.NotNull(identity.Claims);
+                    Assert.True(identity.Claims.ContainsKey("client_id"));
+                    Assert.True(identity.Claims.ContainsKey("scope"));
+                    Assert.True(identity.Claims.ContainsKey("sub"));
+                    Assert.True(identity.Claims.ContainsKey("token_use"));
+
+                    // DefaultAuthStrategy
+                    Assert.NotEmpty(identity.DefaultAuthStrategy);
+
+                    // Groups
+                    Assert.NotNull(identity.Groups);
+                    Assert.NotEmpty(identity.Groups);
+
+                    // Issuer
+                    Assert.NotEmpty(identity.Issuer);
+
+                    // SourceIp
+                    Assert.NotNull(identity.SourceIp);
+                    Assert.NotEmpty(identity.SourceIp);
+
+                    // Sub
+                    Assert.NotEmpty(identity.Sub);
+
+                    // Username
+                    Assert.NotEmpty(identity.Username);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        public void AppSyncTestIAMAuthorizer(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("appsync-event-iam-authorizer.json"))
+            {
+                var request = serializer.Deserialize<AppSyncResolverEvent<Dictionary<string, object>>>(fileStream);
+
+                Assert.NotNull(request.Identity);
+
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(request.Identity.ToString())))
+                {
+                    var identity = serializer.Deserialize<AppSyncIamIdentity>(stream);
+                    Assert.NotNull(identity);
+
+                    // AccountId
+                    Assert.NotEmpty(identity.AccountId);
+
+                    // CognitoIdentityAuthProvider
+                    Assert.NotEmpty(identity.CognitoIdentityAuthProvider);
+
+                    // CognitoIdentityAuthType
+                    Assert.NotEmpty(identity.CognitoIdentityAuthType);
+
+                    // CognitoIdentityId
+                    Assert.NotEmpty(identity.CognitoIdentityId);
+
+                    // CognitoIdentityPoolId
+                    Assert.NotEmpty(identity.CognitoIdentityPoolId);
+
+                    // SourceIp
+                    Assert.NotNull(identity.SourceIp);
+                    Assert.NotEmpty(identity.SourceIp);
+
+                    // UserArn
+                    Assert.NotEmpty(identity.UserArn);
+
+                    // Username
+                    Assert.NotEmpty(identity.Username);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        public void AppSyncTestLambdaAuthorizer(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("appsync-event-lambda-authorizer.json"))
+            {
+                var request = serializer.Deserialize<AppSyncResolverEvent<Dictionary<string, object>>>(fileStream);
+
+                Assert.NotNull(request.Identity);
+
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(request.Identity.ToString())))
+                {
+                    var identity = serializer.Deserialize<AppSyncLambdaIdentity>(stream);
+                    Assert.NotNull(identity);
+
+                    // ResolverContext
+                    Assert.NotNull(identity.ResolverContext);
+                    Assert.NotEmpty(identity.ResolverContext["userid"]);
+                    Assert.NotEmpty(identity.ResolverContext["info"]);
+                    Assert.NotEmpty(identity.ResolverContext["more_info"]);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        public void AppSyncTestOidcAuthorizer(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("appsync-event-oidc-authorizer.json"))
+            {
+                var request = serializer.Deserialize<AppSyncResolverEvent<Dictionary<string, object>>>(fileStream);
+
+                Assert.NotNull(request.Identity);
+
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(request.Identity.ToString())))
+                {
+                    var identity = serializer.Deserialize<AppSyncOidcIdentity>(stream);
+                    Assert.NotNull(identity);
+
+                    // Claims
+                    Assert.NotNull(identity.Claims);
+                    Assert.True(identity.Claims.ContainsKey("client_id"));
+
+                    // Issuer
+                    Assert.NotEmpty(identity.Issuer);
+
+                    // Sub
+                    Assert.NotEmpty(identity.Sub);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        public void AppSyncTestLambdaAuthorizerRequestEvent(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            using (var fileStream = LoadJsonTestFile("appsync-event-lambda-authorizer-request.json"))
+            {
+                var request = serializer.Deserialize<AppSyncAuthorizerEvent>(fileStream);
+
+                // Assert Authorization Token
+                Assert.Equal("custom-token", request.AuthorizationToken);
+
+                // Assert Request Context
+                Assert.NotNull(request.RequestContext);
+                Assert.Equal("xxxxxxxx", request.RequestContext.ApiId);
+                Assert.Equal("112233445566", request.RequestContext.AccountId);
+                Assert.Equal("36307622-97fe-4dfa-bd71-b15b1d03ce97", request.RequestContext.RequestId);
+                Assert.Equal("MyQuery", request.RequestContext.OperationName);
+                Assert.NotNull(request.RequestContext.Variables);
+                Assert.Empty(request.RequestContext.Variables);
+                Assert.Contains("listTodos", request.RequestContext.QueryString);
+
+                // Assert Request Headers
+                Assert.NotNull(request.RequestHeaders);
+                Assert.Equal("This is test token", request.RequestHeaders["authorization"]);
+                Assert.Equal("application/json", request.RequestHeaders["content-type"]);
+                Assert.Equal("https://ap-south-1.console.aws.amazon.com", request.RequestHeaders["origin"]);
+            }
+        }
+ 
+        [Theory]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        public void AppSyncTestLambdaAuthorizerResponseEvent(Type serializerType)
+        {
+            var response = new AppSyncAuthorizerResult
+            {
+                IsAuthorized = true,
+                ResolverContext = new Dictionary<string, string>
+                {
+                    { "userid", "test-user-id" },
+                    { "info", "contextual information A" },
+                    { "more_info", "contextual information B" }
+                },
+                DeniedFields = new List<string>
+                {
+                    "arn:aws:appsync:us-east-1:1234567890:apis/xxxxxx/types/Event/fields/comments",
+                    "Mutation.createEvent"
+                },
+                TtlOverride = 10
+            };
+
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            var json = SerializeJson(serializer, response);
+            var actualObject = JObject.Parse(json);
+            var expectedJObject = JObject.Parse(File.ReadAllText("appsync-event-lambda-authorizer-response.json"));
+
+            Assert.True(JToken.DeepEquals(actualObject, expectedJObject));
+        }
+#endif
 
         class ClassUsingPascalCase
         {
