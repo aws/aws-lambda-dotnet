@@ -140,7 +140,7 @@
       "Name": "Amazon.Lambda.TestTool",
       "Path": "Tools/LambdaTestTool-v2/src/Amazon.Lambda.TestTool/Amazon.Lambda.TestTool.csproj"
     },
-	  {
+	{
       "Name": "Amazon.Lambda.AppSyncEvents",
       "Path": "Libraries/src/Amazon.Lambda.AppSyncEvents/Amazon.Lambda.AppSyncEvents.csproj"
     }
