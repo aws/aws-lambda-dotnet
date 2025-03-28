@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
+using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
@@ -93,9 +93,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var isExecutable = false;
 
                 bool foundFatalError = false;
-                
+
                 var assemblyAttributes = context.Compilation.Assembly.GetAttributes();
-                
+
                 var globalPropertiesAttribute = assemblyAttributes
                     .FirstOrDefault(attr => attr.AttributeClass.Name == nameof(LambdaGlobalPropertiesAttribute));
 
@@ -109,7 +109,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         defaultRuntime = _targetFrameworksToRuntimes[targetFramework];
                     }
                 }
-                
+
                 // The runtime specified in the global property has precedence over the one we determined from the TFM (if we did)
                 if (globalPropertiesAttribute != null)
                 {
@@ -134,14 +134,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     }
                 }
 
-                var configureMethodSymbol = semanticModelProvider.GetConfigureMethodModel(receiver.StartupClasses.FirstOrDefault());
+                var configureHostBuilderMethodSymbol = semanticModelProvider.GetConfigureHostBuilderMethodModel(receiver.StartupClasses.FirstOrDefault());
+                var configureServicesMethodSymbol = semanticModelProvider.GetConfigureServicesMethodModel(receiver.StartupClasses.FirstOrDefault());
+                var configureMethodSymbol = configureServicesMethodSymbol;
+
+                if (configureServicesMethodSymbol != null && configureHostBuilderMethodSymbol != null)
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MultipleConfigureMethodsNotAllowed, configureServicesMethodSymbol.Locations.FirstOrDefault(), configureServicesMethodSymbol.Name, configureHostBuilderMethodSymbol.Name));
+                }
+
+                if (configureHostBuilderMethodSymbol != null)
+                {
+                    configureMethodSymbol = configureHostBuilderMethodSymbol;
+                }
 
                 var annotationReport = new AnnotationReport();
 
                 var templateHandler = new CloudFormationTemplateHandler(_fileManager, _directoryManager);
 
                 var lambdaModels = new List<LambdaFunctionModel>();
-                
+
                 foreach (var lambdaMethodDeclarationSyntax in receiver.LambdaMethods)
                 {
                     var lambdaMethodSymbol = semanticModelProvider.GetMethodSemanticModel(lambdaMethodDeclarationSyntax);
@@ -163,7 +175,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         sourceText = template.TransformText().ToEnvironmentLineEndings();
                         context.AddSource($"{lambdaFunctionModel.GeneratedMethod.ContainingType.Name}.g.cs", SourceText.From(sourceText, Encoding.UTF8, SourceHashAlgorithm.Sha256));
                     }
-                    catch (Exception e) when (e is NotSupportedException || e is InvalidOperationException)  
+                    catch (Exception e) when (e is NotSupportedException || e is InvalidOperationException)
                     {
                         diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.CodeGenerationFailed, Location.Create(lambdaMethodDeclarationSyntax.SyntaxTree, lambdaMethodDeclarationSyntax.Span), e.Message));
                         return;
@@ -241,7 +253,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         DiagnosticDescriptors.MissingDependencies,
                         Location.None,
                         "Amazon.Lambda.RuntimeSupport"));
-                
+
                 return null;
             }
 
@@ -251,14 +263,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var symbol = model.GetDeclaredSymbol(methodDeclaration) as IMethodSymbol;
 
                 // Check to see if a static main method exists in the same namespace that has 0 or 1 parameters
-                if (symbol.Name != "Main" || !symbol.IsStatic || symbol.ContainingNamespace.Name != lambdaModels[0].LambdaMethod.ContainingAssembly || (symbol.Parameters.Length > 1)) 
+                if (symbol.Name != "Main" || !symbol.IsStatic || symbol.ContainingNamespace.Name != lambdaModels[0].LambdaMethod.ContainingAssembly || (symbol.Parameters.Length > 1))
                     continue;
-                
+
                 diagnosticReporter.Report(
                     Diagnostic.Create(
                         DiagnosticDescriptors.MainMethodExists,
                         Location.None));
-                    
+
                 return null;
             }
 

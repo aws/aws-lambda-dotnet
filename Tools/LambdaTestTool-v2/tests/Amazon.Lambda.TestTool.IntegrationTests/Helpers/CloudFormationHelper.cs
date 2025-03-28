@@ -21,7 +21,12 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             {
                 StackName = stackName,
                 TemplateBody = templateBody,
-                Capabilities = new List<string> { "CAPABILITY_IAM" }
+                Capabilities = new List<string> { "CAPABILITY_IAM" },
+                Tags = new List<Tag>
+                {
+                    new Tag { Key = "aws-tests", Value = typeof(CloudFormationHelper).FullName },
+                    new Tag { Key = "aws-repo", Value = "aws-lambda-dotnet" }
+                }
             });
             return response.StackId;
         }
