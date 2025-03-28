@@ -12,5 +12,11 @@
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-  
+
+  <PropertyGroup>
+    <WarningsAsErrors>IL2026,IL2067,IL2075,IL3050</WarningsAsErrors>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
 </Project>
