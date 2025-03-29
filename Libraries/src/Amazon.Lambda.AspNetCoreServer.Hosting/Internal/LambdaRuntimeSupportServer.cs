@@ -1,9 +1,8 @@
-﻿using Amazon.Lambda.AspNetCoreServer.Internal;
+using System.Diagnostics.CodeAnalysis;
+using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
-using Amazon.Lambda.Serialization.SystemTextJson;
 using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
@@ -16,7 +15,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
     /// </summary>
     public abstract class LambdaRuntimeSupportServer : LambdaServer
     {
-        IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
+
+        #if NET8_0_OR_GREATER
+        private readonly LambdaSnapstartExecuteRequestsBeforeSnapshotHelper _snapstartInitHelper;
+        #endif
+
         internal ILambdaSerializer Serializer;
 
         /// <summary>
@@ -26,6 +30,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         public LambdaRuntimeSupportServer(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
+
+            #if NET8_0_OR_GREATER
+            _snapstartInitHelper = _serviceProvider.GetRequiredService<LambdaSnapstartExecuteRequestsBeforeSnapshotHelper>();
+            #endif
+
             Serializer = serviceProvider.GetRequiredService<ILambdaSerializer>();
         }
 
@@ -41,6 +50,13 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             base.StartAsync(application, cancellationToken);
 
             var handlerWrapper = CreateHandlerWrapper(_serviceProvider);
+
+            #if NET8_0_OR_GREATER
+
+            _snapstartInitHelper.RegisterInitializerRequests(handlerWrapper);
+
+            #endif
+
             var bootStrap = new LambdaBootstrap(handlerWrapper);
             return bootStrap.RunAsync();
         }
