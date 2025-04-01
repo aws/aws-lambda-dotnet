@@ -20,13 +20,95 @@ The framework reduces the amount of boiler-plate code developers need to write, 
 
 The framework supports Open Telemetry via the [AWS.Messaging.Telemetry.OpenTelemetry](https://www.nuget.org/packages/AWS.Messaging.Telemetry.OpenTelemetry/) package. Refer to its [README](https://github.com/awslabs/aws-dotnet-messaging/blob/main/src/AWS.Messaging.Telemetry.OpenTelemetry/README.md) to enable instrumentation.
 
-## Testing Locally
+## Local Testing Guide
 
-The functions can be tested with the [Mock Lambda Test Tool](https://github.com/aws/aws-lambda-dotnet/tree/master/Tools/LambdaTestTool) in Visual Studio or other IDEs.
+### Prerequisites
+The functions can be tested with the [Lambda Test Tool](https://github.com/aws/aws-lambda-dotnet/tree/master/Tools/LambdaTestTool-v2).
 
-The project includes two sample payloads, one for each function handler.
-1. "Sender Sample Request" can be used to invoke the Sender function. Note that this will send an SQS message to the queue configured in `launchSettings.json` 
-2. "Handler Sample Request" can be used to invoke the Handler function. This mocks the SQS message, and does not require an actual queue.
+1. Install the Lambda Test Tool:
+```bash
+dotnet tool install -g amazon.lambda.testtool
+```
+
+2. Get the Lambda Test Tool version:
+
+```
+dotnet lambda-test-tool info
+```
+
+### Setup Steps
+
+
+1. Build the project
+
+```
+dotnet build
+```
+
+2. Start the Lambda Test Tool:
+
+```
+dotnet lambda-test-tool start --lambda-emulator-port 5050
+```
+
+3. Configure the project:
+* Update Properties/launchSettings.json with the Lambda Test Tool version and function handler name.
+
+###$ Example launchSettings.json
+
+```json
+{
+    "profiles": {
+        "Default": {
+            "workingDirectory": ".\\bin\\$(Configuration)\\net8.0",
+            "commandName": "Executable",
+            "commandLineArgs": "exec --depsfile ./BlueprintBaseName.1.deps.json  --runtimeconfig ./BlueprintBaseName.1.runtimeconfig.json %USERPROFILE%/.dotnet/tools/.store/amazon.lambda.testtool/${VERSION}/amazon.lambda.testtool/${VERSION}/content/Amazon.Lambda.RuntimeSupport/net8.0/Amazon.Lambda.RuntimeSupport.dll BlueprintBaseName.1::BlueprintBaseName._1.Functions_Handler_Generated::Handler",
+            "executablePath": "dotnet",
+            "environmentVariables": {
+                "AWS_LAMBDA_RUNTIME_API": "localhost:5050/MyFunction",
+                "QUEUE_URL": "QUEUE_URL"
+            }
+        }
+    }
+}
+
+```
+
+
+### Running the project
+
+### Option 1: Using Visual Studio
+1. Update launchSettings.json with the correct Lambda Test Tool version
+2. Run the project from Visual Studio
+
+
+### Option 2: Using Command Line
+
+
+```
+cd bin\Debug\net8.0
+$env:AWS_LAMBDA_RUNTIME_API = "localhost:5050/MyFunction"
+$env:VERSION = "0.9.1" // Use the version returned from dotnet lambda-test-tool info
+
+dotnet exec --depsfile ./BlueprintBaseName.1.deps.json --runtimeconfig ./BlueprintBaseName.1.runtimeconfig.json "$env:USERPROFILE\.dotnet\tools\.store\amazon.lambda.testtool\$env:VERSION\amazon.lambda.testtool\$env:VERSION\content\Amazon.Lambda.RuntimeSupport\net8.0\Amazon.Lambda.RuntimeSupport.dll" BlueprintBaseName.1::BlueprintBaseName._1.Functions_Handler_Generated::Handler
+
+
+```
+
+### Testing
+
+The project includes sample payloads in 
+
+```plaintext
+.lambda-test-tool\SavedRequests
+```
+
+:
+
+1. "Sender Sample Request" - can be used to invoke the Sender function. Note that this will send an SQS message to the queue configured in `launchSettings.json` 
+    
+2. "Handler Sample Request" - can be used to invoke the Handler function. This mocks the SQS message, and does not require an actual queue.
+
 
 ## Deploying and Testing from Visual Studio
 
