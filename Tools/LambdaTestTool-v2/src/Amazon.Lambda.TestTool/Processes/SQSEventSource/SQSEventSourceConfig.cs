@@ -10,12 +10,12 @@ internal class SQSEventSourceConfig
 {
     /// <summary>
     /// The batch size to read and send to Lambda function. This is the upper bound of messages to read and send.
-    /// SQS will return with less then batch size if there are not enough messages in the queue.
+    /// SQS will return with less than batch size if there are not enough messages in the queue.
     /// </summary>
     public int? BatchSize { get; set; }
 
     /// <summary>
-    /// If true the SQSEventSourceBackgroundService will skip deleting messages from the queue after the Lambda function returns.
+    /// If true the <see cref="SQSEventSourceBackgroundService"/> will skip deleting messages from the queue after the Lambda function returns.
     /// </summary>
     public bool? DisableMessageDelete { get; set; }
 
@@ -30,6 +30,7 @@ internal class SQSEventSourceConfig
     /// If not set the current Test Tool instance will be used assuming it is running a Lambda runtime api emulator.
     /// </summary>
     public string? LambdaRuntimeApi { get; set; }
+
     /// <summary>
     /// The AWS profile to use for credentials for fetching messages from the queue.
     /// </summary>

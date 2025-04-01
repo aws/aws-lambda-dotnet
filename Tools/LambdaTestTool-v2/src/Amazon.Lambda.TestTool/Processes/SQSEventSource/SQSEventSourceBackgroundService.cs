@@ -7,11 +7,12 @@ using Amazon.Runtime;
 using Amazon.SQS.Model;
 using Amazon.SQS;
 using System.Text.Json;
+using Amazon.Lambda.TestTool.Services;
 
 namespace Amazon.Lambda.TestTool.Processes.SQSEventSource;
 
 /// <summary>
-/// IHostedService that will run continuially polling the SQS queue for messages and invoking the connected
+/// IHostedService that will run continually polling the SQS queue for messages and invoking the connected
 /// Lambda function with the polled messages.
 /// </summary>
 public class SQSEventSourceBackgroundService : BackgroundService
@@ -24,25 +25,22 @@ public class SQSEventSourceBackgroundService : BackgroundService
 
     private readonly ILogger<SQSEventSourceProcess> _logger;
     private readonly IAmazonSQS _sqsClient;
-    private readonly IAmazonLambda _lambdaClient;
+    private readonly ILambdaClient _lambdaClient;
     private readonly SQSEventSourceBackgroundServiceConfig _config;
 
     /// <summary>
-    /// Constructs instance of SQSEventSourceBackgroundService.
+    /// Constructs instance of <see cref="SQSEventSourceBackgroundService"/>.
     /// </summary>
-    /// <param name="logger"></param>
-    /// <param name="sqsClient"></param>
-    /// <param name="config"></param>
-    public SQSEventSourceBackgroundService(ILogger<SQSEventSourceProcess> logger, IAmazonSQS sqsClient, SQSEventSourceBackgroundServiceConfig config)
+    /// <param name="logger">The logger</param>
+    /// <param name="sqsClient">The SQS client used to poll messages from a queue.</param>
+    /// <param name="config">The config of the service</param>
+    /// <param name="lambdaClient">The Lambda client that can use a different endpoint for each invoke request.</param>
+    public SQSEventSourceBackgroundService(ILogger<SQSEventSourceProcess> logger, IAmazonSQS sqsClient, SQSEventSourceBackgroundServiceConfig config, ILambdaClient lambdaClient)
     {
         _logger = logger;
         _sqsClient = sqsClient;
         _config = config;
-
-        _lambdaClient = new AmazonLambdaClient(new BasicAWSCredentials("accessKey", "secretKey"), new AmazonLambdaConfig
-        {
-            ServiceURL = _config.LambdaRuntimeApi
-        });
+        _lambdaClient = lambdaClient;
     }
 
     private async Task<string> GetQueueArn(CancellationToken stoppingToken)
@@ -59,8 +57,8 @@ public class SQSEventSourceBackgroundService : BackgroundService
     /// <summary>
     /// Execute the SQSEventSourceBackgroundService.
     /// </summary>
-    /// <param name="stoppingToken"></param>
-    /// <returns></returns>
+    /// <param name="stoppingToken">CancellationToken used to end the service.</param>
+    /// <returns>Task for the background service.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // The queue arn is needed for creating the Lambda event.
@@ -107,7 +105,7 @@ public class SQSEventSourceBackgroundService : BackgroundService
                 };
 
                 _logger.LogInformation("Invoking Lambda function {functionName} function with {messageCount} messages", _config.FunctionName, lambdaPayload.Records.Count);
-                var lambdaResponse = await _lambdaClient.InvokeAsync(invokeRequest, stoppingToken);
+                var lambdaResponse = await _lambdaClient.InvokeAsync(invokeRequest, _config.LambdaRuntimeApi);
 
                 if (lambdaResponse.FunctionError != null)
                 {
@@ -188,22 +186,22 @@ public class SQSEventSourceBackgroundService : BackgroundService
     /// <summary>
     /// Convert from the SDK's list of messages to the Lambda event's SQS message type.
     /// </summary>
-    /// <param name="message"></param>
-    /// <param name="awsRegion"></param>
-    /// <param name="queueArn"></param>
-    /// <returns></returns>
-    internal static List<SQSEvent.SQSMessage> ConvertToLambdaMessages(List<Message> message, string awsRegion, string queueArn)
+    /// <param name="messages">List of messages using the SDK's .NET type</param>
+    /// <param name="awsRegion">The aws region the messages came from.</param>
+    /// <param name="queueArn">The SQS queue arn the messages came from.</param>
+    /// <returns>List of messages using the Lambda event's .NET type.</returns>
+    internal static List<SQSEvent.SQSMessage> ConvertToLambdaMessages(List<Message> messages, string awsRegion, string queueArn)
     {
-        return message.Select(m => ConvertToLambdaMessage(m, awsRegion, queueArn)).ToList();
+        return messages.Select(m => ConvertToLambdaMessage(m, awsRegion, queueArn)).ToList();
     }
 
     /// <summary>
     /// Convert from the SDK's SQS message to the Lambda event's SQS message type.
     /// </summary>
-    /// <param name="message"></param>
-    /// <param name="awsRegion"></param>
-    /// <param name="queueArn"></param>
-    /// <returns></returns>
+    /// <param name="message">Message using the SDK's .NET type</param>
+    /// <param name="awsRegion">The aws region the message came from.</param>
+    /// <param name="queueArn">The SQS queue arn the message came from.</param>
+    /// <returns>Messages using the Lambda event's .NET type.</returns>
     internal static SQSEvent.SQSMessage ConvertToLambdaMessage(Message message, string awsRegion, string queueArn)
     {
         var lambdaMessage = new SQSEvent.SQSMessage
