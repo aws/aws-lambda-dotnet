@@ -98,7 +98,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <see cref="HttpRequestMessage.RequestUri"/>.
         /// <para />.
         /// Be aware that this will invoke your applications function handler code
-        /// multiple times.  Additionally, tt uses a mock <see cref="ILambdaContext"/>
+        /// multiple times.  Additionally, it uses a mock <see cref="ILambdaContext"/>
         /// which may not be fully populated.
         /// <para />
         /// This method automatically registers with <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>.

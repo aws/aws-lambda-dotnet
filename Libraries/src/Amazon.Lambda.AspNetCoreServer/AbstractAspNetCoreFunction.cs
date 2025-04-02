@@ -8,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -251,6 +253,46 @@ namespace Amazon.Lambda.AspNetCoreServer
             return builder;
         }
 
+        #if NET8_0_OR_GREATER
+        /// <summary>
+        /// Return one or more <see cref="HttpRequestMessage"/>s that will be used to invoke
+        /// Routes in your lambda function in order to initialize the asp.net and lambda pipelines
+        /// during <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>,
+        /// improving the performance gains offered by SnapStart.
+        /// <para />
+        /// The returned <see cref="HttpRequestMessage"/>s must have a relative
+        /// <see cref="HttpRequestMessage.RequestUri"/>.
+        /// <para />.
+        /// Be aware that this will invoke your applications function handler code
+        /// multiple times.  Additionally, it uses a mock <see cref="ILambdaContext"/>
+        /// which may not be fully populated.
+        /// <para />
+        /// This method automatically registers with <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>.
+        /// <para />
+        /// If SnapStart is not enabled, then this method is never invoked.
+        /// <para />
+        /// Example:
+        /// <para />
+        /// <code>
+        /// <![CDATA[
+        /// public class HttpV2LambdaFunction : APIGatewayHttpApiV2ProxyFunction<Startup>
+        /// {
+        ///     protected override IEnumerable<HttpRequestMessage> RegisterBeforeSnapshotRequest() =>
+        ///     [
+        ///         new HttpRequestMessage
+        ///         {
+        ///             RequestUri = new Uri("/api/ExampleSnapstartInit"),
+        ///             Method = HttpMethod.Get
+        ///         }
+        ///     ];
+        /// }
+        /// ]]>
+        /// </code>
+        /// </summary>
+        protected virtual IEnumerable<HttpRequestMessage> RegisterBeforeSnapshotRequest() =>
+            Enumerable.Empty<HttpRequestMessage>();
+        #endif
+
         private protected bool IsStarted
         {
             get
@@ -284,6 +326,37 @@ namespace Amazon.Lambda.AspNetCoreServer
                         "instead of ConfigureWebHostDefaults to make sure the property Lambda services are registered.");
             }
             _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(this._hostServices);
+
+            #if NET8_0_OR_GREATER
+
+            Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot(async () =>
+            {
+                var beforeSnapstartRequests = RegisterBeforeSnapshotRequest();
+
+                foreach (var httpRequest in beforeSnapstartRequests)
+                {
+                    var invokeTimes = 5;
+
+                    var json = await HttpRequestMessageSerializer.SerializeToJson<TREQUEST>(httpRequest);
+
+                    var request = HttpRequestMessageSerializer.Deserialize<TREQUEST>(json);
+
+                    InvokeFeatures features = new InvokeFeatures();
+                    MarshallRequest(features, request, new SnapStartEmptyLambdaContext());
+
+                    var context = CreateContext(features);
+
+                    var lambdaContext = new SnapStartEmptyLambdaContext();
+
+                    for (var i = 0; i < invokeTimes; i++)
+                    {
+                        await ProcessRequest(lambdaContext, context, features);
+                    }
+                }
+            });
+
+            #endif
+
         }
 
         /// <summary>
