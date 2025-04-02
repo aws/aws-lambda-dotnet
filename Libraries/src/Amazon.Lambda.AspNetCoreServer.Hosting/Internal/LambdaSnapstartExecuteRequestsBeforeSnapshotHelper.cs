@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.ApplicationLoadBalancerEvents;
+using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 using Microsoft.AspNetCore.WebUtilities;
@@ -87,30 +88,36 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
         }
     }
 
+    private class HelperLambdaContext : ILambdaContext, ICognitoIdentity, IClientContext
+    {
+        private LambdaEnvironment _lambdaEnvironment = new ();
+
+        public string TraceId => string.Empty;
+        public string AwsRequestId => string.Empty;
+        public IClientContext ClientContext => this;
+        public string FunctionName => _lambdaEnvironment.FunctionName;
+        public string FunctionVersion => _lambdaEnvironment.FunctionVersion;
+        public ICognitoIdentity Identity => this;
+        public string InvokedFunctionArn => string.Empty;
+        public ILambdaLogger Logger => null;
+        public string LogGroupName => _lambdaEnvironment.LogGroupName;
+        public string LogStreamName => _lambdaEnvironment.LogStreamName;
+        public int MemoryLimitInMB => 128;
+        public TimeSpan RemainingTime => TimeSpan.FromMilliseconds(100);
+        public string IdentityId { get; }
+        public string IdentityPoolId { get; }
+        public IDictionary<string, string> Environment { get; } = new Dictionary<string, string>();
+        public IClientApplication Client { get; }
+        public IDictionary<string, string> Custom { get; } = new Dictionary<string, string>();
+    }
+
     private static class SnapstartHelperLambdaRequests
     {
-        private static readonly InternalLogger _logger = InternalLogger.GetDefaultLogger();
-
-        private static readonly RuntimeApiHeaders _fakeRuntimeApiHeaders = new(new Dictionary<string, IEnumerable<string>>
-        {
-            { RuntimeApiHeaders.HeaderAwsRequestId, new List<string>() },
-            { RuntimeApiHeaders.HeaderTraceId, new List<string>() },
-            { RuntimeApiHeaders.HeaderClientContext, new List<string>() },
-            { RuntimeApiHeaders.HeaderCognitoIdentity, new List<string>() },
-            { RuntimeApiHeaders.HeaderDeadlineMs, new List<string>() },
-            { RuntimeApiHeaders.HeaderInvokedFunctionArn, new List<string>() },
-        });
-
         public static async Task ExecuteSnapstartInitRequests(string jsonRequest, int times, HandlerWrapper handlerWrapper)
         {
-            var dummyRequest = new InvocationRequest
-            {
-                InputStream = new MemoryStream(Encoding.UTF8.GetBytes(jsonRequest)),
-                LambdaContext = new LambdaContext(
-                    _fakeRuntimeApiHeaders,
-                    new LambdaEnvironment(),
-                    new SimpleLoggerWriter())
-            };
+            var dummyRequest = new InvocationRequest(
+                new MemoryStream(Encoding.UTF8.GetBytes(jsonRequest)),
+                new HelperLambdaContext());
 
             for (var i = 0; i < times; i++)
             {
@@ -121,7 +128,6 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
                 catch (Exception e)
                 {
                     Console.WriteLine("StartAsync: " + e.Message + e.StackTrace);
-                    _logger.LogError(e, "StartAsync: Custom Warmup Failure: " + e.Message + e.StackTrace);
                 }
             }
         }
