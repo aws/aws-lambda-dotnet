@@ -139,6 +139,21 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
+        public static IServiceCollection AddAWSLambdaBeforeSnapshotRequest(this IServiceCollection services, Func<IEnumerable<HttpRequestMessage>> beforeSnapStartRequest)
+        {
+            // TODO
+            throw new NotImplementedException();
+        }
+
+        public static IServiceCollection AddAWSLambdaBeforeSnapshotRequest(this IServiceCollection services, Func<HttpRequestMessage> beforeSnapStartRequest)
+        {
+            return AddAWSLambdaBeforeSnapshotRequest(services,
+                () => new List<HttpRequestMessage>
+                {
+                    beforeSnapStartRequest()
+                });
+        }
+
         private static bool TryLambdaSetup(IServiceCollection services, LambdaEventSource eventSource, Action<HostingOptions>? configure, out HostingOptions? hostingOptions)
         {
             hostingOptions = null;
