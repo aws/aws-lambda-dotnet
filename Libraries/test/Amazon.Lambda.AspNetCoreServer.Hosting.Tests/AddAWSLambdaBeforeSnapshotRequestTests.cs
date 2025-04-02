@@ -30,10 +30,9 @@ public class AddAWSLambdaBeforeSnapshotRequestTests
 
         builder.Services.AddAWSLambdaHosting(hostingType);
         // Initialize asp.net pipeline before Snapshot
-        builder.Services.AddAWSLambdaBeforeSnapshotRequest(async httpClient =>
-        {
-            await httpClient.GetAsync($"/test");
-        });
+        builder.Services.AddAWSLambdaBeforeSnapshotRequest(() => 
+             new HttpRequestMessage(HttpMethod.Get, "/test")
+        );
             
         var app = builder.Build();
             
