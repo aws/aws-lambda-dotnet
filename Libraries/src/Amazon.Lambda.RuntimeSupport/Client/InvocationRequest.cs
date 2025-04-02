@@ -35,6 +35,13 @@ namespace Amazon.Lambda.RuntimeSupport
 
         internal InvocationRequest() { }
 
+        /// <inheritdoc cref="InvocationRequest"/>>
+        public InvocationRequest(Stream inputStream, ILambdaContext lambdaContext)
+        {
+            InputStream = inputStream;
+            LambdaContext = lambdaContext;
+        }
+
         public void Dispose()
         {
             InputStream?.Dispose();
