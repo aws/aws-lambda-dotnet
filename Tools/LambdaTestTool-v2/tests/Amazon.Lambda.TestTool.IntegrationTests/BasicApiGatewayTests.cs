@@ -48,7 +48,7 @@ public class BasicApiGatewayTests : BaseApiGatewayTest
             };
 
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/testfunction")
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"127.0.0.1:{lambdaPort}/testfunction")
                 .Build()
                 .RunAsync(CancellationTokenSource.Token);
 
@@ -93,7 +93,7 @@ public class BasicApiGatewayTests : BaseApiGatewayTest
             };
 
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/testfunction")
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"127.0.0.1:{lambdaPort}/testfunction")
                 .Build()
                 .RunAsync(CancellationTokenSource.Token);
 
@@ -138,7 +138,7 @@ public class BasicApiGatewayTests : BaseApiGatewayTest
             };
 
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/testfunction")
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"127.0.0.1:{lambdaPort}/testfunction")
                 .Build()
                 .RunAsync(CancellationTokenSource.Token);
 

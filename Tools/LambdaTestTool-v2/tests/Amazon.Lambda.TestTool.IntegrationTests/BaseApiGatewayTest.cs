@@ -50,7 +50,7 @@ public abstract class BaseApiGatewayTest
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         Environment.SetEnvironmentVariable("APIGATEWAY_EMULATOR_ROUTE_CONFIG", $@"{{
             ""LambdaResourceName"": ""{routeName}"",
-            ""Endpoint"": ""http://localhost:{lambdaPort}"",
+            ""Endpoint"": ""http://127.0.0.1:{lambdaPort}"",
             ""HttpMethod"": ""{httpMethod}"",
             ""Path"": ""/{routeName}""
         }}");
@@ -77,7 +77,7 @@ public abstract class BaseApiGatewayTest
             client.Timeout = TimeSpan.FromSeconds(10);
             var startTime = DateTime.UtcNow;
             var timeout = TimeSpan.FromSeconds(60);
-            var healthUrl = $"http://localhost:{apiGatewayPort}/__lambda_test_tool_apigateway_health__";
+            var healthUrl = $"http://127.0.0.1:{apiGatewayPort}/__lambda_test_tool_apigateway_health__";
 
             while (DateTime.UtcNow - startTime < timeout)
             {
@@ -103,7 +103,7 @@ public abstract class BaseApiGatewayTest
 
     protected async Task<HttpResponseMessage> TestEndpoint(string routeName, int apiGatewayPort, string httpMethod = "POST", string? payload = null)
     {
-        TestOutputHelper.WriteLine($"Testing endpoint: http://localhost:{apiGatewayPort}/{routeName}");
+        TestOutputHelper.WriteLine($"Testing endpoint: http://127.0.0.1:{apiGatewayPort}/{routeName}");
         using (var client = new HttpClient())
         {
             client.Timeout = TimeSpan.FromSeconds(120);
@@ -121,9 +121,9 @@ public abstract class BaseApiGatewayTest
                     return httpMethod.ToUpper() switch
                     {
                         "POST" => await client.PostAsync(
-                            $"http://localhost:{apiGatewayPort}/{routeName}",
+                            $"http://127.0.0.1:{apiGatewayPort}/{routeName}",
                             new StringContent(payload ?? "hello world", Encoding.UTF8, new MediaTypeHeaderValue("text/plain"))),
-                        "GET" => await client.GetAsync($"http://localhost:{apiGatewayPort}/{routeName}"),
+                        "GET" => await client.GetAsync($"http://127.0.0.1:{apiGatewayPort}/{routeName}"),
                         _ => throw new ArgumentException($"Unsupported HTTP method: {httpMethod}")
                     };
                 }

@@ -18,7 +18,7 @@ public abstract class Constants
     /// <summary>
     /// The default hostname used for the Lambda Test Tool.
     /// </summary>
-    public const string DefaultLambdaEmulatorHost = "localhost";
+    public const string DefaultLambdaEmulatorHost = "127.0.0.1";
 
     /// <summary>
     /// The default mode for the API Gateway Emulator.

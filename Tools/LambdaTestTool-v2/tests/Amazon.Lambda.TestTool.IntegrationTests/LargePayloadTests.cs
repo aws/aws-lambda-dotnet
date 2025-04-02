@@ -48,7 +48,7 @@ public class LargePayloadTests : BaseApiGatewayTest
             };
 
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/largerequestfunction")
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"127.0.0.1:{lambdaPort}/largerequestfunction")
                 .Build()
                 .RunAsync(CancellationTokenSource.Token);
 
@@ -95,7 +95,7 @@ public class LargePayloadTests : BaseApiGatewayTest
             };
 
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/largerequestfunction")
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"127.0.0.1:{lambdaPort}/largerequestfunction")
                 .Build()
                 .RunAsync(CancellationTokenSource.Token);
 

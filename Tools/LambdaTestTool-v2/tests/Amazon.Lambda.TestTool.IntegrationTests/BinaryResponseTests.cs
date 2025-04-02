@@ -60,7 +60,7 @@ public class BinaryResponseTests : BaseApiGatewayTest
             };
 
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/binaryfunction")
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"127.0.0.1:{lambdaPort}/binaryfunction")
                 .Build()
                 .RunAsync(CancellationTokenSource.Token);
 
