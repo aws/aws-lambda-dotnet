@@ -8,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -251,6 +253,17 @@ namespace Amazon.Lambda.AspNetCoreServer
             return builder;
         }
 
+        /// <summary>
+        /// TODO - copy from AddAWSLambdaBeforeSnapshotRequest
+        /// Override to register a <see cref="HttpRequestMessage"/> that will be executed
+        /// within <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>.
+        ///
+        /// Improves performance of SnapStart
+        /// </summary>
+        /// <returns></returns>
+        protected virtual IEnumerable<TREQUEST> RegisterBeforeSnapshotRequest() => Enumerable.Empty<TREQUEST>();
+        
+
         private protected bool IsStarted
         {
             get
@@ -284,6 +297,32 @@ namespace Amazon.Lambda.AspNetCoreServer
                         "instead of ConfigureWebHostDefaults to make sure the property Lambda services are registered.");
             }
             _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(this._hostServices);
+
+            #if NET8_0_OR_GREATER
+            var beforeSnapstartRequests = RegisterBeforeSnapshotRequest();
+
+            Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot(async () =>
+            {
+                foreach (var request in beforeSnapstartRequests)
+                {
+                    var invokeTimes = 5;
+
+                    InvokeFeatures features = new InvokeFeatures();
+                    MarshallRequest(features, request, new SnapStartEmptyLambdaContext());
+
+                    var context = CreateContext(features);
+
+                    var lambdaContext = new SnapStartEmptyLambdaContext();
+
+                    for (var i = 0; i < invokeTimes; i++)
+                    {
+                        await ProcessRequest(lambdaContext, context, features);
+                    }
+                }
+            });
+
+            #endif
+
         }
 
         /// <summary>
