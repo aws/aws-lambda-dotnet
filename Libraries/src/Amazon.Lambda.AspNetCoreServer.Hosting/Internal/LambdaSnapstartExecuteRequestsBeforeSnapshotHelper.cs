@@ -45,24 +45,10 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
     {
         Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot(async () =>
         {
-            // Construct specialized HttpClient that will intercept requests and saved them inside
-            // LambdaSnapstartInitializerHttpMessageHandler.CapturedHttpRequests.
-            //
-            // They will be processed later by SnapstartHelperLambdaRequests.ExecuteSnapstartInitRequests which will
-            // route them correctly through a simulated lambda pipeline.
-            var messageHandlerThatCollectsRequests = new LambdaSnapstartInitializerHttpMessageHandler(_lambdaEventSource);
-
-            var httpClientThatCollectsRequests = new HttpClient(messageHandlerThatCollectsRequests);
-            httpClientThatCollectsRequests.BaseAddress = LambdaSnapstartInitializerHttpMessageHandler.BaseUri;
-
-            // "Invoke" each registered request function.  Requests will be captured inside.
-            // LambdaSnapstartInitializerHttpMessageHandler.CapturedHttpRequests.
-            await Registrar.Execute(httpClientThatCollectsRequests);
-
-            // Request are now in CapturedHttpRequests.  Serialize each one into a json object
-            // and execute the request through the lambda pipeline (ie handlerWrapper).
-            foreach (var json in LambdaSnapstartInitializerHttpMessageHandler.CapturedHttpRequestsJson)
+            foreach (var req in Registrar.GetAllRequests())
             {
+                var json = await SnapstartHelperLambdaRequests.SerializeToJson(req, _lambdaEventSource);
+
                 await SnapstartHelperLambdaRequests.ExecuteSnapstartInitRequests(json, times: 5, handlerWrapper);
             }
         });
@@ -74,17 +60,19 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
 
     internal class BeforeSnapstartRequestRegistrar
     {
-        private readonly List<Func<HttpClient, Task>> _beforeSnapstartFuncs = new();
+        private readonly List<Func<IEnumerable<HttpRequestMessage>>> _beforeSnapstartRequests = new();
 
-        public void Register(Func<HttpClient, Task> beforeSnapstartRequest)
+        
+        public void Register(Func<IEnumerable<HttpRequestMessage>> beforeSnapstartRequests)
         {
-            _beforeSnapstartFuncs.Add(beforeSnapstartRequest);
+            _beforeSnapstartRequests.Add(beforeSnapstartRequests);
         }
 
-        internal async Task Execute(HttpClient client)
+        internal IEnumerable<HttpRequestMessage> GetAllRequests()
         {
-            foreach (var f in _beforeSnapstartFuncs)
-                await f(client);
+            foreach (var batch in _beforeSnapstartRequests)
+                foreach (var r in batch())
+                    yield return r;
         }
     }
 
@@ -113,6 +101,8 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
 
     private static class SnapstartHelperLambdaRequests
     {
+        private static readonly Uri _baseUri = new Uri("http://localhost");
+
         public static async Task ExecuteSnapstartInitRequests(string jsonRequest, int times, HandlerWrapper handlerWrapper)
         {
             var dummyRequest = new InvocationRequest(
@@ -131,25 +121,21 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
                 }
             }
         }
-    }
 
-    private class LambdaSnapstartInitializerHttpMessageHandler : HttpMessageHandler
-    {
-        private readonly LambdaEventSource _lambdaEventSource;
-
-        public static Uri BaseUri { get; } = new Uri("http://localhost");
-
-        public static List<string> CapturedHttpRequestsJson { get; } = new();
-
-        public LambdaSnapstartInitializerHttpMessageHandler(LambdaEventSource lambdaEventSource)
-        {
-            _lambdaEventSource = lambdaEventSource;
-        }
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public static async Task<string> SerializeToJson(HttpRequestMessage request, LambdaEventSource lambdaType)
         {
             if (null == request.RequestUri)
-                return new HttpResponseMessage(HttpStatusCode.OK);
+            {
+                throw new ArgumentException($"{nameof(HttpRequestMessage.RequestUri)} must be set.", nameof(request));
+            }
+
+            if (request.RequestUri.IsAbsoluteUri)
+            {
+                throw new ArgumentException($"{nameof(HttpRequestMessage.RequestUri)} must be relative.", nameof(request));
+            }
+
+            // make request absolut (relative to localhost) otherwise parsing the query will not work
+            request.RequestUri = new Uri(_baseUri, request.RequestUri);
 
             var duckRequest = new
             {
@@ -160,12 +146,12 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
                         kvp => kvp.Value.FirstOrDefault(),
                         StringComparer.OrdinalIgnoreCase),
                 HttpMethod = request.Method.ToString(),
-                Path = "/" + BaseUri.MakeRelativeUri(request.RequestUri),
+                Path = "/" + _baseUri.MakeRelativeUri(request.RequestUri),
                 RawQuery = request.RequestUri?.Query,
                 Query = QueryHelpers.ParseNullableQuery(request.RequestUri?.Query)
             };
-            
-            string translatedRequestJson = _lambdaEventSource switch
+
+            string translatedRequestJson = lambdaType switch
             {
                 LambdaEventSource.ApplicationLoadBalancer =>
                     JsonSerializer.Serialize(
@@ -213,17 +199,13 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
                         },
                         LambdaRequestTypeClasses.Default.APIGatewayProxyRequest),
                 _ => throw new NotImplementedException(
-                    $"Unknown {nameof(LambdaEventSource)}: {Enum.GetName(_lambdaEventSource)}")
+                    $"Unknown {nameof(LambdaEventSource)}: {Enum.GetName(lambdaType)}")
             };
 
-            // NOTE: Any object added to CapturedHttpRequests must have it's type added
-            // to the 
-            CapturedHttpRequestsJson.Add(translatedRequestJson);
-
-            return new HttpResponseMessage(HttpStatusCode.OK);
+            return translatedRequestJson;
         }
 
-        private async Task<string> ReadContent(HttpRequestMessage r)
+        private static async Task<string> ReadContent(HttpRequestMessage r)
         {
             if (r.Content == null)
                 return string.Empty;
