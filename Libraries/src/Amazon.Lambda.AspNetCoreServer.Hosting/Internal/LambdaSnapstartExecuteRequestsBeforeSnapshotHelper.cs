@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.ApplicationLoadBalancerEvents;
+using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.RuntimeSupport.Helpers;
@@ -101,8 +102,6 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
 
     private static class SnapstartHelperLambdaRequests
     {
-        private static readonly Uri _baseUri = new Uri("http://localhost");
-
         public static async Task ExecuteSnapstartInitRequests(string jsonRequest, int times, HandlerWrapper handlerWrapper)
         {
             var dummyRequest = new InvocationRequest(
@@ -124,108 +123,20 @@ internal class LambdaSnapstartExecuteRequestsBeforeSnapshotHelper
 
         public static async Task<string> SerializeToJson(HttpRequestMessage request, LambdaEventSource lambdaType)
         {
-            if (null == request.RequestUri)
-            {
-                throw new ArgumentException($"{nameof(HttpRequestMessage.RequestUri)} must be set.", nameof(request));
-            }
-
-            if (request.RequestUri.IsAbsoluteUri)
-            {
-                throw new ArgumentException($"{nameof(HttpRequestMessage.RequestUri)} must be relative.", nameof(request));
-            }
-
-            // make request absolut (relative to localhost) otherwise parsing the query will not work
-            request.RequestUri = new Uri(_baseUri, request.RequestUri);
-
-            var duckRequest = new
-            {
-                Body = await ReadContent(request),
-                Headers = request.Headers
-                    .ToDictionary(
-                        kvp => kvp.Key,
-                        kvp => kvp.Value.FirstOrDefault(),
-                        StringComparer.OrdinalIgnoreCase),
-                HttpMethod = request.Method.ToString(),
-                Path = "/" + _baseUri.MakeRelativeUri(request.RequestUri),
-                RawQuery = request.RequestUri?.Query,
-                Query = QueryHelpers.ParseNullableQuery(request.RequestUri?.Query)
-            };
-
-            string translatedRequestJson = lambdaType switch
+            var result = lambdaType switch
             {
                 LambdaEventSource.ApplicationLoadBalancer =>
-                    JsonSerializer.Serialize(
-                        new ApplicationLoadBalancerRequest
-                        {
-                            Body = duckRequest.Body,
-                            Headers = duckRequest.Headers,
-                            Path = duckRequest.Path,
-                            HttpMethod = duckRequest.HttpMethod,
-                            QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString())
-                        },
-                        LambdaRequestTypeClasses.Default.ApplicationLoadBalancerRequest),
+                    await HttpRequestMessageSerializer.SerializeToJson<ApplicationLoadBalancerRequest>(request),
                 LambdaEventSource.HttpApi =>
-                    JsonSerializer.Serialize(
-                        new APIGatewayHttpApiV2ProxyRequest
-                        {
-                            Body = duckRequest.Body,
-                            Headers = duckRequest.Headers,
-                            RawPath = duckRequest.Path,
-                            RequestContext = new APIGatewayHttpApiV2ProxyRequest.ProxyRequestContext
-                            {
-                                Http = new APIGatewayHttpApiV2ProxyRequest.HttpDescription
-                                {
-                                    Method = duckRequest.HttpMethod,
-                                    Path = duckRequest.Path
-                                }
-                            },
-                            QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString()),
-                            RawQueryString = duckRequest.RawQuery
-                        },
-                        LambdaRequestTypeClasses.Default.APIGatewayHttpApiV2ProxyRequest),
+                    await HttpRequestMessageSerializer.SerializeToJson<APIGatewayHttpApiV2ProxyRequest>(request),
                 LambdaEventSource.RestApi =>
-                    JsonSerializer.Serialize(
-                        new APIGatewayProxyRequest
-                        {
-                            Body = duckRequest.Body,
-                            Headers = duckRequest.Headers,
-                            Path = duckRequest.Path,
-                            HttpMethod = duckRequest.HttpMethod,
-                            RequestContext = new APIGatewayProxyRequest.ProxyRequestContext
-                            {
-                                HttpMethod = duckRequest.HttpMethod
-                            },
-                            QueryStringParameters = duckRequest.Query?.ToDictionary(k => k.Key, v => v.Value.ToString())
-                        },
-                        LambdaRequestTypeClasses.Default.APIGatewayProxyRequest),
+                    await HttpRequestMessageSerializer.SerializeToJson<APIGatewayProxyRequest>(request),
                 _ => throw new NotImplementedException(
                     $"Unknown {nameof(LambdaEventSource)}: {Enum.GetName(lambdaType)}")
             };
 
-            return translatedRequestJson;
-        }
-
-        private static async Task<string> ReadContent(HttpRequestMessage r)
-        {
-            if (r.Content == null)
-                return string.Empty;
-
-            return await r.Content.ReadAsStringAsync();
+            return result;
         }
     }
-}
-
-
-[JsonSourceGenerationOptions(WriteIndented = true)]
-[JsonSerializable(typeof(ApplicationLoadBalancerRequest))]
-[JsonSerializable(typeof(APIGatewayHttpApiV2ProxyRequest))]
-[JsonSerializable(typeof(APIGatewayProxyRequest))]
-[JsonSerializable(typeof(APIGatewayProxyRequest.ClientCertValidity))]
-[JsonSerializable(typeof(APIGatewayProxyRequest.ProxyRequestClientCert))]
-[JsonSerializable(typeof(APIGatewayProxyRequest.ProxyRequestContext))]
-[JsonSerializable(typeof(APIGatewayProxyRequest.RequestIdentity))]
-
-internal partial class LambdaRequestTypeClasses : JsonSerializerContext
-{
 }
 #endif

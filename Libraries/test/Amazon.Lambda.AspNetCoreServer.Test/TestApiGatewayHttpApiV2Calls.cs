@@ -15,7 +15,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 using TestWebApp;
-
+using TestWebApp.Controllers;
 using Xunit;
 
 
@@ -281,6 +281,20 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 Environment.SetEnvironmentVariable("_X_AMZN_TRACE_ID", null);
             }
         }
+
+        #if NET8_0_OR_GREATER
+        /// <summary>
+        /// Verifies that <see cref="HttpV2LambdaFunction.RegisterBeforeSnapshotRequest"/> is invoked during startup.
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public void TestSnapstartInititalizaton()
+        {
+            var lambdaFunction = new TestWebApp.HttpV2LambdaFunction();
+
+            Assert.True(SnapStartController.Invoked);
+        }
+        #endif
 
         private async Task<APIGatewayHttpApiV2ProxyResponse> InvokeAPIGatewayRequest(string fileName, bool configureApiToReturnExceptionDetail = false)
         {
