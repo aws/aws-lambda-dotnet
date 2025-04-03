@@ -14,10 +14,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Cryptography;
-using Amazon.Lambda.TestTool.Tests.Common.Helpers;
-using Microsoft.AspNetCore.Hosting.Server;
-using Amazon.Lambda.TestTool.Tests.Common;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
@@ -44,6 +40,7 @@ public abstract class BaseApiGatewayTest
         if (CancellationTokenSource != null)
         {
             await CancellationTokenSource.CancelAsync();
+            CancellationTokenSource.Dispose();
             CancellationTokenSource = new CancellationTokenSource();
         }
     }
