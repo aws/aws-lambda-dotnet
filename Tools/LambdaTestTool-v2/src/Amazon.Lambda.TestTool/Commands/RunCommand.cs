@@ -81,7 +81,7 @@ public sealed class RunCommand(
                 tasks.Add(sqsEventSourceProcess.RunningTask);
             }
 
-            await Task.WhenAny(tasks);
+            await Task.Run(() => Task.WaitAny(tasks.ToArray(), cancellationTokenSource.Token));
 
             return CommandReturnCodes.Success;
         }
