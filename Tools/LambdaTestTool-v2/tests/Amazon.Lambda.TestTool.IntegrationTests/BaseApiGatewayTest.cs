@@ -14,6 +14,10 @@ using System.Net.Sockets;
 using System.Text;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using System.Threading;
+using Microsoft.Extensions.Hosting;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
@@ -153,6 +157,23 @@ public abstract class BaseApiGatewayTest
     }
 
     protected int GetFreePort()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        var app = builder.Build();
+        app.MapGet("/", () => "test");
+
+        CancellationTokenSource tokenSource = new CancellationTokenSource();
+        var runTask = app.RunAsync(tokenSource.Token);
+        var uri = new Uri(app.Urls.First());
+
+        tokenSource.Cancel();
+        Task.Delay(1000);
+
+        return uri.Port;
+    }
+
+    protected int GetFreePortOldVersion()
     {
         var random = new Random();
         var port = random.Next(49152, 65535);
