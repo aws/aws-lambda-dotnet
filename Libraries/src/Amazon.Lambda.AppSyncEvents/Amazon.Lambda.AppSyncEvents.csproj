@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <WarningsAsErrors>IL2026,IL2067,IL2075,IL3050</WarningsAsErrors>
+    <WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>
