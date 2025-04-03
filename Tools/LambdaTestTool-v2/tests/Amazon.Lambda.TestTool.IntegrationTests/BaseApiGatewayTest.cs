@@ -14,6 +14,12 @@ using System.Net.Sockets;
 using System.Text;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
+using Amazon.Lambda.RuntimeSupport;
+using Castle.DynamicProxy;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
@@ -25,14 +31,43 @@ public abstract class BaseApiGatewayTest
     protected readonly Mock<IRemainingArguments> MockRemainingArgs;
     protected CancellationTokenSource CancellationTokenSource;
     protected static readonly object TestLock = new();
+    protected readonly ILoggerFactory LoggerFactory;
+    protected readonly IConfiguration Configuration;
 
     protected BaseApiGatewayTest(ITestOutputHelper testOutputHelper)
     {
         TestOutputHelper = testOutputHelper;
+
+        Environment.SetEnvironmentVariable("LAMBDA_RUNTIMESUPPORT_DEBUG", "1");
+
         MockEnvironmentManager = new Mock<IEnvironmentManager>();
         MockInteractiveService = new Mock<IToolInteractiveService>();
         MockRemainingArgs = new Mock<IRemainingArguments>();
         CancellationTokenSource = new CancellationTokenSource();
+
+        Configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false)
+            .Build();
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddLogging(builder =>
+        {
+            builder
+                .AddConfiguration(Configuration.GetSection("Logging"))
+                .AddConsole()
+                .AddDebug()
+                .AddXunit(testOutputHelper); // For test output
+        });
+
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+        LoggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+
+        // Configure AWS options
+        AWSConfigs.LoggingConfig.LogTo = LoggingOptions.Console;
+        AWSConfigs.LoggingConfig.LogMetrics = true;
+        AWSConfigs.LoggingConfig.LogResponses = ResponseLoggingOption.Always;
+        AWSConfigs.LoggingConfig.LogMetricsFormat = LogMetricsFormatOption.JSON;
     }
 
     protected async Task CleanupAsync()
@@ -195,4 +230,4 @@ public abstract class BaseApiGatewayTest
 
         await Task.Delay(2000, cancellationTokenSource.Token);
     }
-} 
+}
