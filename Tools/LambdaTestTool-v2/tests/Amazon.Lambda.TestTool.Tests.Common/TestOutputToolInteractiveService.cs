@@ -14,7 +14,7 @@ public class TestOutputToolInteractiveService(ITestOutputHelper testOutputHelper
         }
         catch (Exception)
         {
-            // This can happen when Xunit thinks where is no active test
+            // This can happen when Xunit thinks there is no active test
         }
     }
     public void WriteLine(string? message)
@@ -25,7 +25,7 @@ public class TestOutputToolInteractiveService(ITestOutputHelper testOutputHelper
         }
         catch(Exception)
         {
-            // This can happen when Xunit thinks where is no active test
+            // This can happen when Xunit thinks there is no active test
         }
     }
 }
