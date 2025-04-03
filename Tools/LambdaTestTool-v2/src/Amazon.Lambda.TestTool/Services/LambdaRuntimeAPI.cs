@@ -132,7 +132,7 @@ public class LambdaRuntimeApi
         }
         else
         {
-            while (!runtimeDataStore.TryActivateEvent(out activeEvent))
+            while (!runtimeDataStore.TryActivateEvent(out activeEvent) && !ctx.RequestAborted.IsCancellationRequested)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(100));
             }
