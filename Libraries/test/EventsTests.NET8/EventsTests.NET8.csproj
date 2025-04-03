@@ -1,35 +1,65 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <PackageId>EventsTests31</PackageId>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <RootNamespace>EventsTests.NET8</RootNamespace>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
+
+
 
   <ItemGroup>
     <Content Include="../EventsTests.Shared/*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  
-  <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.5.1" />
-    <PackageReference Include="AWSSDK.Core" Version="3.7.302.13" />
-    <PackageReference Include="coverlet.collector" Version="6.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-    <PackageReference Include="xunit" Version="2.5.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.AppSyncEvents\Amazon.Lambda.AppSyncEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.MQEvents\Amazon.Lambda.MQEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.CloudWatchEvents\Amazon.Lambda.CloudWatchEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.CloudWatchLogsEvents\Amazon.Lambda.CloudWatchLogsEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.ConnectEvents\Amazon.Lambda.ConnectEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.KafkaEvents\Amazon.Lambda.KafkaEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.KinesisAnalyticsEvents\Amazon.Lambda.KinesisAnalyticsEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.KinesisFirehoseEvents\Amazon.Lambda.KinesisFirehoseEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.LexEvents\Amazon.Lambda.LexEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.LexV2Events\Amazon.Lambda.LexV2Events.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.CognitoEvents\Amazon.Lambda.CognitoEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.ConfigEvents\Amazon.Lambda.ConfigEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.DynamoDBEvents\Amazon.Lambda.DynamoDBEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.KinesisEvents\Amazon.Lambda.KinesisEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.S3Events\Amazon.Lambda.S3Events.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.SimpleEmailEvents\Amazon.Lambda.SimpleEmailEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.SNSEvents\Amazon.Lambda.SNSEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="Xunit" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.301.14" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="AWSSDK.Core" Version="3.7.302.13" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
+  </ItemGroup>
+
+  <Import Project="..\EventsTests.Shared\EventsTests.Shared.projitems" Label="Shared" />
 
 </Project>
