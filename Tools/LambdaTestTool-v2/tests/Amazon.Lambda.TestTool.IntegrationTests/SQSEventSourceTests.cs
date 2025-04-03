@@ -32,6 +32,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         var sqsClient = new AmazonSQSClient();
         var queueName = nameof(ProcessSingleMessage) + DateTime.Now.Ticks;
         var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
+        await Task.Delay(2000);
         var consoleError = Console.Error;
         try
         {
@@ -83,6 +84,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         var sqsClient = new AmazonSQSClient();
         var queueName = nameof(SQSEventSourceComesFromEnvironmentVariable) + DateTime.Now.Ticks;
         var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
+        await Task.Delay(2000);
         var consoleError = Console.Error;
         try
         {
@@ -137,6 +139,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
 
         var queueName2 = nameof(ProcessMessagesFromMultipleEventSources) + "-2-" + DateTime.Now.Ticks;
         var queueUrl2 = (await sqsClient.CreateQueueAsync(queueName2)).QueueUrl;
+        await Task.Delay(2000);
 
         var consoleError = Console.Error;
         try
@@ -201,6 +204,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         var sqsClient = new AmazonSQSClient();
         var queueName = nameof(MessageNotDeleted) + DateTime.Now.Ticks;
         var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
+        await Task.Delay(2000);
         var consoleError = Console.Error;
         try
         {
@@ -250,6 +254,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         var sqsClient = new AmazonSQSClient();
         var queueName = nameof(LambdaThrowsErrorAndMessageNotDeleted) + DateTime.Now.Ticks;
         var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
+        await Task.Delay(2000);
         var consoleError = Console.Error;
         try
         {
@@ -300,6 +305,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         var sqsClient = new AmazonSQSClient();
         var queueName = nameof(PartialFailureResponse) + DateTime.Now.Ticks;
         var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
+        await Task.Delay(2000);
         var consoleError = Console.Error;
         try
         {
