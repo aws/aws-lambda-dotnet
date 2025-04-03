@@ -119,7 +119,7 @@ public class LambdaRuntimeApi
     {
         var runtimeDataStore = _runtimeApiDataStoreManager.GetLambdaRuntimeDataStore(functionName);
 
-        EventContainer? activeEvent;
+        EventContainer? activeEvent = null;
 
         // A Lambda function should never call to get the next event till it was done
         // processing the active event and there is no more active event. If there
@@ -132,7 +132,7 @@ public class LambdaRuntimeApi
         }
         else
         {
-            while (!runtimeDataStore.TryActivateEvent(out activeEvent) && !ctx.RequestAborted.IsCancellationRequested)
+            while (!ctx.RequestAborted.IsCancellationRequested && !runtimeDataStore.TryActivateEvent(out activeEvent))
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(100));
             }

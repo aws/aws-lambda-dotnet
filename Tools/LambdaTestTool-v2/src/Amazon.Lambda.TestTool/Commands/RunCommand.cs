@@ -85,6 +85,10 @@ public sealed class RunCommand(
 
             return CommandReturnCodes.Success;
         }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+            return CommandReturnCodes.Success;
+        }
         catch (Exception e) when (e.IsExpectedException())
         {
             toolInteractiveService.WriteErrorLine(string.Empty);
