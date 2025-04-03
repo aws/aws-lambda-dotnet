@@ -39,6 +39,12 @@ jobs:
         uses: aws-actions/aws-codebuild-run-build@v1
         with:
           project-name: ${{ secrets.CI_TESTING_CODE_BUILD_PROJECT_NAME }}
+      - name: Configure Sweeper Credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 #v4
+        with:
+          role-to-assume: ${{ secrets.CI_MAIN_TESTING_ACCOUNT_ROLE_ARN }}
+          role-duration-seconds: 7200
+          aws-region: us-west-2
       - name: Invoke Test Sweeper Lambda
         if: always()
         shell: pwsh
@@ -49,4 +55,3 @@ jobs:
         run: |
           $buildId = "${{ steps.codebuild.outputs.aws-build-id }}"
           echo $buildId
-
