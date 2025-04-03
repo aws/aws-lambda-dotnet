@@ -14,11 +14,11 @@ public sealed class RunCommandSettings : CommandSettings
 {
     /// <summary>
     /// The hostname or IP address used for the test tool's web interface.
-    /// Any host other than an explicit IP address or localhost (e.g. '*', '+' or 'example.com') binds to all public IPv4 and IPv6 addresses.
+    /// Any host other than an explicit IP address or 127.0.0.1 (e.g. '*', '+' or 'example.com') binds to all public IPv4 and IPv6 addresses.
     /// </summary>
     [CommandOption("--lambda-emulator-host <HOST>")]
     [Description(
-        "The hostname or IP address used for the test tool's web interface. Any host other than an explicit IP address or localhost (e.g. '*', '+' or 'example.com') binds to all public IPv4 and IPv6 addresses.")]
+        "The hostname or IP address used for the test tool's web interface. Any host other than an explicit IP address or 127.0.0.1 (e.g. '*', '+' or 'example.com') binds to all public IPv4 and IPv6 addresses.")]
     [DefaultValue(Constants.DefaultLambdaEmulatorHost)]
     public string LambdaEmulatorHost { get; set; } = Constants.DefaultLambdaEmulatorHost;
 

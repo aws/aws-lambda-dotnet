@@ -44,7 +44,7 @@ public class EdgeCaseTests : BaseApiGatewayTest
             };
 
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/stringfunction")
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"127.0.0.1:{lambdaPort}/stringfunction")
                 .Build()
                 .RunAsync(CancellationTokenSource.Token);
 
@@ -89,7 +89,7 @@ public class EdgeCaseTests : BaseApiGatewayTest
             };
 
             _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/testfunction")
+                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"127.0.0.1:{lambdaPort}/testfunction")
                 .Build()
                 .RunAsync(CancellationTokenSource.Token);
 
