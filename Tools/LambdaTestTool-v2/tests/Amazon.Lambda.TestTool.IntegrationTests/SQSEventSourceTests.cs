@@ -51,7 +51,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
                 }
             };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+            var lambdaTask = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                 .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
                 .Build()
                 .RunAsync(cancellationSource.Token);
@@ -61,6 +61,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var startTime = DateTime.UtcNow;
             while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
             {
+                Assert.False(lambdaTask.IsFaulted, "Lambda function failed: " + lambdaTask.Exception?.ToString());
                 await Task.Delay(500);
             }
 
@@ -103,7 +104,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
                 }
             };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+            var lambdaTask = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                 .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
                 .Build()
                 .RunAsync(cancellationSource.Token);
@@ -113,6 +114,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var startTime = DateTime.UtcNow;
             while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
             {
+                Assert.False(lambdaTask.IsFaulted, "Lambda function failed: " + lambdaTask.Exception?.ToString());
                 await Task.Delay(500);
             }
 
@@ -172,7 +174,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
                 }
             };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+            var lambdaTask = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                 .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
                 .Build()
                 .RunAsync(cancellationSource.Token);
@@ -183,6 +185,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var startTime = DateTime.UtcNow;
             while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
             {
+                Assert.False(lambdaTask.IsFaulted, "Lambda function failed: " + lambdaTask.Exception?.ToString());
                 await Task.Delay(500);
             }
 
@@ -223,7 +226,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
                 }
             };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+            var lambdaTask = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                 .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
                 .Build()
                 .RunAsync(CancellationTokenSource.Token);
@@ -233,6 +236,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var startTime = DateTime.UtcNow;
             while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
             {
+                Assert.False(lambdaTask.IsFaulted, "Lambda function failed: " + lambdaTask.Exception?.ToString());
                 await Task.Delay(500);
             }
 
@@ -274,7 +278,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
                 throw new Exception("Failed to process message");
             };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+            var lambdaTask = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                 .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
                 .Build()
                 .RunAsync(CancellationTokenSource.Token);
@@ -284,6 +288,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var startTime = DateTime.UtcNow;
             while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
             {
+                Assert.False(lambdaTask.IsFaulted, "Lambda function failed: " + lambdaTask.Exception?.ToString());
                 await Task.Delay(500);
             }
 
@@ -338,7 +343,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
                 return sqsResponse;
             };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+            var lambdaTask = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                 .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
                 .Build()
                 .RunAsync(CancellationTokenSource.Token);
@@ -348,6 +353,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var startTime = DateTime.UtcNow;
             while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
             {
+                Assert.False(lambdaTask.IsFaulted, "Lambda function failed: " + lambdaTask.Exception?.ToString());
                 await Task.Delay(500);
             }
 
