@@ -78,7 +78,7 @@ public class BinaryResponseTests : BaseApiGatewayTest
         }
         finally
         {
-            _ = CancellationTokenSource.CancelAsync();
+            await CancellationTokenSource.CancelAsync();
             Console.SetError(consoleError);
         }
     }

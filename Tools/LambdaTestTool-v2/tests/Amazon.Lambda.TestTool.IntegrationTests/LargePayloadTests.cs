@@ -63,7 +63,7 @@ public class LargePayloadTests : BaseApiGatewayTest
         }
         finally
         {
-            _ = CancellationTokenSource.CancelAsync();
+            await CancellationTokenSource.CancelAsync();
             Console.SetError(consoleError);
         }
     }
@@ -110,7 +110,7 @@ public class LargePayloadTests : BaseApiGatewayTest
         }
         finally
         {
-            _ = CancellationTokenSource.CancelAsync();
+            await CancellationTokenSource.CancelAsync();
             Console.SetError(consoleError);
         }
     }

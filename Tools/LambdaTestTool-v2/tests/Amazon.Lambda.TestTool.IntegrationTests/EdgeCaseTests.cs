@@ -101,7 +101,7 @@ public class EdgeCaseTests : BaseApiGatewayTest
     //    }
     //    finally
     //    {
-    //        _ = CancellationTokenSource.CancelAsync();
+    //        await CancellationTokenSource.CancelAsync();
     //        Console.SetError(consoleError);
     //    }
     //}

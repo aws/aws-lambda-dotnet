@@ -32,14 +32,10 @@ public abstract class BaseApiGatewayTest
 
     protected BaseApiGatewayTest(ITestOutputHelper testOutputHelper)
     {
-        // Enable the internal logging of runtime support.
-        Environment.SetEnvironmentVariable("LAMBDA_RUNTIMESUPPORT_DEBUG", "true");
-
         TestOutputHelper = testOutputHelper;
         MockEnvironmentManager = new Mock<IEnvironmentManager>();
         MockInteractiveService = new Mock<IToolInteractiveService>();
         MockRemainingArgs = new Mock<IRemainingArguments>();
-
         CancellationTokenSource = new CancellationTokenSource();
     }
 
@@ -47,7 +43,7 @@ public abstract class BaseApiGatewayTest
     {
         if (CancellationTokenSource != null)
         {
-            _ = CancellationTokenSource.CancelAsync();
+            await CancellationTokenSource.CancelAsync();
             CancellationTokenSource = new CancellationTokenSource();
         }
     }
@@ -161,16 +157,12 @@ public abstract class BaseApiGatewayTest
 
     protected int GetFreePort()
     {
-        var port = TestHelpers.GetRandomIntegerInRange(49152, 65535);
-        using var listener = new TcpListener(IPAddress.Loopback, port);
+        var random = new Random();
+        var port = random.Next(49152, 65535);
+        var listener = new TcpListener(IPAddress.Loopback, port);
         try
         {
             listener.Start();
-            using TcpClient client = new TcpClient("127.0.0.1", port);
-            using NetworkStream stream = client.GetStream();
-            stream.WriteByte(0x01);
-            stream.Flush();
-
             return port;
         }
         catch (SocketException)
