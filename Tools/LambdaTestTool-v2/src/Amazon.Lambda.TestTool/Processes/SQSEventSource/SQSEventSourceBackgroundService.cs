@@ -88,7 +88,7 @@ public class SQSEventSourceBackgroundService : BackgroundService
                 {
                     _logger.LogDebug("No messages received from while polling SQS");
                     // Since there are no messages, sleep a bit to wait for messages to come.
-                    await Task.Delay(1000);
+                    await Task.Delay(200);
                     continue;
                 }
 

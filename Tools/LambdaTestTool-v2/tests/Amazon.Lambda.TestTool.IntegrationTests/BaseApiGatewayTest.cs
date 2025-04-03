@@ -173,26 +173,6 @@ public abstract class BaseApiGatewayTest
         return uri.Port;
     }
 
-    protected int GetFreePortOldVersion()
-    {
-        var random = new Random();
-        var port = random.Next(49152, 65535);
-        var listener = new TcpListener(IPAddress.Loopback, port);
-        try
-        {
-            listener.Start();
-            return port;
-        }
-        catch (SocketException)
-        {
-            return GetFreePort();
-        }
-        finally
-        {
-            listener.Stop();
-        }
-    }
-
     protected async Task StartTestToolProcessWithNullEndpoint(ApiGatewayEmulatorMode apiGatewayMode, string routeName, int lambdaPort, int apiGatewayPort, CancellationTokenSource cancellationTokenSource)
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
