@@ -83,7 +83,7 @@ public abstract class BaseApiGatewayTest
             {
                 try
                 {
-                    var response = await client.GetAsync(healthUrl);
+                    var response = await client.GetAsync(healthUrl, new CancellationTokenSource(10000).Token);
                     if (response.IsSuccessStatusCode)
                     {
                         TestOutputHelper.WriteLine("API Gateway health check succeeded");
@@ -122,8 +122,8 @@ public abstract class BaseApiGatewayTest
                     {
                         "POST" => await client.PostAsync(
                             $"http://localhost:{apiGatewayPort}/{routeName}",
-                            new StringContent(payload ?? "hello world", Encoding.UTF8, new MediaTypeHeaderValue("text/plain"))),
-                        "GET" => await client.GetAsync($"http://localhost:{apiGatewayPort}/{routeName}"),
+                            new StringContent(payload ?? "hello world", Encoding.UTF8, new MediaTypeHeaderValue("text/plain")), new CancellationTokenSource(5000).Token),
+                        "GET" => await client.GetAsync($"http://localhost:{apiGatewayPort}/{routeName}", new CancellationTokenSource(5000).Token),
                         _ => throw new ArgumentException($"Unsupported HTTP method: {httpMethod}")
                     };
                 }

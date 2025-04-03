@@ -39,7 +39,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             
             var baseUrl = _fixture.GetAppropriateBaseUrl(ApiGatewayType.RestWithBinarySupport);
             var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.DecodeParseBinary);
-            var actualResponse = await _httpClient.PostAsync(url, new StringContent(JsonSerializer.Serialize(testResponse)));
+            var actualResponse = await _httpClient.PostAsync(url, new StringContent(JsonSerializer.Serialize(testResponse)), new CancellationTokenSource(5000).Token);
             await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpContext.Response);
             Assert.Equal(200, (int)actualResponse.StatusCode);
             var content = await actualResponse.Content.ReadAsStringAsync();
@@ -62,7 +62,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             
             var baseUrl = _fixture.GetAppropriateBaseUrl(ApiGatewayType.HttpV1);
             var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
-            var actualResponse = await _httpClient.PostAsync(url, new StringContent(JsonSerializer.Serialize(testResponse)));
+            var actualResponse = await _httpClient.PostAsync(url, new StringContent(JsonSerializer.Serialize(testResponse)), new CancellationTokenSource(5000).Token);
 
             await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpContext.Response);
             Assert.Equal(200, (int)actualResponse.StatusCode);
