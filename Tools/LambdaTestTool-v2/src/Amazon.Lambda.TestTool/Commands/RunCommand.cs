@@ -24,6 +24,11 @@ public sealed class RunCommand(
     public const string API_GATEWAY_EMULATOR_PORT = "API_GATEWAY_EMULATOR_PORT";
 
     /// <summary>
+    /// Task for the Lambda Runtime API.
+    /// </summary>
+    public Task LambdRuntimeApiTask { get; private set; }
+
+    /// <summary>
     /// The method responsible for executing the <see cref="RunCommand"/>.
     /// </summary>
     public override async Task<int> ExecuteAsync(CommandContext context, RunCommandSettings settings, CancellationTokenSource cancellationTokenSource)
@@ -43,6 +48,7 @@ public sealed class RunCommand(
             if (settings.LambdaEmulatorPort.HasValue)
             {
                 var testToolProcess = TestToolProcess.Startup(settings, cancellationTokenSource.Token);
+                LambdRuntimeApiTask = testToolProcess.RunningTask;
                 tasks.Add(testToolProcess.RunningTask);
 
                 if (!settings.NoLaunchWindow)

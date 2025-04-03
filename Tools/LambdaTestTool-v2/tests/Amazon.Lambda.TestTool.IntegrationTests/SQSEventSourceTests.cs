@@ -369,7 +369,8 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         return response.ApproximateNumberOfMessages + response.ApproximateNumberOfMessagesNotVisible;
     }
 
-    private async Task StartTestToolProcessAsync(int lambdaPort, string sqsEventSourceConfig, CancellationTokenSource cancellationTokenSource)
+    // Do not use async/await so we can be sure to hand back the Task that created by RunCommand back to caller.
+    private Task StartTestToolProcessAsync(int lambdaPort, string sqsEventSourceConfig, CancellationTokenSource cancellationTokenSource)
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
 
@@ -397,8 +398,20 @@ public class SQSEventSourceTests : BaseApiGatewayTest
 
         var command = new RunCommand(MockInteractiveService.Object, new TestEnvironmentManager(environmentVariables));
         var context = new CommandContext(new List<string>(), MockRemainingArgs.Object, "run", null);
-        _ = command.ExecuteAsync(context, settings, cancellationTokenSource);
+        Task testToolTask = command.ExecuteAsync(context, settings, cancellationTokenSource);
 
-        await Task.Delay(2000, cancellationTokenSource.Token);
+        var timeout = DateTime.UtcNow.AddMinutes(1);
+        while (DateTime.UtcNow < timeout && command.LambdRuntimeApiTask == null)
+        {
+            Thread.Sleep(100);
+        }
+
+        Thread.Sleep(2000);
+
+        Assert.NotNull(command.LambdRuntimeApiTask);
+        Assert.False(command.LambdRuntimeApiTask.IsFaulted, "Task to start Lambda Runtime API failed: " + command.LambdRuntimeApiTask.Exception?.ToString());
+
+        Thread.Sleep(2000);
+        return testToolTask;
     }
 }
