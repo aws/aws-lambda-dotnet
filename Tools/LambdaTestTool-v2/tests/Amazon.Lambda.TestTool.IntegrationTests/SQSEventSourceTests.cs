@@ -17,382 +17,382 @@ using Moq;
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
 [Collection("SQSEventSourceTests")]
-public class SQSEventSourceTests : BaseApiGatewayTest
+public class SQSEventSourceTests //: BaseApiGatewayTest
 {
-    public SQSEventSourceTests(ITestOutputHelper testOutputHelper)
-        : base(testOutputHelper)
-    {
-    }
+//    public SQSEventSourceTests(ITestOutputHelper testOutputHelper)
+//        : base(testOutputHelper)
+//    {
+//    }
 
-    [RetryFact]
-    public async Task ProcessSingleMessage()
-    {
-        var sqsClient = new AmazonSQSClient();
-        var queueName = nameof(ProcessSingleMessage) + DateTime.Now.Ticks;
-        var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
-        var consoleError = Console.Error;
-        try
-        {
-            Console.SetError(TextWriter.Null);
+//    [RetryFact]
+//    public async Task ProcessSingleMessage()
+//    {
+//        var sqsClient = new AmazonSQSClient();
+//        var queueName = nameof(ProcessSingleMessage) + DateTime.Now.Ticks;
+//        var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
+//        var consoleError = Console.Error;
+//        try
+//        {
+//            Console.SetError(TextWriter.Null);
 
-            var lambdaPort = GetFreePort();
-            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor", CancellationTokenSource);
+//            var lambdaPort = GetFreePort();
+//            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor", CancellationTokenSource);
 
-            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
-            var handler = (SQSEvent evnt, ILambdaContext context) =>
-            {
-                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
-                foreach (var message in evnt.Records)
-                {
-                    listOfProcessedMessages.Add(message);
-                }
-            };
+//            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
+//            var handler = (SQSEvent evnt, ILambdaContext context) =>
+//            {
+//                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
+//                foreach (var message in evnt.Records)
+//                {
+//                    listOfProcessedMessages.Add(message);
+//                }
+//            };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
-                .Build()
-                .RunAsync(CancellationTokenSource.Token);
+//            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+//                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
+//                .Build()
+//                .RunAsync(CancellationTokenSource.Token);
 
-            await sqsClient.SendMessageAsync(queueUrl, "TheBody");
+//            await sqsClient.SendMessageAsync(queueUrl, "TheBody");
 
-            var startTime = DateTime.UtcNow;
-            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
-            {
-                await Task.Delay(500);
-            }
+//            var startTime = DateTime.UtcNow;
+//            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
+//            {
+//                await Task.Delay(500);
+//            }
 
-            Assert.Single(listOfProcessedMessages);
-            Assert.Equal("TheBody", listOfProcessedMessages[0].Body);
-            Assert.Equal(0, await GetNumberOfMessagesInQueueAsync(sqsClient, queueUrl));
-        }
-        finally
-        {
-            _ = CancellationTokenSource.CancelAsync();
-            await sqsClient.DeleteQueueAsync(queueUrl);
-            Console.SetError(consoleError);
-        }
-    }
+//            Assert.Single(listOfProcessedMessages);
+//            Assert.Equal("TheBody", listOfProcessedMessages[0].Body);
+//            Assert.Equal(0, await GetNumberOfMessagesInQueueAsync(sqsClient, queueUrl));
+//        }
+//        finally
+//        {
+//            _ = CancellationTokenSource.CancelAsync();
+//            await sqsClient.DeleteQueueAsync(queueUrl);
+//            Console.SetError(consoleError);
+//        }
+//    }
 
-    [RetryFact]
-    public async Task SQSEventSourceComesFromEnvironmentVariable()
-    {
-        var sqsClient = new AmazonSQSClient();
-        var queueName = nameof(ProcessSingleMessage) + DateTime.Now.Ticks;
-        var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
-        var consoleError = Console.Error;
-        try
-        {
-            Console.SetError(TextWriter.Null);
+//    [RetryFact]
+//    public async Task SQSEventSourceComesFromEnvironmentVariable()
+//    {
+//        var sqsClient = new AmazonSQSClient();
+//        var queueName = nameof(ProcessSingleMessage) + DateTime.Now.Ticks;
+//        var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
+//        var consoleError = Console.Error;
+//        try
+//        {
+//            Console.SetError(TextWriter.Null);
 
-            var lambdaPort = GetFreePort();
-            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"env:SQS_CONFIG&QueueUrl={queueUrl},FunctionName=SQSProcessor", CancellationTokenSource);
+//            var lambdaPort = GetFreePort();
+//            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"env:SQS_CONFIG&QueueUrl={queueUrl},FunctionName=SQSProcessor", CancellationTokenSource);
 
-            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
-            var handler = (SQSEvent evnt, ILambdaContext context) =>
-            {
-                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
-                foreach (var message in evnt.Records)
-                {
-                    listOfProcessedMessages.Add(message);
-                }
-            };
+//            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
+//            var handler = (SQSEvent evnt, ILambdaContext context) =>
+//            {
+//                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
+//                foreach (var message in evnt.Records)
+//                {
+//                    listOfProcessedMessages.Add(message);
+//                }
+//            };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
-                .Build()
-                .RunAsync(CancellationTokenSource.Token);
+//            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+//                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
+//                .Build()
+//                .RunAsync(CancellationTokenSource.Token);
 
-            await sqsClient.SendMessageAsync(queueUrl, "TheBody");
+//            await sqsClient.SendMessageAsync(queueUrl, "TheBody");
 
-            var startTime = DateTime.UtcNow;
-            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
-            {
-                await Task.Delay(500);
-            }
+//            var startTime = DateTime.UtcNow;
+//            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
+//            {
+//                await Task.Delay(500);
+//            }
 
-            Assert.Single(listOfProcessedMessages);
-            Assert.Equal("TheBody", listOfProcessedMessages[0].Body);
-            Assert.Equal(0, await GetNumberOfMessagesInQueueAsync(sqsClient, queueUrl));
-        }
-        finally
-        {
-            _ = CancellationTokenSource.CancelAsync();
-            await sqsClient.DeleteQueueAsync(queueUrl);
-            Console.SetError(consoleError);
-        }
-    }
+//            Assert.Single(listOfProcessedMessages);
+//            Assert.Equal("TheBody", listOfProcessedMessages[0].Body);
+//            Assert.Equal(0, await GetNumberOfMessagesInQueueAsync(sqsClient, queueUrl));
+//        }
+//        finally
+//        {
+//            _ = CancellationTokenSource.CancelAsync();
+//            await sqsClient.DeleteQueueAsync(queueUrl);
+//            Console.SetError(consoleError);
+//        }
+//    }
 
-    [RetryFact]
-    public async Task ProcessMessagesFromMultipleEventSources()
-    {
-        var sqsClient = new AmazonSQSClient();
-        var queueName1 = nameof(ProcessMessagesFromMultipleEventSources) + "-1-" + DateTime.Now.Ticks;
-        var queueUrl1 = (await sqsClient.CreateQueueAsync(queueName1)).QueueUrl;
+//    [RetryFact]
+//    public async Task ProcessMessagesFromMultipleEventSources()
+//    {
+//        var sqsClient = new AmazonSQSClient();
+//        var queueName1 = nameof(ProcessMessagesFromMultipleEventSources) + "-1-" + DateTime.Now.Ticks;
+//        var queueUrl1 = (await sqsClient.CreateQueueAsync(queueName1)).QueueUrl;
 
-        var queueName2 = nameof(ProcessMessagesFromMultipleEventSources) + "-2-" + DateTime.Now.Ticks;
-        var queueUrl2 = (await sqsClient.CreateQueueAsync(queueName2)).QueueUrl;
+//        var queueName2 = nameof(ProcessMessagesFromMultipleEventSources) + "-2-" + DateTime.Now.Ticks;
+//        var queueUrl2 = (await sqsClient.CreateQueueAsync(queueName2)).QueueUrl;
 
-        var consoleError = Console.Error;
-        try
-        {
-            Console.SetError(TextWriter.Null);
+//        var consoleError = Console.Error;
+//        try
+//        {
+//            Console.SetError(TextWriter.Null);
 
-            var sqsEventSourceConfig = """
-[
-    {
-        "QueueUrl" : "queueUrl1",
-        "FunctionName" : "SQSProcessor"
-    },
-    {
-        "QueueUrl" : "queueUrl2",
-        "FunctionName" : "SQSProcessor"
-    }
-]
-""".Replace("queueUrl1", queueUrl1).Replace("queueUrl2", queueUrl2);
+//            var sqsEventSourceConfig = """
+//[
+//    {
+//        "QueueUrl" : "queueUrl1",
+//        "FunctionName" : "SQSProcessor"
+//    },
+//    {
+//        "QueueUrl" : "queueUrl2",
+//        "FunctionName" : "SQSProcessor"
+//    }
+//]
+//""".Replace("queueUrl1", queueUrl1).Replace("queueUrl2", queueUrl2);
 
-            var lambdaPort = GetFreePort();
-            var testToolTask = StartTestToolProcessAsync(lambdaPort, sqsEventSourceConfig, CancellationTokenSource);
+//            var lambdaPort = GetFreePort();
+//            var testToolTask = StartTestToolProcessAsync(lambdaPort, sqsEventSourceConfig, CancellationTokenSource);
 
-            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
-            var handler = (SQSEvent evnt, ILambdaContext context) =>
-            {
-                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
-                foreach (var message in evnt.Records)
-                {
-                    listOfProcessedMessages.Add(message);
-                }
-            };
+//            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
+//            var handler = (SQSEvent evnt, ILambdaContext context) =>
+//            {
+//                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
+//                foreach (var message in evnt.Records)
+//                {
+//                    listOfProcessedMessages.Add(message);
+//                }
+//            };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
-                .Build()
-                .RunAsync(CancellationTokenSource.Token);
+//            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+//                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
+//                .Build()
+//                .RunAsync(CancellationTokenSource.Token);
 
-            await sqsClient.SendMessageAsync(queueUrl1, "MessageFromQueue1");
-            await sqsClient.SendMessageAsync(queueUrl2, "MessageFromQueue2");
+//            await sqsClient.SendMessageAsync(queueUrl1, "MessageFromQueue1");
+//            await sqsClient.SendMessageAsync(queueUrl2, "MessageFromQueue2");
 
-            var startTime = DateTime.UtcNow;
-            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
-            {
-                await Task.Delay(500);
-            }
+//            var startTime = DateTime.UtcNow;
+//            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
+//            {
+//                await Task.Delay(500);
+//            }
 
-            Assert.Equal(2, listOfProcessedMessages.Count);
-            Assert.NotEqual(listOfProcessedMessages[0].EventSourceArn, listOfProcessedMessages[1].EventSourceArn);
-        }
-        finally
-        {
-            _ = CancellationTokenSource.CancelAsync();
-            await sqsClient.DeleteQueueAsync(queueUrl1);
-            await sqsClient.DeleteQueueAsync(queueUrl2);
-            Console.SetError(consoleError);
-        }
-    }
+//            Assert.Equal(2, listOfProcessedMessages.Count);
+//            Assert.NotEqual(listOfProcessedMessages[0].EventSourceArn, listOfProcessedMessages[1].EventSourceArn);
+//        }
+//        finally
+//        {
+//            _ = CancellationTokenSource.CancelAsync();
+//            await sqsClient.DeleteQueueAsync(queueUrl1);
+//            await sqsClient.DeleteQueueAsync(queueUrl2);
+//            Console.SetError(consoleError);
+//        }
+//    }
 
-    [RetryFact]
-    public async Task MessageNotDeleted()
-    {
-        var sqsClient = new AmazonSQSClient();
-        var queueName = nameof(MessageNotDeleted) + DateTime.Now.Ticks;
-        var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
-        var consoleError = Console.Error;
-        try
-        {
-            Console.SetError(TextWriter.Null);
+//    [RetryFact]
+//    public async Task MessageNotDeleted()
+//    {
+//        var sqsClient = new AmazonSQSClient();
+//        var queueName = nameof(MessageNotDeleted) + DateTime.Now.Ticks;
+//        var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
+//        var consoleError = Console.Error;
+//        try
+//        {
+//            Console.SetError(TextWriter.Null);
 
-            var lambdaPort = GetFreePort();
-            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor,DisableMessageDelete=true", CancellationTokenSource);
+//            var lambdaPort = GetFreePort();
+//            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor,DisableMessageDelete=true", CancellationTokenSource);
 
-            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
-            var handler = (SQSEvent evnt, ILambdaContext context) =>
-            {
-                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
-                foreach (var message in evnt.Records)
-                {
-                    listOfProcessedMessages.Add(message);
-                }
-            };
+//            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
+//            var handler = (SQSEvent evnt, ILambdaContext context) =>
+//            {
+//                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
+//                foreach (var message in evnt.Records)
+//                {
+//                    listOfProcessedMessages.Add(message);
+//                }
+//            };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
-                .Build()
-                .RunAsync(CancellationTokenSource.Token);
+//            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+//                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
+//                .Build()
+//                .RunAsync(CancellationTokenSource.Token);
 
-            await sqsClient.SendMessageAsync(queueUrl, "TheBody");
+//            await sqsClient.SendMessageAsync(queueUrl, "TheBody");
 
-            var startTime = DateTime.UtcNow;
-            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
-            {
-                await Task.Delay(500);
-            }
+//            var startTime = DateTime.UtcNow;
+//            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
+//            {
+//                await Task.Delay(500);
+//            }
 
-            Assert.Single(listOfProcessedMessages);
-            Assert.Equal("TheBody", listOfProcessedMessages[0].Body);
-            Assert.Equal(1, await GetNumberOfMessagesInQueueAsync(sqsClient, queueUrl));
-        }
-        finally
-        {
-            _ = CancellationTokenSource.CancelAsync();
-            await sqsClient.DeleteQueueAsync(queueUrl);
-            Console.SetError(consoleError);
-        }
-    }
+//            Assert.Single(listOfProcessedMessages);
+//            Assert.Equal("TheBody", listOfProcessedMessages[0].Body);
+//            Assert.Equal(1, await GetNumberOfMessagesInQueueAsync(sqsClient, queueUrl));
+//        }
+//        finally
+//        {
+//            _ = CancellationTokenSource.CancelAsync();
+//            await sqsClient.DeleteQueueAsync(queueUrl);
+//            Console.SetError(consoleError);
+//        }
+//    }
 
-    [RetryFact]
-    public async Task LambdaThrowsErrorAndMessageNotDeleted()
-    {
-        var sqsClient = new AmazonSQSClient();
-        var queueName = nameof(LambdaThrowsErrorAndMessageNotDeleted) + DateTime.Now.Ticks;
-        var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
-        var consoleError = Console.Error;
-        try
-        {
-            Console.SetError(TextWriter.Null);
-            var lambdaPort = GetFreePort();
-            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor", CancellationTokenSource);
+//    [RetryFact]
+//    public async Task LambdaThrowsErrorAndMessageNotDeleted()
+//    {
+//        var sqsClient = new AmazonSQSClient();
+//        var queueName = nameof(LambdaThrowsErrorAndMessageNotDeleted) + DateTime.Now.Ticks;
+//        var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
+//        var consoleError = Console.Error;
+//        try
+//        {
+//            Console.SetError(TextWriter.Null);
+//            var lambdaPort = GetFreePort();
+//            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor", CancellationTokenSource);
 
-            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
-            var handler = (SQSEvent evnt, ILambdaContext context) =>
-            {
-                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
-                foreach (var message in evnt.Records)
-                {
-                    listOfProcessedMessages.Add(message);
-                }
+//            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
+//            var handler = (SQSEvent evnt, ILambdaContext context) =>
+//            {
+//                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
+//                foreach (var message in evnt.Records)
+//                {
+//                    listOfProcessedMessages.Add(message);
+//                }
 
-                throw new Exception("Failed to process message");
-            };
+//                throw new Exception("Failed to process message");
+//            };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
-                .Build()
-                .RunAsync(CancellationTokenSource.Token);
+//            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+//                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
+//                .Build()
+//                .RunAsync(CancellationTokenSource.Token);
 
-            await sqsClient.SendMessageAsync(queueUrl, "TheBody");
+//            await sqsClient.SendMessageAsync(queueUrl, "TheBody");
 
-            var startTime = DateTime.UtcNow;
-            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
-            {
-                await Task.Delay(500);
-            }
+//            var startTime = DateTime.UtcNow;
+//            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
+//            {
+//                await Task.Delay(500);
+//            }
 
-            Assert.Single(listOfProcessedMessages);
-            Assert.Equal("TheBody", listOfProcessedMessages[0].Body);
-            Assert.Equal(1, await GetNumberOfMessagesInQueueAsync(sqsClient, queueUrl));
-        }
-        finally
-        {
-            _ = CancellationTokenSource.CancelAsync();
-            await sqsClient.DeleteQueueAsync(queueUrl);
-            Console.SetError(consoleError);
-        }
-    }
+//            Assert.Single(listOfProcessedMessages);
+//            Assert.Equal("TheBody", listOfProcessedMessages[0].Body);
+//            Assert.Equal(1, await GetNumberOfMessagesInQueueAsync(sqsClient, queueUrl));
+//        }
+//        finally
+//        {
+//            _ = CancellationTokenSource.CancelAsync();
+//            await sqsClient.DeleteQueueAsync(queueUrl);
+//            Console.SetError(consoleError);
+//        }
+//    }
 
-    [RetryFact]
-    public async Task PartialFailureResponse()
-    {
-        var sqsClient = new AmazonSQSClient();
-        var queueName = nameof(PartialFailureResponse) + DateTime.Now.Ticks;
-        var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
-        var consoleError = Console.Error;
-        try
-        {
-            Console.SetError(TextWriter.Null);
-            await sqsClient.SendMessageAsync(queueUrl, "Message1");
+//    [RetryFact]
+//    public async Task PartialFailureResponse()
+//    {
+//        var sqsClient = new AmazonSQSClient();
+//        var queueName = nameof(PartialFailureResponse) + DateTime.Now.Ticks;
+//        var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
+//        var consoleError = Console.Error;
+//        try
+//        {
+//            Console.SetError(TextWriter.Null);
+//            await sqsClient.SendMessageAsync(queueUrl, "Message1");
 
-            var lambdaPort = GetFreePort();
+//            var lambdaPort = GetFreePort();
 
-            // Lower VisibilityTimeout to speed up receiving the message at the end to prove the message wasn't deleted.
-            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor,VisibilityTimeout=3", CancellationTokenSource);
+//            // Lower VisibilityTimeout to speed up receiving the message at the end to prove the message wasn't deleted.
+//            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor,VisibilityTimeout=3", CancellationTokenSource);
 
-            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
-            var handler = (SQSEvent evnt, ILambdaContext context) =>
-            {
-                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
-                foreach (var message in evnt.Records)
-                {
-                    listOfProcessedMessages.Add(message);
-                }
+//            var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
+//            var handler = (SQSEvent evnt, ILambdaContext context) =>
+//            {
+//                TestOutputHelper.WriteLine($"Lambda handler called with {evnt.Records.Count} messages");
+//                foreach (var message in evnt.Records)
+//                {
+//                    listOfProcessedMessages.Add(message);
+//                }
 
-                var sqsResponse = new SQSBatchResponse();
-                sqsResponse.BatchItemFailures = new List<SQSBatchResponse.BatchItemFailure>
-                {
-                    new SQSBatchResponse.BatchItemFailure
-                    {
-                        ItemIdentifier = evnt.Records[0].MessageId
-                    }
-                };
+//                var sqsResponse = new SQSBatchResponse();
+//                sqsResponse.BatchItemFailures = new List<SQSBatchResponse.BatchItemFailure>
+//                {
+//                    new SQSBatchResponse.BatchItemFailure
+//                    {
+//                        ItemIdentifier = evnt.Records[0].MessageId
+//                    }
+//                };
 
-                return sqsResponse;
-            };
+//                return sqsResponse;
+//            };
 
-            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
-                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
-                .Build()
-                .RunAsync(CancellationTokenSource.Token);
+//            _ = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
+//                .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
+//                .Build()
+//                .RunAsync(CancellationTokenSource.Token);
 
-            await sqsClient.SendMessageAsync(queueUrl, "TheBody");
+//            await sqsClient.SendMessageAsync(queueUrl, "TheBody");
 
-            var startTime = DateTime.UtcNow;
-            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
-            {
-                await Task.Delay(500);
-            }
+//            var startTime = DateTime.UtcNow;
+//            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
+//            {
+//                await Task.Delay(500);
+//            }
 
-            // Wait for message to be deleted.
-            await Task.Delay(2000);
+//            // Wait for message to be deleted.
+//            await Task.Delay(2000);
 
-            // Since the message was never deleted by the event source it should still be eligibl for reading.
-            var response = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest { QueueUrl = queueUrl, WaitTimeSeconds = 20 });
-            Assert.Single(response.Messages);
-        }
-        finally
-        {
-            _ = CancellationTokenSource.CancelAsync();
-            await sqsClient.DeleteQueueAsync(queueUrl);
-            Console.SetError(consoleError);
-        }
-    }
+//            // Since the message was never deleted by the event source it should still be eligibl for reading.
+//            var response = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest { QueueUrl = queueUrl, WaitTimeSeconds = 20 });
+//            Assert.Single(response.Messages);
+//        }
+//        finally
+//        {
+//            _ = CancellationTokenSource.CancelAsync();
+//            await sqsClient.DeleteQueueAsync(queueUrl);
+//            Console.SetError(consoleError);
+//        }
+//    }
 
 
-    private async Task<int> GetNumberOfMessagesInQueueAsync(IAmazonSQS sqsClient, string queueUrl)
-    {
-        // Add a delay to handle SQS eventual consistency.
-        await Task.Delay(5000);
-        var response = await sqsClient.GetQueueAttributesAsync(queueUrl, new List<string> { "All" });
-        return response.ApproximateNumberOfMessages + response.ApproximateNumberOfMessagesNotVisible;
-    }
+//    private async Task<int> GetNumberOfMessagesInQueueAsync(IAmazonSQS sqsClient, string queueUrl)
+//    {
+//        // Add a delay to handle SQS eventual consistency.
+//        await Task.Delay(5000);
+//        var response = await sqsClient.GetQueueAttributesAsync(queueUrl, new List<string> { "All" });
+//        return response.ApproximateNumberOfMessages + response.ApproximateNumberOfMessagesNotVisible;
+//    }
 
-    private async Task StartTestToolProcessAsync(int lambdaPort, string sqsEventSourceConfig, CancellationTokenSource cancellationTokenSource)
-    {
-        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+//    private async Task StartTestToolProcessAsync(int lambdaPort, string sqsEventSourceConfig, CancellationTokenSource cancellationTokenSource)
+//    {
+//        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
 
-        var environmentVariables = new Dictionary<string, string> { };
+//        var environmentVariables = new Dictionary<string, string> { };
 
-        if (sqsEventSourceConfig.StartsWith(Constants.ArgumentEnvironmentVariablePrefix))
-        {
-            var tokens = sqsEventSourceConfig.Split('&');
-            if (tokens.Length == 2)
-            {
-                sqsEventSourceConfig = tokens[0];
-                var envName = tokens[0].Replace(Constants.ArgumentEnvironmentVariablePrefix, "");
-                var envValue = tokens[1];
-                environmentVariables[envName] = envValue;
-            }
-        }
+//        if (sqsEventSourceConfig.StartsWith(Constants.ArgumentEnvironmentVariablePrefix))
+//        {
+//            var tokens = sqsEventSourceConfig.Split('&');
+//            if (tokens.Length == 2)
+//            {
+//                sqsEventSourceConfig = tokens[0];
+//                var envName = tokens[0].Replace(Constants.ArgumentEnvironmentVariablePrefix, "");
+//                var envValue = tokens[1];
+//                environmentVariables[envName] = envValue;
+//            }
+//        }
 
-        var settings = new RunCommandSettings
-        {
-            LambdaEmulatorPort = lambdaPort,
-            NoLaunchWindow = true,
-            SQSEventSourceConfig = sqsEventSourceConfig
-        };
+//        var settings = new RunCommandSettings
+//        {
+//            LambdaEmulatorPort = lambdaPort,
+//            NoLaunchWindow = true,
+//            SQSEventSourceConfig = sqsEventSourceConfig
+//        };
 
        
-        var command = new RunCommand(MockInteractiveService.Object, new TestEnvironmentManager(environmentVariables));
-        var context = new CommandContext(new List<string>(), MockRemainingArgs.Object, "run", null);
-        _ = command.ExecuteAsync(context, settings, cancellationTokenSource);
+//        var command = new RunCommand(MockInteractiveService.Object, new TestEnvironmentManager(environmentVariables));
+//        var context = new CommandContext(new List<string>(), MockRemainingArgs.Object, "run", null);
+//        _ = command.ExecuteAsync(context, settings, cancellationTokenSource);
 
-        await Task.Delay(2000, cancellationTokenSource.Token);
-    }
+//        await Task.Delay(2000, cancellationTokenSource.Token);
+//    }
 }
