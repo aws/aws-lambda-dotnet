@@ -60,7 +60,7 @@ public class BasicApiGatewayTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             Console.SetError(consoleError);
         }
     }
@@ -105,7 +105,7 @@ public class BasicApiGatewayTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             Console.SetError(consoleError);
         }
     }
@@ -150,7 +150,7 @@ public class BasicApiGatewayTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             Console.SetError(consoleError);
         }
     }

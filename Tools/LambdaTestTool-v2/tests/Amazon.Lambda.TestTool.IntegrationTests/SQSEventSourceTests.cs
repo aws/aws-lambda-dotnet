@@ -65,7 +65,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }
@@ -114,7 +114,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }
@@ -180,7 +180,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl1);
             await sqsClient.DeleteQueueAsync(queueUrl2);
             Console.SetError(consoleError);
@@ -230,7 +230,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }
@@ -280,7 +280,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }
@@ -343,7 +343,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }

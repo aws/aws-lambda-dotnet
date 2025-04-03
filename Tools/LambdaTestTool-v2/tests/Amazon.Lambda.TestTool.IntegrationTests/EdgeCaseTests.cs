@@ -56,7 +56,7 @@ public class EdgeCaseTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             Console.SetError(consoleError);
         }
     }
@@ -101,7 +101,7 @@ public class EdgeCaseTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             Console.SetError(consoleError);
         }
     }

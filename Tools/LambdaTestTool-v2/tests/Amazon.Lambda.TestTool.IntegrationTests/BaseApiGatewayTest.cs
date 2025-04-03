@@ -47,8 +47,7 @@ public abstract class BaseApiGatewayTest
     {
         if (CancellationTokenSource != null)
         {
-            await CancellationTokenSource.CancelAsync();
-            CancellationTokenSource.Dispose();
+            _ = CancellationTokenSource.CancelAsync();
             CancellationTokenSource = new CancellationTokenSource();
         }
     }
