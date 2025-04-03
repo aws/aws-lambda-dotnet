@@ -116,7 +116,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }
@@ -182,7 +182,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl1);
             await sqsClient.DeleteQueueAsync(queueUrl2);
             Console.SetError(consoleError);
@@ -232,7 +232,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }
@@ -282,7 +282,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }
@@ -339,13 +339,16 @@ public class SQSEventSourceTests : BaseApiGatewayTest
                 await Task.Delay(500);
             }
 
+            // Wait for message to be deleted.
+            await Task.Delay(2000);
+
             // Since the message was never deleted by the event source it should still be eligibl for reading.
             var response = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest { QueueUrl = queueUrl, WaitTimeSeconds = 20 });
             Assert.Single(response.Messages);
         }
         finally
         {
-            await CancellationTokenSource.CancelAsync();
+            _ = CancellationTokenSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }
