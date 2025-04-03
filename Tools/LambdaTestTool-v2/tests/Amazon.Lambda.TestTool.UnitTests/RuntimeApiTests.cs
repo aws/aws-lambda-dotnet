@@ -36,7 +36,7 @@ public class RuntimeApiTests(ITestOutputHelper testOutputHelper)
         var options = new RunCommandSettings();
         options.LambdaEmulatorPort = lambdaPort;
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
-        var testToolProcess = TestToolProcess.Startup(options, new TestOutputToolInteractiveService(testOutputHelper), cancellationTokenSource.Token);
+        var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
         try
         {
             var lambdaClient = ConstructLambdaServiceClient(testToolProcess.ServiceUrl);
@@ -89,7 +89,7 @@ public class RuntimeApiTests(ITestOutputHelper testOutputHelper)
         var options = new RunCommandSettings();
         options.LambdaEmulatorPort = lambdaPort;
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
-        var testToolProcess = TestToolProcess.Startup(options, new TestOutputToolInteractiveService(testOutputHelper), cancellationTokenSource.Token);
+        var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
         try
         {
             var handler = (string input, ILambdaContext context) =>

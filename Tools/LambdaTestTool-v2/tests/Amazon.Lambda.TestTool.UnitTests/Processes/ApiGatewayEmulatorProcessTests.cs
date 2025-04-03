@@ -29,7 +29,7 @@ public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
         var apiUrl = $"http://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorPort}/__lambda_test_tool_apigateway_health__";
 
         // Act
-        var process = ApiGatewayEmulatorProcess.Startup(settings, new TestOutputToolInteractiveService(testOutputHelper), cancellationSource.Token);
+        var process = ApiGatewayEmulatorProcess.Startup(settings, cancellationSource.Token);
         var isApiRunning = await TestHelpers.WaitForApiToStartAsync(apiUrl);
         var response = await TestHelpers.SendRequest($"{process.ServiceUrl}/invalid");
         await cancellationSource.CancelAsync();

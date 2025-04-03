@@ -37,7 +37,7 @@ public class TestToolProcess
     /// <summary>
     /// Creates the Web Application and runs it in the background.
     /// </summary>
-    public static TestToolProcess Startup(RunCommandSettings settings, IToolInteractiveService toolInteractiveService, CancellationToken cancellationToken = default)
+    public static TestToolProcess Startup(RunCommandSettings settings, CancellationToken cancellationToken = default)
     {
         var builder = WebApplication.CreateBuilder();
 
@@ -82,8 +82,6 @@ public class TestToolProcess
         }
         else
         {
-            app.Services.GetRequiredService<ILoggerFactory>().AddProvider(new ToolInteractiveLoggerProvider(toolInteractiveService));
-
             // nosemgrep: csharp.lang.security.stacktrace-disclosure.stacktrace-disclosure
             app.UseDeveloperExceptionPage();
             app.UseStaticFiles();

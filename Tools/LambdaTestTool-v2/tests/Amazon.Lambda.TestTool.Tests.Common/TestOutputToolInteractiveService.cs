@@ -4,7 +4,7 @@ using Xunit.Abstractions;
 
 namespace Amazon.Lambda.TestTool.Tests.Common;
 
-public class TestOutputToolInteractiveService(ITestOutputHelper testOutputHelper) : IToolInteractiveService
+public class TestOutputToolInteractiveService(ITestOutputHelper testOutputHelper) //: IToolInteractiveService
 {
     public void WriteErrorLine(string? message)
     {
