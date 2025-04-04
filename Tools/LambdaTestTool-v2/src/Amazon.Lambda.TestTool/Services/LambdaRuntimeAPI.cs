@@ -20,6 +20,8 @@ public class LambdaRuntimeApi
     {
         _runtimeApiDataStoreManager = app.Services.GetRequiredService<IRuntimeApiDataStoreManager>();
 
+        app.MapGet("/lambda-runtime-api/healthcheck", () => "health");
+
         app.MapPost("/2015-03-31/functions/function/invocations", (Delegate)PostEventDefaultFunction);
         app.MapPost("/2015-03-31/functions/{functionName}/invocations", PostEvent);
 

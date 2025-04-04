@@ -426,6 +426,21 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         Assert.NotNull(command.LambdRuntimeApiTask);
         Assert.False(command.LambdRuntimeApiTask.IsFaulted, "Task to start Lambda Runtime API failed: " + command.LambdRuntimeApiTask.Exception?.ToString());
 
+        using var httpClient = new HttpClient();
+
+        var healthCheckUrl = $"http://localhost:{lambdaPort}/lambda-runtime-api/healthcheck";
+        TestOutputHelper.WriteLine($"Attempting health check url for Lambda runtime api: {healthCheckUrl}");
+
+        try
+        {
+            var health = httpClient.GetStringAsync(healthCheckUrl).GetAwaiter().GetResult();
+            TestOutputHelper.WriteLine($"Get successful health check: {health}");
+        }
+        catch(Exception ex)
+        {
+            Assert.Fail($"Failed to make healthcheck: {ex}");
+        }
+
         Thread.Sleep(2000);
         return testToolTask;
     }
