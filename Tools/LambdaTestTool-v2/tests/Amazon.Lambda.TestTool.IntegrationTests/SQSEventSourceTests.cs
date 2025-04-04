@@ -36,7 +36,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         var consoleError = Console.Error;
         try
         {
-            Console.SetError(TextWriter.Null);
+            Console.SetError(Console.Out);
 
             var lambdaPort = GetFreePort();
             var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor", cancellationSource);
@@ -89,7 +89,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         var consoleError = Console.Error;
         try
         {
-            Console.SetError(TextWriter.Null);
+            Console.SetError(Console.Out);
 
             var lambdaPort = GetFreePort();
             var testToolTask = StartTestToolProcessAsync(lambdaPort, $"env:SQS_CONFIG&QueueUrl={queueUrl},FunctionName=SQSProcessor", cancellationSource);
@@ -146,7 +146,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         var consoleError = Console.Error;
         try
         {
-            Console.SetError(TextWriter.Null);
+            Console.SetError(Console.Out);
 
             var sqsEventSourceConfig = """
     [
@@ -212,7 +212,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         var consoleError = Console.Error;
         try
         {
-            Console.SetError(TextWriter.Null);
+            Console.SetError(Console.Out);
 
             var lambdaPort = GetFreePort();
             var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor,DisableMessageDelete=true", cancellationSource);
@@ -264,7 +264,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         var consoleError = Console.Error;
         try
         {
-            Console.SetError(TextWriter.Null);
+            Console.SetError(Console.Out);
             var lambdaPort = GetFreePort();
             var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor", cancellationSource);
 
@@ -317,7 +317,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         var consoleError = Console.Error;
         try
         {
-            Console.SetError(TextWriter.Null);
+            Console.SetError(Console.Out);
             await sqsClient.SendMessageAsync(queueUrl, "Message1");
 
             var lambdaPort = GetFreePort();
