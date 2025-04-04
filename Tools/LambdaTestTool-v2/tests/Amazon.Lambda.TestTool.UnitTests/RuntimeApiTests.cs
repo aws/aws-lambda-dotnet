@@ -14,10 +14,12 @@ using Amazon.Lambda.TestTool.Tests.Common.Retries;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Environment = System.Environment;
+using Xunit.Abstractions;
+using Amazon.Lambda.TestTool.Tests.Common;
 
 namespace Amazon.Lambda.TestTool.UnitTests;
 
-public class RuntimeApiTests
+public class RuntimeApiTests(ITestOutputHelper testOutputHelper)
 {
 #if DEBUG
     [Fact]

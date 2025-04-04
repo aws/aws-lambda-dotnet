@@ -24,7 +24,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             httpContext.Response.Body = new MemoryStream();
             await testResponse.ToHttpResponseAsync(httpContext, emulatorMode);
             var serialized = JsonSerializer.Serialize(testResponse);
-            var actualResponse = await _httpClient.PostAsync(apiUrl, new StringContent(serialized));
+            var actualResponse = await _httpClient.PostAsync(apiUrl, new StringContent(serialized), new CancellationTokenSource(5000).Token);
             return (actualResponse, httpContext.Response);
         }
 
@@ -34,7 +34,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             testResponseHttpContext.Response.Body = new MemoryStream();
             await testResponse.ToHttpResponseAsync(testResponseHttpContext);
             var serialized = JsonSerializer.Serialize(testResponse);
-            var actualResponse = await _httpClient.PostAsync(apiUrl, new StringContent(serialized));
+            var actualResponse = await _httpClient.PostAsync(apiUrl, new StringContent(serialized), new CancellationTokenSource(5000).Token);
             return (actualResponse, testResponseHttpContext.Response);
         }
 

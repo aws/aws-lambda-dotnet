@@ -15,13 +15,11 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
     {
         private readonly IAmazonAPIGateway _apiGatewayV1Client;
         private readonly IAmazonApiGatewayV2 _apiGatewayV2Client;
-        private readonly HttpClient _httpClient;
 
         public ApiGatewayHelper(IAmazonAPIGateway apiGatewayV1Client, IAmazonApiGatewayV2 apiGatewayV2Client)
         {
             _apiGatewayV1Client = apiGatewayV1Client;
             _apiGatewayV2Client = apiGatewayV2Client;
-            _httpClient = new HttpClient();
         }
 
         public async Task WaitForApiAvailability(string apiId, string apiUrl, bool isHttpApi, int maxWaitTimeSeconds = 60)
