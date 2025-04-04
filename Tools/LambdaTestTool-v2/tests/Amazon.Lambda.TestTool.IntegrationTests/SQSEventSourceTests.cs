@@ -204,6 +204,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
     [RetryFact]
     public async Task MessageNotDeleted()
     {
+        var cancellationSource = new CancellationTokenSource();
         var sqsClient = new AmazonSQSClient();
         var queueName = nameof(MessageNotDeleted) + DateTime.Now.Ticks;
         var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
@@ -214,7 +215,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             Console.SetError(TextWriter.Null);
 
             var lambdaPort = GetFreePort();
-            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor,DisableMessageDelete=true", CancellationTokenSource);
+            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor,DisableMessageDelete=true", cancellationSource);
 
             var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
             var handler = (SQSEvent evnt, ILambdaContext context) =>
@@ -229,7 +230,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var lambdaTask = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                 .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
                 .Build()
-                .RunAsync(CancellationTokenSource.Token);
+                .RunAsync(cancellationSource.Token);
 
             await sqsClient.SendMessageAsync(queueUrl, "TheBody");
 
@@ -246,7 +247,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            _ = CancellationTokenSource.CancelAsync();
+            _ = cancellationSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }
@@ -255,6 +256,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
     [RetryFact]
     public async Task LambdaThrowsErrorAndMessageNotDeleted()
     {
+        var cancellationSource = new CancellationTokenSource();
         var sqsClient = new AmazonSQSClient();
         var queueName = nameof(LambdaThrowsErrorAndMessageNotDeleted) + DateTime.Now.Ticks;
         var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
@@ -264,7 +266,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         {
             Console.SetError(TextWriter.Null);
             var lambdaPort = GetFreePort();
-            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor", CancellationTokenSource);
+            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor", cancellationSource);
 
             var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
             var handler = (SQSEvent evnt, ILambdaContext context) =>
@@ -281,7 +283,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var lambdaTask = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                 .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
                 .Build()
-                .RunAsync(CancellationTokenSource.Token);
+                .RunAsync(cancellationSource.Token);
 
             await sqsClient.SendMessageAsync(queueUrl, "TheBody");
 
@@ -298,7 +300,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            _ = CancellationTokenSource.CancelAsync();
+            _ = cancellationSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }
@@ -307,6 +309,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
     [RetryFact]
     public async Task PartialFailureResponse()
     {
+        var cancellationSource = new CancellationTokenSource();
         var sqsClient = new AmazonSQSClient();
         var queueName = nameof(PartialFailureResponse) + DateTime.Now.Ticks;
         var queueUrl = (await sqsClient.CreateQueueAsync(queueName)).QueueUrl;
@@ -320,7 +323,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var lambdaPort = GetFreePort();
 
             // Lower VisibilityTimeout to speed up receiving the message at the end to prove the message wasn't deleted.
-            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor,VisibilityTimeout=3", CancellationTokenSource);
+            var testToolTask = StartTestToolProcessAsync(lambdaPort, $"QueueUrl={queueUrl},FunctionName=SQSProcessor,VisibilityTimeout=3", cancellationSource);
 
             var listOfProcessedMessages = new List<SQSEvent.SQSMessage>();
             var handler = (SQSEvent evnt, ILambdaContext context) =>
@@ -346,7 +349,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             var lambdaTask = LambdaBootstrapBuilder.Create(handler, new DefaultLambdaJsonSerializer())
                 .ConfigureOptions(x => x.RuntimeApiEndpoint = $"localhost:{lambdaPort}/SQSProcessor")
                 .Build()
-                .RunAsync(CancellationTokenSource.Token);
+                .RunAsync(cancellationSource.Token);
 
             await sqsClient.SendMessageAsync(queueUrl, "TheBody");
 
@@ -366,7 +369,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
         }
         finally
         {
-            _ = CancellationTokenSource.CancelAsync();
+            _ = cancellationSource.CancelAsync();
             await sqsClient.DeleteQueueAsync(queueUrl);
             Console.SetError(consoleError);
         }
