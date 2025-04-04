@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using System.Threading;
 using Microsoft.Extensions.Hosting;
+using Amazon.SecurityToken;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
@@ -158,17 +159,46 @@ public abstract class BaseApiGatewayTest
 
     protected int GetFreePort()
     {
+        Console.WriteLine("Looking for free port");
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         var app = builder.Build();
         app.MapGet("/", () => "test");
 
         CancellationTokenSource tokenSource = new CancellationTokenSource();
+        tokenSource.CancelAfter(5000);
         var runTask = app.RunAsync(tokenSource.Token);
         var uri = new Uri(app.Urls.First());
 
+        using var client = new HttpClient();
+        string? content = null;
+
+        Console.WriteLine($"Testing port: {uri.Port}");
+        var timeout = DateTime.UtcNow.AddSeconds(30);
+        while(DateTime.UtcNow < timeout)
+        {
+            try
+            {
+                content = client.GetStringAsync(uri, tokenSource.Token).GetAwaiter().GetResult();
+                Console.WriteLine("Port was successful");
+                break;
+            }
+            catch
+            {
+                Thread.Sleep(100);
+            }
+        }
+
+        if (!string.Equals(content, "test"))
+        {
+            Console.WriteLine("Port test failed trying again");
+            var recursivePort = GetFreePort();
+            tokenSource.Cancel();
+            return recursivePort;
+        }
+
         tokenSource.Cancel();
-        Task.Delay(1000);
+        Task.Delay(2000);
 
         return uri.Port;
     }
