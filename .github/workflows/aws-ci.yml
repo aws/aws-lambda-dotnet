@@ -37,7 +37,7 @@ jobs:
           aws-region: us-west-2
       - name: Run Tests on AWS
         id: codebuild
-        uses: aws-actions/aws-codebuild-run-build@v1
+        uses: aws-actions/aws-codebuild-run-build@4d15a47425739ac2296ba5e7eee3bdd4bfbdd767 #v1.0.18
         with:
           project-name: ${{ secrets.CI_TESTING_CODE_BUILD_PROJECT_NAME }}
       - name: CodeBuild Link

@@ -6,7 +6,7 @@ jobs:
     auto_comment:
         runs-on: ubuntu-latest
         steps:
-        - uses: aws-actions/closed-issue-message@v1
+        - uses: aws-actions/closed-issue-message@3f5beaaa9f8095897f6d11d1b2e0234dda310ebf #unknown-version
           with:
             # These inputs are both required
             repo-token: "${{ secrets.GITHUB_TOKEN }}"

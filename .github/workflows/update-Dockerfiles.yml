@@ -61,7 +61,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
         with:
           ref: 'dev'
 
@@ -126,7 +126,7 @@ jobs:
       - name: Pull Request
         id: pull-request
         if: ${{ steps.commit-push.outputs.BRANCH }}
-        uses: repo-sync/pull-request@v2
+        uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5 #v2.12.1
         with:
           source_branch: ${{ steps.commit-push.outputs.BRANCH }}
           destination_branch: "dev"
