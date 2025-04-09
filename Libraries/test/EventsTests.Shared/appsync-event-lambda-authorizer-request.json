@@ -1,0 +1,35 @@
+{
+    "authorizationToken": "custom-token",
+    "requestContext": {
+      "apiId": "xxxxxxxx",
+      "accountId": "112233445566",
+      "requestId": "36307622-97fe-4dfa-bd71-b15b1d03ce97",
+      "queryString": "query MyQuery {\n  listTodos {\n    completed\n    createdAt\n    description\n    id\n    title\n    updatedAt\n  }\n}\n",
+      "operationName": "MyQuery",
+      "variables": {}
+    },
+    "requestHeaders": {
+      "x-forwarded-for": "182.70.233.9, 15.158.25.215",
+      "accept-encoding": "gzip, deflate, br, zstd",
+      "sec-ch-ua-mobile": "?0",
+      "referer": "https://ap-south-1.console.aws.amazon.com/",
+      "via": "2.0 30c122bd8d8efabc1fd1b3b11bfb53ea.cloudfront.net (CloudFront)",
+      "content-type": "application/json",
+      "origin": "https://ap-south-1.console.aws.amazon.com",
+      "sec-fetch-mode": "cors",
+      "authorization": "This is test token",
+      "sec-fetch-dest": "empty",
+      "content-length": "159",
+      "x-amz-user-agent": "AWS-Console-AppSync/",
+      "sec-ch-ua-platform": "\"macOS\"",
+      "x-forwarded-proto": "https",
+      "accept-language": "en-US,en;q=0.9",
+      "host": "cndjdbaxrfhzppcdhvfvx3a7zq.appsync-api.ap-south-1.amazonaws.com",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+      "sec-fetch-site": "cross-site",
+      "accept": "application/json, text/plain, */*",
+      "priority": "u=1, i",
+      "sec-ch-ua": "\"Chromium\";v=\"134\", \"Not:A-Brand\";v=\"24\", \"Google Chrome\";v=\"134\"",
+      "x-forwarded-port": "443"
+    }
+  }
