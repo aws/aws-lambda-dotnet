@@ -1,0 +1,147 @@
+# This GitHub Workflow is designed to run automatically after the Release PR, which was created by the `Create Release PR` workflow, is closed.
+# This workflow has 2 jobs. One will run if the `Release PR` is successfully merged, indicating that a release should go out.
+# The other will run if the `Release PR` was closed and a release is not intended to go out.
+name: Sync 'dev' and 'master'
+
+# The workflow will automatically be triggered when any PR is closed.
+on:
+  pull_request:
+    types: [closed]
+
+permissions: 
+  contents: write
+  id-token: write
+
+jobs:
+  # This job will check if the PR was successfully merged, it's source branch is `releases/next-release` and target branch is `dev`. 
+  # This indicates that the merged PR was the `Release PR`. 
+  # This job will synchronize `dev` and `master`, create a GitHub Release and delete the `releases/next-release` branch.
+  sync-dev-and-master:
+    name: Sync dev and master
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'releases/next-release' &&
+      github.event.pull_request.base.ref == 'dev'
+    runs-on: ubuntu-latest
+    steps:
+      # Assume an AWS Role that provides access to the Access Token
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4.1.0
+        with:
+          role-to-assume: ${{ secrets.RELEASE_WORKFLOW_ACCESS_TOKEN_ROLE_ARN }}
+          aws-region: us-west-2
+      # Retrieve the Access Token from Secrets Manager
+      - name: Retrieve secret from AWS Secrets Manager
+        uses: aws-actions/aws-secretsmanager-get-secrets@fbd65ea98e018858715f591f03b251f02b2316cb #v2.0.8
+        with:
+          secret-ids: |
+            AWS_SECRET, ${{ secrets.RELEASE_WORKFLOW_ACCESS_TOKEN_NAME }}
+          parse-json-secrets: true
+      # Checkout a full clone of the repo
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ env.AWS_SECRET_TOKEN }}
+      # Install .NET9 which is needed for AutoVer
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #v4.3.1
+        with:
+          dotnet-version: 9.0.x
+      # Install AutoVer which is needed to retrieve information about the current release.
+      - name: Install AutoVer
+        run: dotnet tool install --global AutoVer --version 0.0.25
+      # Set up a git user to be able to run git commands later on
+      - name: Setup Git User
+        run: |
+          git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
+          git config --global user.name "aws-sdk-dotnet-automation"
+      # Retrieve the release name which is needed for the GitHub Release
+      - name: Read Release Name
+        id: read-release-name
+        run: |
+          version=$(autover changelog --release-name)
+          echo "VERSION=$version" >> $GITHUB_OUTPUT
+      # Retrieve the tag name which is needed for the GitHub Release
+      - name: Read Tag Name
+        id: read-tag-name
+        run: |
+          tag=$(autover changelog --tag-name)
+          echo "TAG=$tag" >> $GITHUB_OUTPUT
+      # Retrieve the changelog which is needed for the GitHub Release
+      - name: Read Changelog
+        id: read-changelog
+        run: |
+          changelog=$(autover changelog --output-to-console)
+          echo "CHANGELOG<<EOF"$'\n'"$changelog"$'\n'EOF >> "$GITHUB_OUTPUT"
+      # Merge dev into master in order to synchronize the 2 branches
+      - name: Merge dev to master
+        run: |
+          git fetch origin
+          git checkout master
+          git merge dev
+          git push origin master
+      # Create the GitHub Release
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ env.AWS_SECRET_TOKEN }}
+        run: |
+          gh release create "${{ steps.read-tag-name.outputs.TAG }}" --title "${{ steps.read-release-name.outputs.VERSION }}" --notes "${{ steps.read-changelog.outputs.CHANGELOG }}"
+      # Delete the `releases/next-release` branch
+      - name: Clean up
+        run: |
+          git fetch origin
+          if git ls-remote --exit-code --heads origin releases/next-release > /dev/null; then
+            echo "Branch 'releases/next-release' exists on origin. Deleting..."
+            git push origin --delete releases/next-release
+          else
+            echo "Branch 'releases/next-release' does not exist on origin, skipping deletion."
+          fi
+  # This job will check if the PR was closed, it's source branch is `releases/next-release` and target branch is `dev`. 
+  # This indicates that the closed PR was the `Release PR`.
+  # This job will delete the tag created by AutoVer and the release branch.
+  clean-up-closed-release:
+    name: Clean up closed release
+    if: |
+      github.event.pull_request.merged == false &&
+      github.event.pull_request.head.ref == 'releases/next-release' &&
+      github.event.pull_request.base.ref == 'dev'
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout a full clone of the repo
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+        with:
+          ref: releases/next-release
+          fetch-depth: 0
+      # Install .NET9 which is needed for AutoVer
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #v4.3.1
+        with:
+          dotnet-version: 9.0.x
+      # Install AutoVer which is needed to retrieve information about the current release.
+      - name: Install AutoVer
+        run: dotnet tool install --global AutoVer --version 0.0.25
+      # Set up a git user to be able to run git commands later on
+      - name: Setup Git User
+        run: |
+          git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
+          git config --global user.name "aws-sdk-dotnet-automation"
+      # Retrieve the tag name to be deleted
+      - name: Read Tag Name
+        id: read-tag-name
+        run: |
+          tag=$(autover changelog --tag-name)
+          echo "TAG=$tag" >> $GITHUB_OUTPUT
+      # Delete the tag created by AutoVer and the release branch
+      - name: Clean up
+        run: |
+          git fetch origin
+          git push --delete origin ${{ steps.read-tag-name.outputs.TAG }}
+          if git ls-remote --exit-code --heads origin releases/next-release > /dev/null; then
+            echo "Branch 'releases/next-release' exists on origin. Deleting..."
+            git push origin --delete releases/next-release
+          else
+            echo "Branch 'releases/next-release' does not exist on origin, skipping deletion."
+          fi
