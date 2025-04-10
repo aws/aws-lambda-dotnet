@@ -4,20 +4,6 @@ on:
   # Allows to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
-      NET_6_AMD64:
-        description: ".NET 6 AMD64"
-        type: boolean
-        required: true
-        default: "true"
-      NET_6_ARM64:
-        description: ".NET 6 ARM64"
-        type: boolean
-        required: true
-        default: "true"
-      NET_6_NEXT_VERSION:
-        description: ".NET 6 Next Version"
-        type: string
-        required: true
       NET_8_AMD64:
         description: ".NET 8 AMD64"
         type: boolean
@@ -51,8 +37,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      NET_6_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net6/amd64/Dockerfile"
-      NET_6_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net6/arm64/Dockerfile"
       NET_8_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/amd64/Dockerfile"
       NET_8_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/arm64/Dockerfile"
       NET_9_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/amd64/Dockerfile"
@@ -61,29 +45,9 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
         with:
           ref: 'dev'
-
-      - name: Update .NET 6 AMD64
-        id: update-net6-amd64
-        shell: pwsh
-        env:
-          DOCKERFILE_PATH: ${{ env.NET_6_AMD64_Dockerfile }}
-          NEXT_VERSION: ${{ github.event.inputs.NET_6_NEXT_VERSION }}
-        run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
-        if: ${{ github.event.inputs.NET_6_AMD64 == 'true' }}
-
-      - name: Update .NET 6 ARM64
-        id: update-net6-arm64
-        shell: pwsh
-        env:
-          DOCKERFILE_PATH: ${{ env.NET_6_ARM64_Dockerfile }}
-          NEXT_VERSION: ${{ github.event.inputs.NET_6_NEXT_VERSION }}
-        run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
-        if: ${{ github.event.inputs.NET_6_ARM64 == 'true' }}
 
       - name: Update .NET 8 AMD64
         id: update-net8-amd64
@@ -155,9 +119,7 @@ jobs:
             \n\n*Description of changes:*
             \n${{ format
                 (
-                  '{0}\n{1}\n{2}\n{3}\n{4}\n{5}',
-                  join(steps.update-net6-amd64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net6-arm64.outputs.MESSAGE, '\n'),
+                  '{0}\n{1}\n{2}\n{3}',
                   join(steps.update-net8-amd64.outputs.MESSAGE, '\n'),
                   join(steps.update-net8-arm64.outputs.MESSAGE, '\n'),
                   join(steps.update-net9-amd64.outputs.MESSAGE, '\n'),
@@ -165,5 +127,4 @@ jobs:
                 )
             }}"
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_label: "auto-pr"
           
