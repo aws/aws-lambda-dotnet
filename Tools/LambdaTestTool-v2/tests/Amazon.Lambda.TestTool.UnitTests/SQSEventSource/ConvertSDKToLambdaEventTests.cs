@@ -24,9 +24,10 @@ public class ConvertSDKToLambdaEventTests
             ReceiptHandle = "receiptHandle"
         };
 
-        var eventMessage = SQSEventSourceBackgroundService.ConvertToLambdaMessage(sdkMessage, "us-west-2", "queueArn");
+        var queueArn = Arn.Parse("arn:aws:sqs:us-west-2:123456789012:queueName");
+        var eventMessage = SQSEventSourceBackgroundService.ConvertToLambdaMessage(sdkMessage, queueArn);
         Assert.Equal("us-west-2", eventMessage.AwsRegion);
-        Assert.Equal("queueArn", eventMessage.EventSourceArn);
+        Assert.Equal("arn:aws:sqs:us-west-2:123456789012:queueName", eventMessage.EventSourceArn);
         Assert.Equal("aws:sqs", eventMessage.EventSource);
 
         Assert.Equal(sdkMessage.Attributes, eventMessage.Attributes);
@@ -61,9 +62,10 @@ public class ConvertSDKToLambdaEventTests
             ReceiptHandle = "receiptHandle"
         };
 
-        var eventMessage = SQSEventSourceBackgroundService.ConvertToLambdaMessage(sdkMessage, "us-west-2", "queueArn");
+        var queueArn = Arn.Parse("arn:aws:sqs:us-west-2:123456789012:queueName");
+        var eventMessage = SQSEventSourceBackgroundService.ConvertToLambdaMessage(sdkMessage, queueArn);
         Assert.Equal("us-west-2", eventMessage.AwsRegion);
-        Assert.Equal("queueArn", eventMessage.EventSourceArn);
+        Assert.Equal("arn:aws:sqs:us-west-2:123456789012:queueName", eventMessage.EventSourceArn);
         Assert.Equal("aws:sqs", eventMessage.EventSource);
 
         Assert.Equal("theBody", eventMessage.Body);
