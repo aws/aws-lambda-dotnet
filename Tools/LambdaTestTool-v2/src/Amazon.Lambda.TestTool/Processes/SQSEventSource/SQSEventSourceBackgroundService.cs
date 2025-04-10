@@ -43,7 +43,7 @@ public class SQSEventSourceBackgroundService : BackgroundService
         _lambdaClient = lambdaClient;
     }
 
-    private async Task<Arn> GetQueueArn(CancellationToken stoppingToken)
+    private async Task<string> GetQueueArn(CancellationToken stoppingToken)
     {
         var response = await _sqsClient.GetQueueAttributesAsync(new GetQueueAttributesRequest
         {
@@ -51,7 +51,7 @@ public class SQSEventSourceBackgroundService : BackgroundService
             AttributeNames = new List<string> { "QueueArn" }
         }, stoppingToken);
 
-        return Arn.Parse(response.QueueARN);
+        return response.QueueARN;
     }
 
     /// <summary>
@@ -94,7 +94,7 @@ public class SQSEventSourceBackgroundService : BackgroundService
 
                 var lambdaPayload = new
                 {
-                    Records = ConvertToLambdaMessages(response.Messages, queueArn)
+                    Records = ConvertToLambdaMessages(response.Messages, _sqsClient.Config.RegionEndpoint.SystemName, queueArn)
                 };
 
                 var invokeRequest = new InvokeRequest
@@ -187,27 +187,29 @@ public class SQSEventSourceBackgroundService : BackgroundService
     /// Convert from the SDK's list of messages to the Lambda event's SQS message type.
     /// </summary>
     /// <param name="messages">List of messages using the SDK's .NET type</param>
+    /// <param name="awsRegion">The aws region the messages came from.</param>
     /// <param name="queueArn">The SQS queue arn the messages came from.</param>
     /// <returns>List of messages using the Lambda event's .NET type.</returns>
-    internal static List<SQSEvent.SQSMessage> ConvertToLambdaMessages(List<Message> messages, Arn queueArn)
+    internal static List<SQSEvent.SQSMessage> ConvertToLambdaMessages(List<Message> messages, string awsRegion, string queueArn)
     {
-        return messages.Select(m => ConvertToLambdaMessage(m, queueArn)).ToList();
+        return messages.Select(m => ConvertToLambdaMessage(m, awsRegion, queueArn)).ToList();
     }
 
     /// <summary>
     /// Convert from the SDK's SQS message to the Lambda event's SQS message type.
     /// </summary>
     /// <param name="message">Message using the SDK's .NET type</param>
+    /// <param name="awsRegion">The aws region the message came from.</param>
     /// <param name="queueArn">The SQS queue arn the message came from.</param>
     /// <returns>Messages using the Lambda event's .NET type.</returns>
-    internal static SQSEvent.SQSMessage ConvertToLambdaMessage(Message message, Arn queueArn)
+    internal static SQSEvent.SQSMessage ConvertToLambdaMessage(Message message, string awsRegion, string queueArn)
     {
         var lambdaMessage = new SQSEvent.SQSMessage
         {
-            AwsRegion = queueArn.Region,
+            AwsRegion = awsRegion,
             Body = message.Body,
             EventSource = "aws:sqs",
-            EventSourceArn = queueArn.ToString(),
+            EventSourceArn = queueArn,
             Md5OfBody = message.MD5OfBody,
             Md5OfMessageAttributes = message.MD5OfMessageAttributes,
             MessageId = message.MessageId,
