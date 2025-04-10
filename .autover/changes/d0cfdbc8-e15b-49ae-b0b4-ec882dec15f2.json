@@ -2,7 +2,7 @@
   "Projects": [
     {
       "Name": "Amazon.Lambda.TestTool",
-      "Type": "Minor",
+      "Type": "Patch",
       "ChangelogMessages": [
         "Support optional SQS client region in event source test tool"
       ]
