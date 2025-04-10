@@ -1,3 +1,8 @@
+## Release 2025-04-10
+
+### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (1.0.0)
+* Implement DynamoDBEvents SDK Convertor package for DynamoDBEvent images to DynamoDBv2.Document
+
 ## Release 2025-04-04
 
 ### Amazon.Lambda.Templates (7.4.1)
