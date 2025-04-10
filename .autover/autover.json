@@ -50,7 +50,7 @@
     {
       "Name": "Amazon.Lambda.DynamoDBEvents",
       "Path": "Libraries/src/Amazon.Lambda.DynamoDBEvents/Amazon.Lambda.DynamoDBEvents.csproj"
-    },    
+    },
     {
       "Name": "Amazon.Lambda.DynamoDBEvents.SDK.Convertor",
       "Path": "Libraries/src/Amazon.Lambda.DynamoDBEvents.SDK.Convertor/Amazon.Lambda.DynamoDBEvents.SDK.Convertor.csproj"
