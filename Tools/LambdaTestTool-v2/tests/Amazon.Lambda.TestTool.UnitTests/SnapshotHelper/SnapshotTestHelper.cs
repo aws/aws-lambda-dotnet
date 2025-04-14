@@ -3,7 +3,7 @@
 
 using System.Text.Json;
 
-namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers.snapshot;
+namespace Amazon.Lambda.TestTool.UnitTests.SnapshotHelper;
 public class SnapshotTestHelper
 {
     private readonly string _snapshotDirectory;

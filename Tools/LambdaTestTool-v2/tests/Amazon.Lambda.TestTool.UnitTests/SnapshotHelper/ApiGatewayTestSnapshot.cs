@@ -2,7 +2,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers.snapshot;
+namespace Amazon.Lambda.TestTool.UnitTests.SnapshotHelper;
 
 public class HttpResponseMessageConverter : JsonConverter<HttpResponseMessage>
 {

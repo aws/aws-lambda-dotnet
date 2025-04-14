@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
-namespace Amazon.Lambda.TestTool.Tests.Common
+namespace Amazon.Lambda.TestTool.UnitTests.Extensions
 {
     public static class HttpContextTestCases
     {

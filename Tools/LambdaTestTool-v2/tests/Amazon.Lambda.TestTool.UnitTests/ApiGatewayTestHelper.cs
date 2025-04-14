@@ -4,8 +4,8 @@
 using System.Text.Json;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Extensions;
-using Amazon.Lambda.TestTool.IntegrationTests.Helpers.snapshot;
 using Amazon.Lambda.TestTool.Models;
+using Amazon.Lambda.TestTool.UnitTests.SnapshotHelper;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 

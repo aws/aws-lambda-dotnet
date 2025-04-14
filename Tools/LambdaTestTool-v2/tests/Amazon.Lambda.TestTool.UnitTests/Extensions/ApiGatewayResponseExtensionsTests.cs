@@ -4,64 +4,47 @@
 using System.Text;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Extensions;
+using Amazon.Lambda.TestTool.IntegrationTests.Helpers;
 using Amazon.Lambda.TestTool.Models;
-using Amazon.Lambda.TestTool.Tests.Common;
 using Microsoft.AspNetCore.Http;
 using Xunit;
-using static Amazon.Lambda.TestTool.Tests.Common.ApiGatewayResponseTestCases;
+using static Amazon.Lambda.TestTool.UnitTests.Extensions.ApiGatewayResponseTestCases;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Extensions
 {
-    public class ApiGatewayResponseExtensionsUnitTests
+    public class ApiGatewayResponseExtensionsTests
     {
-        [Theory]
-        [MemberData(nameof(ApiGatewayResponseTestCases.V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
-        public async Task ToHttpResponse_ConvertsCorrectlyV1(string testName, ApiGatewayResponseTestCase testCase)
-        {
-            // Arrange
-            var httpContext = new DefaultHttpContext();
-            httpContext.Response.Body = new MemoryStream();
-            await ((APIGatewayProxyResponse)testCase.Response).ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.HttpV1);
+        private ApiGatewayTestHelper _helper = new();
 
-            // Assert
-            testCase.Assertions(httpContext.Response, ApiGatewayEmulatorMode.HttpV1);
+        [Theory]
+        [MemberData(nameof(V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
+        public async Task IntegrationTest_APIGatewayV1_REST(string testName, ApiGatewayResponseTestCase testCase)
+        {
+            await RunV1Test(testCase, ApiGatewayEmulatorMode.Rest, testName);
         }
 
         [Theory]
-        [MemberData(nameof(ApiGatewayResponseTestCases.V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
-        public async Task ToHttpResponse_ConvertsCorrectlyV1Rest(string testName, ApiGatewayResponseTestCase testCase)
+        [MemberData(nameof(V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
+        public async Task IntegrationTest_APIGatewayV1_HTTP(string testName, ApiGatewayResponseTestCase testCase)
         {
-            // Arrange
-            var httpContext = new DefaultHttpContext();
-            httpContext.Response.Body = new MemoryStream();
-            await ((APIGatewayProxyResponse)testCase.Response).ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.Rest);
-
-            // Assert
-            testCase.Assertions(httpContext.Response, ApiGatewayEmulatorMode.Rest);
+            await RunV1Test(testCase, ApiGatewayEmulatorMode.HttpV1, testName);
         }
 
         [Theory]
-        [MemberData(nameof(ApiGatewayResponseTestCases.V2TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
-        public async Task ToHttpResponse_ConvertsCorrectlyV2(string testName, ApiGatewayResponseTestCase testCase)
+        [MemberData(nameof(V2TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
+        public async Task IntegrationTest_APIGatewayV2(string testName, ApiGatewayResponseTestCase testCase)
         {
-            // Arrange
-            var httpContext = new DefaultHttpContext();
-            httpContext.Response.Body = new MemoryStream();
-            await ((APIGatewayHttpApiV2ProxyResponse)testCase.Response).ToHttpResponseAsync(httpContext);
-
-            // Assert
-            testCase.Assertions(httpContext.Response, ApiGatewayEmulatorMode.HttpV2);
+            var testResponse = testCase.Response as APIGatewayHttpApiV2ProxyResponse;
+            Assert.NotNull(testResponse);
+            var (actualResponse, httpTestResponse) = await _helper.ExecuteTestRequest(testResponse, testName);
+            await _helper.AssertResponsesEqual(actualResponse, httpTestResponse);
+            await testCase.Assertions(actualResponse, ApiGatewayEmulatorMode.HttpV2);
         }
 
-        [Theory]
-        [InlineData(ApiGatewayEmulatorMode.HttpV1)]
-        [InlineData(ApiGatewayEmulatorMode.Rest)]
-        public async Task ToHttpResponse_APIGatewayV1DecodesBase64(ApiGatewayEmulatorMode emulatorMode)
+        [Fact]
+        public async Task ToHttpResponse_RestAPIGatewayV1DecodesBase64()
         {
-            var apiResponse = new APIGatewayProxyResponse
+            var testResponse = new APIGatewayProxyResponse
             {
                 StatusCode = 200,
                 Body = Convert.ToBase64String(Encoding.UTF8.GetBytes("test")),
@@ -70,12 +53,44 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
 
             var httpContext = new DefaultHttpContext();
             httpContext.Response.Body = new MemoryStream();
-            await apiResponse.ToHttpResponseAsync(httpContext, emulatorMode);
+            await testResponse.ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.Rest);
 
-            httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
-            using var reader = new StreamReader(httpContext.Response.Body);
-            var bodyContent = await reader.ReadToEndAsync();
-            Assert.Equal("test", bodyContent);
+            httpContext.Response.Body.Position = 0;
+
+            Assert.Equal(200, (int)httpContext.Response.StatusCode);
+            var content = await new StreamReader(httpContext.Response.Body).ReadToEndAsync();
+            Assert.Equal("test", content);
+        }
+
+        [Fact]
+        public async Task ToHttpResponse_HttpV1APIGatewayV1DecodesBase64()
+        {
+            var testResponse = new APIGatewayProxyResponse
+            {
+                StatusCode = 200,
+                Body = Convert.ToBase64String(Encoding.UTF8.GetBytes("test")),
+                IsBase64Encoded = true
+            };
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Response.Body = new MemoryStream();
+            await testResponse.ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.HttpV1);
+
+            httpContext.Response.Body.Position = 0;
+
+            Assert.Equal(200, (int)httpContext.Response.StatusCode);
+            var content = await new StreamReader(httpContext.Response.Body).ReadToEndAsync();
+            Assert.Equal("test", content);
+        }
+
+        private async Task RunV1Test(ApiGatewayResponseTestCase testCase, ApiGatewayEmulatorMode emulatorMode, string testName)
+        {
+            var testResponse = testCase.Response as APIGatewayProxyResponse;
+            Assert.NotNull(testResponse);
+            var testCaseName = testName + emulatorMode;
+            var (actualResponse, httpTestResponse) = await _helper.ExecuteTestRequest(testResponse, emulatorMode, testCaseName);
+            await _helper.AssertResponsesEqual(actualResponse, httpTestResponse);
+            await testCase.Assertions(actualResponse, emulatorMode);
         }
     }
 }
