@@ -1,0 +1,27 @@
+{
+  "StatusCode": 200,
+  "Content": "Test body",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:10:22 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "x-amzn-RequestId": [
+      "224e0b2e-0dfa-481a-ad65-b647686cb362"
+    ],
+    "x-amz-apigw-id": [
+      "JCIoWGiIvHcEsxg="
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-67fd87ce-39b57ec370e7a7551e8f43db;Parent=752c273a1dbf0dc3;Sampled=0;Lineage=1:6e5eb7d9:0"
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "Content-Length": [
+      "9"
+    ]
+  }
+}

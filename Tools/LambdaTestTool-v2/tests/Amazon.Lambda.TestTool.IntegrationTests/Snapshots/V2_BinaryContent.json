@@ -1,0 +1,44 @@
+{
+  "Version": "2.0",
+  "RouteKey": "POST /test11/api/users/{userId}/avatar",
+  "RawPath": "/test11/api/users/123/avatar",
+  "RawQueryString": "",
+  "Cookies": null,
+  "Headers": {
+    "content-length": "5",
+    "content-type": "application/octet-stream",
+    "host": "7y6qzvvbof.execute-api.us-west-2.amazonaws.com",
+    "x-amzn-trace-id": "Root=1-67fd88b8-2f95df5a03c1bc3a6168b6d8",
+    "x-forwarded-for": "141.149.44.5",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "QueryStringParameters": null,
+  "RequestContext": {
+    "AccountId": "147997163238",
+    "ApiId": "7y6qzvvbof",
+    "Authorizer": null,
+    "DomainName": "7y6qzvvbof.execute-api.us-west-2.amazonaws.com",
+    "DomainPrefix": "7y6qzvvbof",
+    "Http": {
+      "Method": "POST",
+      "Path": "/test11/api/users/123/avatar",
+      "Protocol": "HTTP/1.1",
+      "SourceIp": "141.149.44.5",
+      "UserAgent": ""
+    },
+    "RequestId": "JCJM3j95PHcEJHg=",
+    "RouteId": null,
+    "RouteKey": "POST /test11/api/users/{userId}/avatar",
+    "Stage": "$default",
+    "Time": "14/Apr/2025:22:14:16 \u002B0000",
+    "TimeEpoch": 1744668856359,
+    "Authentication": null
+  },
+  "Body": "AQIDBAU=",
+  "PathParameters": {
+    "userId": "123"
+  },
+  "IsBase64Encoded": true,
+  "StageVariables": null
+}

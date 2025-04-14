@@ -1,0 +1,84 @@
+{
+  "Resource": "/test5/api/users/{username}/orders/{orderName}",
+  "Path": "/test5/api/users/****%20Doe/orders/Summer%20Sale%202023",
+  "HttpMethod": "POST",
+  "Headers": {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Host": "s902u1zkkl.execute-api.us-west-2.amazonaws.com",
+    "X-Amzn-Trace-Id": "Root=1-67fd8860-650d70a10ef73c6b16106e8d",
+    "X-Forwarded-For": "141.149.44.5",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "MultiValueHeaders": {
+    "Content-Type": [
+      "text/plain; charset=utf-8"
+    ],
+    "Host": [
+      "s902u1zkkl.execute-api.us-west-2.amazonaws.com"
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-67fd8860-650d70a10ef73c6b16106e8d"
+    ],
+    "X-Forwarded-For": [
+      "141.149.44.5"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "QueryStringParameters": null,
+  "MultiValueQueryStringParameters": null,
+  "PathParameters": {
+    "username": "****%20Doe",
+    "orderName": "Summer%20Sale%202023"
+  },
+  "StageVariables": null,
+  "RequestContext": {
+    "Path": "/test/test5/api/users/****%20Doe/orders/Summer%20Sale%202023",
+    "AccountId": "147997163238",
+    "ResourceId": "g76y15",
+    "Stage": "test",
+    "RequestId": "dbcb1121-909c-4d1a-aff3-958e94138b79",
+    "Identity": {
+      "CognitoIdentityPoolId": null,
+      "AccountId": null,
+      "CognitoIdentityId": null,
+      "Caller": null,
+      "ApiKey": null,
+      "ApiKeyId": null,
+      "AccessKey": null,
+      "SourceIp": "141.149.44.5",
+      "CognitoAuthenticationType": null,
+      "CognitoAuthenticationProvider": null,
+      "UserArn": null,
+      "UserAgent": null,
+      "User": null,
+      "ClientCert": null
+    },
+    "ResourcePath": "/test5/api/users/{username}/orders/{orderName}",
+    "HttpMethod": "POST",
+    "ApiId": "s902u1zkkl",
+    "ExtendedRequestId": "JCI_JHpQvHcEhVw=",
+    "ConnectionId": null,
+    "ConnectedAt": 0,
+    "DomainName": "s902u1zkkl.execute-api.us-west-2.amazonaws.com",
+    "DomainPrefix": "s902u1zkkl",
+    "EventType": null,
+    "MessageId": null,
+    "RouteKey": null,
+    "Authorizer": null,
+    "OperationName": null,
+    "Error": null,
+    "IntegrationLatency": null,
+    "MessageDirection": null,
+    "RequestTime": "14/Apr/2025:22:12:48 \u002B0000",
+    "RequestTimeEpoch": 1744668768586,
+    "Status": null
+  },
+  "Body": null,
+  "IsBase64Encoded": false
+}

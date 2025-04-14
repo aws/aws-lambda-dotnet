@@ -6,8 +6,6 @@ using Amazon.ApiGatewayV2;
 using Amazon.APIGateway.Model;
 using Amazon.ApiGatewayV2.Model;
 using System.Net;
-using Amazon.Runtime.Internal.Endpoints.StandardLibrary;
-using ConflictException = Amazon.ApiGatewayV2.Model.ConflictException;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
 {
@@ -202,7 +200,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             });
 
             // Create stage if it doesn't exist
-            try 
+            try
             {
                 await _apiGatewayV2Client.CreateStageAsync(new Amazon.ApiGatewayV2.Model.CreateStageRequest
                 {

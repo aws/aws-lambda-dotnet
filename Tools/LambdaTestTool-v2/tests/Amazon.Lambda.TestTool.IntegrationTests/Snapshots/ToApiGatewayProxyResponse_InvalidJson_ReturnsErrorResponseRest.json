@@ -1,0 +1,27 @@
+{
+  "StatusCode": 502,
+  "Content": "{\u0022message\u0022:\u0022Internal server error\u0022}",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:17:20 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "x-amzn-RequestId": [
+      "5f0c2904-275c-4054-9516-bfb8d083ca5c"
+    ],
+    "x-amz-apigw-id": [
+      "JCJpsEPhPHcEYng="
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-67fd8970-7b93429f14d1f5622f3dbbdd;Parent=1b82af92b8de065c;Sampled=0;Lineage=1:6e5eb7d9:0"
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "Content-Length": [
+      "35"
+    ]
+  }
+}

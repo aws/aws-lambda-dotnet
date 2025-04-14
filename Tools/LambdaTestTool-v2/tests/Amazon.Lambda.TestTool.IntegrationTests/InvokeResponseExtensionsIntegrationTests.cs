@@ -62,10 +62,12 @@ public class InvokeResponseExtensionsIntegrationTests
         // Act
         var convertedResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
 
+        var testName = nameof(ToApiGatewayProxyResponse_ValidResponse_MatchesDirectConversion) + emulatorMode;
+
         // Assert
         var baseUrl = _fixture.GetAppropriateBaseUrl(GetGatewayType(emulatorMode));
         var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, url, emulatorMode);
+        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, url, emulatorMode, testName);
         await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
     }
 
@@ -90,7 +92,7 @@ public class InvokeResponseExtensionsIntegrationTests
         // Assert
         var baseUrl = _fixture.GetAppropriateBaseUrl(ApiGatewayType.HttpV2);
         var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, url);
+        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, url, nameof(ToApiGatewayHttpApiV2ProxyResponse_ValidResponse_MatchesDirectConversion));
         await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
     }
 
@@ -108,13 +110,15 @@ public class InvokeResponseExtensionsIntegrationTests
         // Act
         var convertedResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
 
+        var testName = nameof(ToApiGatewayProxyResponse_InvalidJson_ReturnsErrorResponse) + emulatorMode;
+
         // Assert
         Assert.Equal(expectedStatusCode, convertedResponse.StatusCode);
         Assert.Contains(expectedErrorMessage, convertedResponse.Body);
 
         var baseUrl = _fixture.GetAppropriateBaseUrl(GetGatewayType(emulatorMode));
         var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
-        var (actualResponse, _) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, url, emulatorMode);
+        var (actualResponse, _) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, url, emulatorMode, testName);
         Assert.Equal(expectedStatusCode, (int)actualResponse.StatusCode);
         var content = await actualResponse.Content.ReadAsStringAsync();
         Assert.Contains(expectedErrorMessage, content);
@@ -145,17 +149,20 @@ public class InvokeResponseExtensionsIntegrationTests
     /// correctly replicates this observed behavior, rather than the documented behavior.
     /// </remarks>
     [Theory]
-    [InlineData("{\"name\": \"John Doe\", \"age\":", "{\"name\": \"John Doe\", \"age\":")]  // Invalid JSON (partial object)
-    [InlineData("{\"name\": \"John Doe\", \"age\": 30}", "{\"name\": \"John Doe\", \"age\": 30}")]  // Valid JSON object without statusCode
-    [InlineData("[1, 2, 3, 4, 5]", "[1, 2, 3, 4, 5]")]  // JSON array
-    [InlineData("Hello, World!", "Hello, World!")]  // String primitive
-    [InlineData("42", "42")]  // Number primitive
-    [InlineData("true", "true")]  // Boolean primitive
-    [InlineData("\"test\"", "test")]  // JSON string that should be unescaped
-    [InlineData("\"Hello, World!\"", "Hello, World!")]  // JSON string with spaces
-    [InlineData("\"\"", "")]  // Empty JSON string
-    [InlineData("\"Special \\\"quoted\\\" text\"", "Special \"quoted\" text")]  // JSON string with escaped quotes
-    public async Task ToApiGatewayHttpApiV2ProxyResponse_VariousPayloads_ReturnsAsRawBody(string inputPayload, string expectedResponsePayload)
+    [InlineData("Invalid_JSON_Partial_Object", "{\"name\": \"John Doe\", \"age\":", "{\"name\": \"John Doe\", \"age\":")]  // Invalid JSON (partial object)
+    [InlineData("Valid_JSON_Object", "{\"name\": \"John Doe\", \"age\": 30}", "{\"name\": \"John Doe\", \"age\": 30}")]  // Valid JSON object without statusCode
+    [InlineData("JSON_Array", "[1, 2, 3, 4, 5]", "[1, 2, 3, 4, 5]")]  // JSON array
+    [InlineData("string", "Hello, World!", "Hello, World!")]  // String primitive
+    [InlineData("number", "42", "42")]  // Number primitive
+    [InlineData("boolean", "true", "true")]  // Boolean primitive
+    [InlineData("string_unescaped", "\"test\"", "test")]  // JSON string that should be unescaped
+    [InlineData("string_spaces", "\"Hello, World!\"", "Hello, World!")]  // JSON string with spaces
+    [InlineData("empty_string", "\"\"", "")]  // Empty JSON string
+    [InlineData("json_special", "\"Special \\\"quoted\\\" text\"", "Special \"quoted\" text")]  // JSON string with escaped quotes
+    public async Task ToApiGatewayHttpApiV2ProxyResponse_VariousPayloads_ReturnsAsRawBody(
+        string testName,
+        string inputPayload,
+        string expectedResponsePayload)
     {
         // Arrange
         var invokeResponse = new InvokeResponse
@@ -166,6 +173,8 @@ public class InvokeResponseExtensionsIntegrationTests
         // Act
         var actualConvertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
 
+        var testCaseName =  nameof(ToApiGatewayProxyResponse_ValidResponse_MatchesDirectConversion) + testName;
+
         // Assert
         Assert.Equal(200, actualConvertedResponse.StatusCode);
         Assert.Equal(expectedResponsePayload, actualConvertedResponse.Body);
@@ -174,7 +183,7 @@ public class InvokeResponseExtensionsIntegrationTests
         // Verify against actual API Gateway behavior
         var baseUrl = _fixture.GetAppropriateBaseUrl(ApiGatewayType.HttpV2);
         var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(actualConvertedResponse, url);
+        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(actualConvertedResponse, url, testCaseName);
         await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
 
         // Additional checks for API Gateway specific behavior
@@ -205,7 +214,7 @@ public class InvokeResponseExtensionsIntegrationTests
         // Verify against actual API Gateway behavior
         var baseUrl = _fixture.GetAppropriateBaseUrl(ApiGatewayType.HttpV2);
         var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
-        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, url);
+        var (actualResponse, httpTestResponse) = await _fixture.ApiGatewayTestHelper.ExecuteTestRequest(convertedResponse, url, nameof(ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError));
         await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpTestResponse);
 
         // Additional checks for API Gateway specific behavior

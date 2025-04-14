@@ -1,0 +1,88 @@
+{
+  "Resource": "/test6/api/products/{productName}/reviews/{reviewTitle}",
+  "Path": "/test6/api/products/%E2%98%95%20Coffee/reviews/%F0%9F%98%8A%20Happy",
+  "HttpMethod": "POST",
+  "Headers": {
+    "Content-Length": "0",
+    "Content-Type": "text/plain; charset=utf-8",
+    "Host": "0awrsfc302.execute-api.us-west-2.amazonaws.com",
+    "X-Amzn-Trace-Id": "Root=1-67fd896c-70b58b4501a8b49c5ef26f03",
+    "X-Forwarded-For": "141.149.44.5",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "MultiValueHeaders": {
+    "Content-Length": [
+      "0"
+    ],
+    "Content-Type": [
+      "text/plain; charset=utf-8"
+    ],
+    "Host": [
+      "0awrsfc302.execute-api.us-west-2.amazonaws.com"
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-67fd896c-70b58b4501a8b49c5ef26f03"
+    ],
+    "X-Forwarded-For": [
+      "141.149.44.5"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "QueryStringParameters": null,
+  "MultiValueQueryStringParameters": null,
+  "PathParameters": {
+    "productName": "\u2615 Coffee",
+    "reviewTitle": "\uD83D\uDE0A Happy"
+  },
+  "StageVariables": null,
+  "RequestContext": {
+    "Path": "/test6/api/products/\u2615 Coffee/reviews/\uD83D\uDE0A Happy",
+    "AccountId": "147997163238",
+    "ResourceId": "POST /test6/api/products/{productName}/reviews/{reviewTitle}",
+    "Stage": "$default",
+    "RequestId": "JCJpDi3HPHcESow=",
+    "Identity": {
+      "CognitoIdentityPoolId": null,
+      "AccountId": null,
+      "CognitoIdentityId": null,
+      "Caller": null,
+      "ApiKey": null,
+      "ApiKeyId": null,
+      "AccessKey": null,
+      "SourceIp": "141.149.44.5",
+      "CognitoAuthenticationType": null,
+      "CognitoAuthenticationProvider": null,
+      "UserArn": null,
+      "UserAgent": "",
+      "User": null,
+      "ClientCert": null
+    },
+    "ResourcePath": "/test6/api/products/{productName}/reviews/{reviewTitle}",
+    "HttpMethod": "POST",
+    "ApiId": "0awrsfc302",
+    "ExtendedRequestId": "JCJpDi3HPHcESow=",
+    "ConnectionId": null,
+    "ConnectedAt": 0,
+    "DomainName": "0awrsfc302.execute-api.us-west-2.amazonaws.com",
+    "DomainPrefix": "0awrsfc302",
+    "EventType": null,
+    "MessageId": null,
+    "RouteKey": null,
+    "Authorizer": null,
+    "OperationName": null,
+    "Error": null,
+    "IntegrationLatency": null,
+    "MessageDirection": null,
+    "RequestTime": "14/Apr/2025:22:17:16 \u002B0000",
+    "RequestTimeEpoch": 1744669036726,
+    "Status": null
+  },
+  "Body": null,
+  "IsBase64Encoded": false
+}

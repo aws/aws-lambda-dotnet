@@ -1,0 +1,27 @@
+{
+  "StatusCode": 200,
+  "Content": "{\u0022message\u0022:\u0022With Headers\u0022}",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:10:16 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "Myheader": [
+      "test,shouldhavesecondvalue"
+    ],
+    "Anotherheader": [
+      "secondvalue"
+    ],
+    "Apigw-Requestid": [
+      "JCInYgIKPHcEJbQ="
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "Content-Length": [
+      "26"
+    ]
+  }
+}

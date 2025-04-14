@@ -1,0 +1,37 @@
+{
+  "StatusCode": 200,
+  "Content": "{\u0022message\u0022:\u0022With Multiple Headers\u0022}",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:10:21 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "x-amzn-RequestId": [
+      "60a62529-4157-4038-a796-1c57440bc5f6"
+    ],
+    "anotherheader": [
+      "secondvalue"
+    ],
+    "x-amz-apigw-id": [
+      "JCIoKGHFPHcEaIQ="
+    ],
+    "headername": [
+      "headervalue",
+      "headervalue2"
+    ],
+    "myheader": [
+      "test,other"
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-67fd87cd-619e118449cb17b736abd8bc;Parent=23e83a8204296606;Sampled=0;Lineage=1:6e5eb7d9:0"
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "Content-Length": [
+      "35"
+    ]
+  }
+}

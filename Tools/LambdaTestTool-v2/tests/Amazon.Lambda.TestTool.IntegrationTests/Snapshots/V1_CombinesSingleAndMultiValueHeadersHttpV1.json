@@ -1,0 +1,33 @@
+{
+  "StatusCode": 200,
+  "Content": "{\u0022message\u0022:\u0022With Combined Headers\u0022}",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:10:18 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "X-Custom-Header": [
+      "single-value"
+    ],
+    "Combined-Header": [
+      "single-value",
+      "multi-value1",
+      "multi-value2"
+    ],
+    "X-Multi-Header": [
+      "multi-value1",
+      "multi-value2"
+    ],
+    "Apigw-Requestid": [
+      "JCInwiC6PHcEPqA="
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "Content-Length": [
+      "35"
+    ]
+  }
+}

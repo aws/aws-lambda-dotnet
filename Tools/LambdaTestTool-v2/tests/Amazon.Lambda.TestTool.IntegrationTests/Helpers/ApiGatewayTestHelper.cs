@@ -1,9 +1,11 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Extensions;
+using Amazon.Lambda.TestTool.IntegrationTests.Helpers.snapshot;
 using Amazon.Lambda.TestTool.Models;
 using Microsoft.AspNetCore.Http;
 using Xunit;
@@ -12,29 +14,81 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
 {
     public class ApiGatewayTestHelper
     {
-        private readonly HttpClient _httpClient;
+        private readonly SnapshotTestHelper _snapshots;
 
         public ApiGatewayTestHelper()
         {
-            _httpClient = new HttpClient();
-        }
-        public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(APIGatewayProxyResponse testResponse, string apiUrl, ApiGatewayEmulatorMode emulatorMode)
-        {
-            var httpContext = new DefaultHttpContext();
-            httpContext.Response.Body = new MemoryStream();
-            await testResponse.ToHttpResponseAsync(httpContext, emulatorMode);
-            var serialized = JsonSerializer.Serialize(testResponse);
-            var actualResponse = await _httpClient.PostAsync(apiUrl, new StringContent(serialized), new CancellationTokenSource(5000).Token);
-            return (actualResponse, httpContext.Response);
+            _snapshots = new SnapshotTestHelper(new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Converters = { new HttpResponseMessageConverter() }
+                }
+            );
         }
 
-        public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(APIGatewayHttpApiV2ProxyResponse testResponse, string apiUrl)
+         public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(
+            APIGatewayProxyResponse testResponse,
+            string apiUrl,
+            ApiGatewayEmulatorMode emulatorMode,
+            string testName)
         {
+            // Generate the expected response using ToHttpResponseAsync
+            var testResponseHttpContext = new DefaultHttpContext();
+            testResponseHttpContext.Response.Body = new MemoryStream();
+            await testResponse.ToHttpResponseAsync(testResponseHttpContext, emulatorMode);
+
+            HttpResponseMessage actualResponse;
+            if (_snapshots.IsUpdatingSnapshots)
+            {
+                // When updating snapshots, we need to make the real API call
+                using var httpClient = new HttpClient();
+                var serialized = JsonSerializer.Serialize(testResponse);
+                actualResponse = await httpClient.PostAsync(
+                    apiUrl,
+                    new StringContent(serialized),
+                    new CancellationTokenSource(5000).Token);
+
+                await _snapshots.SaveSnapshot(actualResponse, testName);
+            }
+            else
+            {
+                // Load existing snapshot and verify
+                actualResponse = await _snapshots.LoadSnapshot<HttpResponseMessage>(testName);
+            }
+
+            return (actualResponse, testResponseHttpContext.Response);
+
+        }
+
+        public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(
+             APIGatewayHttpApiV2ProxyResponse testResponse,
+             string apiUrl,
+             string testName)
+        {
+            // Generate the expected response using ToHttpResponseAsync
             var testResponseHttpContext = new DefaultHttpContext();
             testResponseHttpContext.Response.Body = new MemoryStream();
             await testResponse.ToHttpResponseAsync(testResponseHttpContext);
-            var serialized = JsonSerializer.Serialize(testResponse);
-            var actualResponse = await _httpClient.PostAsync(apiUrl, new StringContent(serialized), new CancellationTokenSource(5000).Token);
+
+            HttpResponseMessage actualResponse;
+            if (_snapshots.IsUpdatingSnapshots)
+            {
+                // When updating snapshots, make the real API call
+                using var httpClient = new HttpClient();
+                var serialized = JsonSerializer.Serialize(testResponse);
+                actualResponse = await httpClient.PostAsync(
+                    apiUrl,
+                    new StringContent(serialized),
+                    new CancellationTokenSource(5000).Token);
+
+                await _snapshots.SaveSnapshot(actualResponse, testName);
+            }
+            else
+            {
+                // Load existing snapshot
+                actualResponse = await _snapshots.LoadSnapshot<HttpResponseMessage>(testName);
+            }
+
             return (actualResponse, testResponseHttpContext.Response);
         }
 

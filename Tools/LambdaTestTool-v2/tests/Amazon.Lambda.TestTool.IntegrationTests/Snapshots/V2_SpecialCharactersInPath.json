@@ -1,0 +1,45 @@
+{
+  "Version": "2.0",
+  "RouteKey": "POST /test13/api/users/{username}/orders/{orderName}",
+  "RawPath": "/test13/api/users/**** Doe/orders/Summer Sale 2023",
+  "RawQueryString": "",
+  "Cookies": null,
+  "Headers": {
+    "content-length": "0",
+    "content-type": "text/plain; charset=utf-8",
+    "host": "7y6qzvvbof.execute-api.us-west-2.amazonaws.com",
+    "x-amzn-trace-id": "Root=1-67fd88db-518e8b296009540c739c0ca7",
+    "x-forwarded-for": "141.149.44.5",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "QueryStringParameters": null,
+  "RequestContext": {
+    "AccountId": "147997163238",
+    "ApiId": "7y6qzvvbof",
+    "Authorizer": null,
+    "DomainName": "7y6qzvvbof.execute-api.us-west-2.amazonaws.com",
+    "DomainPrefix": "7y6qzvvbof",
+    "Http": {
+      "Method": "POST",
+      "Path": "/test13/api/users/**** Doe/orders/Summer Sale 2023",
+      "Protocol": "HTTP/1.1",
+      "SourceIp": "141.149.44.5",
+      "UserAgent": ""
+    },
+    "RequestId": "JCJSViW5PHcESow=",
+    "RouteId": null,
+    "RouteKey": "POST /test13/api/users/{username}/orders/{orderName}",
+    "Stage": "$default",
+    "Time": "14/Apr/2025:22:14:51 \u002B0000",
+    "TimeEpoch": 1744668891302,
+    "Authentication": null
+  },
+  "Body": null,
+  "PathParameters": {
+    "orderName": "Summer Sale 2023",
+    "username": "**** Doe"
+  },
+  "IsBase64Encoded": false,
+  "StageVariables": null
+}

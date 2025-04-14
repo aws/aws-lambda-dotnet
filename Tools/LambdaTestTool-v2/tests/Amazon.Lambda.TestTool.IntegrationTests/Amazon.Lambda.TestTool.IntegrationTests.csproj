@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -42,6 +42,10 @@
 
 	<ItemGroup>
 		<EmbeddedResource Include="cloudformation-template-apigateway.yaml" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Snapshots\" />
 	</ItemGroup>
 
 </Project>

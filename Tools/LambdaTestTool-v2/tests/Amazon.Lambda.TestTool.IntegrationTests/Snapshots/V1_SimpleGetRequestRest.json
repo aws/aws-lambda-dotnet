@@ -1,0 +1,106 @@
+{
+  "Resource": "/test1/api/users/{userId}/orders",
+  "Path": "/test1/api/users/123/orders",
+  "HttpMethod": "POST",
+  "Headers": {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cookie": "session=abc123; theme=dark",
+    "Host": "s902u1zkkl.execute-api.us-west-2.amazonaws.com",
+    "User-Agent": "TestAgent",
+    "X-Amzn-Trace-Id": "Root=1-67fd87f5-7643e6a875203f06341af04f",
+    "X-Custom-Header": "value1",
+    "X-Forwarded-For": "141.149.44.5",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "MultiValueHeaders": {
+    "Content-Type": [
+      "text/plain; charset=utf-8"
+    ],
+    "Cookie": [
+      "session=abc123; theme=dark"
+    ],
+    "Host": [
+      "s902u1zkkl.execute-api.us-west-2.amazonaws.com"
+    ],
+    "User-Agent": [
+      "TestAgent"
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-67fd87f5-7643e6a875203f06341af04f"
+    ],
+    "X-Custom-Header": [
+      "value1"
+    ],
+    "X-Forwarded-For": [
+      "141.149.44.5"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "QueryStringParameters": {
+    "status": "pending",
+    "tag": "urgent"
+  },
+  "MultiValueQueryStringParameters": {
+    "status": [
+      "pending"
+    ],
+    "tag": [
+      "important",
+      "urgent"
+    ]
+  },
+  "PathParameters": {
+    "userId": "123"
+  },
+  "StageVariables": null,
+  "RequestContext": {
+    "Path": "/test/test1/api/users/123/orders",
+    "AccountId": "147997163238",
+    "ResourceId": "06oou2",
+    "Stage": "test",
+    "RequestId": "4acd49e9-9210-4d04-8e04-0f26a4e92537",
+    "Identity": {
+      "CognitoIdentityPoolId": null,
+      "AccountId": null,
+      "CognitoIdentityId": null,
+      "Caller": null,
+      "ApiKey": null,
+      "ApiKeyId": null,
+      "AccessKey": null,
+      "SourceIp": "141.149.44.5",
+      "CognitoAuthenticationType": null,
+      "CognitoAuthenticationProvider": null,
+      "UserArn": null,
+      "UserAgent": "TestAgent",
+      "User": null,
+      "ClientCert": null
+    },
+    "ResourcePath": "/test1/api/users/{userId}/orders",
+    "HttpMethod": "POST",
+    "ApiId": "s902u1zkkl",
+    "ExtendedRequestId": "JCIudEUfPHcEhog=",
+    "ConnectionId": null,
+    "ConnectedAt": 0,
+    "DomainName": "s902u1zkkl.execute-api.us-west-2.amazonaws.com",
+    "DomainPrefix": "s902u1zkkl",
+    "EventType": null,
+    "MessageId": null,
+    "RouteKey": null,
+    "Authorizer": null,
+    "OperationName": null,
+    "Error": null,
+    "IntegrationLatency": null,
+    "MessageDirection": null,
+    "RequestTime": "14/Apr/2025:22:11:01 \u002B0000",
+    "RequestTimeEpoch": 1744668661718,
+    "Status": null
+  },
+  "Body": null,
+  "IsBase64Encoded": false
+}

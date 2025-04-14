@@ -1,0 +1,83 @@
+{
+  "Resource": "/test4/api/users/{userId}/avatar",
+  "Path": "/test4/api/users/123/avatar",
+  "HttpMethod": "POST",
+  "Headers": {
+    "Content-Type": "application/octet-stream",
+    "Host": "4brwn090q0.execute-api.us-west-2.amazonaws.com",
+    "X-Amzn-Trace-Id": "Root=1-67fd8927-4b9cc8347ead8aa60c674ac2",
+    "X-Forwarded-For": "141.149.44.5",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "MultiValueHeaders": {
+    "Content-Type": [
+      "application/octet-stream"
+    ],
+    "Host": [
+      "4brwn090q0.execute-api.us-west-2.amazonaws.com"
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-67fd8927-4b9cc8347ead8aa60c674ac2"
+    ],
+    "X-Forwarded-For": [
+      "141.149.44.5"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "QueryStringParameters": null,
+  "MultiValueQueryStringParameters": null,
+  "PathParameters": {
+    "userId": "123"
+  },
+  "StageVariables": null,
+  "RequestContext": {
+    "Path": "/test/test4/api/users/123/avatar",
+    "AccountId": "147997163238",
+    "ResourceId": "rz18ez",
+    "Stage": "test",
+    "RequestId": "7a1ab4cd-edd9-4437-86d3-7978341c597d",
+    "Identity": {
+      "CognitoIdentityPoolId": null,
+      "AccountId": null,
+      "CognitoIdentityId": null,
+      "Caller": null,
+      "ApiKey": null,
+      "ApiKeyId": null,
+      "AccessKey": null,
+      "SourceIp": "141.149.44.5",
+      "CognitoAuthenticationType": null,
+      "CognitoAuthenticationProvider": null,
+      "UserArn": null,
+      "UserAgent": null,
+      "User": null,
+      "ClientCert": null
+    },
+    "ResourcePath": "/test4/api/users/{userId}/avatar",
+    "HttpMethod": "POST",
+    "ApiId": "4brwn090q0",
+    "ExtendedRequestId": "JCJePHSSPHcEtwQ=",
+    "ConnectionId": null,
+    "ConnectedAt": 0,
+    "DomainName": "4brwn090q0.execute-api.us-west-2.amazonaws.com",
+    "DomainPrefix": "4brwn090q0",
+    "EventType": null,
+    "MessageId": null,
+    "RouteKey": null,
+    "Authorizer": null,
+    "OperationName": null,
+    "Error": null,
+    "IntegrationLatency": null,
+    "MessageDirection": null,
+    "RequestTime": "14/Apr/2025:22:16:07 \u002B0000",
+    "RequestTimeEpoch": 1744668967561,
+    "Status": null
+  },
+  "Body": "AQIDBAU=",
+  "IsBase64Encoded": true
+}

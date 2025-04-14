@@ -7,6 +7,7 @@ using System.Text.Json;
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
 using System.Text;
+using Amazon.Lambda.TestTool.IntegrationTests.Helpers.snapshot;
 using Xunit;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests
@@ -16,11 +17,19 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
     {
         private readonly ApiGatewayIntegrationTestFixture _fixture;
         private readonly HttpClient _httpClient;
+        private readonly SnapshotTestHelper _snapshots;
+
 
         public ApiGatewayResponseExtensionsAdditionalTests(ApiGatewayIntegrationTestFixture fixture)
         {
             _fixture = fixture;
             _httpClient = new HttpClient();
+            _snapshots = new SnapshotTestHelper(new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Converters = { new HttpResponseMessageConverter() }
+                }
+            );
         }
 
         [Fact]
@@ -36,14 +45,27 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
             var httpContext = new DefaultHttpContext();
             httpContext.Response.Body = new MemoryStream();
             await testResponse.ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.Rest);
-            
-            var baseUrl = _fixture.GetAppropriateBaseUrl(ApiGatewayType.RestWithBinarySupport);
-            var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.DecodeParseBinary);
-            var actualResponse = await _httpClient.PostAsync(url, new StringContent(JsonSerializer.Serialize(testResponse)), new CancellationTokenSource(5000).Token);
-            await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpContext.Response);
-            Assert.Equal(200, (int)actualResponse.StatusCode);
-            var content = await actualResponse.Content.ReadAsStringAsync();
-            Assert.Equal("test", content);
+
+            if (_snapshots.IsUpdatingSnapshots)
+            {
+                var baseUrl = _fixture.GetAppropriateBaseUrl(ApiGatewayType.RestWithBinarySupport);
+                var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.DecodeParseBinary);
+                var actualResponse = await _httpClient.PostAsync(
+                    url,
+                    new StringContent(JsonSerializer.Serialize(testResponse)),
+                    new CancellationTokenSource(5000).Token);
+
+                await _snapshots.SaveSnapshot(actualResponse, nameof(ToHttpResponse_RestAPIGatewayV1DecodesBase64));
+            }
+            else
+            {
+                var snapshot = await _snapshots.LoadSnapshot<HttpResponseMessage>(
+                    nameof(ToHttpResponse_RestAPIGatewayV1DecodesBase64));
+
+                Assert.Equal(200, (int)snapshot.StatusCode);
+                var content = await snapshot.Content.ReadAsStringAsync();
+                Assert.Equal("test", content);
+            }
         }
 
         [Fact]
@@ -56,18 +78,27 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 IsBase64Encoded = true
             };
 
-            var httpContext = new DefaultHttpContext();
-            httpContext.Response.Body = new MemoryStream();
-            await testResponse.ToHttpResponseAsync(httpContext, ApiGatewayEmulatorMode.HttpV1);
-            
             var baseUrl = _fixture.GetAppropriateBaseUrl(ApiGatewayType.HttpV1);
             var url = _fixture.GetRouteUrl(baseUrl, TestRoutes.Ids.ParseAndReturnBody);
-            var actualResponse = await _httpClient.PostAsync(url, new StringContent(JsonSerializer.Serialize(testResponse)), new CancellationTokenSource(5000).Token);
 
-            await _fixture.ApiGatewayTestHelper.AssertResponsesEqual(actualResponse, httpContext.Response);
-            Assert.Equal(200, (int)actualResponse.StatusCode);
-            var content = await actualResponse.Content.ReadAsStringAsync();
-            Assert.Equal("test", content);
+            if (_snapshots.IsUpdatingSnapshots)
+            {
+                var actualResponse = await _httpClient.PostAsync(
+                    url,
+                    new StringContent(JsonSerializer.Serialize(testResponse)),
+                    new CancellationTokenSource(5000).Token);
+
+                await _snapshots.SaveSnapshot(actualResponse, nameof(ToHttpResponse_HttpV1APIGatewayV1DecodesBase64));
+            }
+            else
+            {
+                var snapshot = await _snapshots.LoadSnapshot<HttpResponseMessage>(
+                    nameof(ToHttpResponse_HttpV1APIGatewayV1DecodesBase64));
+
+                Assert.Equal(200, (int)snapshot.StatusCode);
+                var content = await snapshot.Content.ReadAsStringAsync();
+                Assert.Equal("test", content);
+            }
         }
     }
 }

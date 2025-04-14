@@ -14,7 +14,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
     public class ApiGatewayIntegrationTestFixture : IAsyncLifetime
     {
         private readonly Dictionary<string, TestRouteConfig> _testRoutes;
-        
+
         public CloudFormationHelper CloudFormationHelper { get; private set; }
         public ApiGatewayHelper ApiGatewayHelper { get; private set; }
         public ApiGatewayTestHelper ApiGatewayTestHelper { get; private set; }
@@ -137,7 +137,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests
                 _ => throw new ArgumentException($"Unsupported gateway type: {gatewayType}")
             };
         }
-        
+
 
         public async Task InitializeAsync()
         {
