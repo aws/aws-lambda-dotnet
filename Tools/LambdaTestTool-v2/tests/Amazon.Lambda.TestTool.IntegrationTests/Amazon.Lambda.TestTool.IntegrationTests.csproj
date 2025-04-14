@@ -41,10 +41,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="cloudformation-template-apigateway.yaml" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <Folder Include="Snapshots\" />
 	</ItemGroup>
 

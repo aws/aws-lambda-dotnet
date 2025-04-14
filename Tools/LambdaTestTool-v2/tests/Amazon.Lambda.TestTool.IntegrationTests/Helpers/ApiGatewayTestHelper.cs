@@ -1,7 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Extensions;
@@ -28,7 +27,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
 
          public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(
             APIGatewayProxyResponse testResponse,
-            string apiUrl,
             ApiGatewayEmulatorMode emulatorMode,
             string testName)
         {
@@ -38,23 +36,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             await testResponse.ToHttpResponseAsync(testResponseHttpContext, emulatorMode);
 
             HttpResponseMessage actualResponse;
-            if (_snapshots.IsUpdatingSnapshots)
-            {
-                // When updating snapshots, we need to make the real API call
-                using var httpClient = new HttpClient();
-                var serialized = JsonSerializer.Serialize(testResponse);
-                actualResponse = await httpClient.PostAsync(
-                    apiUrl,
-                    new StringContent(serialized),
-                    new CancellationTokenSource(5000).Token);
-
-                await _snapshots.SaveSnapshot(actualResponse, testName);
-            }
-            else
-            {
-                // Load existing snapshot and verify
-                actualResponse = await _snapshots.LoadSnapshot<HttpResponseMessage>(testName);
-            }
+            actualResponse = await _snapshots.LoadSnapshot<HttpResponseMessage>(testName);
 
             return (actualResponse, testResponseHttpContext.Response);
 
@@ -62,7 +44,6 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
 
         public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(
              APIGatewayHttpApiV2ProxyResponse testResponse,
-             string apiUrl,
              string testName)
         {
             // Generate the expected response using ToHttpResponseAsync
@@ -71,23 +52,7 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
             await testResponse.ToHttpResponseAsync(testResponseHttpContext);
 
             HttpResponseMessage actualResponse;
-            if (_snapshots.IsUpdatingSnapshots)
-            {
-                // When updating snapshots, make the real API call
-                using var httpClient = new HttpClient();
-                var serialized = JsonSerializer.Serialize(testResponse);
-                actualResponse = await httpClient.PostAsync(
-                    apiUrl,
-                    new StringContent(serialized),
-                    new CancellationTokenSource(5000).Token);
-
-                await _snapshots.SaveSnapshot(actualResponse, testName);
-            }
-            else
-            {
-                // Load existing snapshot
-                actualResponse = await _snapshots.LoadSnapshot<HttpResponseMessage>(testName);
-            }
+            actualResponse = await _snapshots.LoadSnapshot<HttpResponseMessage>(testName);
 
             return (actualResponse, testResponseHttpContext.Response);
         }

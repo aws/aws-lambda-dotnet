@@ -8,7 +8,6 @@ public class SnapshotTestHelper
 {
     private readonly string _snapshotDirectory;
     private readonly JsonSerializerOptions _serializerOptions;
-    public bool IsUpdatingSnapshots => true;
 
     public SnapshotTestHelper(JsonSerializerOptions? serializerOptions = null, string snapshotDirectory = "Snapshots")
     {
