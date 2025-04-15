@@ -26,12 +26,6 @@ public static class ApiGatewayResponseTestCases
                     Body = JsonSerializer.Serialize(new { message = "Hello, World!" }),
                     Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
                 },
-                Assertions = (response, emulatormode) =>
-                {
-                    Assert.Equal(200, response.StatusCode);
-                    Assert.Equal("application/json", response.ContentType);
-                    Assert.Equal("{\"message\":\"Hello, World!\"}", ReadResponseBody(response));
-                },
             }
         };
 
@@ -44,10 +38,6 @@ public static class ApiGatewayResponseTestCases
                 {
                     StatusCode = 201,
                     Body = "{\"message\":\"Created\"}"
-                },
-                Assertions = (response, emulatormode) =>
-                {
-                    Assert.Equal(201, response.StatusCode);
                 },
             }
         };
@@ -67,11 +57,6 @@ public static class ApiGatewayResponseTestCases
                     },
                     Body = "{\"message\":\"With Headers\"}"
                 },
-                Assertions = (response, emulatormode) =>
-                {
-                    Assert.Equal("application/json", response.Headers["Content-Type"]);
-                    Assert.Equal("CustomValue", response.Headers["X-Custom-Header"]);
-                },
             }
         };
 
@@ -89,10 +74,6 @@ public static class ApiGatewayResponseTestCases
                     },
                     Body = "{\"message\":\"With MultiValueHeaders\"}"
                 },
-                Assertions = (response, emulatormode) =>
-                {
-                    Assert.Equal(new[] { "Value1", "Value2" }, response.Headers["X-Multi-Header"]);
-                },
             }
         };
 
@@ -107,10 +88,6 @@ public static class ApiGatewayResponseTestCases
                     Body = "{\"message\":\"Hello, World!\"}",
                     IsBase64Encoded = false
                 },
-                Assertions = (response, emulatormode) =>
-                {
-                    Assert.Equal("{\"message\":\"Hello, World!\"}", ReadResponseBody(response));
-                },
             }
         };
 
@@ -123,16 +100,6 @@ public static class ApiGatewayResponseTestCases
                 {
                     StatusCode = 200,
                     Body = "Hello, World!"
-                },
-                Assertions = (response, emulatorMode) =>
-                {
-                    if (emulatorMode == ApiGatewayEmulatorMode.HttpV1)
-                    {
-                        Assert.Equal("text/plain; charset=utf-8", response.ContentType);
-                    } else
-                    {
-                        Assert.Equal("application/json", response.ContentType);
-                    }
                 },
             }
         };
@@ -158,13 +125,6 @@ public static class ApiGatewayResponseTestCases
                     StatusCode = 200
 
                 },
-                Assertions = (response, emulatormode) =>
-                {
-                    Assert.Equal("application/json", response.Headers["Content-Type"]);
-                    Assert.Equal("test,other", response.Headers["myheader"]);
-                    Assert.Equal("secondvalue", response.Headers["anotherheader"]);
-                    Assert.Equal(new[] { "headervalue", "headervalue2" }, response.Headers["headername"]);
-                },
             }
         };
 
@@ -189,13 +149,6 @@ public static class ApiGatewayResponseTestCases
                     Body = "{\"message\":\"With Combined Headers\"}",
                     StatusCode = 200
                 },
-                Assertions = (response, emulatormode) =>
-                {
-                    Assert.Equal("application/json", response.Headers["Content-Type"]);
-                    Assert.Equal("single-value", response.Headers["X-Custom-Header"]);
-                    Assert.Equal(new[] { "multi-value1", "multi-value2" }, response.Headers["X-Multi-Header"]);
-                    Assert.Equal(new[] { "multi-value1", "multi-value2", "single-value" }, response.Headers["Combined-Header"]);
-                },
             }
         };
 
@@ -210,10 +163,6 @@ public static class ApiGatewayResponseTestCases
                     IsBase64Encoded = false,
                     StatusCode = 200
                 },
-                Assertions = (response, emulatorMode) =>
-                {
-                    Assert.Equal("{\"message\":\"Hello, World!\"}".Length, response.ContentLength);
-                },
             }
         };
 
@@ -227,28 +176,6 @@ public static class ApiGatewayResponseTestCases
                     StatusCode = 0,
                     Body = "{\"key\":\"This body should be replaced\"}"
                 },
-                Assertions = (response, emulatorMode) =>
-                {
-                    string error;
-                    int contentLength;
-                    int statusCode;
-                    if (emulatorMode == ApiGatewayEmulatorMode.Rest)
-                    {
-                        error = " \"Internal server error\"}";
-                        contentLength = 36;
-                        statusCode = 502;
-                    }
-                    else
-                    {
-                        error = "\"Internal Server Error\"}";
-                        contentLength = 35;
-                        statusCode = 500;
-                    }
-                    Assert.Equal(statusCode, response.StatusCode);
-                    Assert.Equal("application/json", response.ContentType);
-                    Assert.Equal("{\"message\":"+error, ReadResponseBody(response));
-                    Assert.Equal(contentLength, response.ContentLength);
-                }
             }
         };
 
@@ -266,10 +193,6 @@ public static class ApiGatewayResponseTestCases
                         { "Content-Type", "application/json" }
                     }
                 },
-                Assertions = (response, emulatormode) =>
-                {
-                    Assert.Equal("application/json", response.ContentType);
-                },
             }
         };
         yield return new object[]
@@ -281,26 +204,6 @@ public static class ApiGatewayResponseTestCases
                 {
                     StatusCode = 200,
                     Body = "Test body"
-                },
-                Assertions = (response, emulatorMode) =>
-                {
-                    Assert.True(response.Headers.ContainsKey("Date"));
-
-                    if (emulatorMode == ApiGatewayEmulatorMode.Rest)
-                    {
-                        Assert.True(response.Headers.ContainsKey("x-amzn-RequestId"));
-                        Assert.True(response.Headers.ContainsKey("x-amz-apigw-id"));
-                        Assert.True(response.Headers.ContainsKey("X-Amzn-Trace-Id"));
-
-                        Assert.Matches(@"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", response.Headers["x-amzn-RequestId"]);
-                        Assert.Matches(@"^[A-Za-z0-9_\-]{15}=$", response.Headers["x-amz-apigw-id"]);
-                        Assert.Matches(@"^Root=1-[0-9a-f]{8}-[0-9a-f]{24};Parent=[0-9a-f]{16};Sampled=0;Lineage=1:[0-9a-f]{8}:0$", response.Headers["X-Amzn-Trace-Id"]);
-                    }
-                    else // HttpV1 or HttpV2
-                    {
-                        Assert.True(response.Headers.ContainsKey("Apigw-Requestid"));
-                        Assert.Matches(@"^[A-Za-z0-9_\-]{15}=$", response.Headers["Apigw-Requestid"]);
-                    }
                 },
             }
         };
@@ -321,12 +224,6 @@ public static class ApiGatewayResponseTestCases
                     Body = JsonSerializer.Serialize(new { message = "Hello, World!" }),
                     Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
                 },
-                Assertions = (response, emulatorMode) =>
-                {
-                    Assert.Equal(200, response.StatusCode);
-                    Assert.Equal("application/json", response.ContentType);
-                    Assert.Equal("{\"message\":\"Hello, World!\"}", ReadResponseBody(response));
-                },
             }
         };
 
@@ -340,10 +237,6 @@ public static class ApiGatewayResponseTestCases
                     StatusCode = 201,
                     Body = "{\"message\":\"Created\"}"
                 },
-                Assertions = (response, emulatorMode) =>
-                {
-                    Assert.Equal(201, response.StatusCode);
-                },
             }
         };
 
@@ -356,19 +249,6 @@ public static class ApiGatewayResponseTestCases
                 {
                     StatusCode = 0,
                     Body = "{\"key\":\"This body should be replaced\"}"
-                },
-                Assertions = (response, emulatorMode) =>
-                {
-                    string error;
-                    int contentLength;
-                    int statusCode;
-                    error = "\"Internal Server Error\"}";
-                    contentLength = 35;
-                    statusCode = 500;
-                    Assert.Equal(statusCode, response.StatusCode);
-                    Assert.Equal("application/json", response.ContentType);
-                    Assert.Equal("{\"message\":"+error, ReadResponseBody(response));
-                    Assert.Equal(contentLength, response.ContentLength);
                 },
             }
         };
@@ -388,11 +268,6 @@ public static class ApiGatewayResponseTestCases
                     },
                     Body = "{\"message\":\"With Headers\"}"
                 },
-                Assertions = (response, emulatorMode) =>
-                {
-                    Assert.Equal("application/json", response.Headers["Content-Type"]);
-                    Assert.Equal("CustomValue", response.Headers["X-Custom-Header"]);
-                },
             }
         };
 
@@ -406,10 +281,6 @@ public static class ApiGatewayResponseTestCases
                     StatusCode = 200,
                     Body = "{\"message\":\"Hello, API Gateway v2!\"}",
                     IsBase64Encoded = false
-                },
-                Assertions = (response, emulatorMode) =>
-                {
-                    Assert.Equal("{\"message\":\"Hello, API Gateway v2!\"}", ReadResponseBody(response));
                 },
             }
         };
@@ -425,10 +296,6 @@ public static class ApiGatewayResponseTestCases
                     Body = Convert.ToBase64String(Encoding.UTF8.GetBytes("{\"message\":\"Hello, API Gateway v2!\"}")),
                     IsBase64Encoded = true
                 },
-                Assertions = (response, emulatormode) =>
-                {
-                    Assert.Equal("{\"message\":\"Hello, API Gateway v2!\"}", ReadResponseBody(response));
-                },
             }
         };
 
@@ -441,10 +308,6 @@ public static class ApiGatewayResponseTestCases
                 {
                     StatusCode = 200,
                     Body = "Hello, World!"
-                },
-                Assertions = (response, emulatorMode) =>
-                {
-                    Assert.Equal("text/plain; charset=utf-8", response.ContentType);
                 },
             }
         };
@@ -465,12 +328,6 @@ public static class ApiGatewayResponseTestCases
                     },
                     Body = "{\"message\":\"With Headers\"}"
                 },
-                Assertions = (response, emulatorMode) =>
-                {
-                    Assert.Equal("application/json", response.Headers["Content-Type"]);
-                    Assert.Equal("test,shouldhavesecondvalue", response.Headers["myheader"]);
-                    Assert.Equal("secondvalue", response.Headers["anotherheader"]);
-                },
             }
         };
 
@@ -488,12 +345,6 @@ public static class ApiGatewayResponseTestCases
                         { "Content-Type", "application/xml" }
                     }
                 },
-                Assertions = (response, emulatorMode) =>
-                {
-                    Assert.Equal(201, response.StatusCode);
-                    Assert.Equal("application/xml", response.ContentType);
-                    Assert.Equal("{\"key\":\"value\"}", ReadResponseBody(response));
-                },
             }
         };
 
@@ -507,28 +358,13 @@ public static class ApiGatewayResponseTestCases
                     StatusCode = 200,
                     Body = "Test body"
                 },
-                Assertions = (response, emulatorMode) =>
-                {
-                    Assert.True(response.Headers.ContainsKey("Date"));
-                    Assert.True(response.Headers.ContainsKey("Apigw-Requestid"));
-
-                    Assert.Matches(@"^[A-Za-z0-9_\-]{15}=$", response.Headers["Apigw-Requestid"]);
-                },
             }
         };
 
     }
 
-    private static string ReadResponseBody(HttpResponse response)
-    {
-        response.Body.Seek(0, SeekOrigin.Begin);
-        using var reader = new StreamReader(response.Body);
-        return reader.ReadToEnd();
-    }
-
     public class ApiGatewayResponseTestCase
     {
         public required object Response { get; set; }
-        public required Action<HttpResponse, ApiGatewayEmulatorMode> Assertions { get; set; }
     }
 }

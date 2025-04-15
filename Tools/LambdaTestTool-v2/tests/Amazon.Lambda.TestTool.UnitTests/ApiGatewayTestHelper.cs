@@ -23,8 +23,7 @@ namespace Amazon.Lambda.TestTool.UnitTests
         public async Task VerifyApiGatewayResponseAsync(
             APIGatewayProxyResponse response,
             ApiGatewayEmulatorMode emulatorMode,
-            string snapshotName,
-            Action<HttpResponse>? additionalAssertions = null)
+            string snapshotName)
         {
             // Convert response to HttpResponse (simulates what API Gateway would do)
             var convertedResponse = await ConvertToHttpResponseAsync(response, emulatorMode);
@@ -34,15 +33,11 @@ namespace Amazon.Lambda.TestTool.UnitTests
 
             // Compare the responses
             await AssertResponsesEqual(expectedResponse, convertedResponse);
-
-            // Run any additional assertions
-            additionalAssertions?.Invoke(convertedResponse);
         }
 
         public async Task VerifyHttpApiV2ResponseAsync(
             APIGatewayHttpApiV2ProxyResponse response,
-            string snapshotName,
-            Action<HttpResponse>? additionalAssertions = null)
+            string snapshotName)
         {
             // Convert response to HttpResponse (simulates what API Gateway would do)
             var convertedResponse = await ConvertToHttpResponseAsync(response);
@@ -52,9 +47,6 @@ namespace Amazon.Lambda.TestTool.UnitTests
 
             // Compare the responses
             await AssertResponsesEqual(expectedResponse, convertedResponse);
-
-            // Run any additional assertions
-            additionalAssertions?.Invoke(convertedResponse);
         }
 
         private async Task<HttpResponse> ConvertToHttpResponseAsync(

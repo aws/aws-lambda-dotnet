@@ -35,11 +35,7 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
         {
             var testResponse = testCase.Response as APIGatewayHttpApiV2ProxyResponse;
             Assert.NotNull(testResponse);
-            await _helper.VerifyHttpApiV2ResponseAsync(testResponse, testName,
-                 response =>
-                {
-                    testCase.Assertions(response, ApiGatewayEmulatorMode.HttpV2);
-                });
+            await _helper.VerifyHttpApiV2ResponseAsync(testResponse, testName);
         }
 
         [Fact]
@@ -89,11 +85,7 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
             var testResponse = testCase.Response as APIGatewayProxyResponse;
             Assert.NotNull(testResponse);
             var testCaseName = testName + emulatorMode;
-            await _helper.VerifyApiGatewayResponseAsync(testResponse, emulatorMode, testCaseName,
-                 httpResponse =>
-                {
-                    testCase.Assertions(httpResponse, emulatorMode);
-                });
+            await _helper.VerifyApiGatewayResponseAsync(testResponse, emulatorMode, testCaseName);
 
         }
     }

@@ -97,15 +97,7 @@ public class InvokeResponseExtensionsTests
         await _helper.VerifyApiGatewayResponseAsync(
             convertedResponse,
             emulatorMode,
-            testName,
-            async httpResponse =>
-            {
-                Assert.Equal(expectedStatusCode, httpResponse.StatusCode);
-
-                httpResponse.Body.Seek(0, SeekOrigin.Begin);
-                var content = await new StreamReader(httpResponse.Body).ReadToEndAsync();
-                Assert.Contains(expectedErrorMessage, content);
-            });
+            testName);
     }
 
     /// <summary>
@@ -166,18 +158,7 @@ public class InvokeResponseExtensionsTests
 
         await _helper.VerifyHttpApiV2ResponseAsync(
             actualConvertedResponse,
-            testCaseName,
-            async httpResponse =>
-            {
-                // Additional checks for API Gateway specific behavior
-                Assert.Equal(200, httpResponse.StatusCode);
-
-                httpResponse.Body.Seek(0, SeekOrigin.Begin);
-                var content = await new StreamReader(httpResponse.Body).ReadToEndAsync();
-                Assert.Equal(expectedResponsePayload, content);
-
-                Assert.Equal("application/json", httpResponse.Headers["Content-Type"]);
-            });
+            testCaseName);
     }
 
     [Fact]
@@ -200,18 +181,7 @@ public class InvokeResponseExtensionsTests
 
         await _helper.VerifyHttpApiV2ResponseAsync(
             convertedResponse,
-            nameof(ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError),
-            async httpResponse =>
-            {
-                // Additional checks for API Gateway specific behavior
-                Assert.Equal(500, httpResponse.StatusCode);
-
-                httpResponse.Body.Seek(0, SeekOrigin.Begin);
-                var content = await new StreamReader(httpResponse.Body).ReadToEndAsync();
-                Assert.Equal("{\"message\":\"Internal Server Error\"}", content);
-
-                Assert.Equal("application/json", httpResponse.Headers["Content-Type"]);
-            });
+            nameof(ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError));
     }
 
     [Theory]
