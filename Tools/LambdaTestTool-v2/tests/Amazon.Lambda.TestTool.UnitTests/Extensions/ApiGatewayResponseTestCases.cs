@@ -4,9 +4,6 @@
 using System.Text;
 using System.Text.Json;
 using Amazon.Lambda.APIGatewayEvents;
-using Amazon.Lambda.TestTool.Models;
-using Microsoft.AspNetCore.Http;
-using Xunit;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Extensions;
 

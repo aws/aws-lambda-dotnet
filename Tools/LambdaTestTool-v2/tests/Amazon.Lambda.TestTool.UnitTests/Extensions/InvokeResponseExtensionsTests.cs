@@ -68,10 +68,10 @@ public class InvokeResponseExtensionsTests
         };
 
         // Act
-        var convertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+        var apiGatewayHttpApiV2ProxyResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
 
         // Assert
-        await _helper.VerifyHttpApiV2ResponseAsync(convertedResponse, nameof(ToApiGatewayHttpApiV2ProxyResponse_ValidResponse_MatchesDirectConversion));
+        await _helper.VerifyHttpApiV2ResponseAsync(apiGatewayHttpApiV2ProxyResponse, nameof(ToApiGatewayHttpApiV2ProxyResponse_ValidResponse_MatchesDirectConversion));
     }
 
     [Theory]
@@ -86,16 +86,16 @@ public class InvokeResponseExtensionsTests
         };
 
         // Act
-        var convertedResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
+        var apiGatewayProxyResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
 
         var testName = nameof(ToApiGatewayProxyResponse_InvalidJson_ReturnsErrorResponse) + emulatorMode;
 
         // Assert
-        Assert.Equal(expectedStatusCode, convertedResponse.StatusCode);
-        Assert.Contains(expectedErrorMessage, convertedResponse.Body);
+        Assert.Equal(expectedStatusCode, apiGatewayProxyResponse.StatusCode);
+        Assert.Contains(expectedErrorMessage, apiGatewayProxyResponse.Body);
 
         await _helper.VerifyApiGatewayResponseAsync(
-            convertedResponse,
+            apiGatewayProxyResponse,
             emulatorMode,
             testName);
     }
@@ -147,17 +147,17 @@ public class InvokeResponseExtensionsTests
         };
 
         // Act
-        var actualConvertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+        var apiGatewayHttpApiV2ProxyResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
 
         var testCaseName =  nameof(ToApiGatewayProxyResponse_ValidResponse_MatchesDirectConversion) + testName;
 
         // Assert
-        Assert.Equal(200, actualConvertedResponse.StatusCode);
-        Assert.Equal(expectedResponsePayload, actualConvertedResponse.Body);
-        Assert.Equal("application/json", actualConvertedResponse.Headers["Content-Type"]);
+        Assert.Equal(200, apiGatewayHttpApiV2ProxyResponse.StatusCode);
+        Assert.Equal(expectedResponsePayload, apiGatewayHttpApiV2ProxyResponse.Body);
+        Assert.Equal("application/json", apiGatewayHttpApiV2ProxyResponse.Headers["Content-Type"]);
 
         await _helper.VerifyHttpApiV2ResponseAsync(
-            actualConvertedResponse,
+            apiGatewayHttpApiV2ProxyResponse,
             testCaseName);
     }
 
@@ -172,15 +172,15 @@ public class InvokeResponseExtensionsTests
         };
 
         // Act
-        var convertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+        var apiGatewayHttpApiV2ProxyResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
 
         // Assert
-        Assert.Equal(500, convertedResponse.StatusCode);
-        Assert.Equal("{\"message\":\"Internal Server Error\"}", convertedResponse.Body);
-        Assert.Equal("application/json", convertedResponse.Headers["Content-Type"]);
+        Assert.Equal(500, apiGatewayHttpApiV2ProxyResponse.StatusCode);
+        Assert.Equal("{\"message\":\"Internal Server Error\"}", apiGatewayHttpApiV2ProxyResponse.Body);
+        Assert.Equal("application/json", apiGatewayHttpApiV2ProxyResponse.Headers["Content-Type"]);
 
         await _helper.VerifyHttpApiV2ResponseAsync(
-            convertedResponse,
+            apiGatewayHttpApiV2ProxyResponse,
             nameof(ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError));
     }
 
