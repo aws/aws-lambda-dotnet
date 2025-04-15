@@ -69,7 +69,11 @@ namespace Amazon.Lambda.TestTool.Runtime
                     info.Name = functionHandler;
                 }
 
-                if(configFile.EnvironmentVariables != null)
+                info.Timeout = configFile.FunctionTimeOut.HasValue 
+                    ? TimeSpan.FromSeconds(configFile.FunctionTimeOut.Value)
+                    : TimeSpan.FromMinutes(15);
+
+                if (configFile.EnvironmentVariables != null)
                 {
                     ParseKeyValueOption(configFile.EnvironmentVariables, info.EnvironmentVariables);
                 }
