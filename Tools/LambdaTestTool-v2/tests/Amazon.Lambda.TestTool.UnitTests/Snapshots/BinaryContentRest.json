@@ -4,9 +4,9 @@
   "HttpMethod": "POST",
   "Headers": {
     "Content-Type": "application/octet-stream",
-    "Host": "4brwn090q0.execute-api.us-west-2.amazonaws.com",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
     "X-Amzn-Trace-Id": "Root=1-67fd8927-4b9cc8347ead8aa60c674ac2",
-    "X-Forwarded-For": "141.149.44.5",
+    "X-Forwarded-For": "IP_ADDRESS",
     "X-Forwarded-Port": "443",
     "X-Forwarded-Proto": "https"
   },
@@ -14,15 +14,11 @@
     "Content-Type": [
       "application/octet-stream"
     ],
-    "Host": [
-      "4brwn090q0.execute-api.us-west-2.amazonaws.com"
-    ],
+    "Host": ["EXAMPLE.execute-api.REGION.amazonaws.com"],
     "X-Amzn-Trace-Id": [
       "Root=1-67fd8927-4b9cc8347ead8aa60c674ac2"
     ],
-    "X-Forwarded-For": [
-      "141.149.44.5"
-    ],
+    "X-Forwarded-For": ["IP_ADDRESS"],
     "X-Forwarded-Port": [
       "443"
     ],
@@ -38,8 +34,8 @@
   "StageVariables": null,
   "RequestContext": {
     "Path": "/test/test4/api/users/123/avatar",
-    "AccountId": "147997163238",
-    "ResourceId": "rz18ez",
+    "AccountId": "ACCOUNT_ID",
+    "ResourceId": "RESOURCE_ID",
     "Stage": "test",
     "RequestId": "7a1ab4cd-edd9-4437-86d3-7978341c597d",
     "Identity": {
@@ -50,7 +46,7 @@
       "ApiKey": null,
       "ApiKeyId": null,
       "AccessKey": null,
-      "SourceIp": "141.149.44.5",
+      "SourceIp": "IP_ADDRESS",
       "CognitoAuthenticationType": null,
       "CognitoAuthenticationProvider": null,
       "UserArn": null,
@@ -60,12 +56,12 @@
     },
     "ResourcePath": "/test4/api/users/{userId}/avatar",
     "HttpMethod": "POST",
-    "ApiId": "4brwn090q0",
+    "ApiId": "EXAMPLE",
     "ExtendedRequestId": "JCJePHSSPHcEtwQ=",
     "ConnectionId": null,
     "ConnectedAt": 0,
-    "DomainName": "4brwn090q0.execute-api.us-west-2.amazonaws.com",
-    "DomainPrefix": "4brwn090q0",
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
     "EventType": null,
     "MessageId": null,
     "RouteKey": null,
@@ -81,3 +77,5 @@
   "Body": "AQIDBAU=",
   "IsBase64Encoded": true
 }
+
+

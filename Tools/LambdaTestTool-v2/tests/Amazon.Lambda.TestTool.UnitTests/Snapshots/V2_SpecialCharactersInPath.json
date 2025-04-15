@@ -7,24 +7,24 @@
   "Headers": {
     "content-length": "0",
     "content-type": "text/plain; charset=utf-8",
-    "host": "7y6qzvvbof.execute-api.us-west-2.amazonaws.com",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
     "x-amzn-trace-id": "Root=1-67fd88db-518e8b296009540c739c0ca7",
-    "x-forwarded-for": "141.149.44.5",
+    "X-Forwarded-For": "IP_ADDRESS",
     "x-forwarded-port": "443",
     "x-forwarded-proto": "https"
   },
   "QueryStringParameters": null,
   "RequestContext": {
-    "AccountId": "147997163238",
-    "ApiId": "7y6qzvvbof",
+    "AccountId": "ACCOUNT_ID",
+    "ApiId": "EXAMPLE",
     "Authorizer": null,
-    "DomainName": "7y6qzvvbof.execute-api.us-west-2.amazonaws.com",
-    "DomainPrefix": "7y6qzvvbof",
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
     "Http": {
       "Method": "POST",
       "Path": "/test13/api/users/**** Doe/orders/Summer Sale 2023",
       "Protocol": "HTTP/1.1",
-      "SourceIp": "141.149.44.5",
+      "SourceIp": "IP_ADDRESS",
       "UserAgent": ""
     },
     "RequestId": "JCJSViW5PHcESow=",
@@ -43,3 +43,5 @@
   "IsBase64Encoded": false,
   "StageVariables": null
 }
+
+

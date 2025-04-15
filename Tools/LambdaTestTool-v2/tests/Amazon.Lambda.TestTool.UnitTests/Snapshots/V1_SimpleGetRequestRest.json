@@ -5,11 +5,11 @@
   "Headers": {
     "Content-Type": "text/plain; charset=utf-8",
     "Cookie": "session=abc123; theme=dark",
-    "Host": "s902u1zkkl.execute-api.us-west-2.amazonaws.com",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
     "User-Agent": "TestAgent",
     "X-Amzn-Trace-Id": "Root=1-67fd87f5-7643e6a875203f06341af04f",
     "X-Custom-Header": "value1",
-    "X-Forwarded-For": "141.149.44.5",
+    "X-Forwarded-For": "IP_ADDRESS",
     "X-Forwarded-Port": "443",
     "X-Forwarded-Proto": "https"
   },
@@ -20,9 +20,7 @@
     "Cookie": [
       "session=abc123; theme=dark"
     ],
-    "Host": [
-      "s902u1zkkl.execute-api.us-west-2.amazonaws.com"
-    ],
+    "Host": ["EXAMPLE.execute-api.REGION.amazonaws.com"],
     "User-Agent": [
       "TestAgent"
     ],
@@ -32,9 +30,7 @@
     "X-Custom-Header": [
       "value1"
     ],
-    "X-Forwarded-For": [
-      "141.149.44.5"
-    ],
+    "X-Forwarded-For": ["IP_ADDRESS"],
     "X-Forwarded-Port": [
       "443"
     ],
@@ -61,8 +57,8 @@
   "StageVariables": null,
   "RequestContext": {
     "Path": "/test/test1/api/users/123/orders",
-    "AccountId": "147997163238",
-    "ResourceId": "06oou2",
+    "AccountId": "ACCOUNT_ID",
+    "ResourceId": "RESOURCE_ID",
     "Stage": "test",
     "RequestId": "4acd49e9-9210-4d04-8e04-0f26a4e92537",
     "Identity": {
@@ -73,7 +69,7 @@
       "ApiKey": null,
       "ApiKeyId": null,
       "AccessKey": null,
-      "SourceIp": "141.149.44.5",
+      "SourceIp": "IP_ADDRESS",
       "CognitoAuthenticationType": null,
       "CognitoAuthenticationProvider": null,
       "UserArn": null,
@@ -83,12 +79,12 @@
     },
     "ResourcePath": "/test1/api/users/{userId}/orders",
     "HttpMethod": "POST",
-    "ApiId": "s902u1zkkl",
+    "ApiId": "EXAMPLE",
     "ExtendedRequestId": "JCIudEUfPHcEhog=",
     "ConnectionId": null,
     "ConnectedAt": 0,
-    "DomainName": "s902u1zkkl.execute-api.us-west-2.amazonaws.com",
-    "DomainPrefix": "s902u1zkkl",
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
     "EventType": null,
     "MessageId": null,
     "RouteKey": null,
@@ -104,3 +100,5 @@
   "Body": null,
   "IsBase64Encoded": false
 }
+
+

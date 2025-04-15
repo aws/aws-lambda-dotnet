@@ -7,9 +7,9 @@
   "Headers": {
     "content-length": "0",
     "content-type": "text/plain; charset=utf-8",
-    "host": "7y6qzvvbof.execute-api.us-west-2.amazonaws.com",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
     "x-amzn-trace-id": "Root=1-67fd88cb-4981526a50466e9f2be0fbed",
-    "x-forwarded-for": "141.149.44.5",
+    "X-Forwarded-For": "IP_ADDRESS",
     "x-forwarded-port": "443",
     "x-forwarded-proto": "https"
   },
@@ -18,16 +18,16 @@
     "tag": "C# Programming,.NET Core"
   },
   "RequestContext": {
-    "AccountId": "147997163238",
-    "ApiId": "7y6qzvvbof",
+    "AccountId": "ACCOUNT_ID",
+    "ApiId": "EXAMPLE",
     "Authorizer": null,
-    "DomainName": "7y6qzvvbof.execute-api.us-west-2.amazonaws.com",
-    "DomainPrefix": "7y6qzvvbof",
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
     "Http": {
       "Method": "POST",
       "Path": "/test12/api/search",
       "Protocol": "HTTP/1.1",
-      "SourceIp": "141.149.44.5",
+      "SourceIp": "IP_ADDRESS",
       "UserAgent": ""
     },
     "RequestId": "JCJP4iwYPHcEJgQ=",
@@ -43,3 +43,5 @@
   "IsBase64Encoded": false,
   "StageVariables": null
 }
+
+

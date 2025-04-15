@@ -4,9 +4,9 @@
   "HttpMethod": "POST",
   "Headers": {
     "Content-Type": "text/plain; charset=utf-8",
-    "Host": "s902u1zkkl.execute-api.us-west-2.amazonaws.com",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
     "X-Amzn-Trace-Id": "Root=1-67fd8822-75aa8f5e7a30566958eef084",
-    "X-Forwarded-For": "141.149.44.5",
+    "X-Forwarded-For": "IP_ADDRESS",
     "X-Forwarded-Port": "443",
     "X-Forwarded-Proto": "https"
   },
@@ -14,15 +14,11 @@
     "Content-Type": [
       "text/plain; charset=utf-8"
     ],
-    "Host": [
-      "s902u1zkkl.execute-api.us-west-2.amazonaws.com"
-    ],
+    "Host": ["EXAMPLE.execute-api.REGION.amazonaws.com"],
     "X-Amzn-Trace-Id": [
       "Root=1-67fd8822-75aa8f5e7a30566958eef084"
     ],
-    "X-Forwarded-For": [
-      "141.149.44.5"
-    ],
+    "X-Forwarded-For": ["IP_ADDRESS"],
     "X-Forwarded-Port": [
       "443"
     ],
@@ -47,8 +43,8 @@
   "StageVariables": null,
   "RequestContext": {
     "Path": "/test/test4/api/search",
-    "AccountId": "147997163238",
-    "ResourceId": "3x3a3q",
+    "AccountId": "ACCOUNT_ID",
+    "ResourceId": "RESOURCE_ID",
     "Stage": "test",
     "RequestId": "bc5e4f00-8cfb-4473-83c7-e6e1735ee418",
     "Identity": {
@@ -59,7 +55,7 @@
       "ApiKey": null,
       "ApiKeyId": null,
       "AccessKey": null,
-      "SourceIp": "141.149.44.5",
+      "SourceIp": "IP_ADDRESS",
       "CognitoAuthenticationType": null,
       "CognitoAuthenticationProvider": null,
       "UserArn": null,
@@ -69,12 +65,12 @@
     },
     "ResourcePath": "/test4/api/search",
     "HttpMethod": "POST",
-    "ApiId": "s902u1zkkl",
+    "ApiId": "EXAMPLE",
     "ExtendedRequestId": "JCI1hFtPPHcEDUw=",
     "ConnectionId": null,
     "ConnectedAt": 0,
-    "DomainName": "s902u1zkkl.execute-api.us-west-2.amazonaws.com",
-    "DomainPrefix": "s902u1zkkl",
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
     "EventType": null,
     "MessageId": null,
     "RouteKey": null,
@@ -90,3 +86,5 @@
   "Body": null,
   "IsBase64Encoded": false
 }
+
+

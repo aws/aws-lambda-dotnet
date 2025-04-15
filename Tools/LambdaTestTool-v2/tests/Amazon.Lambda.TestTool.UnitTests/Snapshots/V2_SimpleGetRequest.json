@@ -11,11 +11,11 @@
     "accept": "text/html, application/json",
     "content-length": "0",
     "content-type": "text/plain; charset=utf-8",
-    "host": "7y6qzvvbof.execute-api.us-west-2.amazonaws.com",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
     "user-agent": "TestAgent",
     "x-amzn-trace-id": "Root=1-67fd88a4-127eb8e773d2bb6f7df47ab6",
     "x-custom-header": "value1",
-    "x-forwarded-for": "141.149.44.5",
+    "X-Forwarded-For": "IP_ADDRESS",
     "x-forwarded-port": "443",
     "x-forwarded-proto": "https"
   },
@@ -24,16 +24,16 @@
     "tag": "important,urgent"
   },
   "RequestContext": {
-    "AccountId": "147997163238",
-    "ApiId": "7y6qzvvbof",
+    "AccountId": "ACCOUNT_ID",
+    "ApiId": "EXAMPLE",
     "Authorizer": null,
-    "DomainName": "7y6qzvvbof.execute-api.us-west-2.amazonaws.com",
-    "DomainPrefix": "7y6qzvvbof",
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
     "Http": {
       "Method": "POST",
       "Path": "/test9/api/users/123/orders",
       "Protocol": "HTTP/1.1",
-      "SourceIp": "141.149.44.5",
+      "SourceIp": "IP_ADDRESS",
       "UserAgent": "TestAgent"
     },
     "RequestId": "JCJJxhz4PHcEJgQ=",
@@ -51,3 +51,5 @@
   "IsBase64Encoded": false,
   "StageVariables": null
 }
+
+

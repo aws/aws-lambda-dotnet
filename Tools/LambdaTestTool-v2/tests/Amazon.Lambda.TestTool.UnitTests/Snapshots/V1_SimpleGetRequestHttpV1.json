@@ -6,11 +6,11 @@
     "Content-Length": "0",
     "Content-Type": "text/plain; charset=utf-8",
     "Cookie": "session=abc123; theme=dark",
-    "Host": "0awrsfc302.execute-api.us-west-2.amazonaws.com",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
     "User-Agent": "TestAgent",
     "X-Amzn-Trace-Id": "Root=1-67fd8937-6cd643e155b4258a556982c5",
     "X-Custom-Header": "value1",
-    "X-Forwarded-For": "141.149.44.5",
+    "X-Forwarded-For": "IP_ADDRESS",
     "X-Forwarded-Port": "443",
     "X-Forwarded-Proto": "https"
   },
@@ -24,9 +24,7 @@
     "Cookie": [
       "session=abc123; theme=dark"
     ],
-    "Host": [
-      "0awrsfc302.execute-api.us-west-2.amazonaws.com"
-    ],
+    "Host": ["EXAMPLE.execute-api.REGION.amazonaws.com"],
     "User-Agent": [
       "TestAgent"
     ],
@@ -36,9 +34,7 @@
     "X-Custom-Header": [
       "value1"
     ],
-    "X-Forwarded-For": [
-      "141.149.44.5"
-    ],
+    "X-Forwarded-For": ["IP_ADDRESS"],
     "X-Forwarded-Port": [
       "443"
     ],
@@ -65,7 +61,7 @@
   "StageVariables": null,
   "RequestContext": {
     "Path": "/test1/api/users/123/orders",
-    "AccountId": "147997163238",
+    "AccountId": "ACCOUNT_ID",
     "ResourceId": "POST /test1/api/users/{userId}/orders",
     "Stage": "$default",
     "RequestId": "JCJgriq-vHcEPMg=",
@@ -77,7 +73,7 @@
       "ApiKey": null,
       "ApiKeyId": null,
       "AccessKey": null,
-      "SourceIp": "141.149.44.5",
+      "SourceIp": "IP_ADDRESS",
       "CognitoAuthenticationType": null,
       "CognitoAuthenticationProvider": null,
       "UserArn": null,
@@ -87,12 +83,12 @@
     },
     "ResourcePath": "/test1/api/users/{userId}/orders",
     "HttpMethod": "POST",
-    "ApiId": "0awrsfc302",
+    "ApiId": "EXAMPLE",
     "ExtendedRequestId": "JCJgriq-vHcEPMg=",
     "ConnectionId": null,
     "ConnectedAt": 0,
-    "DomainName": "0awrsfc302.execute-api.us-west-2.amazonaws.com",
-    "DomainPrefix": "0awrsfc302",
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
     "EventType": null,
     "MessageId": null,
     "RouteKey": null,
@@ -108,3 +104,5 @@
   "Body": null,
   "IsBase64Encoded": false
 }
+
+

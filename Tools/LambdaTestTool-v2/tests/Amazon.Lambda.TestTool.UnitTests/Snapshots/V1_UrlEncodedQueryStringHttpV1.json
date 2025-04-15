@@ -5,9 +5,9 @@
   "Headers": {
     "Content-Length": "0",
     "Content-Type": "text/plain; charset=utf-8",
-    "Host": "0awrsfc302.execute-api.us-west-2.amazonaws.com",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
     "X-Amzn-Trace-Id": "Root=1-67fd894d-3c512d985fc0f8aa38cbeaac",
-    "X-Forwarded-For": "141.149.44.5",
+    "X-Forwarded-For": "IP_ADDRESS",
     "X-Forwarded-Port": "443",
     "X-Forwarded-Proto": "https"
   },
@@ -18,15 +18,11 @@
     "Content-Type": [
       "text/plain; charset=utf-8"
     ],
-    "Host": [
-      "0awrsfc302.execute-api.us-west-2.amazonaws.com"
-    ],
+    "Host": ["EXAMPLE.execute-api.REGION.amazonaws.com"],
     "X-Amzn-Trace-Id": [
       "Root=1-67fd894d-3c512d985fc0f8aa38cbeaac"
     ],
-    "X-Forwarded-For": [
-      "141.149.44.5"
-    ],
+    "X-Forwarded-For": ["IP_ADDRESS"],
     "X-Forwarded-Port": [
       "443"
     ],
@@ -51,7 +47,7 @@
   "StageVariables": null,
   "RequestContext": {
     "Path": "/test4/api/search",
-    "AccountId": "147997163238",
+    "AccountId": "ACCOUNT_ID",
     "ResourceId": "POST /test4/api/search",
     "Stage": "$default",
     "RequestId": "JCJkHhmUPHcEPXA=",
@@ -63,7 +59,7 @@
       "ApiKey": null,
       "ApiKeyId": null,
       "AccessKey": null,
-      "SourceIp": "141.149.44.5",
+      "SourceIp": "IP_ADDRESS",
       "CognitoAuthenticationType": null,
       "CognitoAuthenticationProvider": null,
       "UserArn": null,
@@ -73,12 +69,12 @@
     },
     "ResourcePath": "/test4/api/search",
     "HttpMethod": "POST",
-    "ApiId": "0awrsfc302",
+    "ApiId": "EXAMPLE",
     "ExtendedRequestId": "JCJkHhmUPHcEPXA=",
     "ConnectionId": null,
     "ConnectedAt": 0,
-    "DomainName": "0awrsfc302.execute-api.us-west-2.amazonaws.com",
-    "DomainPrefix": "0awrsfc302",
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
     "EventType": null,
     "MessageId": null,
     "RouteKey": null,
@@ -94,3 +90,5 @@
   "Body": null,
   "IsBase64Encoded": false
 }
+
+

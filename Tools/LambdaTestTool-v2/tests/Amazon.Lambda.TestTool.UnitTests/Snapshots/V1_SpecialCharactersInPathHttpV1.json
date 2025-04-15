@@ -5,9 +5,9 @@
   "Headers": {
     "Content-Length": "0",
     "Content-Type": "text/plain; charset=utf-8",
-    "Host": "0awrsfc302.execute-api.us-west-2.amazonaws.com",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
     "X-Amzn-Trace-Id": "Root=1-67fd895b-766061a83ad2b27b1782b470",
-    "X-Forwarded-For": "141.149.44.5",
+    "X-Forwarded-For": "IP_ADDRESS",
     "X-Forwarded-Port": "443",
     "X-Forwarded-Proto": "https"
   },
@@ -18,15 +18,11 @@
     "Content-Type": [
       "text/plain; charset=utf-8"
     ],
-    "Host": [
-      "0awrsfc302.execute-api.us-west-2.amazonaws.com"
-    ],
+    "Host": ["EXAMPLE.execute-api.REGION.amazonaws.com"],
     "X-Amzn-Trace-Id": [
       "Root=1-67fd895b-766061a83ad2b27b1782b470"
     ],
-    "X-Forwarded-For": [
-      "141.149.44.5"
-    ],
+    "X-Forwarded-For": ["IP_ADDRESS"],
     "X-Forwarded-Port": [
       "443"
     ],
@@ -43,7 +39,7 @@
   "StageVariables": null,
   "RequestContext": {
     "Path": "/test5/api/users/**** Doe/orders/Summer Sale 2023",
-    "AccountId": "147997163238",
+    "AccountId": "ACCOUNT_ID",
     "ResourceId": "POST /test5/api/users/{username}/orders/{orderName}",
     "Stage": "$default",
     "RequestId": "JCJmXjUAPHcEP4w=",
@@ -55,7 +51,7 @@
       "ApiKey": null,
       "ApiKeyId": null,
       "AccessKey": null,
-      "SourceIp": "141.149.44.5",
+      "SourceIp": "IP_ADDRESS",
       "CognitoAuthenticationType": null,
       "CognitoAuthenticationProvider": null,
       "UserArn": null,
@@ -65,12 +61,12 @@
     },
     "ResourcePath": "/test5/api/users/{username}/orders/{orderName}",
     "HttpMethod": "POST",
-    "ApiId": "0awrsfc302",
+    "ApiId": "EXAMPLE",
     "ExtendedRequestId": "JCJmXjUAPHcEP4w=",
     "ConnectionId": null,
     "ConnectedAt": 0,
-    "DomainName": "0awrsfc302.execute-api.us-west-2.amazonaws.com",
-    "DomainPrefix": "0awrsfc302",
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
     "EventType": null,
     "MessageId": null,
     "RouteKey": null,
@@ -86,3 +82,5 @@
   "Body": null,
   "IsBase64Encoded": false
 }
+
+
