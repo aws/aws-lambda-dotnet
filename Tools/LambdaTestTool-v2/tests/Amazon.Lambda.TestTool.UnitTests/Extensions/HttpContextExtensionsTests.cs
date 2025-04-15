@@ -23,8 +23,7 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
 
         [Theory]
         [MemberData(nameof(V1TestCases), MemberType = typeof(HttpContextTestCases))]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
-        public Task IntegrationTest_APIGatewayV1_REST(string testName, HttpContextTestCase testCase)
+        public Task APIGatewayV1_REST(string testName, HttpContextTestCase testCase)
         {
             var testCaseName = testName + ApiGatewayEmulatorMode.Rest;
             return RunApiGatewayTest<APIGatewayProxyRequest>(testCase, ApiGatewayEmulatorMode.Rest, testCaseName);
@@ -32,8 +31,7 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
 
         [Theory]
         [MemberData(nameof(V1TestCases), MemberType = typeof(HttpContextTestCases))]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
-        public Task IntegrationTest_APIGatewayV1_HTTP(string testName, HttpContextTestCase testCase)
+        public Task APIGatewayV1_HTTP(string testName, HttpContextTestCase testCase)
         {
             var testCaseName = testName + ApiGatewayEmulatorMode.HttpV1;
 
@@ -42,8 +40,7 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
 
         [Theory]
         [MemberData(nameof(V2TestCases), MemberType = typeof(HttpContextTestCases))]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1026:Theory methods should use all of their parameters")]
-        public Task IntegrationTest_APIGatewayV2(string testName, HttpContextTestCase testCase)
+        public Task APIGatewayV2(string testName, HttpContextTestCase testCase)
         {
             return RunApiGatewayTest<APIGatewayHttpApiV2ProxyRequest>(testCase,  ApiGatewayEmulatorMode.HttpV2, testName);
         }

@@ -12,7 +12,7 @@ using Xunit;
 namespace Amazon.Lambda.TestTool.UnitTests.Extensions;
 
 /// <summary>
-/// Integration tests for InvokeResponseExtensions.
+/// Unit tests for InvokeResponseExtensions.
 /// </summary>
 /// <remarks>
 /// Developer's Note:

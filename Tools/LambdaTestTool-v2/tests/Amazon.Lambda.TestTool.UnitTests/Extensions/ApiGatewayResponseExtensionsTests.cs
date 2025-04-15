@@ -17,21 +17,21 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
 
         [Theory]
         [MemberData(nameof(V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
-        public async Task IntegrationTest_APIGatewayV1_REST(string testName, ApiGatewayResponseTestCase testCase)
+        public async Task APIGatewayV1_REST(string testName, ApiGatewayResponseTestCase testCase)
         {
             await RunV1Test(testCase, ApiGatewayEmulatorMode.Rest, testName);
         }
 
         [Theory]
         [MemberData(nameof(V1TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
-        public async Task IntegrationTest_APIGatewayV1_HTTP(string testName, ApiGatewayResponseTestCase testCase)
+        public async Task APIGatewayV1_HTTP(string testName, ApiGatewayResponseTestCase testCase)
         {
             await RunV1Test(testCase, ApiGatewayEmulatorMode.HttpV1, testName);
         }
 
         [Theory]
         [MemberData(nameof(V2TestCases), MemberType = typeof(ApiGatewayResponseTestCases))]
-        public async Task IntegrationTest_APIGatewayV2(string testName, ApiGatewayResponseTestCase testCase)
+        public async Task APIGatewayV2(string testName, ApiGatewayResponseTestCase testCase)
         {
             var testResponse = testCase.Response as APIGatewayHttpApiV2ProxyResponse;
             Assert.NotNull(testResponse);
