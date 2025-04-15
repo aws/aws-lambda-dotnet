@@ -4,7 +4,6 @@
 using System.Text;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.TestTool.Extensions;
-using Amazon.Lambda.TestTool.IntegrationTests.Helpers;
 using Amazon.Lambda.TestTool.Models;
 using Microsoft.AspNetCore.Http;
 using Xunit;
@@ -36,9 +35,11 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
         {
             var testResponse = testCase.Response as APIGatewayHttpApiV2ProxyResponse;
             Assert.NotNull(testResponse);
-            var (actualResponse, httpTestResponse) = await _helper.ExecuteTestRequest(testResponse, testName);
-            await _helper.AssertResponsesEqual(actualResponse, httpTestResponse);
-            await testCase.Assertions(actualResponse, ApiGatewayEmulatorMode.HttpV2);
+            await _helper.VerifyHttpApiV2ResponseAsync(testResponse, testName,
+                 response =>
+                {
+                    testCase.Assertions(response, ApiGatewayEmulatorMode.HttpV2);
+                });
         }
 
         [Fact]
@@ -47,7 +48,7 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
             var testResponse = new APIGatewayProxyResponse
             {
                 StatusCode = 200,
-                Body = Convert.ToBase64String(Encoding.UTF8.GetBytes("test")),
+                Body = Convert.ToBase64String("test"u8.ToArray()),
                 IsBase64Encoded = true
             };
 
@@ -68,7 +69,7 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
             var testResponse = new APIGatewayProxyResponse
             {
                 StatusCode = 200,
-                Body = Convert.ToBase64String(Encoding.UTF8.GetBytes("test")),
+                Body = Convert.ToBase64String("test"u8.ToArray()),
                 IsBase64Encoded = true
             };
 
@@ -88,9 +89,12 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
             var testResponse = testCase.Response as APIGatewayProxyResponse;
             Assert.NotNull(testResponse);
             var testCaseName = testName + emulatorMode;
-            var (actualResponse, httpTestResponse) = await _helper.ExecuteTestRequest(testResponse, emulatorMode, testCaseName);
-            await _helper.AssertResponsesEqual(actualResponse, httpTestResponse);
-            await testCase.Assertions(actualResponse, emulatorMode);
+            await _helper.VerifyApiGatewayResponseAsync(testResponse, emulatorMode, testCaseName,
+                 httpResponse =>
+                {
+                    testCase.Assertions(httpResponse, emulatorMode);
+                });
+
         }
     }
 }

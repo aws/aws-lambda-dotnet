@@ -6,7 +6,6 @@ using System.Text.Json;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Model;
 using Amazon.Lambda.TestTool.Extensions;
-using Amazon.Lambda.TestTool.IntegrationTests.Helpers;
 using Amazon.Lambda.TestTool.Models;
 using Xunit;
 
@@ -45,13 +44,12 @@ public class InvokeResponseExtensionsTests
         };
 
         // Act
-        var convertedResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
+        var apiGatewayProxyResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
 
         var testName = nameof(ToApiGatewayProxyResponse_ValidResponse_MatchesDirectConversion) + emulatorMode;
 
         // Assert
-        var (actualResponse, httpTestResponse) = await _helper.ExecuteTestRequest(convertedResponse, emulatorMode, testName);
-        await _helper.AssertResponsesEqual(actualResponse, httpTestResponse);
+        await _helper.VerifyApiGatewayResponseAsync(apiGatewayProxyResponse, emulatorMode, testName);
     }
 
     [Fact]
@@ -73,8 +71,7 @@ public class InvokeResponseExtensionsTests
         var convertedResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
 
         // Assert
-        var (actualResponse, httpTestResponse) = await _helper.ExecuteTestRequest(convertedResponse, nameof(ToApiGatewayHttpApiV2ProxyResponse_ValidResponse_MatchesDirectConversion));
-        await _helper.AssertResponsesEqual(actualResponse, httpTestResponse);
+        await _helper.VerifyHttpApiV2ResponseAsync(convertedResponse, nameof(ToApiGatewayHttpApiV2ProxyResponse_ValidResponse_MatchesDirectConversion));
     }
 
     [Theory]
@@ -97,10 +94,18 @@ public class InvokeResponseExtensionsTests
         Assert.Equal(expectedStatusCode, convertedResponse.StatusCode);
         Assert.Contains(expectedErrorMessage, convertedResponse.Body);
 
-        var (actualResponse, _) = await _helper.ExecuteTestRequest(convertedResponse, emulatorMode, testName);
-        Assert.Equal(expectedStatusCode, (int)actualResponse.StatusCode);
-        var content = await actualResponse.Content.ReadAsStringAsync();
-        Assert.Contains(expectedErrorMessage, content);
+        await _helper.VerifyApiGatewayResponseAsync(
+            convertedResponse,
+            emulatorMode,
+            testName,
+            async httpResponse =>
+            {
+                Assert.Equal(expectedStatusCode, httpResponse.StatusCode);
+
+                httpResponse.Body.Seek(0, SeekOrigin.Begin);
+                var content = await new StreamReader(httpResponse.Body).ReadToEndAsync();
+                Assert.Contains(expectedErrorMessage, content);
+            });
     }
 
     /// <summary>
@@ -159,14 +164,20 @@ public class InvokeResponseExtensionsTests
         Assert.Equal(expectedResponsePayload, actualConvertedResponse.Body);
         Assert.Equal("application/json", actualConvertedResponse.Headers["Content-Type"]);
 
-        var (actualResponse, httpTestResponse) = await _helper.ExecuteTestRequest(actualConvertedResponse, testCaseName);
-        await _helper.AssertResponsesEqual(actualResponse, httpTestResponse);
+        await _helper.VerifyHttpApiV2ResponseAsync(
+            actualConvertedResponse,
+            testCaseName,
+            async httpResponse =>
+            {
+                // Additional checks for API Gateway specific behavior
+                Assert.Equal(200, httpResponse.StatusCode);
 
-        // Additional checks for API Gateway specific behavior
-        Assert.Equal(200, (int)actualResponse.StatusCode);
-        var actualContent = await actualResponse.Content.ReadAsStringAsync();
-        Assert.Equal(expectedResponsePayload, actualContent);
-        Assert.Equal("application/json", actualResponse.Content.Headers.ContentType?.ToString());
+                httpResponse.Body.Seek(0, SeekOrigin.Begin);
+                var content = await new StreamReader(httpResponse.Body).ReadToEndAsync();
+                Assert.Equal(expectedResponsePayload, content);
+
+                Assert.Equal("application/json", httpResponse.Headers["Content-Type"]);
+            });
     }
 
     [Fact]
@@ -187,14 +198,20 @@ public class InvokeResponseExtensionsTests
         Assert.Equal("{\"message\":\"Internal Server Error\"}", convertedResponse.Body);
         Assert.Equal("application/json", convertedResponse.Headers["Content-Type"]);
 
-        var (actualResponse, httpTestResponse) = await _helper.ExecuteTestRequest(convertedResponse, nameof(ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError));
-        await _helper.AssertResponsesEqual(actualResponse, httpTestResponse);
+        await _helper.VerifyHttpApiV2ResponseAsync(
+            convertedResponse,
+            nameof(ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError),
+            async httpResponse =>
+            {
+                // Additional checks for API Gateway specific behavior
+                Assert.Equal(500, httpResponse.StatusCode);
 
-        // Additional checks for API Gateway specific behavior
-        Assert.Equal(500, (int)actualResponse.StatusCode);
-        var content = await actualResponse.Content.ReadAsStringAsync();
-        Assert.Equal("{\"message\":\"Internal Server Error\"}", content);
-        Assert.Equal("application/json", actualResponse.Content.Headers.ContentType?.ToString());
+                httpResponse.Body.Seek(0, SeekOrigin.Begin);
+                var content = await new StreamReader(httpResponse.Body).ReadToEndAsync();
+                Assert.Equal("{\"message\":\"Internal Server Error\"}", content);
+
+                Assert.Equal("application/json", httpResponse.Headers["Content-Type"]);
+            });
     }
 
     [Theory]

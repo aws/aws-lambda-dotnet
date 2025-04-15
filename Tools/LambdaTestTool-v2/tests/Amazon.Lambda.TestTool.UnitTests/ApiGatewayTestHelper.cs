@@ -9,63 +9,82 @@ using Amazon.Lambda.TestTool.UnitTests.SnapshotHelper;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 
-namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
+namespace Amazon.Lambda.TestTool.UnitTests
 {
     public class ApiGatewayTestHelper
     {
-        private readonly SnapshotTestHelper _snapshots;
+        private readonly SnapshotTestHelper _snapshots = new(new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Converters = { new HttpResponseMessageConverter() }
+            }
+        );
 
-        public ApiGatewayTestHelper()
-        {
-            _snapshots = new SnapshotTestHelper(new JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    Converters = { new HttpResponseMessageConverter() }
-                }
-            );
-        }
-
-         public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(
-            APIGatewayProxyResponse testResponse,
+        public async Task VerifyApiGatewayResponseAsync(
+            APIGatewayProxyResponse response,
             ApiGatewayEmulatorMode emulatorMode,
-            string testName)
+            string snapshotName,
+            Action<HttpResponse>? additionalAssertions = null)
         {
-            // Generate the expected response using ToHttpResponseAsync
-            var testResponseHttpContext = new DefaultHttpContext();
-            testResponseHttpContext.Response.Body = new MemoryStream();
-            await testResponse.ToHttpResponseAsync(testResponseHttpContext, emulatorMode);
+            // Convert response to HttpResponse (simulates what API Gateway would do)
+            var convertedResponse = await ConvertToHttpResponseAsync(response, emulatorMode);
 
-            HttpResponseMessage actualResponse;
-            actualResponse = await _snapshots.LoadSnapshot<HttpResponseMessage>(testName);
+            // Load the expected response from snapshot
+            var expectedResponse = await _snapshots.LoadSnapshot<HttpResponseMessage>(snapshotName);
 
-            return (actualResponse, testResponseHttpContext.Response);
+            // Compare the responses
+            await AssertResponsesEqual(expectedResponse, convertedResponse);
 
+            // Run any additional assertions
+            additionalAssertions?.Invoke(convertedResponse);
         }
 
-        public async Task<(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)> ExecuteTestRequest(
-             APIGatewayHttpApiV2ProxyResponse testResponse,
-             string testName)
+        public async Task VerifyHttpApiV2ResponseAsync(
+            APIGatewayHttpApiV2ProxyResponse response,
+            string snapshotName,
+            Action<HttpResponse>? additionalAssertions = null)
         {
-            // Generate the expected response using ToHttpResponseAsync
-            var testResponseHttpContext = new DefaultHttpContext();
-            testResponseHttpContext.Response.Body = new MemoryStream();
-            await testResponse.ToHttpResponseAsync(testResponseHttpContext);
+            // Convert response to HttpResponse (simulates what API Gateway would do)
+            var convertedResponse = await ConvertToHttpResponseAsync(response);
 
-            HttpResponseMessage actualResponse;
-            actualResponse = await _snapshots.LoadSnapshot<HttpResponseMessage>(testName);
+            // Load the expected response from snapshot
+            var expectedResponse = await _snapshots.LoadSnapshot<HttpResponseMessage>(snapshotName);
 
-            return (actualResponse, testResponseHttpContext.Response);
+            // Compare the responses
+            await AssertResponsesEqual(expectedResponse, convertedResponse);
+
+            // Run any additional assertions
+            additionalAssertions?.Invoke(convertedResponse);
         }
 
-        public async Task AssertResponsesEqual(HttpResponseMessage actualResponse, HttpResponse httpTestResponse)
+        private async Task<HttpResponse> ConvertToHttpResponseAsync(
+            APIGatewayProxyResponse response,
+            ApiGatewayEmulatorMode emulatorMode)
         {
-            httpTestResponse.Body.Seek(0, SeekOrigin.Begin);
-            var expectedContent = await new StreamReader(httpTestResponse.Body).ReadToEndAsync();
-            var actualContent = await actualResponse.Content.ReadAsStringAsync();
+            var context = new DefaultHttpContext();
+            context.Response.Body = new MemoryStream();
+            await response.ToHttpResponseAsync(context, emulatorMode);
+            return context.Response;
+        }
 
-            Assert.Equal(expectedContent, actualContent);
+        private async Task<HttpResponse> ConvertToHttpResponseAsync(
+            APIGatewayHttpApiV2ProxyResponse response)
+        {
+            var context = new DefaultHttpContext();
+            context.Response.Body = new MemoryStream();
+            await response.ToHttpResponseAsync(context);
+            return context.Response;
+        }
 
-            Assert.Equal(httpTestResponse.StatusCode, (int)actualResponse.StatusCode);
+        private async Task AssertResponsesEqual(HttpResponseMessage expected, HttpResponse actual)
+        {
+            actual.Body.Seek(0, SeekOrigin.Begin);
+            var actualContent = await new StreamReader(actual.Body).ReadToEndAsync();
+            var expectedContent = await expected.Content.ReadAsStringAsync();
+
+            Assert.Equal(actualContent, expectedContent);
+
+            Assert.Equal(actual.StatusCode, (int)expected.StatusCode);
 
             // ignore these because they will vary in the real world. we will check manually in other test cases that these are set
             var headersToIgnore = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -81,28 +100,28 @@ namespace Amazon.Lambda.TestTool.IntegrationTests.Helpers
                 "X-Amz-Cf-Id"
             };
 
-            foreach (var header in httpTestResponse.Headers)
+            foreach (var header in actual.Headers)
             {
                 if (headersToIgnore.Contains(header.Key)) continue;
-                Assert.True(actualResponse.Headers.TryGetValues(header.Key, out var actualValues) ||
-                            actualResponse.Content.Headers.TryGetValues(header.Key, out actualValues),
-                            $"Header '{header.Key}={string.Join(", ", header.Value.ToArray())}' not found in actual response");
+                Assert.True(expected.Headers.TryGetValues(header.Key, out var expectedValues) ||
+                            expected.Content.Headers.TryGetValues(header.Key, out expectedValues),
+                            $"Header '{header.Key}={string.Join(", ", header.Value.ToArray())}' not found in expected response");
 
-                var sortedExpectedValues = header.Value.OrderBy(v => v).ToArray();
-                var sortedActualValues = actualValues.OrderBy(v => v).ToArray();
-                Assert.Equal(sortedExpectedValues, sortedActualValues);
+                var sortedActualValues = header.Value.OrderBy(v => v).ToArray();
+                var sortedExpectedValues = expectedValues.OrderBy(v => v).ToArray();
+                Assert.Equal(sortedActualValues, sortedExpectedValues);
             }
 
-            foreach (var header in actualResponse.Headers.Concat(actualResponse.Content.Headers))
+            foreach (var header in expected.Headers.Concat(expected.Content.Headers))
             {
                 if (headersToIgnore.Contains(header.Key)) continue;
 
-                Assert.True(httpTestResponse.Headers.ContainsKey(header.Key),
-                            $"Header '{header.Key}={string.Join(", ", header.Value)}' not found in test response");
+                Assert.True(actual.Headers.ContainsKey(header.Key),
+                            $"Header '{header.Key}={string.Join(", ", header.Value)}' not found in actual response");
 
-                var sortedExpectedValues = httpTestResponse.Headers[header.Key].OrderBy(v => v).ToArray();
-                var sortedActualValues = header.Value.OrderBy(v => v).ToArray();
-                Assert.Equal(sortedExpectedValues, sortedActualValues);
+                var sortedActualValues = actual.Headers[header.Key].OrderBy(v => v).ToArray();
+                var sortedExpectedValues = header.Value.OrderBy(v => v).ToArray();
+                Assert.Equal(sortedActualValues, sortedExpectedValues);
             }
         }
     }

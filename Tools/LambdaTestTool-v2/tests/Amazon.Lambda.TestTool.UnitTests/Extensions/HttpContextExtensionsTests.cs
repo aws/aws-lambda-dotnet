@@ -142,11 +142,11 @@ namespace Amazon.Lambda.TestTool.UnitTests.Extensions
             string testName)
             where T : class
         {
-            T actualApiGatewayRequest;
-            actualApiGatewayRequest = await _snapshots.LoadSnapshot<T>(testName);
+            T snapshot;
+            snapshot = await _snapshots.LoadSnapshot<T>(testName);
             var expectedApiGatewayRequest = await toApiGatewayRequest(testCase.HttpContext, testCase.ApiGatewayRouteConfig);
-            CompareApiGatewayRequests(expectedApiGatewayRequest, actualApiGatewayRequest);
-            testCase.Assertions(actualApiGatewayRequest!, emulatorMode);
+            CompareApiGatewayRequests(expectedApiGatewayRequest, snapshot);
+            testCase.Assertions(expectedApiGatewayRequest!, emulatorMode);
         }
 
         private void CompareApiGatewayRequests<T>(T expected, T actual) where T : class?
