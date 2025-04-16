@@ -1,11 +1,24 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Amazon.Lambda.TestTool.UnitTests.SnapshotHelper;
 
+/// <summary>
+/// Provides custom JSON conversion for HttpResponseMessage objects.
+/// </summary>
 public class HttpResponseMessageConverter : JsonConverter<HttpResponseMessage>
 {
+    /// <summary>
+    /// Reads and converts JSON to an HttpResponseMessage object.
+    /// </summary>
+    /// <param name="reader">The Utf8JsonReader to read data from.</param>
+    /// <param name="typeToConvert">The type of object to convert.</param>
+    /// <param name="options">An object that specifies serialization options.</param>
+    /// <returns>The converted HttpResponseMessage.</returns>
     public override HttpResponseMessage Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using var document = JsonDocument.ParseValue(ref reader);
@@ -42,6 +55,12 @@ public class HttpResponseMessageConverter : JsonConverter<HttpResponseMessage>
         return response;
     }
 
+    /// <summary>
+    /// Writes an HttpResponseMessage object to JSON.
+    /// </summary>
+    /// <param name="writer">The Utf8JsonWriter to write to.</param>
+    /// <param name="value">The HttpResponseMessage to convert.</param>
+    /// <param name="options">An object that specifies serialization options.</param>
     public override void Write(Utf8JsonWriter writer, HttpResponseMessage value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
