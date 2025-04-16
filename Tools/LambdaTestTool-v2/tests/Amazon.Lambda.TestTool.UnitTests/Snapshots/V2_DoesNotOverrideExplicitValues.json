@@ -1,0 +1,23 @@
+{
+  "StatusCode": 201,
+  "Content": "{\u0022key\u0022:\u0022value\u0022}",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:10:16 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "Apigw-Requestid": [
+      "JCInbgLtPHcEJIQ="
+    ],
+    "Content-Type": [
+      "application/xml"
+    ],
+    "Content-Length": [
+      "15"
+    ]
+  }
+}
+
+

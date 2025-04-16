@@ -1,0 +1,55 @@
+{
+  "Version": "2.0",
+  "RouteKey": "POST /test9/api/users/{userId}/orders",
+  "RawPath": "/test9/api/users/123/orders",
+  "RawQueryString": "status=pending\u0026tag=important\u0026tag=urgent",
+  "Cookies": [
+    "session=abc123",
+    "theme=dark"
+  ],
+  "Headers": {
+    "accept": "text/html, application/json",
+    "content-length": "0",
+    "content-type": "text/plain; charset=utf-8",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "user-agent": "TestAgent",
+    "x-amzn-trace-id": "Root=1-67fd88a4-127eb8e773d2bb6f7df47ab6",
+    "x-custom-header": "value1",
+    "X-Forwarded-For": "IP_ADDRESS",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "QueryStringParameters": {
+    "status": "pending",
+    "tag": "important,urgent"
+  },
+  "RequestContext": {
+    "AccountId": "ACCOUNT_ID",
+    "ApiId": "EXAMPLE",
+    "Authorizer": null,
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
+    "Http": {
+      "Method": "POST",
+      "Path": "/test9/api/users/123/orders",
+      "Protocol": "HTTP/1.1",
+      "SourceIp": "IP_ADDRESS",
+      "UserAgent": "TestAgent"
+    },
+    "RequestId": "JCJJxhz4PHcEJgQ=",
+    "RouteId": null,
+    "RouteKey": "POST /test9/api/users/{userId}/orders",
+    "Stage": "$default",
+    "Time": "14/Apr/2025:22:13:56 \u002B0000",
+    "TimeEpoch": 1744668836573,
+    "Authentication": null
+  },
+  "Body": null,
+  "PathParameters": {
+    "userId": "123"
+  },
+  "IsBase64Encoded": false,
+  "StageVariables": null
+}
+
+

@@ -1,0 +1,29 @@
+{
+  "StatusCode": 200,
+  "Content": "Hello, World!",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:10:21 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "x-amzn-RequestId": [
+      "8ec8d88e-4536-4e8e-a5f2-28877a4cc5b2"
+    ],
+    "x-amz-apigw-id": [
+      "JCIoIEenvHcEGNA="
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-67fd87cd-548ca2e2768cf411287e4266;Parent=3389559e9a470afb;Sampled=0;Lineage=1:6e5eb7d9:0"
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "Content-Length": [
+      "13"
+    ]
+  }
+}
+
+

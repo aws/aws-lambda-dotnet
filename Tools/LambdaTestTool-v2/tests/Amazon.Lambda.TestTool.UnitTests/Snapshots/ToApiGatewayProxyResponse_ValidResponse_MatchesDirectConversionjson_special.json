@@ -1,0 +1,23 @@
+{
+  "StatusCode": 200,
+  "Content": "Special \u0022quoted\u0022 text",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:17:18 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "Apigw-Requestid": [
+      "JCJpXh5MvHcEP2Q="
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "Content-Length": [
+      "21"
+    ]
+  }
+}
+
+

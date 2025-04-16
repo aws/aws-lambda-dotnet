@@ -1,0 +1,27 @@
+{
+  "StatusCode": 200,
+  "Content": "{\u0022message\u0022:\u0022With MultiValueHeaders\u0022}",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:10:17 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "X-Multi-Header": [
+      "Value1",
+      "Value2"
+    ],
+    "Apigw-Requestid": [
+      "JCInniZlPHcEP1g="
+    ],
+    "Content-Type": [
+      "text/plain; charset=utf-8"
+    ],
+    "Content-Length": [
+      "36"
+    ]
+  }
+}
+
+

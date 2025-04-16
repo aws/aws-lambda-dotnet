@@ -1,0 +1,23 @@
+{
+  "StatusCode": 200,
+  "Content": "{\u0022message\u0022:\u0022Hello, World!\u0022}",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:10:19 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "Apigw-Requestid": [
+      "JCInzjkJPHcEP8g="
+    ],
+    "Content-Type": [
+      "text/plain; charset=utf-8"
+    ],
+    "Content-Length": [
+      "27"
+    ]
+  }
+}
+
+
