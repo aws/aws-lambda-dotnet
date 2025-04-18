@@ -139,6 +139,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.DynamoDBEvent
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests", "test\Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests\Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests.csproj", "{074DB940-82BA-47D4-B888-C213D4220A82}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.BedrockAgentEvents", "src\Amazon.Lambda.BedrockAgentEvents\Amazon.Lambda.BedrockAgentEvents.csproj", "{5A28C0AA-07D3-B0CF-2169-56278447DFB1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -381,6 +383,10 @@ Global
 		{074DB940-82BA-47D4-B888-C213D4220A82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{074DB940-82BA-47D4-B888-C213D4220A82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{074DB940-82BA-47D4-B888-C213D4220A82}.Release|Any CPU.Build.0 = Release|Any CPU
+    {5A28C0AA-07D3-B0CF-2169-56278447DFB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A28C0AA-07D3-B0CF-2169-56278447DFB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A28C0AA-07D3-B0CF-2169-56278447DFB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A28C0AA-07D3-B0CF-2169-56278447DFB1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -449,6 +455,7 @@ Global
 		{A699E183-D0D4-4F26-A0A7-88DA5607F455} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{3400F4E9-BA12-4D3D-9BA1-2798AA8D0AFC} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 		{074DB940-82BA-47D4-B888-C213D4220A82} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+    {5A28C0AA-07D3-B0CF-2169-56278447DFB1} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}

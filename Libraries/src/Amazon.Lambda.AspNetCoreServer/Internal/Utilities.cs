@@ -145,6 +145,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             return "?" + queryString;
         }
 
+        public static List<string> ExtractPathParams(string path)
+        {
+            var matches = System.Text.RegularExpressions.Regex.Matches(path, @"\{([^}]+)\}");
+            return matches.Select(m => m.Groups[1].Value).ToList();
+        }
+
         internal static string CreateQueryStringParameters(IDictionary<string, string> singleValues, IDictionary<string, IList<string>> multiValues, bool urlEncodeValue)
         {
             if (multiValues?.Count > 0)

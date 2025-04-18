@@ -49,3 +49,15 @@ app.MapControllers();
 app.Run();
 
 ```
+
+## Amazon Bedrock Agent API
+
+The `BedrockAgentApi` event source allows your ASP.NET Core application to be invoked by Amazon Bedrock Agent API. This is useful for building custom actions for your Bedrock agents.
+
+When using the `BedrockAgentApi` event source, the Lambda function will receive events in the Bedrock Agent API format and convert them to HTTP requests that your ASP.NET Core application can process. The responses from your application will be converted back to the Bedrock Agent API format.
+
+Example:
+
+```csharp
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.BedrockAgentApi);
+```

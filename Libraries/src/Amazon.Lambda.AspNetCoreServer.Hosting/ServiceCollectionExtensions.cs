@@ -27,7 +27,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// ELB Application Load Balancer
         /// </summary>
-        ApplicationLoadBalancer
+        ApplicationLoadBalancer,
+        
+        /// <summary>
+        /// Amazon Bedrock Agent API
+        /// </summary>
+        BedrockAgentApi
     }
 
     /// <summary>
@@ -106,6 +111,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 LambdaEventSource.HttpApi => typeof(APIGatewayHttpApiV2LambdaRuntimeSupportServer),
                 LambdaEventSource.RestApi => typeof(APIGatewayRestApiLambdaRuntimeSupportServer),
                 LambdaEventSource.ApplicationLoadBalancer => typeof(ApplicationLoadBalancerLambdaRuntimeSupportServer),
+                LambdaEventSource.BedrockAgentApi => typeof(BedrockAgentApiLambdaRuntimeSupportServer),
                 _ => throw new ArgumentException($"Event source type {eventSource} unknown")
             };
 

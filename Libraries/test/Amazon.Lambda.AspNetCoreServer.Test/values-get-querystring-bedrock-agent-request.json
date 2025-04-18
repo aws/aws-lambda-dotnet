@@ -1,0 +1,32 @@
+{
+  "messageVersion": "1.0",
+  "agent": {
+    "name": "TestAgent",
+    "id": "agent-12345",
+    "alias": "TestAlias",
+    "version": "1.0"
+  },
+  "inputText": "Get values with query parameters",
+  "sessionId": "session-12345",
+  "actionGroup": "ValuesApi",
+  "apiPath": "/api/querystring",
+  "httpMethod": "GET",
+  "parameters": [
+    {
+      "name": "firstName",
+      "type": "string",
+      "value": "Lewis"
+    },
+    {
+      "name": "lastName",
+      "type": "string",
+      "value": "Meriwether"
+    }
+  ],
+  "sessionAttributes": {
+    "key1": "value1"
+  },
+  "promptSessionAttributes": {
+    "key2": "value2"
+  }
+} 

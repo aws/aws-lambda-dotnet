@@ -35,12 +35,18 @@
     <None Remove="rawtarget-escaped-slash-in-path-alb.json" />
     <None Remove="rawtarget-escaped-slash-in-path-httpapi-v2.json" />
     <None Remove="rawtarget-escaped-slash-in-path.json" />
+    <None Remove="values-get-all-bedrock-agent-request.json" />
     <None Remove="values-get-all-httpapi-request.json" />
+    <None Remove="values-get-querystring-bedrock-agent-request.json" />
+    <None Remove="values-get-single-bedrock-agent-request.json" />
+    <None Remove="values-put-withbody-bedrock-agent-request.json" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.AspNetCoreServer.Hosting\Amazon.Lambda.AspNetCoreServer.Hosting.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.BedrockAgentEvents\Amazon.Lambda.BedrockAgentEvents.csproj" />
     <ProjectReference Include="..\TestWebApp\TestWebApp.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.TestUtilities\Amazon.Lambda.TestUtilities.csproj" />
   </ItemGroup>
