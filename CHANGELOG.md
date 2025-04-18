@@ -1,3 +1,17 @@
+## Release 2025-04-10 #2
+
+### Amazon.Lambda.TestTool (0.10.1)
+* Support optional SQS client region in event source test tool
+### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (1.0.0)
+* Implement DynamoDBEvents SDK Convertor package for DynamoDBEvent images to DynamoDBv2.Document
+
+## Release 2025-04-04
+
+### Amazon.Lambda.Templates (7.4.1)
+* Update the AWS Message Processing Framework for .NET project template.
+### Amazon.Lambda.TestTool (0.10.0)
+* Add SQS event source support
+
 ## Release 2025-03-13
 
 ### Amazon.Lambda.Annotations (1.7.0)

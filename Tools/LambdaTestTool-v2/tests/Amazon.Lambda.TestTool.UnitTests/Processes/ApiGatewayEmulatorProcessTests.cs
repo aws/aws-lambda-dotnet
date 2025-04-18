@@ -5,12 +5,14 @@ using System.Net;
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Processes;
+using Amazon.Lambda.TestTool.Tests.Common;
 using Amazon.Lambda.TestTool.Tests.Common.Helpers;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Processes;
 
-public class ApiGatewayEmulatorProcessTests
+public class ApiGatewayEmulatorProcessTests(ITestOutputHelper testOutputHelper)
 {
     [Theory]
     [InlineData(ApiGatewayEmulatorMode.Rest, HttpStatusCode.Forbidden, "{\"message\":\"Missing Authentication Token\"}")]

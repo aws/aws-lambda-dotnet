@@ -20,6 +20,8 @@ public class LambdaRuntimeApi
     {
         _runtimeApiDataStoreManager = app.Services.GetRequiredService<IRuntimeApiDataStoreManager>();
 
+        app.MapGet("/lambda-runtime-api/healthcheck", () => "health");
+
         app.MapPost("/2015-03-31/functions/function/invocations", (Delegate)PostEventDefaultFunction);
         app.MapPost("/2015-03-31/functions/{functionName}/invocations", PostEvent);
 
@@ -119,7 +121,7 @@ public class LambdaRuntimeApi
     {
         var runtimeDataStore = _runtimeApiDataStoreManager.GetLambdaRuntimeDataStore(functionName);
 
-        EventContainer? activeEvent;
+        EventContainer? activeEvent = null;
 
         // A Lambda function should never call to get the next event till it was done
         // processing the active event and there is no more active event. If there
@@ -132,7 +134,7 @@ public class LambdaRuntimeApi
         }
         else
         {
-            while (!runtimeDataStore.TryActivateEvent(out activeEvent))
+            while (!ctx.RequestAborted.IsCancellationRequested && !runtimeDataStore.TryActivateEvent(out activeEvent))
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(100));
             }

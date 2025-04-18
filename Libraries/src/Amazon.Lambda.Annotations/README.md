@@ -163,15 +163,37 @@ original declaration should be manually removed.
 ## Dependency Injection integration
 
 Lambda Annotations supports dependency injection. A class can be marked with a `LambdaStartup` attribute. The class will 
-have a `ConfigureServices` method for configuring services.
+have a `ConfigureHostBuilder` method for configuring the host builder. `ConfigureHostBuilder` should return an implementation of `IHostApplicationBuilder`.
 
-The services can be injected by either constructor injection or using the `FromServices` attribute on a method parameter of
+Services can be injected by either constructor injection or using the `FromServices` attribute on a method parameter of
 the function decorated with the `LambdaFunction` attribute.
 
 Services injected via the constructor have a lifecycle for the length of the Lambda compute container. For each Lambda 
 invocation a scope is created and the services injected using the `FromServices` attribute are created within the scope.
 
-Example startup class:
+Example startup class using the recommended ConfigureHostBuilder:
+```csharp
+[LambdaStartup]
+public class Startup
+{
+    public HostApplicationBuilder ConfigureHostBuilder()
+    {
+        var hostBuilder = new HostApplicationBuilder();
+        
+        // Register services
+        hostBuilder.Services.AddAWSService<Amazon.S3.IAmazonS3>();
+        hostBuilder.Services.AddScoped<ITracker, DefaultTracker>();
+        
+        // Add other configuration if needed
+        hostBuilder.AddServiceDefaults();
+        
+        return hostBuilder;
+    }
+}
+```
+
+For legacy support, you can still use the ConfigureServices method:
+
 ```csharp
 [LambdaStartup]
 public class Startup
@@ -372,12 +394,16 @@ Here the `ICalculatorService` is registered as a singleton service in the collec
 [LambdaStartup]
 public class Startup
 {
-
-    public void ConfigureServices(IServiceCollection services)
+    public HostApplicationBuilder ConfigureHostBuilder()
     {
-        services.AddSingleton<ICalculatorService, DefaultCalculatorService>();
+        var hostBuilder = new HostApplicationBuilder();
+        
+        hostBuilder.Services.AddSingleton<ICalculatorService, DefaultCalculatorService>();
+        
+        return hostBuilder;
     }
 }
+
 ```
 
 Since the `ICalculatorService` is registered as a singleton the service is injected into the Lambda function via the constructor. 
@@ -487,15 +513,18 @@ public class Functions_Add_Generated
 
     public Functions_Add_Generated()
     {
-        var services = new ServiceCollection();
+        var startup = new CloudCalculator.Startup();
+        var hostBuilder = startup.ConfigureHostBuilder();
+
 
         // By default, Lambda function class is added to the service container using the singleton lifetime
-        // To use a different lifetime, specify the lifetime in Startup.ConfigureServices(IServiceCollection) method.
-        services.AddSingleton<Functions>();
+        // To use a different lifetime, specify the lifetime in Startup.ConfigureHostBuilder() method.
+        hostBuilder.Services.AddSingleton<Functions>();  
 
-        var startup = new CloudCalculator.Startup();
-        startup.ConfigureServices(services);
-        serviceProvider = services.BuildServiceProvider();
+        serviceProvider = hostBuilder.Services.BuildServiceProvider();
+
+        host = hostBuilder.Build();
+        host.RunAsync();
     }
 
     public Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse Add(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest request, Amazon.Lambda.Core.ILambdaContext context)
@@ -579,16 +608,20 @@ service has state that should not be preserved per invocation.
 [LambdaStartup]
 public class Startup
 {
-    public void ConfigureServices(IServiceCollection services)
+    public HostApplicationBuilder ConfigureHostBuilder()
     {
+        var hostBuilder = new HostApplicationBuilder();
+        
         // Using the AWSSDK.Extensions.NETCore.Setup package add the AWS SDK's S3 client
-        services.AddAWSService<Amazon.S3.IAmazonS3>();
+        hostBuilder.Services.AddAWSService<Amazon.S3.IAmazonS3>();
 
         // Add service for handling image manipulation. 
         // IImageServices is added as transient service so a new instance
         // is created for each Lambda invocation. This can be important if services
         // have state that should not be persisted per invocation.
-        services.AddTransient<IImageServices, DefaultImageServices>();
+        hostBuilder.Services.AddTransient<IImageServices, DefaultImageServices>();
+        
+        return hostBuilder;
     }
 }
 ```

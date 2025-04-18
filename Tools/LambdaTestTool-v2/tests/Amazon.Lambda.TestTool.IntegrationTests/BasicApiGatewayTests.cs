@@ -23,7 +23,7 @@ public class BasicApiGatewayTests : BaseApiGatewayTest
     [RetryFact]
     public async Task TestLambdaToUpperV2()
     {
-        var ports = await GetFreePorts();
+        var ports = GetFreePorts();
         var lambdaPort = ports.lambdaPort;
         var apiGatewayPort = ports.apiGatewayPort;
         
@@ -68,7 +68,7 @@ public class BasicApiGatewayTests : BaseApiGatewayTest
     [RetryFact]
     public async Task TestLambdaToUpperRest()
     {
-        var ports = await GetFreePorts();
+        var ports = GetFreePorts();
         var lambdaPort = ports.lambdaPort;
         var apiGatewayPort = ports.apiGatewayPort;
         
@@ -113,7 +113,7 @@ public class BasicApiGatewayTests : BaseApiGatewayTest
     [RetryFact]
     public async Task TestLambdaToUpperV1()
     {
-        var ports = await GetFreePorts();
+        var ports = GetFreePorts();
         var lambdaPort = ports.lambdaPort;
         var apiGatewayPort = ports.apiGatewayPort;
         

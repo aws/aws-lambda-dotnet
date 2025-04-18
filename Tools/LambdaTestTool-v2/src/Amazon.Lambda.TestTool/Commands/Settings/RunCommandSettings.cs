@@ -53,4 +53,12 @@ public sealed class RunCommandSettings : CommandSettings
     [CommandOption("--api-gateway-emulator-port <PORT>")]
     [Description("The port number used for the test tool's API Gateway emulator.")]
     public int? ApiGatewayEmulatorPort { get; set; }
+
+    /// <summary>
+    /// The configuration for the SQS event source. The format of the config is a comma delimited key pairs. For example \"QueueUrl=queue-url,FunctionName=function-name,VisibilityTimeout=100\".
+    /// Possible keys are: BatchSize, DisableMessageDelete, FunctionName, LambdaRuntimeApi, Profile, QueueUrl, Region, VisibilityTimeout
+    /// </summary>
+    [CommandOption("--sqs-eventsource-config <CONFIG>")]
+    [Description("The configuration for the SQS event source. The format of the config is a comma delimited key pairs. For example \"QueueUrl=<queue-url>,FunctionName=<function-name>,VisibilityTimeout=100\". Possible keys are: BatchSize, DisableMessageDelete, FunctionName, LambdaRuntimeApi, Profile, QueueUrl, Region, VisibilityTimeout")]
+    public string? SQSEventSourceConfig { get; set; }
 }

@@ -14,14 +14,19 @@ using System.Net.Sockets;
 using System.Text;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using System.Threading;
+using Microsoft.Extensions.Hosting;
+using Amazon.SecurityToken;
 
 namespace Amazon.Lambda.TestTool.IntegrationTests;
 
 public abstract class BaseApiGatewayTest
 {
     protected readonly ITestOutputHelper TestOutputHelper;
-    protected readonly Mock<IEnvironmentManager> MockEnvironmentManager;
     protected readonly Mock<IToolInteractiveService> MockInteractiveService;
+    protected readonly Mock<IEnvironmentManager> MockEnvironmentManager;
     protected readonly Mock<IRemainingArguments> MockRemainingArgs;
     protected CancellationTokenSource CancellationTokenSource;
     protected static readonly object TestLock = new();
@@ -83,7 +88,7 @@ public abstract class BaseApiGatewayTest
             {
                 try
                 {
-                    var response = await client.GetAsync(healthUrl);
+                    var response = await client.GetAsync(healthUrl, new CancellationTokenSource(10000).Token);
                     if (response.IsSuccessStatusCode)
                     {
                         TestOutputHelper.WriteLine("API Gateway health check succeeded");
@@ -122,8 +127,8 @@ public abstract class BaseApiGatewayTest
                     {
                         "POST" => await client.PostAsync(
                             $"http://localhost:{apiGatewayPort}/{routeName}",
-                            new StringContent(payload ?? "hello world", Encoding.UTF8, new MediaTypeHeaderValue("text/plain"))),
-                        "GET" => await client.GetAsync($"http://localhost:{apiGatewayPort}/{routeName}"),
+                            new StringContent(payload ?? "hello world", Encoding.UTF8, new MediaTypeHeaderValue("text/plain")), new CancellationTokenSource(5000).Token),
+                        "GET" => await client.GetAsync($"http://localhost:{apiGatewayPort}/{routeName}", new CancellationTokenSource(5000).Token),
                         _ => throw new ArgumentException($"Unsupported HTTP method: {httpMethod}")
                     };
                 }
@@ -140,7 +145,7 @@ public abstract class BaseApiGatewayTest
         }
     }
 
-    protected async Task<(int lambdaPort, int apiGatewayPort)> GetFreePorts()
+    protected (int lambdaPort, int apiGatewayPort) GetFreePorts()
     {
         var lambdaPort = GetFreePort();
         int apiGatewayPort;
@@ -154,22 +159,48 @@ public abstract class BaseApiGatewayTest
 
     protected int GetFreePort()
     {
-        var random = new Random();
-        var port = random.Next(49152, 65535);
-        var listener = new TcpListener(IPAddress.Loopback, port);
-        try
+        Console.WriteLine("Looking for free port");
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        var app = builder.Build();
+        app.MapGet("/", () => "test");
+
+        CancellationTokenSource tokenSource = new CancellationTokenSource();
+        tokenSource.CancelAfter(5000);
+        var runTask = app.RunAsync(tokenSource.Token);
+        var uri = new Uri(app.Urls.First());
+
+        using var client = new HttpClient();
+        string? content = null;
+
+        Console.WriteLine($"Testing port: {uri.Port}");
+        var timeout = DateTime.UtcNow.AddSeconds(30);
+        while(DateTime.UtcNow < timeout)
         {
-            listener.Start();
-            return port;
+            try
+            {
+                content = client.GetStringAsync(uri, tokenSource.Token).GetAwaiter().GetResult();
+                Console.WriteLine("Port was successful");
+                break;
+            }
+            catch
+            {
+                Thread.Sleep(100);
+            }
         }
-        catch (SocketException)
+
+        if (!string.Equals(content, "test"))
         {
-            return GetFreePort();
+            Console.WriteLine("Port test failed trying again");
+            var recursivePort = GetFreePort();
+            tokenSource.Cancel();
+            return recursivePort;
         }
-        finally
-        {
-            listener.Stop();
-        }
+
+        tokenSource.Cancel();
+        Task.Delay(2000);
+
+        return uri.Port;
     }
 
     protected async Task StartTestToolProcessWithNullEndpoint(ApiGatewayEmulatorMode apiGatewayMode, string routeName, int lambdaPort, int apiGatewayPort, CancellationTokenSource cancellationTokenSource)
