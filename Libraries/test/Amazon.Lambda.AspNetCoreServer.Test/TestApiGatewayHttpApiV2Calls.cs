@@ -284,7 +284,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         #if NET8_0_OR_GREATER
         /// <summary>
-        /// Verifies that <see cref="HttpV2LambdaFunction.RegisterBeforeSnapshotRequest"/> is invoked during startup.
+        /// Verifies that <see cref="HttpV2LambdaFunction.GetBeforeSnapshotRequests"/> is invoked during startup.
         /// </summary>
         /// <returns></returns>
         [Fact]

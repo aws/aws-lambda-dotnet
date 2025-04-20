@@ -289,7 +289,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// ]]>
         /// </code>
         /// </summary>
-        protected virtual IEnumerable<HttpRequestMessage> RegisterBeforeSnapshotRequest() =>
+        protected virtual IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests() =>
             Enumerable.Empty<HttpRequestMessage>();
         #endif
 
@@ -331,7 +331,7 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot(async () =>
             {
-                var beforeSnapstartRequests = RegisterBeforeSnapshotRequest();
+                var beforeSnapstartRequests = GetBeforeSnapshotRequests();
 
                 foreach (var httpRequest in beforeSnapstartRequests)
                 {
