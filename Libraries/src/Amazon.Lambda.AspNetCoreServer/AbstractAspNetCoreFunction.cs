@@ -337,19 +337,17 @@ namespace Amazon.Lambda.AspNetCoreServer
                 {
                     var invokeTimes = 5;
 
-                    var json = await HttpRequestMessageSerializer.SerializeToJson<TREQUEST>(httpRequest);
-
-                    var request = HttpRequestMessageSerializer.Deserialize<TREQUEST>(json);
+                    var request = await HttpRequestMessageSerializer.ConvertToLambdaRequest<TREQUEST>(httpRequest);
 
                     InvokeFeatures features = new InvokeFeatures();
                     MarshallRequest(features, request, new SnapStartEmptyLambdaContext());
 
                     var context = CreateContext(features);
 
-                    var lambdaContext = new SnapStartEmptyLambdaContext();
-
                     for (var i = 0; i < invokeTimes; i++)
                     {
+                        var lambdaContext = new SnapStartEmptyLambdaContext();
+
                         await ProcessRequest(lambdaContext, context, features);
                     }
                 }

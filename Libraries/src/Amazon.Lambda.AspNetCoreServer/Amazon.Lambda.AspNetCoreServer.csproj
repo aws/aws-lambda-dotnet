@@ -31,7 +31,6 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="..\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj" />
     <ProjectReference Include="..\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
   </ItemGroup>
 
