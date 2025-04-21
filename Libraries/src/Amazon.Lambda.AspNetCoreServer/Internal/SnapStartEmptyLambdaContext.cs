@@ -16,7 +16,6 @@ internal class SnapStartEmptyLambdaContext : ILambdaContext, ICognitoIdentity, I
     private const string EnvVarFunctionMemorySize = "AWS_LAMBDA_FUNCTION_MEMORY_SIZE";
     private const string EnvVarFunctionName = "AWS_LAMBDA_FUNCTION_NAME";
     private const string EnvVarFunctionVersion = "AWS_LAMBDA_FUNCTION_VERSION";
-    private const string EnvVarHandler = "_HANDLER";
     private const string EnvVarLogGroupName = "AWS_LAMBDA_LOG_GROUP_NAME";
     private const string EnvVarLogStreamName = "AWS_LAMBDA_LOG_STREAM_NAME";
     

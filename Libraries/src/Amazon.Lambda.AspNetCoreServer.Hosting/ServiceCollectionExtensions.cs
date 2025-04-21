@@ -90,20 +90,22 @@ namespace Microsoft.Extensions.DependencyInjection
 
         #if NET8_0_OR_GREATER
         /// <summary>
-        /// Adds a function meant to initialize the asp.net and lambda pipelines during <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>
-        /// improving the performance gains offered by SnapStart.
+        /// Adds a <see cref="HttpRequestMessage"/>> that will be used to invoke
+        /// Routes in your lambda function in order to initialize the asp.net and lambda pipelines
+        /// during <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>.  This improves the performance gains offered by SnapStart.
         /// <para />
-        /// Pass a function with one or more <see cref="HttpRequestMessage"/>s that will be used to invoke
-        /// Routes in your lambda function.  The returned <see cref="HttpRequestMessage"/> must have a relative
+        /// The returned <see cref="HttpRequestMessage"/> must have a relative
         /// <see cref="HttpRequestMessage.RequestUri"/>.
         /// <para />.
         /// Be aware that this will invoke your applications function handler code
-        /// multiple times.  Additionally, it uses a mock <see cref="ILambdaContext"/>
-        /// which may not be fully populated.
+        /// multiple times so that .NET runtime sees this code is a hot path and should be optimized.
+        /// <para />
+        /// When the function handler is called as part of SnapStart warm up, the instance will use a
+        /// mock <see cref="ILambdaContext"/>, which will not be fully populated.
         /// <para />
         /// This method automatically registers with <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>.
         /// <para />
-        /// If SnapStart is not enabled, then this method is ignored and <paramref name="beforeSnapStartRequests"/> is never invoked.
+        /// This method can be called multiple times.
         /// <para />
         /// Example:
         /// <para />
@@ -115,9 +117,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
         /// 
         /// // Initialize asp.net pipeline before Snapshot
-        /// builder.Services.AddAWSLambdaBeforeSnapshotRequest(() => [
+        /// builder.Services.AddAWSLambdaBeforeSnapshotRequest(
         ///     new HttpRequestMessage(HttpMethod.Get, "/test")
-        /// });
+        /// );
         /// 
         /// var app = builder.Build();
         /// 
@@ -127,29 +129,16 @@ namespace Microsoft.Extensions.DependencyInjection
         /// ]]>
         /// </code>
         /// </summary>
-        #else
-        /// <summary>
-        /// Snapstart requires your application to target .NET 8 or above.
-        /// </summary>
-        #endif
-        public static IServiceCollection AddAWSLambdaBeforeSnapshotRequest(this IServiceCollection services, Func<IEnumerable<HttpRequestMessage>> beforeSnapStartRequests)
+        public static IServiceCollection AddAWSLambdaBeforeSnapshotRequest(this IServiceCollection services, HttpRequestMessage beforeSnapStartRequests)
         {
-            #if NET8_0_OR_GREATER
-            LambdaSnapstartExecuteRequestsBeforeSnapshotHelper.Registrar.Register(beforeSnapStartRequests);
-            #endif
+            services.AddSingleton(new GetBeforeSnapshotRequestsCollector
+            {
+                Requests = beforeSnapStartRequests
+            });
 
             return services;
         }
-
-        /// <inheritdoc cref="AddAWSLambdaBeforeSnapshotRequest(IServiceCollection,Func{IEnumerable{HttpRequestMessage}})"/>
-        public static IServiceCollection AddAWSLambdaBeforeSnapshotRequest(this IServiceCollection services, Func<HttpRequestMessage> beforeSnapStartRequest)
-        {
-            return AddAWSLambdaBeforeSnapshotRequest(services,
-                () => new List<HttpRequestMessage>
-                {
-                    beforeSnapStartRequest()
-                });
-        }
+        #endif
 
         private static bool TryLambdaSetup(IServiceCollection services, LambdaEventSource eventSource, Action<HostingOptions>? configure, out HostingOptions? hostingOptions)
         {
@@ -173,11 +162,6 @@ namespace Microsoft.Extensions.DependencyInjection
             };
 
             Utilities.EnsureLambdaServerRegistered(services, serverType);
-
-            #if NET8_0_OR_GREATER
-            // register a LambdaSnapStartInitializerHttpMessageHandler
-            services.AddSingleton<LambdaSnapstartExecuteRequestsBeforeSnapshotHelper>(new LambdaSnapstartExecuteRequestsBeforeSnapshotHelper(eventSource));
-            #endif
 
             return true;
         }

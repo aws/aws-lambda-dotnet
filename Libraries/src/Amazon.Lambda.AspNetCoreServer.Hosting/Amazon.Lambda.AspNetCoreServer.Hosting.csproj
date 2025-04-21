@@ -27,8 +27,6 @@
     <ProjectReference Include="..\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
     <ProjectReference Include="..\Amazon.Lambda.AspNetCoreServer\Amazon.Lambda.AspNetCoreServer.csproj" />
     <ProjectReference Include="..\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj" />
-    <ProjectReference Include="..\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
-
-   </ItemGroup>
+  </ItemGroup>
 
 </Project>
