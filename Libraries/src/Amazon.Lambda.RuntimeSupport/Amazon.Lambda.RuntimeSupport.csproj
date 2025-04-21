@@ -16,13 +16,6 @@
 	<LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!--This assembly contains some internal methods that need to be accessed by the Amazon.Lambda.Annotations.SourceGenerator assembly.
-    Both these assemblies need to be strongly signed for the InternalsVisibleTo attribute to take effect.-->
-    <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-
   <PropertyGroup Condition=" '$(ExecutableOutputType)'=='true' ">
     <OutputType>Exe</OutputType>
     <DefineConstants>$(DefineConstants);ExecutableOutputType</DefineConstants>

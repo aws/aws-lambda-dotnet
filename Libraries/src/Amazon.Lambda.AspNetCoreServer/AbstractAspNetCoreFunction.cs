@@ -122,6 +122,8 @@ namespace Amazon.Lambda.AspNetCoreServer
             _hostServices = hostedServices;
             _server = this._hostServices.GetService(typeof(Microsoft.AspNetCore.Hosting.Server.IServer)) as LambdaServer;
             _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(this._hostServices);
+
+            AddRegisterBeforeSnapshot();
         }
 
         /// <summary>
@@ -256,7 +258,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         #if NET8_0_OR_GREATER
         /// <summary>
         /// Return one or more <see cref="HttpRequestMessage"/>s that will be used to invoke
-        /// Routes in your lambda function in order to initialize the asp.net and lambda pipelines
+        /// Routes in your lambda function in order to initialize the ASP.NET Core and Lambda pipelines
         /// during <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>,
         /// improving the performance gains offered by SnapStart.
         /// <para />
@@ -301,6 +303,40 @@ namespace Amazon.Lambda.AspNetCoreServer
             }
         }
 
+        private void AddRegisterBeforeSnapshot()
+        {
+            #if NET8_0_OR_GREATER
+
+            Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot(async () =>
+            {
+                var beforeSnapstartRequests = GetBeforeSnapshotRequests();
+
+                foreach (var httpRequest in beforeSnapstartRequests)
+                {
+                    var invokeTimes = 5;
+
+                    var request = await HttpRequestMessageConverter.ConvertToLambdaRequest<TREQUEST>(httpRequest);
+
+                    InvokeFeatures features = new InvokeFeatures();
+                    (features as IItemsFeature).Items = new Dictionary<object, object>();
+                    (features as IServiceProvidersFeature).RequestServices = _hostServices;
+
+                    MarshallRequest(features, request, new SnapStartEmptyLambdaContext());
+
+                    var context = CreateContext(features);
+
+                    for (var i = 0; i < invokeTimes; i++)
+                    {
+                        var lambdaContext = new SnapStartEmptyLambdaContext();
+
+                        await ProcessRequest(lambdaContext, context, features);
+                    }
+                }
+            });
+
+            #endif
+        }
+
         /// <summary>
         /// Should be called in the derived constructor 
         /// </summary>
@@ -327,34 +363,7 @@ namespace Amazon.Lambda.AspNetCoreServer
             }
             _logger = ActivatorUtilities.CreateInstance<Logger<AbstractAspNetCoreFunction<TREQUEST, TRESPONSE>>>(this._hostServices);
 
-            #if NET8_0_OR_GREATER
-
-            Amazon.Lambda.Core.SnapshotRestore.RegisterBeforeSnapshot(async () =>
-            {
-                var beforeSnapstartRequests = GetBeforeSnapshotRequests();
-
-                foreach (var httpRequest in beforeSnapstartRequests)
-                {
-                    var invokeTimes = 5;
-
-                    var request = await HttpRequestMessageSerializer.ConvertToLambdaRequest<TREQUEST>(httpRequest);
-
-                    InvokeFeatures features = new InvokeFeatures();
-                    MarshallRequest(features, request, new SnapStartEmptyLambdaContext());
-
-                    var context = CreateContext(features);
-
-                    for (var i = 0; i < invokeTimes; i++)
-                    {
-                        var lambdaContext = new SnapStartEmptyLambdaContext();
-
-                        await ProcessRequest(lambdaContext, context, features);
-                    }
-                }
-            });
-
-            #endif
-
+            AddRegisterBeforeSnapshot();
         }
 
         /// <summary>
