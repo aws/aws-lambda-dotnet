@@ -1,0 +1,23 @@
+{
+  "StatusCode": 201,
+  "Content": "{\u0022message\u0022:\u0022Created\u0022}",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:10:15 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "Apigw-Requestid": [
+      "JCInKgOZPHcEJhg="
+    ],
+    "Content-Type": [
+      "text/plain; charset=utf-8"
+    ],
+    "Content-Length": [
+      "21"
+    ]
+  }
+}
+
+

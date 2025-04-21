@@ -1,0 +1,86 @@
+{
+  "Resource": "/test5/api/users/{username}/orders/{orderName}",
+  "Path": "/test5/api/users/****%20Doe/orders/Summer%20Sale%202023",
+  "HttpMethod": "POST",
+  "Headers": {
+    "Content-Length": "0",
+    "Content-Type": "text/plain; charset=utf-8",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "X-Amzn-Trace-Id": "Root=1-67fd895b-766061a83ad2b27b1782b470",
+    "X-Forwarded-For": "IP_ADDRESS",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "MultiValueHeaders": {
+    "Content-Length": [
+      "0"
+    ],
+    "Content-Type": [
+      "text/plain; charset=utf-8"
+    ],
+    "Host": ["EXAMPLE.execute-api.REGION.amazonaws.com"],
+    "X-Amzn-Trace-Id": [
+      "Root=1-67fd895b-766061a83ad2b27b1782b470"
+    ],
+    "X-Forwarded-For": ["IP_ADDRESS"],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "QueryStringParameters": null,
+  "MultiValueQueryStringParameters": null,
+  "PathParameters": {
+    "orderName": "Summer Sale 2023",
+    "username": "**** Doe"
+  },
+  "StageVariables": null,
+  "RequestContext": {
+    "Path": "/test5/api/users/**** Doe/orders/Summer Sale 2023",
+    "AccountId": "ACCOUNT_ID",
+    "ResourceId": "POST /test5/api/users/{username}/orders/{orderName}",
+    "Stage": "$default",
+    "RequestId": "JCJmXjUAPHcEP4w=",
+    "Identity": {
+      "CognitoIdentityPoolId": null,
+      "AccountId": null,
+      "CognitoIdentityId": null,
+      "Caller": null,
+      "ApiKey": null,
+      "ApiKeyId": null,
+      "AccessKey": null,
+      "SourceIp": "IP_ADDRESS",
+      "CognitoAuthenticationType": null,
+      "CognitoAuthenticationProvider": null,
+      "UserArn": null,
+      "UserAgent": "",
+      "User": null,
+      "ClientCert": null
+    },
+    "ResourcePath": "/test5/api/users/{username}/orders/{orderName}",
+    "HttpMethod": "POST",
+    "ApiId": "EXAMPLE",
+    "ExtendedRequestId": "JCJmXjUAPHcEP4w=",
+    "ConnectionId": null,
+    "ConnectedAt": 0,
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
+    "EventType": null,
+    "MessageId": null,
+    "RouteKey": null,
+    "Authorizer": null,
+    "OperationName": null,
+    "Error": null,
+    "IntegrationLatency": null,
+    "MessageDirection": null,
+    "RequestTime": "14/Apr/2025:22:16:59 \u002B0000",
+    "RequestTimeEpoch": 1744669019524,
+    "Status": null
+  },
+  "Body": null,
+  "IsBase64Encoded": false
+}
+
+

@@ -1,0 +1,23 @@
+{
+  "StatusCode": 200,
+  "Content": "{\u0022name\u0022: \u0022John Doe\u0022, \u0022age\u0022:",
+  "Headers": {
+    "Date": [
+      "Mon, 14 Apr 2025 22:17:19 GMT"
+    ],
+    "Connection": [
+      "keep-alive"
+    ],
+    "Apigw-Requestid": [
+      "JCJpejtwvHcEP4Q="
+    ],
+    "Content-Type": [
+      "application/json"
+    ],
+    "Content-Length": [
+      "27"
+    ]
+  }
+}
+
+
