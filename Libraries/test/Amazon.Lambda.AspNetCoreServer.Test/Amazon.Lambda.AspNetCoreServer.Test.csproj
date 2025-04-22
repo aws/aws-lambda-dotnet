@@ -41,6 +41,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.RuntimeSupport\Amazon.Lambda.RuntimeSupport.csproj" />
     <ProjectReference Include="..\TestWebApp\TestWebApp.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.TestUtilities\Amazon.Lambda.TestUtilities.csproj" />
   </ItemGroup>

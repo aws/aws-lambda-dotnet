@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -9,13 +9,15 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.RuntimeSupport;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.TestUtilities;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 using TestWebApp;
-
+using TestWebApp.Controllers;
 using Xunit;
 
 
@@ -282,6 +284,30 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             }
         }
 
+        #if NET8_0_OR_GREATER
+        /// <summary>
+        /// Verifies that <see cref="HttpV2LambdaFunction.GetBeforeSnapshotRequests"/> is invoked during startup.
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
+        public async Task TestSnapStartInitialization()
+        {
+            using var e1 = new EnvironmentVariableHelper("AWS_LAMBDA_FUNCTION_NAME", nameof(TestSnapStartInitialization));
+            using var e2 = new EnvironmentVariableHelper("AWS_LAMBDA_INITIALIZATION_TYPE", "snap-start");
+            using var e3 = new EnvironmentVariableHelper("AWS_LAMBDA_RUNTIME_API", "localhost:123");
+
+            var t = LambdaBootstrapBuilder.Create<APIGatewayHttpApiV2ProxyRequest>(
+                    new TestWebApp.HttpV2LambdaFunction().FunctionHandlerAsync,
+                    new DefaultLambdaJsonSerializer())
+                .Build()
+                .RunAsync();
+
+            await Task.Delay(1000);
+
+            Assert.True(SnapStartController.Invoked);
+        }
+        #endif
+
         private async Task<APIGatewayHttpApiV2ProxyResponse> InvokeAPIGatewayRequest(string fileName, bool configureApiToReturnExceptionDetail = false)
         {
             return await InvokeAPIGatewayRequestWithContent(new TestLambdaContext(), GetRequestContent(fileName), configureApiToReturnExceptionDetail);
@@ -309,5 +335,20 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var requestStr = File.ReadAllText(filePath);
             return requestStr;
         }
+    }
+
+    public class EnvironmentVariableHelper : IDisposable
+    {
+        private string _name;
+        private string? _oldValue;
+        public EnvironmentVariableHelper(string name, string value)
+        {
+            _name = name;
+            _oldValue = Environment.GetEnvironmentVariable(name);
+
+            Environment.SetEnvironmentVariable(name, value);
+        }
+
+        public void Dispose() => Environment.SetEnvironmentVariable(_name, _oldValue);
     }
 }
