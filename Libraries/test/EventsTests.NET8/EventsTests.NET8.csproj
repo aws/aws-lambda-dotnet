@@ -14,6 +14,7 @@
     <Content Include="../EventsTests.Shared/*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Compile Include="..\EventsTests.NET6\SourceGeneratorSerializerTests.cs" Link="SourceGeneratorSerializerTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
