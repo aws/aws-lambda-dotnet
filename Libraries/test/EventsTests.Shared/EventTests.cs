@@ -951,7 +951,7 @@ namespace Amazon.Lambda.Tests
                 Assert.True(session0.ChallengeResult);
 
                 Assert.Equal("challenge_metadata1", session0.ChallengeMetadata);
-
+                
                 var session1 = cognitoDefineAuthChallengeEvent.Request.Session[1];
                 Assert.Equal("challenge2", session1.ChallengeName);
                 Assert.False(session1.ChallengeResult);
@@ -1109,7 +1109,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("private_value_2", cognitoVerifyAuthChallengeEvent.Request.PrivateChallengeParameters.ToArray()[1].Value);
 
                 Assert.True(cognitoVerifyAuthChallengeEvent.Request.UserNotFound);
-
+            
                 Assert.True(cognitoVerifyAuthChallengeEvent.Response.AnswerCorrect);
 
                 MemoryStream ms = new MemoryStream();
@@ -1253,11 +1253,11 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("attribute_value_1", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[0].Value);
                 Assert.Equal("attribute_2", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[1].Key);
                 Assert.Equal("attribute_value_2", cognitoPreTokenGenerationV2Event.Request.UserAttributes.ToArray()[1].Value);
-
+                
                 Assert.Equal(2, cognitoPreTokenGenerationV2Event.Request.Scopes.Count);
                 Assert.Equal("scope_1", cognitoPreTokenGenerationV2Event.Request.Scopes.ToArray()[0]);
                 Assert.Equal("scope_2", cognitoPreTokenGenerationV2Event.Request.Scopes.ToArray()[1]);
-
+                
                 // Value comparison would vary across different serializers. Skip it for now and validate the complete JSON later.
                 Assert.Equal(5, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.Count);
                 Assert.Equal("id_claim_1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[0].Key);
@@ -1265,7 +1265,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("id_claim_3", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[2].Key);
                 Assert.Equal("id_claim_4", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[3].Key);
                 Assert.Equal("id_claim_5", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToAddOrOverride.ToArray()[4].Key);
-
+                
                 Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress.Count);
                 Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress[0]);
                 Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.IdTokenGeneration.ClaimsToSuppress[1]);
@@ -1277,7 +1277,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal("access_claim_3", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[2].Key);
                 Assert.Equal("access_claim_4", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[3].Key);
                 Assert.Equal("access_claim_5", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToAddOrOverride.ToArray()[4].Key);
-
+                
                 Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress.Count);
                 Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress[0]);
                 Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ClaimsToSuppress[1]);
@@ -1287,7 +1287,7 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress.Count);
                 Assert.Equal("suppress1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress[0]);
                 Assert.Equal("suppress2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.AccessTokenGeneration.ScopesToSuppress[1]);
-
+                
                 Assert.Equal(2, cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride.Count);
                 Assert.Equal("group1", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride[0]);
                 Assert.Equal("group2", cognitoPreTokenGenerationV2Event.Response.ClaimsAndScopeOverrideDetails.GroupOverrideDetails.GroupsToOverride[1]);
@@ -1308,7 +1308,7 @@ namespace Amazon.Lambda.Tests
                 Assert.True(JToken.DeepEquals(serialized, original), "Serialized object is not the same as the original JSON");
             }
         }
-
+        
         [Theory]
         [InlineData(typeof(JsonSerializer))]
 #if NETCOREAPP3_1_OR_GREATER
@@ -2049,7 +2049,7 @@ namespace Amazon.Lambda.Tests
                             Condition = new Dictionary<string, IDictionary<string, object>>()
                             {
                                 {  "StringEquals", new Dictionary<string, object>()
-                                    {
+                                    { 
                                         { "aws:PrincipalTag/job-category", "iamuser-admin" }
                                     }
                                 }
@@ -2112,16 +2112,16 @@ namespace Amazon.Lambda.Tests
                             Resource = new HashSet<string>{ "*" },
                             Condition = new Dictionary<string, IDictionary<string, object>>()
                             {
-                                {
-                                    "StringEquals",
+                                {  
+                                    "StringEquals", 
                                     new Dictionary<string, object>()
                                     {
                                         { "aws:PrincipalTag/department", new List<string>{ "finance", "hr", "legal" } },
                                         { "aws:PrincipalTag/role", new List<string>{ "audit", "security" } }
                                     }
                                 },
-                                {
-                                    "ArnLike",
+                                { 
+                                    "ArnLike", 
                                     new Dictionary<string, object>()
                                     {
                                         { "aws:PrincipalArn", new List<string>{ "arn:aws:iam::XXXXXXXXXXXX:user/User1", "arn:aws:iam::XXXXXXXXXXXX:user/User2" } }
