@@ -7,6 +7,7 @@ using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Processes;
+using Amazon.Lambda.TestTool.Processes.SQSEventSource;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Services.IO;
 using Spectre.Console.Cli;
@@ -23,6 +24,11 @@ public sealed class RunCommand(
     public const string API_GATEWAY_EMULATOR_PORT = "API_GATEWAY_EMULATOR_PORT";
 
     /// <summary>
+    /// Task for the Lambda Runtime API.
+    /// </summary>
+    public Task LambdRuntimeApiTask { get; private set; }
+
+    /// <summary>
     /// The method responsible for executing the <see cref="RunCommand"/>.
     /// </summary>
     public override async Task<int> ExecuteAsync(CommandContext context, RunCommandSettings settings, CancellationTokenSource cancellationTokenSource)
@@ -31,10 +37,10 @@ public sealed class RunCommand(
         {
             EvaluateEnvironmentVariables(settings);
 
-            if (!settings.LambdaEmulatorPort.HasValue && !settings.ApiGatewayEmulatorPort.HasValue)
+            if (!settings.LambdaEmulatorPort.HasValue && !settings.ApiGatewayEmulatorPort.HasValue && string.IsNullOrEmpty(settings.SQSEventSourceConfig))
             {
                 throw new ArgumentException("At least one of the following parameters must be set: " +
-                                            "--lambda-emulator-port or --api-gateway-emulator-port");
+                                            "--lambda-emulator-port, --api-gateway-emulator-port or --sqs-eventsource-config");
             }
 
             var tasks = new List<Task>();
@@ -42,6 +48,7 @@ public sealed class RunCommand(
             if (settings.LambdaEmulatorPort.HasValue)
             {
                 var testToolProcess = TestToolProcess.Startup(settings, cancellationTokenSource.Token);
+                LambdRuntimeApiTask = testToolProcess.RunningTask;
                 tasks.Add(testToolProcess.RunningTask);
 
                 if (!settings.NoLaunchWindow)
@@ -74,8 +81,18 @@ public sealed class RunCommand(
                 tasks.Add(apiGatewayEmulatorProcess.RunningTask);
             }
 
-            await Task.WhenAny(tasks);
+            if (!string.IsNullOrEmpty(settings.SQSEventSourceConfig))
+            {
+                var sqsEventSourceProcess = SQSEventSourceProcess.Startup(settings, cancellationTokenSource.Token);
+                tasks.Add(sqsEventSourceProcess.RunningTask);
+            }
 
+            await Task.Run(() => Task.WaitAny(tasks.ToArray(), cancellationTokenSource.Token));
+
+            return CommandReturnCodes.Success;
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
             return CommandReturnCodes.Success;
         }
         catch (Exception e) when (e.IsExpectedException())
@@ -131,6 +148,16 @@ public sealed class RunCommand(
             {
                 throw new ArgumentException($"Value for {API_GATEWAY_EMULATOR_PORT} environment variable was not a valid port number");
             }
+        }
+
+        if (settings.SQSEventSourceConfig != null && settings.SQSEventSourceConfig.StartsWith(Constants.ArgumentEnvironmentVariablePrefix, StringComparison.CurrentCultureIgnoreCase))
+        {
+            var envVariable = settings.SQSEventSourceConfig.Substring(Constants.ArgumentEnvironmentVariablePrefix.Length);
+            if (!environmentVariables.Contains(envVariable))
+            {
+                throw new InvalidOperationException($"Environment variable {envVariable} for the SQS event source config was empty");
+            }
+            settings.SQSEventSourceConfig = environmentVariables[envVariable]?.ToString();
         }
     }
 }

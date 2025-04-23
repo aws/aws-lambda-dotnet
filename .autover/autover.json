@@ -52,6 +52,10 @@
       "Path": "Libraries/src/Amazon.Lambda.DynamoDBEvents/Amazon.Lambda.DynamoDBEvents.csproj"
     },
     {
+      "Name": "Amazon.Lambda.DynamoDBEvents.SDK.Convertor",
+      "Path": "Libraries/src/Amazon.Lambda.DynamoDBEvents.SDK.Convertor/Amazon.Lambda.DynamoDBEvents.SDK.Convertor.csproj"
+    },
+    {
       "Name": "Amazon.Lambda.KafkaEvents",
       "Path": "Libraries/src/Amazon.Lambda.KafkaEvents/Amazon.Lambda.KafkaEvents.csproj"
     },

@@ -84,4 +84,10 @@ public abstract class Constants
     /// The Visual Studio Marketplace link for the AWS Toolkit for Visual Studio.
     /// </summary>
     public const string LinkVsToolkitMarketplace = "https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.AWSToolkitforVisualStudio2022";
+
+    /// <summary>
+    /// Prefix this is used for values of command line arguments that support the value being stored in an environment variable.
+    /// This used in the Aspire integration where it is often easier to pass configuration via environment variables.
+    /// </summary>
+    public const string ArgumentEnvironmentVariablePrefix = "env:";
 }

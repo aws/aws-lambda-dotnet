@@ -2,7 +2,7 @@
 
   <Import Project="..\..\..\..\buildtools\common.props" />
   <PropertyGroup>
-    <OutputType>Exe</OutputType>  
+    <OutputType>Exe</OutputType>
     <Description>A tool to help debug and test your .NET AWS Lambda functions locally.</Description>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -15,9 +15,9 @@
     <PackAsTool>true</PackAsTool>
     <PackageId>Amazon.Lambda.TestTool</PackageId>
     <ToolCommandName>dotnet-lambda-test-tool</ToolCommandName>
-    <Version>0.9.1</Version>
+    <Version>0.10.1</Version>
     <NoWarn>NU5100</NoWarn>
-    <RollForward>Major</RollForward>	
+    <RollForward>Major</RollForward>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
@@ -26,7 +26,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.0" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.400" />
     <PackageReference Include="AWSSDK.Lambda" Version="3.7.411.17" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.400.109" />
     <PackageReference Include="Spectre.Console" Version="0.49.1" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.1" />
@@ -38,7 +41,7 @@
     <Exec Command="dotnet msbuild ../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj --getProperty:TargetFrameworks" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="RuntimeSupportTargetFrameworks" />
     </Exec>
-    
+
     <ItemGroup>
       <TempFrameworks Include="$(RuntimeSupportTargetFrameworks.Split(';'))" />
       <TargetFrameworks Include="@(TempFrameworks)" Condition="'%(Identity)' != 'netstandard2.0'" />

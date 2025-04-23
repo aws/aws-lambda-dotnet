@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text;
+using System.Text.Json;
+using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Model;
 using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Models;
@@ -9,8 +11,179 @@ using Xunit;
 
 namespace Amazon.Lambda.TestTool.UnitTests.Extensions;
 
+/// <summary>
+/// Unit tests for InvokeResponseExtensions.
+/// </summary>
+/// <remarks>
+/// Developer's Note:
+/// These tests don't have direct access to the intermediate result of the Lambda to API Gateway conversion.
+/// Instead, we test the final API Gateway response object to ensure our conversion methods produce results
+/// that match the actual API Gateway behavior. This approach allows us to verify the correctness of our
+/// conversion methods within the constraints of not having access to AWS's internal conversion process.
+/// </remarks>
 public class InvokeResponseExtensionsTests
 {
+
+    private readonly ApiGatewayTestHelper _helper = new();
+
+    [Theory]
+    [InlineData(ApiGatewayEmulatorMode.Rest)]
+    [InlineData(ApiGatewayEmulatorMode.HttpV1)]
+    public async Task ToApiGatewayProxyResponse_ValidResponse_MatchesDirectConversion(ApiGatewayEmulatorMode emulatorMode)
+    {
+        // Arrange
+        var testResponse = new APIGatewayProxyResponse
+        {
+            StatusCode = 200,
+            Body = JsonSerializer.Serialize(new { message = "Hello, World!" }),
+            Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+        };
+        var invokeResponse = new InvokeResponse
+        {
+            Payload = new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(testResponse)))
+        };
+
+        // Act
+        var apiGatewayProxyResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
+
+        var testName = nameof(ToApiGatewayProxyResponse_ValidResponse_MatchesDirectConversion) + emulatorMode;
+
+        // Assert
+        await _helper.VerifyApiGatewayResponseAsync(apiGatewayProxyResponse, emulatorMode, testName);
+    }
+
+    [Fact]
+    public async Task ToApiGatewayHttpApiV2ProxyResponse_ValidResponse_MatchesDirectConversion()
+    {
+        // Arrange
+        var testResponse = new APIGatewayHttpApiV2ProxyResponse
+        {
+            StatusCode = 200,
+            Body = JsonSerializer.Serialize(new { message = "Hello, World!" }),
+            Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+        };
+        var invokeResponse = new InvokeResponse
+        {
+            Payload = new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(testResponse)))
+        };
+
+        // Act
+        var apiGatewayHttpApiV2ProxyResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+
+        // Assert
+        await _helper.VerifyHttpApiV2ResponseAsync(apiGatewayHttpApiV2ProxyResponse, nameof(ToApiGatewayHttpApiV2ProxyResponse_ValidResponse_MatchesDirectConversion));
+    }
+
+    [Theory]
+    [InlineData(ApiGatewayEmulatorMode.Rest, 502, "Internal server error")]
+    [InlineData(ApiGatewayEmulatorMode.HttpV1, 500, "Internal Server Error")]
+    public async Task ToApiGatewayProxyResponse_InvalidJson_ReturnsErrorResponse(ApiGatewayEmulatorMode emulatorMode, int expectedStatusCode, string expectedErrorMessage)
+    {
+        // Arrange
+        var invokeResponse = new InvokeResponse
+        {
+            Payload = new MemoryStream(Encoding.UTF8.GetBytes("Not a valid proxy response object"))
+        };
+
+        // Act
+        var apiGatewayProxyResponse = invokeResponse.ToApiGatewayProxyResponse(emulatorMode);
+
+        var testName = nameof(ToApiGatewayProxyResponse_InvalidJson_ReturnsErrorResponse) + emulatorMode;
+
+        // Assert
+        Assert.Equal(expectedStatusCode, apiGatewayProxyResponse.StatusCode);
+        Assert.Contains(expectedErrorMessage, apiGatewayProxyResponse.Body);
+
+        await _helper.VerifyApiGatewayResponseAsync(
+            apiGatewayProxyResponse,
+            emulatorMode,
+            testName);
+    }
+
+    /// <summary>
+    /// Tests various Lambda return values to verify API Gateway's handling of responses.
+    /// </summary>
+    /// <param name="expectedResponsePayload">The payload returned by the Lambda function.</param>
+    /// <remarks>
+    /// This test demonstrates a discrepancy between the official AWS documentation
+    /// and the actual observed behavior of API Gateway HTTP API v2 with Lambda
+    /// proxy integrations (payload format version 2.0).
+    ///
+    /// Official documentation states:
+    /// "If your Lambda function returns valid JSON and doesn't return a statusCode,
+    /// API Gateway assumes a 200 status code and treats the entire response as the body."
+    ///
+    /// However, the observed behavior (which this test verifies) is:
+    /// - API Gateway does not validate whether the returned data is valid JSON.
+    /// - Any response from the Lambda function that is not a properly formatted
+    ///   API Gateway response object (i.e., an object with a 'statusCode' property)
+    ///   is treated as a raw body in a 200 OK response.
+    /// - This includes valid JSON objects without a statusCode, JSON arrays,
+    ///   primitive values, and invalid JSON strings.
+    ///
+    /// This test ensures that our ToApiGatewayHttpApiV2ProxyResponse method
+    /// correctly replicates this observed behavior, rather than the documented behavior.
+    /// </remarks>
+    [Theory]
+    [InlineData("Invalid_JSON_Partial_Object", "{\"name\": \"John Doe\", \"age\":", "{\"name\": \"John Doe\", \"age\":")]  // Invalid JSON (partial object)
+    [InlineData("Valid_JSON_Object", "{\"name\": \"John Doe\", \"age\": 30}", "{\"name\": \"John Doe\", \"age\": 30}")]  // Valid JSON object without statusCode
+    [InlineData("JSON_Array", "[1, 2, 3, 4, 5]", "[1, 2, 3, 4, 5]")]  // JSON array
+    [InlineData("string", "Hello, World!", "Hello, World!")]  // String primitive
+    [InlineData("number", "42", "42")]  // Number primitive
+    [InlineData("boolean", "true", "true")]  // Boolean primitive
+    [InlineData("string_unescaped", "\"test\"", "test")]  // JSON string that should be unescaped
+    [InlineData("string_spaces", "\"Hello, World!\"", "Hello, World!")]  // JSON string with spaces
+    [InlineData("empty_string", "\"\"", "")]  // Empty JSON string
+    [InlineData("json_special", "\"Special \\\"quoted\\\" text\"", "Special \"quoted\" text")]  // JSON string with escaped quotes
+    public async Task ToApiGatewayHttpApiV2ProxyResponse_VariousPayloads_ReturnsAsRawBody(
+        string testName,
+        string inputPayload,
+        string expectedResponsePayload)
+    {
+        // Arrange
+        var invokeResponse = new InvokeResponse
+        {
+            Payload = new MemoryStream(Encoding.UTF8.GetBytes(inputPayload))
+        };
+
+        // Act
+        var apiGatewayHttpApiV2ProxyResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+
+        var testCaseName =  nameof(ToApiGatewayProxyResponse_ValidResponse_MatchesDirectConversion) + testName;
+
+        // Assert
+        Assert.Equal(200, apiGatewayHttpApiV2ProxyResponse.StatusCode);
+        Assert.Equal(expectedResponsePayload, apiGatewayHttpApiV2ProxyResponse.Body);
+        Assert.Equal("application/json", apiGatewayHttpApiV2ProxyResponse.Headers["Content-Type"]);
+
+        await _helper.VerifyHttpApiV2ResponseAsync(
+            apiGatewayHttpApiV2ProxyResponse,
+            testCaseName);
+    }
+
+    [Fact]
+    public async Task ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError()
+    {
+        // Arrange
+        var responsePayload = "{\"statusCode\": 200.5, \"body\": \"Hello\", \"headers\": {\"Content-Type\": \"text/plain\"}}";
+        var invokeResponse = new InvokeResponse
+        {
+            Payload = new MemoryStream(Encoding.UTF8.GetBytes(responsePayload))
+        };
+
+        // Act
+        var apiGatewayHttpApiV2ProxyResponse = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
+
+        // Assert
+        Assert.Equal(500, apiGatewayHttpApiV2ProxyResponse.StatusCode);
+        Assert.Equal("{\"message\":\"Internal Server Error\"}", apiGatewayHttpApiV2ProxyResponse.Body);
+        Assert.Equal("application/json", apiGatewayHttpApiV2ProxyResponse.Headers["Content-Type"]);
+
+        await _helper.VerifyHttpApiV2ResponseAsync(
+            apiGatewayHttpApiV2ProxyResponse,
+            nameof(ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError));
+    }
+
     [Theory]
     [InlineData("{\"statusCode\": 200, \"body\": \"Hello\", \"headers\": {\"Content-Type\": \"text/plain\"}}", ApiGatewayEmulatorMode.Rest, 200, "Hello", "text/plain")]
     [InlineData("{\"statusCode\": 201, \"body\": \"Created\", \"headers\": {\"Content-Type\": \"application/json\"}}", ApiGatewayEmulatorMode.HttpV1, 201, "Created", "application/json")]
@@ -38,27 +211,6 @@ public class InvokeResponseExtensionsTests
         Assert.Equal("application/json", result.Headers["Content-Type"]);
     }
 
-    [Theory]
-    [InlineData("{\"statusCode\": 200, \"body\": \"Hello\", \"headers\": {\"Content-Type\": \"text/plain\"}}", 200, "Hello", "text/plain")]
-    [InlineData("{\"statusCode\": \"invalid\", \"body\": \"Hello\"}", 500, "{\"message\":\"Internal Server Error\"}", "application/json")]
-    [InlineData("{\"message\": \"Hello, World!\"}", 200, "{\"message\": \"Hello, World!\"}", "application/json")]
-    [InlineData("test", 200, "test", "application/json")]
-    [InlineData("\"test\"", 200, "test", "application/json")]
-    [InlineData("42", 200, "42", "application/json")]
-    [InlineData("true", 200, "true", "application/json")]
-    [InlineData("[1,2,3]", 200, "[1,2,3]", "application/json")]
-    [InlineData("{invalid json}", 200, "{invalid json}", "application/json")]
-    [InlineData("", 200, "", "application/json")]
-    public void ToApiGatewayHttpApiV2ProxyResponse_VariousInputs_ReturnsExpectedResult(string payload, int expectedStatusCode, string expectedBody, string expectedContentType)
-    {
-        var invokeResponse = CreateInvokeResponse(payload);
-        var result = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
-
-        Assert.Equal(expectedStatusCode, result.StatusCode);
-        Assert.Equal(expectedBody, result.Body);
-        Assert.Equal(expectedContentType, result.Headers["Content-Type"]);
-    }
-
     [Fact]
     public void ToApiGatewayProxyResponse_UnsupportedEmulatorMode_ThrowsNotSupportedException()
     {
@@ -67,23 +219,6 @@ public class InvokeResponseExtensionsTests
         Assert.Throws<NotSupportedException>(() =>
             invokeResponse.ToApiGatewayProxyResponse(ApiGatewayEmulatorMode.HttpV2));
     }
-
-    [Fact]
-    public void ToApiGatewayHttpApiV2ProxyResponse_StatusCodeAsFloat_ReturnsInternalServerError()
-    {
-        // Arrange
-        var payload = "{\"statusCode\": 200.5, \"body\": \"Hello\", \"headers\": {\"Content-Type\": \"text/plain\"}}";
-        var invokeResponse = CreateInvokeResponse(payload);
-
-        // Act
-        var result = invokeResponse.ToApiGatewayHttpApiV2ProxyResponse();
-
-        // Assert
-        Assert.Equal(500, result.StatusCode);
-        Assert.Equal("{\"message\":\"Internal Server Error\"}", result.Body);
-        Assert.Equal("application/json", result.Headers["Content-Type"]);
-    }
-
 
     private InvokeResponse CreateInvokeResponse(string payload)
     {
