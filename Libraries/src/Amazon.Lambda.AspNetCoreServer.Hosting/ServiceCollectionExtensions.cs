@@ -95,8 +95,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// during <see cref="SnapshotRestore.RegisterBeforeSnapshot"/>.  This improves the performance gains
         /// offered by SnapStart.
         /// <para />
-        /// The returned <see cref="HttpRequestMessage"/> must have a relative
-        /// <see cref="HttpRequestMessage.RequestUri"/>.
+        /// <paramref name="beforeSnapStartRequest"/> must have a relative
+        /// <see cref="HttpRequestMessage.RequestUri"/> and the <see cref="HttpRequestMessage.Content"/> only supports
+        /// text based payload.
         /// <para />.
         /// Be aware that this will invoke your applications function handler code
         /// multiple times so that .NET runtime sees this code is a hot path and should be optimized.
@@ -136,7 +137,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.AddSingleton(new GetBeforeSnapshotRequestsCollector
             {
-                Requests = beforeSnapStartRequest
+                Request = beforeSnapStartRequest
             });
 
             return services;

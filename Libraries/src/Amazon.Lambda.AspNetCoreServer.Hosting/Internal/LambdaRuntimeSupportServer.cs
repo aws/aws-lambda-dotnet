@@ -85,7 +85,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// </summary>
         public class APIGatewayHttpApiV2MinimalApi : APIGatewayHttpApiV2ProxyFunction
         {
+            #if NET8_0_OR_GREATER
             private readonly IEnumerable<GetBeforeSnapshotRequestsCollector> _beforeSnapshotRequestsCollectors;
+            #endif
 
             /// <summary>
             /// Create instances
@@ -94,15 +96,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             public APIGatewayHttpApiV2MinimalApi(IServiceProvider serviceProvider)
                 : base(serviceProvider)
             {
+                #if NET8_0_OR_GREATER
                 _beforeSnapshotRequestsCollectors = serviceProvider.GetServices<GetBeforeSnapshotRequestsCollector>();
+                #endif
             }
 
             #if NET8_0_OR_GREATER
             protected override IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests()
             {
                 foreach (var collector in _beforeSnapshotRequestsCollectors)
-                    if (collector.Requests != null)
-                        yield return collector.Requests;
+                    if (collector.Request != null)
+                        yield return collector.Request;
             }
             #endif
         }
@@ -138,7 +142,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// </summary>
         public class APIGatewayRestApiMinimalApi : APIGatewayProxyFunction
         {
+            #if NET8_0_OR_GREATER
             private readonly IEnumerable<GetBeforeSnapshotRequestsCollector> _beforeSnapshotRequestsCollectors;
+            #endif
 
             /// <summary>
             /// Create instances
@@ -147,15 +153,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             public APIGatewayRestApiMinimalApi(IServiceProvider serviceProvider)
                 : base(serviceProvider)
             {
+                #if NET8_0_OR_GREATER
                 _beforeSnapshotRequestsCollectors = serviceProvider.GetServices<GetBeforeSnapshotRequestsCollector>();
+                #endif
             }
 
             #if NET8_0_OR_GREATER
             protected override IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests()
             {
                 foreach (var collector in _beforeSnapshotRequestsCollectors)
-                    if (collector.Requests != null)
-                        yield return collector.Requests;
+                    if (collector.Request != null)
+                        yield return collector.Request;
             }
             #endif
         }
@@ -191,7 +199,9 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// </summary>
         public class ApplicationLoadBalancerMinimalApi : ApplicationLoadBalancerFunction
         {
+            #if NET8_0_OR_GREATER
             private readonly IEnumerable<GetBeforeSnapshotRequestsCollector> _beforeSnapshotRequestsCollectors;
+            #endif
 
             /// <summary>
             /// Create instances
@@ -200,15 +210,17 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             public ApplicationLoadBalancerMinimalApi(IServiceProvider serviceProvider)
                 : base(serviceProvider)
             {
+                #if NET8_0_OR_GREATER
                 _beforeSnapshotRequestsCollectors = serviceProvider.GetServices<GetBeforeSnapshotRequestsCollector>();
+                #endif
             }
 
             #if NET8_0_OR_GREATER
             protected override IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests()
             {
                 foreach (var collector in _beforeSnapshotRequestsCollectors)
-                    if (collector.Requests != null)
-                        yield return collector.Requests;
+                    if (collector.Request != null)
+                        yield return collector.Request;
             }
             #endif
         }

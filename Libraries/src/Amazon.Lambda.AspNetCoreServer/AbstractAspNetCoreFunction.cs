@@ -263,7 +263,8 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// improving the performance gains offered by SnapStart.
         /// <para />
         /// The returned <see cref="HttpRequestMessage"/>s must have a relative
-        /// <see cref="HttpRequestMessage.RequestUri"/>.
+        /// <see cref="HttpRequestMessage.RequestUri"/> and the <see cref="HttpRequestMessage.Content"/> only supports
+        /// text based payload.
         /// <para />.
         /// Be aware that this will invoke your applications function handler code
         /// multiple times.  Additionally, it uses a mock <see cref="ILambdaContext"/>
