@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Amazon.Lambda.APIGatewayEvents;
@@ -294,15 +295,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         {
             using var e1 = new EnvironmentVariableHelper("AWS_LAMBDA_FUNCTION_NAME", nameof(TestSnapStartInitialization));
             using var e2 = new EnvironmentVariableHelper("AWS_LAMBDA_INITIALIZATION_TYPE", "snap-start");
-            using var e3 = new EnvironmentVariableHelper("AWS_LAMBDA_RUNTIME_API", "localhost:123");
 
-            var t = LambdaBootstrapBuilder.Create<APIGatewayHttpApiV2ProxyRequest>(
+            var cts = new CancellationTokenSource();
+
+            using var bootstrap = LambdaBootstrapBuilder.Create<APIGatewayHttpApiV2ProxyRequest>(
                     new TestWebApp.HttpV2LambdaFunction().FunctionHandlerAsync,
                     new DefaultLambdaJsonSerializer())
-                .Build()
-                .RunAsync();
+                .ConfigureOptions(opt => opt.RuntimeApiEndpoint = "localhost:123")
+                .Build();
+            
+            _ = bootstrap.RunAsync(cts.Token);
 
-            await Task.Delay(1000);
+            // allow some time for Bootstrap to initialize in background
+            await Task.Delay(100, cts.Token);
+
+            await cts.CancelAsync();
 
             Assert.True(SnapStartController.Invoked);
         }
