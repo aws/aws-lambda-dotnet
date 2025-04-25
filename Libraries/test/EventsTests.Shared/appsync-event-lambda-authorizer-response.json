@@ -1,0 +1,13 @@
+{
+    "isAuthorized": true,
+    "resolverContext": {
+      "userid": "test-user-id",
+      "info": "contextual information A",
+      "more_info": "contextual information B"
+    },
+    "deniedFields": [
+        "arn:aws:appsync:us-east-1:1234567890:apis/xxxxxx/types/Event/fields/comments",
+        "Mutation.createEvent"
+    ],
+    "ttlOverride": 10
+  }

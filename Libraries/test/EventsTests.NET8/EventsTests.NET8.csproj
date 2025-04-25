@@ -1,32 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <PackageId>EventsTests31</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <RootNamespace>EventsTests.NET6</RootNamespace>
+    <RootNamespace>EventsTests.NET8</RootNamespace>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
 
-  
+
   <ItemGroup>
     <Content Include="../EventsTests.Shared/*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Compile Include="..\EventsTests.NET6\SourceGeneratorSerializerTests.cs" Link="SourceGeneratorSerializerTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="ecs-container-state-change-event.json" />
-    <None Remove="ecs-task-state-change-event.json" />
-    <None Remove="kinesis-analytics-inputpreprocessing-event.json" />
-    <None Remove="kinesis-analytics-inputpreprocessing-response.json" />
-    <None Remove="kinesis-analytics-outputdelivery-event.json" />
-    <None Remove="kinesis-analytics-outputdelivery-response.json" />
-    <None Remove="simple-email-event-s3.json" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\..\src\Amazon.Lambda.AppSyncEvents\Amazon.Lambda.AppSyncEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.MQEvents\Amazon.Lambda.MQEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.CloudWatchEvents\Amazon.Lambda.CloudWatchEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj" />
@@ -49,7 +41,7 @@
     <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
     <ProjectReference Include="..\..\src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.Serialization.SystemTextJson\Amazon.Lambda.Serialization.SystemTextJson.csproj" />
   </ItemGroup>

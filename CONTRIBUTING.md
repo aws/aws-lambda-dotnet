@@ -105,6 +105,7 @@ The available projects are:
 * Amazon.Lambda.SQSEvents
 * Amazon.Lambda.TestUtilities
 * Amazon.Lambda.TestTool.BlazorTester
+* Amazon.Lambda.AppSyncEvents
 
 The possible increment types are:
 * Patch
