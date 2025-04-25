@@ -1,5 +1,7 @@
 ## Release 2025-04-25
 
+### Amazon.Lambda.AspNetCoreServer (9.0.5)
+* Add overrideable method GetBeforeSnapshotRequests() and AddAWSLambdaBeforeSnapshotRequest() extension method to support warming up the asp.net/lambda pipelines automatically during BeforeSnapshot callback.
 ### Amazon.Lambda.AspNetCoreServer.Hosting (1.7.5)
 * Add overrideable method GetBeforeSnapshotRequests() and AddAWSLambdaBeforeSnapshotRequest() extension method to support warming up the asp.net/lambda pipelines automatically during BeforeSnapshot callback.
 ### Amazon.Lambda.AppSyncEvents (1.0.0)
