@@ -38,7 +38,7 @@ jobs:
           parse-json-secrets: true
       # Checkout a full clone of the repo
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 #v4.2.2
         with:
           fetch-depth: '0'
           token: ${{ env.AWS_SECRET_TOKEN }}
