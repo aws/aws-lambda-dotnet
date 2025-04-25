@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Configure Load Balancer Credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 #v4
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4
         with:
           role-to-assume: ${{ secrets.CI_MAIN_TESTING_ACCOUNT_ROLE_ARN }}
           role-duration-seconds: 7200
@@ -29,7 +29,7 @@ jobs:
           $roleArn=$(cat ./response.json)
           "roleArn=$($roleArn -replace '"', '')" >> $env:GITHUB_OUTPUT
       - name: Configure Test Runner Credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 #v4
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4
         with:
           role-to-assume: ${{ steps.lambda.outputs.roleArn }}
           role-duration-seconds: 7200
@@ -41,7 +41,7 @@ jobs:
           project-name: ${{ secrets.CI_TESTING_CODE_BUILD_PROJECT_NAME }}
       - name: Configure Test Sweeper Lambda Credentials
         if: always()
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 #v4
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 #v4
         with:
           role-to-assume: ${{ steps.lambda.outputs.roleArn }}
           role-duration-seconds: 7200
