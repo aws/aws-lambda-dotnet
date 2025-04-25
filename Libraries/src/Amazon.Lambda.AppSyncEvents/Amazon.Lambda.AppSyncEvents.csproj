@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET support - AWS AppSync package.</Description>
     <TargetFrameworks>net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.AppSyncEvents</AssemblyTitle>
-    <Version>0.0.1</Version>
+    <Version>1.0.0</Version>
     <AssemblyName>Amazon.Lambda.AppSyncEvents</AssemblyName>
     <PackageId>Amazon.Lambda.AppSyncEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
