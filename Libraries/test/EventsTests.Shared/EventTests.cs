@@ -319,9 +319,9 @@ namespace Amazon.Lambda.Tests
 #if NET8_0_OR_GREATER
                 // Starting with .NET 7 the precision of the underlying AddSeconds method was changed.
                 // https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/7.0/datetime-add-precision
-                Assert.Equal(636162383234769999, record.Kinesis.ApproximateArrivalTimestamp.ToUniversalTime().Ticks);
+                Assert.Equal(636162383234769999, record.Kinesis.ApproximateArrivalTimestamp.Value.ToUniversalTime().Ticks);
 #else
-                Assert.Equal(636162383234770000, record.Kinesis.ApproximateArrivalTimestamp.ToUniversalTime().Ticks);
+                Assert.Equal(636162383234770000, record.Kinesis.ApproximateArrivalTimestamp.Value.ToUniversalTime().Ticks);
 #endif
 
                 Handle(kinesisEvent);
@@ -409,7 +409,7 @@ namespace Amazon.Lambda.Tests
                 var dataBytes = record.Kinesis.Data.ToArray();
                 Assert.Equal(Convert.ToBase64String(dataBytes), "SGVsbG8sIHRoaXMgaXMgYSB0ZXN0Lg==");
                 Assert.Equal(Encoding.UTF8.GetString(dataBytes), "Hello, this is a test.");
-                Assert.Equal(637430942750000000, record.Kinesis.ApproximateArrivalTimestamp.ToUniversalTime().Ticks);
+                Assert.Equal(637430942750000000, record.Kinesis.ApproximateArrivalTimestamp.Value.ToUniversalTime().Ticks);
 
                 Handle(kinesisTimeWindowEvent);
             }
