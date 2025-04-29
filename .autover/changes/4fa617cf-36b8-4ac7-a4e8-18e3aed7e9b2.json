@@ -1,0 +1,12 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Add SSO dependencies to support credential profiles that are using SSO",
+        "Update version of AWS SDK for .NET to V4"
+      ]
+    }
+  ]
+}

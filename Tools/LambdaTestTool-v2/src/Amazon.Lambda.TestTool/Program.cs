@@ -7,6 +7,9 @@ using Amazon.Lambda.TestTool.Extensions;
 using Amazon.Lambda.TestTool.Services;
 using Spectre.Console.Cli;
 
+// Till we do the full inspection for collection maintain the S3 behavior for initializing collections.
+Amazon.AWSConfigs.InitializeCollections = true;
+
 var serviceCollection = new ServiceCollection();
 
 serviceCollection.AddCustomServices();
