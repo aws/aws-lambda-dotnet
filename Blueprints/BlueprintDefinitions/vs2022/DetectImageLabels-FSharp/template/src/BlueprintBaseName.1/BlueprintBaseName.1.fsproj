@@ -7,11 +7,12 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- Generate ready to run images during publishing to improve cold start time. -->
     <PublishReadyToRun>true</PublishReadyToRun>
+    <NoWarn>FS3536</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.406.4" />
-    <PackageReference Include="AWSSDK.Rekognition" Version="3.7.400.55" />
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.5.0" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.0.0" />
+    <PackageReference Include="AWSSDK.Rekognition" Version="4.0.0.0" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.5.1" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
     <PackageReference Include="Amazon.Lambda.S3Events" Version="3.1.0" />
   </ItemGroup>
