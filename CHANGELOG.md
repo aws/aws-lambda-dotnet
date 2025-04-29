@@ -1,3 +1,13 @@
+## Release 2025-04-29
+
+### Amazon.Lambda.TestTool (0.10.2)
+* Add SSO dependencies to support credential profiles that are using SSO
+* Update version of AWS SDK for .NET to V4
+### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (2.0.0)
+* Update to AWS SDK for .NET V4
+### Amazon.Lambda.KinesisEvents (3.0.0)
+* Update to AWS SDK for .NET V4
+
 ## Release 2025-04-25
 
 ### Amazon.Lambda.AspNetCoreServer (9.1.0)
