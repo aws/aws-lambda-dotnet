@@ -11,12 +11,12 @@ namespace Amazon.Lambda.DynamoDBEvents.SDK.Convertor
         /// </summary>
         /// <param name="lambdaIdentity">The Lambda Identity to convert.</param>
         /// <returns>The converted SDK Identity.</returns>
-        public static Amazon.DynamoDBv2.Model.Identity ConvertToSdkIdentity(this DynamoDBEvent.Identity lambdaIdentity)
+        public static Amazon.DynamoDBStreams.Model.Identity ConvertToSdkIdentity(this DynamoDBEvent.Identity lambdaIdentity)
         {
             if (lambdaIdentity == null)
                 return null;
 
-            var sdkIdentity = new Amazon.DynamoDBv2.Model.Identity
+            var sdkIdentity = new Amazon.DynamoDBStreams.Model.Identity
             {
                 PrincipalId = lambdaIdentity.PrincipalId,
                 Type = lambdaIdentity.Type

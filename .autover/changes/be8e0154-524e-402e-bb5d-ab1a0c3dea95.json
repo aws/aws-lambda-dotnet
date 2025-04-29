@@ -1,0 +1,18 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DynamoDBEvents.SDK.Convertor",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update to AWS SDK for .NET V4"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.KinesisEvents",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "Update to AWS SDK for .NET V4"
+      ]
+    }	
+  ]
+}
