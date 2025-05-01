@@ -1,0 +1,64 @@
+[2025-05-01 14:58:59] Checking out dev branch...
+[2025-05-01 14:59:00] Processing workflow file: C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\aws-ci.yml
+[2025-05-01 14:59:00] Found action with version tag: aws-actions/aws-codebuild-run-build@v1
+[2025-05-01 14:59:00] Resolving commit hash for aws-actions/aws-codebuild-run-build@v1...
+[2025-05-01 14:59:00] API Request: GET repos/aws-actions/aws-codebuild-run-build/git/refs/tags/v1
+[2025-05-01 14:59:01] Resolved to commit: 4d15a47425739ac2296ba5e7eee3bdd4bfbdd767
+[2025-05-01 14:59:01] Updating action from aws-actions/aws-codebuild-run-build@v1 to aws-actions/aws-codebuild-run-build@4d15a47425739ac2296ba5e7eee3bdd4bfbdd767
+[2025-05-01 14:59:01] Writing changes to C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\aws-ci.yml
+[2025-05-01 14:59:01] Processing workflow file: C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\change-file-in-pr.yml
+[2025-05-01 14:59:01] Found action with version tag: actions/checkout@v4
+[2025-05-01 14:59:01] Resolving commit hash for actions/checkout@v4...
+[2025-05-01 14:59:01] API Request: GET repos/actions/checkout/git/refs/tags/v4
+[2025-05-01 14:59:01] Resolved to commit: 11bd71901bbe5b1630ceea73d27597364c9af683
+[2025-05-01 14:59:01] Updating action from actions/checkout@v4 to actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+[2025-05-01 14:59:01] Writing changes to C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\change-file-in-pr.yml
+[2025-05-01 14:59:01] Processing workflow file: C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\closed-issue-message.yml
+[2025-05-01 14:59:01] Found action with version tag: aws-actions/closed-issue-message@v2
+[2025-05-01 14:59:01] Resolving commit hash for aws-actions/closed-issue-message@v2...
+[2025-05-01 14:59:01] API Request: GET repos/aws-actions/closed-issue-message/git/refs/tags/v2
+[2025-05-01 14:59:02] Resolved to commit: 10aaf6366131b673a7c8b7742f8b3849f1d44f18
+[2025-05-01 14:59:02] Updating action from aws-actions/closed-issue-message@v2 to aws-actions/closed-issue-message@10aaf6366131b673a7c8b7742f8b3849f1d44f18
+[2025-05-01 14:59:02] Writing changes to C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\closed-issue-message.yml
+[2025-05-01 14:59:02] Processing workflow file: C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\create-release-pr.yml
+[2025-05-01 14:59:02] Processing workflow file: C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\handle-stale-discussions.yml
+[2025-05-01 14:59:02] Found action with version tag: aws-github-ops/handle-stale-discussions@v1
+[2025-05-01 14:59:02] Resolving commit hash for aws-github-ops/handle-stale-discussions@v1...
+[2025-05-01 14:59:02] API Request: GET repos/aws-github-ops/handle-stale-discussions/git/refs/tags/v1
+[2025-05-01 14:59:03] Resolved to commit: 711a9813957be17629fc6933afcd8bd132c57254
+[2025-05-01 14:59:03] Updating action from aws-github-ops/handle-stale-discussions@v1 to aws-github-ops/handle-stale-discussions@711a9813957be17629fc6933afcd8bd132c57254
+[2025-05-01 14:59:03] Writing changes to C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\handle-stale-discussions.yml
+[2025-05-01 14:59:03] Processing workflow file: C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\issue-regression-labeler.yml
+[2025-05-01 14:59:03] Found action with version tag: actions/github-script@v7
+[2025-05-01 14:59:03] Resolving commit hash for actions/github-script@v7...
+[2025-05-01 14:59:03] API Request: GET repos/actions/github-script/git/refs/tags/v7
+[2025-05-01 14:59:03] Found annotated tag, resolving actual commit...
+[2025-05-01 14:59:03] API Request: GET repos/actions/github-script/git/tags/5c56fde4671bc2d3592fb0f2c5b5bab9ddae03b1
+[2025-05-01 14:59:03] Resolved to commit: 60a0d83039c74a4aee543508d2ffcb1c3799cdea
+[2025-05-01 14:59:03] Updating action from actions/github-script@v7 to actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+[2025-05-01 14:59:03] Writing changes to C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\issue-regression-labeler.yml
+[2025-05-01 14:59:03] Processing workflow file: C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\semgrep-analysis.yml
+[2025-05-01 14:59:03] Found action with version tag: actions/checkout@v4
+[2025-05-01 14:59:03] Resolving commit hash for actions/checkout@v4...
+[2025-05-01 14:59:03] API Request: GET repos/actions/checkout/git/refs/tags/v4
+[2025-05-01 14:59:04] Resolved to commit: 11bd71901bbe5b1630ceea73d27597364c9af683
+[2025-05-01 14:59:04] Updating action from actions/checkout@v4 to actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+[2025-05-01 14:59:04] Writing changes to C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\semgrep-analysis.yml
+[2025-05-01 14:59:04] Processing workflow file: C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\stale_issues.yml
+[2025-05-01 14:59:04] Found action with version tag: aws-actions/stale-issue-cleanup@v6
+[2025-05-01 14:59:04] Resolving commit hash for aws-actions/stale-issue-cleanup@v6...
+[2025-05-01 14:59:04] API Request: GET repos/aws-actions/stale-issue-cleanup/git/refs/tags/v6
+[2025-05-01 14:59:04] Found annotated tag, resolving actual commit...
+[2025-05-01 14:59:04] API Request: GET repos/aws-actions/stale-issue-cleanup/git/tags/2790509321bec5e987679ec8d4a021aa2cca0ca1
+[2025-05-01 14:59:05] Resolved to commit: 7de35968489e4142233d2a6812519a82e68b5c38
+[2025-05-01 14:59:05] Updating action from aws-actions/stale-issue-cleanup@v6 to aws-actions/stale-issue-cleanup@7de35968489e4142233d2a6812519a82e68b5c38
+[2025-05-01 14:59:05] Writing changes to C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\stale_issues.yml
+[2025-05-01 14:59:05] Processing workflow file: C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\sync-master-dev.yml
+[2025-05-01 14:59:05] Processing workflow file: C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\update-Dockerfiles.yml
+[2025-05-01 14:59:05] Found action with version tag: repo-sync/pull-request@v2
+[2025-05-01 14:59:05] Resolving commit hash for repo-sync/pull-request@v2...
+[2025-05-01 14:59:05] API Request: GET repos/repo-sync/pull-request/git/refs/tags/v2
+[2025-05-01 14:59:05] Resolved to commit: 7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
+[2025-05-01 14:59:05] Updating action from repo-sync/pull-request@v2 to repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
+[2025-05-01 14:59:05] Writing changes to C:\dev\testing\aws-repos\aws-lambda-dotnet\.github\workflows\update-Dockerfiles.yml
+[2025-05-01 14:59:05] Committing changes...

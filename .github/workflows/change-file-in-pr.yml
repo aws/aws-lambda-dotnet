@@ -1,30 +1,29 @@
-name: Change File Included in PR
-
-on:
+"on":
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
-
+    types:
+    - opened
+    - synchronize
+    - reopened
+    - labeled
+name: Change File Included in PR
 jobs:
   check-files-in-directory:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Release Not Needed') && !contains(github.event.pull_request.labels.*.name, 'Release PR') }}
-    name: Change File Included in PR
     runs-on: ubuntu-latest
-
+    name: Change File Included in PR
     steps:
-      - name: Checkout PR code
-        uses: actions/checkout@v4
-
-      - name: Get List of Changed Files
-        id: changed-files
-        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c #v45
-
-      - name: Check for Change File(s) in .autover/changes/
-        run: |
-          DIRECTORY=".autover/changes/"
-          if echo "${{ steps.changed-files.outputs.all_changed_files }}" | grep -q "$DIRECTORY"; then
-            echo "✅ One or more change files in '$DIRECTORY' are included in this PR."
-          else
-            echo "❌ No change files in '$DIRECTORY' are included in this PR."
-            echo "Refer to the 'Adding a change file to your contribution branch' section of https://github.com/aws/aws-lambda-dotnet/blob/master/CONTRIBUTING.md"
-            exit 1
-          fi
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      name: Checkout PR code
+    - uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c
+      id: changed-files
+      name: Get List of Changed Files
+    - run: |
+        DIRECTORY=".autover/changes/"
+        if echo "${{ steps.changed-files.outputs.all_changed_files }}" | grep -q "$DIRECTORY"; then
+          echo "✅ One or more change files in '$DIRECTORY' are included in this PR."
+        else
+          echo "❌ No change files in '$DIRECTORY' are included in this PR."
+          echo "Refer to the 'Adding a change file to your contribution branch' section of https://github.com/aws/aws-lambda-dotnet/blob/master/CONTRIBUTING.md"
+          exit 1
+        fi
+      name: Check for Change File(s) in .autover/changes/

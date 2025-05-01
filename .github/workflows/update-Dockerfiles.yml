@@ -1,130 +1,116 @@
-name: Update Lambda Dockerfiles
-
-on:
-  # Allows to run this workflow manually from the Actions tab
+"on":
   workflow_dispatch:
     inputs:
-      NET_8_AMD64:
-        description: ".NET 8 AMD64"
+      NET_9_NEXT_VERSION:
+        type: string
+        required: true
+        description: .NET 9 Next Version
+      NET_9_AMD64:
         type: boolean
         required: true
+        description: .NET 9 AMD64
+        default: "true"
+      NET_8_AMD64:
+        type: boolean
+        required: true
+        description: .NET 8 AMD64
         default: "true"
       NET_8_ARM64:
-        description: ".NET 8 ARM64"
         type: boolean
         required: true
+        description: .NET 8 ARM64
         default: "true"
       NET_8_NEXT_VERSION:
-        description: ".NET 8 Next Version"
         type: string
         required: true
-      NET_9_AMD64:
-        description: ".NET 9 AMD64"
-        type: boolean
-        required: true
-        default: "true"
+        description: .NET 8 Next Version
       NET_9_ARM64:
-        description: ".NET 9 ARM64"
         type: boolean
         required: true
+        description: .NET 9 ARM64
         default: "true"
-      NET_9_NEXT_VERSION:
-        description: ".NET 9 Next Version"
-        type: string
-        required: true
-
+name: Update Lambda Dockerfiles
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      NET_8_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/amd64/Dockerfile"
-      NET_8_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/arm64/Dockerfile"
-      NET_9_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/amd64/Dockerfile"
-      NET_9_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/arm64/Dockerfile"
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+      NET_9_ARM64_Dockerfile: LambdaRuntimeDockerfiles/Images/net9/arm64/Dockerfile
+      NET_9_AMD64_Dockerfile: LambdaRuntimeDockerfiles/Images/net9/amd64/Dockerfile
+      NET_8_ARM64_Dockerfile: LambdaRuntimeDockerfiles/Images/net8/arm64/Dockerfile
+      NET_8_AMD64_Dockerfile: LambdaRuntimeDockerfiles/Images/net8/amd64/Dockerfile
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 #v4.2.2
-        with:
-          ref: 'dev'
+    - uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
+      with:
+        ref: dev
+    - id: update-net8-amd64
+      name: Update .NET 8 AMD64
+      run: |
+        .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+      if: ${{ github.event.inputs.NET_8_AMD64 == 'true' }}
+      shell: pwsh
+      env:
+        DOCKERFILE_PATH: ${{ env.NET_8_AMD64_Dockerfile }}
+        NEXT_VERSION: ${{ github.event.inputs.NET_8_NEXT_VERSION }}
+    - id: update-net8-arm64
+      name: Update .NET 8 ARM64
+      run: |
+        .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+      if: ${{ github.event.inputs.NET_8_ARM64 == 'true' }}
+      shell: pwsh
+      env:
+        DOCKERFILE_PATH: ${{ env.NET_8_ARM64_Dockerfile }}
+        NEXT_VERSION: ${{ github.event.inputs.NET_8_NEXT_VERSION }}
+    - id: update-net9-amd64
+      name: Update .NET 9 AMD64
+      run: |
+        .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+      if: ${{ github.event.inputs.NET_9_AMD64 == 'true' }}
+      shell: pwsh
+      env:
+        DOCKERFILE_PATH: ${{ env.NET_9_AMD64_Dockerfile }}
+        NEXT_VERSION: ${{ github.event.inputs.NET_9_NEXT_VERSION }}
+    - id: update-net9-arm64
+      name: Update .NET 9 ARM64
+      run: |
+        .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+      if: ${{ github.event.inputs.NET_9_ARM64 == 'true' }}
+      shell: pwsh
+      env:
+        DOCKERFILE_PATH: ${{ env.NET_9_ARM64_Dockerfile }}
+        NEXT_VERSION: ${{ github.event.inputs.NET_9_NEXT_VERSION }}
+    - run: |
+        git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
+        git config --global user.name "aws-sdk-dotnet-automation"
+        $suffix=Get-Date -Format yyyy-mm-dd-HH-mm
+        $branch="chore/update-Dockerfiles-${suffix}"
+        git checkout -b $branch
+        git add "**/*Dockerfile"
+        git commit -m "chore: ASP.NET Core version update in Dockerfiles"
+        git push origin $branch
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "BRANCH=$branch"
+      id: commit-push
+      name: Commit and Push
+      shell: pwsh
+    - id: pull-request
+      uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
+      with:
+        pr_body: |-
+          This PR updates the Dockerfiles to use the latest ASP.NET Core version. Verify listed Dockerfiles that they have correct version and matching SHA512 checksum for ASP.NET Core runtime. 
 
-      - name: Update .NET 8 AMD64
-        id: update-net8-amd64
-        shell: pwsh
-        env:
-          DOCKERFILE_PATH: ${{ env.NET_8_AMD64_Dockerfile }}
-          NEXT_VERSION: ${{ github.event.inputs.NET_8_NEXT_VERSION }}
-        run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
-        if: ${{ github.event.inputs.NET_8_AMD64 == 'true' }}
+          All .NET versions https://dotnet.microsoft.com/en-us/download/dotnet 
 
-      - name: Update .NET 8 ARM64
-        id: update-net8-arm64
-        shell: pwsh
-        env:
-          DOCKERFILE_PATH: ${{ env.NET_8_ARM64_Dockerfile }}
-          NEXT_VERSION: ${{ github.event.inputs.NET_8_NEXT_VERSION }}
-        run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
-        if: ${{ github.event.inputs.NET_8_ARM64 == 'true' }}
-
-      - name: Update .NET 9 AMD64
-        id: update-net9-amd64
-        shell: pwsh
-        env:
-          DOCKERFILE_PATH: ${{ env.NET_9_AMD64_Dockerfile }}
-          NEXT_VERSION: ${{ github.event.inputs.NET_9_NEXT_VERSION }}
-        run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
-        if: ${{ github.event.inputs.NET_9_AMD64 == 'true' }}
-
-      - name: Update .NET 9 ARM64
-        id: update-net9-arm64
-        shell: pwsh
-        env:
-          DOCKERFILE_PATH: ${{ env.NET_9_ARM64_Dockerfile }}
-          NEXT_VERSION: ${{ github.event.inputs.NET_9_NEXT_VERSION }}
-        run: |
-          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
-        if: ${{ github.event.inputs.NET_9_ARM64 == 'true' }}
-
-      # Update Dockerfiles if newer version of ASP.NET Core is available
-      - name: Commit and Push
-        id: commit-push
-        shell: pwsh
-        run: |
-          git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
-          git config --global user.name "aws-sdk-dotnet-automation"
-          $suffix=Get-Date -Format yyyy-mm-dd-HH-mm
-          $branch="chore/update-Dockerfiles-${suffix}"
-          git checkout -b $branch
-          git add "**/*Dockerfile"
-          git commit -m "chore: ASP.NET Core version update in Dockerfiles"
-          git push origin $branch
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "BRANCH=$branch"
-
-      # Create a Pull Request from the pushed branch
-      - name: Pull Request
-        id: pull-request
-        if: ${{ steps.commit-push.outputs.BRANCH }}
-        uses: repo-sync/pull-request@v2
-        with:
-          source_branch: ${{ steps.commit-push.outputs.BRANCH }}
-          destination_branch: "dev"
-          pr_title: 'chore: ASP.NET Core version update in Dockerfiles'
-          pr_body: "This PR updates the Dockerfiles to use the latest ASP.NET Core version.
-            Verify listed Dockerfiles that they have correct version and matching SHA512 checksum for ASP.NET Core runtime.
-            \n\nAll .NET versions https://dotnet.microsoft.com/en-us/download/dotnet
-            \n\n*Description of changes:*
-            \n${{ format
-                (
-                  '{0}\n{1}\n{2}\n{3}',
-                  join(steps.update-net8-amd64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net8-arm64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net9-amd64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net9-arm64.outputs.MESSAGE, '\n')
-                )
-            }}"
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          
+          *Description of changes:* 
+          ${{ format ( '{0}
+          {1}
+          {2}
+          {3}', join(steps.update-net8-amd64.outputs.MESSAGE, '
+          '), join(steps.update-net8-arm64.outputs.MESSAGE, '
+          '), join(steps.update-net9-amd64.outputs.MESSAGE, '
+          '), join(steps.update-net9-arm64.outputs.MESSAGE, '
+          ') ) }}
+        pr_title: 'chore: ASP.NET Core version update in Dockerfiles'
+        destination_branch: dev
+        source_branch: ${{ steps.commit-push.outputs.BRANCH }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+      if: ${{ steps.commit-push.outputs.BRANCH }}
+      name: Pull Request

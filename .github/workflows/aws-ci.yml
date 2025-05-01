@@ -1,58 +1,55 @@
-name: AWS CI
-
-on:
-  workflow_dispatch:
-  pull_request:
-    branches:
-      - master
-      - dev
-      - "feature/**"
-
 permissions:
   id-token: write
-
+"on":
+  workflow_dispatch: 
+  pull_request:
+    branches:
+    - master
+    - dev
+    - feature/**
+name: AWS CI
 jobs:
   run-ci:
     runs-on: ubuntu-latest
     steps:
-      - name: Configure Load Balancer Credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 #v4
-        with:
-          role-to-assume: ${{ secrets.CI_MAIN_TESTING_ACCOUNT_ROLE_ARN }}
-          role-duration-seconds: 7200
-          aws-region: us-west-2
-      - name: Invoke Load Balancer Lambda
-        id: lambda
-        shell: pwsh
-        run: |
-          aws lambda invoke response.json --function-name "${{ secrets.CI_TESTING_LOAD_BALANCER_LAMBDA_NAME }}" --cli-binary-format raw-in-base64-out --payload '{"Roles": "${{ secrets.CI_TEST_RUNNER_ACCOUNT_ROLES }}", "ProjectName": "${{ secrets.CI_TESTING_CODE_BUILD_PROJECT_NAME }}", "Branch": "${{ github.sha }}"}'
-          $roleArn=$(cat ./response.json)
-          "roleArn=$($roleArn -replace '"', '')" >> $env:GITHUB_OUTPUT
-      - name: Configure Test Runner Credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 #v4
-        with:
-          role-to-assume: ${{ steps.lambda.outputs.roleArn }}
-          role-duration-seconds: 7200
-          aws-region: us-west-2
-      - name: Run Tests on AWS
-        id: codebuild
-        uses: aws-actions/aws-codebuild-run-build@v1
-        with:
-          project-name: ${{ secrets.CI_TESTING_CODE_BUILD_PROJECT_NAME }}
-      - name: Configure Test Sweeper Lambda Credentials
-        if: always()
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 #v4
-        with:
-          role-to-assume: ${{ steps.lambda.outputs.roleArn }}
-          role-duration-seconds: 7200
-          aws-region: us-west-2
-      - name: Invoke Test Sweeper Lambda
-        if: always()
-        shell: pwsh
-        run: |
-          aws lambda invoke response.json --function-name "${{ secrets.CI_TESTING_TEST_SWEEPER_LAMBDA_NAME }}" --cli-binary-format raw-in-base64-out --payload '{"Tags": "aws-repo=${{ secrets.CI_TESTING_CODE_BUILD_PROJECT_NAME }}"}'
-      - name: CodeBuild Link
-        shell: pwsh
-        run: |
-          $buildId = "${{ steps.codebuild.outputs.aws-build-id }}"
-          echo $buildId
+    - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+      name: Configure Load Balancer Credentials
+      with:
+        aws-region: us-west-2
+        role-to-assume: ${{ secrets.CI_MAIN_TESTING_ACCOUNT_ROLE_ARN }}
+        role-duration-seconds: 7200
+    - run: |
+        aws lambda invoke response.json --function-name "${{ secrets.CI_TESTING_LOAD_BALANCER_LAMBDA_NAME }}" --cli-binary-format raw-in-base64-out --payload '{"Roles": "${{ secrets.CI_TEST_RUNNER_ACCOUNT_ROLES }}", "ProjectName": "${{ secrets.CI_TESTING_CODE_BUILD_PROJECT_NAME }}", "Branch": "${{ github.sha }}"}'
+        $roleArn=$(cat ./response.json)
+        "roleArn=$($roleArn -replace '"', '')" >> $env:GITHUB_OUTPUT
+      id: lambda
+      name: Invoke Load Balancer Lambda
+      shell: pwsh
+    - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+      name: Configure Test Runner Credentials
+      with:
+        aws-region: us-west-2
+        role-to-assume: ${{ steps.lambda.outputs.roleArn }}
+        role-duration-seconds: 7200
+    - uses: aws-actions/aws-codebuild-run-build@4d15a47425739ac2296ba5e7eee3bdd4bfbdd767
+      id: codebuild
+      name: Run Tests on AWS
+      with:
+        project-name: ${{ secrets.CI_TESTING_CODE_BUILD_PROJECT_NAME }}
+    - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+      if: always()
+      name: Configure Test Sweeper Lambda Credentials
+      with:
+        aws-region: us-west-2
+        role-to-assume: ${{ steps.lambda.outputs.roleArn }}
+        role-duration-seconds: 7200
+    - run: |
+        aws lambda invoke response.json --function-name "${{ secrets.CI_TESTING_TEST_SWEEPER_LAMBDA_NAME }}" --cli-binary-format raw-in-base64-out --payload '{"Tags": "aws-repo=${{ secrets.CI_TESTING_CODE_BUILD_PROJECT_NAME }}"}'
+      if: always()
+      name: Invoke Test Sweeper Lambda
+      shell: pwsh
+    - run: |
+        $buildId = "${{ steps.codebuild.outputs.aws-build-id }}"
+        echo $buildId
+      name: CodeBuild Link
+      shell: pwsh

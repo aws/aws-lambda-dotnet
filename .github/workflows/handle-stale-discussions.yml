@@ -1,18 +1,18 @@
-name: HandleStaleDiscussions
-on:
+"on":
   schedule:
-    - cron: '0 */4 * * *'
+  - cron: 0 */4 * * *
   discussion_comment:
-    types: [created]
-
+    types:
+    - created
+name: HandleStaleDiscussions
 jobs:
   handle-stale-discussions:
-    name: Handle stale discussions
-    runs-on: ubuntu-latest
     permissions:
       discussions: write
+    runs-on: ubuntu-latest
+    name: Handle stale discussions
     steps:
-      - name: Stale discussions action
-        uses: aws-github-ops/handle-stale-discussions@v1
-        env:
-          GITHUB_TOKEN:  ${{secrets.GITHUB_TOKEN}}
+    - uses: aws-github-ops/handle-stale-discussions@711a9813957be17629fc6933afcd8bd132c57254
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      name: Stale discussions action

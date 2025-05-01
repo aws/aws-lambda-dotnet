@@ -1,41 +1,29 @@
-name: Semgrep
-
-on:
-  # Scan changed files in PRs, block on new issues only (existing issues ignored)
-  pull_request:
-
+"on":
   push:
-    branches: ["dev", "main"]
-
+    branches:
+    - dev
+    - main
   schedule:
-    - cron: '23 20 * * 1'
-
-  # Manually trigger the workflow
-  workflow_dispatch:
-
+  - cron: 23 20 * * 1
+  workflow_dispatch: 
+  pull_request: 
+name: Semgrep
 jobs:
   semgrep:
-    name: Scan
-    permissions:
-      security-events: write
-    runs-on: ubuntu-latest
+    if: (github.actor != 'dependabot[bot]')
     container:
       image: returntocorp/semgrep
-    # Skip any PR created by dependabot to avoid permission issues
-    if: (github.actor != 'dependabot[bot]')
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
     steps:
-      # Fetch project source
-      - uses: actions/checkout@v4
-
-      - run: semgrep ci --sarif > semgrep.sarif
-        env:
-          SEMGREP_RULES: >- # more at semgrep.dev/explore
-            p/security-audit
-            p/secrets
-            p/owasp-top-ten
-
-      - name: Upload SARIF file for GitHub Advanced Security Dashboard
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: semgrep.sarif
-        if: always()
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - run: semgrep ci --sarif > semgrep.sarif
+      env:
+        SEMGREP_RULES: p/security-audit p/secrets p/owasp-top-ten
+    - uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      name: Upload SARIF file for GitHub Advanced Security Dashboard
+      with:
+        sarif_file: semgrep.sarif
+    name: Scan
