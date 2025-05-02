@@ -1,0 +1,15 @@
+# Ignore test and example files containing dummy credentials
+**/test/**/*.json
+**/tests/**/*.json
+**/SampleRequests/**/*.json
+**/*.example.*
+**/*.test.*
+**/*.min.js
+**/env.configs.yml
+
+# Ignore third-party libraries
+**/node_modules/**
+**/vendor/**
+**/dist/**
+**/build/**
+**/bootstrap/**/*.js
