@@ -76,6 +76,9 @@ namespace Amazon.Lambda.Tests
 				// check that there are no unexpected strings in the text
 				Assert.DoesNotContain(SHOULD_NOT_APPEAR, text);
 
+                // Confirm log level was written to log
+                Assert.Contains("Critical:", text);
+
 				// check that all expected strings are in the text
 				for (int i = 0; i < count; i++)
 				{
@@ -552,7 +555,20 @@ namespace Amazon.Lambda.Tests
 			Assert.NotNull(loggingActionField);
 
 			loggingActionField.SetValue(null, loggingAction);
-		}
+
+            Action<string, string, object[]> loggingWithLevelAction = (level, message, parameters) =>  {
+                var formattedMessage = $"{level}: {message}: parameter count: {parameters?.Length}";
+                loggingAction(formattedMessage);
+            };
+
+            var loggingWithLevelActionField = lambdaLoggerType
+                .GetTypeInfo()
+                .GetField("_loggingWithLevelAction", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(loggingActionField);
+
+            loggingWithLevelActionField.SetValue(null, loggingWithLevelAction);
+        }
+
 		private static int CountOccurences(string text, string substring)
 		{
 			int occurences = 0;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Logging
@@ -29,53 +29,74 @@ namespace Microsoft.Extensions.Logging
 				_options.Filter(_categoryName, logLevel));
 		}
 
-		public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-		{
-			if (formatter == null)
-			{
-				throw new ArgumentNullException(nameof(formatter));
-			}
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        {
+            if (formatter == null)
+            {
+                throw new ArgumentNullException(nameof(formatter));
+            }
 
-			if (!IsEnabled(logLevel))
-			{
-				return;
-			}
+            if (!IsEnabled(logLevel))
+            {
+                return;
+            }
 
-			// Format of the logged text, optional components are in {}
-			//  {[LogLevel] }{ => Scopes : }{Category: }{EventId: }MessageText {Exception}{\n}
+            var lambdaLogLevel = ConvertLogLevel(logLevel);
 
-			var components = new List<string>(4);
-			if (_options.IncludeLogLevel)
-			{
-				components.Add($"[{logLevel}]");
-			}
+            var components = new List<string>(4);
+            if (_options.IncludeLogLevel)
+            {
+                components.Add($"[{logLevel}]");
+            }
 
-			GetScopeInformation(components);
+            GetScopeInformation(components);
 
-			if (_options.IncludeCategory)
-			{
-				components.Add($"{_categoryName}:");
-			}
-			if (_options.IncludeEventId)
-			{
-				components.Add($"[{eventId}]:");
-			}
+            if (_options.IncludeCategory)
+            {
+                components.Add($"{_categoryName}:");
+            }
+            if (_options.IncludeEventId)
+            {
+                components.Add($"[{eventId}]:");
+            }
 
-			var text = formatter.Invoke(state, exception);
-			components.Add(text);
+            var text = formatter.Invoke(state, exception);
+            components.Add(text);
 
-			if (_options.IncludeException)
-			{
-				components.Add($"{exception}");
-			}
-			if (_options.IncludeNewline)
-			{
-				components.Add(Environment.NewLine);
-			}
+            if (_options.IncludeException)
+            {
+                components.Add($"{exception}");
+            }
+            if (_options.IncludeNewline)
+            {
+                components.Add(Environment.NewLine);
+            }
 
-			var finalText = string.Join(" ", components);
-			Amazon.Lambda.Core.LambdaLogger.Log(finalText);
-		}
+            var finalText = string.Join(" ", components);
+
+            Amazon.Lambda.Core.LambdaLogger.Log(lambdaLogLevel, finalText);
+        }
+
+        private static Amazon.Lambda.Core.LogLevel ConvertLogLevel(LogLevel logLevel)
+        {
+            switch (logLevel)
+            {
+                case LogLevel.Trace:
+                    return Amazon.Lambda.Core.LogLevel.Trace;
+                case LogLevel.Debug:
+                    return Amazon.Lambda.Core.LogLevel.Debug;
+                case LogLevel.Information:
+                    return Amazon.Lambda.Core.LogLevel.Information;
+                case LogLevel.Warning:
+                    return Amazon.Lambda.Core.LogLevel.Warning;
+                case LogLevel.Error:
+                    return Amazon.Lambda.Core.LogLevel.Error;
+                case LogLevel.Critical:
+                    return Amazon.Lambda.Core.LogLevel.Critical;
+                default:
+                    return Amazon.Lambda.Core.LogLevel.Information;
+            }
+        }
 
 		private void GetScopeInformation(List<string> logMessageComponents)
 		{
