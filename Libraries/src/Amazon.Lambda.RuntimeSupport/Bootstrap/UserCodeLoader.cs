@@ -35,6 +35,8 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
     {
         private const string UserInvokeException = "An exception occurred while invoking customer handler.";
         private const string LambdaLoggingActionFieldName = "_loggingAction";
+        private const string LambdaLoggingWithLevelActionFieldName = "_loggingWithLevelAction";
+        private const string LambdaLoggingWithLevelAndExceptionActionFieldName = "_loggingWithLevelAndExceptionAction";
 
         internal const string LambdaCoreAssemblyName = "Amazon.Lambda.Core";
 
@@ -183,6 +185,82 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             {
                 throw LambdaExceptions.ValidationException(e, Errors.UserCodeLoader.Internal.UnableToSetField,
                     Types.LambdaLoggerTypeName, LambdaLoggingActionFieldName);
+            }
+        }
+
+        internal static void SetCustomerLoggerLogAction(Assembly coreAssembly, Action<string, string, object[]> loggingWithLevelAction, InternalLogger internalLogger)
+        {
+            if (coreAssembly == null)
+            {
+                throw new ArgumentNullException(nameof(coreAssembly));
+            }
+
+            if (loggingWithLevelAction == null)
+            {
+                throw new ArgumentNullException(nameof(loggingWithLevelAction));
+            }
+
+            internalLogger.LogDebug($"UCL : Retrieving type '{Types.LambdaLoggerTypeName}'");
+            var lambdaILoggerType = coreAssembly.GetType(Types.LambdaLoggerTypeName);
+            if (lambdaILoggerType == null)
+            {
+                throw LambdaExceptions.ValidationException(Errors.UserCodeLoader.Internal.UnableToLocateType, Types.LambdaLoggerTypeName);
+            }
+
+            internalLogger.LogDebug($"UCL : Retrieving field '{LambdaLoggingWithLevelActionFieldName}'");
+            var loggingActionField = lambdaILoggerType.GetTypeInfo().GetField(LambdaLoggingWithLevelActionFieldName, BindingFlags.NonPublic | BindingFlags.Static);
+            if (loggingActionField == null)
+            {
+                throw LambdaExceptions.ValidationException(Errors.UserCodeLoader.Internal.UnableToRetrieveField, LambdaLoggingWithLevelActionFieldName, Types.LambdaLoggerTypeName);
+            }
+
+            internalLogger.LogDebug($"UCL : Setting field '{LambdaLoggingWithLevelActionFieldName}'");
+            try
+            {
+                loggingActionField.SetValue(null, loggingWithLevelAction);
+            }
+            catch (Exception e)
+            {
+                throw LambdaExceptions.ValidationException(e, Errors.UserCodeLoader.Internal.UnableToSetField,
+                    Types.LambdaLoggerTypeName, LambdaLoggingWithLevelActionFieldName);
+            }
+        }
+
+        internal static void SetCustomerLoggerLogAction(Assembly coreAssembly, Action<string, Exception, string, object[]> loggingWithAndExceptionLevelAction, InternalLogger internalLogger)
+        {
+            if (coreAssembly == null)
+            {
+                throw new ArgumentNullException(nameof(coreAssembly));
+            }
+
+            if (loggingWithAndExceptionLevelAction == null)
+            {
+                throw new ArgumentNullException(nameof(loggingWithAndExceptionLevelAction));
+            }
+
+            internalLogger.LogDebug($"UCL : Retrieving type '{Types.LambdaLoggerTypeName}'");
+            var lambdaILoggerType = coreAssembly.GetType(Types.LambdaLoggerTypeName);
+            if (lambdaILoggerType == null)
+            {
+                throw LambdaExceptions.ValidationException(Errors.UserCodeLoader.Internal.UnableToLocateType, Types.LambdaLoggerTypeName);
+            }
+
+            internalLogger.LogDebug($"UCL : Retrieving field '{LambdaLoggingWithLevelAndExceptionActionFieldName}'");
+            var loggingActionField = lambdaILoggerType.GetTypeInfo().GetField(LambdaLoggingWithLevelAndExceptionActionFieldName, BindingFlags.NonPublic | BindingFlags.Static);
+            if (loggingActionField == null)
+            {
+                throw LambdaExceptions.ValidationException(Errors.UserCodeLoader.Internal.UnableToRetrieveField, LambdaLoggingWithLevelAndExceptionActionFieldName, Types.LambdaLoggerTypeName);
+            }
+
+            internalLogger.LogDebug($"UCL : Setting field '{LambdaLoggingWithLevelAndExceptionActionFieldName}'");
+            try
+            {
+                loggingActionField.SetValue(null, loggingWithAndExceptionLevelAction);
+            }
+            catch (Exception e)
+            {
+                throw LambdaExceptions.ValidationException(e, Errors.UserCodeLoader.Internal.UnableToSetField,
+                    Types.LambdaLoggerTypeName, LambdaLoggingWithLevelAndExceptionActionFieldName);
             }
         }
 
