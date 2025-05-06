@@ -1,4 +1,5 @@
 # Ignore test and example files containing dummy credentials
+
 **/test/**/*.json
 **/tests/**/*.json
 **/SampleRequests/**/*.json
@@ -6,6 +7,12 @@
 **/*.test.*
 **/*.min.js
 **/env.configs.yml
+
+# ignore template files
+Blueprints/BlueprintDefinitions/vs2017/*/template/**
+Blueprints/BlueprintDefinitions/vs2019/*/template/**
+Blueprints/BlueprintDefinitions/vs2022/*/template/**
+Libraries/test/*/**
 
 # Ignore third-party libraries
 **/node_modules/**
