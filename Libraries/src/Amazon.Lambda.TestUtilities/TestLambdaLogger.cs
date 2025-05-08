@@ -38,6 +38,11 @@ namespace Amazon.Lambda.TestUtilities
             Console.WriteLine(message);
         }
 
+        /// <summary>
+        /// Write log messages to the console and the Buffer.
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="message"></param>
         public void Log(string level, string message)
         {
             var formmattedString = $"{level}: {message}";
@@ -45,6 +50,12 @@ namespace Amazon.Lambda.TestUtilities
             Console.WriteLine(formmattedString);
         }
 
+        /// <summary>
+        /// Write log messages to the console and the Buffer.
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="message"></param>
+        /// <param name="args"></param>
         public void Log(string level, string message, params object[] args)
         {
             var builder = new StringBuilder();
@@ -63,6 +74,13 @@ namespace Amazon.Lambda.TestUtilities
             Console.WriteLine(formmattedString);
         }
 
+        /// <summary>
+        /// Write log messages to the console and the Buffer.
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="exception"></param>
+        /// <param name="message"></param>
+        /// <param name="args"></param>
         public void Log(string level, Exception exception, string message, params object[] args)
         {
             var builder = new StringBuilder();

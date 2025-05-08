@@ -30,7 +30,7 @@
     },  
     {
       "Name": "Amazon.Lambda.Logging.AspNetCore",
-      "Type": "Minor",
+      "Type": "Major",
       "ChangelogMessages": [
         "Add support Lambda log levels",
 		"Change build target from .NET Standard 2.0 to .NET 6 and NET 8 to match Amazon.Lambda.AspNetCoreServer"
@@ -38,7 +38,7 @@
     },  
     {
       "Name": "Amazon.Lambda.TestUtilities",
-      "Type": "Minor",
+      "Type": "Major",
       "ChangelogMessages": [
         "Update Amazon.Lambda.TestUtitlies to have implementation of the newer logging methods",
 		"Change build target from .NET Standard 2.0 to .NET 6 and NET 8 to match Amazon.Lambda.AspNetCoreServer"

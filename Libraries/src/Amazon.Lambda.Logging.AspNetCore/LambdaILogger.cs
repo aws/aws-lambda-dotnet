@@ -29,6 +29,17 @@ namespace Microsoft.Extensions.Logging
 				_options.Filter(_categoryName, logLevel));
 		}
 
+        /// <summary>
+        /// The Log method called by the ILogger framework to log message to logger's target. In the Lambda case the formatted logging will be
+        /// sent to the Amazon.Lambda.Core.LambdaLogger's Log method.
+        /// </summary>
+        /// <typeparam name="TState"></typeparam>
+        /// <param name="logLevel"></param>
+        /// <param name="eventId"></param>
+        /// <param name="state"></param>
+        /// <param name="exception"></param>
+        /// <param name="formatter"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
             if (formatter == null)
@@ -40,8 +51,6 @@ namespace Microsoft.Extensions.Logging
             {
                 return;
             }
-
-            var lambdaLogLevel = ConvertLogLevel(logLevel);
 
             var components = new List<string>(4);
             if (_options.IncludeLogLevel)
@@ -74,6 +83,7 @@ namespace Microsoft.Extensions.Logging
 
             var finalText = string.Join(" ", components);
 
+            var lambdaLogLevel = ConvertLogLevel(logLevel);
             Amazon.Lambda.Core.LambdaLogger.Log(lambdaLogLevel, finalText);
         }
 

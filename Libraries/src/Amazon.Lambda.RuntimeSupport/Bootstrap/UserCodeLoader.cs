@@ -150,6 +150,13 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             _invokeDelegate(lambdaData, lambdaContext, outStream);
         }
 
+        /// <summary>
+        /// Sets the backing logger action field in Amazon.Logging.Core to redirect logs into Amazon.Lambda.RuntimeSupport.
+        /// </summary>
+        /// <param name="coreAssembly"></param>
+        /// <param name="customerLoggingAction"></param>
+        /// <param name="internalLogger"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         internal static void SetCustomerLoggerLogAction(Assembly coreAssembly, Action<string> customerLoggingAction, InternalLogger internalLogger)
         {
             if (coreAssembly == null)
@@ -187,6 +194,14 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
                     Types.LambdaLoggerTypeName, LambdaLoggingActionFieldName);
             }
         }
+
+        /// <summary>
+        /// Sets the backing logger action field in Amazon.Logging.Core to redirect logs into Amazon.Lambda.RuntimeSupport.
+        /// </summary>
+        /// <param name="coreAssembly"></param>
+        /// <param name="loggingWithLevelAction"></param>
+        /// <param name="internalLogger"></param>
+        /// <exception cref="ArgumentNullException"></exception>
 
         internal static void SetCustomerLoggerLogAction(Assembly coreAssembly, Action<string, string, object[]> loggingWithLevelAction, InternalLogger internalLogger)
         {
@@ -226,6 +241,13 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             }
         }
 
+        /// <summary>
+        /// Sets the backing logger action field in Amazon.Logging.Core to redirect logs into Amazon.Lambda.RuntimeSupport.
+        /// </summary>
+        /// <param name="coreAssembly"></param>
+        /// <param name="loggingWithAndExceptionLevelAction"></param>
+        /// <param name="internalLogger"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         internal static void SetCustomerLoggerLogAction(Assembly coreAssembly, Action<string, Exception, string, object[]> loggingWithAndExceptionLevelAction, InternalLogger internalLogger)
         {
             if (coreAssembly == null)
