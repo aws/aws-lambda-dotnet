@@ -54,7 +54,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 {
                     return true;
                 }
-                if(ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.IHttpResult) 
+                if(ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.IHttpResult)
                 {
                     return true;
                 }
@@ -99,6 +99,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// Returns true if original method uses dependency injection.
         /// </summary>
         public bool UsingDependencyInjection { get; set; }
+
+        public bool UsingHostBuilderForDependencyInjection { get; set; }
 
         /// <summary>
         /// Gets or sets the namespace for the nearest enclosing namespace. Returns null if the

@@ -27,6 +27,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 Events = EventTypeBuilder.Build(lambdaMethodSymbol, context),
                 ContainingType = TypeModelBuilder.Build(lambdaMethodSymbol.ContainingType, context),
                 UsingDependencyInjection = configureMethodSymbol != null,
+                UsingHostBuilderForDependencyInjection = configureMethodSymbol != null && configureMethodSymbol.Name == "ConfigureHostBuilder",
                 Attributes = lambdaMethodSymbol.GetAttributes().Select(att => AttributeModelBuilder.Build(att, context)).ToList()
             };
 

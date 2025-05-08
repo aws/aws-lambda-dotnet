@@ -32,6 +32,8 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         internal const string ENVIRONMENT_VARIABLE_TELEMETRY_LOG_FD = "_LAMBDA_TELEMETRY_LOG_FD";
         internal const string AWS_LAMBDA_INITIALIZATION_TYPE_PC = "provisioned-concurrency";
         internal const string AWS_LAMBDA_INITIALIZATION_TYPE_ON_DEMAND = "on-demand";
+        internal const string AWS_LAMBDA_INITIALIZATION_TYPE_SNAP_START = "snap-start";
+
 
         internal const string NET_RIC_LOG_LEVEL_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_LEVEL";
         internal const string NET_RIC_LOG_FORMAT_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_HANDLER_LOG_FORMAT";
@@ -40,6 +42,13 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         internal const string LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE = "AWS_LAMBDA_LOG_FORMAT";
 
         internal const string LAMBDA_LOG_FORMAT_JSON = "Json";
+
+        internal const string LAMBDA_ERROR_TYPE_BEFORE_SNAPSHOT = "Runtime.BeforeSnapshotError";
+        internal const string LAMBDA_ERROR_TYPE_AFTER_RESTORE = "Runtime.AfterRestoreError";
+
+        // For testing purposes only, this command line arg can be used to specify the Lambda Runtime API endpoint
+        // instead of using environment variables.
+        internal const string CMDLINE_ARG_RUNTIME_API_CLIENT = "--runtime-api-endpoint";
 
         internal enum AwsLambdaDotNetPreJit
         {

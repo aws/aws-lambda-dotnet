@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
@@ -6,7 +6,7 @@
     <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <Description>AWS Lambda PowerShell Host.</Description>
     <AssemblyTitle>Amazon.Lambda.PowerShellHost</AssemblyTitle>
-    <Version>3.0.1</Version>
+    <Version>3.0.2</Version>
     <AssemblyName>Amazon.Lambda.PowerShellHost</AssemblyName>
     <PackageId>Amazon.Lambda.PowerShellHost</PackageId>
     <PackageTags>AWS;Amazon;Lambda;PowerShell</PackageTags>

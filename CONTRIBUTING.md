@@ -86,6 +86,7 @@ The available projects are:
 * Amazon.Lambda.ConnectEvents
 * Amazon.Lambda.Core
 * Amazon.Lambda.DynamoDBEvents
+* Amazon.Lambda.DynamoDBEvents.SDK.Convertor
 * Amazon.Lambda.KafkaEvents
 * Amazon.Lambda.KinesisAnalyticsEvents
 * Amazon.Lambda.KinesisEvents
@@ -104,6 +105,7 @@ The available projects are:
 * Amazon.Lambda.SQSEvents
 * Amazon.Lambda.TestUtilities
 * Amazon.Lambda.TestTool.BlazorTester
+* Amazon.Lambda.AppSyncEvents
 
 The possible increment types are:
 * Patch

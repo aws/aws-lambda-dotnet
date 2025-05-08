@@ -33,14 +33,18 @@ namespace TestServerlessApp.Sub1
             var startup = new TestServerlessApp.Startup();
             startup.ConfigureServices(services);
             serviceProvider = services.BuildServiceProvider();
+
+            // Intentionally eagerly build Functions and its dependencies.
+            // This causes time spent in the Constructor to appear on INIT_REPORTs
+            _ = serviceProvider.GetRequiredService<Functions>();
         }
 
         /// <summary>
         /// The generated Lambda function handler for <see cref="ToUpper(string)"/>
         /// </summary>
-        /// <param name="text">The request object that will be processed by the Lambda function handler.</param>
+        /// <param name="__text__">The request object that will be processed by the Lambda function handler.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public string ToUpper(string text)
+        public string ToUpper(string __text__)
         {
             // Create a scope for every request,
             // this allows creating scoped dependencies without creating a scope manually.
@@ -48,7 +52,7 @@ namespace TestServerlessApp.Sub1
             var functions = scope.ServiceProvider.GetRequiredService<Functions>();
             var serializer = scope.ServiceProvider.GetRequiredService<Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer>();
 
-            return functions.ToUpper(text);
+            return functions.ToUpper(__text__);
         }
 
         private static void SetExecutionEnvironment()

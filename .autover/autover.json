@@ -52,6 +52,10 @@
       "Path": "Libraries/src/Amazon.Lambda.DynamoDBEvents/Amazon.Lambda.DynamoDBEvents.csproj"
     },
     {
+      "Name": "Amazon.Lambda.DynamoDBEvents.SDK.Convertor",
+      "Path": "Libraries/src/Amazon.Lambda.DynamoDBEvents.SDK.Convertor/Amazon.Lambda.DynamoDBEvents.SDK.Convertor.csproj"
+    },
+    {
       "Name": "Amazon.Lambda.KafkaEvents",
       "Path": "Libraries/src/Amazon.Lambda.KafkaEvents/Amazon.Lambda.KafkaEvents.csproj"
     },
@@ -124,9 +128,25 @@
       "Paths": [
         "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester.csproj",
         "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester60-pack.csproj",
-        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester70-pack.csproj",
-        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester80-pack.csproj"
+        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester80-pack.csproj",
+        "Tools/LambdaTestTool/src/Amazon.Lambda.TestTool.BlazorTester/Amazon.Lambda.TestTool.BlazorTester90-pack.csproj"
       ]
+    },
+    {
+      "Name": "Amazon.Lambda.Templates",
+      "Path": "Blueprints/BlueprintDefinitions/vs2022/Templates.csproj"
+    },
+    {
+      "Name": "SnapshotRestore.Registry",
+      "Path": "Libraries/src/SnapshotRestore.Registry/SnapshotRestore.Registry.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Path": "Tools/LambdaTestTool-v2/src/Amazon.Lambda.TestTool/Amazon.Lambda.TestTool.csproj"
+    },
+    {
+      "Name": "Amazon.Lambda.AppSyncEvents",
+      "Path": "Libraries/src/Amazon.Lambda.AppSyncEvents/Amazon.Lambda.AppSyncEvents.csproj"
     }
   ],
   "UseCommitsForChangelog": false,

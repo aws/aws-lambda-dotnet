@@ -1,7 +1,7 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=8.0.10
-ARG ASPNET_SHA512=3a478f9310c748b7427c91deb3ba83f4c02557a7d7a3d7382526b6dc39dad3d938022475ab20f060f1b4ed365c7b1b95a1d089cca502a423298c41379bff8111
+ARG ASPNET_VERSION=8.0.15
+ARG ASPNET_SHA512=967d43a9387d226ed804cfee35144a69f249f6206b73ed0d8915dad358fede3c5ddc3ec963a5c35400b62dc57265da1dbc07d793cf5e3940ce94e54783312f0e
 
 ARG LAMBDA_RUNTIME_NAME=dotnet8
 ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
@@ -20,7 +20,7 @@ WORKDIR /dotnet
 RUN dnf install tar gzip --assumeyes
 
 # Install the ASP.NET Core shared framework
-RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/$ASPNET_VERSION/aspnetcore-runtime-$ASPNET_VERSION-linux-arm64.tar.gz \
+RUN curl -SL --output aspnetcore.tar.gz https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/$ASPNET_VERSION/aspnetcore-runtime-$ASPNET_VERSION-linux-arm64.tar.gz \
     && aspnetcore_sha512=$ASPNET_SHA512 \
     && echo "$aspnetcore_sha512  aspnetcore.tar.gz" | sha512sum -c - \
     && tar -ozxf aspnetcore.tar.gz -C /dotnet \
@@ -30,7 +30,9 @@ RUN curl -SL --output aspnetcore.tar.gz https://dotnetcli.azureedge.net/dotnet/a
 FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS builder
 WORKDIR /src
 COPY ["Libraries/src/Amazon.Lambda.RuntimeSupport", "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/"]
+COPY ["Libraries/src/SnapshotRestore.Registry", "Repo/Libraries/src/SnapshotRestore.Registry/"]
 COPY ["Libraries/src/Amazon.Lambda.Core", "Repo/Libraries/src/Amazon.Lambda.Core/"]
+COPY ["Libraries/src/SnapshotRestore.Registry", "Repo/Libraries/src/SnapshotRestore.Registry/"]
 COPY ["buildtools/", "Repo/buildtools/"]
 RUN dotnet restore "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj" /p:TargetFrameworks=net8.0
 WORKDIR "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport"

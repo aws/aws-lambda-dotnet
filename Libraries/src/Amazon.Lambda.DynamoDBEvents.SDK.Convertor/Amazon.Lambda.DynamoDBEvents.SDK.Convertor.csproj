@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\..\buildtools\common.props" />
+
+  <PropertyGroup>
+    <Description>Amazon Lambda .NET Core support -  DynamoDBEvents SDK Convertor package.</Description>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <AssemblyTitle>Amazon.Lambda.DynamoDBEvents.SDK.Convertor</AssemblyTitle>
+    <AssemblyName>Amazon.Lambda.DynamoDBEvents.SDK.Convertor</AssemblyName>
+    <PackageId>Amazon.Lambda.DynamoDBEvents.SDK.Convertor</PackageId>
+    <PackageTags>AWS;Amazon;Lambda</PackageTags>
+    <Version>2.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.0" />
+    <PackageReference Include="AWSSDK.DynamoDBStreams" Version="4.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Amazon.Lambda.DynamoDBEvents\Amazon.Lambda.DynamoDBEvents.csproj" />
+  </ItemGroup>
+
+</Project>

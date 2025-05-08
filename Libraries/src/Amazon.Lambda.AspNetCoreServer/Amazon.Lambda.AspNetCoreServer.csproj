@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
@@ -6,7 +6,7 @@
     <Description>Amazon.Lambda.AspNetCoreServer makes it easy to run ASP.NET Core Web API applications as AWS Lambda functions.</Description>
     <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.AspNetCoreServer</AssemblyTitle>
-    <Version>9.0.1</Version>
+    <Version>9.1.0</Version>
     <AssemblyName>Amazon.Lambda.AspNetCoreServer</AssemblyName>
     <PackageId>Amazon.Lambda.AspNetCoreServer</PackageId>
     <PackageTags>AWS;Amazon;Lambda;aspnetcore</PackageTags>

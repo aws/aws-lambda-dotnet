@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
+  
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <AssemblyOriginatorKeyFile>..\..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Amazon.Lambda.Core\Amazon.Lambda.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\SnapshotRestore.Registry\SnapshotRestore.Registry.csproj" />
     <ProjectReference Include="..\..\..\src\Amazon.Lambda.Serialization.Json\Amazon.Lambda.Serialization.Json.csproj" />
     <ProjectReference Include="..\..\HandlerTestNoSerializer\HandlerTestNoSerializer.csproj" />
     <ProjectReference Include="..\..\HandlerTest\HandlerTest.csproj" />

@@ -127,6 +127,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
+        public async Task TestPutNoBody()
+        {
+            var response = await this.InvokeAPIGatewayRequest("values-put-no-body-request.json");
+
+            Assert.Equal(string.Empty, response.Body);
+            Assert.Equal(202, response.StatusCode);
+        }
+
+        [Fact]
         public async Task TestDefaultResponseErrorCode()
         {
             var response = await this.InvokeAPIGatewayRequest("values-get-error-apigateway-request.json");
@@ -484,6 +493,27 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var traceId1 = features.TraceIdentifier;
             var traceId2 = features.TraceIdentifier;
             Assert.Equal(traceId1, traceId2);
+        }
+
+        [Fact]
+        public void TestDefaultResponseHasStartedFalse()
+        {
+            var features = new InvokeFeatures();
+            var response = (IHttpResponseFeature)features;
+
+            Assert.False(response.HasStarted);
+        }
+
+        [Fact]
+        public async Task TestStartAsyncSetsHasStartedTrue()
+        {
+            var features = new InvokeFeatures();
+            var responseBody = (IHttpResponseBodyFeature)features;
+
+            await responseBody.StartAsync();
+
+            var response = (IHttpResponseFeature)features;
+            Assert.True(response.HasStarted);
         }
 
         private async Task<APIGatewayProxyResponse> InvokeAPIGatewayRequest(string fileName, bool configureApiToReturnExceptionDetail = false)

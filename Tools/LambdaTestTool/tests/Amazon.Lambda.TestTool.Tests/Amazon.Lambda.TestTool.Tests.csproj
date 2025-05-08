@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
     <ProjectReference Include="..\LambdaFunctions\AspNetCoreAPIExample\AspNetCoreAPIExample.csproj" />
     <ProjectReference Include="..\LambdaFunctions\FunctionSignatureExamples\FunctionSignatureExamples.csproj" />
+    <ProjectReference Include="..\LambdaFunctions\IntegerFunc\IntegerFunc.csproj" />
     <ProjectReference Include="..\LambdaFunctions\S3EventFunction\S3EventFunction.csproj" />
     <ProjectReference Include="..\LambdaFunctions\ServerlessFunctionTemplateYamlExample\ServerlessFunctionTemplateYamlExample.csproj" />
     <ProjectReference Include="..\LambdaFunctions\ServerlessTemplateExample\ServerlessTemplateExample.csproj" />

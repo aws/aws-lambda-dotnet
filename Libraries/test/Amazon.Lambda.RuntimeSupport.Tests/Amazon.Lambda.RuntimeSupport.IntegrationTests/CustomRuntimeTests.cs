@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -31,6 +31,7 @@ using static Amazon.Lambda.RuntimeSupport.IntegrationTests.CustomRuntimeTests;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
+    [Collection("Integration Tests")]
     public class CustomRuntimeNET6Tests : CustomRuntimeTests
     {
         public CustomRuntimeNET6Tests()
@@ -49,6 +50,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
     }
 
+    [Collection("Integration Tests")]
     public class CustomRuntimeNET8Tests : CustomRuntimeTests
     {
         public CustomRuntimeNET8Tests()
@@ -104,6 +106,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await RunTestSuccessAsync(lambdaClient, "UnintendedDisposeTest", "not-used", "UnintendedDisposeTest-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "LoggingStressTest", "not-used", "LoggingStressTest-success");
 
+                    await RunGlobalLoggingTestAsync(lambdaClient, "GlobalLoggingTest");
                     await RunJsonLoggingWithUnhandledExceptionAsync(lambdaClient);
 
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Trace, LogConfigSource.LambdaAPI);
@@ -118,7 +121,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Warning, LogConfigSource.DotnetEnvironment);
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Error, LogConfigSource.DotnetEnvironment);
                     await RunLoggingTestAsync(lambdaClient, "LoggingTest", RuntimeLogLevel.Critical, LogConfigSource.DotnetEnvironment);
-
 
                     await RunUnformattedLoggingTestAsync(lambdaClient, "LoggingTest");
 
@@ -313,6 +315,19 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             {
                 Assert.DoesNotContain("A critical log", log);
             }
+        }
+
+        private async Task RunGlobalLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler)
+        {
+            await UpdateHandlerAsync(lambdaClient, handler);
+
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.True(invokeResponse.FunctionError == null);
+
+            var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+
+            Assert.Contains("This is a global log message with foobar as an argument", log);
         }
 
         private async Task RunUnformattedLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler)

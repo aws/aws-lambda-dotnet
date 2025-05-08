@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
@@ -6,14 +6,14 @@
     <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - KinesisEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.KinesisEvents</AssemblyTitle>
-    <Version>2.2.0</Version>
+    <Version>3.0.0</Version>
     <AssemblyName>Amazon.Lambda.KinesisEvents</AssemblyName>
     <PackageId>Amazon.Lambda.KinesisEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Kinesis" Version="3.7.0" />
+    <PackageReference Include="AWSSDK.Kinesis" Version="4.0.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,82 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <Import Project="..\..\..\..\buildtools\common.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Description>A tool to help debug and test your .NET AWS Lambda functions locally.</Description>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Product>AWS .NET Lambda Test Tool</Product>
+    <Copyright>Apache 2</Copyright>
+    <PackageTags>AWS;Amazon;Lambda</PackageTags>
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <PackageId>Amazon.Lambda.TestTool</PackageId>
+    <ToolCommandName>dotnet-lambda-test-tool</ToolCommandName>
+    <Version>0.10.2</Version>
+    <NoWarn>NU5100</NoWarn>
+    <RollForward>Major</RollForward>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(Configuration) == 'Release'">
+    <None Include="$(OutputPath)\publish\wwwroot\" Pack="true" PackagePath="tools\net8.0\any\wwwroot" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.0" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.0" />
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.0" />
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.0" />
+    <PackageReference Include="AWSSDK.SSO" Version="4.0.0" />
+    <PackageReference Include="AWSSDK.SSOOIDC" Version="4.0.0" />
+    <PackageReference Include="Spectre.Console" Version="0.49.1" />
+    <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.1" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="8.0.11" />
+    <PackageReference Include="BlazorMonaco" Version="3.2.0" />
+  </ItemGroup>
+
+  <Target Name="GetRuntimeSupportTargetFrameworks">
+    <Exec Command="dotnet msbuild ../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj --getProperty:TargetFrameworks" ConsoleToMSBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="RuntimeSupportTargetFrameworks" />
+    </Exec>
+
+    <ItemGroup>
+      <TempFrameworks Include="$(RuntimeSupportTargetFrameworks.Split(';'))" />
+      <TargetFrameworks Include="@(TempFrameworks)" Condition="'%(Identity)' != 'netstandard2.0'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PublishRuntimeSupportFiles" DependsOnTargets="GetRuntimeSupportTargetFrameworks" BeforeTargets="Build">
+    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj&quot; -c $(Configuration) -f %(TargetFrameworks.Identity) /p:ExecutableOutputType=true" />
+  </Target>
+
+  <Target Name="CopyRuntimeSupportFiles" DependsOnTargets="GetRuntimeSupportTargetFrameworks" BeforeTargets="_GetPackageFiles">
+    <ItemGroup>
+      <None Include="$(MSBuildThisFileDirectory)../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/bin/$(Configuration)/%(TargetFrameworks.Identity)/publish/**/*.*">
+        <Pack>true</Pack>
+        <PackagePath>content\Amazon.Lambda.RuntimeSupport\%(TargetFrameworks.Identity)</PackagePath>
+      </None>
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+	  <EmbeddedResource Include="Resources\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

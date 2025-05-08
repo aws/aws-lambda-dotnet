@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - Logging ASP.NET Core package.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyTitle>Amazon.Lambda.Logging.AspNetCore</AssemblyTitle>
-    <Version>3.1.0</Version>
+    <Version>3.1.1</Version>
     <AssemblyName>Amazon.Lambda.Logging.AspNetCore</AssemblyName>
     <PackageId>Amazon.Lambda.Logging.AspNetCore</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Logging</PackageTags>

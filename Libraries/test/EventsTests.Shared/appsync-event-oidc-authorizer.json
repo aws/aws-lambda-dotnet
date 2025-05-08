@@ -1,0 +1,51 @@
+{
+  "arguments": {
+    "input": {
+      "title": "Support Ticket Test",
+      "description": "Support Ticket Test"
+    }
+  },
+  "identity": {
+    "claims": {
+      "client_id": "458vq6091kg88r4qurfnxxxxx",
+      "event_id": "373cdbc2-5460-4dff-bebb-3cba1de69777",
+      "username": "b662d2e4-d0a1-7098-4973-20a5d6ff5a12"
+    },
+    "defaultAuthStrategy": "ALLOW",
+    "groups": [
+      "admin"
+    ],
+    "issuer": "https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_xxxxxx",
+    "sub": "b662d2e4-d0a1-7098-4973-20a5d6ff5a12"
+  },
+  "source": null,
+  "request": {
+    "headers": {
+      "key1": "value1",
+      "key2": "value2"
+    },
+    "domainName": null
+  },
+  "prev": null,
+  "info": {
+    "fieldName": "openSupportTicket",
+    "selectionSetList": [
+      "ticketId",
+      "status",
+      "title",
+      "description",
+      "createdAt",
+      "updatedAt",
+      "__typename"
+    ],
+    "selectionSetGraphQL": "{\n  ticketId\n  status\n  title\n  description\n  createdAt\n  updatedAt\n  __typename\n}",
+    "variables": {
+      "input": {
+        "title": "Support Ticket Test",
+        "description": "Support Ticket Test"
+      }
+    },
+    "parentTypeName": "Mutation"
+  },
+  "stash": {}
+}

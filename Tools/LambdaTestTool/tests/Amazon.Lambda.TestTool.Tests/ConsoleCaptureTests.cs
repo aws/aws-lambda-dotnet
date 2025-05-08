@@ -37,5 +37,22 @@ namespace Amazon.Lambda.TestTool.Tests
             Assert.DoesNotContain("NOT_CAPTURED", logger.Buffer);
         }
 
+
+        [Fact]
+        public void CallParameterizedLoggingMethods()
+        {
+            var logger = new LocalLambdaLogger();
+
+            logger.Log("INFO", "TheMessage");
+            logger.Log("WARN", "TheMessage {argument}", "TheArgument");
+            logger.Log("ERROR", new ApplicationException("TheApplicationException"), "TheMessageWithException");
+            logger.Log("ERROR", new ApplicationException("TheApplicationException"), "TheMessageWithException {argument}", "TheExceptionArgument");
+
+            Assert.Contains("Level = INFO, Message = TheMessage", logger.Buffer);
+            Assert.Contains("Level = WARN, Message = TheMessage {argument}, Arguments = TheArgument", logger.Buffer);
+            Assert.Contains("Level = ERROR, Message = TheMessageWithException", logger.Buffer);
+            Assert.Contains("System.ApplicationException: TheApplicationException", logger.Buffer);
+            Assert.Contains("Level = ERROR, Message = TheMessageWithException {argument}, Arguments = TheExceptionArgument", logger.Buffer);
+        }
     }
 }

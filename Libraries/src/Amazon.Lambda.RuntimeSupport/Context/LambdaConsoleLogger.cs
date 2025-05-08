@@ -46,19 +46,11 @@ namespace Amazon.Lambda.RuntimeSupport
             _consoleLoggerRedirector.FormattedWriteLine(level, message);
         }
 
-        private const string ParameterizedPreviewMessage =
-            "Parameterized logging is in preview till a new version of .NET Lambda runtime client that supports parameterized logging " +
-            "has been deployed to the .NET Lambda managed runtime. Till deployment has been made the feature can be used by deploying as an " +
-            "executable including the latest version of Amazon.Lambda.RuntimeSupport and setting the \"LangVersion\" in the Lambda " +
-            "project file to \"preview\"";
-
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         public void Log(string level, string message, params object[] args)
         {
             _consoleLoggerRedirector.FormattedWriteLine(level, message, args);
         }
 
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         public void Log(string level, Exception exception, string message, params object[] args)
         {
             _consoleLoggerRedirector.FormattedWriteLine(level, exception, message, args);

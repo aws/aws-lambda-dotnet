@@ -1,0 +1,48 @@
+{
+  "arguments": {
+    "input": {
+      "title": "Support Ticket Test",
+      "description": "Support Ticket Test"
+    }
+  },
+  "identity": {
+    "accountId": "123456789012",
+    "cognitoIdentityPoolId": "us-east-1:1234abcd-1234-5678-abcd-1234567890ab",
+    "cognitoIdentityId": "us-east-1:1234abcd-1234-5678-abcd-1234567890ab",
+    "sourceIp": [ "192.0.2.1" ],
+    "username": "IAMUser",
+    "userArn": "arn:aws:iam::123456789012:user/IAMUser",
+    "cognitoIdentityAuthType": "authenticated",
+    "cognitoIdentityAuthProvider": "cognito-identity.amazonaws.com"
+  },
+  "source": null,
+  "request": {
+    "headers": {
+      "key1": "value1",
+      "key2": "value2"
+    },
+    "domainName": null
+  },
+  "prev": null,
+  "info": {
+    "fieldName": "openSupportTicket",
+    "selectionSetList": [
+      "ticketId",
+      "status",
+      "title",
+      "description",
+      "createdAt",
+      "updatedAt",
+      "__typename"
+    ],
+    "selectionSetGraphQL": "{\n  ticketId\n  status\n  title\n  description\n  createdAt\n  updatedAt\n  __typename\n}",
+    "variables": {
+      "input": {
+        "title": "Support Ticket Test",
+        "description": "Support Ticket Test"
+      }
+    },
+    "parentTypeName": "Mutation"
+  },
+  "stash": {}
+}

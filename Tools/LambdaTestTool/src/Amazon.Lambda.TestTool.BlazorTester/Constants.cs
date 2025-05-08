@@ -7,10 +7,10 @@ namespace Amazon.Lambda.TestTool.BlazorTester
 
 #if NET6_0
         public const string PRODUCT_NAME = "AWS .NET 6.0 Mock Lambda Test Tool";
-#elif NET7_0
-        public const string PRODUCT_NAME = "AWS .NET 7.0 Mock Lambda Test Tool";
 #elif NET8_0
         public const string PRODUCT_NAME = "AWS .NET 8.0 Mock Lambda Test Tool";
+#elif NET9_0
+        public const string PRODUCT_NAME = "AWS .NET 9.0 Mock Lambda Test Tool";
 #else
         Update for new target framework!!!
 #endif

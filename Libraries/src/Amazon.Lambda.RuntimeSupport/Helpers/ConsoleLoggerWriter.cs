@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -240,16 +240,25 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// </summary>
         private void ConfigureLoggingActionField()
         {
-            var lambdaILoggerType = typeof(Amazon.Lambda.Core.LambdaLogger);
-            if (lambdaILoggerType == null)
+            var lambdaLoggerType = typeof(Amazon.Lambda.Core.LambdaLogger);
+            if (lambdaLoggerType == null)
                 return;
 
-            var loggingActionField = lambdaILoggerType.GetTypeInfo().GetField("_loggingAction", BindingFlags.NonPublic | BindingFlags.Static);
-            if (loggingActionField == null)
-                return;
+            var loggingActionField = lambdaLoggerType.GetTypeInfo().GetField("_loggingAction", BindingFlags.NonPublic | BindingFlags.Static);
+            if (loggingActionField != null)
+            {
+                Action<string> loggingAction = (message => FormattedWriteLine(null, message));
+                loggingActionField.SetValue(null, loggingAction);
+            }
 
-            Action<string> callback = (message => FormattedWriteLine(null, message));
-            loggingActionField.SetValue(null, callback);
+
+            var loggingWithLevelActionField = lambdaLoggerType.GetTypeInfo().GetField("_loggingWithLevelAction", BindingFlags.NonPublic | BindingFlags.Static);
+            if (loggingWithLevelActionField != null)
+            {
+                Action<string, string, object[]> loggingWithLevelAction = ((level, message, args) => FormattedWriteLine(level, message, args));
+                loggingWithLevelActionField.SetValue(null, loggingWithLevelAction);
+
+            }
         }
 
         /// <inheritdoc/>

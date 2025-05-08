@@ -46,6 +46,7 @@ These are the packages and their README.md files:
 * [Amazon.Lambda.SNSEvents](Libraries/src/Amazon.Lambda.SNSEvents) - [README.md](Libraries/src/Amazon.Lambda.SNSEvents/README.md)
 * [Amazon.Lambda.SQSEvents](Libraries/src/Amazon.Lambda.SQSEvents) - [README.md](Libraries/src/Amazon.Lambda.SQSEvents/README.md)
 * [Amazon.Lambda.KafkaEvents](Libraries/src/Amazon.Lambda.KafkaEvents) - [README.md](Libraries/src/Amazon.Lambda.KafkaEvents/README.md)
+* [Amazon.Lambda.AppSyncEvents](Libraries/src/Amazon.Lambda.AppSyncEvents) - [README.md](Libraries/src/Amazon.Lambda.AppSyncEvents/README.md)
 
 ### Amazon.Lambda.Tools
 

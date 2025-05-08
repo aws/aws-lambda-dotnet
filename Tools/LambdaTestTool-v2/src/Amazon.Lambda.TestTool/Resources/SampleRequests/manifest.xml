@@ -1,0 +1,234 @@
+﻿<requests>
+  <request category="Alexa">
+    <name>Alexa End Session</name>
+    <filename>alexa-end-session.json</filename>
+  </request>
+  <request category="Alexa">
+    <name>Alexa Intent - Answer</name>
+    <filename>alexa-intent-answer.json</filename>
+  </request>
+  <request category="Alexa">
+    <name>Alexa Intent - GetNewFact</name>
+    <filename>alexa-intent-getnewfact.json</filename>
+  </request>
+  <request category="Alexa">
+    <name>Alexa Intent - MyColorIs</name>
+    <filename>alexa-intent-mycoloris.json</filename>
+  </request>
+  <request category="Alexa">
+    <name>Alexa Intent - Recipe</name>
+    <filename>alexa-intent-recipe.json</filename>
+  </request>
+  <request category="Alexa">
+    <name>Alexa Smart Home - Discovery</name>
+    <filename>alexa-smart-home-discovery-request.json</filename>
+  </request>
+  <request category="Alexa">
+    <name>Alexa Smart Home - Turn Off</name>
+    <filename>alexa-smart-home-control-turn-off-request.json</filename>
+  </request>
+  <request category="Alexa">
+    <name>Alexa Smart Home - Turn On</name>
+    <filename>alexa-smart-home-control-turn-on-request.json</filename>
+  </request>
+  <request category="Alexa">
+    <name>Alexa Start Session</name>
+    <filename>alexa-start-session.json</filename>
+  </request>
+  <request category="AWS">
+    <name>API Gateway Authorizer</name>
+    <filename>api-gateway-authorizer.json</filename>
+  </request>
+  <request category="AWS">
+    <name>API Gateway AWS Proxy</name>
+    <filename>aws-proxy.json</filename>
+  </request>
+  <request category="AWS">
+    <name>API Gateway V2 HTTP API</name>
+    <filename>http-api-v2-request.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Application Load Balancer</name>
+    <filename>alb.json</filename>
+  </request>
+  <request category="AWS">
+    <name>AWS Batch Get Job Request</name>
+    <filename>batch-get-job.json</filename>
+  </request>
+  <request category="AWS">
+    <name>AWS Batch Submit Job Request</name>
+    <filename>batch-submit-job.json</filename>
+  </request>
+  <request category="AWS">
+    <name>AWS Config Change Triggered Rule</name>
+    <filename>change-triggered-rule.json</filename>
+  </request>
+  <request category="AWS">
+    <name>AWS Config Change Triggered Rule</name>
+    <filename>configuration-item-change-notification.json</filename>
+  </request>
+  <request category="AWS">
+    <name>AWS Config Change Triggered Rule - Oversized</name>
+    <filename>oversized-configuration-item-change-notification.json</filename>
+  </request>
+  <request category="AWS">
+    <name>AWS Config Periodic Rule</name>
+    <filename>periodic-rule.json</filename>
+  </request>
+  <request category="AWS">
+    <name>CloudFormation Create Request</name>
+    <filename>cfn-create-request.json</filename>
+  </request>
+  <request category="AWS">
+    <name>CloudFront AB Test</name>
+    <filename>cloudfront-ab-test.json</filename>
+  </request>
+  <request category="AWS">
+    <name>CloudFront Access Request Header in Response Event</name>
+    <filename>cloudfront-access-request-in-response.json</filename>
+  </request>
+  <request category="AWS">
+    <name>CloudFront HTTP Redirect</name>
+    <filename>cloudfront-http-redirect.json</filename>
+  </request>
+  <request category="AWS">
+    <name>CloudFront Modify Response Header</name>
+    <filename>cloudfront-modify-response-header.json</filename>
+  </request>
+  <request category="AWS">
+    <name>CloudFront Multiple Remote Calls Aggregate Response</name>
+    <filename>cloudfront-multiple-remote-calls-aggregate-response.json</filename>
+  </request>
+  <request category="AWS">
+    <name>CloudFront Response Generation</name>
+    <filename>cloudfront-response-generation.json</filename>
+  </request>
+  <request category="AWS">
+    <name>CloudFront Simple Remote Call</name>
+    <filename>cloudfront-simple-remote-call.json</filename>
+  </request>
+  <request category="AWS">
+    <name>CloudWatch Logs</name>
+    <filename>cloudwatch-logs.json</filename>
+  </request>
+  <request category="AWS">
+    <name>CodeCommit</name>
+    <filename>CodeCommit.json</filename>
+  </request>
+  <request category="AWS">
+    <name>CodePipeline</name>
+    <filename>codepipeline.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Cognito Sync Trigger</name>
+    <filename>cognito-sync-trigger.json</filename>
+  </request>
+  <request category="AWS">
+    <name>DynamoDB Update</name>
+    <filename>dynamodb-update.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis</name>
+    <filename>Kinesis.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis Analytics - Compressed</name>
+    <filename>kinesis-analytics-compressed.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis Analytics - KPL</name>
+    <filename>kinesis-analytics-kpl.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis Analytics - Output DDB</name>
+    <filename>kinesis-analytics-output-ddb.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis Analytics - Output</name>
+    <filename>kinesis-analytics-output.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis Analytics - SNS Output</name>
+    <filename>kinesis-analytics-sns-output.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis Analytics</name>
+    <filename>kinesis-analytics.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis Firehose</name>
+    <filename>kinesis-firehose.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis Firehose Apache Log</name>
+    <filename>kinesis-firehose-apachelog.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis Firehose Cloudwatch Logs Processor</name>
+    <filename>kinesis-firehose-cloudwatch-logs-processor.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis Firehose streams as source</name>
+    <filename>kinesis-firehose-streams-as-source.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kinesis Firehose Syslog</name>
+    <filename>kinesis-firehose-syslog.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Rekognition S3 Request</name>
+    <filename>rekognition-s3-request.json</filename>
+  </request>
+  <request category="AWS">
+    <name>S3 Delete</name>
+    <filename>s3-delete.json</filename>
+  </request>
+  <request category="AWS">
+    <name>S3 Put</name>
+    <filename>s3-put.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Scheduled Event</name>
+    <filename>scheduled-event.json</filename>
+  </request>
+  <request category="AWS">
+    <name>SES Email Receiving</name>
+    <filename>ses-email-receiving.json</filename>
+  </request>
+  <request category="AWS">
+    <name>SNS</name>
+    <filename>SNS.json</filename>
+  </request>
+  <request category="AWS">
+    <name>SQS</name>
+    <filename>sqs.json</filename>
+  </request>
+  <request category="AWS">
+    <name>Kafka Event</name>
+    <filename>kafka-event.json</filename>
+  </request>
+  <request category="Common">
+    <name>Hello World</name>
+    <filename>hello-world.json</filename>
+  </request>
+  <request category="Common">
+    <name>Mobile Backend</name>
+    <filename>mobile-backend-echo.json</filename>
+  </request>
+  <request category="Lex">
+    <name>Lex - Make Appointment</name>
+    <filename>lex-make-appointment.json</filename>
+  </request>
+  <request category="Lex">
+    <name>Lex - Order Flowers</name>
+    <filename>lex-order-flowers.json</filename>
+  </request>
+  <request category="Lex">
+    <name>Lex BookTrip - Book Car</name>
+    <filename>lex-book-car.json</filename>
+  </request>
+  <request category="Lex">
+    <name>Lex BookTrip - Book Hotel</name>
+    <filename>lex-book-hotel.json</filename>
+  </request>
+</requests>

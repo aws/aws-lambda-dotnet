@@ -27,7 +27,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             return model;
         }
 
-        private static IList<string> BuildUsings(LambdaMethodModel lambdaMethodModel, 
+        private static IList<string> BuildUsings(LambdaMethodModel lambdaMethodModel,
             IMethodSymbol lambdaMethodSymbol,
             IMethodSymbol configureMethodSymbol,
             GeneratorExecutionContext context)
@@ -45,6 +45,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             if (configureMethodSymbol != null)
             {
                 namespaces.Add("Microsoft.Extensions.DependencyInjection");
+
+                if (lambdaMethodModel.UsingHostBuilderForDependencyInjection)
+                {
+                    namespaces.Add("Microsoft.Extensions.Hosting");
+                }
+
             }
 
             namespaces.Add("Amazon.Lambda.Core");
@@ -73,7 +79,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 return TypeModelBuilder.Build(typeStream, context);
             }
 
-            
+
             if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute))
             {
                 var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
@@ -215,6 +221,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                     }
                     else
                     {
+                        // Somehow, Roslyn doesn't include @ character when using with reserved keyword. Add a check just in case Roslyn fix is implemented in later versions.
+                        if (!param.Name.StartsWith("@"))
+                        {
+                            param.Name = "__" + param.Name + "__";
+                        }
                         param.Documentation = "The request object that will be processed by the Lambda function handler.";
                     }
 

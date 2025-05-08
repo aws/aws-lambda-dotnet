@@ -1,3 +1,171 @@
+## Release 2025-04-29
+
+### Amazon.Lambda.TestTool (0.10.2)
+* Add SSO dependencies to support credential profiles that are using SSO
+* Update version of AWS SDK for .NET to V4
+### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (2.0.0)
+* Update to AWS SDK for .NET V4
+### Amazon.Lambda.KinesisEvents (3.0.0)
+* Update to AWS SDK for .NET V4
+
+## Release 2025-04-25
+
+### Amazon.Lambda.AspNetCoreServer (9.1.0)
+* Add overrideable method GetBeforeSnapshotRequests() and AddAWSLambdaBeforeSnapshotRequest() extension method to support warming up the asp.net/lambda pipelines automatically during BeforeSnapshot callback.
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.8.0)
+* Add overrideable method GetBeforeSnapshotRequests() and AddAWSLambdaBeforeSnapshotRequest() extension method to support warming up the asp.net/lambda pipelines automatically during BeforeSnapshot callback.
+### Amazon.Lambda.AppSyncEvents (1.0.0)
+* Added AppSyncResolverEvent to support direct lambda resolver
+
+## Release 2025-04-10 #2
+
+### Amazon.Lambda.TestTool (0.10.1)
+* Support optional SQS client region in event source test tool
+### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (1.0.0)
+* Implement DynamoDBEvents SDK Convertor package for DynamoDBEvent images to DynamoDBv2.Document
+
+## Release 2025-04-04
+
+### Amazon.Lambda.Templates (7.4.1)
+* Update the AWS Message Processing Framework for .NET project template.
+### Amazon.Lambda.TestTool (0.10.0)
+* Add SQS event source support
+
+## Release 2025-03-13
+
+### Amazon.Lambda.Annotations (1.7.0)
+* Add ConfigureHostBuilder function to `Startup` class for allowing the Lambda function to configure an `IHostApplicationBuilder`.
+### Amazon.Lambda.RuntimeSupport (1.13.0)
+* Add support for parameterized logging method to global logger LambdaLogger in Amazon.Lambda.Core
+### Amazon.Lambda.Core (2.5.1)
+* Add support for parameterized logging method to global logger LambdaLogger. Method is marked as preview till new version of Amazon.Lambda.RuntimeSupport is deployed to managed runtime.
+
+## Release 2025-03-05
+
+### Amazon.Lambda.TestTool (0.9.1)
+* Add Lambda-Runtime-Deadline-Ms response header
+
+## Release 2025-02-26 #3
+
+### Amazon.Lambda.Annotations (1.6.3)
+* fix: implemented change to always use __ as prefix and suffix for parameter names generated for a LambdaFunction.
+
+## Release 2025-02-26 #2
+
+### Amazon.Lambda.TestTool (0.9.0)
+* Add README
+* Add 6MB request and response size validation.
+
+## Release 2025-02-25
+
+### Amazon.Lambda.AspNetCoreServer (9.0.4)
+* Fixed issue with marking the response body started. This is required for writing trailing headers
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.7.4)
+* Update Amazon.Lambda.AspNetCoreServer dependency to latest.
+### Amazon.Lambda.RuntimeSupport (1.12.3)
+* Add ability to specify configuration using command line args
+
+## Release 2025-02-20
+
+### Amazon.Lambda.TestTool.BlazorTester (0.16.2)
+* Fixed yaml function-based serverless.template Environment Variable parsing and adding to functioninfo
+### Amazon.Lambda.TestTool (0.0.3)
+* Add missing icon for NuGet package
+
+## Release 2025-02-07
+
+### Amazon.Lambda.TestTool (0.0.2-preview)
+* Update default log level to be ERROR in production and INFORMATION in debug mode.
+* Fix exception method when not setting --api-gateway-emulator-mode
+* Breaking change: Switch to use commands to invoke the tool. For example to run the Lambda emulator use the command 'dotnet lambda-test-tool start --lambda-emulator-port 5050'
+* Add new info command to get metadata about the tool. For example getting the version number of the tool.
+
+## Release 2025-01-31 #2
+
+### Amazon.Lambda.TestTool.BlazorTester (0.16.1)
+* Update AWS dependencies. This address issues when attempting to use SnapStart APIs from Amazon.Lambda.Core in Lambda functions.
+
+## Release 2025-01-31
+
+### Amazon.Lambda.TestTool (0.0.1-preview)
+* Initial preview release
+
+## Release 2024-12-09
+
+### SnapshotRestore.Registry (1.0.1)
+* Added License URL to project
+* Updated project to support building the .NET 9 Lambda custom runtime image
+### Amazon.Lambda.RuntimeSupport (1.12.2)
+* Updated project to support building the .NET 9 Lambda custom runtime image
+### Amazon.Lambda.Annotations (1.6.2)
+* Added License URL to project
+
+## Release 2024-11-26
+
+### Amazon.Lambda.AspNetCoreServer (9.0.3)
+* Fixed issue '(EmptyBodyBehavior = EmptyBodyBehavior.Allow)' not being honored when request body was empty
+### Amazon.Lambda.RuntimeSupport (1.12.1)
+* Revert behavior for non SnapShot scenario to throw an exception when initialization fails
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.7.3)
+* Fixed issue '(EmptyBodyBehavior = EmptyBodyBehavior.Allow)' not being honored when request body was empty
+
+## Release 2024-11-25
+
+### Amazon.Lambda.Templates (7.4.0)
+* Update package dependencies. The significant dependency update was for Amazon.Lambda.Core and Amazon.Lambda.RuntimeSupport with added support for Lambda SnapStart.
+
+## Release 2024-11-20
+
+### Amazon.Lambda.PowerShellHost (3.0.2)
+* Update to latest version of Amazon.Lambda.Core
+### Amazon.Lambda.Logging.AspNetCore (3.1.1)
+* Update to latest version of Amazon.Lambda.Core
+### Amazon.Lambda.Annotations (1.6.1)
+* Update to latest version of Amazon.Lambda.Core
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.7.2)
+* Update to latest version of Amazon.Lambda.Core and Amazon.Lambda.RuntimeSupport
+### Amazon.Lambda.AspNetCoreServer (9.0.2)
+* Update to latest version of Amazon.Lambda.Core
+
+## Release 2024-11-18
+
+### Amazon.Lambda.Core (2.5.0)
+* Added the new `SnapshotRestore` static class for registering SnapStart hooks for before snapshot and after restore.
+
+### Amazon.Lambda.RuntimeSupport (1.12.0)
+* Added support for handling Lambda SnapStart events.
+
+### SnapshotRestore.Registry (1.0.0)
+* New package used by Amazon.Lambda.RuntimeSupport for registering and executing SnapStart hooks.
+
+## Release 2024-11-14
+
+### Amazon.Lambda.TestTool.BlazorTester (0.16.0)
+* Update Lambda Test Tool to add a .NET9 target
+* Fixed issue supporting parameterized logging APIs added to Amazon.Lambda.Core in version 2.4.0
+
+## Release 2024-11-13
+
+### Amazon.Lambda.Templates (7.3.0)
+* Update package Dependencies.
+* Custom Runtime templates target .NET 9.
+* Rework the `EntryPoint` for F# test projects.
+
+## Release 2024-11-12
+
+### Amazon.Lambda.Annotations (1.6.0)
+* Eagerly build Function Handler inside the Generated class's constructor
+
+## Release 2024-11-06
+
+### Amazon.Lambda.Core (2.4.0)
+* Removed RequiresPreviewFeatures attribute from parameterized logging APIs
+
+## Release 2024-11-01
+
+### Amazon.Lambda.TestTool.BlazorTester (0.15.3)
+* Fixed an issue where delimited string and primitive values in payload were not parsed properly by Lambda Test Tool.
+
 ## Release 2024-10-30
 
 ### Amazon.Lambda.Annotations (1.5.3)

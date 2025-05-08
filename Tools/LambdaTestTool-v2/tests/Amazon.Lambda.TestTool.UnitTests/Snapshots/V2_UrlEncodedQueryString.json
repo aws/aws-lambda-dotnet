@@ -1,0 +1,47 @@
+{
+  "Version": "2.0",
+  "RouteKey": "POST /test12/api/search",
+  "RawPath": "/test12/api/search",
+  "RawQueryString": "q=Hello%20World\u0026tag=C%23%20Programming\u0026tag=.NET%20Core",
+  "Cookies": null,
+  "Headers": {
+    "content-length": "0",
+    "content-type": "text/plain; charset=utf-8",
+    "Host": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "x-amzn-trace-id": "Root=1-67fd88cb-4981526a50466e9f2be0fbed",
+    "X-Forwarded-For": "IP_ADDRESS",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "QueryStringParameters": {
+    "q": "Hello World",
+    "tag": "C# Programming,.NET Core"
+  },
+  "RequestContext": {
+    "AccountId": "ACCOUNT_ID",
+    "ApiId": "EXAMPLE",
+    "Authorizer": null,
+    "DomainName": "EXAMPLE.execute-api.REGION.amazonaws.com",
+    "DomainPrefix": "EXAMPLE",
+    "Http": {
+      "Method": "POST",
+      "Path": "/test12/api/search",
+      "Protocol": "HTTP/1.1",
+      "SourceIp": "IP_ADDRESS",
+      "UserAgent": ""
+    },
+    "RequestId": "JCJP4iwYPHcEJgQ=",
+    "RouteId": null,
+    "RouteKey": "POST /test12/api/search",
+    "Stage": "$default",
+    "Time": "14/Apr/2025:22:14:35 \u002B0000",
+    "TimeEpoch": 1744668875623,
+    "Authentication": null
+  },
+  "Body": null,
+  "PathParameters": null,
+  "IsBase64Encoded": false,
+  "StageVariables": null
+}
+
+

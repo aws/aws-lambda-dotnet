@@ -123,13 +123,27 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestMinimalAPIApp", "test\T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.MQEvents", "src\Amazon.Lambda.MQEvents\Amazon.Lambda.MQEvents.csproj", "{BF85932E-2DFF-41CD-8090-A672468B8FBB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.LexV2Events", "src\Amazon.Lambda.LexV2Events\Amazon.Lambda.LexV2Events.csproj", "{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.LexV2Events", "src\Amazon.Lambda.LexV2Events\Amazon.Lambda.LexV2Events.csproj", "{3C6AABF5-0372-41E0-874F-DF18ECCC7FB6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest", "test\Amazon.Lambda.RuntimeSupport.Tests\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.csproj", "{0BD83939-458C-4EF5-8663-7098AD1200F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest", "test\Amazon.Lambda.RuntimeSupport.Tests\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.csproj", "{0BD83939-458C-4EF5-8663-7098AD1200F2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestExecutableServerlessApp", "test\TestExecutableServerlessApp\TestExecutableServerlessApp.csproj", "{DD378063-C54A-44C7-9A6F-32A6A1AE94B3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestServerlessApp.NET8", "test\TestServerlessApp.NET8\TestServerlessApp.NET8.csproj", "{7300983D-8FCE-42EA-9B9E-B1C5347D15D8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SnapshotRestore.Registry", "src\SnapshotRestore.Registry\SnapshotRestore.Registry.csproj", "{7261A438-8C1D-47AD-98B0-7678F72E4382}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SnapshotRestore.Registry.Tests", "test\SnapshotRestore.Registry.Tests\SnapshotRestore.Registry.Tests.csproj", "{A699E183-D0D4-4F26-A0A7-88DA5607F455}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amazon.Lambda.AppSyncEvents", "src\Amazon.Lambda.AppSyncEvents\Amazon.Lambda.AppSyncEvents.csproj", "{99F39E49-1FD0-4EF5-BF4B-8F2473FB8198}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventsTests.NET8", "test\EventsTests.NET8\EventsTests.NET8.csproj", "{1FB22337-5D88-4CE7-ADFF-FFD89204F0E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.DynamoDBEvents.SDK.Convertor", "src\Amazon.Lambda.DynamoDBEvents.SDK.Convertor\Amazon.Lambda.DynamoDBEvents.SDK.Convertor.csproj", "{3400F4E9-BA12-4D3D-9BA1-2798AA8D0AFC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests", "test\Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests\Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests.csproj", "{074DB940-82BA-47D4-B888-C213D4220A82}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon.Lambda.AspNetCoreServer.Hosting.Tests", "test\Amazon.Lambda.AspNetCoreServer.Hosting.Tests\Amazon.Lambda.AspNetCoreServer.Hosting.Tests.csproj", "{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -357,6 +371,34 @@ Global
 		{7300983D-8FCE-42EA-9B9E-B1C5347D15D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7300983D-8FCE-42EA-9B9E-B1C5347D15D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7300983D-8FCE-42EA-9B9E-B1C5347D15D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7261A438-8C1D-47AD-98B0-7678F72E4382}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7261A438-8C1D-47AD-98B0-7678F72E4382}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7261A438-8C1D-47AD-98B0-7678F72E4382}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7261A438-8C1D-47AD-98B0-7678F72E4382}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A699E183-D0D4-4F26-A0A7-88DA5607F455}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A699E183-D0D4-4F26-A0A7-88DA5607F455}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A699E183-D0D4-4F26-A0A7-88DA5607F455}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A699E183-D0D4-4F26-A0A7-88DA5607F455}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3400F4E9-BA12-4D3D-9BA1-2798AA8D0AFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3400F4E9-BA12-4D3D-9BA1-2798AA8D0AFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3400F4E9-BA12-4D3D-9BA1-2798AA8D0AFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3400F4E9-BA12-4D3D-9BA1-2798AA8D0AFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{074DB940-82BA-47D4-B888-C213D4220A82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{074DB940-82BA-47D4-B888-C213D4220A82}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{074DB940-82BA-47D4-B888-C213D4220A82}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{074DB940-82BA-47D4-B888-C213D4220A82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99F39E49-1FD0-4EF5-BF4B-8F2473FB8198}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99F39E49-1FD0-4EF5-BF4B-8F2473FB8198}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99F39E49-1FD0-4EF5-BF4B-8F2473FB8198}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99F39E49-1FD0-4EF5-BF4B-8F2473FB8198}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FB22337-5D88-4CE7-ADFF-FFD89204F0E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FB22337-5D88-4CE7-ADFF-FFD89204F0E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FB22337-5D88-4CE7-ADFF-FFD89204F0E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FB22337-5D88-4CE7-ADFF-FFD89204F0E9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -421,11 +463,19 @@ Global
 		{0BD83939-458C-4EF5-8663-7098AD1200F2} = {B5BD0336-7D08-492C-8489-42C987E29B39}
 		{DD378063-C54A-44C7-9A6F-32A6A1AE94B3} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 		{7300983D-8FCE-42EA-9B9E-B1C5347D15D8} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{7261A438-8C1D-47AD-98B0-7678F72E4382} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{A699E183-D0D4-4F26-A0A7-88DA5607F455} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{3400F4E9-BA12-4D3D-9BA1-2798AA8D0AFC} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{074DB940-82BA-47D4-B888-C213D4220A82} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{D61CBB71-17AB-4EC2-8C6A-70E9D7C60526} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
+		{99F39E49-1FD0-4EF5-BF4B-8F2473FB8198} = {AAB54E74-20B1-42ED-BC3D-CE9F7BC7FD12}
+		{1FB22337-5D88-4CE7-ADFF-FFD89204F0E9} = {1DE4EE60-45BA-4EF7-BE00-B9EB861E4C69}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {503678A4-B8D1-4486-8915-405A3E9CF0EB}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		test\EventsTests.Shared\EventsTests.Shared.projitems*{1fb22337-5d88-4ce7-adff-ffd89204f0e9}*SharedItemsImports = 5
 		test\EventsTests.Shared\EventsTests.Shared.projitems*{44e9d925-b61d-4234-97b7-61424c963ba6}*SharedItemsImports = 5
 		test\EventsTests.Shared\EventsTests.Shared.projitems*{a2cb78bb-e54f-48ca-bbfb-9553d27ef23d}*SharedItemsImports = 13
 		test\EventsTests.Shared\EventsTests.Shared.projitems*{c1bb30d2-3237-4cfc-ba93-627471148ec2}*SharedItemsImports = 5

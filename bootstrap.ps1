@@ -2,17 +2,26 @@ param (
     [Parameter(Mandatory = $true, HelpMessage = "Pipeline Account ID.")]
     [string] $PipelineAccountId,
 
-    [Parameter(Mandatory = $true, HelpMessage = "Code Commit Account ID.")]
-    [string] $CodeCommitAccountId,
+    [Parameter(Mandatory = $false, HelpMessage = "Pipeline name suffix.")]
+    [string] $PipelineNameSuffix,
 
     [Parameter(Mandatory = $true, HelpMessage = "Region.")]
     [string] $Region,
 
-    [Parameter(Mandatory = $true, HelpMessage = "Source repository ARN.")]
-    [string] $SourceRepositoryArn,
+    [Parameter(Mandatory = $true, HelpMessage = "The name of the secret in Secret Manager that contains the GitHub Access Token.")]
+    [string] $GitHubTokenSecretName,
 
-    [Parameter(Mandatory = $true, HelpMessage = "Source branch name.")]
-    [string] $SourceBranchName,
+    [Parameter(Mandatory = $true, HelpMessage = "The secret key in Secret Manager that contains the GitHub Access Token.")]
+    [string] $GitHubTokenSecretKey,
+
+    [Parameter(Mandatory = $true, HelpMessage = "GitHub repository owner name.")]
+    [string] $GitHubRepoOwner,
+
+    [Parameter(Mandatory = $true, HelpMessage = "GitHub repository name.")]
+    [string] $GitHubRepoName,
+
+    [Parameter(Mandatory = $true, HelpMessage = "GitHub repository branch name.")]
+    [string] $GitHubRepoBranch,
 
     [Parameter(Mandatory = $false, HelpMessage = "ECR URI to store Stage images.")]
     [string] $StageEcr,
@@ -26,12 +35,6 @@ param (
     [Parameter(Mandatory = $true, HelpMessage = "ECR repository name for Stage, Beta and Prod images.")]
     [string] $EcrRepositoryName,
 
-    [Parameter(Mandatory = $true, HelpMessage = "AWS Profile used to created resources.")]
-    [string] $Profile,
-
-    [Parameter(Mandatory = $true, HelpMessage = "AWS Profile for the CodeCommmit AWS account.")]
-    [string] $CodeCommitAccountProfile,
-
     [Parameter(Mandatory = $true, HelpMessage = "The target .NET framework to create a pipeline for.")]
     [string] $TargetFramework,
 
@@ -40,11 +43,15 @@ param (
 )
 
 $env:AWS_LAMBDA_PIPELINE_ACCOUNT_ID = $PipelineAccountId
-$env:AWS_LAMBDA_PIPELINE_CODECOMMIT_ACCOUNT_ID = $CodeCommitAccountId
 $env:AWS_LAMBDA_PIPELINE_REGION = $Region
+$env:AWS_LAMBDA_PIPELINE_NAME_SUFFIX = $PipelineNameSuffix
 
-$env:AWS_LAMBDA_SOURCE_REPOSITORY_ARN = $SourceRepositoryArn
-$env:AWS_LAMBDA_SOURCE_BRANCH_NAME = $SourceBranchName
+$env:AWS_LAMBDA_GITHUB_TOKEN_SECRET_NAME = $GitHubTokenSecretName
+$env:AWS_LAMBDA_GITHUB_TOKEN_SECRET_KEY = $GitHubTokenSecretKey
+
+$env:AWS_LAMBDA_GITHUB_REPO_OWNER = $GitHubRepoOwner
+$env:AWS_LAMBDA_GITHUB_REPO_NAME = $GitHubRepoName
+$env:AWS_LAMBDA_GITHUB_REPO_BRANCH = $GitHubRepoBranch
 
 $env:AWS_LAMBDA_STAGE_ECR = $StageEcr
 $env:AWS_LAMBDA_BETA_ECRS = $BetaEcrs
@@ -55,6 +62,5 @@ $env:AWS_LAMBDA_ECR_REPOSITORY_NAME = $EcrRepositoryName
 $env:AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION = $TargetFramework
 $env:AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL = $DotnetChannel
 
-npx cdk bootstrap --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess aws://$PipelineAccountId/$Region --profile $Profile
-npx cdk bootstrap --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess --trust $PipelineAccountId aws://$CodeCommitAccountId/$Region --profile $CodeCommitAccountProfile
-npx cdk deploy --require-approval never --all --profile $Profile
+npx cdk bootstrap --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess aws://$PipelineAccountId/$Region
+npx cdk deploy --require-approval never --all

@@ -287,15 +287,12 @@ namespace Amazon.Lambda.TestTool.Runtime
 
                 if (resourceBody.Children.TryGetValue("Environment", out var environmentProperty) && environmentProperty is YamlMappingNode)
                 {
-                    if (((YamlMappingNode)environmentProperty).Children.TryGetValue("Environment", out var variableProperty) && variableProperty is YamlMappingNode)
+                    foreach (var kvp in ((YamlMappingNode)environmentProperty).Children)
                     {
-                        foreach(var kvp in ((YamlMappingNode)variableProperty).Children) 
+                        if(kvp.Key is YamlScalarNode keyNode && keyNode.Value != null &&
+    kvp.Value is YamlScalarNode valueNode && valueNode.Value != null)
                         {
-                            if(kvp.Key is YamlScalarNode keyNode && keyNode.Value != null && 
-                                kvp.Value is YamlScalarNode valueNode && valueNode.Value != null)
-                            {
-                                functionInfo.EnvironmentVariables[keyNode.Value] = valueNode.Value;
-                            }
+                            functionInfo.EnvironmentVariables[keyNode.Value] = valueNode.Value;
                         }
                     }
                 }
