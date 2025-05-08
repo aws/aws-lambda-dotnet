@@ -18,7 +18,11 @@
         {
           "Ref": "ArchitectureTypeParameter"
         }
-      ]
+      ],
+      "Tags": {
+        "aws-tests": "TestServerlessApp",
+        "aws-repo": "aws-lambda-dotnet"
+      }
     }
   },
   "Resources": {
