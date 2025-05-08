@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text.Json.Serialization;
 
 
@@ -17,6 +17,8 @@ namespace Amazon.Lambda.TestTool
         public string FunctionName { get; set; }
         [JsonPropertyName("function-timeout")]
         public int? FunctionTimeOut { get; set; }
+        [JsonPropertyName("function-debugtimeout")]
+        public int? FunctionDebugTimeOut { get; set; }
 
         [JsonPropertyName("image-command")]
         public string ImageCommand { get; set; }
