@@ -1,3 +1,12 @@
+## Release 2025-05-15
+
+### Amazon.Lambda.TestTool (0.10.3)
+* Fix issue with long debugging sessions causing events to be retried
+### Amazon.Lambda.AspNetCoreServer (9.1.1)
+* Fixed issue when executing AddRegisterBeforeSnapshot callbacks to ensure each invocation has a new ASP.NET Core feature collection and HttpContext.
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.8.1)
+* Update Amazon.Lambda.AspNetCoreServer dependency for latest patch fix.
+
 ## Release 2025-04-29
 
 ### Amazon.Lambda.TestTool (0.10.2)
