@@ -1,4 +1,4 @@
-﻿using Amazon.IdentityManagement;
+using Amazon.IdentityManagement;
 using Amazon.IdentityManagement.Model;
 using Amazon.Lambda.Model;
 using Amazon.S3;
@@ -267,7 +267,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     S3Bucket = bucketName,
                     S3Key = DeploymentZipKey
                 },
-                Handler = this.Handler,
+                Handler = Handler,
                 MemorySize = FUNCTION_MEMORY_MB,
                 Timeout = 30,
                 Runtime = Runtime.Dotnet6,

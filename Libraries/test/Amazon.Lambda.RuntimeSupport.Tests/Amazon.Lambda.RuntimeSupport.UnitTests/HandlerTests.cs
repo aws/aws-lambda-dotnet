@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -393,9 +393,10 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                     Client = testRuntimeApiClient
                 };
 
-                var loggerAction = actionWriter.ToLoggingAction();
                 var assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName(UserCodeLoader.LambdaCoreAssemblyName));
-                UserCodeLoader.SetCustomerLoggerLogAction(assembly, loggerAction, _internalLogger);
+                UserCodeLoader.SetCustomerLoggerLogAction(assembly, actionWriter.ToLoggingAction(), _internalLogger);
+                UserCodeLoader.SetCustomerLoggerLogAction(assembly, actionWriter.ToLoggingWithLevelAction(), _internalLogger);
+                UserCodeLoader.SetCustomerLoggerLogAction(assembly, actionWriter.ToLoggingWithLevelAndExceptionAction(), _internalLogger);
 
                 if (assertLoggedByInitialize != null)
                 {

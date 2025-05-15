@@ -247,7 +247,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             var loggingActionField = lambdaLoggerType.GetTypeInfo().GetField("_loggingAction", BindingFlags.NonPublic | BindingFlags.Static);
             if (loggingActionField != null)
             {
-                Action<string> loggingAction = (message => FormattedWriteLine(null, message));
+                Action<string> loggingAction = message => FormattedWriteLine(null, message);
                 loggingActionField.SetValue(null, loggingAction);
             }
 
@@ -255,9 +255,15 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             var loggingWithLevelActionField = lambdaLoggerType.GetTypeInfo().GetField("_loggingWithLevelAction", BindingFlags.NonPublic | BindingFlags.Static);
             if (loggingWithLevelActionField != null)
             {
-                Action<string, string, object[]> loggingWithLevelAction = ((level, message, args) => FormattedWriteLine(level, message, args));
+                Action<string, string, object[]> loggingWithLevelAction = (level, message, args) => FormattedWriteLine(level, message, args);
                 loggingWithLevelActionField.SetValue(null, loggingWithLevelAction);
+            }
 
+            var loggingWithLevelAndExceptionActionField = lambdaLoggerType.GetTypeInfo().GetField("_loggingWithLevelAndExceptionAction", BindingFlags.NonPublic | BindingFlags.Static);
+            if (loggingWithLevelAndExceptionActionField != null)
+            {
+                Action<string, Exception, string, object[]> loggingWithLevelAndExceptionAction = (level, exception, message, args) => FormattedWriteLine(level, exception, message, args);
+                loggingWithLevelAndExceptionActionField.SetValue(null, loggingWithLevelAndExceptionAction);
             }
         }
 
