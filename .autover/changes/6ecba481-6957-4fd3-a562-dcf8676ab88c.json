@@ -1,0 +1,18 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fixed issue when executing AddRegisterBeforeSnapshot callbacks to ensure each invocation has a new ASP.NET Core feature collection and HttpContext."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update Amazon.Lambda.AspNetCoreServer dependency for latest patch fix."
+      ]
+    }
+  ]
+}
