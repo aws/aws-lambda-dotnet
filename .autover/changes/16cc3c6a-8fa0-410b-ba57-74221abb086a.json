@@ -13,7 +13,7 @@
       "ChangelogMessages": [
         "Added log level version of the static logging functions on Amazon.Lambda.Core.LambdaLogger"
       ]
-    }   
+    },
     {
       "Name": "Amazon.Lambda.AspNetCoreServer",
       "Type": "Patch",
