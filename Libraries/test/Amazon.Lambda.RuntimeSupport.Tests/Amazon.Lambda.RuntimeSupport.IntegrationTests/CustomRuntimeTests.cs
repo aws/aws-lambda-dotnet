@@ -106,6 +106,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await RunTestSuccessAsync(lambdaClient, "UnintendedDisposeTest", "not-used", "UnintendedDisposeTest-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "LoggingStressTest", "not-used", "LoggingStressTest-success");
 
+                    await RunGlobalLoggingWithExceptionTestAsync(lambdaClient, "GlobalLoggingWithExceptionTest");
                     await RunGlobalLoggingTestAsync(lambdaClient, "GlobalLoggingTest");
                     await RunJsonLoggingWithUnhandledExceptionAsync(lambdaClient);
 
@@ -328,6 +329,21 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
 
             Assert.Contains("This is a global log message with foobar as an argument", log);
+        }
+
+        private async Task RunGlobalLoggingWithExceptionTestAsync(AmazonLambdaClient lambdaClient, string handler)
+        {
+            await UpdateHandlerAsync(lambdaClient, handler);
+
+            var invokeResponse = await InvokeFunctionAsync(lambdaClient, JsonConvert.SerializeObject(""));
+            Assert.True(invokeResponse.HttpStatusCode == System.Net.HttpStatusCode.OK);
+            Assert.True(invokeResponse.FunctionError == null);
+
+            var log = System.Text.UTF8Encoding.UTF8.GetString(Convert.FromBase64String(invokeResponse.LogResult));
+
+            Assert.Contains("This is a global log message with foobar as an argument", log);
+            Assert.Contains("ArgumentException", log);
+            Assert.Contains("This is the wrong argument", log);
         }
 
         private async Task RunUnformattedLoggingTestAsync(AmazonLambdaClient lambdaClient, string handler)

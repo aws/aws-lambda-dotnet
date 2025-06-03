@@ -51,6 +51,9 @@ namespace CustomRuntimeFunctionTest
                     case nameof(GlobalLoggingTest):
                         bootstrap = new LambdaBootstrap(GlobalLoggingTest);
                         break;
+                    case nameof(GlobalLoggingWithExceptionTest):
+                        bootstrap = new LambdaBootstrap(GlobalLoggingWithExceptionTest);
+                        break;
                     case nameof(LoggingTest):
                         bootstrap = new LambdaBootstrap(LoggingTest);
                         break;
@@ -172,12 +175,18 @@ namespace CustomRuntimeFunctionTest
             return Task.FromResult(GetInvocationResponse(nameof(LoggingStressTest), "success"));
         }
 
+        private static Task<InvocationResponse> GlobalLoggingWithExceptionTest(InvocationRequest invocation)
+        {
+#pragma warning disable CA2252
+            var exception = new ArgumentException("This is the wrong argument");
+            LambdaLogger.Log(LogLevel.Error, exception, "This is a global log message with {argument} as an argument", "foobar");
+#pragma warning restore CA2252
+            return Task.FromResult(GetInvocationResponse(nameof(GlobalLoggingWithExceptionTest), true));
+        }
 
         private static Task<InvocationResponse> GlobalLoggingTest(InvocationRequest invocation)
         {
-#pragma warning disable CA2252
             LambdaLogger.Log(LogLevel.Information, "This is a global log message with {argument} as an argument", "foobar");
-#pragma warning restore CA2252
             return Task.FromResult(GetInvocationResponse(nameof(GlobalLoggingTest), true));
         }
 
