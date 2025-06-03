@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - Logging ASP.NET Core package.</Description>
     <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.Logging.AspNetCore</AssemblyTitle>
-    <Version>3.1.1</Version>
+    <Version>4.0.0</Version>
     <AssemblyName>Amazon.Lambda.Logging.AspNetCore</AssemblyName>
     <PackageId>Amazon.Lambda.Logging.AspNetCore</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Logging</PackageTags>

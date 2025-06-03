@@ -1,3 +1,20 @@
+## Release 2025-06-03
+
+### Amazon.Lambda.RuntimeSupport (1.13.1)
+* Add support for parameterized logging method with exception to global logger LambdaLogger in Amazon.Lambda.Core
+### Amazon.Lambda.Core (2.6.0)
+* Added log level version of the static logging functions on Amazon.Lambda.Core.LambdaLogger
+### Amazon.Lambda.AspNetCoreServer (9.1.2)
+* Update Amazon.Lambda.Logging.AspNetCore dependency
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.8.2)
+* Update Amazon.Lambda.Logging.AspNetCore dependency
+### Amazon.Lambda.Logging.AspNetCore (4.0.0)
+* Add support Lambda log levels
+* Change build target from .NET Standard 2.0 to .NET 6 and NET 8 to match Amazon.Lambda.AspNetCoreServer
+### Amazon.Lambda.TestUtilities (3.0.0)
+* Update Amazon.Lambda.TestUtitlies to have implementation of the newer logging methods
+* Change build target from .NET Standard 2.0 to .NET 6 and NET 8 to match Amazon.Lambda.AspNetCoreServer
+
 ## Release 2025-05-15
 
 ### Amazon.Lambda.TestTool (0.10.3)
