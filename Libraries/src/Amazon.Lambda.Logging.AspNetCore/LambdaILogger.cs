@@ -3,31 +3,31 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Logging
 {
-	internal class LambdaILogger : ILogger
-	{
-		// Private fields
-		private readonly string _categoryName;
-		private readonly LambdaLoggerOptions _options;
+    internal class LambdaILogger : ILogger
+    {
+        // Private fields
+        private readonly string _categoryName;
+        private readonly LambdaLoggerOptions _options;
 
 
-		internal IExternalScopeProvider ScopeProvider { get; set; }
+        internal IExternalScopeProvider ScopeProvider { get; set; }
 
-		// Constructor
-		public LambdaILogger(string categoryName, LambdaLoggerOptions options)
-		{
-			_categoryName = categoryName;
-			_options = options;
-		}
+        // Constructor
+        public LambdaILogger(string categoryName, LambdaLoggerOptions options)
+        {
+            _categoryName = categoryName;
+            _options = options;
+        }
 
-		// ILogger methods
-		public IDisposable BeginScope<TState>(TState state) => ScopeProvider?.Push(state) ?? new NoOpDisposable();
+        // ILogger methods
+        public IDisposable BeginScope<TState>(TState state) => ScopeProvider?.Push(state) ?? new NoOpDisposable();
 
-		public bool IsEnabled(LogLevel logLevel)
-		{
-			return (
-				_options.Filter == null ||
-				_options.Filter(_categoryName, logLevel));
-		}
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return (
+                _options.Filter == null ||
+                _options.Filter(_categoryName, logLevel));
+        }
 
         /// <summary>
         /// The Log method called by the ILogger framework to log message to logger's target. In the Lambda case the formatted logging will be
@@ -108,33 +108,33 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-		private void GetScopeInformation(List<string> logMessageComponents)
-		{
-			var scopeProvider = ScopeProvider;
+        private void GetScopeInformation(List<string> logMessageComponents)
+        {
+            var scopeProvider = ScopeProvider;
 
-			if (_options.IncludeScopes && scopeProvider != null)
-			{
-				var initialCount = logMessageComponents.Count;
+            if (_options.IncludeScopes && scopeProvider != null)
+            {
+                var initialCount = logMessageComponents.Count;
 
-				scopeProvider.ForEachScope((scope, list) =>
-				{
-					list.Add(scope.ToString());
-				}, (logMessageComponents));
+                scopeProvider.ForEachScope((scope, list) =>
+                {
+                    list.Add(scope.ToString());
+                }, (logMessageComponents));
 
-				if (logMessageComponents.Count > initialCount)
-				{
-					logMessageComponents.Add("=>");
-				}
-			}
-		}
+                if (logMessageComponents.Count > initialCount)
+                {
+                    logMessageComponents.Add("=>");
+                }
+            }
+        }
 
-		// Private classes	       
-		private class NoOpDisposable : IDisposable
-		{
-			public void Dispose()
-			{
-			}
-		}
+        // Private classes	       
+        private class NoOpDisposable : IDisposable
+        {
+            public void Dispose()
+            {
+            }
+        }
 
-	}
+    }
 }
