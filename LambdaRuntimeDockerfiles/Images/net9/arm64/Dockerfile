@@ -1,7 +1,7 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=9.0.4
-ARG ASPNET_SHA512=7cca4084341c2e978e6d75e09cae308a35de7cd84c5b27d5246b9d1b3e6aaff200bae8de5a25b816e30c3ba354bef17b84bae0ce15144895518661e53af18331
+ARG ASPNET_VERSION=9.0.5
+ARG ASPNET_SHA512=bd1db145a29b2eef440eba0491c5b70bf29e6793ebaab453d2939bd3ac161f7c33e3e4b1e65a734dd4fd44151357b4c150a4cfcb5ade7249cbf2d03266d6b32b
 
 ARG LAMBDA_RUNTIME_NAME=dotnet9
 ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
