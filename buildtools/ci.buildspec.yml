@@ -7,9 +7,10 @@ phases:
     commands:
       # Find and delete the global.json files that were added by CodeBuild. This causes issues when multiple SDKs are installed.
       - find / -type f -name 'global.json' -delete
-      # The tests need .NET 3.1, 6, 8 and 9. .NET6 is installed by default. .NET8 is added in the runtime-versions. .NET 3.1 and 9 are installed manually.
+      # The tests need .NET 3.1, 6, 8, 9 and 10. .NET6 is installed by default. .NET8 is added in the runtime-versions. .NET 3.1, 9 and 10 are installed manually.
       - curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 3.1
       - curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0
+      - curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 10.0
   build:
     commands:
       - dotnet msbuild buildtools/build.proj /t:testtoolv2-tests /p:Cicd=true
