@@ -1,7 +1,7 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=9.0.5
-ARG ASPNET_SHA512=b60b8b5fa6b4538065166cd1266d075c64c464b281159d98bf03132bf363478ccc1185a9a51738cbe37d86752820f6be4add5208120a80dfb2bf4a8b58d22cc4
+ARG ASPNET_VERSION=9.0.6
+ARG ASPNET_SHA512=54c122c4c6127ce7e0f0ad0479a101db1455484c9e5bffa8fdc0dd72d2db028be86861f331f2c7c1cb2eaee9a92e741e4e5da567795533e46af27e4e481c0451
 
 ARG LAMBDA_RUNTIME_NAME=dotnet9
 ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
@@ -41,8 +41,8 @@ RUN dotnet build "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=t
 FROM builder AS publish
 RUN dotnet publish "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net9.0 -f net9.0 --runtime linux-x64 --self-contained false -p:PublishReadyToRun=true -c Release -o /app/publish
 RUN apt-get update && apt-get install -y dos2unix
-RUN dos2unix /app/publish/bootstrap-al2023.sh && \
-    mv /app/publish/bootstrap-al2023.sh /app/publish/bootstrap && \
+RUN dos2unix /app/publish/bootstrap.net8.sh && \
+    mv /app/publish/bootstrap.net8.sh /app/publish/bootstrap && \
     chmod +x /app/publish/bootstrap
 RUN touch /app/publish/empty-certificates.crt
 

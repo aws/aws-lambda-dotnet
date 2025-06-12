@@ -83,7 +83,7 @@ namespace ImageFunction.SmokeTests
             if(invokeResponse.FunctionError != null)
             {
                 throw new Exception($"Lambda function {handler} failed: {invokeResponse.FunctionError}");
-            }    
+            }
 
             await using var responseStream = invokeResponse.Payload;
             using var sr = new StreamReader(responseStream);
@@ -123,7 +123,7 @@ namespace ImageFunction.SmokeTests
         /// <param name="setValue"></param>
         /// <returns></returns>
         [Theory]
-#if NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER && !NET10_0_OR_GREATER
         [InlineData("SSL_CERT_FILE", "\"/var/runtime/empty-certificates.crt\"", null)]
         [InlineData("SSL_CERT_FILE", "\"/tmp/my-bundle\"", "/tmp/my-bundle")]
 #else
@@ -136,7 +136,7 @@ namespace ImageFunction.SmokeTests
             if(setValue != null)
             {
                 envVariables[envName] = setValue;
-            }    
+            }
 
             await UpdateHandlerAsync("ImageFunction::ImageFunction.Function::GetEnvironmentVariable", envVariables);
 
@@ -159,7 +159,7 @@ namespace ImageFunction.SmokeTests
                 FunctionName = _functionName,
                 ImageConfig = new ImageConfig()
                 {
-                    Command = {handler},
+                    Command = [handler],
                 },
                 Environment = new Amazon.Lambda.Model.Environment
                 {

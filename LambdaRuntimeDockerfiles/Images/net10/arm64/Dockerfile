@@ -1,51 +1,23 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=6.0.36
-ARG ASPNET_SHA512=2a6a2dde7ba3aeee9145686ee32f1901a7aa6238ae8395ea3bad51770e227069272be83959b711d238210c377b66661e3cf039965f019b58cd44c08a982404a2
+ARG ASPNET_VERSION=10.0.0-preview.5.25277.114
+ARG ASPNET_SHA512=AC99EBEC4E7ABD660A27317D37DA56AE1FA8E9EBDBF4A88FE5F9BE58E1F4D7E8F05BEC32D5E902C0FDD1E9D9E250CDB49448266682010E4CF7F4640F9699B9F1
 
-ARG ICU_VERSION=68.1
-ARG ICU_MD5=6a99b541ea01f271257b121a4433c7c0
-
-ARG LAMBDA_RUNTIME_NAME=dotnet6
-ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2
+ARG LAMBDA_RUNTIME_NAME=dotnet10
+ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
 
 FROM $AMAZON_LINUX AS base
 
-FROM base AS builder-libicu
-WORKDIR /
+RUN dnf install libicu-67.1-7.amzn2023.0.3.aarch64 --assumeyes
 
-# Install depedencies to extract and build ICU library
-RUN yum install -d1 -y \
-    tar \
-    gzip \
-    make \
-    gcc-c++
-
-# Download, validate and extract ICU library
-# https://github.com/unicode-org/icu/releases/tag/release-68-1
-ARG ICU_VERSION
-ARG ICU_MD5
-RUN curl -SL https://github.com/unicode-org/icu/releases/download/release-${ICU_VERSION//./-}/icu4c-${ICU_VERSION//./_}-src.tgz -o icu-src.tgz \
-    && echo "$ICU_MD5  icu-src.tgz" | md5sum -c - \
-    && tar -xzf icu-src.tgz \
-    && rm icu-src.tgz
-
-# Build ICU library
-RUN mkdir /libicu
-WORKDIR /icu/source/
-RUN ./configure --prefix=/libicu \
-    && make \
-    && make install
-
-
-FROM base AS builder-net6
+FROM base AS builder-net10
 ARG ASPNET_VERSION
 ARG ASPNET_SHA512
 
 WORKDIR /dotnet
 
 # Install tar and gzip for unarchiving downloaded tar.gz
-RUN yum install tar gzip --assumeyes
+RUN dnf install tar gzip --assumeyes
 
 # Install the ASP.NET Core shared framework
 RUN curl -SL --output aspnetcore.tar.gz https://builds.dotnet.microsoft.com/dotnet/aspnetcore/Runtime/$ASPNET_VERSION/aspnetcore-runtime-$ASPNET_VERSION-linux-arm64.tar.gz \
@@ -55,25 +27,24 @@ RUN curl -SL --output aspnetcore.tar.gz https://builds.dotnet.microsoft.com/dotn
     && rm aspnetcore.tar.gz
 
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0-bullseye-slim AS builder
+FROM mcr.microsoft.com/dotnet/sdk:10.0-preview-trixie-slim AS builder
 WORKDIR /src
 COPY ["Libraries/src/Amazon.Lambda.RuntimeSupport", "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/"]
+COPY ["Libraries/src/SnapshotRestore.Registry", "Repo/Libraries/src/SnapshotRestore.Registry/"]
 COPY ["Libraries/src/Amazon.Lambda.Core", "Repo/Libraries/src/Amazon.Lambda.Core/"]
 COPY ["buildtools/", "Repo/buildtools/"]
-RUN dotnet restore "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj" /p:TargetFrameworks=net6.0
+RUN dotnet restore "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj" /p:TargetFrameworks=net10.0
 WORKDIR "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport"
-RUN dotnet build "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net6.0 --runtime linux-arm64 -c Release -o /app/build
+RUN dotnet build "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net10.0 --runtime linux-arm64 -c Release -o /app/build
 
 
 FROM builder AS publish
-RUN dotnet publish "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net6.0 -f net6.0 --runtime linux-arm64 --self-contained false -p:PublishReadyToRun=true -c Release -o /app/publish
+RUN dotnet publish "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net10.0 -f net10.0 --runtime linux-arm64 --self-contained false -p:PublishReadyToRun=true -c Release -o /app/publish
 RUN apt-get update && apt-get install -y dos2unix
 RUN dos2unix /app/publish/bootstrap.sh && \
     mv /app/publish/bootstrap.sh /app/publish/bootstrap && \
     chmod +x /app/publish/bootstrap
-
-# Copy native dependencies
-COPY --from=builder-libicu  /libicu         /app/publish
+RUN touch /app/publish/empty-certificates.crt
 
 
 FROM base
@@ -93,7 +64,7 @@ ENV \
     # Disable Microsoft's telemetry collection
     DOTNET_CLI_TELEMETRY_OPTOUT=true
 
-COPY --from=builder-net6    /dotnet         ${DOTNET_ROOT}
+COPY --from=builder-net10    /dotnet         ${DOTNET_ROOT}
 COPY --from=publish         /app/publish    ${LAMBDA_RUNTIME_DIR}
 
 # Generate runtime-release file
