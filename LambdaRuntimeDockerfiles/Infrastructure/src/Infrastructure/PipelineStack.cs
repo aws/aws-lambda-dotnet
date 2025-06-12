@@ -15,31 +15,25 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Amazon.CDK;
 using Amazon.CDK.AWS.CodeBuild;
 using Amazon.CDK.AWS.CodePipeline;
 using Amazon.CDK.AWS.CodePipeline.Actions;
 using Amazon.CDK.AWS.IAM;
-using Amazon.CDK.Pipelines;
 using Constructs;
 
 namespace Infrastructure;
 
 public class PipelineStack : Stack
 {
-    private const string CdkCliVersion = "2.165.0";
     private const string PowershellVersion = "7.4.5";
     private const string BaseImageMultiArch = "contributed-base-image-multi-arch";
 
     internal PipelineStack(
         Construct scope,
         string id,
-        string ecrRepositoryName,
-        string framework,
-        string channel,
-        string dockerBuildImage,
         Configuration configuration,
+        FrameworkConfiguration frameworkConfiguration,
         IStackProps props = null) : base(scope, id, props)
     {
         var sourceArtifact = new Artifact_();
@@ -64,11 +58,11 @@ public class PipelineStack : Stack
                 JsonField = configuration.GitHubTokenSecretKey
             })
         });
-        
-        var basePipeline = new Pipeline(this, "CodePipeline", new PipelineProps
+
+        var pipeline = new Pipeline(this, "CodePipeline", new PipelineProps
         {
             PipelineType = PipelineType.V2,
-            PipelineName = id,
+            PipelineName = $"{Configuration.ProjectName}-{frameworkConfiguration.Framework}",
             RestartExecutionOnUpdate = true,
             Stages =
             [
@@ -80,93 +74,7 @@ public class PipelineStack : Stack
             ]
         });
 
-        var environmentVariables =
-            new Dictionary<string, IBuildEnvironmentVariable>
-            {
-                { "AWS_LAMBDA_PIPELINE_ACCOUNT_ID",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_ACCOUNT_ID") ?? string.Empty } },
-                { "AWS_LAMBDA_PIPELINE_NAME_SUFFIX",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                        System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_NAME_SUFFIX") ?? string.Empty } },
-                { "AWS_LAMBDA_PIPELINE_REGION",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_REGION") ?? string.Empty } },
-                { "AWS_LAMBDA_GITHUB_TOKEN_SECRET_NAME",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_TOKEN_SECRET_NAME") ?? string.Empty } },
-                { "AWS_LAMBDA_GITHUB_TOKEN_SECRET_KEY",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_TOKEN_SECRET_KEY") ?? string.Empty } },
-                { "AWS_LAMBDA_GITHUB_REPO_OWNER",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_OWNER") ?? string.Empty } },
-                { "AWS_LAMBDA_GITHUB_REPO_NAME",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_NAME") ?? string.Empty } },
-                { "AWS_LAMBDA_GITHUB_REPO_BRANCH",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_BRANCH") ?? string.Empty } },
-                { "AWS_LAMBDA_STAGE_ECR",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_STAGE_ECR") ?? string.Empty } },
-                { "AWS_LAMBDA_BETA_ECRS",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_BETA_ECRS") ?? string.Empty } },
-                { "AWS_LAMBDA_PROD_ECRS",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_PROD_ECRS") ?? string.Empty } },
-                { "AWS_LAMBDA_ECR_REPOSITORY_NAME",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_ECR_REPOSITORY_NAME") ?? string.Empty } },
-                { "AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION") ?? string.Empty } },
-                { "AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL",
-                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
-                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL") ?? string.Empty } },
-            };
-
-        // Self mutation
-        var pipeline = new CodePipeline(this, "Pipeline", new CodePipelineProps
-        {
-            CodePipeline = basePipeline,
-
-            // It synthesizes CDK code to cdk.out directory which is picked by SelfMutate stage to mutate the pipeline
-            Synth = new ShellStep("Synth", new ShellStepProps
-            {
-                Input = CodePipelineFileSet.FromArtifact(sourceArtifact),
-                InstallCommands = new[] { $"npm install -g aws-cdk@{CdkCliVersion}" },
-                Commands = new[] { $"dotnet build {Configuration.ProjectRoot}", "cdk synth" }
-            }),
-            CodeBuildDefaults = new CodeBuildOptions
-            {
-                BuildEnvironment = new BuildEnvironment
-                {
-                    EnvironmentVariables = environmentVariables
-                },
-                PartialBuildSpec = BuildSpec.FromObject(new Dictionary<string, object>
-                {
-                    { "phases", new Dictionary<string, object>
-                        {
-                            { "install", new Dictionary<string, object>
-                                {
-                                    { "runtime-versions", new Dictionary<string, object>
-                                        {
-                                            { "dotnet", "8.x"}
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                })
-            }
-        });
-
-        pipeline.BuildPipeline();
-
-        var stageEcr = GetStageEcr(this, ecrRepositoryName, configuration);
+        var stageEcr = GetStageEcr(this, frameworkConfiguration.EcrRepositoryName, configuration);
 
         var dockerBuildActions = new List<IAction>();
 
@@ -190,13 +98,13 @@ public class PipelineStack : Stack
             EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
             {
                 {"AWS_LAMBDA_STAGE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = frameworkConfiguration.EcrRepositoryName}},
                 {"AWS_LAMBDA_ARCHITECTURE", new BuildEnvironmentVariable {Value = "amd64"}},
                 {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellVersion}},
-                {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAmd64Tags[framework]}},
-                {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
-                {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
-                {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }}
+                {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = frameworkConfiguration.BaseImageAmd64Tag}},
+                {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = frameworkConfiguration.Framework}},
+                {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = frameworkConfiguration.Channel}},
+                {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = frameworkConfiguration.SpecificSdkVersion }}
             }
         });
 
@@ -208,7 +116,7 @@ public class PipelineStack : Stack
             ActionName = "amd64"
         }));
 
-        if (configuration.DockerArm64Images.Contains(framework))
+        if (frameworkConfiguration.HasArm64Image)
         {
             // Build ARM64 image
             var dockerBuildArm64 = new Project(this, "DockerBuild-arm64", new ProjectProps
@@ -229,13 +137,13 @@ public class PipelineStack : Stack
                 EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
                 {
                     {"AWS_LAMBDA_STAGE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = frameworkConfiguration.EcrRepositoryName}},
                     {"AWS_LAMBDA_ARCHITECTURE", new BuildEnvironmentVariable {Value = "arm64"}},
                     {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellVersion}},
-                    {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageArm64Tags[framework]}},
-                    {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
-                    {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
-                    {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }}
+                    {"AWS_LAMBDA_IMAGE_TAG", new BuildEnvironmentVariable {Value = frameworkConfiguration.BaseImageArm64Tag}},
+                    {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = frameworkConfiguration.Framework}},
+                    {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = frameworkConfiguration.Channel}},
+                    {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = frameworkConfiguration.SpecificSdkVersion }}
                 }
             });
 
@@ -248,7 +156,7 @@ public class PipelineStack : Stack
             }));
         }
 
-        basePipeline.AddStage(new StageOptions
+        pipeline.AddStage(new StageOptions
         {
             StageName = "DockerBuild",
             Actions = dockerBuildActions.ToArray()
@@ -273,17 +181,17 @@ public class PipelineStack : Stack
             EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
             {
                 {"AWS_LAMBDA_STAGE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = frameworkConfiguration.EcrRepositoryName}},
                 {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
-                {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAmd64Tags[framework]}},
-                {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageArm64Tags[framework]}},
-                {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerArm64Images.Contains(framework).ToString()}},
+                {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = frameworkConfiguration.BaseImageAmd64Tag}},
+                {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = frameworkConfiguration.BaseImageArm64Tag}},
+                {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = frameworkConfiguration.HasArm64Image.ToString()}},
             }
         });
 
         dockerImageManifest.AddToRolePolicy(ecrPolicy);
 
-        basePipeline.AddStage(new StageOptions
+        pipeline.AddStage(new StageOptions
         {
             StageName = "DockerImageManifest",
             Actions =
@@ -323,13 +231,13 @@ public class PipelineStack : Stack
             EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
             {
                 {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = frameworkConfiguration.EcrRepositoryName}},
                 {"AWS_LAMBDA_SOURCE_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
                 {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellVersion}},
-                {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
-                {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
-                {"AWS_LAMBDA_DOTNET_BUILD_IMAGE", new BuildEnvironmentVariable {Value = dockerBuildImage}},
-                {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }},
+                {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = frameworkConfiguration.Framework}},
+                {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = frameworkConfiguration.Channel}},
+                {"AWS_LAMBDA_DOTNET_BUILD_IMAGE", new BuildEnvironmentVariable {Value = frameworkConfiguration.DockerBuildImage}},
+                {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = frameworkConfiguration.SpecificSdkVersion }},
                 {"AWS_LAMBDA_SMOKETESTS_LAMBDA_ROLE", new BuildEnvironmentVariable {Value = smokeTestsLambdaFunctionRole.RoleArn}}
             },
         });
@@ -357,7 +265,7 @@ public class PipelineStack : Stack
             Resources =
             [
                 $"arn:aws:ecr:{configuration.Region}:{configuration.AccountId}:repository/image-function-tests",
-                $"arn:aws:ecr:{configuration.Region}:{configuration.AccountId}:repository/{ecrRepositoryName}"
+                $"arn:aws:ecr:{configuration.Region}:{configuration.AccountId}:repository/{frameworkConfiguration.EcrRepositoryName}"
             ]
         }));
 
@@ -416,7 +324,7 @@ public class PipelineStack : Stack
             ActionName = "amd64"
         }));
 
-        if (configuration.DockerArm64Images.Contains(framework))
+        if (frameworkConfiguration.HasArm64Image)
         {
             // Smoke test ARM64 image
             var arm64SmokeTests = new Project(this, "SmokeTests-arm64", new ProjectProps
@@ -437,13 +345,13 @@ public class PipelineStack : Stack
                 EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
                 {
                     {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = frameworkConfiguration.EcrRepositoryName}},
                     {"AWS_LAMBDA_SOURCE_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
                     {"AWS_LAMBDA_POWERSHELL_VERSION", new BuildEnvironmentVariable {Value = PowershellVersion}},
-                    {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = framework}},
-                    {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = channel}},
-                    {"AWS_LAMBDA_DOTNET_BUILD_IMAGE", new BuildEnvironmentVariable {Value = dockerBuildImage}},
-                    {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = configuration.DotnetSdkVersions.ContainsKey(framework) ? configuration.DotnetSdkVersions[framework] : string.Empty }},
+                    {"AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION", new BuildEnvironmentVariable {Value = frameworkConfiguration.Framework}},
+                    {"AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL", new BuildEnvironmentVariable {Value = frameworkConfiguration.Channel}},
+                    {"AWS_LAMBDA_DOTNET_BUILD_IMAGE", new BuildEnvironmentVariable {Value = frameworkConfiguration.DockerBuildImage}},
+                    {"AWS_LAMBDA_DOTNET_SDK_VERSION", new BuildEnvironmentVariable {Value = frameworkConfiguration.SpecificSdkVersion }},
                     {"AWS_LAMBDA_SMOKETESTS_LAMBDA_ROLE", new BuildEnvironmentVariable {Value = smokeTestsLambdaFunctionRole.RoleArn}}
                 }
             });
@@ -459,7 +367,7 @@ public class PipelineStack : Stack
             }));
         }
 
-        basePipeline.AddStage(new StageOptions
+        pipeline.AddStage(new StageOptions
         {
             StageName = "SmokeTests",
             Actions = smokeTestsActions.ToArray()
@@ -486,18 +394,18 @@ public class PipelineStack : Stack
                 EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
                 {
                     {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = frameworkConfiguration.EcrRepositoryName}},
                     {"AWS_LAMBDA_DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Beta}},
                     {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
-                    {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAmd64Tags[framework]}},
-                    {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageArm64Tags[framework]}},
-                    {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerArm64Images.Contains(framework).ToString()}},
+                    {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = frameworkConfiguration.BaseImageAmd64Tag}},
+                    {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = frameworkConfiguration.BaseImageArm64Tag}},
+                    {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = frameworkConfiguration.HasArm64Image.ToString()}},
                 }
             });
 
             betaDockerPush.AddToRolePolicy(ecrPolicy);
 
-            basePipeline.AddStage(new StageOptions
+            pipeline.AddStage(new StageOptions
             {
                 StageName = "Beta-DockerPush",
                 Actions =
@@ -516,7 +424,7 @@ public class PipelineStack : Stack
         if (!string.IsNullOrWhiteSpace(configuration.Ecrs.Prod))
         {
             // Manual Approval
-            basePipeline.AddStage(new StageOptions
+            pipeline.AddStage(new StageOptions
             {
                 StageName = "Prod-ManualApproval",
                 Actions =
@@ -546,18 +454,18 @@ public class PipelineStack : Stack
                 EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
                 {
                     {"AWS_LAMBDA_SOURCE_ECR", new BuildEnvironmentVariable {Value = stageEcr}},
-                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = ecrRepositoryName}},
+                    {"AWS_LAMBDA_ECR_REPOSITORY_NAME", new BuildEnvironmentVariable {Value = frameworkConfiguration.EcrRepositoryName}},
                     {"AWS_LAMBDA_DESTINATION_ECRS", new BuildEnvironmentVariable {Value = configuration.Ecrs.Prod}},
                     {"AWS_LAMBDA_MULTI_ARCH_IMAGE_TAG", new BuildEnvironmentVariable {Value = BaseImageMultiArch}},
-                    {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageAmd64Tags[framework]}},
-                    {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = configuration.BaseImageArm64Tags[framework]}},
-                    {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = configuration.DockerArm64Images.Contains(framework).ToString()}},
+                    {"AWS_LAMBDA_AMD64_IMAGE_TAG", new BuildEnvironmentVariable {Value = frameworkConfiguration.BaseImageAmd64Tag}},
+                    {"AWS_LAMBDA_ARM64_IMAGE_TAG", new BuildEnvironmentVariable {Value = frameworkConfiguration.BaseImageArm64Tag}},
+                    {"AWS_LAMBDA_INCLUDE_ARM64", new BuildEnvironmentVariable {Value = frameworkConfiguration.HasArm64Image.ToString()}},
                 }
             });
 
             prodDockerPush.AddToRolePolicy(ecrPolicy);
 
-            basePipeline.AddStage(new StageOptions
+            pipeline.AddStage(new StageOptions
             {
                 StageName = "Prod-DockerPush",
                 Actions =
