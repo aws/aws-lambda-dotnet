@@ -4,16 +4,16 @@
     <AWSProjectType>Lambda</AWSProjectType>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Framework)'=='net6.0' ">
-    <TargetFramework>net6.0</TargetFramework>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(Framework)'=='net8.0' ">
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Framework)'=='net9.0' ">
     <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Framework)'=='net10.0' ">
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.1.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
   </ItemGroup>
 </Project>

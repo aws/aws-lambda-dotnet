@@ -11,6 +11,12 @@ function Update-Dockerfile ([string]$DockerfilePath, [string]$NextVersion) {
     $checksumFilePath = "${NextVersion}-checksum.txt"
 
     $checksumUri = "https://dotnetcli.blob.core.windows.net/dotnet/checksums/${NextVersion}-sha.txt"
+
+    if ($NextVersion -match "^(\d+\.\d+\.\d+-preview\.\d+)") {
+        $matchedVersion = $matches[1]
+        $checksumUri = "https://dotnetcli.blob.core.windows.net/dotnet/checksums/${matchedVersion}-sha.txt"
+    }
+
     Write-Host "Downloading checksums from $checksumUri"
 
     Invoke-WebRequest -Uri $checksumUri -OutFile $checksumFilePath
