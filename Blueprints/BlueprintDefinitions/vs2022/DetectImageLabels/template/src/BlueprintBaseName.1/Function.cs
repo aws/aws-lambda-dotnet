@@ -110,29 +110,35 @@ public class Function
                 }
             });
 
-            var tags = new List<Tag>();
-            foreach(var label in detectResponses.Labels)
+            if (detectResponses.Labels != null)
             {
-                if(tags.Count < 10)
+                var tags = new List<Tag>();
+                
+                foreach(var label in detectResponses.Labels)
                 {
-                    Console.WriteLine($"\tFound Label {label.Name} with confidence {label.Confidence}");
-                    tags.Add(new Tag { Key = label.Name, Value = label.Confidence.ToString() });
+                    if(tags.Count < 10)
+                    {
+                        Console.WriteLine($"\tFound Label {label.Name} with confidence {label.Confidence}");
+                        tags.Add(new Tag { Key = label.Name, Value = label.Confidence.ToString() });
+                    }
+                    else
+                    {
+                        Console.WriteLine($"\tSkipped label {label.Name} with confidence {label.Confidence} because the maximum number of tags has been reached");
+                    }
                 }
-                else
+
+                await this.S3Client.PutObjectTaggingAsync(new PutObjectTaggingRequest
                 {
-                    Console.WriteLine($"\tSkipped label {label.Name} with confidence {label.Confidence} because the maximum number of tags has been reached");
-                }
+                    BucketName = record.S3.Bucket.Name,
+                    Key = record.S3.Object.Key,
+                    Tagging = new Tagging
+                    {
+                        TagSet = tags
+                    }
+                });                
             }
 
-            await this.S3Client.PutObjectTaggingAsync(new PutObjectTaggingRequest
-            {
-                BucketName = record.S3.Bucket.Name,
-                Key = record.S3.Object.Key,
-                Tagging = new Tagging
-                {
-                    TagSet = tags
-                }
-            });
+
         }
         return;
     }
