@@ -7,7 +7,7 @@ updates:
     directory: "/"
     schedule:
       # Check for updates to GitHub Actions every week
-      interval: "weekly"
+      interval: "quarterly"
     labels:
       - "Release Not Needed"
     target-branch: "dev"
