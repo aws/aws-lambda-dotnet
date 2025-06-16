@@ -6,8 +6,8 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      # Check for updates to GitHub Actions every week
-      interval: "weekly"
+      # Check for updates to GitHub Actions every quarter
+      interval: "quarterly"
     labels:
       - "Release Not Needed"
     target-branch: "dev"
