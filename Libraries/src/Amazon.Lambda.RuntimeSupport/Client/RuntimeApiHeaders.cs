@@ -51,8 +51,13 @@ namespace Amazon.Lambda.RuntimeSupport
 
         private string GetHeaderValueOrNull(Dictionary<string, IEnumerable<string>> headers, string header)
         {
-            var headerKey = headers.Keys.FirstOrDefault(k => string.Equals(k, header, StringComparison.OrdinalIgnoreCase));
-            return headers[headerKey].FirstOrDefault();
+             var headerKey = headers.Keys.FirstOrDefault(k => string.Equals(k, header, StringComparison.OrdinalIgnoreCase));
+            if (headers.TryGetValue(headerKey, out var values))
+            {
+                return values.FirstOrDefault();
+            }
+
+            return null;
         }
     }
 }
