@@ -52,39 +52,61 @@ namespace Microsoft.Extensions.Logging
                 return;
             }
 
-            var components = new List<string>(4);
-            if (_options.IncludeLogLevel)
-            {
-                components.Add($"[{logLevel}]");
-            }
-
-            GetScopeInformation(components);
-
-            if (_options.IncludeCategory)
-            {
-                components.Add($"{_categoryName}:");
-            }
-            if (_options.IncludeEventId)
-            {
-                components.Add($"[{eventId}]:");
-            }
-
-            var text = formatter.Invoke(state, exception);
-            components.Add(text);
-
-            if (_options.IncludeException)
-            {
-                components.Add($"{exception}");
-            }
-            if (_options.IncludeNewline)
-            {
-                components.Add(Environment.NewLine);
-            }
-
-            var finalText = string.Join(" ", components);
-
             var lambdaLogLevel = ConvertLogLevel(logLevel);
-            Amazon.Lambda.Core.LambdaLogger.Log(lambdaLogLevel, finalText);
+
+            if (IsLambdaJsonFormatEnabled && state is IEnumerable<KeyValuePair<string, object>> structure)
+            {
+                string messageTemplate = null;
+                var parameters = new List<object>();
+                foreach (var property in structure)
+                {
+                    if (property is { Key: "{OriginalFormat}", Value: string value })
+                    {
+                        messageTemplate = value;
+                    }
+                    else
+                    {
+                        parameters.Add(property.Value);
+                    }
+                }
+
+                Amazon.Lambda.Core.LambdaLogger.Log(lambdaLogLevel, exception, messageTemplate, parameters.ToArray());
+            }
+            else
+            {
+                var components = new List<string>(4);
+                if (_options.IncludeLogLevel)
+                {
+                    components.Add($"[{logLevel}]");
+                }
+
+                GetScopeInformation(components);
+
+                if (_options.IncludeCategory)
+                {
+                    components.Add($"{_categoryName}:");
+                }
+                if (_options.IncludeEventId)
+                {
+                    components.Add($"[{eventId}]:");
+                }
+
+                var text = formatter.Invoke(state, exception);
+                components.Add(text);
+
+                if (_options.IncludeException)
+                {
+                    components.Add($"{exception}");
+                }
+                if (_options.IncludeNewline)
+                {
+                    components.Add(Environment.NewLine);
+                }
+
+                var finalText = string.Join(" ", components);
+
+                Amazon.Lambda.Core.LambdaLogger.Log(lambdaLogLevel, finalText);
+            }
         }
 
         private static Amazon.Lambda.Core.LogLevel ConvertLogLevel(LogLevel logLevel)
@@ -125,6 +147,14 @@ namespace Microsoft.Extensions.Logging
                 {
                     logMessageComponents.Add("=>");
                 }
+            }
+        }
+
+        private bool IsLambdaJsonFormatEnabled
+        {
+            get
+            {
+                return string.Equals(Environment.GetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT"), "JSON", StringComparison.InvariantCultureIgnoreCase);
             }
         }
 

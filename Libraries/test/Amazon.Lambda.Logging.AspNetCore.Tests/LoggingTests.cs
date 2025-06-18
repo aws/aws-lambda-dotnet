@@ -118,14 +118,14 @@ namespace Amazon.Lambda.Tests
 				Assert.False(loggerOptions.IncludeLogLevel);
 				Assert.False(loggerOptions.IncludeNewline);
 
-				var loggerfactory = new TestLoggerFactory()
+				var loggerFactory = new TestLoggerFactory()
 					.AddLambdaLogger(loggerOptions);
 
 				int count = 0;
 
 				// Should match:
 				//   "Foo.*": "Information"
-				var foobarLogger = loggerfactory.CreateLogger("Foo.Bar");
+				var foobarLogger = loggerFactory.CreateLogger("Foo.Bar");
 				foobarLogger.LogTrace(SHOULD_NOT_APPEAR);
 				foobarLogger.LogDebug(SHOULD_NOT_APPEAR);
 				foobarLogger.LogInformation(SHOULD_APPEAR + (count++));
@@ -135,7 +135,7 @@ namespace Amazon.Lambda.Tests
 
 				// Should match:
 				//   "Foo.Bar.Baz": "Critical"
-				var foobarbazLogger = loggerfactory.CreateLogger("Foo.Bar.Baz");
+				var foobarbazLogger = loggerFactory.CreateLogger("Foo.Bar.Baz");
 				foobarbazLogger.LogTrace(SHOULD_NOT_APPEAR);
 				foobarbazLogger.LogDebug(SHOULD_NOT_APPEAR);
 				foobarbazLogger.LogInformation(SHOULD_NOT_APPEAR);
@@ -145,7 +145,7 @@ namespace Amazon.Lambda.Tests
 
 				// Should match:
 				//   "Foo.Bar.*": "Warning"
-				var foobarbuzzLogger = loggerfactory.CreateLogger("Foo.Bar.Buzz");
+				var foobarbuzzLogger = loggerFactory.CreateLogger("Foo.Bar.Buzz");
 				foobarbuzzLogger.LogTrace(SHOULD_NOT_APPEAR);
 				foobarbuzzLogger.LogDebug(SHOULD_NOT_APPEAR);
 				foobarbuzzLogger.LogInformation(SHOULD_NOT_APPEAR);
@@ -156,7 +156,7 @@ namespace Amazon.Lambda.Tests
 
 				// Should match:
 				//   "*": "Error"
-				var somethingLogger = loggerfactory.CreateLogger("something");
+				var somethingLogger = loggerFactory.CreateLogger("something");
 				somethingLogger.LogTrace(SHOULD_NOT_APPEAR);
 				somethingLogger.LogDebug(SHOULD_NOT_APPEAR);
 				somethingLogger.LogInformation(SHOULD_NOT_APPEAR);
@@ -285,19 +285,19 @@ namespace Amazon.Lambda.Tests
 					.Build();
 
 				var loggerOptions = new LambdaLoggerOptions(configuration);
-				var loggerfactory = new TestLoggerFactory()
+				var loggerFactory = new TestLoggerFactory()
 					.AddLambdaLogger(loggerOptions);
 
 				int countMessage = 0;
 				int countEvent = 0;
 				int countException = 0;
 
-				var defaultLogger = loggerfactory.CreateLogger("Default");
+				var defaultLogger = loggerFactory.CreateLogger("Default");
 				defaultLogger.LogTrace(SHOULD_NOT_APPEAR_EVENT, SHOULD_NOT_APPEAR_EXCEPTION, SHOULD_NOT_APPEAR);
 				defaultLogger.LogDebug(SHOULD_NOT_APPEAR_EVENT, SHOULD_APPEAR + (countMessage++));
 				defaultLogger.LogCritical(SHOULD_NOT_APPEAR_EVENT, SHOULD_APPEAR + (countMessage++));
 
-				defaultLogger = loggerfactory.CreateLogger(null);
+				defaultLogger = loggerFactory.CreateLogger(null);
 				defaultLogger.LogTrace(SHOULD_NOT_APPEAR_EVENT, SHOULD_NOT_APPEAR);
 				defaultLogger.LogDebug(SHOULD_NOT_APPEAR_EVENT, SHOULD_APPEAR + (countMessage++));
 				defaultLogger.LogCritical(SHOULD_NOT_APPEAR_EVENT, SHOULD_APPEAR + (countMessage++));
@@ -309,12 +309,12 @@ namespace Amazon.Lambda.Tests
 				loggerOptions.IncludeException = true;
 				loggerOptions.IncludeEventId = true;
 
-				var msLogger = loggerfactory.CreateLogger("Microsoft");
+				var msLogger = loggerFactory.CreateLogger("Microsoft");
 				msLogger.LogTrace(SHOULD_NOT_APPEAR_EVENT, SHOULD_NOT_APPEAR_EXCEPTION, SHOULD_NOT_APPEAR);
 				msLogger.LogInformation(GET_SHOULD_APPEAR_EVENT(countEvent++), GET_SHOULD_APPEAR_EXCEPTION(countException++), SHOULD_APPEAR + (countMessage++));
 				msLogger.LogCritical(GET_SHOULD_APPEAR_EVENT(countEvent++), GET_SHOULD_APPEAR_EXCEPTION(countException++), SHOULD_APPEAR + (countMessage++));
 
-				var sdkLogger = loggerfactory.CreateLogger("AWSSDK");
+				var sdkLogger = loggerFactory.CreateLogger("AWSSDK");
 				sdkLogger.LogTrace(SHOULD_NOT_APPEAR_EVENT, SHOULD_NOT_APPEAR_EXCEPTION, SHOULD_NOT_APPEAR);
 				sdkLogger.LogInformation(GET_SHOULD_APPEAR_EVENT(countEvent++), GET_SHOULD_APPEAR_EXCEPTION(countException++), SHOULD_APPEAR + (countMessage++));
 				sdkLogger.LogCritical(GET_SHOULD_APPEAR_EVENT(countEvent++), GET_SHOULD_APPEAR_EXCEPTION(countException++), SHOULD_APPEAR + (countMessage++));
@@ -356,10 +356,10 @@ namespace Amazon.Lambda.Tests
                 ConnectLoggingActionToLogger(message => writer.Write(message));
 
                 var loggerOptions = new LambdaLoggerOptions{ IncludeScopes = true };
-                var loggerfactory = new TestLoggerFactory()
+                var loggerFactory = new TestLoggerFactory()
                     .AddLambdaLogger(loggerOptions);
 
-                var defaultLogger = loggerfactory.CreateLogger("Default");
+                var defaultLogger = loggerFactory.CreateLogger("Default");
 
                 // Act
                 using(defaultLogger.BeginScope("First {0}", "scope123"))
@@ -391,10 +391,10 @@ namespace Amazon.Lambda.Tests
 				ConnectLoggingActionToLogger(message => writer.Write(message));
 
 				var loggerOptions = new LambdaLoggerOptions { IncludeScopes = false };
-				var loggerfactory = new TestLoggerFactory()
+				var loggerFactory = new TestLoggerFactory()
 					.AddLambdaLogger(loggerOptions);
 
-				var defaultLogger = loggerfactory.CreateLogger("Default");
+				var defaultLogger = loggerFactory.CreateLogger("Default");
 
 				// Act
 				using (defaultLogger.BeginScope("First {0}", "scope123"))
@@ -477,25 +477,25 @@ namespace Amazon.Lambda.Tests
                     .Build();
 
                 var loggerOptions = new LambdaLoggerOptions(configuration);
-                var loggerfactory = new TestLoggerFactory()
+                var loggerFactory = new TestLoggerFactory()
                     .AddLambdaLogger(loggerOptions);
 
                 // act
                 // creating named logger, `Default` category is set to "Debug"
                 // (Default category has special treatment - it's not actually stored, named logger just falls to default)
-                var defaultLogger = loggerfactory.CreateLogger("Default");
+                var defaultLogger = loggerFactory.CreateLogger("Default");
                 defaultLogger.LogTrace(SHOULD_NOT_APPEAR);
                 defaultLogger.LogDebug(SHOULD_APPEAR);
                 defaultLogger.LogInformation(SHOULD_APPEAR);
 
                 // `Dummy` category is not specified, we should use `Default` category instead
-                var dummyLogger = loggerfactory.CreateLogger("Dummy");
+                var dummyLogger = loggerFactory.CreateLogger("Dummy");
                 dummyLogger.LogTrace(SHOULD_NOT_APPEAR);
                 dummyLogger.LogDebug(SHOULD_APPEAR);
                 dummyLogger.LogInformation(SHOULD_APPEAR);
 
                 // `Microsoft` category is specified, log accordingly
-                var msLogger = loggerfactory.CreateLogger("Microsoft");
+                var msLogger = loggerFactory.CreateLogger("Microsoft");
                 msLogger.LogTrace(SHOULD_NOT_APPEAR);
                 msLogger.LogDebug(SHOULD_NOT_APPEAR);
                 msLogger.LogInformation(SHOULD_APPEAR);
@@ -519,18 +519,18 @@ namespace Amazon.Lambda.Tests
                     .Build();
 
                 var loggerOptions = new LambdaLoggerOptions(configuration);
-                var loggerfactory = new TestLoggerFactory()
+                var loggerFactory = new TestLoggerFactory()
                     .AddLambdaLogger(loggerOptions);
 
                 // act
                 // `Dummy` category is not specified, we should stick with default: min level = INFO
-                var dummyLogger = loggerfactory.CreateLogger("Dummy");
+                var dummyLogger = loggerFactory.CreateLogger("Dummy");
                 dummyLogger.LogTrace(SHOULD_NOT_APPEAR);
                 dummyLogger.LogDebug(SHOULD_NOT_APPEAR);
                 dummyLogger.LogInformation(SHOULD_APPEAR);
 
                 // `Microsoft` category is specified, log accordingly
-                var msLogger = loggerfactory.CreateLogger("Microsoft");
+                var msLogger = loggerFactory.CreateLogger("Microsoft");
                 msLogger.LogTrace(SHOULD_NOT_APPEAR);
                 msLogger.LogDebug(SHOULD_NOT_APPEAR);
                 msLogger.LogInformation(SHOULD_NOT_APPEAR);
@@ -541,7 +541,47 @@ namespace Amazon.Lambda.Tests
             }
         }
 
-		private static string GetAppSettingsPath(string fileName)
+        /// <summary>
+        /// For this test we just need to make sure the _loggingWithLevelAndExceptionAction is called with parameters and exception.
+        /// We can't confirm the JSON formatting is done because RuntimeSupport is not involved. That is okay because we have
+        /// other tests that confirm RuntimeSupport formats the log as JSON. We jsut need to confirm the right callback is called
+        /// with the parameters from the log message.
+        /// </summary>
+        [Fact]
+        public void TestJSONParameterLogging()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var configuration = new ConfigurationBuilder()
+                        .AddJsonFile(GetAppSettingsPath("appsettings.json"))
+                        .Build();
+
+                    var loggerOptions = new LambdaLoggerOptions(configuration);
+                    var loggerFactory = new TestLoggerFactory()
+                        .AddLambdaLogger(loggerOptions);
+
+                    var logger = loggerFactory.CreateLogger("JSONLogging");
+
+                    logger.LogError(new Exception("Too Cheap"), "User {name} fail to by {product} for {price}", "Gilmour", "Guitar", 55.55);
+
+                    var text = writer.ToString();
+                    Assert.Contains("parameter count: 3", text);
+                    Assert.Contains("Too Cheap", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+
+        }
+
+        private static string GetAppSettingsPath(string fileName)
 		{
 			return Path.Combine(APPSETTINGS_DIR, fileName);
 		}
@@ -567,6 +607,18 @@ namespace Amazon.Lambda.Tests
             Assert.NotNull(loggingActionField);
 
             loggingWithLevelActionField.SetValue(null, loggingWithLevelAction);
+
+            Action<string, Exception, string, object[]> loggingWithExceptionLevelAction = (level, exception, message, parameters) => {
+                var formattedMessage = $"{level}: {message}: parameter count: {parameters?.Length}\n{exception.Message}";
+                loggingAction(formattedMessage);
+            };
+
+            var loggingWithExceptionLevelActionField = lambdaLoggerType
+                .GetTypeInfo()
+                .GetField("_loggingWithLevelAndExceptionAction", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(loggingActionField);
+
+            loggingWithExceptionLevelActionField.SetValue(null, loggingWithExceptionLevelAction);
         }
 
 		private static int CountOccurences(string text, string substring)
