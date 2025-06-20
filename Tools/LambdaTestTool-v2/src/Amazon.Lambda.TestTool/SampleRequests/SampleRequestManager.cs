@@ -96,7 +96,8 @@ public class SampleRequestManager(string preferenceDirectory)
         {
             name = name.Substring(name.IndexOf("@") + 1);
             var savedRequestDirectory = GetSavedRequestDirectory();
-            var path = Path.Combine(savedRequestDirectory, name);
+            var sanitizedName = Path.GetFileName(name);
+            var path = Path.Combine(savedRequestDirectory, sanitizedName);
             return File.ReadAllText(path);
         }
         return GetEmbeddedResource(name);
@@ -110,7 +111,8 @@ public class SampleRequestManager(string preferenceDirectory)
         if (!Directory.Exists(savedRequestDirectory))
             Directory.CreateDirectory(savedRequestDirectory);
 
-        File.WriteAllText(Path.Combine(savedRequestDirectory, filename), content);
+        var sanitizedFilename = Path.GetFileName(filename);
+        File.WriteAllText(Path.Combine(savedRequestDirectory, sanitizedFilename), content);
         return $"{SavedRequestDirectory}@{filename}";
     }
 
