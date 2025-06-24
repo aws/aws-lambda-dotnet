@@ -5,8 +5,6 @@ using Amazon.Lambda.Model;
 using Microsoft.AspNetCore.Components;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Models;
-using Amazon.Lambda.TestTool.SampleRequests;
-using Amazon.Lambda.TestTool.Services.IO;
 using BlazorMonaco.Editor;
 using Microsoft.JSInterop;
 using Microsoft.AspNetCore.WebUtilities;
@@ -14,26 +12,73 @@ using Microsoft.Extensions.Options;
 
 namespace Amazon.Lambda.TestTool.Components.Pages;
 
+/// <summary>
+/// Component representing the Lambda Test Tool.
+/// </summary>
 public partial class Home : ComponentBase, IDisposable
 {
+    /// <summary>
+    /// <see cref="NavigationManager"/>
+    /// </summary>
     [Inject] public required NavigationManager NavManager { get; set; }
+    /// <summary>
+    /// <see cref="ILogger{Home}"/>
+    /// </summary>
     [Inject] public required ILogger<Home> Logger { get; set; }
+    /// <summary>
+    /// <see cref="IHttpContextAccessor"/>
+    /// </summary>
     [Inject] public required IHttpContextAccessor HttpContextAccessor { get; set; }
+    /// <summary>
+    /// <see cref="IRuntimeApiDataStoreManager"/>
+    /// </summary>
     [Inject] public required IRuntimeApiDataStoreManager DataStoreManager { get; set; }
-    [Inject] public required IDirectoryManager DirectoryManager { get; set; }
+    /// <summary>
+    /// <see cref="IThemeService"/>
+    /// </summary>
     [Inject] public required IThemeService ThemeService { get; set; }
+    /// <summary>
+    /// <see cref="IJSRuntime"/>
+    /// </summary>
     [Inject] public required IJSRuntime JsRuntime { get; set; }
+    /// <summary>
+    /// <see cref="ILambdaClient"/>
+    /// </summary>
     [Inject] public required ILambdaClient LambdaClient { get; set; }
-    [Inject] public IOptions<LambdaOptions> LambdaOptions { get; set; }
+    /// <summary>
+    /// <see cref="IOptions{LambdaOptions}"/>
+    /// </summary>
+    [Inject] public required IOptions<LambdaOptions> LambdaOptions { get; set; }
+    /// <summary>
+    /// <see cref="IGlobalSettingsService"/>
+    /// </summary>
+    [Inject] public required IGlobalSettingsService GlobalSettingsService { get; set; }
+    /// <summary>
+    /// <see cref="LambdaRequestManager"/>
+    /// </summary>
+    [Inject] public required ILambdaRequestManager LambdaRequestManager { get; set; }
 
     private StandaloneCodeEditor? _editor;
     private StandaloneCodeEditor? _activeEditor;
     private StandaloneCodeEditor? _activeEditorError;
 
     private EventDialog? _eventDialog;
+    private SaveRequestDialog? _saveRequestDialog;
+    private ManageSavedRequestsDialog? _manageSavedRequestsDialog;
 
     private int _queuedEventsCount;
     private int _pastEventsCount;
+
+    /// <summary>
+    /// Reload Lambda input requests.
+    /// </summary>
+    public void ReloadSampleRequests()
+    {
+        if (SelectedFunctionName is not null)
+            SampleRequests = LambdaRequestManager.GetLambdaRequests(SelectedFunctionName, includeSampleRequests: GlobalSettingsService.CurrentSettings.ShowSampleRequests, includeSavedRequests: !string.IsNullOrEmpty(LambdaOptions.Value.SavedRequestsPath) && GlobalSettingsService.CurrentSettings.ShowSavedRequests);
+
+        StateHasChanged();
+    }
 
     private const string NoSampleSelectedId = "void-select-request";
 
@@ -67,6 +112,8 @@ public partial class Home : ComponentBase, IDisposable
             _queuedEventsCount = DataStore?.QueuedEvents.Count ?? 0;
             _pastEventsCount = DataStore?.ExecutedEvents.Count ?? 0;
 
+            ReloadSampleRequests();
+
             StateHasChanged();
         }
     }
@@ -77,9 +124,6 @@ public partial class Home : ComponentBase, IDisposable
         get => _selectedSampleRequestName;
         set
         {
-            if (SampleRequestManager == null)
-                return;
-
             _selectedSampleRequestName = value;
             if (string.IsNullOrEmpty(_selectedSampleRequestName) ||
                 string.Equals(value, NoSampleSelectedId))
@@ -88,16 +132,18 @@ public partial class Home : ComponentBase, IDisposable
             }
             else
             {
-                _editor?.SetValue(SampleRequestManager.GetRequest(_selectedSampleRequestName));
+                if (SelectedFunctionName is not null)
+                    _editor?.SetValue(LambdaRequestManager.GetRequest(SelectedFunctionName, _selectedSampleRequestName));
             }
 
             StateHasChanged();
         }
     }
 
-    SampleRequestManager? SampleRequestManager { get; set; }
-
-    protected override void OnInitialized()
+    /// <summary>
+    /// Method called at class initialization.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
     {
         var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
         string initialFunction = string.Empty;
@@ -130,13 +176,12 @@ public partial class Home : ComponentBase, IDisposable
             DataStore = DataStoreManager.GetLambdaRuntimeDataStore(LambdaRuntimeApi.DefaultFunctionName);
         }
 
-
         ThemeService.OnThemeChanged += HandleThemeChanged;
         DataStoreManager.StateChange += DataStoreManagerOnStateChange;
-        SampleRequestManager = new SampleRequestManager(DirectoryManager.GetCurrentDirectory());
-        SampleRequests = SampleRequestManager.GetSampleRequests();
         _queuedEventsCount = DataStore?.QueuedEvents.Count ?? 0;
         _pastEventsCount = DataStore?.ExecutedEvents.Count ?? 0;
+
+        await GlobalSettingsService.LoadSettingsAsync();
     }
 
     private void HandleThemeChanged()
@@ -152,6 +197,9 @@ public partial class Home : ComponentBase, IDisposable
         InvokeAsync(StateHasChanged);
     }
 
+    /// <summary>
+    /// Method called as instance disposal.
+    /// </summary>
     public void Dispose()
     {
         ThemeService.OnThemeChanged -= HandleThemeChanged;
@@ -171,7 +219,7 @@ public partial class Home : ComponentBase, IDisposable
         });
     }
 
-    private bool functionUpdated = false;
+    private bool functionUpdated;
 
     private void DataStoreManagerOnStateChange(object? sender, EventArgs e)
     {
@@ -263,6 +311,25 @@ public partial class Home : ComponentBase, IDisposable
     void ShowEvent(EventContainer evnt)
     {
         _eventDialog?.ShowDialog(evnt);
+    }
+
+    async Task ShowSaveEventDialog()
+    {
+        if (_editor is null ||
+            DataStore is null ||
+            SelectedFunctionName is null)
+            return;
+
+        var editorValue = await _editor.GetValue();
+        _saveRequestDialog?.ShowDialog(SelectedFunctionName, editorValue);
+    }
+
+    async Task ShowManagedSavedRequestsDialog()
+    {
+        if (_manageSavedRequestsDialog is null)
+            return;
+
+        await _manageSavedRequestsDialog.ShowDialog(SelectedFunctionName);
     }
 
     string GetLambdaFunctionName(string? functionId)
@@ -361,5 +428,16 @@ public partial class Home : ComponentBase, IDisposable
                 : e.Message;
         }
         return false;
+    }
+
+    private string _editorContent = string.Empty;
+    private async Task HandleModelContentChanged()
+    {
+        if (_editor is null)
+            return;
+
+        _editorContent = await _editor.GetValue();
+
+        StateHasChanged();
     }
 }

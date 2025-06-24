@@ -61,4 +61,11 @@ public sealed class RunCommandSettings : CommandSettings
     [CommandOption("--sqs-eventsource-config <CONFIG>")]
     [Description("The configuration for the SQS event source. The format of the config is a comma delimited key pairs. For example \"QueueUrl=<queue-url>,FunctionName=<function-name>,VisibilityTimeout=100\". Possible keys are: BatchSize, DisableMessageDelete, FunctionName, LambdaRuntimeApi, Profile, QueueUrl, Region, VisibilityTimeout")]
     public string? SQSEventSourceConfig { get; set; }
+
+    /// <summary>
+    /// The path used to save requests to.
+    /// </summary>
+    [CommandOption("--saved-requests-path <SAVED-REQUESTS-PATH>")]
+    [Description("The path used to save requests to.")]
+    public string? SavedRequestsPath { get; set; }
 }

@@ -1,0 +1,56 @@
+<div class="modal fade" id="manageSavedRequestsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-sliders"></i>
+                    <h5 class="modal-title">Manage Requests</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body d-flex flex-column gap-3">
+                <div class="d-flex flex-column gap-2">
+                    <span>Show/Hide elements:</span>
+                    <div class="d-flex gap-2 justify-content-between">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" @bind="_showSampleRequests" @bind:after="ReloadSampleRequests" id="_showSampleRequests">
+                            <label class="form-check-label text-nowrap" for="_showSampleRequests">
+                                Sample requests
+                            </label>
+                        </div>
+                        @if (!string.IsNullOrEmpty(LambdaOptions.Value.SavedRequestsPath))
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" @bind="@_showSavedRequests" @bind:after="ReloadSampleRequests" id="_showSavedRequests">
+                                <label class="form-check-label text-nowrap" for="_showSavedRequests">
+                                    Saved requests
+                                </label>
+                            </div>
+                        }
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" @bind="@_showRequestsList" @bind:after="ReloadSampleRequests" id="_showRequestsList">
+                            <label class="form-check-label text-nowrap" for="_showRequestsList">
+                                Requests list
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                @if (SavedRequests is not null && SavedRequests.ContainsKey(Constants.SavedRequestGroup))
+                {
+                    <div class="d-flex flex-column border rounded-4 p-2">
+                        @foreach (var request in SavedRequests[Constants.SavedRequestGroup])
+                        {
+                            <div class="d-flex ps-2">
+                                <span class="flex-grow-1 align-content-center">@request.Name</span>
+                                <button type="button" class="btn rounded-circle" @onclick="@(() => DeleteSavedRequest(@request.Name))">
+                                    <i class="bi bi-trash-fill"></i>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

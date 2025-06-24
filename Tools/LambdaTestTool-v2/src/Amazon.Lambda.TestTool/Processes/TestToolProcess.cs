@@ -1,16 +1,13 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Reflection;
 using Amazon.Lambda.TestTool.Commands.Settings;
 using Amazon.Lambda.TestTool.Components;
-using Amazon.Lambda.TestTool.Configuration;
 using Amazon.Lambda.TestTool.Models;
 using Amazon.Lambda.TestTool.Services;
 using Amazon.Lambda.TestTool.Services.IO;
 using Amazon.Lambda.TestTool.Utilities;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Options;
 
 namespace Amazon.Lambda.TestTool.Processes;
 
@@ -46,10 +43,12 @@ public class TestToolProcess
         builder.Services.AddSingleton<IRuntimeApiDataStoreManager, RuntimeApiDataStoreManager>();
         builder.Services.AddSingleton<IThemeService, ThemeService>();
         builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
+        builder.Services.AddSingleton<ILambdaRequestManager, LambdaRequestManager>();
 
         builder.Services.Configure<LambdaOptions>(options =>
         {
             options.Endpoint = $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
+            options.SavedRequestsPath = settings.SavedRequestsPath;
         });
 
 
@@ -70,6 +69,9 @@ public class TestToolProcess
         var serviceUrl = $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
         builder.WebHost.UseUrls(serviceUrl);
         builder.WebHost.SuppressStatusMessages(true);
+
+        builder.Services.AddSingleton<IGlobalSettingsRepository, FileSettingsRepository>();
+        builder.Services.AddSingleton<IGlobalSettingsService, GlobalSettingsService>();
 
         var app = builder.Build();
 

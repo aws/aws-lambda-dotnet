@@ -1,8 +1,6 @@
 @page "/"
 
 @using Amazon.Lambda.TestTool.Models
-@using Amazon.Lambda.TestTool.SampleRequests
-@using Amazon.Lambda.TestTool.Services
 @using Amazon.Lambda.TestTool.Utilities
 
 <PageTitle>Lambda Function Tester</PageTitle>
@@ -43,19 +41,31 @@ else
     <div class="row">
         <div class="col-lg-6 gap-2 d-flex flex-column mt-1 mb-3">
             <div class="form-group d-flex">
-                <h4>Queue Event</h4>
-                <button class="btn btn-primary btn-sm ms-auto rounded-pill px-4 fw-bold d-flex align-items-center gap-1" @onclick="OnAddEventClick">
-                    <i class="bi bi-play-fill"></i>
-                    Invoke
-                </button>
+                <h4 class="m-0">Queue Event</h4>
+                <div class="d-flex gap-2 ms-auto">
+                    <button type="button" data-bs-toggle="modal" data-bs-target="#manageSavedRequestsModal" class="btn @(ThemeService.CurrentTheme.Equals("dark")? "btn-dark" : "btn-light") btn-sm rounded-circle fs-5 p-0 px-2 fw-bold d-flex align-items-center" @onclick="async () => await ShowManagedSavedRequestsDialog()">
+                        <i class="bi bi-sliders"></i>
+                    </button>
+                    @if (!string.IsNullOrEmpty(LambdaOptions.Value.SavedRequestsPath))
+                    {
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#saveRequestModal" class="btn @(string.IsNullOrEmpty(_editorContent) ? "btn-disabled" : "btn-secondary") btn-sm rounded-pill px-4 fw-bold d-flex align-items-center gap-2" disabled="@(string.IsNullOrEmpty(_editorContent))" @onclick="async () => await ShowSaveEventDialog()">
+                            <i class="bi bi-floppy-fill"></i>
+                            Save
+                        </button>
+                    }
+                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-bold d-flex align-items-center gap-1" @onclick="OnAddEventClick">
+                        <i class="bi bi-play-fill"></i>
+                        Invoke
+                    </button>
+                </div>
             </div>
-            <div class="form-floating">
+            <div class="form-floating @(GlobalSettingsService.CurrentSettings.ShowRequestsList ? "" : "d-none")">
                 <select class="form-select" id="sample-requests" @bind="SelectedSampleRequestName">
                     <option value="@NoSampleSelectedId">Select a request</option>
-                    @if (@SampleRequests.ContainsKey(SampleRequestManager.SavedRequestGroup))
+                    @if (@SampleRequests.ContainsKey(Constants.SavedRequestGroup))
                     {
-                        <optgroup id="saved-select-request-group" label="@SampleRequestManager.SavedRequestGroup">
-                            @foreach (var request in SampleRequests[SampleRequestManager.SavedRequestGroup])
+                        <optgroup id="saved-select-request-group" label="@Constants.SavedRequestGroup">
+                            @foreach (var request in SampleRequests[Constants.SavedRequestGroup])
                             {
                                 <option value="@request.Filename">@request.Name</option>
                             }
@@ -63,7 +73,7 @@ else
                     }
                     @foreach (var group in SampleRequests.Keys)
                     {
-                        @if (!string.Equals(group, SampleRequestManager.SavedRequestGroup))
+                        @if (!string.Equals(group, Constants.SavedRequestGroup))
                         {
                             <optgroup label="@group">
                                 @foreach (var request in SampleRequests[group])
@@ -90,6 +100,7 @@ else
                     Id="function-payload"
                     @ref="_editor"
                     ConstructionOptions="EditorConstructionOptions"
+                    OnDidChangeModelContent="HandleModelContentChanged"
                     CssClass="@($"rounded-4 overflow-hidden border {(!string.IsNullOrEmpty(_errorMessage) ? "border-danger border-2" : "")}")"/>
                 @if (!string.IsNullOrEmpty(_errorMessage))
                 {
@@ -263,13 +274,15 @@ else
 }
 
 <EventDialog @ref="_eventDialog"/>
+<SaveRequestDialog @ref="_saveRequestDialog" OnSaveRequest="ReloadSampleRequests" />
+<ManageSavedRequestsDialog @ref="_manageSavedRequestsDialog" Callback="ReloadSampleRequests" />
 
 <div class="offcanvas offcanvas-end" tabindex="-1" id="switchFunctionOffCanvas">
     <nav class="navbar navbar-expand-lg bd-navbar sticky-top bg-body-tertiary">
         <div class="container-fluid">
             <a class="navbar-brand py-0 me-4 d-flex align-items-center gap-3" href="/">
-                <img src="aws.svg" width="42" height="42" class="align-text-top logo-light-mode"/>
-                <img src="aws-light.svg" width="42" height="42" class="align-text-top logo-dark-mode"/>
+                <img src="aws.svg" alt="AWS Logo" width="42" height="42" class="align-text-top logo-light-mode"/>
+                <img src="aws-light.svg" alt="AWS Light Logo" width="42" height="42" class="align-text-top logo-dark-mode"/>
                 Lambda Test Tool
             </a>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>

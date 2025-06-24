@@ -37,4 +37,14 @@ public class RunCommandSettingsTests
         // Assert
         Assert.Null(settings.ApiGatewayEmulatorMode);
     }
+
+    [Fact]
+    public void SavedRequestsPath_DefaultsToNull()
+    {
+        // Arrange
+        var settings = new RunCommandSettings();
+
+        // Assert
+        Assert.Null(settings.SavedRequestsPath);
+    }
 }

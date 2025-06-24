@@ -15,4 +15,9 @@ public class LambdaOptions
     /// A string containing the endpoint URL. Defaults to an empty string.
     /// </value>
     public string Endpoint { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The path used to save requests to.
+    /// </summary>
+    public string? SavedRequestsPath { get; set; }
 }
