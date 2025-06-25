@@ -55,7 +55,7 @@ public partial class ManageSavedRequestsDialog : ComponentBase
         await ReloadSampleRequests();
 
         if (!string.IsNullOrEmpty(functionName))
-            SavedRequests = LambdaRequestManager.GetLambdaRequests(functionName, includeSavedRequests: !string.IsNullOrEmpty(LambdaOptions.Value.SavedRequestsPath), includeSampleRequests: false);
+            SavedRequests = LambdaRequestManager.GetLambdaRequests(functionName, includeSavedRequests: !string.IsNullOrEmpty(LambdaOptions.Value.ConfigStoragePath), includeSampleRequests: false);
 
         StateHasChanged();
     }
@@ -66,7 +66,7 @@ public partial class ManageSavedRequestsDialog : ComponentBase
 
     private async Task ReloadSampleRequests()
     {
-        await GlobalSettingsService.UpdateSettings(s =>
+        await GlobalSettingsService.UpdateSettingsAsync(s =>
         {
             s.ShowSampleRequests = _showSampleRequests;
             s.ShowSavedRequests = _showSavedRequests;
@@ -87,7 +87,7 @@ public partial class ManageSavedRequestsDialog : ComponentBase
 
         await ReloadSampleRequests();
 
-        SavedRequests = LambdaRequestManager.GetLambdaRequests(_functionName, includeSavedRequests: !string.IsNullOrEmpty(LambdaOptions.Value.SavedRequestsPath), includeSampleRequests: false);
+        SavedRequests = LambdaRequestManager.GetLambdaRequests(_functionName, includeSavedRequests: !string.IsNullOrEmpty(LambdaOptions.Value.ConfigStoragePath), includeSampleRequests: false);
 
         StateHasChanged();
     }

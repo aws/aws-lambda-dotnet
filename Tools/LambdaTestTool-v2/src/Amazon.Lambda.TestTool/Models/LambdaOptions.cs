@@ -17,7 +17,7 @@ public class LambdaOptions
     public string Endpoint { get; set; } = string.Empty;
 
     /// <summary>
-    /// The path used to save requests to.
+    /// The path used to save global settings and saved requests. You will need to specify a path in order to enable saving global settings and requests.
     /// </summary>
-    public string? SavedRequestsPath { get; set; }
+    public string? ConfigStoragePath { get; set; }
 }

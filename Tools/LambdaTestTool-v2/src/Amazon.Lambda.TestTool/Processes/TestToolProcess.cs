@@ -48,7 +48,7 @@ public class TestToolProcess
         builder.Services.Configure<LambdaOptions>(options =>
         {
             options.Endpoint = $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
-            options.SavedRequestsPath = settings.SavedRequestsPath;
+            options.ConfigStoragePath = settings.ConfigStoragePath;
         });
 
 

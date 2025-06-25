@@ -102,11 +102,6 @@ public abstract class Constants
     public const string SavedRequestDirectory = "SavedRequests";
 
     /// <summary>
-    /// The directory name for the test tool.
-    /// </summary>
-    public const string TestToolLocalDirectory = ".aws-lambda-test-tool";
-
-    /// <summary>
     /// The file name of global settings.
     /// </summary>
     public const string GlobalSettingsFileName = "settings.json";

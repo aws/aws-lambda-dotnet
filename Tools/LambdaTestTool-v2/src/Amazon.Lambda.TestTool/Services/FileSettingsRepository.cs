@@ -27,7 +27,7 @@ public class FileSettingsRepository : IGlobalSettingsRepository
         _logger = logger;
         _lambdaOptions = lambdaOptions;
 
-        if (string.IsNullOrEmpty(lambdaOptions.Value.SavedRequestsPath))
+        if (string.IsNullOrEmpty(lambdaOptions.Value.ConfigStoragePath))
         {
             logger.LogInformation("A saved requests path was not provided. Settings will not be persisted.");
         }
@@ -36,9 +36,8 @@ public class FileSettingsRepository : IGlobalSettingsRepository
     /// <inheritdoc/>
     public async Task<GlobalSettings> LoadSettingsAsync(CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(_lambdaOptions.Value.SavedRequestsPath)) return new ();
-        var testToolDirectory = Path.Combine(_lambdaOptions.Value.SavedRequestsPath, Constants.TestToolLocalDirectory);
-        var filePath = Path.Combine(testToolDirectory, Constants.GlobalSettingsFileName);
+        if (string.IsNullOrEmpty(_lambdaOptions.Value.ConfigStoragePath)) return new ();
+        var filePath = Path.Combine(_lambdaOptions.Value.ConfigStoragePath, Constants.GlobalSettingsFileName);
         if (!File.Exists(filePath))
         {
             _logger.LogInformation("Settings file not found at {FilePath}. Returning default settings.", filePath);
@@ -62,13 +61,12 @@ public class FileSettingsRepository : IGlobalSettingsRepository
     /// <inheritdoc/>
     public async Task SaveSettingsAsync(GlobalSettings settings, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(_lambdaOptions.Value.SavedRequestsPath)) return;
-        var testToolDirectory = Path.Combine(_lambdaOptions.Value.SavedRequestsPath, Constants.TestToolLocalDirectory);
-        var filePath = Path.Combine(testToolDirectory, Constants.GlobalSettingsFileName);
+        if (string.IsNullOrEmpty(_lambdaOptions.Value.ConfigStoragePath)) return;
+        var filePath = Path.Combine(_lambdaOptions.Value.ConfigStoragePath, Constants.GlobalSettingsFileName);
         try
         {
-            if (!Directory.Exists(testToolDirectory))
-                Directory.CreateDirectory(testToolDirectory);
+            if (!Directory.Exists(_lambdaOptions.Value.ConfigStoragePath))
+                Directory.CreateDirectory(_lambdaOptions.Value.ConfigStoragePath);
 
             await using var stream = File.Create(filePath);
             await JsonSerializer.SerializeAsync(stream, settings, _jsonOptions, cancellationToken);

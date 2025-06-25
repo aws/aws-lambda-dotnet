@@ -12,7 +12,7 @@ namespace Amazon.Lambda.TestTool.Services;
 /// </summary>
 public class LambdaRequestManager(IOptions<LambdaOptions> lambdaOptions) : ILambdaRequestManager
 {
-    private string? GetRequestDirectory(string functionName) => !string.IsNullOrEmpty(lambdaOptions.Value.SavedRequestsPath) ? Path.Combine(lambdaOptions.Value.SavedRequestsPath, Constants.TestToolLocalDirectory, Constants.SavedRequestDirectory, functionName) : null;
+    private string? GetRequestDirectory(string functionName) => !string.IsNullOrEmpty(lambdaOptions.Value.ConfigStoragePath) ? Path.Combine(lambdaOptions.Value.ConfigStoragePath, Constants.SavedRequestDirectory, functionName) : null;
 
     /// <inheritdoc />
     public IDictionary<string, IList<LambdaRequest>> GetLambdaRequests(string functionName, bool includeSampleRequests = true, bool includeSavedRequests = true)

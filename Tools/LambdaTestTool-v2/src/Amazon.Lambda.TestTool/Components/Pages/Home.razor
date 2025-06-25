@@ -43,11 +43,11 @@ else
             <div class="form-group d-flex">
                 <h4 class="m-0">Queue Event</h4>
                 <div class="d-flex gap-2 ms-auto">
-                    <button type="button" data-bs-toggle="modal" data-bs-target="#manageSavedRequestsModal" class="btn @(ThemeService.CurrentTheme.Equals("dark")? "btn-dark" : "btn-light") btn-sm rounded-circle fs-5 p-0 px-2 fw-bold d-flex align-items-center" @onclick="async () => await ShowManagedSavedRequestsDialog()">
-                        <i class="bi bi-sliders"></i>
-                    </button>
-                    @if (!string.IsNullOrEmpty(LambdaOptions.Value.SavedRequestsPath))
+                    @if (!string.IsNullOrEmpty(LambdaOptions.Value.ConfigStoragePath))
                     {
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#manageSavedRequestsModal" class="btn @(ThemeService.CurrentTheme.Equals("dark")? "btn-dark" : "btn-light") btn-sm rounded-circle fs-5 p-0 px-2 fw-bold d-flex align-items-center" @onclick="async () => await ShowManagedSavedRequestsDialog()">
+                            <i class="bi bi-sliders"></i>
+                        </button>
                         <button type="button" data-bs-toggle="modal" data-bs-target="#saveRequestModal" class="btn @(string.IsNullOrEmpty(_editorContent) ? "btn-disabled" : "btn-secondary") btn-sm rounded-pill px-4 fw-bold d-flex align-items-center gap-2" disabled="@(string.IsNullOrEmpty(_editorContent))" @onclick="async () => await ShowSaveEventDialog()">
                             <i class="bi bi-floppy-fill"></i>
                             Save

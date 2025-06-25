@@ -71,7 +71,7 @@ public class GlobalSettingsServiceTests
         Assert.True(_globalSettingsService.CurrentSettings.ShowSampleRequests);
 
         // Act
-        await _globalSettingsService.UpdateSettings(s => s.ShowSampleRequests = false);
+        await _globalSettingsService.UpdateSettingsAsync(s => s.ShowSampleRequests = false);
         var updatedSettings = _globalSettingsService.CurrentSettings;
 
         // Assert
@@ -94,7 +94,7 @@ public class GlobalSettingsServiceTests
         Assert.True(_globalSettingsService.CurrentSettings.ShowSampleRequests);
 
         // Act
-        await _globalSettingsService.UpdateSettings(s => s.ShowSampleRequests = true);
+        await _globalSettingsService.UpdateSettingsAsync(s => s.ShowSampleRequests = true);
 
         // Assert
         _mockSettingsRepository.Verify(r => r.SaveSettingsAsync(It.IsAny<GlobalSettings>(), It.IsAny<CancellationToken>()), Times.Never);

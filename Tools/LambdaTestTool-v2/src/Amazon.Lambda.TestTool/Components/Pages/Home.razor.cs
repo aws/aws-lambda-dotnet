@@ -75,7 +75,7 @@ public partial class Home : ComponentBase, IDisposable
     public void ReloadSampleRequests()
     {
         if (SelectedFunctionName is not null)
-            SampleRequests = LambdaRequestManager.GetLambdaRequests(SelectedFunctionName, includeSampleRequests: GlobalSettingsService.CurrentSettings.ShowSampleRequests, includeSavedRequests: !string.IsNullOrEmpty(LambdaOptions.Value.SavedRequestsPath) && GlobalSettingsService.CurrentSettings.ShowSavedRequests);
+            SampleRequests = LambdaRequestManager.GetLambdaRequests(SelectedFunctionName, includeSampleRequests: GlobalSettingsService.CurrentSettings.ShowSampleRequests, includeSavedRequests: !string.IsNullOrEmpty(LambdaOptions.Value.ConfigStoragePath) && GlobalSettingsService.CurrentSettings.ShowSavedRequests);
 
         StateHasChanged();
     }

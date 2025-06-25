@@ -45,6 +45,6 @@ public class RunCommandSettingsTests
         var settings = new RunCommandSettings();
 
         // Assert
-        Assert.Null(settings.SavedRequestsPath);
+        Assert.Null(settings.ConfigStoragePath);
     }
 }

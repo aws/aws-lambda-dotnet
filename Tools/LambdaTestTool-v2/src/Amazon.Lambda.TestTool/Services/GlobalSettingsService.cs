@@ -43,7 +43,7 @@ public class GlobalSettingsService(
     }
 
     /// <inheritdoc/>
-    public async Task UpdateSettings(Action<GlobalSettings> updateAction)
+    public async Task UpdateSettingsAsync(Action<GlobalSettings> updateAction)
     {
         // Use a lock to ensure thread-safe updates
         _settingsLock.Wait();
@@ -56,7 +56,7 @@ public class GlobalSettingsService(
             {
                 _currentSettings = newSettings;
                 logger.LogInformation("Global settings updated.");
-                _ = settingsRepository.SaveSettingsAsync(_currentSettings); // Fire-and-forget save
+                await settingsRepository.SaveSettingsAsync(_currentSettings);
             }
 
             await Task.CompletedTask;
@@ -81,6 +81,6 @@ public class GlobalSettingsService(
     public async ValueTask DisposeAsync()
     {
         _settingsLock.Dispose();
-        await Task.CompletedTask;
+        await ValueTask.CompletedTask;
     }
 }

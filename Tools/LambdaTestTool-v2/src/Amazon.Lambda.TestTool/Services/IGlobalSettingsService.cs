@@ -20,7 +20,7 @@ public interface IGlobalSettingsService
     /// </summary>
     /// <param name="updateAction"></param>
     /// <returns></returns>
-    Task UpdateSettings(Action<GlobalSettings> updateAction);
+    Task UpdateSettingsAsync(Action<GlobalSettings> updateAction);
 
     /// <summary>
     /// Initial load of <see cref="GlobalSettings"/>.

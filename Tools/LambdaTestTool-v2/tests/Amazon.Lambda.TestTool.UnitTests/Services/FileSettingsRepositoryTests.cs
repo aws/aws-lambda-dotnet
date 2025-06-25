@@ -27,7 +27,7 @@ public class FileSettingsRepositoryTests
 
     private FileSettingsRepository CreateRepository(string? savedRequestsPath)
     {
-        var options = new LambdaOptions { SavedRequestsPath = savedRequestsPath };
+        var options = new LambdaOptions { ConfigStoragePath = savedRequestsPath };
         _mockLambdaOptions.Setup(o => o.Value).Returns(options);
         return new FileSettingsRepository(_mockLambdaOptions.Object, _mockLogger.Object);
     }
@@ -70,7 +70,7 @@ public class FileSettingsRepositoryTests
         Assert.True(settings.ShowSampleRequests);
         Assert.True(settings.ShowSavedRequests);
         Assert.True(settings.ShowRequestsList);
-        var expectedFilePath = Path.Combine(_tempPath, Constants.TestToolLocalDirectory, Constants.GlobalSettingsFileName);
+        var expectedFilePath = Path.Combine(_tempPath, Constants.GlobalSettingsFileName);
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -85,9 +85,8 @@ public class FileSettingsRepositoryTests
     public async Task LoadSettingsAsync_FileExists_ReturnsSettings()
     {
         // Arrange
-        var testToolDir = Path.Combine(_tempPath, Constants.TestToolLocalDirectory);
-        Directory.CreateDirectory(testToolDir);
-        var filePath = Path.Combine(testToolDir, Constants.GlobalSettingsFileName);
+        Directory.CreateDirectory(_tempPath);
+        var filePath = Path.Combine(_tempPath, Constants.GlobalSettingsFileName);
 
         var expectedSettings = new GlobalSettings
         {
@@ -121,9 +120,8 @@ public class FileSettingsRepositoryTests
     public async Task LoadSettingsAsync_CorruptFile_ReturnsDefaultSettings()
     {
         // Arrange
-        var testToolDir = Path.Combine(_tempPath, Constants.TestToolLocalDirectory);
-        Directory.CreateDirectory(testToolDir);
-        var filePath = Path.Combine(testToolDir, Constants.GlobalSettingsFileName);
+        Directory.CreateDirectory(_tempPath);
+        var filePath = Path.Combine(_tempPath, Constants.GlobalSettingsFileName);
 
         await File.WriteAllTextAsync(filePath, "this is not valid json");
 
@@ -148,21 +146,6 @@ public class FileSettingsRepositoryTests
     }
 
     [Fact]
-    public async Task SaveSettingsAsync_NoPath_DoesNothing()
-    {
-        // Arrange
-        var repository = CreateRepository(null);
-        var settings = new GlobalSettings();
-
-        // Act
-        await repository.SaveSettingsAsync(settings);
-
-        // Assert
-        var testToolDir = Path.Combine(_tempPath, Constants.TestToolLocalDirectory);
-        Assert.False(Directory.Exists(testToolDir));
-    }
-
-    [Fact]
     public async Task SaveSettingsAsync_ValidPath_SavesFile()
     {
         // Arrange
@@ -176,8 +159,7 @@ public class FileSettingsRepositoryTests
         await repository.SaveSettingsAsync(settings);
 
         // Assert
-        var testToolDir = Path.Combine(_tempPath, Constants.TestToolLocalDirectory);
-        var filePath = Path.Combine(testToolDir, Constants.GlobalSettingsFileName);
+        var filePath = Path.Combine(_tempPath, Constants.GlobalSettingsFileName);
 
         Assert.True(File.Exists(filePath));
         var content = await File.ReadAllTextAsync(filePath);
@@ -191,31 +173,6 @@ public class FileSettingsRepositoryTests
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Settings saved to {filePath}")),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task SaveSettingsAsync_DirectoryCreationError_LogsError()
-    {
-        // Arrange
-        // Create a file where a directory should be to cause a conflict
-        var conflictingPath = Path.Combine(_tempPath, Constants.TestToolLocalDirectory);
-        await File.WriteAllTextAsync(conflictingPath, "i am a file");
-
-        var repository = CreateRepository(_tempPath);
-        var settings = new GlobalSettings();
-
-        // Act
-        await repository.SaveSettingsAsync(settings);
-
-        // Assert
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Error saving settings to")),
-                It.IsAny<IOException>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
