@@ -78,6 +78,11 @@ public sealed class RunCommandSettings : CommandSettings
         if (string.IsNullOrEmpty(ConfigStoragePath))
             return ValidationResult.Success();
 
+        if (!Path.IsPathFullyQualified(ConfigStoragePath))
+        {
+            ConfigStoragePath = Path.Combine(Environment.CurrentDirectory, ConfigStoragePath);
+        }
+
         return !Path.IsPathFullyQualified(ConfigStoragePath)
             ? ValidationResult.Error("'Config storage path' must be an absolute path.")
             : ValidationResult.Success();
