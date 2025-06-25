@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add the ability to save requests and hide UI elements"
+      ]
+    }
+  ]
+}

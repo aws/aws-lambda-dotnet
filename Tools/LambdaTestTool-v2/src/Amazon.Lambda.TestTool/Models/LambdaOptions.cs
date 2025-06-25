@@ -15,4 +15,9 @@ public class LambdaOptions
     /// A string containing the endpoint URL. Defaults to an empty string.
     /// </value>
     public string Endpoint { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The absolute path used to save global settings and saved requests. You will need to specify a path in order to enable saving global settings and requests.
+    /// </summary>
+    public string? ConfigStoragePath { get; set; }
 }
