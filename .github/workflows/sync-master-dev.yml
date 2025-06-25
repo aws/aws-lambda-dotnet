@@ -8,13 +8,13 @@ on:
   pull_request:
     types: [closed]
 
-permissions: 
+permissions:
   contents: write
   id-token: write
 
 jobs:
-  # This job will check if the PR was successfully merged, it's source branch is `releases/next-release` and target branch is `dev`. 
-  # This indicates that the merged PR was the `Release PR`. 
+  # This job will check if the PR was successfully merged, it's source branch is `releases/next-release` and target branch is `dev`.
+  # This indicates that the merged PR was the `Release PR`.
   # This job will synchronize `dev` and `master`, create a GitHub Release and delete the `releases/next-release` branch.
   sync-dev-and-master:
     name: Sync dev and master
@@ -49,6 +49,11 @@ jobs:
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #v4.3.1
         with:
           dotnet-version: 9.0.x
+      # Install .NET10 which is needed for building the solution
+      - name: Setup .NET 10.0
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #v4.3.1
+        with:
+          dotnet-version: 10.0.x
       # Install AutoVer which is needed to retrieve information about the current release.
       - name: Install AutoVer
         run: dotnet tool install --global AutoVer --version 0.0.25
@@ -98,7 +103,7 @@ jobs:
           else
             echo "Branch 'releases/next-release' does not exist on origin, skipping deletion."
           fi
-  # This job will check if the PR was closed, it's source branch is `releases/next-release` and target branch is `dev`. 
+  # This job will check if the PR was closed, it's source branch is `releases/next-release` and target branch is `dev`.
   # This indicates that the closed PR was the `Release PR`.
   # This job will delete the tag created by AutoVer and the release branch.
   clean-up-closed-release:
@@ -120,6 +125,11 @@ jobs:
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #v4.3.1
         with:
           dotnet-version: 9.0.x
+      # Install .NET10 which is needed for building the solution
+      - name: Setup .NET 10.0
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #v4.3.1
+        with:
+          dotnet-version: 10.0.x
       # Install AutoVer which is needed to retrieve information about the current release.
       - name: Install AutoVer
         run: dotnet tool install --global AutoVer --version 0.0.25
@@ -145,3 +155,4 @@ jobs:
           else
             echo "Branch 'releases/next-release' does not exist on origin, skipping deletion."
           fi
+
