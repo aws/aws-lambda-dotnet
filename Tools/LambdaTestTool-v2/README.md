@@ -133,6 +133,7 @@ dotnet lambda-test-tool start \
 | `--api-gateway-emulator-port` | Port for API Gateway | API Gateway Mode |
 | `--api-gateway-emulator-mode` | API Gateway mode (Rest/HttpV1/HttpV2) | API Gateway Mode |
 | `--no-launch-window` | Disable auto-launching web interface | Optional |
+| `--config-storage-path` | Path for saving settings and requests | Optional |
 
 
 ## API Gateway Configuration
@@ -333,3 +334,11 @@ Expected response:
 ```
 8
 ```
+
+## Saving Lambda Requests
+
+The Test Tool provides users with the ability to save Lambda requests for quick access. Saved requests will be listed in a drop down above the request input area.
+
+In order to enable saving requests, you will need to provide a storage path during the test tool startup. 
+
+You can use the command line argument `--config-storage-path <absolute-path>` to specify the storage path.

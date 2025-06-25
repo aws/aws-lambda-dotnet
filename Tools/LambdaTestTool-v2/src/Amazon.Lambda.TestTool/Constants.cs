@@ -90,4 +90,19 @@ public abstract class Constants
     /// This used in the Aspire integration where it is often easier to pass configuration via environment variables.
     /// </summary>
     public const string ArgumentEnvironmentVariablePrefix = "env:";
+
+    /// <summary>
+    /// Group name of the saved Lambda requests.
+    /// </summary>
+    public const string SavedRequestGroup = "Saved Requests";
+
+    /// <summary>
+    /// The directory name of the saved Lambda requests.
+    /// </summary>
+    public const string SavedRequestDirectory = "SavedRequests";
+
+    /// <summary>
+    /// The file name of global settings.
+    /// </summary>
+    public const string GlobalSettingsFileName = "settings.json";
 }
