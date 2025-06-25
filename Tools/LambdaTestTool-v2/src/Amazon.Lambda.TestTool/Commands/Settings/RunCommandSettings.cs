@@ -4,6 +4,7 @@
 using Amazon.Lambda.TestTool.Models;
 using Spectre.Console.Cli;
 using System.ComponentModel;
+using ValidationResult = Spectre.Console.ValidationResult;
 
 namespace Amazon.Lambda.TestTool.Commands.Settings;
 
@@ -63,9 +64,22 @@ public sealed class RunCommandSettings : CommandSettings
     public string? SQSEventSourceConfig { get; set; }
 
     /// <summary>
-    /// The path used to save global settings and saved requests. You will need to specify a path in order to enable saving global settings and requests.
+    /// The absolute path used to save global settings and saved requests. You will need to specify a path in order to enable saving global settings and requests.
     /// </summary>
     [CommandOption("--config-storage-path <CONFIG-STORAGE-PATH>")]
-    [Description("The path used to save global settings and saved requests. You will need to specify a path in order to enable saving global settings and requests.")]
+    [Description("The absolute path used to save global settings and saved requests. You will need to specify a path in order to enable saving global settings and requests.")]
     public string? ConfigStoragePath { get; set; }
+
+    /// <summary>
+    /// Validate that <see cref="ConfigStoragePath"/> is an absolute path.
+    /// </summary>
+    public override ValidationResult Validate()
+    {
+        if (string.IsNullOrEmpty(ConfigStoragePath))
+            return ValidationResult.Success();
+
+        return !Path.IsPathFullyQualified(ConfigStoragePath)
+            ? ValidationResult.Error("'Config storage path' must be an absolute path.")
+            : ValidationResult.Success();
+    }
 }

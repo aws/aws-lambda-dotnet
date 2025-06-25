@@ -80,6 +80,16 @@ public partial class Home : ComponentBase, IDisposable
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Callback function on save request.
+    /// </summary>
+    public async Task OnSaveRequest()
+    {
+        await ShowToast("Request has been saved.");
+
+        ReloadSampleRequests();
+    }
+
     private const string NoSampleSelectedId = "void-select-request";
 
     private string _errorMessage = string.Empty;
@@ -439,5 +449,12 @@ public partial class Home : ComponentBase, IDisposable
         _editorContent = await _editor.GetValue();
 
         StateHasChanged();
+    }
+
+    private string? _toastMessage;
+    private async Task ShowToast(string message)
+    {
+        _toastMessage = message;
+        await JsRuntime.InvokeVoidAsync("liveToast.show");
     }
 }
