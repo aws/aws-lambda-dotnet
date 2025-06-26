@@ -71,26 +71,27 @@ type Function(s3Client: IAmazonS3, rekognitionClient: IAmazonRekognition, minCon
                 rekognitionClient.DetectLabelsAsync(detectRequest)
                 |> Async.AwaitTask
 
-            let s3Tags =
-                detectResponse.Labels
-                |> Seq.truncate 10
-                |> Seq.map (fun x ->
-                    sprintf "\tFound Label %s with confidence %f" x.Name x.Confidence |> context.Logger.LogInformation
-                    Tag(Key = x.Name, Value = string x.Confidence))
-                |> List
+            if not (isNull detectResponse.Labels) then
+                let s3Tags =
+                    detectResponse.Labels
+                    |> Seq.truncate 10
+                    |> Seq.map (fun x ->
+                        sprintf "\tFound Label %s with confidence %f" x.Name x.Confidence.Value |> context.Logger.LogInformation
+                        Tag(Key = x.Name, Value = string x.Confidence))
+                    |> List
 
-            let putTags =
-                PutObjectTaggingRequest(
-                    BucketName = record.S3.Bucket.Name,
-                    Key = record.S3.Object.Key,
-                    Tagging = Tagging(TagSet = s3Tags)
-                )
+                let putTags =
+                    PutObjectTaggingRequest(
+                        BucketName = record.S3.Bucket.Name,
+                        Key = record.S3.Object.Key,
+                        Tagging = Tagging(TagSet = s3Tags)
+                    )
 
-            let! putResponse =
-                s3Client.PutObjectTaggingAsync(putTags)
-                |> Async.AwaitTask
+                let! putResponse =
+                    s3Client.PutObjectTaggingAsync(putTags)
+                    |> Async.AwaitTask
 
-            context.Logger.LogInformation("Tags put on S3 object")
+                context.Logger.LogInformation("Tags put on S3 object")
         }
 
         input.Records
