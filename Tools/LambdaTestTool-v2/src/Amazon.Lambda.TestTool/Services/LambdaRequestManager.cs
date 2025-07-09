@@ -3,6 +3,7 @@
 
 using System.Xml.Linq;
 using Amazon.Lambda.TestTool.Models;
+using Amazon.Lambda.TestTool.Services.IO;
 using Microsoft.Extensions.Options;
 
 namespace Amazon.Lambda.TestTool.Services;
@@ -10,9 +11,9 @@ namespace Amazon.Lambda.TestTool.Services;
 /// <summary>
 /// This class manages the sample Lambda input requests. This includes the pre-canned requests and saved requests.
 /// </summary>
-public class LambdaRequestManager(IOptions<LambdaOptions> lambdaOptions) : ILambdaRequestManager
+public class LambdaRequestManager(IOptions<LambdaOptions> lambdaOptions, IDirectoryManager directoryManager) : ILambdaRequestManager
 {
-    private string? GetRequestDirectory(string functionName) => !string.IsNullOrEmpty(lambdaOptions.Value.ConfigStoragePath) ? Path.Combine(lambdaOptions.Value.ConfigStoragePath, Constants.SavedRequestDirectory, functionName) : null;
+    private string? GetRequestDirectory(string functionName) => !string.IsNullOrEmpty(lambdaOptions.Value.ConfigStoragePath) ? Path.Combine(lambdaOptions.Value.ConfigStoragePath, Constants.SavedRequestDirectory, functionName) : Path.Combine(directoryManager.GetCurrentDirectory(), Constants.SavedRequestDirectory);
 
     /// <inheritdoc />
     public IDictionary<string, IList<LambdaRequest>> GetLambdaRequests(string functionName, bool includeSampleRequests = true, bool includeSavedRequests = true)
