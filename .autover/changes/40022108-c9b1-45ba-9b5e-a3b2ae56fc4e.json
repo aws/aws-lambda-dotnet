@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fix issue causing sample requests to not be applied if a config path is not supplied"
+      ]
+    }
+  ]
+}
