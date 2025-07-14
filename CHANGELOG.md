@@ -1,3 +1,8 @@
+## Release 2025-07-14
+
+### Amazon.Lambda.TestTool (0.11.1)
+* Fix issue causing sample requests to not be applied if a config path is not supplied
+
 ## Release 2025-06-25
 
 ### Amazon.Lambda.TestTool (0.11.0)
