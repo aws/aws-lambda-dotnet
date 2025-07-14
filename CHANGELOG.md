@@ -1,3 +1,16 @@
+## Release 2025-07-14 #2
+
+### Amazon.Lambda.TestTool (0.11.1)
+* Fix issue causing sample requests to not be applied if a config path is not supplied
+### Amazon.Lambda.AspNetCoreServer (9.2.0)
+* Update Amazon.Lambda.Logging.AspNetCore dependency
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.9.0)
+* Update Amazon.Lambda.Logging.AspNetCore dependency
+### Amazon.Lambda.Core (2.7.0)
+* Added log level with exception version of the static logging functions on Amazon.Lambda.Core.LambdaLogger
+### Amazon.Lambda.Logging.AspNetCore (4.1.0)
+* Convert logging parameters into JSON properties when Lambda log format is configured as JSON
+
 ## Release 2025-06-25
 
 ### Amazon.Lambda.TestTool (0.11.0)
