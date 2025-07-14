@@ -6,7 +6,7 @@
     <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - Core package.</Description>
     <AssemblyTitle>Amazon.Lambda.Core</AssemblyTitle>
-    <Version>2.6.0</Version>
+    <Version>2.7.0</Version>
     <AssemblyName>Amazon.Lambda.Core</AssemblyName>
     <PackageId>Amazon.Lambda.Core</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>

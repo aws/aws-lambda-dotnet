@@ -75,10 +75,6 @@ namespace Amazon.Lambda.Core
             Console.WriteLine(exception);
         }
 
-        private const string ParameterizedPreviewMessage =
-            "This method has been mark as preview till the Lambda .NET Managed runtime has been updated with the backing implementation of this method. " +
-            "It is possible to use this method while in preview if the Lambda function is deployed as an executable and uses the latest version of Amazon.Lambda.RuntimeSupport.";
-
         /// <summary>
         /// Logs a message to AWS CloudWatch Logs.
         /// 
@@ -114,7 +110,6 @@ namespace Amazon.Lambda.Core
         /// <param name="exception">Exception to include with the logging.</param>
         /// <param name="message">Message to log. The message may have format arguments.</param>
         /// <param name="args">Arguments to format the message with.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         public static void Log(string level, Exception exception, string message, params object[] args)
         {
             _loggingWithLevelAndExceptionAction(level, exception, message, args);
@@ -130,7 +125,6 @@ namespace Amazon.Lambda.Core
         /// <param name="exception">Exception to include with the logging.</param>
         /// <param name="message">Message to log. The message may have format arguments.</param>
         /// <param name="args">Arguments to format the message with.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         public static void Log(LogLevel level, Exception exception, string message, params object[] args) => Log(level.ToString(), exception, message, args);
 #endif
     }
