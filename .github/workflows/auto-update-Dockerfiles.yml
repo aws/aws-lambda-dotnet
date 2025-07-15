@@ -1,0 +1,175 @@
+name: Auto-Update Lambda Dockerfiles Monthly
+
+on:
+  # Run monthly on the 1st day of each month at midnight UTC
+  schedule:
+    - cron: '0 0 1 * *'
+  # Allows to run this workflow manually from the Actions tab for testing
+  workflow_dispatch:
+
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    env:
+      NET_8_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/amd64/Dockerfile"
+      NET_8_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/arm64/Dockerfile"
+      NET_9_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/amd64/Dockerfile"
+      NET_9_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/arm64/Dockerfile"
+      NET_10_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net10/amd64/Dockerfile"
+      NET_10_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net10/arm64/Dockerfile"
+
+    steps:
+      # Checks-out the repository under $GITHUB_WORKSPACE
+      - uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 #v4.2.2
+        with:
+          ref: 'dev'
+
+      # Determine the latest ASP.NET Core versions for all .NET versions
+      - name: Determine Latest ASP.NET Core Versions
+        id: get-versions
+        shell: pwsh
+        run: |
+          $versions = ./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1
+          foreach ($line in $versions) {
+            if ($line -match '(.+)=(.+)') {
+              echo "$($matches[1])=$($matches[2])" >> $env:GITHUB_OUTPUT
+              echo "Using $($matches[1])=$($matches[2])"
+            }
+          }
+
+      # Update .NET 8 AMD64 Dockerfile
+      - name: Update .NET 8 AMD64
+        id: update-net8-amd64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_8_AMD64_Dockerfile }}
+          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_8_NEXT_VERSION }}
+        run: |
+          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          } else {
+            Write-Host "Skipping .NET 8 AMD64 update - No version detected"
+          }
+
+      # Update .NET 8 ARM64 Dockerfile
+      - name: Update .NET 8 ARM64
+        id: update-net8-arm64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_8_ARM64_Dockerfile }}
+          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_8_NEXT_VERSION }}
+        run: |
+          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          } else {
+            Write-Host "Skipping .NET 8 ARM64 update - No version detected"
+          }
+
+      # Update .NET 9 AMD64 Dockerfile
+      - name: Update .NET 9 AMD64
+        id: update-net9-amd64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_9_AMD64_Dockerfile }}
+          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_9_NEXT_VERSION }}
+        run: |
+          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          } else {
+            Write-Host "Skipping .NET 9 AMD64 update - No version detected"
+          }
+
+      # Update .NET 9 ARM64 Dockerfile
+      - name: Update .NET 9 ARM64
+        id: update-net9-arm64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_9_ARM64_Dockerfile }}
+          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_9_NEXT_VERSION }}
+        run: |
+          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          } else {
+            Write-Host "Skipping .NET 9 ARM64 update - No version detected"
+          }
+
+      # Update .NET 10 AMD64 Dockerfile
+      - name: Update .NET 10 AMD64
+        id: update-net10-amd64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_10_AMD64_Dockerfile }}
+          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_10_NEXT_VERSION }}
+        run: |
+          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          } else {
+            Write-Host "Skipping .NET 10 AMD64 update - No version detected"
+          }
+
+      # Update .NET 10 ARM64 Dockerfile
+      - name: Update .NET 10 ARM64
+        id: update-net10-arm64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_10_ARM64_Dockerfile }}
+          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_10_NEXT_VERSION }}
+        run: |
+          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          } else {
+            Write-Host "Skipping .NET 10 ARM64 update - No version detected"
+          }
+
+      # Commit changes and create a branch
+      - name: Commit and Push
+        id: commit-push
+        shell: pwsh
+        run: |
+          # Check if there are any changes to commit
+          if (git status --porcelain) {
+            git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
+            git config --global user.name "aws-sdk-dotnet-automation"
+            $suffix=Get-Date -Format yyyy-MM-dd
+            $branch="chore/auto-update-Dockerfiles-${suffix}"
+            git checkout -b $branch
+            git add "**/*Dockerfile"
+            git commit -m "chore: Monthly ASP.NET Core version update in Dockerfiles"
+            git push origin $branch
+            
+            # Write the branch name to GITHUB_OUTPUT for use in the PR step
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "BRANCH=$branch"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "CHANGES_MADE=true"
+            echo "Changes committed and pushed to branch $branch"
+          } else {
+            echo "No changes detected in Dockerfiles, skipping PR creation"
+          }
+
+      # Create a Pull Request
+      - name: Create Pull Request
+        id: pull-request
+        if: ${{ steps.commit-push.outputs.CHANGES_MADE == 'true' }}
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: ${{ steps.commit-push.outputs.BRANCH }}
+          destination_branch: "dev"
+          pr_title: 'chore: Monthly ASP.NET Core version update in Dockerfiles'
+          pr_body: "This PR automatically updates the Dockerfiles to use the latest ASP.NET Core version.
+            
+            Verify that the Dockerfiles have correct versions and matching SHA512 checksums for ASP.NET Core runtime.
+            
+            All .NET versions: https://dotnet.microsoft.com/en-us/download/dotnet
+            
+            *Description of changes:*
+            \n${{ format
+                (
+                  '{0}\n{1}\n{2}\n{3}\n{4}\n{5}',
+                  join(steps.update-net8-amd64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net8-arm64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net9-amd64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net9-arm64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net10-amd64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net10-arm64.outputs.MESSAGE, '\n')
+                )
+            }}"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
