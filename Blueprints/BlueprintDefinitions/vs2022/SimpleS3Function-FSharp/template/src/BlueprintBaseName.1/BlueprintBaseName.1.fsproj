@@ -9,10 +9,10 @@
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.5.1" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.7.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
     <PackageReference Include="Amazon.Lambda.S3Events" Version="3.1.0" />
-    <PackageReference Include="AWSSDK.S3" Version="4.0.0.0" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.4.2" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Function.fs" />
