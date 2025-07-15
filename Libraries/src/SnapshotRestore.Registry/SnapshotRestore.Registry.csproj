@@ -3,7 +3,7 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <Version>1.0.1</Version>
     <Description>Provides a Restore Hooks library to help you register before snapshot and after restore hooks.</Description>
     <AssemblyTitle>SnapshotRestore.Registry</AssemblyTitle>
@@ -16,12 +16,12 @@
     <WarningsAsErrors>IL2026,IL2067,IL2075</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-    <Authors>Amazon Web Services</Authors>	
+    <Authors>Amazon Web Services</Authors>
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\snapshotrestore.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
-	
+
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
-  </ItemGroup>	
+  </ItemGroup>
 </Project>

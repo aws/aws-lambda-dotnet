@@ -1,3 +1,47 @@
+## Release 2025-07-14 #2
+
+### Amazon.Lambda.TestTool (0.11.1)
+* Fix issue causing sample requests to not be applied if a config path is not supplied
+### Amazon.Lambda.AspNetCoreServer (9.2.0)
+* Update Amazon.Lambda.Logging.AspNetCore dependency
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.9.0)
+* Update Amazon.Lambda.Logging.AspNetCore dependency
+### Amazon.Lambda.Core (2.7.0)
+* Added log level with exception version of the static logging functions on Amazon.Lambda.Core.LambdaLogger
+### Amazon.Lambda.Logging.AspNetCore (4.1.0)
+* Convert logging parameters into JSON properties when Lambda log format is configured as JSON
+
+## Release 2025-06-25
+
+### Amazon.Lambda.TestTool (0.11.0)
+* Add the ability to save requests and hide UI elements
+
+## Release 2025-06-03
+
+### Amazon.Lambda.RuntimeSupport (1.13.1)
+* Add support for parameterized logging method with exception to global logger LambdaLogger in Amazon.Lambda.Core
+### Amazon.Lambda.Core (2.6.0)
+* Added log level version of the static logging functions on Amazon.Lambda.Core.LambdaLogger
+### Amazon.Lambda.AspNetCoreServer (9.1.2)
+* Update Amazon.Lambda.Logging.AspNetCore dependency
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.8.2)
+* Update Amazon.Lambda.Logging.AspNetCore dependency
+### Amazon.Lambda.Logging.AspNetCore (4.0.0)
+* Add support Lambda log levels
+* Change build target from .NET Standard 2.0 to .NET 6 and NET 8 to match Amazon.Lambda.AspNetCoreServer
+### Amazon.Lambda.TestUtilities (3.0.0)
+* Update Amazon.Lambda.TestUtitlies to have implementation of the newer logging methods
+* Change build target from .NET Standard 2.0 to .NET 6 and NET 8 to match Amazon.Lambda.AspNetCoreServer
+
+## Release 2025-05-15
+
+### Amazon.Lambda.TestTool (0.10.3)
+* Fix issue with long debugging sessions causing events to be retried
+### Amazon.Lambda.AspNetCoreServer (9.1.1)
+* Fixed issue when executing AddRegisterBeforeSnapshot callbacks to ensure each invocation has a new ASP.NET Core feature collection and HttpContext.
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.8.1)
+* Update Amazon.Lambda.AspNetCoreServer dependency for latest patch fix.
+
 ## Release 2025-04-29
 
 ### Amazon.Lambda.TestTool (0.10.2)

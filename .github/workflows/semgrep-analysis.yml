@@ -5,7 +5,7 @@ on:
   pull_request:
 
   push:
-    branches: ["dev", "main"]
+    branches: ["dev", "master"]
 
   schedule:
     - cron: '23 20 * * 1'
@@ -35,7 +35,7 @@ jobs:
             p/owasp-top-ten
 
       - name: Upload SARIF file for GitHub Advanced Security Dashboard
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@181d5eefc20863364f96762470ba6f862bdef56b #v3.29.2
         with:
           sarif_file: semgrep.sarif
         if: always()

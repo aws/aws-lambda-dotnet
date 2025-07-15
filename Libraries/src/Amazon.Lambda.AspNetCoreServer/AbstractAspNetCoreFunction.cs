@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.AspNetCoreServer.Internal;
+using Amazon.Lambda.AspNetCoreServer.Internal;
 using Amazon.Lambda.Core;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
@@ -318,16 +318,16 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                     var request = await HttpRequestMessageConverter.ConvertToLambdaRequest<TREQUEST>(httpRequest);
 
-                    InvokeFeatures features = new InvokeFeatures();
-                    (features as IItemsFeature).Items = new Dictionary<object, object>();
-                    (features as IServiceProvidersFeature).RequestServices = _hostServices;
-
-                    MarshallRequest(features, request, new SnapStartEmptyLambdaContext());
-
-                    var context = CreateContext(features);
-
                     for (var i = 0; i < invokeTimes; i++)
                     {
+                        InvokeFeatures features = new InvokeFeatures();
+                        (features as IItemsFeature).Items = new Dictionary<object, object>();
+                        (features as IServiceProvidersFeature).RequestServices = _hostServices;
+
+                        MarshallRequest(features, request, new SnapStartEmptyLambdaContext());
+
+                        var context = CreateContext(features);
+
                         var lambdaContext = new SnapStartEmptyLambdaContext();
 
                         await ProcessRequest(lambdaContext, context, features);

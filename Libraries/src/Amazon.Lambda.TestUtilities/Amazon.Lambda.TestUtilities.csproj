@@ -1,12 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
     <Description>Amazon.Lambda.TestUtilties includes stub implementations of interfaces defined in Amazon.Lambda.Core and helper methods.</Description>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.TestUtilities</AssemblyTitle>
-    <Version>2.0.0</Version>
+    <Version>3.0.0</Version>
     <AssemblyName>Amazon.Lambda.TestUtilities</AssemblyName>
     <PackageId>Amazon.Lambda.TestUtilities</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>

@@ -34,7 +34,13 @@ public class LambdaClient : ILambdaClient, IDisposable
     {
         var config = new AmazonLambdaConfig
         {
-            ServiceURL = endpoint
+            ServiceURL = endpoint,
+
+            // Turn of retries since the calls we are making are locally and we don't want retry happening while waiting for debugging.
+            MaxErrorRetry = 0,
+
+            // Set to infinite to allow debugging without timeouts causing retrigger of events
+            Timeout = Timeout.InfiniteTimeSpan
         };
         return new AmazonLambdaClient(
             new Amazon.Runtime.BasicAWSCredentials("accessKey", "secretKey"),

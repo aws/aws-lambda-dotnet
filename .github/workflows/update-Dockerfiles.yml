@@ -32,6 +32,20 @@ on:
         description: ".NET 9 Next Version"
         type: string
         required: true
+      NET_10_AMD64:
+        description: ".NET 10 AMD64"
+        type: boolean
+        required: true
+        default: "true"
+      NET_10_ARM64:
+        description: ".NET 10 ARM64"
+        type: boolean
+        required: true
+        default: "true"
+      NET_10_NEXT_VERSION:
+        description: ".NET 10 Next Version"
+        type: string
+        required: true
 
 jobs:
   build:
@@ -41,11 +55,13 @@ jobs:
       NET_8_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/arm64/Dockerfile"
       NET_9_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/amd64/Dockerfile"
       NET_9_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/arm64/Dockerfile"
+      NET_10_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net10/amd64/Dockerfile"
+      NET_10_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net10/arm64/Dockerfile"
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+      - uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 #v4.2.2
         with:
           ref: 'dev'
 
@@ -89,6 +105,26 @@ jobs:
           .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
         if: ${{ github.event.inputs.NET_9_ARM64 == 'true' }}
 
+      - name: Update .NET 10 AMD64
+        id: update-net10-amd64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_10_AMD64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_10_NEXT_VERSION }}
+        run: |
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+        if: ${{ github.event.inputs.NET_10_AMD64 == 'true' }}
+
+      - name: Update .NET 10 ARM64
+        id: update-net10-arm64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_10_ARM64_Dockerfile }}
+          NEXT_VERSION: ${{ github.event.inputs.NET_10_NEXT_VERSION }}
+        run: |
+          .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+        if: ${{ github.event.inputs.NET_10_ARM64 == 'true' }}
+
       # Update Dockerfiles if newer version of ASP.NET Core is available
       - name: Commit and Push
         id: commit-push
@@ -119,11 +155,13 @@ jobs:
             \n\n*Description of changes:*
             \n${{ format
                 (
-                  '{0}\n{1}\n{2}\n{3}',
+                  '{0}\n{1}\n{2}\n{3}\n{4}\n{5}',
                   join(steps.update-net8-amd64.outputs.MESSAGE, '\n'),
                   join(steps.update-net8-arm64.outputs.MESSAGE, '\n'),
                   join(steps.update-net9-amd64.outputs.MESSAGE, '\n'),
-                  join(steps.update-net9-arm64.outputs.MESSAGE, '\n')
+                  join(steps.update-net9-arm64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net10-amd64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net10-arm64.outputs.MESSAGE, '\n')
                 )
             }}"
           github_token: ${{ secrets.GITHUB_TOKEN }}

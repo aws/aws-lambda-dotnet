@@ -30,19 +30,42 @@ internal class Configuration
     public string GitHubRepository { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_NAME");
     public string GitHubBranch { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_BRANCH");
     public Ecrs Ecrs { get; } = new Ecrs();
-    public readonly string[] EcrRepositoryNames = Environment.GetEnvironmentVariable("AWS_LAMBDA_ECR_REPOSITORY_NAME")?.Split(";");
     public const string ProjectRoot = "LambdaRuntimeDockerfiles/Infrastructure/src/Infrastructure";
-    public static readonly string ProjectName = $"aws-lambda-container-images{Environment.GetEnvironmentVariable("AWS_LAMBDA_PIPELINE_NAME_SUFFIX")}";
-    public readonly string[] DockerArm64Images = new string[] { "net6", "net8", "net9" };
-    // DotnetSdkVersions is used to specify a specific version of the .NET SDK to be installed on the CodeBuild image
-    // The default behavior is to specify a channel and that installs the latest version in that channel
-    // By specifying a specific .NET SDK version, you override the default channel behavior
-    public readonly Dictionary<string, string> DotnetSdkVersions = new Dictionary<string, string> { };
-    public readonly Dictionary<string, string> DockerBuildImages = new Dictionary<string, string> { {"net6", "6.0-bullseye-slim"}, {"net8", "8.0-bookworm-slim"}, {"net9", "9.0-bookworm-slim"} };
-    public readonly Dictionary<string, string> BaseImageAmd64Tags = new Dictionary<string, string> { { "net6", "contributed-base-image-x86_64" }, { "net8", "contributed-base-image-x86_64" }, { "net9", "contributed-base-image-x86_64" } };
-    public readonly Dictionary<string, string> BaseImageArm64Tags = new Dictionary<string, string> { { "net6", "contributed-base-image-arm64" }, { "net8", "contributed-base-image-arm64" }, { "net9", "contributed-base-image-arm64" } };
-    public readonly string[] Frameworks = Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_VERSION")?.Split(";");
-    public readonly string[] Channels = Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL")?.Split(";");
+    public static readonly string ProjectName = "aws-lambda-container-images";
+
+    public readonly FrameworkConfiguration[] Frameworks = new[]
+    {
+        new FrameworkConfiguration
+        {
+            Framework = "net8",
+            Channel = "8.0",
+            EcrRepositoryName = "awslambda/dotnet8-runtime",
+            DockerBuildImage = "8.0-bookworm-slim",
+            BaseImageAmd64Tag = "contributed-base-image-x86_64",
+            BaseImageArm64Tag = "contributed-base-image-arm64",
+            HasArm64Image = true
+        },
+        new FrameworkConfiguration
+        {
+            Framework = "net9",
+            Channel = "9.0",
+            EcrRepositoryName = "awslambda/dotnet9-runtime",
+            DockerBuildImage = "9.0-bookworm-slim",
+            BaseImageAmd64Tag = "contributed-base-image-x86_64",
+            BaseImageArm64Tag = "contributed-base-image-arm64",
+            HasArm64Image = true
+        },
+        new FrameworkConfiguration
+        {
+            Framework = "net10",
+            Channel = "10.0",
+            EcrRepositoryName = "awslambda/dotnet10-runtime",
+            DockerBuildImage = "10.0-preview-trixie-slim",
+            BaseImageAmd64Tag = "contributed-base-image-x86_64",
+            BaseImageArm64Tag = "contributed-base-image-arm64",
+            HasArm64Image = true
+        }
+    };
 }
 
 internal class Ecrs
@@ -50,4 +73,26 @@ internal class Ecrs
     public string Stage { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_STAGE_ECR");
     public string Beta { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_BETA_ECRS");
     public string Prod { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_PROD_ECRS");
+}
+
+internal class FrameworkConfiguration
+{
+    public string Framework { get; set; }
+
+    public string Channel { get; set; }
+
+    public string EcrRepositoryName { get; set; }
+
+    public string DockerBuildImage { get; set; }
+
+    public string BaseImageAmd64Tag { get; set; }
+
+    public string BaseImageArm64Tag { get; set; }
+
+    public bool HasArm64Image { get; set; }
+
+    // DotnetSdkVersions is used to specify a specific version of the .NET SDK to be installed on the CodeBuild image
+    // The default behavior is to specify a channel and that installs the latest version in that channel
+    // By specifying a specific .NET SDK version, you override the default channel behavior
+    public string SpecificSdkVersion { get; set; } = string.Empty;
 }

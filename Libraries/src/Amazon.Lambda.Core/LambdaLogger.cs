@@ -42,6 +42,7 @@ namespace Amazon.Lambda.Core
         // value with an Action that directs the logging into its logging system.
 #pragma warning disable IDE0044 // Add readonly modifier
         private static Action<string, string, object[]> _loggingWithLevelAction = LogWithLevelToConsole;
+        private static Action<string, Exception, string, object[]> _loggingWithLevelAndExceptionAction = LogWithLevelAndExceptionToConsole;
 #pragma warning restore IDE0044 // Add readonly modifier
 
         // Logs message to console
@@ -65,9 +66,14 @@ namespace Amazon.Lambda.Core
             Console.WriteLine(sb.ToString());
         }
 
-        private const string ParameterizedPreviewMessage =
-            "This method has been mark as preview till the Lambda .NET Managed runtime has been updated with the backing implementation of this method. " +
-            "It is possible to use this method while in preview if the Lambda function is deployed as an executable and uses the latest version of Amazon.Lambda.RuntimeSupport.";
+        private static void LogWithLevelAndExceptionToConsole(string level, Exception exception, string message, params object[] args)
+        {
+            // Formatting here is not important, it is used for debugging Amazon.Lambda.Core only.
+            // In a real scenario Amazon.Lambda.RuntimeSupport will change the value of _loggingWithLevelAction
+            // to an Action inside it's logging system to handle the real formatting.
+            LogWithLevelToConsole(level, message, args);
+            Console.WriteLine(exception);
+        }
 
         /// <summary>
         /// Logs a message to AWS CloudWatch Logs.
@@ -78,7 +84,6 @@ namespace Amazon.Lambda.Core
         /// <param name="level">The log level of the message</param>
         /// <param name="message">Message to log. The message may have format arguments.</param>
         /// <param name="args">Arguments to format the message with.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         public static void Log(string level, string message, params object[] args)
         {
             _loggingWithLevelAction(level, message, args);
@@ -93,8 +98,34 @@ namespace Amazon.Lambda.Core
         /// <param name="level">The log level of the message</param>
         /// <param name="message">Message to log. The message may have format arguments.</param>
         /// <param name="args">Arguments to format the message with.</param>
-        [RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         public static void Log(LogLevel level, string message, params object[] args) => Log(level.ToString(), message, args);
+
+        /// <summary>
+        /// Logs a message to AWS CloudWatch Logs.
+        /// 
+        /// Logging will not be done:
+        ///  If the role provided to the function does not have sufficient permissions.
+        /// </summary>
+        /// <param name="level">The log level of the message</param>
+        /// <param name="exception">Exception to include with the logging.</param>
+        /// <param name="message">Message to log. The message may have format arguments.</param>
+        /// <param name="args">Arguments to format the message with.</param>
+        public static void Log(string level, Exception exception, string message, params object[] args)
+        {
+            _loggingWithLevelAndExceptionAction(level, exception, message, args);
+        }
+
+        /// <summary>
+        /// Logs a message to AWS CloudWatch Logs.
+        /// 
+        /// Logging will not be done:
+        ///  If the role provided to the function does not have sufficient permissions.
+        /// </summary>
+        /// <param name="level">The log level of the message</param>
+        /// <param name="exception">Exception to include with the logging.</param>
+        /// <param name="message">Message to log. The message may have format arguments.</param>
+        /// <param name="args">Arguments to format the message with.</param>
+        public static void Log(LogLevel level, Exception exception, string message, params object[] args) => Log(level.ToString(), exception, message, args);
 #endif
     }
 }

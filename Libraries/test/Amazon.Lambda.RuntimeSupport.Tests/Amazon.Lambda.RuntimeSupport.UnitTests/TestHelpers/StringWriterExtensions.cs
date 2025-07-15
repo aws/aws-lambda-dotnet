@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -65,6 +65,24 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests.TestHelpers
         public static Action<string> ToLoggingAction(this TextWriter writer)
         {
             return writer.WriteLine;
+        }
+
+        public static Action<string, string, object[]> ToLoggingWithLevelAction(this TextWriter writer)
+        {
+            return (l, m, p) =>
+            {
+                var formattedMessage = $"{l}: {m}";
+                writer.WriteLine(formattedMessage);
+            };
+        }
+
+        public static Action<string, Exception, string, object[]> ToLoggingWithLevelAndExceptionAction(this TextWriter writer)
+        {
+            return (l, e, m, p) =>
+            {
+                var formattedMessage = $"{l}: {m}\n{e}";
+                writer.WriteLine(formattedMessage);
+            };
         }
 
         public static Action<string> ToLoggingAction(this ITestOutputHelper writer)

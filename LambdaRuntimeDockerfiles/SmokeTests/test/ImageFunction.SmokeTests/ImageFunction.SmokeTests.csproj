@@ -4,23 +4,26 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Framework)'=='net6.0' ">
-    <TargetFramework>net6.0</TargetFramework>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(Framework)'=='net8.0' ">
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Framework)'=='net9.0' ">
     <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Framework)'=='net10.0' ">
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.0" />
-    <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
-    <PackageReference Include="AWSSDK.ECR" Version="3.7.1.14" />
-    <PackageReference Include="AWSSDK.IdentityManagement" Version="3.7.2.62" />
-    <PackageReference Include="AWSSDK.Lambda" Version="3.7.4.9" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="AWSSDK.ECR" Version="4.0.1.4" />
+    <PackageReference Include="AWSSDK.IdentityManagement" Version="4.0.1.3" />
+    <PackageReference Include="AWSSDK.Lambda" Version="4.0.0.5" />
   </ItemGroup>
 
 </Project>

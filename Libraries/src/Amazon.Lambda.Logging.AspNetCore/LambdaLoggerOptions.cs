@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,8 +18,8 @@ namespace Microsoft.Extensions.Logging
         private const string INCLUDE_CATEGORY_KEY = "IncludeCategory";
         private const string INCLUDE_NEWLINE_KEY = "IncludeNewline";
         private const string INCLUDE_EXCEPTION_KEY = "IncludeException";
-		private const string INCLUDE_EVENT_ID_KEY = "IncludeEventId";
-		private const string INCLUDE_SCOPES_KEY = "IncludeScopes";
+        private const string INCLUDE_EVENT_ID_KEY = "IncludeEventId";
+        private const string INCLUDE_SCOPES_KEY = "IncludeScopes";
         private const string LOG_LEVEL_KEY = "LogLevel";
         private const string DEFAULT_CATEGORY = "Default";
 
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         public bool IncludeScopes { get; set; }
 
-		/// <summary>
+        /// <summary>
         /// Function used to filter events based on the log level.
         /// Default value is null and will instruct logger to log everything.
         /// </summary>
