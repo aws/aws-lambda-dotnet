@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -82,12 +82,12 @@ namespace Packager
                 xdoc.Load(projectfile);
 
                 var packageId = xdoc.SelectSingleNode("//PropertyGroup/PackageId")?.InnerText;
-                var versionPrefix = xdoc.SelectSingleNode("//PropertyGroup/VersionPrefix")?.InnerText ?? xdoc.SelectSingleNode("//PropertyGroup/Version")?.InnerText;
+                var version = xdoc.SelectSingleNode("//PropertyGroup/Version")?.InnerText ?? xdoc.SelectSingleNode("//PropertyGroup/Version")?.InnerText;
 
-                if(!string.IsNullOrEmpty(packageId) && !string.IsNullOrEmpty(versionPrefix))
+                if(!string.IsNullOrEmpty(packageId) && !string.IsNullOrEmpty(version))
                 {
-                    Console.WriteLine($"\t{packageId}: {versionPrefix}");
-                    versions[packageId] = versionPrefix;
+                    Console.WriteLine($"\t{packageId}: {version}");
+                    versions[packageId] = version;
                 }
             }
 

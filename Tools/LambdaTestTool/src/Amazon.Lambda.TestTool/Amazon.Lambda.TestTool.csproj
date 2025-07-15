@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="2.5.0" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.7.0" />
     <PackageReference Include="AWSSDK.SSO" Version="3.7.400.85" />
     <PackageReference Include="AWSSDK.SSOOIDC" Version="3.7.400.86" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />

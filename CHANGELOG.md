@@ -1,3 +1,10 @@
+## Release 2025-07-15
+
+### Amazon.Lambda.TestTool.BlazorTester (0.16.3)
+* Update to version 2.7.0 of Amazon.Lambda.Core
+### Amazon.Lambda.Templates (7.5.0)
+* Update package references including AWS SDK for .NET version to V4
+
 ## Release 2025-07-14 #2
 
 ### Amazon.Lambda.TestTool (0.11.1)
