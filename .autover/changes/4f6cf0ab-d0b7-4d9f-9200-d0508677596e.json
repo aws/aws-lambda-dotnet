@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool.BlazorTester",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update to version 2.7.0 of Amazon.Lambda.Core"
+      ]
+    }
+  ]
+}
