@@ -1,5 +1,9 @@
 name: Auto-Update Lambda Dockerfiles Monthly
 
+permissions:
+  contents: read
+  pull-requests: write
+
 on:
   # Run monthly on the 1st day of each month at midnight UTC
   schedule:
