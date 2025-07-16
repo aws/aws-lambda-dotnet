@@ -31,7 +31,7 @@ jobs:
         id: get-versions
         shell: pwsh
         run: |
-          $versions = ./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1
+          $versions = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1
           foreach ($line in $versions) {
             if ($line -match '(.+)=(.+)') {
               echo "$($matches[1])=$($matches[2])" >> $env:GITHUB_OUTPUT
