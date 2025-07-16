@@ -179,3 +179,17 @@ jobs:
                 )
             }}"
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          
+      # Add "Release Not Needed" label to the PR
+      - name: Add Release Not Needed label
+        if: ${{ steps.pull-request.outputs.pr_number }}
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.pull-request.outputs.pr_number }},
+              labels: ['Release Not Needed']
+            })
