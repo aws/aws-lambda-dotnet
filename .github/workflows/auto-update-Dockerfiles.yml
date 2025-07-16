@@ -6,7 +6,6 @@ on:
     - cron: '0 0 1 * *'
   # Allows to run this workflow manually from the Actions tab for testing
   workflow_dispatch:
-  pull_request:
     
 
 
