@@ -12,6 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -45,12 +46,14 @@ namespace Amazon.Lambda.RuntimeSupport
 
         private string GetHeaderValueRequired(Dictionary<string, IEnumerable<string>> headers, string header)
         {
-            return headers[header].FirstOrDefault();
+            var headerKey = headers.Keys.FirstOrDefault(k => string.Equals(k, header, StringComparison.OrdinalIgnoreCase));
+            return headers[headerKey].FirstOrDefault();
         }
 
         private string GetHeaderValueOrNull(Dictionary<string, IEnumerable<string>> headers, string header)
         {
-            if (headers.TryGetValue(header, out var values))
+             var headerKey = headers.Keys.FirstOrDefault(k => string.Equals(k, header, StringComparison.OrdinalIgnoreCase));
+            if (headers.TryGetValue(headerKey, out var values))
             {
                 return values.FirstOrDefault();
             }
@@ -58,5 +61,4 @@ namespace Amazon.Lambda.RuntimeSupport
             return null;
         }
     }
-
 }
