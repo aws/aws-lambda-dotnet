@@ -1,5 +1,9 @@
 name: Update Lambda Dockerfiles
 
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
   # Allows to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -8,12 +12,12 @@ on:
         description: ".NET 8 AMD64"
         type: boolean
         required: true
-        default: "true"
+        default: true
       NET_8_ARM64:
         description: ".NET 8 ARM64"
         type: boolean
         required: true
-        default: "true"
+        default: true
       NET_8_NEXT_VERSION:
         description: ".NET 8 Next Version"
         type: string
@@ -22,12 +26,12 @@ on:
         description: ".NET 9 AMD64"
         type: boolean
         required: true
-        default: "true"
+        default: true
       NET_9_ARM64:
         description: ".NET 9 ARM64"
         type: boolean
         required: true
-        default: "true"
+        default: true
       NET_9_NEXT_VERSION:
         description: ".NET 9 Next Version"
         type: string
@@ -36,12 +40,12 @@ on:
         description: ".NET 10 AMD64"
         type: boolean
         required: true
-        default: "true"
+        default: true
       NET_10_ARM64:
         description: ".NET 10 ARM64"
         type: boolean
         required: true
-        default: "true"
+        default: true
       NET_10_NEXT_VERSION:
         description: ".NET 10 Next Version"
         type: string
@@ -165,4 +169,17 @@ jobs:
                 )
             }}"
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          
+
+      # Add "Release Not Needed" label to the PR
+      - name: Add Release Not Needed label
+        if: ${{ steps.pull-request.outputs.pr_number }}
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.pull-request.outputs.pr_number }},
+              labels: ['Release Not Needed']
+            })
