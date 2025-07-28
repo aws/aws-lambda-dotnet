@@ -29,12 +29,14 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public RuntimeApiHeaders(Dictionary<string, IEnumerable<string>> headers)
         {
-            DeadlineMs = GetHeaderValueOrNull(headers, HeaderDeadlineMs);
-            AwsRequestId = GetHeaderValueRequired(headers, HeaderAwsRequestId);
-            ClientContextJson = GetHeaderValueOrNull(headers, HeaderClientContext);
-            CognitoIdentityJson = GetHeaderValueOrNull(headers, HeaderCognitoIdentity);
-            InvokedFunctionArn = GetHeaderValueOrNull(headers, HeaderInvokedFunctionArn);
-            TraceId = GetHeaderValueOrNull(headers, HeaderTraceId);
+            var caseInsensitiveHeaders = new Dictionary<string, IEnumerable<string>>(headers, StringComparer.OrdinalIgnoreCase);
+
+            DeadlineMs = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderDeadlineMs);
+            AwsRequestId = GetHeaderValueRequired(caseInsensitiveHeaders, HeaderAwsRequestId);
+            ClientContextJson = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderClientContext);
+            CognitoIdentityJson = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderCognitoIdentity);
+            InvokedFunctionArn = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderInvokedFunctionArn);
+            TraceId = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderTraceId);
         }
 
         public string AwsRequestId { get; private set; }
@@ -46,14 +48,12 @@ namespace Amazon.Lambda.RuntimeSupport
 
         private string GetHeaderValueRequired(Dictionary<string, IEnumerable<string>> headers, string header)
         {
-            var headerKey = headers.Keys.FirstOrDefault(k => string.Equals(k, header, StringComparison.OrdinalIgnoreCase));
-            return headers[headerKey].FirstOrDefault();
+            return headers[header].FirstOrDefault();
         }
 
         private string GetHeaderValueOrNull(Dictionary<string, IEnumerable<string>> headers, string header)
         {
-             var headerKey = headers.Keys.FirstOrDefault(k => string.Equals(k, header, StringComparison.OrdinalIgnoreCase));
-            if (headers.TryGetValue(headerKey, out var values))
+            if (headers.TryGetValue(header, out var values))
             {
                 return values.FirstOrDefault();
             }
