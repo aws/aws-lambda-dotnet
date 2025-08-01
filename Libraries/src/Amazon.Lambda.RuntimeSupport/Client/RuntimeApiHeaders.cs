@@ -12,6 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -28,12 +29,14 @@ namespace Amazon.Lambda.RuntimeSupport
 
         public RuntimeApiHeaders(Dictionary<string, IEnumerable<string>> headers)
         {
-            DeadlineMs = GetHeaderValueOrNull(headers, HeaderDeadlineMs);
-            AwsRequestId = GetHeaderValueRequired(headers, HeaderAwsRequestId);
-            ClientContextJson = GetHeaderValueOrNull(headers, HeaderClientContext);
-            CognitoIdentityJson = GetHeaderValueOrNull(headers, HeaderCognitoIdentity);
-            InvokedFunctionArn = GetHeaderValueOrNull(headers, HeaderInvokedFunctionArn);
-            TraceId = GetHeaderValueOrNull(headers, HeaderTraceId);
+            var caseInsensitiveHeaders = new Dictionary<string, IEnumerable<string>>(headers, StringComparer.OrdinalIgnoreCase);
+
+            DeadlineMs = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderDeadlineMs);
+            AwsRequestId = GetHeaderValueRequired(caseInsensitiveHeaders, HeaderAwsRequestId);
+            ClientContextJson = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderClientContext);
+            CognitoIdentityJson = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderCognitoIdentity);
+            InvokedFunctionArn = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderInvokedFunctionArn);
+            TraceId = GetHeaderValueOrNull(caseInsensitiveHeaders, HeaderTraceId);
         }
 
         public string AwsRequestId { get; private set; }
@@ -58,5 +61,4 @@ namespace Amazon.Lambda.RuntimeSupport
             return null;
         }
     }
-
 }

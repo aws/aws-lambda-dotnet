@@ -1,3 +1,8 @@
+## Release 2025-08-01
+
+### Amazon.Lambda.RuntimeSupport (1.13.2)
+* Fix issue making HTTP header comparisons be case insensitive
+
 ## Release 2025-07-15
 
 ### Amazon.Lambda.TestTool.BlazorTester (0.16.3)
