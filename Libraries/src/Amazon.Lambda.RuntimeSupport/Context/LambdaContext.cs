@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -28,8 +28,8 @@ namespace Amazon.Lambda.RuntimeSupport
         private IDateTimeHelper _dateTimeHelper;
         private long _deadlineMs;
         private int _memoryLimitInMB;
-        private Lazy<CognitoIdentity> _cognitoIdentityLazy;
-        private Lazy<CognitoClientContext> _cognitoClientContextLazy;
+        private readonly Lazy<CognitoIdentity> _cognitoIdentityLazy;
+        private readonly Lazy<CognitoClientContext> _cognitoClientContextLazy;
         private IConsoleLoggerWriter _consoleLogger;
 
         public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IConsoleLoggerWriter consoleLogger)

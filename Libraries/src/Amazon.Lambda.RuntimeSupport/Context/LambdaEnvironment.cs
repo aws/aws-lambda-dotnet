@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -38,10 +38,13 @@ namespace Amazon.Lambda.RuntimeSupport
         internal const string AwsLambdaDotnetCustomRuntime = "AWS_Lambda_dotnet_custom";
         internal const string AmazonLambdaRuntimeSupportMarker = "amazonlambdaruntimesupport";
 
-        private IEnvironmentVariables _environmentVariables;
+        private readonly IEnvironmentVariables _environmentVariables;
 
         internal const int OneMegabyte = 1024 * 1024;
 
+        /// <summary>
+        /// Construct an instance of LambdaEnvironment
+        /// </summary>
         public LambdaEnvironment() : this(new SystemEnvironmentVariables()) { }
 
         internal LambdaEnvironment(IEnvironmentVariables environmentVariables, LambdaBootstrapOptions lambdaBootstrapOptions = null)
@@ -83,13 +86,44 @@ namespace Amazon.Lambda.RuntimeSupport
             _environmentVariables.SetEnvironmentVariable(EnvVarTraceId, xAmznTraceId);
         }
 
+        /// <summary>
+        /// Gets the FunctionMemorySize
+        /// </summary>
         public string FunctionMemorySize { get; private set; }
+
+        /// <summary>
+        /// Gets the FunctionMemorySize
+        /// </summary>
         public string FunctionName { get; private set; }
+
+        /// <summary>
+        /// Gets the FunctionVersion
+        /// </summary>
         public string FunctionVersion { get; private set; }
+
+        /// <summary>
+        /// Gets the LogGroupName
+        /// </summary>
         public string LogGroupName { get; private set; }
+
+        /// <summary>
+        /// Gets the LogStreamName
+        /// </summary>
         public string LogStreamName { get; private set; }
+
+        /// <summary>
+        /// Gets the RuntimeServerHostAndPort
+        /// </summary>
         public string RuntimeServerHostAndPort { get; private set; }
+
+        /// <summary>
+        /// Gets the Handler
+        /// </summary>
         public string Handler { get; private set; }
+
+        /// <summary>
+        /// Gets the XAmznTraceId
+        /// </summary>
         public string XAmznTraceId
         {
             get
@@ -97,6 +131,10 @@ namespace Amazon.Lambda.RuntimeSupport
                 return _environmentVariables.GetEnvironmentVariable(EnvVarTraceId);
             }
         }
+
+        /// <summary>
+        /// Gets the ExecutionEnvironment
+        /// </summary>
         public string ExecutionEnvironment
         {
             get

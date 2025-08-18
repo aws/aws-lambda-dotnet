@@ -28,8 +28,9 @@ namespace Amazon.Lambda.RuntimeSupport
                     Constants.AWS_LAMBDA_INITIALIZATION_TYPE_SNAP_START);
 
             return new LambdaBootstrapConfiguration(isCallPreJit, isInitTypeSnapstart);
-#endif
+#else
             return new LambdaBootstrapConfiguration(isCallPreJit, false);
+#endif
         }
     }
 }

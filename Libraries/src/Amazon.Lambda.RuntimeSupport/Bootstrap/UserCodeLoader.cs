@@ -296,7 +296,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         private object GetSerializerObject(Assembly customerAssembly)
         {
             // try looking up the LambdaSerializerAttribute on the method
-            _logger.LogDebug($"UCL : Searching for LambdaSerializerAttribute at method level");
+            _logger.LogDebug("UCL : Searching for LambdaSerializerAttribute at method level");
             var customerSerializerAttribute = CustomerMethodInfo.GetCustomAttributes().SingleOrDefault(a => Types.IsLambdaSerializerAttribute(a.GetType()));
 
             _logger.LogDebug($"UCL : LambdaSerializerAttribute at method level {(customerSerializerAttribute != null ? "found" : "not found")}");
@@ -304,7 +304,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             // only check the assembly if the LambdaSerializerAttribute does not exist on the method
             if (customerSerializerAttribute == null)
             {
-                _logger.LogDebug($"UCL : Searching for LambdaSerializerAttribute at assembly level");
+                _logger.LogDebug("UCL : Searching for LambdaSerializerAttribute at assembly level");
                 customerSerializerAttribute = customerAssembly.GetCustomAttributes()
                     .SingleOrDefault(a => Types.IsLambdaSerializerAttribute(a.GetType()));
                 _logger.LogDebug($"UCL : LambdaSerializerAttribute at assembly level {(customerSerializerAttribute != null ? "found" : "not found")}");
@@ -315,7 +315,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
 
             if (serializerAttributeExists)
             {
-                _logger.LogDebug($"UCL : Constructing custom serializer");
+                _logger.LogDebug("UCL : Constructing custom serializer");
                 return ConstructCustomSerializer(customerSerializerAttribute);
             }
             else
@@ -435,7 +435,6 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// <param name="serializerAttribute">Serializer attribute used to define the input/output serializer.</param>
         /// <returns></returns>
         /// <exception cref="LambdaValidationException">Thrown when serializer doesn't satisfy serializer type requirements.</exception>
-        /// <exception cref="LambdaUserCodeException">Thrown when failed to instantiate serializer type.</exception>
         private object ConstructCustomSerializer(Attribute serializerAttribute)
         {
             var attributeType = serializerAttribute.GetType();
@@ -487,7 +486,6 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// </summary>
         /// <param name="customerType">Type of the customer handler container.</param>
         /// <returns>Instance of customer handler container type</returns>
-        /// <exception cref="LambdaUserCodeException">Thrown when failed to instantiate customer type.</exception>
         private object GetCustomerObject(Type customerType)
         {
             _logger.LogDebug($"UCL : Validating type '{_handler.TypeName}'");
