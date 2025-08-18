@@ -21,10 +21,6 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(Configuration) == 'Release'">
-    <None Include="$(OutputPath)\publish\wwwroot\" Pack="true" PackagePath="tools\net8.0\any\wwwroot" Visible="false" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.0" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.0" />
