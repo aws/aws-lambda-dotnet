@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -465,6 +465,10 @@ namespace Amazon.Lambda.RuntimeSupport
             return this;
         }
 
+        /// <summary>
+        /// Build the LambdaBootstrap from the builder configuration.
+        /// </summary>
+        /// <returns>The LambdaBootstrap instance that can be run to start the Lambda runtime client.</returns>
         public LambdaBootstrap Build()
         {
             if(_httpClient == null)
