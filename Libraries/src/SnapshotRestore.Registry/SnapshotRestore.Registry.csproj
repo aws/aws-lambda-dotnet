@@ -19,7 +19,7 @@
     <Authors>Amazon Web Services</Authors>
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\snapshotrestore.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>NU5048;NU1903</NoWarn>
   </PropertyGroup>
 
