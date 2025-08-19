@@ -92,7 +92,7 @@ namespace Amazon.Lambda.RuntimeSupport
         public string FunctionMemorySize { get; private set; }
 
         /// <summary>
-        /// Gets the FunctionMemorySize
+        /// Gets the FunctionName
         /// </summary>
         public string FunctionName { get; private set; }
 
