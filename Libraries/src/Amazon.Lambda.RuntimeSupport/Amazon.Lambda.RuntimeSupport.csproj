@@ -14,7 +14,7 @@
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>NU5048;NU1903</NoWarn>
+    <NoWarn>NU5048;NU1903;NU1902</NoWarn>
     <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
