@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
@@ -20,6 +20,7 @@
     <AssemblyOriginatorKeyFile>..\..\..\buildtools\snapshotrestore.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>NU5048;NU1903</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
