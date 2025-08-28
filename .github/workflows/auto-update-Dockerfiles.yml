@@ -37,9 +37,9 @@ jobs:
         env:
           DOCKERFILE_PATH: ${{ env.NET_8_AMD64_Dockerfile }}
         run: |
-          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "8"
+          $version = ./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1 -MajorVersion "8"
           if (-not [string]::IsNullOrEmpty($version)) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+            ./LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 8 AMD64 update - No version detected"
           }
@@ -51,9 +51,9 @@ jobs:
         env:
           DOCKERFILE_PATH: ${{ env.NET_8_ARM64_Dockerfile }}
         run: |
-          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "8"
+          $version = ./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1 -MajorVersion "8"
           if (-not [string]::IsNullOrEmpty($version)) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+            ./LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 8 ARM64 update - No version detected"
           }
@@ -65,9 +65,9 @@ jobs:
         env:
           DOCKERFILE_PATH: ${{ env.NET_9_AMD64_Dockerfile }}
         run: |
-          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "9"
+          $version = ./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1 -MajorVersion "9"
           if (-not [string]::IsNullOrEmpty($version)) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+            ./LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 9 AMD64 update - No version detected"
           }
@@ -79,9 +79,9 @@ jobs:
         env:
           DOCKERFILE_PATH: ${{ env.NET_9_ARM64_Dockerfile }}
         run: |
-          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "9"
+          $version = ./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1 -MajorVersion "9"
           if (-not [string]::IsNullOrEmpty($version)) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+            ./LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 9 ARM64 update - No version detected"
           }
@@ -93,9 +93,9 @@ jobs:
         env:
           DOCKERFILE_PATH: ${{ env.NET_10_AMD64_Dockerfile }}
         run: |
-          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "10"
+          $version = ./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1 -MajorVersion "10"
           if (-not [string]::IsNullOrEmpty($version)) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+            ./LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 10 AMD64 update - No version detected"
           }
@@ -107,9 +107,9 @@ jobs:
         env:
           DOCKERFILE_PATH: ${{ env.NET_10_ARM64_Dockerfile }}
         run: |
-          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "10"
+          $version = ./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1 -MajorVersion "10"
           if (-not [string]::IsNullOrEmpty($version)) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+            ./LambdaRuntimeDockerfiles/update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 10 ARM64 update - No version detected"
           }
