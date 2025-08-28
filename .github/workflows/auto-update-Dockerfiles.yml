@@ -30,6 +30,35 @@ jobs:
         with:
           ref: 'dev'
 
+      # Debug: Check current directory and file structure
+      - name: Debug - Check paths and files
+        shell: pwsh
+        run: |
+          Write-Host "=== DEBUGGING INFORMATION ==="
+          Write-Host "Current working directory: $(Get-Location)"
+          Write-Host "PWD variable: $PWD"
+          Write-Host ""
+          Write-Host "Files in current directory:"
+          Get-ChildItem -Name | Sort-Object
+          Write-Host ""
+          Write-Host "Checking for LambdaRuntimeDockerfiles directory:"
+          if (Test-Path "LambdaRuntimeDockerfiles") {
+            Write-Host "✓ LambdaRuntimeDockerfiles directory exists"
+            Write-Host "Contents of LambdaRuntimeDockerfiles:"
+            Get-ChildItem "LambdaRuntimeDockerfiles" -Name | Sort-Object
+            Write-Host ""
+            Write-Host "Checking for get-latest-aspnet-versions.ps1:"
+            if (Test-Path "LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1") {
+              Write-Host "✓ get-latest-aspnet-versions.ps1 exists"
+              Write-Host "Full path: $(Resolve-Path 'LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1')"
+            } else {
+              Write-Host "✗ get-latest-aspnet-versions.ps1 NOT FOUND"
+            }
+          } else {
+            Write-Host "✗ LambdaRuntimeDockerfiles directory NOT FOUND"
+          }
+          Write-Host "=== END DEBUGGING ==="
+
       # Update .NET 8 AMD64 Dockerfile
       - name: Update .NET 8 AMD64
         id: update-net8-amd64
