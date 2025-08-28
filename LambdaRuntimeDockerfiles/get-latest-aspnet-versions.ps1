@@ -1,5 +1,10 @@
-# This script fetches the latest ASP.NET Core runtime versions for .NET 8, 9, and 10
+# This script fetches the latest ASP.NET Core runtime version for a specified .NET major version
 # It uses the NuGet API to query for Microsoft.AspNetCore.App.Runtime.linux-x64 package versions
+
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$MajorVersion
+)
 
 function Get-LatestAspNetVersion {
     param (
@@ -117,31 +122,14 @@ function Get-LatestAspNetVersion {
     }
 }
 
-# Get latest versions for each .NET version
-$net8Version = Get-LatestAspNetVersion -majorVersion "8"
-$net9Version = Get-LatestAspNetVersion -majorVersion "9"
-$net10Version = Get-LatestAspNetVersion -majorVersion "10"
+# Get latest version for the specified .NET major version
+$version = Get-LatestAspNetVersion -majorVersion $MajorVersion
 
-# Verify we got valid versions
-$allVersionsValid = $true
-if (-not $net8Version) { 
-    Write-Error "Failed to determine .NET 8 version"
-    $allVersionsValid = $false
-}
-if (-not $net9Version) { 
-    Write-Error "Failed to determine .NET 9 version" 
-    $allVersionsValid = $false
-}
-if (-not $net10Version) { 
-    Write-Error "Failed to determine .NET 10 version" 
-    $allVersionsValid = $false
-}
-
-if (-not $allVersionsValid) {
+# Verify we got a valid version
+if (-not $version) { 
+    Write-Error "Failed to determine .NET $MajorVersion version"
     exit 1
 }
 
-# Output as GitHub Actions environment variables
-Write-Output "NET_8_NEXT_VERSION=$net8Version"
-Write-Output "NET_9_NEXT_VERSION=$net9Version"
-Write-Output "NET_10_NEXT_VERSION=$net10Version"
+# Output the version directly
+Write-Output $version

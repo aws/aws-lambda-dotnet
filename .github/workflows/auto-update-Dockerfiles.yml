@@ -1,13 +1,13 @@
-name: Auto-Update Lambda Dockerfiles Monthly
+name: Auto-Update Lambda Dockerfiles Daily
 
 permissions:
   contents: write
   pull-requests: write
 
 on:
-  # Run monthly on the 1st day of each month at midnight UTC
+  # Run daily at midnight UTC
   schedule:
-    - cron: '0 0 1 * *'
+    - cron: '0 0 * * *'
   # Allows to run this workflow manually from the Actions tab for testing
   workflow_dispatch:
     
@@ -30,29 +30,16 @@ jobs:
         with:
           ref: 'dev'
 
-      # Determine the latest ASP.NET Core versions for all .NET versions
-      - name: Determine Latest ASP.NET Core Versions
-        id: get-versions
-        shell: pwsh
-        run: |
-          $versions = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1
-          foreach ($line in $versions) {
-            if ($line -match '(.+)=(.+)') {
-              echo "$($matches[1])=$($matches[2])" >> $env:GITHUB_OUTPUT
-              echo "Using $($matches[1])=$($matches[2])"
-            }
-          }
-
       # Update .NET 8 AMD64 Dockerfile
       - name: Update .NET 8 AMD64
         id: update-net8-amd64
         shell: pwsh
         env:
           DOCKERFILE_PATH: ${{ env.NET_8_AMD64_Dockerfile }}
-          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_8_NEXT_VERSION }}
         run: |
-          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "8"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 8 AMD64 update - No version detected"
           }
@@ -63,10 +50,10 @@ jobs:
         shell: pwsh
         env:
           DOCKERFILE_PATH: ${{ env.NET_8_ARM64_Dockerfile }}
-          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_8_NEXT_VERSION }}
         run: |
-          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "8"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 8 ARM64 update - No version detected"
           }
@@ -77,10 +64,10 @@ jobs:
         shell: pwsh
         env:
           DOCKERFILE_PATH: ${{ env.NET_9_AMD64_Dockerfile }}
-          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_9_NEXT_VERSION }}
         run: |
-          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "9"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 9 AMD64 update - No version detected"
           }
@@ -91,10 +78,10 @@ jobs:
         shell: pwsh
         env:
           DOCKERFILE_PATH: ${{ env.NET_9_ARM64_Dockerfile }}
-          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_9_NEXT_VERSION }}
         run: |
-          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "9"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 9 ARM64 update - No version detected"
           }
@@ -105,10 +92,10 @@ jobs:
         shell: pwsh
         env:
           DOCKERFILE_PATH: ${{ env.NET_10_AMD64_Dockerfile }}
-          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_10_NEXT_VERSION }}
         run: |
-          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "10"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 10 AMD64 update - No version detected"
           }
@@ -119,10 +106,10 @@ jobs:
         shell: pwsh
         env:
           DOCKERFILE_PATH: ${{ env.NET_10_ARM64_Dockerfile }}
-          NEXT_VERSION: ${{ steps.get-versions.outputs.NET_10_NEXT_VERSION }}
         run: |
-          if (-not [string]::IsNullOrEmpty("${{ env.NEXT_VERSION }}")) {
-            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion "${{ env.NEXT_VERSION }}"
+          $version = .\LambdaRuntimeDockerfiles\get-latest-aspnet-versions.ps1 -MajorVersion "10"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            .\LambdaRuntimeDockerfiles\update-dockerfile.ps1 -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
           } else {
             Write-Host "Skipping .NET 10 ARM64 update - No version detected"
           }
@@ -136,12 +123,22 @@ jobs:
           if (git status --porcelain) {
             git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
             git config --global user.name "aws-sdk-dotnet-automation"
-            $suffix=Get-Date -Format yyyy-MM-dd
-            $branch="chore/auto-update-Dockerfiles-${suffix}"
-            git checkout -b $branch
+            $branch="chore/auto-update-Dockerfiles-daily"
+            
+            # Check if the branch already exists remotely
+            $branchExists = git ls-remote --heads origin $branch
+            if ($branchExists) {
+              # Branch exists, check it out and update it
+              git fetch origin $branch
+              git checkout -B $branch origin/$branch
+            } else {
+              # Branch doesn't exist, create it
+              git checkout -b $branch
+            }
+            
             git add "**/*Dockerfile"
-            git commit -m "chore: Monthly ASP.NET Core version update in Dockerfiles"
-            git push origin $branch
+            git commit -m "chore: Daily ASP.NET Core version update in Dockerfiles"
+            git push --force-with-lease origin $branch
             
             # Write the branch name to GITHUB_OUTPUT for use in the PR step
             Add-Content -Path $env:GITHUB_OUTPUT -Value "BRANCH=$branch"
@@ -159,7 +156,7 @@ jobs:
         with:
           source_branch: ${{ steps.commit-push.outputs.BRANCH }}
           destination_branch: "dev"
-          pr_title: 'chore: Monthly ASP.NET Core version update in Dockerfiles'
+          pr_title: 'chore: Daily ASP.NET Core version update in Dockerfiles'
           pr_body: "This PR automatically updates the Dockerfiles to use the latest ASP.NET Core version.
             
             Verify that the Dockerfiles have correct versions and matching SHA512 checksums for ASP.NET Core runtime.
