@@ -123,27 +123,25 @@ jobs:
           if (git status --porcelain) {
             git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
             git config --global user.name "aws-sdk-dotnet-automation"
-            $branch="chore/auto-update-Dockerfiles-daily"
             
-            # Check if the branch already exists remotely
-            $branchExists = git ls-remote --heads origin $branch
-            if ($branchExists) {
-              # Branch exists, check it out and update it
-              git fetch origin $branch
-              git checkout -B $branch origin/$branch
-            } else {
-              # Branch doesn't exist, create it
-              git checkout -b $branch
-            }
+            # Generate timestamp for unique local branch name
+            $timestamp = Get-Date -Format "yyyyMMddHHmmss"
+            $localBranch = "chore/auto-update-Dockerfiles-daily-$timestamp"
+            $remoteBranch = "chore/auto-update-Dockerfiles-daily"
+            
+            # Always create a new unique local branch
+            git checkout -b $localBranch
             
             git add "**/*Dockerfile"
             git commit -m "chore: Daily ASP.NET Core version update in Dockerfiles"
-            git push --force-with-lease origin $branch
             
-            # Write the branch name to GITHUB_OUTPUT for use in the PR step
-            Add-Content -Path $env:GITHUB_OUTPUT -Value "BRANCH=$branch"
+            # Push local branch to remote branch (force push to consistent remote branch name)
+            git push --force-with-lease origin "${localBranch}:${remoteBranch}"
+            
+            # Write the remote branch name to GITHUB_OUTPUT for use in the PR step
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "BRANCH=$remoteBranch"
             Add-Content -Path $env:GITHUB_OUTPUT -Value "CHANGES_MADE=true"
-            echo "Changes committed and pushed to branch $branch"
+            echo "Changes committed to local branch $localBranch and pushed to remote branch $remoteBranch"
           } else {
             echo "No changes detected in Dockerfiles, skipping PR creation"
           }
