@@ -97,7 +97,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private const string ErrorContentType = "application/vnd.aws.lambda.error+json";
 
         private string _baseUrl = "/2018-06-01";
-        private System.Net.Http.HttpClient _httpClient;
+        private readonly System.Net.Http.HttpClient _httpClient;
         private InternalLogger _logger;
 
         public InternalRuntimeApiClient(System.Net.Http.HttpClient httpClient)
@@ -257,7 +257,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<SwaggerResponse<System.IO.Stream>> NextAsync(String endpointUrl, CancellationToken cancellationToken)
         {
-            this._logger.LogInformation("Starting InternalClient.NextAsync");
+            _logger.LogInformation("Starting InternalClient.NextAsync");
 
             var client_ = _httpClient;
             try
@@ -323,7 +323,7 @@ namespace Amazon.Lambda.RuntimeSupport
             }
             finally
             {
-                this._logger.LogInformation("Finished InternalClient.NextAsync");
+                _logger.LogInformation("Finished InternalClient.NextAsync");
             }
         }
 
@@ -343,7 +343,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<SwaggerResponse<StatusResponse>> ResponseAsync(string awsRequestId, System.IO.Stream outputStream, System.Threading.CancellationToken cancellationToken)
         {
-            this._logger.LogInformation("Starting InternalClient.ResponseAsync");
+            _logger.LogInformation("Starting InternalClient.ResponseAsync");
 
             if (awsRequestId == null)
                 throw new System.ArgumentNullException("awsRequestId");
@@ -368,7 +368,7 @@ namespace Amazon.Lambda.RuntimeSupport
                         request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
 
                         var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                        this._logger.LogInformation("Return from SendAsync");
+                        _logger.LogInformation("Return from SendAsync");
                         try
                         {
                             var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
@@ -468,7 +468,7 @@ namespace Amazon.Lambda.RuntimeSupport
             }
             finally
             {
-                this._logger.LogInformation("Finished InternalClient.ResponseAsync");
+                _logger.LogInformation("Finished InternalClient.ResponseAsync");
             }
         }
 
@@ -659,14 +659,34 @@ namespace Amazon.Lambda.RuntimeSupport
         }
     }
 
+    /// <summary>
+    /// Exception when an error occurs when communicating with the Lambda runtime API.
+    /// </summary>
     public partial class RuntimeApiClientException : System.Exception
     {
+        /// <summary>
+        /// Http status code from the Lambda runtime API.
+        /// </summary>
         public int StatusCode { get; private set; }
 
+        /// <summary>
+        /// Response from the Lambda runtime API.
+        /// </summary>
         public string Response { get; private set; }
 
+        /// <summary>
+        /// Headers from the Lambda runtime API error response.
+        /// </summary>
         public System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>> Headers { get; private set; }
 
+        /// <summary>
+        /// Instructs an instance of RuntimeApiClientException
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="statusCode"></param>
+        /// <param name="response"></param>
+        /// <param name="headers"></param>
+        /// <param name="innerException"></param>
         public RuntimeApiClientException(string message, int statusCode, string response, System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Exception innerException)
             : base(message + "\n\nStatus: " + statusCode + "\nResponse: \n" + response.Substring(0, response.Length >= 512 ? 512 : response.Length), innerException)
         {
@@ -675,16 +695,35 @@ namespace Amazon.Lambda.RuntimeSupport
             Headers = headers;
         }
 
+        /// <summary>
+        /// Returns a formatted string containing the HTTP response and base exception information.
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return string.Format("HTTP Response: \n\n{0}\n\n{1}", Response, base.ToString());
         }
     }
 
+    /// <summary>
+    /// Exception when an error occurs when communicating with the Lambda runtime API.
+    /// </summary>
     public partial class RuntimeApiClientException<TResult> : RuntimeApiClientException
     {
+        /// <summary>
+        /// The structured error response
+        /// </summary>
         public TResult Result { get; private set; }
 
+        /// <summary>
+        /// Instructs an instance of RuntimeApiClientException
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="statusCode"></param>
+        /// <param name="response"></param>
+        /// <param name="headers"></param>
+        /// <param name="result"></param>
+        /// <param name="innerException"></param>
         public RuntimeApiClientException(string message, int statusCode, string response, System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>> headers, TResult result, System.Exception innerException)
             : base(message, statusCode, response, headers, innerException)
         {

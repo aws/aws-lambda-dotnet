@@ -233,7 +233,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// it will break existing Lambda deployment packages which still use older version of ILambdaContext.
         /// </summary>
         /// <param name="iLambdaContextType">Type of context passed for the invocation.</param>
-        /// <exception cref="LambdaValidationException">Thrown when context doesn't contain required properties & methods.</exception>
+        /// <exception cref="LambdaValidationException">Thrown when context doesn't contain required properties and methods.</exception>
         internal static void ValidateILambdaContextType(Type iLambdaContextType)
         {
             if (iLambdaContextType == null)

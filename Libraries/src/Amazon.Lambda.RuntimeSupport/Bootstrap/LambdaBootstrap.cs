@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -24,7 +24,17 @@ using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
+    /// <summary>
+    /// Delegate for the handler that will be invoked for each event.
+    /// </summary>
+    /// <param name="invocation"></param>
+    /// <returns></returns>
     public delegate Task<InvocationResponse> LambdaBootstrapHandler(InvocationRequest invocation);
+
+    /// <summary>
+    /// Delegate for an initializer run during startup.
+    /// </summary>
+    /// <returns></returns>
     public delegate Task<bool> LambdaBootstrapInitializer();
 
     /// <summary>
@@ -44,7 +54,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private bool _ownsHttpClient;
         private InternalLogger _logger = InternalLogger.GetDefaultLogger();
 
-        private HttpClient _httpClient;
+        private readonly HttpClient _httpClient;
         private LambdaBootstrapConfiguration _configuration;
         internal IRuntimeApiClient Client { get; set; }
 
@@ -172,10 +182,10 @@ namespace Amazon.Lambda.RuntimeSupport
 
             if (_configuration.IsCallPreJit)
             {
-                this._logger.LogInformation("PreJit: CultureInfo");
+                _logger.LogInformation("PreJit: CultureInfo");
                 UserCodeInit.LoadStringCultureInfo();
 
-                this._logger.LogInformation("PreJit: Amazon.Lambda.Core");
+                _logger.LogInformation("PreJit: Amazon.Lambda.Core");
                 UserCodeInit.PreJitAssembly(typeof(Amazon.Lambda.Core.ILambdaContext).Assembly);
             }
 
@@ -193,7 +203,7 @@ namespace Amazon.Lambda.RuntimeSupport
             // Check if Initialization type is SnapStart, and invoke the snapshot restore logic.
             if (_configuration.IsInitTypeSnapstart)
             {
-                InternalLogger.GetDefaultLogger().LogInformation($"In LambdaBootstrap, Initializing with SnapStart.");
+                InternalLogger.GetDefaultLogger().LogInformation("In LambdaBootstrap, Initializing with SnapStart.");
 
                 object registry = null;
                 try
@@ -204,7 +214,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     Client.ConsoleLogger.FormattedWriteLine(
                         Amazon.Lambda.RuntimeSupport.Helpers.LogLevelLoggerWriter.LogLevel.Error.ToString(),
-                        $"Failed to retrieve snapshot hooks from Amazon.Lambda.Core.SnapshotRestore, " +
+                        "Failed to retrieve snapshot hooks from Amazon.Lambda.Core.SnapshotRestore, " +
                         $"this can be fixed by updating the version of Amazon.Lambda.Core: {ex}",
                         null);
                 }
@@ -257,7 +267,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         internal async Task InvokeOnceAsync(CancellationToken cancellationToken = default)
         {
-            this._logger.LogInformation($"Starting InvokeOnceAsync");
+            _logger.LogInformation("Starting InvokeOnceAsync");
             using (var invocation = await Client.GetNextInvocationAsync(cancellationToken))
             {
                 InvocationResponse response = null;
@@ -265,7 +275,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
                 try
                 {
-                    this._logger.LogInformation($"Starting invoking handler");
+                    _logger.LogInformation("Starting invoking handler");
                     response = await _handler(invocation);
                     invokeSucceeded = true;
                 }
@@ -276,12 +286,12 @@ namespace Amazon.Lambda.RuntimeSupport
                 }
                 finally
                 {
-                    this._logger.LogInformation($"Finished invoking handler");
+                    _logger.LogInformation("Finished invoking handler");
                 }
 
                 if (invokeSucceeded)
                 {
-                    this._logger.LogInformation($"Starting sending response");
+                    _logger.LogInformation("Starting sending response");
                     try
                     {
                         await Client.SendResponseAsync(invocation.LambdaContext.AwsRequestId, response?.OutputStream);
@@ -293,10 +303,10 @@ namespace Amazon.Lambda.RuntimeSupport
                             response.OutputStream?.Dispose();
                         }
 
-                        this._logger.LogInformation($"Finished sending response");
+                        _logger.LogInformation("Finished sending response");
                     }
                 }
-                this._logger.LogInformation($"Finished InvokeOnceAsync");
+                _logger.LogInformation("Finished InvokeOnceAsync");
             }
         }
 
@@ -392,6 +402,10 @@ namespace Amazon.Lambda.RuntimeSupport
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
+        /// <summary>
+        /// Dispose the LambdaBootstrap. If the bootstrap owns the HttpClient it will dispose the client.
+        /// </summary>
+        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -404,7 +418,9 @@ namespace Amazon.Lambda.RuntimeSupport
             }
         }
 
-        // This code added to correctly implement the disposable pattern.
+        /// <summary>
+        /// Dispose the LambdaBootstrap
+        /// </summary>
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.

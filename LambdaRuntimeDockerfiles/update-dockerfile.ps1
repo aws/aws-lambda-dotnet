@@ -12,7 +12,7 @@ function Update-Dockerfile ([string]$DockerfilePath, [string]$NextVersion) {
 
     $checksumUri = "https://dotnetcli.blob.core.windows.net/dotnet/checksums/${NextVersion}-sha.txt"
 
-    if ($NextVersion -match "^(\d+\.\d+\.\d+-preview\.\d+)") {
+    if ($NextVersion -match "^(\d+\.\d+\.\d+-preview\.\d+)" -or $NextVersion -match "^(\d+\.\d+\.\d+-rc\.\d+)" ) {
         $matchedVersion = $matches[1]
         $checksumUri = "https://dotnetcli.blob.core.windows.net/dotnet/checksums/${matchedVersion}-sha.txt"
     }

@@ -68,7 +68,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
     /// </summary>
     public class SimpleLoggerWriter : IConsoleLoggerWriter
     {
-        TextWriter _writer;
+        readonly TextWriter _writer;
 
         /// <summary>
         /// Default Constructor
@@ -301,15 +301,15 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         class WrapperTextWriter : TextWriter
         {
             private readonly TextWriter _innerWriter;
-            private string _defaultLogLevel;
+            private readonly string _defaultLogLevel;
 
-            private LogLevel _minmumLogLevel = LogLevel.Information;
+            private readonly LogLevel _minmumLogLevel = LogLevel.Information;
 
             enum LogFormatType { Default, Unformatted, Json }
 
-            private LogFormatType _logFormatType = LogFormatType.Default;
+            private readonly LogFormatType _logFormatType = LogFormatType.Default;
 
-            private ILogMessageFormatter _logMessageFormatter;
+            private readonly ILogMessageFormatter _logMessageFormatter;
 
             public string CurrentAwsRequestId { get; set; } = string.Empty;
 
@@ -421,10 +421,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             }
 
             #region WriteLine redirects to formatting
-            [CLSCompliant(false)]
             public override void WriteLine(ulong value) => FormattedWriteLine(value.ToString(FormatProvider));
 
-            [CLSCompliant(false)]
             public override void WriteLine(uint value) => FormattedWriteLine(value.ToString(FormatProvider));
 
 
@@ -463,8 +461,6 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             public override Task WriteLineAsync(char value) => FormattedWriteLineAsync(value.ToString());
 
-            public Task WriteLineAsync(char[] buffer) => FormattedWriteLineAsync(buffer == null ? String.Empty : new string(buffer));
-
             public override Task WriteLineAsync(char[] buffer, int index, int count) => FormattedWriteLineAsync(new string(buffer, index, count));
 
 
@@ -472,10 +468,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             public override Task WriteLineAsync() => FormattedWriteLineAsync(string.Empty);
 
 
-            public override void WriteLine(StringBuilder? value) => FormattedWriteLine(value?.ToString());
+            public override void WriteLine(StringBuilder value) => FormattedWriteLine(value?.ToString());
             public override void WriteLine(ReadOnlySpan<char> buffer) => FormattedWriteLine(new string(buffer));
             public override Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => FormattedWriteLineAsync(new string(buffer.Span));
-            public override Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default) => FormattedWriteLineAsync(value?.ToString());
+            public override Task WriteLineAsync(StringBuilder value, CancellationToken cancellationToken = default) => FormattedWriteLineAsync(value?.ToString());
 
             #endregion
 
@@ -498,10 +494,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             public override Task FlushAsync() => _innerWriter.FlushAsync();
 
-            [CLSCompliant(false)]
             public override void Write(ulong value) => _innerWriter.Write(value);
 
-            [CLSCompliant(false)]
             public override void Write(uint value) => _innerWriter.Write(value);
 
 
@@ -540,18 +534,16 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             public override Task WriteAsync(char[] buffer, int index, int count) => _innerWriter.WriteAsync(buffer, index, count);
 
-            public Task WriteAsync(char[] buffer) => _innerWriter.WriteAsync(buffer);
-
             public override Task WriteAsync(char value) => _innerWriter.WriteAsync(value);
 
 
             protected override void Dispose(bool disposing) => _innerWriter.Dispose();
 
-            public override void Write(StringBuilder? value) => _innerWriter.Write(value);
+            public override void Write(StringBuilder value) => _innerWriter.Write(value);
 
             public override void Write(ReadOnlySpan<char> buffer) => _innerWriter.Write(buffer);
 
-            public override Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default) => _innerWriter.WriteAsync(value, cancellationToken);
+            public override Task WriteAsync(StringBuilder value, CancellationToken cancellationToken = default) => _innerWriter.WriteAsync(value, cancellationToken);
 
             public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => _innerWriter.WriteAsync(buffer, cancellationToken);
 
