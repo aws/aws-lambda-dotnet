@@ -1,0 +1,18 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fix NullReferenceException when logging a null logging message with structured logging enabled."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Logging.AspNetCore",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fix NullReferenceException when logging a null logging message with structured logging enabled."
+      ]
+    }	
+  ]
+}

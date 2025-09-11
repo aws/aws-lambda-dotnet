@@ -70,6 +70,11 @@ namespace Microsoft.Extensions.Logging
                     }
                 }
 
+                if (messageTemplate == null)
+                {
+                    messageTemplate = formatter.Invoke(state, exception);
+                }
+
                 Amazon.Lambda.Core.LambdaLogger.Log(lambdaLogLevel, exception, messageTemplate, parameters.ToArray());
             }
             else
