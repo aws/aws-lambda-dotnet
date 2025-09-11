@@ -1,4 +1,4 @@
-﻿using Amazon.Lambda.RuntimeSupport.Helpers;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 using Amazon.Lambda.RuntimeSupport.Helpers.Logging;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using System;
@@ -101,6 +101,40 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Equal(formattedTimestamp, doc.RootElement.GetProperty("timestamp").GetString());
             Assert.Equal("Warning", doc.RootElement.GetProperty("level").GetString());
             Assert.Equal("Hello AWS", doc.RootElement.GetProperty("message").GetString());
+        }
+
+        [Fact]
+        public void FormatJsonNullMessageTemplate()
+        {
+            var timestamp = DateTime.UtcNow;
+            var formatter = new JsonLogMessageFormatter();
+            var state = new MessageState()
+            {
+                MessageTemplate = null,
+                AwsRequestId = "1234",
+                Level = Helpers.LogLevelLoggerWriter.LogLevel.Warning,
+                TimeStamp = timestamp
+            };
+
+            var json = formatter.FormatMessage(state);
+            var doc = JsonDocument.Parse(json);
+            Assert.Equal(string.Empty, doc.RootElement.GetProperty("message").GetString());
+            Assert.Equal("1234", doc.RootElement.GetProperty("requestId").GetString());
+
+            // Currently the arguments are ignored because they don't exist in the message template but 
+            // having arguments uses a different code path so we need to make sure a NPE doesn't happen.
+            state = new MessageState()
+            {
+                MessageTemplate = null,
+                MessageArguments = new object[] { true },
+                AwsRequestId = "1234",
+                Level = Helpers.LogLevelLoggerWriter.LogLevel.Warning,
+                TimeStamp = timestamp
+            };
+
+            json = formatter.FormatMessage(state);
+            Assert.Equal(string.Empty, doc.RootElement.GetProperty("message").GetString());
+            Assert.Equal("1234", doc.RootElement.GetProperty("requestId").GetString());
         }
 
         [Fact]

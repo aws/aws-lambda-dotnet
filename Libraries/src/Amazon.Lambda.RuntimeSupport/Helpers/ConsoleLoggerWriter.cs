@@ -401,7 +401,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
                     var messageState = new MessageState();
 
-                    messageState.MessageTemplate = messageTemplate;
+                    messageState.MessageTemplate = messageTemplate ?? string.Empty;
                     messageState.MessageArguments = args;
                     messageState.TimeStamp = DateTime.UtcNow;
                     messageState.AwsRequestId = CurrentAwsRequestId;

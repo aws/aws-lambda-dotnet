@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Xunit;
 
 namespace Amazon.Lambda.Tests
@@ -581,6 +582,46 @@ namespace Amazon.Lambda.Tests
 
         }
 
+        [Fact]
+        public void JsonLoggingWithNoOriginalFormat()
+        {
+            Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", "JSON");
+            try
+            {
+                using (var writer = new StringWriter())
+                {
+                    ConnectLoggingActionToLogger(message => writer.Write(message));
+
+                    var configuration = new ConfigurationBuilder()
+                        .AddJsonFile(GetAppSettingsPath("appsettings.json"))
+                        .Build();
+
+                    var loggerOptions = new LambdaLoggerOptions(configuration);
+                    var loggerFactory = new TestLoggerFactory()
+                        .AddLambdaLogger(loggerOptions);
+
+                    var logger = loggerFactory.CreateLogger("JSONLogging");
+
+                    logger.Log(LogLevel.Error, new EventId(1), new Dictionary<string, object>() { { "Param1", "Value1" } }, null, (state, e) =>
+                    {
+                        var sb = new StringBuilder();
+                        foreach(var kvp in state)
+                        {
+                            sb.AppendFormat("{0}:{1}\n", kvp.Key, kvp.Value);
+                        }
+                        return sb.ToString();
+                    });
+
+                    var text = writer.ToString();
+                    Assert.Contains("Param1:Value1", text);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AWS_LAMBDA_LOG_FORMAT", null);
+            }
+        }
+
         private static string GetAppSettingsPath(string fileName)
 		{
 			return Path.Combine(APPSETTINGS_DIR, fileName);
@@ -609,7 +650,7 @@ namespace Amazon.Lambda.Tests
             loggingWithLevelActionField.SetValue(null, loggingWithLevelAction);
 
             Action<string, Exception, string, object[]> loggingWithExceptionLevelAction = (level, exception, message, parameters) => {
-                var formattedMessage = $"{level}: {message}: parameter count: {parameters?.Length}\n{exception.Message}";
+                var formattedMessage = $"{level}: {message}: parameter count: {parameters?.Length}\n{exception?.Message}";
                 loggingAction(formattedMessage);
             };
 

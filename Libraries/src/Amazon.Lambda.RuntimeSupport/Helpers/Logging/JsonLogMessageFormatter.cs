@@ -1,4 +1,4 @@
-﻿#if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER
 using System;
 using System.Buffers;
 using System.Collections;
@@ -48,15 +48,15 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
             if (state.MessageArguments?.Length == 0)
             {
                 messageProperties = _emptyMessageProperties;
-                message = state.MessageTemplate;
+                message = state.MessageTemplate ?? string.Empty;
             }
             else
             {
                 // Parse the message template for any message properties like "{count}".
-                messageProperties = ParseProperties(state.MessageTemplate);
+                messageProperties = ParseProperties(state.MessageTemplate ?? string.Empty);
 
                 // Replace any message properties in the message template with the provided argument values.
-                message = ApplyMessageProperties(state.MessageTemplate, messageProperties, state.MessageArguments);
+                message = ApplyMessageProperties(state.MessageTemplate ?? string.Empty, messageProperties, state.MessageArguments);
             }
 
 
