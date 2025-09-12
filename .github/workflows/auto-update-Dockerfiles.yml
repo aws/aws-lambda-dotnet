@@ -1,0 +1,190 @@
+name: Auto-Update Lambda Dockerfiles Daily
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  # Run daily at midnight UTC
+  schedule:
+    - cron: '0 0 * * *'
+  # Allows to run this workflow manually from the Actions tab for testing
+  workflow_dispatch:
+    
+
+
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    env:
+      NET_8_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/amd64/Dockerfile"
+      NET_8_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net8/arm64/Dockerfile"
+      NET_9_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/amd64/Dockerfile"
+      NET_9_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net9/arm64/Dockerfile"
+      NET_10_AMD64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net10/amd64/Dockerfile"
+      NET_10_ARM64_Dockerfile: "LambdaRuntimeDockerfiles/Images/net10/arm64/Dockerfile"
+
+    steps:
+      # Checks-out the repository under $GITHUB_WORKSPACE
+      - uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 #v4.2.2
+        with:
+          ref: 'dev'
+
+      # Update .NET 8 AMD64 Dockerfile
+      - name: Update .NET 8 AMD64
+        id: update-net8-amd64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_8_AMD64_Dockerfile }}
+        run: |
+          $version = & "./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1" -MajorVersion "8"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            & "./LambdaRuntimeDockerfiles/update-dockerfile.ps1" -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+          } else {
+            Write-Host "Skipping .NET 8 AMD64 update - No version detected"
+          }
+
+      # Update .NET 8 ARM64 Dockerfile
+      - name: Update .NET 8 ARM64
+        id: update-net8-arm64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_8_ARM64_Dockerfile }}
+        run: |
+          $version = & "./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1" -MajorVersion "8"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            & "./LambdaRuntimeDockerfiles/update-dockerfile.ps1" -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+          } else {
+            Write-Host "Skipping .NET 8 ARM64 update - No version detected"
+          }
+
+      # Update .NET 9 AMD64 Dockerfile
+      - name: Update .NET 9 AMD64
+        id: update-net9-amd64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_9_AMD64_Dockerfile }}
+        run: |
+          $version = & "./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1" -MajorVersion "9"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            & "./LambdaRuntimeDockerfiles/update-dockerfile.ps1" -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+          } else {
+            Write-Host "Skipping .NET 9 AMD64 update - No version detected"
+          }
+
+      # Update .NET 9 ARM64 Dockerfile
+      - name: Update .NET 9 ARM64
+        id: update-net9-arm64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_9_ARM64_Dockerfile }}
+        run: |
+          $version = & "./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1" -MajorVersion "9"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            & "./LambdaRuntimeDockerfiles/update-dockerfile.ps1" -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+          } else {
+            Write-Host "Skipping .NET 9 ARM64 update - No version detected"
+          }
+
+      # Update .NET 10 AMD64 Dockerfile
+      - name: Update .NET 10 AMD64
+        id: update-net10-amd64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_10_AMD64_Dockerfile }}
+        run: |
+          $version = & "./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1" -MajorVersion "10"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            & "./LambdaRuntimeDockerfiles/update-dockerfile.ps1" -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+          } else {
+            Write-Host "Skipping .NET 10 AMD64 update - No version detected"
+          }
+
+      # Update .NET 10 ARM64 Dockerfile
+      - name: Update .NET 10 ARM64
+        id: update-net10-arm64
+        shell: pwsh
+        env:
+          DOCKERFILE_PATH: ${{ env.NET_10_ARM64_Dockerfile }}
+        run: |
+          $version = & "./LambdaRuntimeDockerfiles/get-latest-aspnet-versions.ps1" -MajorVersion "10"
+          if (-not [string]::IsNullOrEmpty($version)) {
+            & "./LambdaRuntimeDockerfiles/update-dockerfile.ps1" -DockerfilePath "${{ env.DOCKERFILE_PATH }}" -NextVersion $version
+          } else {
+            Write-Host "Skipping .NET 10 ARM64 update - No version detected"
+          }
+
+      # Commit changes and create a branch
+      - name: Commit and Push
+        id: commit-push
+        shell: pwsh
+        run: |
+          # Check if there are any changes to commit
+          if (git status --porcelain) {
+            git config --global user.email "github-aws-sdk-dotnet-automation@amazon.com"
+            git config --global user.name "aws-sdk-dotnet-automation"
+            
+            # Generate timestamp for unique local branch name
+            $timestamp = Get-Date -Format "yyyyMMddHHmmss"
+            $localBranch = "chore/auto-update-Dockerfiles-daily-$timestamp"
+            $remoteBranch = "chore/auto-update-Dockerfiles-daily"
+            
+            # Always create a new unique local branch
+            git checkout -b $localBranch
+            
+            git add "**/*Dockerfile"
+            git commit -m "chore: Daily ASP.NET Core version update in Dockerfiles"
+            
+            # Push local branch to remote branch (force push to consistent remote branch name)
+            git push --force-with-lease origin "${localBranch}:${remoteBranch}"
+            
+            # Write the remote branch name to GITHUB_OUTPUT for use in the PR step
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "BRANCH=$remoteBranch"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "CHANGES_MADE=true"
+            echo "Changes committed to local branch $localBranch and pushed to remote branch $remoteBranch"
+          } else {
+            echo "No changes detected in Dockerfiles, skipping PR creation"
+          }
+
+      # Create a Pull Request
+      - name: Create Pull Request
+        id: pull-request
+        if: ${{ steps.commit-push.outputs.CHANGES_MADE == 'true' }}
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: ${{ steps.commit-push.outputs.BRANCH }}
+          destination_branch: "dev"
+          pr_title: 'chore: Daily ASP.NET Core version update in Dockerfiles'
+          pr_body: "This PR automatically updates the Dockerfiles to use the latest ASP.NET Core version.
+            
+            Verify that the Dockerfiles have correct versions and matching SHA512 checksums for ASP.NET Core runtime.
+            
+            All .NET versions: https://dotnet.microsoft.com/en-us/download/dotnet
+            
+            *Description of changes:*
+            \n${{ format
+                (
+                  '{0}\n{1}\n{2}\n{3}\n{4}\n{5}',
+                  join(steps.update-net8-amd64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net8-arm64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net9-amd64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net9-arm64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net10-amd64.outputs.MESSAGE, '\n'),
+                  join(steps.update-net10-arm64.outputs.MESSAGE, '\n')
+                )
+            }}"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          
+      # Add "Release Not Needed" label to the PR
+      - name: Add Release Not Needed label
+        if: ${{ steps.pull-request.outputs.pr_number }}
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.pull-request.outputs.pr_number }},
+              labels: ['Release Not Needed']
+            })
