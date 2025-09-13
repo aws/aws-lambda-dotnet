@@ -69,27 +69,37 @@ function Get-LatestAspNetVersion {
         # Otherwise get the latest rc version
         elseif ($rcVersions.Count -gt 0) {
             $rcObjs = @()
+            $maxRcParts = 0
             foreach ($ver in $rcVersions) {
                 # Match versions like 10.0.0-rc.1.25451.107 or 10.0.0-rc.1
-                if ($ver -match '(\d+)\.(\d+)\.(\d+)-rc\.(\d+)(?:\.(\d+)\.(\d+))?') {
+                if ($ver -match '^(\d+)\.(\d+)\.(\d+)-rc\.(.+)$') {
                     $major = [int]$matches[1]
                     $minor = [int]$matches[2]
                     $patch = [int]$matches[3]
-                    $rc = [int]$matches[4]
-                    $extra1 = if ($matches[5]) { [int]$matches[5] } else { 0 }
-                    $extra2 = if ($matches[6]) { [int]$matches[6] } else { 0 }
+                    $rcParts = $matches[4] -split '\.'
+                    $rcNumbers = $rcParts | ForEach-Object { [int]$_ }
+                    if ($rcNumbers.Count -gt $maxRcParts) { $maxRcParts = $rcNumbers.Count }
                     $rcObj = New-Object PSObject
                     Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "OriginalVersion" -Value $ver
                     Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "Major" -Value $major
                     Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "Minor" -Value $minor
                     Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "Patch" -Value $patch
-                    Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "RC" -Value $rc
-                    Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "Extra1" -Value $extra1
-                    Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "Extra2" -Value $extra2
+                    for ($i = 0; $i -lt $rcNumbers.Count; $i++) {
+                        Add-Member -InputObject $rcObj -MemberType NoteProperty -Name ("RC$i") -Value $rcNumbers[$i]
+                    }
                     $rcObjs += $rcObj
                 }
             }
-            $sortedRCs = $rcObjs | Sort-Object -Property Major, Minor, Patch, RC, Extra1, Extra2 -Descending
+            # Pad missing RC fields with 0 for sorting
+            foreach ($obj in $rcObjs) {
+                for ($i = 0; $i -lt $maxRcParts; $i++) {
+                    if (-not ($obj.PSObject.Properties.Name -contains ("RC$i"))) {
+                        Add-Member -InputObject $obj -MemberType NoteProperty -Name ("RC$i") -Value 0
+                    }
+                }
+            }
+            $sortProps = @("Major", "Minor", "Patch") + @(for ($i = 0; $i -lt $maxRcParts; $i++) { "RC$i" })
+            $sortedRCs = $rcObjs | Sort-Object -Property $sortProps -Descending
             if ($sortedRCs.Count -gt 0) {
                 $latestVersion = $sortedRCs[0].OriginalVersion
             } else {
