@@ -33,10 +33,13 @@ function Get-LatestAspNetVersion {
         # Separate release and preview versions
         $releaseVersions = @()
         $previewVersions = @()
+        $rcVersions = @()
         
         foreach ($ver in $versions) {
             if ($ver -match '-preview') {
                 $previewVersions += $ver
+            } elseif ($ver -match '-rc') {
+                $rcVersions += $ver
             } else {
                 $releaseVersions += $ver
             }
@@ -45,61 +48,76 @@ function Get-LatestAspNetVersion {
         # If we have release versions, get the latest
         if ($releaseVersions.Count -gt 0) {
             $verObjects = @()
-            
             foreach ($ver in $releaseVersions) {
                 try {
                     $verObj = New-Object PSObject
                     Add-Member -InputObject $verObj -MemberType NoteProperty -Name "OriginalVersion" -Value $ver
-                    
-                    # Convert to Version object for proper comparison
                     $versionObj = [Version]$ver
                     Add-Member -InputObject $verObj -MemberType NoteProperty -Name "Version" -Value $versionObj
-                    
                     $verObjects += $verObj
                 } catch {
                     Write-Host "Warning: Could not parse version $ver, skipping."
                 }
             }
-            
-            # Sort by version (descending) and get the first one
             $sortedVersions = $verObjects | Sort-Object -Property Version -Descending
-            
             if ($sortedVersions.Count -gt 0) {
                 $latestVersion = $sortedVersions[0].OriginalVersion
             } else {
                 $latestVersion = $null
             }
         }
+        # Otherwise get the latest rc version
+        elseif ($rcVersions.Count -gt 0) {
+            $rcObjs = @()
+            foreach ($ver in $rcVersions) {
+                # Match versions like 10.0.0-rc.1.25451.107 or 10.0.0-rc.1
+                if ($ver -match '(\d+)\.(\d+)\.(\d+)-rc\.(\d+)(?:\.(\d+)\.(\d+))?') {
+                    $major = [int]$matches[1]
+                    $minor = [int]$matches[2]
+                    $patch = [int]$matches[3]
+                    $rc = [int]$matches[4]
+                    $extra1 = if ($matches[5]) { [int]$matches[5] } else { 0 }
+                    $extra2 = if ($matches[6]) { [int]$matches[6] } else { 0 }
+                    $rcObj = New-Object PSObject
+                    Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "OriginalVersion" -Value $ver
+                    Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "Major" -Value $major
+                    Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "Minor" -Value $minor
+                    Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "Patch" -Value $patch
+                    Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "RC" -Value $rc
+                    Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "Extra1" -Value $extra1
+                    Add-Member -InputObject $rcObj -MemberType NoteProperty -Name "Extra2" -Value $extra2
+                    $rcObjs += $rcObj
+                }
+            }
+            $sortedRCs = $rcObjs | Sort-Object -Property Major, Minor, Patch, RC, Extra1, Extra2 -Descending
+            if ($sortedRCs.Count -gt 0) {
+                $latestVersion = $sortedRCs[0].OriginalVersion
+            } else {
+                $latestVersion = ($rcVersions | Sort-Object)[-1]
+            }
+        }
         # Otherwise get the latest preview version
         elseif ($previewVersions.Count -gt 0) {
-            # For preview versions like "10.0.0-preview.5.25277.114"
             $previewObjs = @()
-            
             foreach ($ver in $previewVersions) {
                 if ($ver -match '(\d+)\.(\d+)\.(\d+)-preview\.(\d+)') {
                     $major = [int]$matches[1]
                     $minor = [int]$matches[2]
                     $patch = [int]$matches[3]
                     $preview = [int]$matches[4]
-                    
                     $previewObj = New-Object PSObject
                     Add-Member -InputObject $previewObj -MemberType NoteProperty -Name "OriginalVersion" -Value $ver
                     Add-Member -InputObject $previewObj -MemberType NoteProperty -Name "Major" -Value $major
                     Add-Member -InputObject $previewObj -MemberType NoteProperty -Name "Minor" -Value $minor
                     Add-Member -InputObject $previewObj -MemberType NoteProperty -Name "Patch" -Value $patch
                     Add-Member -InputObject $previewObj -MemberType NoteProperty -Name "Preview" -Value $preview
-                    
                     $previewObjs += $previewObj
                 }
             }
-            
-            # Sort by version components
             $sortedPreviews = $previewObjs | Sort-Object -Property Major, Minor, Patch, Preview -Descending
-            
             if ($sortedPreviews.Count -gt 0) {
                 $latestVersion = $sortedPreviews[0].OriginalVersion
             } else {
-                # Fallback - just take the last one alphabetically
                 $latestVersion = ($previewVersions | Sort-Object)[-1]
             }
         }
