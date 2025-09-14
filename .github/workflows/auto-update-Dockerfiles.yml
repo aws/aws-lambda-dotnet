@@ -139,7 +139,7 @@ jobs:
             git push origin --delete $remoteBranch 2>$null
             
             # Push local branch to remote branch (force push to consistent remote branch name)
-            git push --force-with-lease origin "${localBranch}:${remoteBranch}"
+            git push --force origin "${localBranch}:${remoteBranch}"
             
             # Write the remote branch name to GITHUB_OUTPUT for use in the PR step
             Add-Content -Path $env:GITHUB_OUTPUT -Value "BRANCH=$remoteBranch"
