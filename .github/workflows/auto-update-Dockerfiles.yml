@@ -135,6 +135,9 @@ jobs:
             git add "**/*Dockerfile"
             git commit -m "chore: Daily ASP.NET Core version update in Dockerfiles"
             
+            # Always delete the remote branch before pushing to avoid stale branch errors
+            git push origin --delete $remoteBranch 2>$null
+            
             # Push local branch to remote branch (force push to consistent remote branch name)
             git push --force-with-lease origin "${localBranch}:${remoteBranch}"
             
