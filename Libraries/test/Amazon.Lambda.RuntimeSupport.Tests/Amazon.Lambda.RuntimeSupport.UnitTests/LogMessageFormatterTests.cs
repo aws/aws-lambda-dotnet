@@ -133,6 +133,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             };
 
             json = formatter.FormatMessage(state);
+            doc = JsonDocument.Parse(json);
             Assert.Equal(string.Empty, doc.RootElement.GetProperty("message").GetString());
             Assert.Equal("1234", doc.RootElement.GetProperty("requestId").GetString());
         }
