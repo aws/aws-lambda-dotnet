@@ -1,3 +1,10 @@
+## Release 2025-09-16
+
+### Amazon.Lambda.RuntimeSupport (1.13.3)
+* Fix NullReferenceException when logging a null logging message with structured logging enabled.
+### Amazon.Lambda.Logging.AspNetCore (4.1.1)
+* Fix NullReferenceException when logging a null logging message with structured logging enabled.
+
 ## Release 2025-08-01
 
 ### Amazon.Lambda.RuntimeSupport (1.13.2)
