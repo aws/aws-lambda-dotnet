@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -47,6 +47,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 },
                 {
                     RuntimeApiHeaders.HeaderInvokedFunctionArn, new List<string> {"invoked_function_arn"}
+                },
+                {
+                    RuntimeApiHeaders.HeaderAwsTenantId, new List<string> {"tenant_id"}
                 }
             };
             _testRuntimeApiClient = new TestRuntimeApiClient(_environmentVariables, headers);
@@ -80,6 +83,18 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             }
             Assert.False(_testInitializer.InitializerWasCalled);
             Assert.False(_testFunction.HandlerWasCalled);
+        }
+
+        [Fact]
+        public async Task ConfirmRuntimeApiHeadersInContext()
+        {
+
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerConfirmContextAsync, null))
+            {
+                bootstrap.Client = _testRuntimeApiClient;
+                await bootstrap.RunAsync(_testFunction.CancellationSource.Token);
+            }
+            Assert.True(_testFunction.HandlerWasCalled);
         }
 
         [Fact]

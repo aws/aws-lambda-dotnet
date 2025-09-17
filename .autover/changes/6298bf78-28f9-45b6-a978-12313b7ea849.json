@@ -1,0 +1,18 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Add missing TraceId property on the ILambdaContext"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Add missing TraceId property on the ILambdaContext"
+      ]
+    }	
+  ]
+}

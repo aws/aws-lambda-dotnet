@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -110,7 +110,7 @@ namespace Amazon.Lambda.RuntimeSupport
             SwaggerResponse<Stream> response = await _internalClient.NextAsync(cancellationToken);
 
             var headers = new RuntimeApiHeaders(response.Headers);
-            _consoleLoggerRedirector.SetCurrentAwsRequestId(headers.AwsRequestId);
+            _consoleLoggerRedirector.SetRuntimeHeaders(headers);
 
             var lambdaContext = new LambdaContext(headers, LambdaEnvironment, _consoleLoggerRedirector);
             return new InvocationRequest

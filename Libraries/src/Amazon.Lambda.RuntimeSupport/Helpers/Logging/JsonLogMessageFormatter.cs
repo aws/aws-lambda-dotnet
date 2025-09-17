@@ -19,7 +19,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         private static readonly UTF8Encoding UTF8NoBomNoThrow = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
         // Options used when serializing any message property values as a JSON to be added to the structured log message.
-        private JsonSerializerOptions _jsonSerializationOptions;
+        private readonly JsonSerializerOptions _jsonSerializationOptions;
 
         /// <summary>
         /// Constructs an instance of JsonLogMessageFormatter.
@@ -78,7 +78,12 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
             {
                 writer.WriteString("requestId", state.AwsRequestId);
             }
-            
+
+            if (!string.IsNullOrEmpty(state.TenantId))
+            {
+                writer.WriteString("tenantId", state.TenantId);
+            }
+
             if (!string.IsNullOrEmpty(state.TraceId))
             {
                 writer.WriteString("traceId", state.TraceId);
