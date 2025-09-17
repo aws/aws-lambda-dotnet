@@ -13,6 +13,13 @@
       "ChangelogMessages": [
         "Add missing TraceId property on the ILambdaContext"
       ]
-    }	
+    },
+    {
+      "Name": "Amazon.Lambda.TestUtilities",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Add missing TraceId property on the ILambdaContext"
+      ]
+    }		
   ]
 }
