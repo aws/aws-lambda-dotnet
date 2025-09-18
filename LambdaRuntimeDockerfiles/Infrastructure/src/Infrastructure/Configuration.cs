@@ -29,9 +29,15 @@ internal class Configuration
     public string GitHubOwner { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_OWNER");
     public string GitHubRepository { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_NAME");
     public string GitHubBranch { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_BRANCH");
+    
+    // Staging repo configuration
+    public string GitHubOwnerStaging { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_OWNER_STAGING");
+    public string GitHubRepositoryStaging { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_NAME_STAGING");
+    public string GitHubBranchStaging { get; } = Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_BRANCH_STAGING");
+    
     public Ecrs Ecrs { get; } = new Ecrs();
     public const string ProjectRoot = "LambdaRuntimeDockerfiles/Infrastructure/src/Infrastructure";
-    public static readonly string ProjectName = "aws-lambda-container-images";
+    public string ProjectName { get; } = "aws-lambda-container-images";
 
     public readonly FrameworkConfiguration[] Frameworks = new[]
     {

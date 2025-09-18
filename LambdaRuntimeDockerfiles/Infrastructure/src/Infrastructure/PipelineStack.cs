@@ -34,6 +34,9 @@ public class PipelineStack : Stack
         string id,
         Configuration configuration,
         FrameworkConfiguration frameworkConfiguration,
+        string gitHubOwner,
+        string gitHubRepository,
+        string gitHubBranch,
         IStackProps props = null) : base(scope, id, props)
     {
         var sourceArtifact = new Artifact_();
@@ -47,11 +50,11 @@ public class PipelineStack : Stack
 
         var sourceAction = new GitHubSourceAction(new GitHubSourceActionProps
         {
-            ActionName = configuration.GitHubRepository,
+            ActionName = gitHubRepository,
             Output = sourceArtifact,
-            Owner = configuration.GitHubOwner,
-            Repo = configuration.GitHubRepository,
-            Branch = configuration.GitHubBranch,
+            Owner = gitHubOwner,
+            Repo = gitHubRepository,
+            Branch = gitHubBranch,
             Trigger = GitHubTrigger.WEBHOOK,
             OauthToken = SecretValue.SecretsManager(configuration.GitHubTokenSecretName, new SecretsManagerSecretOptions
             {
@@ -62,7 +65,7 @@ public class PipelineStack : Stack
         var pipeline = new Pipeline(this, "CodePipeline", new PipelineProps
         {
             PipelineType = PipelineType.V2,
-            PipelineName = $"{Configuration.ProjectName}-{frameworkConfiguration.Framework}",
+            PipelineName = id,
             RestartExecutionOnUpdate = true,
             Stages =
             [
@@ -91,9 +94,9 @@ public class PipelineStack : Stack
             },
             Source = Source.GitHub(new GitHubSourceProps
             {
-                Owner = configuration.GitHubOwner,
-                Repo = configuration.GitHubRepository,
-                BranchOrRef = configuration.GitHubBranch
+                Owner = gitHubOwner,
+                Repo = gitHubRepository,
+                BranchOrRef = gitHubBranch
             }),
             EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
             {
@@ -130,9 +133,9 @@ public class PipelineStack : Stack
                 },
                 Source = Source.GitHub(new GitHubSourceProps
                 {
-                    Owner = configuration.GitHubOwner,
-                    Repo = configuration.GitHubRepository,
-                    BranchOrRef = configuration.GitHubBranch
+                    Owner = gitHubOwner,
+                    Repo = gitHubRepository,
+                    BranchOrRef = gitHubBranch
                 }),
                 EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
                 {
@@ -174,9 +177,9 @@ public class PipelineStack : Stack
             },
             Source = Source.GitHub(new GitHubSourceProps
             {
-                Owner = configuration.GitHubOwner,
-                Repo = configuration.GitHubRepository,
-                BranchOrRef = configuration.GitHubBranch
+                Owner = gitHubOwner,
+                Repo = gitHubRepository,
+                BranchOrRef = gitHubBranch
             }),
             EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
             {
@@ -224,9 +227,9 @@ public class PipelineStack : Stack
             },
             Source = Source.GitHub(new GitHubSourceProps
             {
-                Owner = configuration.GitHubOwner,
-                Repo = configuration.GitHubRepository,
-                BranchOrRef = configuration.GitHubBranch
+                Owner = gitHubOwner,
+                Repo = gitHubRepository,
+                BranchOrRef = gitHubBranch
             }),
             EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
             {
@@ -338,9 +341,9 @@ public class PipelineStack : Stack
                 },
                 Source = Source.GitHub(new GitHubSourceProps
                 {
-                    Owner = configuration.GitHubOwner,
-                    Repo = configuration.GitHubRepository,
-                    BranchOrRef = configuration.GitHubBranch
+                    Owner = gitHubOwner,
+                    Repo = gitHubRepository,
+                    BranchOrRef = gitHubBranch
                 }),
                 EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
                 {
@@ -387,9 +390,9 @@ public class PipelineStack : Stack
                 },
                 Source = Source.GitHub(new GitHubSourceProps
                 {
-                    Owner = configuration.GitHubOwner,
-                    Repo = configuration.GitHubRepository,
-                    BranchOrRef = configuration.GitHubBranch
+                    Owner = gitHubOwner,
+                    Repo = gitHubRepository,
+                    BranchOrRef = gitHubBranch
                 }),
                 EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
                 {
@@ -447,9 +450,9 @@ public class PipelineStack : Stack
                 },
                 Source = Source.GitHub(new GitHubSourceProps
                 {
-                    Owner = configuration.GitHubOwner,
-                    Repo = configuration.GitHubRepository,
-                    BranchOrRef = configuration.GitHubBranch
+                    Owner = gitHubOwner,
+                    Repo = gitHubRepository,
+                    BranchOrRef = gitHubBranch
                 }),
                 EnvironmentVariables = new Dictionary<string, IBuildEnvironmentVariable>
                 {
