@@ -65,9 +65,19 @@ public class SelfMutatingPipelineStack : Stack
                 { "AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL",
                     new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
                     System.Environment.GetEnvironmentVariable("AWS_LAMBDA_DOTNET_FRAMEWORK_CHANNEL") ?? string.Empty } },
+                { "AWS_LAMBDA_GITHUB_REPO_OWNER_STAGING",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_OWNER_STAGING") ?? string.Empty } },
+                { "AWS_LAMBDA_GITHUB_REPO_NAME_STAGING",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_NAME_STAGING") ?? string.Empty } },
+                { "AWS_LAMBDA_GITHUB_REPO_BRANCH_STAGING",
+                    new BuildEnvironmentVariable { Type = BuildEnvironmentVariableType.PLAINTEXT, Value =
+                    System.Environment.GetEnvironmentVariable("AWS_LAMBDA_GITHUB_REPO_BRANCH_STAGING") ?? string.Empty } },
             };
 
         // Self mutation
+        
         var pipeline = new CodePipeline(this, "SelfMutatingPipeline", new CodePipelineProps
         {
             PipelineName = id,
@@ -114,6 +124,6 @@ public class SelfMutatingPipelineStack : Stack
         });
 
         // Add a stage in the pipeline to deploy the Lambda container pipelines
-        pipeline.AddStage(new PipelinesStage(this, Configuration.ProjectName, configuration));
+        pipeline.AddStage(new PipelinesStage(this, configuration.ProjectName, configuration));
     }
 }

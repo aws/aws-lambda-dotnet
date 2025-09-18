@@ -14,12 +14,37 @@ internal class PipelinesStage : Stage
         Configuration configuration,
         IStageProps props = null) : base(scope, id, props)
     {
+        // Create pipelines for main repository
+        CreatePipelinesForRepository(configuration, 
+            configuration.ProjectName,
+            configuration.GitHubOwner, 
+            configuration.GitHubRepository, 
+            configuration.GitHubBranch);
+        
+        // Create pipelines for staging repository
+        CreatePipelinesForRepository(configuration,
+            $"{configuration.ProjectName}-staging",
+            configuration.GitHubOwnerStaging,
+            configuration.GitHubRepositoryStaging,
+            configuration.GitHubBranchStaging);
+    }
+
+    private void CreatePipelinesForRepository(
+        Configuration configuration, 
+        string pipelinePrefix,
+        string gitHubOwner, 
+        string gitHubRepository, 
+        string gitHubBranch)
+    {
         for (var i = 0; i < configuration.Frameworks.Length; i++)
         {
             new PipelineStack(this,
-                configuration.Frameworks[i].Framework,
+                $"{pipelinePrefix}-{configuration.Frameworks[i].Framework}",
                 configuration,
                 configuration.Frameworks[i],
+                gitHubOwner,
+                gitHubRepository,
+                gitHubBranch,
                 new StackProps
                 {
                     TerminationProtection = true,
