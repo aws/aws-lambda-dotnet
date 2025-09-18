@@ -47,7 +47,7 @@ public class PipelineStack : Stack
 
         var sourceAction = new GitHubSourceAction(new GitHubSourceActionProps
         {
-            ActionName = configuration.GitHubRepository,
+            ActionName = configuration.GitHubRepository + DateTime.Now.Ticks.ToString(),
             Output = sourceArtifact,
             Owner = configuration.GitHubOwner,
             Repo = configuration.GitHubRepository,
