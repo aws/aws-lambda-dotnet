@@ -1,4 +1,4 @@
-﻿#if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER
 using System;
 
 namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
@@ -18,6 +18,11 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers.Logging
         /// if logging before the first event.
         /// </summary>
         public string AwsRequestId { get; set; }
+
+        /// <summary>
+        /// Gets the tenant id for the Lambda function.
+        /// </summary>
+        public string TenantId { get; set; }
 
         /// <summary>
         /// The current trace id if available.

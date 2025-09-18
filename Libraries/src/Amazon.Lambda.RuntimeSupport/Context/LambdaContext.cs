@@ -54,8 +54,6 @@ namespace Amazon.Lambda.RuntimeSupport
             _lambdaEnvironment.SetXAmznTraceId(_runtimeApiHeaders.TraceId);
         }
 
-        // TODO If/When Amazon.Lambda.Core is major versioned, add this to ILambdaContext.
-        // Until then function code can access it via the _X_AMZN_TRACE_ID environment variable set by LambdaBootstrap.
         public string TraceId => _runtimeApiHeaders.TraceId;
 
         public string AwsRequestId => _runtimeApiHeaders.AwsRequestId;
@@ -79,5 +77,7 @@ namespace Amazon.Lambda.RuntimeSupport
         public int MemoryLimitInMB => _memoryLimitInMB;
 
         public TimeSpan RemainingTime => TimeSpan.FromMilliseconds(_deadlineMs - (_dateTimeHelper.UtcNow - UnixEpoch).TotalMilliseconds);
+
+        public string TenantId => _runtimeApiHeaders.TenantId;
     }
 }

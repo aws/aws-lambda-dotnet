@@ -1,3 +1,12 @@
+## Release 2025-09-17
+
+### Amazon.Lambda.RuntimeSupport (1.13.4)
+* Add missing TraceId property on the ILambdaContext
+### Amazon.Lambda.Core (2.7.1)
+* Add missing TraceId property on the ILambdaContext
+### Amazon.Lambda.TestUtilities (3.0.1)
+* Add missing TraceId property on the ILambdaContext
+
 ## Release 2025-09-16
 
 ### Amazon.Lambda.RuntimeSupport (1.13.3)

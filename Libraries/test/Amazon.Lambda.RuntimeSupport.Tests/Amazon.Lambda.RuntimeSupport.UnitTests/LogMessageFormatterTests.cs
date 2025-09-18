@@ -80,6 +80,51 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
+        public void FormatTenantId()
+        {
+            var timestamp = DateTime.UtcNow;
+            var formattedTimestamp = timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+            var formatter = new JsonLogMessageFormatter();
+
+            // Test without a TenantId
+            var state = new MessageState()
+            {
+                AwsRequestId = "1234",
+                TraceId = "4321",
+                Level = Helpers.LogLevelLoggerWriter.LogLevel.Warning,
+                MessageTemplate = "Simple Log Message",
+                MessageArguments = null,
+                TimeStamp = timestamp
+            };
+
+            var json = formatter.FormatMessage(state);
+            var doc = JsonDocument.Parse(json);
+
+            Assert.Equal("1234", doc.RootElement.GetProperty("requestId").GetString());
+            Assert.Equal("4321", doc.RootElement.GetProperty("traceId").GetString());
+            Assert.False(doc.RootElement.TryGetProperty("tenantId", out _));
+
+            // Test with a TenantId
+            state = new MessageState()
+            {
+                AwsRequestId = "1234",
+                TraceId = "4321",
+                TenantId = "ten",
+                Level = Helpers.LogLevelLoggerWriter.LogLevel.Warning,
+                MessageTemplate = "Simple Log Message",
+                MessageArguments = null,
+                TimeStamp = timestamp
+            };
+
+            json = formatter.FormatMessage(state);
+            doc = JsonDocument.Parse(json);
+
+            Assert.Equal("1234", doc.RootElement.GetProperty("requestId").GetString());
+            Assert.Equal("4321", doc.RootElement.GetProperty("traceId").GetString());
+            Assert.Equal("ten", doc.RootElement.GetProperty("tenantId").GetString());
+        }
+
+        [Fact]
         public void FormatJsonWithStringMessageProperties()
         {
             var timestamp = DateTime.UtcNow;

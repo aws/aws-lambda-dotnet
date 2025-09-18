@@ -63,4 +63,5 @@ internal class SnapStartEmptyLambdaContext : ILambdaContext, ICognitoIdentity, I
     public IDictionary<string, string> Environment { get; } = new Dictionary<string, string>();
     public IClientApplication Client { get; }
     public IDictionary<string, string> Custom { get; } = new Dictionary<string, string>();
+    public string TenantId { get; }
 }

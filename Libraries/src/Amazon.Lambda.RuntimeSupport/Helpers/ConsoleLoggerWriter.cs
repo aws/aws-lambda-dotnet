@@ -34,10 +34,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
     public interface IConsoleLoggerWriter
     {
         /// <summary>
-        /// The current aws request id
+        /// The runtime headers for the current event to be added to log messages.
         /// </summary>
-        /// <param name="awsRequestId">The AWS request id for the function invocation added to each log message.</param>
-        void SetCurrentAwsRequestId(string awsRequestId);
+        /// <param name="runtimeApiHeaders">The headers containing invocation specific information that can be during log formatting.</param>
+        void SetRuntimeHeaders(IRuntimeApiHeaders runtimeApiHeaders);
 
         /// <summary>
         /// Format message with default log level
@@ -99,7 +99,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         }
 
         /// <inheritdoc/>
-        public void SetCurrentAwsRequestId(string awsRequestId)
+        public void SetRuntimeHeaders(IRuntimeApiHeaders runtimeApiHeaders)
         {
         }
 
@@ -268,10 +268,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         }
 
         /// <inheritdoc/>
-        public void SetCurrentAwsRequestId(string awsRequestId)
+        public void SetRuntimeHeaders(IRuntimeApiHeaders runtimeApiHeaders)
         {
-            _wrappedStdOutWriter.CurrentAwsRequestId = awsRequestId;
-            _wrappedStdErrorWriter.CurrentAwsRequestId = awsRequestId;
+            _wrappedStdOutWriter.CurrentRuntimeApiHeaders = runtimeApiHeaders;
+            _wrappedStdErrorWriter.CurrentRuntimeApiHeaders = runtimeApiHeaders;
         }
 
         /// <inheritdoc/>
@@ -311,7 +311,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             private readonly ILogMessageFormatter _logMessageFormatter;
 
-            public string CurrentAwsRequestId { get; set; } = string.Empty;
+            public IRuntimeApiHeaders CurrentRuntimeApiHeaders { get; set; }
 
             /// <summary>
             /// This is typically set to either Console.Out or Console.Error to make sure we acquiring a lock
@@ -388,7 +388,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                 FormattedWriteLine(_defaultLogLevel, (Exception)null, message);
             }
 
-            internal void FormattedWriteLine(string level, Exception exeception, string messageTemplate, params object[] args)
+            internal void FormattedWriteLine(string level, Exception exception, string messageTemplate, params object[] args)
             {
                 lock(LockObject)
                 {
@@ -404,10 +404,15 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     messageState.MessageTemplate = messageTemplate ?? string.Empty;
                     messageState.MessageArguments = args;
                     messageState.TimeStamp = DateTime.UtcNow;
-                    messageState.AwsRequestId = CurrentAwsRequestId;
-                    messageState.TraceId = Environment.GetEnvironmentVariable(LambdaEnvironment.EnvVarTraceId);
                     messageState.Level = levelEnum;
-                    messageState.Exception = exeception;
+                    messageState.Exception = exception;
+
+                    if (CurrentRuntimeApiHeaders != null)
+                    {
+                        messageState.AwsRequestId = CurrentRuntimeApiHeaders.AwsRequestId;
+                        messageState.TenantId = CurrentRuntimeApiHeaders.TenantId;
+                        messageState.TraceId = CurrentRuntimeApiHeaders.TraceId;
+                    }
 
                     var message = _logMessageFormatter.FormatMessage(messageState);
                     _innerWriter.WriteLine(message);
