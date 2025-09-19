@@ -26,7 +26,7 @@ sealed class Program
 
         new SelfMutatingPipelineStack(
             app,
-            Configuration.ProjectName,
+            configuration.ProjectName,
             configuration,
             new StackProps
             {
