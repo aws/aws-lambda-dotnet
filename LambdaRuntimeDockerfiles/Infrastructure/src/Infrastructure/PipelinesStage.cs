@@ -39,9 +39,7 @@ internal class PipelinesStage : Stage
         for (var i = 0; i < configuration.Frameworks.Length; i++)
         {
 
-            var pipelineName = string.IsNullOrEmpty(pipelinePrefix) 
-            ? $"{configuration.ProjectName}-{configuration.Frameworks[i].Framework}"  // "aws-lambda-container-images-net8"
-            : $"{configuration.ProjectName}-{pipelinePrefix}-{configuration.Frameworks[i].Framework}";  // "aws-lambda-container-images-staging-net8"
+            var pipelineName = $"{pipelinePrefix}-{configuration.Frameworks[i].Framework}";
 
             new PipelineStack(this,
                 $"{pipelinePrefix}-{configuration.Frameworks[i].Framework}",
