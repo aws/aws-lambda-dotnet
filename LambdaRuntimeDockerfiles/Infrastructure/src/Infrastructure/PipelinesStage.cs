@@ -14,24 +14,19 @@ internal class PipelinesStage : Stage
         Configuration configuration,
         IStageProps props = null) : base(scope, id, props)
     {
-        // Create pipelines for main repository (aws-lambda-dotnet)
+        // Create pipelines for main repository
         CreatePipelinesForRepository(configuration, 
             configuration.ProjectName,
             configuration.GitHubOwner, 
             configuration.GitHubRepository, 
             configuration.GitHubBranch);
         
-        // Create pipelines for staging repository (aws-lambda-dotnet-staging)
-        // Only create if staging repository is configured
-        if (!string.IsNullOrWhiteSpace(configuration.GitHubOwnerStaging) &&
-            !string.IsNullOrWhiteSpace(configuration.GitHubRepositoryStaging))
-        {
-            CreatePipelinesForRepository(configuration,
-                $"{configuration.ProjectName}-staging",
-                configuration.GitHubOwnerStaging,
-                configuration.GitHubRepositoryStaging,
-                configuration.GitHubBranchStaging ?? configuration.GitHubBranch);
-        }
+        // Create pipelines for staging repository
+        CreatePipelinesForRepository(configuration,
+            $"{configuration.ProjectName}-staging",
+            configuration.GitHubOwnerStaging,
+            configuration.GitHubRepositoryStaging,
+            configuration.GitHubBranchStaging);
     }
 
     private void CreatePipelinesForRepository(
