@@ -16,14 +16,14 @@ internal class PipelinesStage : Stage
     {
         // Create pipelines for main repository
         CreatePipelinesForRepository(configuration, 
-            configuration.ProjectName,
+            string.Empty,
             configuration.GitHubOwner, 
             configuration.GitHubRepository, 
             configuration.GitHubBranch);
         
         // Create pipelines for staging repository
         CreatePipelinesForRepository(configuration,
-            $"{configuration.ProjectName}-staging",
+            "staging",
             configuration.GitHubOwnerStaging,
             configuration.GitHubRepositoryStaging,
             configuration.GitHubBranchStaging);
