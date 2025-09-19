@@ -37,6 +37,7 @@ public class PipelineStack : Stack
         string gitHubOwner,
         string gitHubRepository,
         string gitHubBranch,
+        string pipelineName,
         IStackProps props = null) : base(scope, id, props)
     {
         var sourceArtifact = new Artifact_();
@@ -65,7 +66,7 @@ public class PipelineStack : Stack
         var pipeline = new Pipeline(this, "CodePipeline", new PipelineProps
         {
             PipelineType = PipelineType.V2,
-            PipelineName = id,
+            PipelineName = pipelineName,
             RestartExecutionOnUpdate = true,
             Stages =
             [

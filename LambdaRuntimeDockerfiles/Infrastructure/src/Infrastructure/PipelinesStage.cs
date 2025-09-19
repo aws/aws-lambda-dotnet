@@ -38,6 +38,11 @@ internal class PipelinesStage : Stage
     {
         for (var i = 0; i < configuration.Frameworks.Length; i++)
         {
+
+            var pipelineName = string.IsNullOrEmpty(pipelinePrefix) 
+            ? $"{configuration.ProjectName}-{configuration.Frameworks[i].Framework}"  // "aws-lambda-container-images-net8"
+            : $"{configuration.ProjectName}-{pipelinePrefix}-{configuration.Frameworks[i].Framework}";  // "aws-lambda-container-images-staging-net8"
+
             new PipelineStack(this,
                 $"{pipelinePrefix}-{configuration.Frameworks[i].Framework}",
                 configuration,
@@ -45,6 +50,7 @@ internal class PipelinesStage : Stage
                 gitHubOwner,
                 gitHubRepository,
                 gitHubBranch,
+                pipelineName,
                 new StackProps
                 {
                     TerminationProtection = true,
