@@ -16,14 +16,14 @@ internal class PipelinesStage : Stage
     {
         // Create pipelines for main repository
         CreatePipelinesForRepository(configuration, 
-            string.Empty, // cloudformation already prepends the parent stack name which is configuration.ProjectName so we don't need to add it again
+            configuration.ProjectName,
             configuration.GitHubOwner, 
             configuration.GitHubRepository, 
             configuration.GitHubBranch);
         
         // Create pipelines for staging repository
         CreatePipelinesForRepository(configuration,
-            "staging", // cloudformation already prepends the parent stack name which is configuration.ProjectName so we just add staging prefix only
+            $"{configuration.ProjectName}-staging",
             configuration.GitHubOwnerStaging,
             configuration.GitHubRepositoryStaging,
             configuration.GitHubBranchStaging);
