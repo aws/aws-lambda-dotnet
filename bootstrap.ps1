@@ -23,6 +23,15 @@ param (
     [Parameter(Mandatory = $true, HelpMessage = "GitHub repository branch name.")]
     [string] $GitHubRepoBranch,
 
+    [Parameter(Mandatory = $true, HelpMessage = "GitHub staging repository owner name.")]
+    [string] $GitHubRepoOwnerStaging,
+
+    [Parameter(Mandatory = $true, HelpMessage = "GitHub staging repository name.")]
+    [string] $GitHubRepoNameStaging,
+
+    [Parameter(Mandatory = $true, HelpMessage = "GitHub staging repository branch name.")]
+    [string] $GitHubRepoBranchStaging,
+
     [Parameter(Mandatory = $false, HelpMessage = "ECR URI to store Stage images.")]
     [string] $StageEcr,
 
@@ -43,6 +52,10 @@ $env:AWS_LAMBDA_GITHUB_TOKEN_SECRET_KEY = $GitHubTokenSecretKey
 $env:AWS_LAMBDA_GITHUB_REPO_OWNER = $GitHubRepoOwner
 $env:AWS_LAMBDA_GITHUB_REPO_NAME = $GitHubRepoName
 $env:AWS_LAMBDA_GITHUB_REPO_BRANCH = $GitHubRepoBranch
+
+$env:AWS_LAMBDA_GITHUB_REPO_OWNER_STAGING = $GitHubRepoOwnerStaging
+$env:AWS_LAMBDA_GITHUB_REPO_NAME_STAGING = $GitHubRepoNameStaging
+$env:AWS_LAMBDA_GITHUB_REPO_BRANCH_STAGING = $GitHubRepoBranchStaging
 
 $env:AWS_LAMBDA_STAGE_ECR = $StageEcr
 $env:AWS_LAMBDA_BETA_ECRS = $BetaEcrs
