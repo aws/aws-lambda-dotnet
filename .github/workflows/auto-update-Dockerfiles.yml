@@ -181,7 +181,7 @@ jobs:
       # Add "Release Not Needed" label to the PR
       - name: Add Release Not Needed label
         if: ${{ steps.pull-request.outputs.pr_number }}
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
