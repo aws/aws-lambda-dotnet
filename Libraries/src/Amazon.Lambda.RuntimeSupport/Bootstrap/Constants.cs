@@ -24,6 +24,15 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         // variable should never be set when function is deployed to Lambda.
         internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE = "AWS_LAMBDA_DOTNET_DEBUG_RUN_ONCE";
 
+        // Lambda Environment variable used to check if user has configured the function to run in multi concurrency mode.
+        // To be in multi concurrency mode the environment has to exist and have an int value greater then 1.
+        internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_MAX_CONCURRENCY = "AWS_LAMBDA_MAX_CONCURRENCY";
+
+        // .NET Lambda runtime specific environment variable used to override the number of .NET Tasks started
+        // that will reach out to the Lambda Runtime API for new events to process. This environment variable is only
+        // used if AWS_LAMBDA_MAX_CONCURRENCY environment variable is set.
+        internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PROCESSING_TASKS = "AWS_LAMBDA_DOTNET_PROCESSING_TASKS";
+
         internal const string ENVIRONMENT_VARIABLE_DISABLE_HEAP_MEMORY_LIMIT = "AWS_LAMBDA_DOTNET_DISABLE_MEMORY_LIMIT_CHECK";
 
         internal const string ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT = "AWS_LAMBDA_DOTNET_PREJIT";

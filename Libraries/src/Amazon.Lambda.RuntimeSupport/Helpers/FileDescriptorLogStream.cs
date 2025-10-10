@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -41,14 +41,15 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// <summary>
         /// Get the StreamWriter for the particular file descriptor ID. If the same ID is passed the same StreamWriter instance is returned.
         /// </summary>
+        /// <param name="environmentVariables"></param>
         /// <param name="fileDescriptorId"></param>
         /// <returns></returns>
-        public static StreamWriter GetWriter(string fileDescriptorId)
+        public static StreamWriter GetWriter(IEnvironmentVariables environmentVariables, string fileDescriptorId)
         {
             var writer = _writers.GetOrAdd(fileDescriptorId,
                 (x) => {
                     SafeFileHandle handle = new SafeFileHandle(new IntPtr(int.Parse(fileDescriptorId)), false);
-                    return InitializeWriter(new FileStream(handle, FileAccess.Write));
+                    return InitializeWriter(environmentVariables, new FileStream(handle, FileAccess.Write));
                 });
             return writer;
         }
@@ -57,15 +58,16 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// Initialize a StreamWriter for the given Stream.
         /// This method is internal as it is tested in Amazon.RuntimeSupport.Tests
         /// </summary>
+        /// <param name="environmentVariables"></param>
         /// <param name="fileDescriptorStream"></param>
         /// <returns></returns>
-        internal static StreamWriter InitializeWriter(Stream fileDescriptorStream)
+        internal static StreamWriter InitializeWriter(IEnvironmentVariables environmentVariables, Stream fileDescriptorStream)
         {
             // AutoFlush must be turned out otherwise the StreamWriter might not send the data to the stream before the Lambda function completes.
             // Set the buffer size to the same max size as CloudWatch Logs records.
             // Encoder has encoderShouldEmitUTF8Identifier = false as Lambda FD will assume UTF-8 so there is no need to emit an extra log entry.
             // In fact this extra log entry is cast to UTF-8 and results in an empty log entry which will be rejected by CloudWatch Logs.
-            return new NonDisposableStreamWriter(new FileDescriptorLogStream(fileDescriptorStream),
+            return new NonDisposableStreamWriter(new FileDescriptorLogStream(environmentVariables, fileDescriptorStream),
                     new UTF8Encoding(false), MaxCloudWatchLogEventSize)
                 { AutoFlush = true };
         }
@@ -88,9 +90,9 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             private readonly byte[] _frameTypeBytes;
             private readonly uint _frameType;
 
-            public FileDescriptorLogStream(Stream logStream)
+            public FileDescriptorLogStream(IEnvironmentVariables environmentVariables, Stream logStream)
             {
-                var logFormat = Environment.GetEnvironmentVariable(Constants.LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE);
+                var logFormat = environmentVariables.GetEnvironmentVariable(Constants.LAMBDA_LOG_FORMAT_ENVIRONMENT_VARIABLE);
                 _frameType = string.Equals(logFormat, Constants.LAMBDA_LOG_FORMAT_JSON, StringComparison.InvariantCultureIgnoreCase) 
                                 ? LambdaTelemetryLogHeaderFrameTypeJson : LambdaTelemetryLogHeaderFrameTypeText;
 

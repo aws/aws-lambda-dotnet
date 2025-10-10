@@ -81,11 +81,6 @@ namespace Amazon.Lambda.RuntimeSupport
             }
         }
 
-        internal void SetXAmznTraceId(string xAmznTraceId)
-        {
-            _environmentVariables.SetEnvironmentVariable(EnvVarTraceId, xAmznTraceId);
-        }
-
         /// <summary>
         /// Gets the FunctionMemorySize
         /// </summary>

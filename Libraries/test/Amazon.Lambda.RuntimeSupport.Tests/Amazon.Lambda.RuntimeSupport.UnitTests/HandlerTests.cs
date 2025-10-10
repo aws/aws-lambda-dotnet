@@ -134,7 +134,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Trait("Category", "UserCodeLoader")]
         public async Task NegativeBootstrapInitTestsAsync()
         {
-            var ucl = new UserCodeLoader("NonExistentAssembly::HandlerTest.CustomerType::ZeroInZeroOut", _internalLogger);
+            var ucl = new UserCodeLoader(new SystemEnvironmentVariables(), "NonExistentAssembly::HandlerTest.CustomerType::ZeroInZeroOut", _internalLogger);
             var ex = Assert.Throws<LambdaValidationException>(() => ucl.Init(NoOpLoggingAction));
             Assert.Contains("Could not find the specified handler", ex.Message);
 
@@ -247,7 +247,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             var testRuntimeApiClient = new TestRuntimeApiClient(_environmentVariables, _headers);
 
-            var userCodeLoader = new UserCodeLoader(handler, _internalLogger);
+            var userCodeLoader = new UserCodeLoader(new SystemEnvironmentVariables(), handler, _internalLogger);
             var initializer = new UserCodeInitializer(userCodeLoader, _internalLogger);
             var handlerWrapper = HandlerWrapper.GetHandlerWrapper(userCodeLoader.Invoke);
             var bootstrap = new LambdaBootstrap(handlerWrapper, initializer.InitializeAsync)
@@ -385,7 +385,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 var testRuntimeApiClient = new TestRuntimeApiClient(_environmentVariables, _headers);
 
 
-                var userCodeLoader = new UserCodeLoader(handler, _internalLogger);
+                var userCodeLoader = new UserCodeLoader(new SystemEnvironmentVariables(), handler, _internalLogger);
                 var handlerWrapper = HandlerWrapper.GetHandlerWrapper(userCodeLoader.Invoke);
                 var initializer = new UserCodeInitializer(userCodeLoader, _internalLogger);
                 var bootstrap = new LambdaBootstrap(handlerWrapper, initializer.InitializeAsync)

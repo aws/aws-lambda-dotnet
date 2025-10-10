@@ -5,6 +5,8 @@
     <AssemblyName>Amazon.Lambda.Core.Tests</AssemblyName>
     <PackageId>Amazon.Lambda.Core.Tests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AssemblyOriginatorKeyFile>..\..\..\buildtools\public.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>

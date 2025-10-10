@@ -44,8 +44,11 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         protected string ExecutionRoleArn { get; set; }
         private const string TestsProjectDirectoryName = "Amazon.Lambda.RuntimeSupport.Tests";
 
-        protected BaseCustomRuntimeTest(string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler)
+        private IntegrationTestFixture _fixture;
+
+        protected BaseCustomRuntimeTest(IntegrationTestFixture fixture, string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler)
         {
+            _fixture = fixture;
             FunctionName = functionName;
             ExecutionRoleName = FunctionName;
             Handler = handler;
@@ -329,13 +332,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         /// <returns></returns>
         private string GetDeploymentZipPath()
         {
-            var testsProjectDirectory = FindUp(System.Environment.CurrentDirectory, TestsProjectDirectoryName, true);
-            if (string.IsNullOrEmpty(testsProjectDirectory))
-            {
-                throw new NoDeploymentPackageFoundException();
-            }
-
-            var deploymentZipFile = Path.Combine(testsProjectDirectory, DeploymentPackageZipRelativePath.Replace('\\', Path.DirectorySeparatorChar));
+            var deploymentZipFile = _fixture.TestAppPaths[DeploymentPackageZipRelativePath];
 
             if (!File.Exists(deploymentZipFile))
             {

@@ -73,16 +73,16 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// <summary>
         /// Default Constructor
         /// </summary>
-        public SimpleLoggerWriter()
+        public SimpleLoggerWriter(IEnvironmentVariables environmentVariables)
         {
             // Look to see if Lambda's telemetry log file descriptor is available. If so use that for logging.
             // This will make sure multiline log messages use a single CloudWatch Logs record.
-            var fileDescriptorLogId = Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_TELEMETRY_LOG_FD);
+            var fileDescriptorLogId = environmentVariables.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_TELEMETRY_LOG_FD);
             if (fileDescriptorLogId != null)
             {
                 try
                 {
-                    _writer = FileDescriptorLogFactory.GetWriter(fileDescriptorLogId);
+                    _writer = FileDescriptorLogFactory.GetWriter(environmentVariables, fileDescriptorLogId);
                     InternalLogger.GetDefaultLogger().LogInformation("Using file descriptor stream writer for logging");
                 }
                 catch (Exception ex)
@@ -170,6 +170,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             Critical = 5
         }
 
+        readonly IEnvironmentVariables _environmentVariables;
         WrapperTextWriter _wrappedStdOutWriter;
         WrapperTextWriter _wrappedStdErrorWriter;
 
@@ -180,17 +181,19 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// Stdout will default log messages to be Information
         /// Stderror will default log messages to be Error
         /// </summary>
-        public LogLevelLoggerWriter()
+        /// <param name="environmentVariables">Environment variables interface.</param>
+        public LogLevelLoggerWriter(IEnvironmentVariables environmentVariables)
         {
+            _environmentVariables = environmentVariables;
             // Look to see if Lambda's telemetry log file descriptor is available. If so use that for logging.
             // This will make sure multiline log messages use a single CloudWatch Logs record.
-            var fileDescriptorLogId = Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_TELEMETRY_LOG_FD);
+            var fileDescriptorLogId = environmentVariables.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_TELEMETRY_LOG_FD);
             if (fileDescriptorLogId != null)
             {
                 try
                 {
-                    var stdOutWriter = FileDescriptorLogFactory.GetWriter(fileDescriptorLogId);
-                    var stdErrorWriter = FileDescriptorLogFactory.GetWriter(fileDescriptorLogId);
+                    var stdOutWriter = FileDescriptorLogFactory.GetWriter(environmentVariables, fileDescriptorLogId);
+                    var stdErrorWriter = FileDescriptorLogFactory.GetWriter(environmentVariables, fileDescriptorLogId);
                     Initialize(stdOutWriter, stdErrorWriter);
                     InternalLogger.GetDefaultLogger().LogInformation("Using file descriptor stream writer for logging.");
                 }
@@ -229,8 +232,8 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
         private void Initialize(TextWriter stdOutWriter, TextWriter stdErrorWriter)
         {
-            _wrappedStdOutWriter = new WrapperTextWriter(stdOutWriter, LogLevel.Information.ToString());
-            _wrappedStdErrorWriter = new WrapperTextWriter(stdErrorWriter, LogLevel.Error.ToString());
+            _wrappedStdOutWriter = new WrapperTextWriter(_environmentVariables, stdOutWriter, LogLevel.Information.ToString());
+            _wrappedStdErrorWriter = new WrapperTextWriter(_environmentVariables, stdErrorWriter, LogLevel.Error.ToString());
         }
 
         /// <summary>
@@ -300,6 +303,7 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
         /// </summary>
         class WrapperTextWriter : TextWriter
         {
+            private readonly IEnvironmentVariables _environmentVariables;
             private readonly TextWriter _innerWriter;
             private readonly string _defaultLogLevel;
 
@@ -311,7 +315,34 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             private readonly ILogMessageFormatter _logMessageFormatter;
 
-            public IRuntimeApiHeaders CurrentRuntimeApiHeaders { get; set; }
+            // If running in multi concurrency mode we need to store the current aws request id in Task
+            // local storage to avoid the wrong request id being logged for a log statement. If not using
+            // multi concurrency mode we use the quicker to access string member variable.
+            private readonly AsyncLocal<IRuntimeApiHeaders> _currentRuntimeApiHeadersStorage;
+            private IRuntimeApiHeaders _currentRuntimeApiHeaders;
+
+            public IRuntimeApiHeaders CurrentRuntimeApiHeaders
+            {
+                get
+                {
+                    if (Utils.IsUsingMultiConcurrency(_environmentVariables))
+                    {
+                        return _currentRuntimeApiHeadersStorage.Value;
+                    }
+                    return _currentRuntimeApiHeaders;
+                }
+                set
+                {
+                    if (Utils.IsUsingMultiConcurrency(_environmentVariables))
+                    {
+                        _currentRuntimeApiHeadersStorage.Value = value;
+                    }
+                    else
+                    {
+                        _currentRuntimeApiHeaders = value;
+                    }
+                }
+            }
 
             /// <summary>
             /// This is typically set to either Console.Out or Console.Error to make sure we acquiring a lock
@@ -324,12 +355,19 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
             /// <summary>
             /// Create an instance
             /// </summary>
+            /// <param name="environmentVariables"></param>
             /// <param name="innerWriter"></param>
             /// <param name="defaultLogLevel"></param>
-            public WrapperTextWriter(TextWriter innerWriter, string defaultLogLevel)
+            public WrapperTextWriter(IEnvironmentVariables environmentVariables, TextWriter innerWriter, string defaultLogLevel)
             {
+                _environmentVariables = environmentVariables;
                 _innerWriter = innerWriter;
                 _defaultLogLevel = defaultLogLevel;
+
+                if(Utils.IsUsingMultiConcurrency(environmentVariables))
+                {
+                    _currentRuntimeApiHeadersStorage = new AsyncLocal<IRuntimeApiHeaders>();
+                }
 
                 var envLogLevel = GetEnvironmentVariable(Constants.NET_RIC_LOG_LEVEL_ENVIRONMENT_VARIABLE, Constants.LAMBDA_LOG_LEVEL_ENVIRONMENT_VARIABLE);
                 if (!string.IsNullOrEmpty(envLogLevel))
@@ -374,10 +412,10 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
 
             private string GetEnvironmentVariable(string envName, string fallbackEnvName)
             {
-                var value = Environment.GetEnvironmentVariable(envName);
+                var value = _environmentVariables.GetEnvironmentVariable(envName);
                 if(string.IsNullOrEmpty(value) && fallbackEnvName != null)
                 {
-                    value = Environment.GetEnvironmentVariable(fallbackEnvName);
+                    value = _environmentVariables.GetEnvironmentVariable(fallbackEnvName);
                 }
 
                 return value;
@@ -407,11 +445,14 @@ namespace Amazon.Lambda.RuntimeSupport.Helpers
                     messageState.Level = levelEnum;
                     messageState.Exception = exception;
 
-                    if (CurrentRuntimeApiHeaders != null)
+                    // Capture the IRuntimeApiHeaders into a local variable to avoid repeatedly accessing the backing AsyncLocal
+                    // or having AsyncLocal change in between accessing.
+                    var runtimeApiHeaders = CurrentRuntimeApiHeaders;
+                    if (runtimeApiHeaders != null)
                     {
-                        messageState.AwsRequestId = CurrentRuntimeApiHeaders.AwsRequestId;
-                        messageState.TenantId = CurrentRuntimeApiHeaders.TenantId;
-                        messageState.TraceId = CurrentRuntimeApiHeaders.TraceId;
+                        messageState.AwsRequestId = runtimeApiHeaders.AwsRequestId;
+                        messageState.TenantId = runtimeApiHeaders.TenantId;
+                        messageState.TraceId = runtimeApiHeaders.TraceId;
                     }
 
                     var message = _logMessageFormatter.FormatMessage(messageState);

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -87,9 +87,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             tempStream.Read(PocoOutputBytes, 0, PocoOutputBytes.Length);
         }
 
-        private LambdaEnvironment _lambdaEnvironment;
-        private RuntimeApiHeaders _runtimeApiHeaders;
-        private Checkpoint _checkpoint;
+        private readonly LambdaEnvironment _lambdaEnvironment;
+        private readonly RuntimeApiHeaders _runtimeApiHeaders;
+        private readonly Checkpoint _checkpoint;
 
         public HandlerWrapperTests()
         {
@@ -641,7 +641,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 var invocation = new InvocationRequest
                 {
                     InputStream = new MemoryStream(input ?? new byte[0]),
-                    LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.SimpleLoggerWriter())
+                    LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.SimpleLoggerWriter(new SystemEnvironmentVariables()))
                 };
 
                 var invocationResponse = await handlerWrapper.Handler(invocation);

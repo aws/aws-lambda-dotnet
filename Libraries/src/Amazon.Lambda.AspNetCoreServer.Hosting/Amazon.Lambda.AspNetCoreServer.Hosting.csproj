@@ -7,10 +7,16 @@
     <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<Version>1.9.0</Version>
-	<PackageReadmeFile>README.md</PackageReadmeFile>
+    <Version>1.9.0</Version>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <AssemblyName>Amazon.Lambda.AspNetCoreServer.Hosting</AssemblyName>
-    <PackageId>Amazon.Lambda.AspNetCoreServer.Hosting</PackageId>	  
+    <PackageId>Amazon.Lambda.AspNetCoreServer.Hosting</PackageId>
+    <!--
+      Disabling the EOL check because when we remove support in our libraries is a different and slower cycle then the framework's cycle.
+      We need to be confident there is no longer a critical mass of customers still using the framework version and we need to be
+      ready to make a major version release of our libraries.
+      -->
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
 
     <WarningsAsErrors>IL2104,IL2026,IL2067,IL2075</WarningsAsErrors>
     <IsTrimmable>true</IsTrimmable>

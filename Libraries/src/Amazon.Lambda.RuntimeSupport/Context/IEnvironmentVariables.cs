@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -20,10 +20,26 @@ namespace Amazon.Lambda.RuntimeSupport
     /// Interface to access environment variables.
     /// Allows for unit testing without changing the real System environment variables.
     /// </summary>
-    internal interface IEnvironmentVariables
+    public interface IEnvironmentVariables
     {
+        /// <summary>
+        /// Sets the value for an environment variable.
+        /// </summary>
+        /// <param name="variable"></param>
+        /// <param name="value"></param>
         void SetEnvironmentVariable(string variable, string value);
+
+        /// <summary>
+        /// Get the value for an environment variable.
+        /// </summary>
+        /// <param name="variable"></param>
+        /// <returns></returns>
         string GetEnvironmentVariable(string variable);
+
+        /// <summary>
+        /// Get all environment variables.
+        /// </summary>
+        /// <returns></returns>
         IDictionary GetEnvironmentVariables();
     }
 }

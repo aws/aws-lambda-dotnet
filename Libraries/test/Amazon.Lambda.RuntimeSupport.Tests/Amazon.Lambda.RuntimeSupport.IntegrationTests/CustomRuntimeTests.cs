@@ -32,37 +32,14 @@ using static Amazon.Lambda.RuntimeSupport.IntegrationTests.CustomRuntimeTests;
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     [Collection("Integration Tests")]
-    public class CustomRuntimeNET6Tests : CustomRuntimeTests
-    {
-        public CustomRuntimeNET6Tests()
-            : base("CustomRuntimeNET6FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net6.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET6)
-        {
-        }
-
-#if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
-        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
-#else
-        [Fact]
-#endif
-        public async Task TestAllNET6HandlersAsync()
-        {
-            await base.TestAllHandlersAsync();
-        }
-    }
-
-    [Collection("Integration Tests")]
     public class CustomRuntimeNET8Tests : CustomRuntimeTests
     {
-        public CustomRuntimeNET8Tests()
-            : base("CustomRuntimeNET8FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net8.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET8)
+        public CustomRuntimeNET8Tests(IntegrationTestFixture fixture)
+            : base(fixture, "CustomRuntimeNET8FunctionTest-" + DateTime.Now.Ticks, "CustomRuntimeFunctionTest.zip", @"CustomRuntimeFunctionTest\bin\Release\net8.0\CustomRuntimeFunctionTest.zip", "CustomRuntimeFunctionTest", TargetFramework.NET8)
         {
         }
 
-#if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
-        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
-#else
         [Fact]
-#endif
         public async Task TestAllNET8HandlersAsync()
         {
             await base.TestAllHandlersAsync();
@@ -75,8 +52,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
         private TargetFramework _targetFramework;
 
-        public CustomRuntimeTests(string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler, TargetFramework targetFramework) 
-            : base(functionName, deploymentZipKey, deploymentPackageZipRelativePath, handler)
+        public CustomRuntimeTests(IntegrationTestFixture fixture, string functionName, string deploymentZipKey, string deploymentPackageZipRelativePath, string handler, TargetFramework targetFramework) 
+            : base(fixture, functionName, deploymentZipKey, deploymentPackageZipRelativePath, handler)
         {
             _targetFramework = targetFramework;
         }
@@ -129,7 +106,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     await RunTestSuccessAsync(lambdaClient, "PingAsync", "ping", "PingAsync-pong");
                     await RunTestSuccessAsync(lambdaClient, "HttpsWorksAsync", "", "HttpsWorksAsync-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "CertificateCallbackWorksAsync", "", "CertificateCallbackWorksAsync-SUCCESS");
-                    await RunTestSuccessAsync(lambdaClient, "NetworkingProtocolsAsync", "", "NetworkingProtocolsAsync-SUCCESS");
                     await RunTestSuccessAsync(lambdaClient, "HandlerEnvVarAsync", "", "HandlerEnvVarAsync-CustomRuntimeFunctionTest");
                     await RunTestExceptionAsync(lambdaClient, "AggregateExceptionUnwrappedAsync", "", "Exception", "Exception thrown from an async handler.");
                     await RunTestExceptionAsync(lambdaClient, "AggregateExceptionUnwrapped", "", "Exception", "Exception thrown from a synchronous handler.");

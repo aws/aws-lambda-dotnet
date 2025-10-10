@@ -32,9 +32,9 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly IInternalRuntimeApiClient _internalClient;
 
 #if NET6_0_OR_GREATER
-        private readonly IConsoleLoggerWriter _consoleLoggerRedirector = new LogLevelLoggerWriter();
+        private readonly IConsoleLoggerWriter _consoleLoggerRedirector;
 #else
-        private readonly IConsoleLoggerWriter _consoleLoggerRedirector = new SimpleLoggerWriter();
+        private readonly IConsoleLoggerWriter _consoleLoggerRedirector;
 #endif
 
         internal Func<Exception, ExceptionInfo> ExceptionConverter { get;  set; }
@@ -54,6 +54,12 @@ namespace Amazon.Lambda.RuntimeSupport
 
         internal RuntimeApiClient(IEnvironmentVariables environmentVariables, HttpClient httpClient, LambdaBootstrapOptions lambdaBootstrapOptions = null)
         {
+#if NET6_0_OR_GREATER
+            _consoleLoggerRedirector = new LogLevelLoggerWriter(environmentVariables);
+#else
+            _consoleLoggerRedirector = new SimpleLoggerWriter(environmentVariables);
+#endif
+
             ExceptionConverter = ExceptionInfo.GetExceptionInfo;
             _httpClient = httpClient;
             LambdaEnvironment = new LambdaEnvironment(environmentVariables, lambdaBootstrapOptions);
@@ -110,13 +116,11 @@ namespace Amazon.Lambda.RuntimeSupport
             SwaggerResponse<Stream> response = await _internalClient.NextAsync(cancellationToken);
 
             var headers = new RuntimeApiHeaders(response.Headers);
-            _consoleLoggerRedirector.SetRuntimeHeaders(headers);
-
             var lambdaContext = new LambdaContext(headers, LambdaEnvironment, _consoleLoggerRedirector);
             return new InvocationRequest
             {
                 InputStream = response.Result,
-                LambdaContext = lambdaContext,
+                LambdaContext = lambdaContext
             };
         }
 

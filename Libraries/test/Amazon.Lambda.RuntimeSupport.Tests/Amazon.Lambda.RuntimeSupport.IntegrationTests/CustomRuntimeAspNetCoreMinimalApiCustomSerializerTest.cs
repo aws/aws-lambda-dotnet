@@ -1,4 +1,4 @@
-﻿using Amazon.IdentityManagement;
+using Amazon.IdentityManagement;
 using Amazon.IdentityManagement.Model;
 using Amazon.Lambda.Model;
 using Amazon.S3;
@@ -21,17 +21,13 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     [Collection("Integration Tests")]
     public class CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest : BaseCustomRuntimeTest
     {
-        public CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest()
-            : base("CustomRuntimeMinimalApiCustomSerializerTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", @"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net6.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", "bootstrap")
+        public CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest(IntegrationTestFixture fixture)
+            : base(fixture, "CustomRuntimeMinimalApiCustomSerializerTest-" + DateTime.Now.Ticks, "CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", @"CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest\bin\Release\net8.0\CustomRuntimeAspNetCoreMinimalApiCustomSerializerTest.zip", "bootstrap")
         {
         }
 
 
-#if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
-        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
-#else
         [Fact]
-#endif
         public async Task TestMinimalApi()
         {
             // run all test cases in one test to ensure they run serially
@@ -61,11 +57,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             }
         }
 
-#if SKIP_RUNTIME_SUPPORT_INTEG_TESTS
-        [Fact(Skip = "Skipped intentionally by setting the SkipRuntimeSupportIntegTests build parameter.")]
-#else
         [Fact]
-#endif
         public async Task TestThreadingLogging()
         {
             // run all test cases in one test to ensure they run serially

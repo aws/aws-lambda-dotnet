@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License").
@@ -26,10 +26,10 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
     internal class TestRuntimeApiClient : IRuntimeApiClient
     {
-        private IEnvironmentVariables _environmentVariables;
-        private Dictionary<string, IEnumerable<string>> _headers;
+        readonly private IEnvironmentVariables _environmentVariables;
+        readonly private Dictionary<string, IEnumerable<string>> _headers;
 
-        public IConsoleLoggerWriter ConsoleLogger { get; } = new LogLevelLoggerWriter();
+        public IConsoleLoggerWriter ConsoleLogger { get; } = new LogLevelLoggerWriter(new SystemEnvironmentVariables());
 
         public TestRuntimeApiClient(IEnvironmentVariables environmentVariables, Dictionary<string, IEnumerable<string>> headers)
         {
@@ -99,7 +99,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 LambdaContext = new LambdaContext(
                     new RuntimeApiHeaders(_headers),
                     new LambdaEnvironment(_environmentVariables),
-                    new TestDateTimeHelper(), new Helpers.SimpleLoggerWriter())
+                    new TestDateTimeHelper(), new Helpers.SimpleLoggerWriter(_environmentVariables))
             });
         }
         

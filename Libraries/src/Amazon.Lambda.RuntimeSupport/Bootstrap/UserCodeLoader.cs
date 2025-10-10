@@ -40,6 +40,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
 
         internal const string LambdaCoreAssemblyName = "Amazon.Lambda.Core";
 
+        private readonly IEnvironmentVariables _environmentVariables;
         private readonly InternalLogger _logger;
         private readonly string _handlerString;
         private bool _customerLoggerSetUpComplete;
@@ -50,14 +51,17 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
         /// <summary>
         /// Initializes UserCodeLoader with a given handler and internal logger.
         /// </summary>
+        /// <param name="environmentVariables"></param>
         /// <param name="handler"></param>
         /// <param name="logger"></param>
-        public UserCodeLoader(string handler, InternalLogger logger)
+        public UserCodeLoader(IEnvironmentVariables environmentVariables, string handler, InternalLogger logger)
         {
             if (string.IsNullOrEmpty(handler))
             {
                 throw new ArgumentNullException(nameof(handler));
             }
+
+            _environmentVariables = environmentVariables;
 
             _logger = logger;
             _handlerString = handler;
@@ -129,7 +133,7 @@ namespace Amazon.Lambda.RuntimeSupport.Bootstrap
             var customerSerializerInstance = GetSerializerObject(customerAssembly);
             _logger.LogDebug($"UCL : Constructing invoke delegate");
 
-            var isPreJit = UserCodeInit.IsCallPreJit();
+            var isPreJit = UserCodeInit.IsCallPreJit(_environmentVariables);
             var builder = new InvokeDelegateBuilder(_logger, _handler, CustomerMethodInfo);
             _invokeDelegate = builder.ConstructInvokeDelegate(customerObject, customerSerializerInstance, isPreJit);
             if (isPreJit)
