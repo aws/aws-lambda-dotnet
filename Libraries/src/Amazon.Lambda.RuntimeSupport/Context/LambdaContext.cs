@@ -23,14 +23,14 @@ namespace Amazon.Lambda.RuntimeSupport
     {
         internal static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        private LambdaEnvironment _lambdaEnvironment;
-        private RuntimeApiHeaders _runtimeApiHeaders;
-        private IDateTimeHelper _dateTimeHelper;
-        private long _deadlineMs;
-        private int _memoryLimitInMB;
+        private readonly LambdaEnvironment _lambdaEnvironment;
+        private readonly RuntimeApiHeaders _runtimeApiHeaders;
+        private readonly IDateTimeHelper _dateTimeHelper;
+        private readonly long _deadlineMs;
+        private readonly int _memoryLimitInMB;
         private readonly Lazy<CognitoIdentity> _cognitoIdentityLazy;
         private readonly Lazy<CognitoClientContext> _cognitoClientContextLazy;
-        private IConsoleLoggerWriter _consoleLogger;
+        private readonly IConsoleLoggerWriter _consoleLogger;
 
         public LambdaContext(RuntimeApiHeaders runtimeApiHeaders, LambdaEnvironment lambdaEnvironment, IConsoleLoggerWriter consoleLogger)
             : this(runtimeApiHeaders, lambdaEnvironment, new DateTimeHelper(), consoleLogger)
@@ -49,9 +49,6 @@ namespace Amazon.Lambda.RuntimeSupport
             long.TryParse(_runtimeApiHeaders.DeadlineMs, out _deadlineMs);
             _cognitoIdentityLazy = new Lazy<CognitoIdentity>(() => CognitoIdentity.FromJson(runtimeApiHeaders.CognitoIdentityJson));
             _cognitoClientContextLazy = new Lazy<CognitoClientContext>(() => CognitoClientContext.FromJson(runtimeApiHeaders.ClientContextJson));
-
-            // set environment variable so that if the function uses the XRay client it will work correctly
-            _lambdaEnvironment.SetXAmznTraceId(_runtimeApiHeaders.TraceId);
         }
 
         public string TraceId => _runtimeApiHeaders.TraceId;
@@ -79,5 +76,7 @@ namespace Amazon.Lambda.RuntimeSupport
         public TimeSpan RemainingTime => TimeSpan.FromMilliseconds(_deadlineMs - (_dateTimeHelper.UtcNow - UnixEpoch).TotalMilliseconds);
 
         public string TenantId => _runtimeApiHeaders.TenantId;
+
+        internal IRuntimeApiHeaders RuntimeApiHeaders => _runtimeApiHeaders;
     }
 }

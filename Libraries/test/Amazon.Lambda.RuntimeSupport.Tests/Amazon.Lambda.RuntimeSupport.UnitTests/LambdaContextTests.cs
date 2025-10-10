@@ -31,7 +31,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var runtimeApiHeaders = new RuntimeApiHeaders(headers);
             var lambdaEnvironment = new LambdaEnvironment(_environmentVariables);
 
-            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment, new Helpers.SimpleLoggerWriter());
+            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment, new Helpers.SimpleLoggerWriter(new SystemEnvironmentVariables()));
 
             Assert.True(context.RemainingTime >= TimeSpan.Zero, $"Remaining time is not a positive value: {context.RemainingTime}");
         }
@@ -49,7 +49,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var runtimeApiHeaders = new RuntimeApiHeaders(headers);
             var lambdaEnvironment = new LambdaEnvironment(_environmentVariables);
 
-            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment, new Helpers.SimpleLoggerWriter());
+            var context = new LambdaContext(runtimeApiHeaders, lambdaEnvironment, new Helpers.SimpleLoggerWriter(new SystemEnvironmentVariables()));
 
             Assert.Equal("request-generated-id", context.AwsRequestId);
             Assert.Equal("my-function-arn", context.InvokedFunctionArn);

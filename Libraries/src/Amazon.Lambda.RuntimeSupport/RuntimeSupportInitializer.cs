@@ -62,10 +62,17 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             await _debugAttacher.TryAttachDebugger();
 
-            var userCodeLoader = new UserCodeLoader(_handler, _logger);
+            var environmentVariables = new SystemEnvironmentVariables();
+            var userCodeLoader = new UserCodeLoader(environmentVariables, _handler, _logger);
             var initializer = new UserCodeInitializer(userCodeLoader, _logger);
             using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper(userCodeLoader.Invoke))
-            using (var bootstrap = new LambdaBootstrap(handlerWrapper, _lambdaBootstrapOptions, initializer.InitializeAsync))
+            using (var bootstrap = new LambdaBootstrap(
+                        httpClient: null,
+                        handler: handlerWrapper.Handler,
+                        initializer: initializer.InitializeAsync,
+                        ownsHttpClient: true,
+                        lambdaBootstrapOptions: _lambdaBootstrapOptions,
+                        environmentVariables: environmentVariables))
             {
                 await bootstrap.RunAsync();
             }

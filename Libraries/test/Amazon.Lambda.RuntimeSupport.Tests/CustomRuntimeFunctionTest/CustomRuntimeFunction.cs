@@ -22,9 +22,9 @@ namespace CustomRuntimeFunctionTest
         private static readonly Lazy<string> SixMBString = new Lazy<string>(() => { return new string('X', 1024 * 1024 * 6); });
         private static readonly Lazy<string> SevenMBString = new Lazy<string>(() => { return new string('X', 1024 * 1024 * 7); });
 
-        private static MemoryStream ResponseStream = new MemoryStream();
-        private static DefaultLambdaJsonSerializer JsonSerializer = new DefaultLambdaJsonSerializer();
-        private static LambdaEnvironment LambdaEnvironment = new LambdaEnvironment();
+        private static readonly MemoryStream ResponseStream = new MemoryStream();
+        private static readonly DefaultLambdaJsonSerializer JsonSerializer = new DefaultLambdaJsonSerializer();
+        private static readonly LambdaEnvironment LambdaEnvironment = new LambdaEnvironment();
 
         private static async Task Main(string[] args)
         {
@@ -68,9 +68,6 @@ namespace CustomRuntimeFunctionTest
                         break;
                     case nameof(CertificateCallbackWorksAsync):
                         bootstrap = new LambdaBootstrap(CertificateCallbackWorksAsync);
-                        break;
-                    case nameof(NetworkingProtocolsAsync):
-                        bootstrap = new LambdaBootstrap(NetworkingProtocolsAsync);
                         break;
                     case nameof(HandlerEnvVarAsync):
                         bootstrap = new LambdaBootstrap(HandlerEnvVarAsync);
@@ -217,7 +214,7 @@ namespace CustomRuntimeFunctionTest
 
         public class WrapTextWriter : TextWriter
         {
-            TextWriter _textWriter;
+            readonly TextWriter _textWriter;
             public WrapTextWriter(TextWriter textWriter)
             {
                 _textWriter = textWriter;
@@ -300,67 +297,6 @@ namespace CustomRuntimeFunctionTest
             }
 
             return GetInvocationResponse(nameof(CertificateCallbackWorksAsync), isSuccess);
-        }
-
-        private static Task<InvocationResponse> NetworkingProtocolsAsync(InvocationRequest invocation)
-        {
-            var type = typeof(Socket).GetTypeInfo().Assembly.GetType("System.Net.SocketProtocolSupportPal");
-            var method = type.GetMethod("IsSupported", BindingFlags.NonPublic | BindingFlags.Static);
-            var ipv4Supported = method.Invoke(null, new object[] { AddressFamily.InterNetwork });
-            var ipv6Supported = method.Invoke(null, new object[] { AddressFamily.InterNetworkV6 });
-
-            Exception ipv4SocketCreateException = null;
-            try
-            {
-                using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)) { }
-            }
-            catch (Exception e)
-            {
-                ipv4SocketCreateException = e;
-            }
-
-            Exception ipv6SocketCreateException = null;
-            try
-            {
-                using (Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp)) { }
-            }
-            catch (Exception e)
-            {
-                ipv6SocketCreateException = e;
-            }
-
-            string returnValue = "";
-            if (!(bool)ipv4Supported)
-            {
-                returnValue += "For System.Net.SocketProtocolSupportPal.IsProtocolSupported(AddressFamily.InterNetwork) Expected true, Actual false" + Environment.NewLine;
-            }
-
-            if ((bool)ipv6Supported)
-            {
-                returnValue += "For System.Net.SocketProtocolSupportPal.IsProtocolSupported(AddressFamily.InterNetworkV6) Expected false, Actual true" + Environment.NewLine;
-            }
-
-            if (ipv4SocketCreateException != null)
-            {
-                returnValue += "Error creating IPV4 Socket: " + ipv4SocketCreateException + Environment.NewLine;
-            }
-
-            if (ipv6SocketCreateException == null)
-            {
-                returnValue += "When creating IPV6 Socket expected exception, got none." + Environment.NewLine;
-            }
-
-            if (ipv6SocketCreateException != null && ipv6SocketCreateException.Message != "Address family not supported by protocol")
-            {
-                returnValue += "When creating IPV6 Socket expected exception 'Address family not supported by protocol', actual '" + ipv6SocketCreateException.Message + "'" + Environment.NewLine;
-            }
-
-            if (String.IsNullOrEmpty(returnValue))
-            {
-                returnValue = "SUCCESS";
-            }
-
-            return Task.FromResult(GetInvocationResponse(nameof(NetworkingProtocolsAsync), returnValue));
         }
 
         private static Task<InvocationResponse> HandlerEnvVarAsync(InvocationRequest invocation)
@@ -459,9 +395,9 @@ namespace CustomRuntimeFunctionTest
             return Task.FromResult(GetInvocationResponse(nameof(GetTimezoneNameAsync), TimeZoneInfo.Local.Id));
         }
 
-        private static async Task<InvocationResponse> GetTotalAvailableMemoryBytes(InvocationRequest invocation)
+        private static Task<InvocationResponse> GetTotalAvailableMemoryBytes(InvocationRequest invocation)
         {
-            return GetInvocationResponse(nameof(GetTotalAvailableMemoryBytes), GC.GetGCMemoryInfo().TotalAvailableMemoryBytes.ToString());
+            return Task.FromResult(GetInvocationResponse(nameof(GetTotalAvailableMemoryBytes), GC.GetGCMemoryInfo().TotalAvailableMemoryBytes.ToString()));
         }
 
         #region Helpers

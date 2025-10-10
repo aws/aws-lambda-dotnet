@@ -3,6 +3,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <!-- This is turning off the warning for unused parameters in method signatures. There are tests that we need to have parameters in the signature for testing purposes. -->
+    <NoWarn>IDE0060</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

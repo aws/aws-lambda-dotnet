@@ -18,13 +18,13 @@ namespace Amazon.Lambda.RuntimeSupport
             IsInitTypeSnapstart = isInitTypeSnapstart;
         }
 
-        internal static LambdaBootstrapConfiguration GetDefaultConfiguration()
+        internal static LambdaBootstrapConfiguration GetDefaultConfiguration(IEnvironmentVariables environmentVariables)
         {
-            bool isCallPreJit = UserCodeInit.IsCallPreJit();
+            bool isCallPreJit = UserCodeInit.IsCallPreJit(environmentVariables);
 #if NET8_0_OR_GREATER
             bool isInitTypeSnapstart = 
                 string.Equals(
-                    Environment.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE),
+                    environmentVariables.GetEnvironmentVariable(Constants.ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE),
                     Constants.AWS_LAMBDA_INITIALIZATION_TYPE_SNAP_START);
 
             return new LambdaBootstrapConfiguration(isCallPreJit, isInitTypeSnapstart);

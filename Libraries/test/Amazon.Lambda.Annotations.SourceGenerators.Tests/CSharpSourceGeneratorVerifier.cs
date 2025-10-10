@@ -30,9 +30,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
             public enum TargetFramework { Net60, Net80 }
 
+            private ImmutableArray<string> PreprocessorSymbols { get; set; } = ImmutableArray<string>.Empty;
+
             public Test(ReferencesMode referencesMode = ReferencesMode.All, TargetFramework targetFramework = TargetFramework.Net60)
             {
-                if(referencesMode == ReferencesMode.NoApiGatewayEvents)
+                PreprocessorSymbols = ImmutableArray.Create<string>("ANALYZER_UNIT_TESTS");
+
+                if (referencesMode == ReferencesMode.NoApiGatewayEvents)
                 {
                     this.SolutionTransforms.Add((solution, projectId) =>
                     {
@@ -129,7 +133,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
             protected override ParseOptions CreateParseOptions()
             {
-                return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
+                return ((CSharpParseOptions)base.CreateParseOptions())
+                    .WithLanguageVersion(LanguageVersion)
+                    .WithPreprocessorSymbols(PreprocessorSymbols);
             }
         }
     }

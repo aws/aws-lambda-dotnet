@@ -10,7 +10,13 @@
         <PackageId>Amazon.Lambda.Serialization.SystemTextJson</PackageId>
         <PackageTags>AWS;Amazon;Lambda</PackageTags>
         <Version>2.4.4</Version>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+      <!--
+      Disabling the EOL check because when we remove support in our libraries is a different and slower cycle then the framework's cycle.
+      We need to be confident there is no longer a critical mass of customers still using the framework version and we need to be
+      ready to make a major version release of our libraries.
+      -->
+        <CheckEolTargetFramework>false</CheckEolTargetFramework>
     </PropertyGroup>
 	<ItemGroup>
 		<None Include="README.md" Pack="true" PackagePath="\"/>

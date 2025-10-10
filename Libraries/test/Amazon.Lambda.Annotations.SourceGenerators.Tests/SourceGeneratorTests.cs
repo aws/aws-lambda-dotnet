@@ -706,7 +706,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 if (file.EndsWith("Program.cs") && content.Contains("Task Main(string[] args)"))
                     continue;
 
-                test.TestState.Sources.Add((file, await File.ReadAllTextAsync(file)));
+                test.TestState.Sources.Add((file, content));
             }
 
             await test.RunAsync();
