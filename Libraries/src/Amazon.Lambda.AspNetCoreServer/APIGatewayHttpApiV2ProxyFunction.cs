@@ -257,7 +257,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                 }
 
                 (response.Body, response.IsBase64Encoded) = Utilities.ConvertAspNetCoreBodyToLambdaBody(responseFeatures.Body, rcEncoding);
-
+                responseFeatures.Body.Position = 0L;
             }
 
             PostMarshallResponseFeature(responseFeatures, response, lambdaContext);
