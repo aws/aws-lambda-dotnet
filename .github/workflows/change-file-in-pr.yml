@@ -4,6 +4,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
 
+permissions:
+  contents: read
+
 jobs:
   check-files-in-directory:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'Release Not Needed') && !contains(github.event.pull_request.labels.*.name, 'Release PR') }}
