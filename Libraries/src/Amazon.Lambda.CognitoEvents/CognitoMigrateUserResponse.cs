@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace Amazon.Lambda.CognitoEvents
@@ -51,6 +51,6 @@ namespace Amazon.Lambda.CognitoEvents
 #if NETCOREAPP3_1_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("forceAliasCreation")]
 #endif
-        public bool ForceAliasCreation { get; set; }
+        public bool? ForceAliasCreation { get; set; }
     }
 }
