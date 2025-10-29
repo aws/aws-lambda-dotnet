@@ -4,7 +4,7 @@
       "Name": "Amazon.Lambda.CognitoEvents",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Make ForceAliasCreation nullable to allow proper serialization"
+        "[Breaking Change] Fix issue around not handling null value during deserialization for `ForceAliasCreation` by making it nullable."
       ]
     }
   ]
