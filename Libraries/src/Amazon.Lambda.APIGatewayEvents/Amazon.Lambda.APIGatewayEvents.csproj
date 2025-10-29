@@ -6,7 +6,7 @@
     <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>    
     <Description>Amazon Lambda .NET Core support - API Gateway package.</Description>
     <AssemblyTitle>Amazon.Lambda.APIGatewayEvents</AssemblyTitle>
-    <Version>2.7.2</Version>
+    <Version>2.7.1</Version>
     <AssemblyName>Amazon.Lambda.APIGatewayEvents</AssemblyName>
     <PackageId>Amazon.Lambda.APIGatewayEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
