@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.CognitoEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Make ForceAliasCreation nullable to allow proper serialization"
+      ]
+    }
+  ]
+}
