@@ -1,4 +1,4 @@
-﻿namespace Amazon.Lambda.APIGatewayEvents
+namespace Amazon.Lambda.APIGatewayEvents
 {
     using System.Collections.Generic;
 
@@ -51,6 +51,14 @@
             [System.Text.Json.Serialization.JsonPropertyName("Resource")]
 #endif
             public HashSet<string> Resource { get; set; }
+
+            /// <summary>
+            /// Gets or sets the resources the statement does not apply to.
+            /// </summary>
+#if NETCOREAPP3_1_OR_GREATER
+            [System.Text.Json.Serialization.JsonPropertyName("NotResource")]
+#endif
+            public HashSet<string> NotResource { get; set; }
 
             /// <summary>
             /// Gets or sets the conditions for when a policy is in effect. 
