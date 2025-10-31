@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.CognitoEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "[Breaking Change] Fix issue around not handling null value during deserialization for `ForceAliasCreation` by making it nullable."
+      ]
+    }
+  ]
+}
