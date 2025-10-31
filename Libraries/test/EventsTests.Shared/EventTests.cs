@@ -2171,6 +2171,72 @@ namespace Amazon.Lambda.Tests
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
         [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 #endif
+        public void APIGatewayAuthorizerResponseNotResourceTest(Type serializerType)
+        {
+            var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;
+            var context = new APIGatewayCustomAuthorizerContextOutput();
+            context["field1"] = "value1";
+            context["field2"] = "value2";
+
+            var response = new APIGatewayCustomAuthorizerResponse
+            {
+                PrincipalID = "prin1",
+                UsageIdentifierKey = "usageKey",
+                Context = context,
+                PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+                {
+                    Version = "2012-10-17",
+                    Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
+                    {
+                        new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                        {
+                            Action = new HashSet<string>{ "execute-api:Invoke" },
+                            Effect = "Deny",
+                            NotResource = new HashSet<string>
+                            {
+                                "arn:aws:execute-api:us-east-1:1234567890:abcdef1234/Prod/GET/resource1",
+                                "arn:aws:execute-api:us-east-1:1234567890:abcdef1234/Prod/GET/resource2"
+                            }
+                        }
+                    }
+                }
+            };
+
+            string serializedJson;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                serializer.Serialize(response, stream);
+
+                stream.Position = 0;
+                serializedJson = Encoding.UTF8.GetString(stream.ToArray());
+            }
+
+            JObject root = Newtonsoft.Json.JsonConvert.DeserializeObject(serializedJson) as JObject;
+
+            Assert.Equal("prin1", root["principalId"]);
+            Assert.Equal("usageKey", root["usageIdentifierKey"]);
+            Assert.Equal("value1", root["context"]["field1"]);
+            Assert.Equal("value2", root["context"]["field2"]);
+
+            Assert.Equal("2012-10-17", root["policyDocument"]["Version"]);
+            Assert.Equal("execute-api:Invoke", root["policyDocument"]["Statement"][0]["Action"][0]);
+            Assert.Equal("Deny", root["policyDocument"]["Statement"][0]["Effect"]);
+
+            var allowedResources = root["policyDocument"]["Statement"][0]["NotResource"];
+            Assert.Equal(2, allowedResources.Count());
+            Assert.Contains("arn:aws:execute-api:us-east-1:1234567890:abcdef1234/Prod/GET/resource1", allowedResources);
+            Assert.Contains("arn:aws:execute-api:us-east-1:1234567890:abcdef1234/Prod/GET/resource2", allowedResources);
+
+            Assert.Null(root["policyDocument"]["Statement"][0]["Condition"]);
+            Assert.Null(root["policyDocument"]["Statement"][0]["Resource"]);
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonSerializer))]
+#if NETCOREAPP3_1_OR_GREATER
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.LambdaJsonSerializer))]
+        [InlineData(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+#endif
         public void WebSocketApiConnectTest(Type serializerType)
         {
             var serializer = Activator.CreateInstance(serializerType) as ILambdaSerializer;

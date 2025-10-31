@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.APIGatewayEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Added NotResource field to APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement"
+      ]
+    }
+  ]
+}
