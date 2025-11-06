@@ -1,3 +1,14 @@
+## Release 2025-11-06
+
+### Amazon.Lambda.CognitoEvents (4.0.1)
+* [Breaking Change] Fix issue around not handling null value during deserialization for `ForceAliasCreation` by making it nullable.
+### Amazon.Lambda.Core (2.8.0)
+* Add LambdaTraceProvider to make the current trace id globally accessible
+### Amazon.Lambda.RuntimeSupport (1.14.0)
+* Add support for Lambda multi concurrency mode
+### Amazon.Lambda.APIGatewayEvents (2.7.2)
+* Added NotResource field to APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+
 ## Release 2025-09-17
 
 ### Amazon.Lambda.RuntimeSupport (1.13.4)

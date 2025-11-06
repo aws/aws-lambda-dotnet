@@ -24,7 +24,7 @@ namespace Amazon.Lambda.Core.Tests
         [Fact]
         public async Task SetTraceIdWithMultiConcurrency()
         {
-            Environment.SetEnvironmentVariable(LambdaTraceProvider.ENV_VAR_AWS_LAMBDA_MAX_CONCURRENCY, "2");
+            Environment.SetEnvironmentVariable(Constants.ENV_VAR_AWS_LAMBDA_MAX_CONCURRENCY, "2");
             try
             {
                 var successCount = 0;
@@ -48,7 +48,7 @@ namespace Amazon.Lambda.Core.Tests
             }
             finally
             {
-                Environment.SetEnvironmentVariable(LambdaTraceProvider.ENV_VAR_AWS_LAMBDA_MAX_CONCURRENCY, null);
+                Environment.SetEnvironmentVariable(Constants.ENV_VAR_AWS_LAMBDA_MAX_CONCURRENCY, null);
             }
         }
     }
