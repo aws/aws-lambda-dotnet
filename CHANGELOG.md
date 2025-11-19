@@ -1,3 +1,8 @@
+## Release 2025-11-19
+
+### Amazon.Lambda.RuntimeSupport (1.14.1)
+* Fixed issue with output stream being reused when using multi concurrency mode
+
 ## Release 2025-11-06
 
 ### Amazon.Lambda.CognitoEvents (4.0.1)
