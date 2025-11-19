@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fixed issue with output stream being reused when using multi concurrency mode"
+      ]
+    }
+  ]
+}

@@ -633,6 +633,49 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task TestOutputStreamReuse(bool onDemand)
+        {
+            if (!onDemand)
+            {
+                Environment.SetEnvironmentVariable(Constants.ENV_VAR_AWS_LAMBDA_MAX_CONCURRENCY, "10");
+            }
+            try
+            {
+                using (var handlerWrapper = HandlerWrapper.GetHandlerWrapper<string, string>((input) =>
+                {
+                    return input.ToUpper();
+                }, Serializer))
+                {
+                    var invocation1 = new InvocationRequest
+                    {
+                        InputStream = new MemoryStream(UTF8Encoding.UTF8.GetBytes("\"Hello\"")),
+                        LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.SimpleLoggerWriter(new SystemEnvironmentVariables()))
+                    };
+
+                    var invocationResponse1 = await handlerWrapper.Handler(invocation1);
+
+                    var invocation2 = new InvocationRequest
+                    {
+                        InputStream = new MemoryStream(UTF8Encoding.UTF8.GetBytes("\"World\"")),
+                        LambdaContext = new LambdaContext(_runtimeApiHeaders, _lambdaEnvironment, new Helpers.SimpleLoggerWriter(new SystemEnvironmentVariables()))
+                    };
+
+                    var invocationResponse2 = await handlerWrapper.Handler(invocation2);
+                    if (onDemand)
+                        Assert.True(object.ReferenceEquals(invocationResponse1.OutputStream, invocationResponse2.OutputStream));
+                    else
+                        Assert.False(object.ReferenceEquals(invocationResponse1.OutputStream, invocationResponse2.OutputStream));
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(Constants.ENV_VAR_AWS_LAMBDA_MAX_CONCURRENCY, null);
+            }
+        }
+
         private async Task TestHandlerWrapper(HandlerWrapper handlerWrapper, byte[] input, byte[] expectedOutput, bool expectedDisposeOutputStream)
         {
             // run twice to make sure wrappers that reuse the output stream work correctly
