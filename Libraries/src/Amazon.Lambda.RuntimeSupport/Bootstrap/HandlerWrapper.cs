@@ -29,7 +29,7 @@ namespace Amazon.Lambda.RuntimeSupport
         private static readonly InvocationResponse EmptyInvocationResponse =
             new InvocationResponse(new MemoryStream(0), false);
 
-        private readonly MemoryStream OutputStream = new MemoryStream();
+        private readonly IOutputStreamFactory _outputStreamFactory;
 
         /// <summary>
         /// The handler that will be called for each event.
@@ -39,9 +39,20 @@ namespace Amazon.Lambda.RuntimeSupport
         private HandlerWrapper(LambdaBootstrapHandler handler)
         {
             Handler = handler;
+
+            if (Helpers.Utils.IsUsingMultiConcurrency(new SystemEnvironmentVariables()))
+                _outputStreamFactory = new MultiConcurrencyOutputStreamFactory();
+            else
+                _outputStreamFactory = new OnDemandOutputStreamFactory();
         }
 
-        private HandlerWrapper() { }
+        private HandlerWrapper()
+        {
+            if (Helpers.Utils.IsUsingMultiConcurrency(new SystemEnvironmentVariables()))
+                _outputStreamFactory = new MultiConcurrencyOutputStreamFactory();
+            else
+                _outputStreamFactory = new OnDemandOutputStreamFactory();
+        }
 
         /// <summary>
         /// Get a HandlerWrapper that will call the given delegate on function invocation.
@@ -54,10 +65,10 @@ namespace Amazon.Lambda.RuntimeSupport
             var handlerWrapper = new HandlerWrapper();
             handlerWrapper.Handler = invocation =>
             {
-                handlerWrapper.OutputStream.SetLength(0);
-                invokeDelegate(invocation.InputStream, invocation.LambdaContext, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                var response = new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                invokeDelegate(invocation.InputStream, invocation.LambdaContext, outputStream);
+                outputStream.Position = 0;
+                var response = new InvocationResponse(outputStream, false);
                 return Task.FromResult(response);
             };
             return handlerWrapper;
@@ -271,10 +282,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler();
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -293,10 +304,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler(invocation.InputStream);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -316,10 +327,10 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 TOutput output = await handler(input);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -338,10 +349,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler(invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0; ;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0; ;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -360,10 +371,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = async (invocation) =>
             {
                 TOutput output = await handler(invocation.InputStream, invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -383,10 +394,10 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 TOutput output = await handler(input, invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return new InvocationResponse(handlerWrapper.OutputStream, false);
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return new InvocationResponse(outputStream, false);
             };
             return handlerWrapper;
         }
@@ -599,10 +610,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler();
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -621,10 +632,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler(invocation.InputStream);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -644,10 +655,10 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 TOutput output = handler(input);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -666,10 +677,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler(invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0; ;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0; ;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -688,10 +699,10 @@ namespace Amazon.Lambda.RuntimeSupport
             handlerWrapper.Handler = (invocation) =>
             {
                 TOutput output = handler(invocation.InputStream, invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -711,10 +722,10 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 TInput input = serializer.Deserialize<TInput>(invocation.InputStream);
                 TOutput output = handler(input, invocation.LambdaContext);
-                handlerWrapper.OutputStream.SetLength(0);
-                serializer.Serialize(output, handlerWrapper.OutputStream);
-                handlerWrapper.OutputStream.Position = 0;
-                return Task.FromResult(new InvocationResponse(handlerWrapper.OutputStream, false));
+                var outputStream = handlerWrapper._outputStreamFactory.CreateOutputStream();
+                serializer.Serialize(output, outputStream);
+                outputStream.Position = 0;
+                return Task.FromResult(new InvocationResponse(outputStream, false));
             };
             return handlerWrapper;
         }
@@ -731,7 +742,7 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 if (disposing)
                 {
-                    OutputStream.Dispose();
+                    _outputStreamFactory.Dispose();
                 }
 
                 disposedValue = true;
@@ -746,5 +757,65 @@ namespace Amazon.Lambda.RuntimeSupport
             Dispose(true);
         }
         #endregion
+
+        interface IOutputStreamFactory : IDisposable
+        {
+            MemoryStream CreateOutputStream();
+        }
+
+        /// <summary>
+        /// In on demand mode there is never a more then one invocation happening at a time within the process
+        /// so the same memory stream can be reused.
+        /// </summary>
+        class OnDemandOutputStreamFactory : IOutputStreamFactory
+        {
+            private readonly MemoryStream OutputStream = new MemoryStream();
+            private bool _disposedValue;
+
+            public MemoryStream CreateOutputStream()
+            {
+                OutputStream.SetLength(0);
+                return OutputStream;
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (!_disposedValue)
+                {
+                    if (disposing)
+                    {
+                        OutputStream.Dispose();
+                    }
+
+                    _disposedValue = true;
+                }
+            }
+
+            public void Dispose()
+            {
+                // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
+            }
+        }
+
+        /// <summary>
+        /// In multi concurrency mode multiple invocations can happen at the same time within the process
+        /// so we need to make sure each invocation gets its own output stream.
+        /// </summary>
+        class MultiConcurrencyOutputStreamFactory : IOutputStreamFactory
+        {
+            public MemoryStream CreateOutputStream()
+            {
+                return new MemoryStream();
+            }
+
+            public void Dispose()
+            {
+                // Technically we are creating MemoryStreams that have a Dispose method but that is inherited from the base
+                // class. A MemoryStream is fully managed and doesn't have anything to dispose so it is okay to not worry
+                // about disposing any of the MemoryStreams created from the CreateOutputStream call.
+            }
+        }
     }
 }
