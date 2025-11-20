@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DynamoDBEvents.SDK.Convertor",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fix Empty Strings converted to null issue."
+      ]
+    }
+  ]
+}
