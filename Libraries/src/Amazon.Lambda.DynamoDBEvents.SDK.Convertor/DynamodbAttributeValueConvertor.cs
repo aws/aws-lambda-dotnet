@@ -21,7 +21,7 @@ namespace Amazon.Lambda.DynamoDBEvents.SDK.Convertor
             var sdkAttribute = new Amazon.DynamoDBv2.Model.AttributeValue();
 
             // String
-            if (!string.IsNullOrEmpty(lambdaAttribute.S))
+            if (lambdaAttribute.S!=null)
                 sdkAttribute.S = lambdaAttribute.S;
 
             // Number
@@ -112,7 +112,7 @@ namespace Amazon.Lambda.DynamoDBEvents.SDK.Convertor
             var sdkAttribute = new Amazon.DynamoDBStreams.Model.AttributeValue();
 
             // String
-            if (!string.IsNullOrEmpty(lambdaAttribute.S))
+            if (lambdaAttribute.S != null)
                 sdkAttribute.S = lambdaAttribute.S;
 
             // Number
