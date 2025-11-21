@@ -1,3 +1,8 @@
+## Release 2025-11-21
+
+### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (2.0.1)
+* Fix Empty Strings converted to null issue.
+
 ## Release 2025-11-19
 
 ### Amazon.Lambda.RuntimeSupport (1.14.1)
