@@ -13,6 +13,16 @@ namespace Amazon.Lambda.DynamoDBEvents.SDK.Convertor.Tests
         }
 
         [Fact]
+        public void ConvertToSdkAttribute_EmptyStringValue_ReturnsSdkAttribute()
+        {
+            var lambdaAttribute = new DynamoDBEvent.AttributeValue { S = string.Empty };
+            var sdkAttribute = lambdaAttribute.ConvertToSdkAttribute();
+
+            Assert.NotNull(sdkAttribute);
+            Assert.Equal(string.Empty, sdkAttribute.S);
+        }
+
+        [Fact]
         public void ConvertToSdkAttribute_NumberValue_ReturnsSdkAttribute()
         {
             var lambdaAttribute = new DynamoDBEvent.AttributeValue { N = "123" };
