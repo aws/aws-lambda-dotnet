@@ -1,0 +1,14 @@
+{
+  "display-name": "Simple SQS Function",
+  "system-name": "SimpleSQSFunction",
+  "description": "A project for responding to SQS Event notifications",
+  "sort-order": 125,
+  "hidden-tags": [
+    "C#",
+    "LambdaProject"
+  ],
+  "tags": [
+    "SQS",
+    "Simple"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "display-name": "Empty Serverless Application",
+  "system-name": "EmptyServerless",
+  "description": "Setup the project and test project to create a Serverless application from scratch.",
+  "sort-order": 100,
+  "hidden-tags": [
+    "F#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "Custom"
+  ]
+}
