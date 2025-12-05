@@ -1,4 +1,4 @@
-﻿namespace Amazon.Lambda.APIGatewayEvents
+namespace Amazon.Lambda.APIGatewayEvents
 {
     using System;
     using System.Collections.Generic;
@@ -234,10 +234,11 @@
             /// Gets and sets the operation name.
             /// </summary>
             public string OperationName { get; set; }
-            
+
             /// <summary>
             /// Gets and sets the error.
             /// </summary>
+            [Obsolete("This property is obsolete since it is not used by AWS API Gateway and will never have value set by the service.")]
             public string Error { get; set; }
             
             /// <summary>
