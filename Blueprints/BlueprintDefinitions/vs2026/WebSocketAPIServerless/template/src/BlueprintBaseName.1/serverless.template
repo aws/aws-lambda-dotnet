@@ -38,7 +38,7 @@
       "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::OnConnectHandler",
-        "Runtime": "dotnet8",
+        "Runtime": "dotnet10",
         "CodeUri": "",
         "MemorySize": 512,
         "Timeout": 30,
@@ -65,7 +65,7 @@
       "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::OnDisconnectHandler",
-        "Runtime": "dotnet8",
+        "Runtime": "dotnet10",
         "CodeUri": "",
         "MemorySize": 512,
         "Timeout": 30,
@@ -92,7 +92,7 @@
       "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "BlueprintBaseName.1::BlueprintBaseName._1.Functions::SendMessageHandler",
-        "Runtime": "dotnet8",
+        "Runtime": "dotnet10",
         "CodeUri": "",
         "MemorySize": 512,
         "Timeout": 30,

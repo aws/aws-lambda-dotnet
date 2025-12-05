@@ -226,7 +226,7 @@ remove the `Tool` metadata property.
         ]
     },
     "Properties": {
-    "Runtime": "dotnet8",
+    "Runtime": "dotnet10",
     "CodeUri": ".",
 
   ...
@@ -271,7 +271,7 @@ public class Functions
         ]
       },
       "Properties": {
-        "Runtime": "dotnet8",
+        "Runtime": "dotnet10",
 
 ...
         "Role": {
@@ -424,7 +424,7 @@ The `HttpApi` attribute also adds the API Gateway event source.
         ]
       },
       "Properties": {
-        "Runtime": "dotnet8",
+        "Runtime": "dotnet10",
         "CodeUri": ".",
         "MemorySize": 512,
         "Timeout": 30,
@@ -615,7 +615,7 @@ In this example the function is modified to define the event source in this case
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "Runtime": "dotnet8",
+        "Runtime": "dotnet10",
         "CodeUri": ".",
         "MemorySize": 1024,
         "Timeout": 120,

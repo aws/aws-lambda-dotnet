@@ -9,7 +9,7 @@
   "region": "DefaultRegion",
   "configuration": "Release",
   "function-architecture": "x86_64",
-  "function-runtime": "dotnet8",
+  "function-runtime": "dotnet10",
   "function-memory-size": 512,
   "function-timeout": 30,
   "function-handler": "BlueprintBaseName.1::BlueprintBaseName._1.Function::FunctionHandler"

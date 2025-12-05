@@ -60,9 +60,9 @@ dotnet lambda-test-tool start --lambda-emulator-port 5050
 {
     "profiles": {
         "Default": {
-            "workingDirectory": ".\\bin\\$(Configuration)\\net8.0",
+            "workingDirectory": ".\\bin\\$(Configuration)\\net10.0",
             "commandName": "Executable",
-            "commandLineArgs": "exec --depsfile ./BlueprintBaseName.1.deps.json  --runtimeconfig ./BlueprintBaseName.1.runtimeconfig.json %USERPROFILE%/.dotnet/tools/.store/amazon.lambda.testtool/${VERSION}/amazon.lambda.testtool/${VERSION}/content/Amazon.Lambda.RuntimeSupport/net8.0/Amazon.Lambda.RuntimeSupport.dll BlueprintBaseName.1::BlueprintBaseName._1.Functions_Handler_Generated::Handler",
+            "commandLineArgs": "exec --depsfile ./BlueprintBaseName.1.deps.json  --runtimeconfig ./BlueprintBaseName.1.runtimeconfig.json %USERPROFILE%/.dotnet/tools/.store/amazon.lambda.testtool/${VERSION}/amazon.lambda.testtool/${VERSION}/content/Amazon.Lambda.RuntimeSupport/net10.0/Amazon.Lambda.RuntimeSupport.dll BlueprintBaseName.1::BlueprintBaseName._1.Functions_Handler_Generated::Handler",
             "executablePath": "dotnet",
             "environmentVariables": {
                 "AWS_LAMBDA_RUNTIME_API": "localhost:5050/MyFunction",
@@ -86,11 +86,11 @@ dotnet lambda-test-tool start --lambda-emulator-port 5050
 
 
 ```
-cd bin\Debug\net8.0
+cd bin\Debug\net10.0
 $env:AWS_LAMBDA_RUNTIME_API = "localhost:5050/MyFunction"
 $env:VERSION = "0.9.1" // Use the version returned from dotnet lambda-test-tool info
 
-dotnet exec --depsfile ./BlueprintBaseName.1.deps.json --runtimeconfig ./BlueprintBaseName.1.runtimeconfig.json "$env:USERPROFILE\.dotnet\tools\.store\amazon.lambda.testtool\$env:VERSION\amazon.lambda.testtool\$env:VERSION\content\Amazon.Lambda.RuntimeSupport\net8.0\Amazon.Lambda.RuntimeSupport.dll" BlueprintBaseName.1::BlueprintBaseName._1.Functions_Handler_Generated::Handler
+dotnet exec --depsfile ./BlueprintBaseName.1.deps.json --runtimeconfig ./BlueprintBaseName.1.runtimeconfig.json "$env:USERPROFILE\.dotnet\tools\.store\amazon.lambda.testtool\$env:VERSION\amazon.lambda.testtool\$env:VERSION\content\Amazon.Lambda.RuntimeSupport\net10.0\Amazon.Lambda.RuntimeSupport.dll" BlueprintBaseName.1::BlueprintBaseName._1.Functions_Handler_Generated::Handler
 
 
 ```

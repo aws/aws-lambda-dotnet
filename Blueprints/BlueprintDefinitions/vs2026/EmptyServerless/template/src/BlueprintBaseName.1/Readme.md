@@ -91,7 +91,7 @@ You must also replace the function resource in `serverless.template` with:
       "Type": "AWS::Serverless::Function",
       "Properties": {
         "Handler": "<ASSEMBLY>::<TYPE>.Functions::Get",
-        "Runtime": "dotnet8",
+        "Runtime": "dotnet10",
         "CodeUri": "",
         "MemorySize": 512,
         "Timeout": 30,

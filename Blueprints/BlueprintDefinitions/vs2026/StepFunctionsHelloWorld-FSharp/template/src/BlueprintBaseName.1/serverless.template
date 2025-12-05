@@ -13,7 +13,7 @@
             "Arn"
           ]
         },
-        "Runtime": "dotnet8",
+        "Runtime": "dotnet10",
         "MemorySize": 512,
         "Timeout": 30,
         "Code": {
@@ -32,7 +32,7 @@
             "Arn"
           ]
         },
-        "Runtime": "dotnet8",
+        "Runtime": "dotnet10",
         "MemorySize": 512,
         "Timeout": 30,
         "Code": {
