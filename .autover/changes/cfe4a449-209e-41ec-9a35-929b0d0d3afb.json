@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.APIGatewayEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Marked ProxyRequestContext.Error property as Obsolete for APIGatewayProxyRequest."
+      ]
+    }
+  ]
+}
