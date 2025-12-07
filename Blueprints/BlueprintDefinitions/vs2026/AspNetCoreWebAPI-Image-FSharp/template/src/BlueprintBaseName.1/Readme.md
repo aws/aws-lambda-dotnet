@@ -44,7 +44,7 @@ Alternatively the Docker file could be written to use [multi-stage](https://docs
 have the .NET project built inside the container. Below is an example of building the .NET project inside the image.
 
 ```dockerfile
-FROM public.ecr.aws/lambda/dotnet:8 AS base
+FROM public.ecr.aws/lambda/dotnet:10 AS base
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 as build
 WORKDIR /src
