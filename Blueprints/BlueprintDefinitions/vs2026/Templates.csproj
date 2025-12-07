@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageType>Template</PackageType>
-    <Version>7.5.0</Version>
+    <Version>7.5.111</Version>
     <PackageId>Amazon.Lambda.Templates</PackageId>
     <Title>AWS Lambda Templates</Title>
     <Authors>Amazon Web Services</Authors>
