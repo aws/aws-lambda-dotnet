@@ -1,19 +1,18 @@
 namespace BlueprintBaseName._1
 
-
-open Microsoft.AspNetCore
+open Microsoft.Extensions.Hosting
 open Microsoft.AspNetCore.Hosting
-
 
 module LocalEntryPoint =
     let exitCode = 0
 
-    let CreateWebHostBuilder args =
-        WebHost
-            .CreateDefaultBuilder(args)
-            .UseStartup<Startup>()
+    let CreateHostBuilder args =
+        Host.CreateDefaultBuilder(args)
+            .ConfigureWebHostDefaults(fun webBuilder ->
+                webBuilder.UseStartup<Startup>() |> ignore
+            )
 
     [<EntryPoint>]
     let main args =
-        CreateWebHostBuilder(args).Build().Run()
+        CreateHostBuilder(args).Build().Run()
         exitCode

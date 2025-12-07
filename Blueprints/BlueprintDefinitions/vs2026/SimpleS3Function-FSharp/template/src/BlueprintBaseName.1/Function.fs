@@ -13,7 +13,7 @@ open Amazon.S3.Util
 ()
 
 
-type Function(s3Client: IAmazonS3) =
+type Function(s3Client: AmazonS3Client) =
     new() = Function(new AmazonS3Client())
 
     /// <summary>

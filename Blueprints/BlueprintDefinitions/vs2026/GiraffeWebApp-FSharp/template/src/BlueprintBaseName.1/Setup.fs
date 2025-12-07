@@ -77,18 +77,22 @@ type LambdaEntryPoint() =
 // The main function is used for local development.
 // ---------------------------------
 [<EntryPoint>]
-let main _ =
+let main args =
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot     = Path.Combine(contentRoot, "WebRoot")
-    WebHostBuilder()
-        .UseKestrel()
-        .UseContentRoot(contentRoot)
-        .UseIISIntegration()
-        .UseWebRoot(webRoot)
-        .ConfigureAppConfiguration(Action<WebHostBuilderContext, IConfigurationBuilder> configureAppConfiguration)
-        .Configure(Action<IApplicationBuilder> configureApp)
-        .ConfigureServices(configureServices)
-        .ConfigureLogging(configureLogging)
+
+    Host.CreateDefaultBuilder(args)
+        .ConfigureWebHostDefaults(fun webBuilder ->
+            webBuilder
+                .UseKestrel()
+                .UseContentRoot(contentRoot)
+                .UseIISIntegration()
+                .UseWebRoot(webRoot)
+                .ConfigureAppConfiguration(Action<WebHostBuilderContext, IConfigurationBuilder> configureAppConfiguration)
+                .Configure(Action<IApplicationBuilder> configureApp)
+                .ConfigureServices(configureServices)
+                .ConfigureLogging(configureLogging)
+                |> ignore)
         .Build()
         .Run()
     0
