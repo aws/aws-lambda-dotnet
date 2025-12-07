@@ -48,7 +48,7 @@
     <Target Name="test-blueprints-dotnetnew-legacy" DependsOnTargets="package-blueprints;build-nuget-packages">
     </Target>
 
-    <Target Name="test-blueprints-dotnew" DependsOnTargets="">
+    <Target Name="test-blueprints-dotnew" DependsOnTargets="package-blueprints;build-nuget-packages">
         <RemoveDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew"/>
         <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew"/>
         <MakeDir Directories="../Deployment/BlueprintGenerationTests/DotnetNew/vs2026"/>
