@@ -1,4 +1,3 @@
-
 # Amazon.Lambda.AspNetCoreServer.Hosting
 
 This package allows ASP .NET Core applications written using the minimal api style to be deployed
@@ -48,6 +47,40 @@ app.MapControllers();
 
 app.Run();
 
+```
+
+## Handler Configuration
+
+When deploying your Lambda function, the handler configuration depends on your project structure.
+
+### Executable Mode (Recommended)
+
+For executable mode, use `AssemblyName` as the handler (e.g., `MyLambdaProject`). This mode works with top-level statements or a `Main()` method without parameters. The Lambda runtime client handles event routing automatically.
+
+### Class Library Mode
+
+For class library mode, use `AssemblyName::ClassName::MethodName` as the handler. This mode works with traditional class-based handlers and uses reflection-based method invocation.
+
+### Common Configuration Issue
+
+When using `Main(string[] args)` with executable mode handler configuration, the Lambda runtime attempts to deserialize the incoming API Gateway event JSON into the `string[] args` parameter, which causes a `JsonSerializerException`.
+
+Incorrect usage:
+```csharp
+static void Main(string[] args)
+{
+    var builder = WebApplication.CreateBuilder(args);
+    // ... rest of setup
+}
+```
+
+Correct usage for executable mode:
+```csharp
+static void Main()
+{
+    var builder = WebApplication.CreateBuilder();
+    // ... rest of setup
+}
 ```
 
 ## Extension Points
@@ -111,4 +144,3 @@ builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, options =>
         apiResponse.Headers["X-Request-Id"] = context.AwsRequestId;
     };
 });
-```
