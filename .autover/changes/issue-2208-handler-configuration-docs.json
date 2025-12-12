@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Added Handler Configuration documentation explaining executable vs class library modes and Main(string[] args) pitfall"
+      ]
+    }
+  ]
+}
