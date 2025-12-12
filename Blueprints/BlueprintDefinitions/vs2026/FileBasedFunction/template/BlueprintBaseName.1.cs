@@ -1,4 +1,5 @@
-// C# file-based Lambda functions can be deployed to Lambda using the .NET Tool Amazon.Lambda.Tools.
+// C# file-based Lambda functions can be deployed to Lambda using the 
+// .NET Tool Amazon.Lambda.Tools version 6.0.0 or later.
 //
 // Command to install Amazon.Lambda.Tools
 //   dotnet tool install -g Amazon.Lambda.Tools
