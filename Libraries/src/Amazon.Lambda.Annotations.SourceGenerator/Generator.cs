@@ -16,7 +16,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
     [Generator]
     public class Generator : ISourceGenerator
     {
-        private const string DEFAULT_LAMBDA_SERIALIZER = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
         private readonly IFileManager _fileManager = new FileManager();
         private readonly IDirectoryManager _directoryManager = new DirectoryManager();
 
@@ -26,7 +25,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         internal static readonly Dictionary<string, string> _targetFrameworksToRuntimes = new Dictionary<string, string>(2)
         {
             { "net6.0", "dotnet6" },
-            { "net8.0", "dotnet8" }
+            { "net8.0", "dotnet8" },
+            { "net10.0", "dotnet10" }
         };
 
         internal static readonly List<string> _allowedRuntimeValues = new List<string>(4)
@@ -34,7 +34,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             "dotnet6",
             "provided.al2",
             "provided.al2023",
-            "dotnet8"
+            "dotnet8",
+            "dotnet10"
         };
 
         public Generator()

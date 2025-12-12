@@ -1,4 +1,4 @@
-﻿
+
 using System;
 
 namespace Amazon.Lambda.Annotations
@@ -17,7 +17,7 @@ namespace Amazon.Lambda.Annotations
         public bool GenerateMain { get; set; }
 
         /// <summary>
-        /// The runtime to set in the generated CloudFormation template. Either 'dotnet6', 'provided.al2', 'provided.al2023', or 'dotnet8'.
+        /// The runtime to set in the generated CloudFormation template. Either 'dotnet6', 'provided.al2', 'provided.al2023', 'dotnet8', or 'dotnet10'.
         /// </summary>
         public string Runtime { get; set; }
     }

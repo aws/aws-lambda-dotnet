@@ -264,7 +264,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     },
                     ExpectedDiagnostics =
                     {
-                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. The valid values are: dotnet6, provided.al2, provided.al2023, dotnet8"),
+                        new DiagnosticResult("AWSLambda0112", DiagnosticSeverity.Error).WithMessage("The runtime selected in the Amazon.Lambda.Annotations.LambdaGlobalPropertiesAttribute is not a supported value. The valid values are: dotnet6, provided.al2, provided.al2023, dotnet8, dotnet10"),
                     }
                 }
             };
