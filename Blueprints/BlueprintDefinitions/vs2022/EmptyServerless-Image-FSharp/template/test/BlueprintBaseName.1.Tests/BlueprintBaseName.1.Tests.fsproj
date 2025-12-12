@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="2.8.0" />
     <PackageReference Include="Amazon.Lambda.TestUtilities" Version="3.0.1" />
-    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.2" />
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />

@@ -84,6 +84,14 @@ namespace Packager
                 var packageId = xdoc.SelectSingleNode("//PropertyGroup/PackageId")?.InnerText;
                 var version = xdoc.SelectSingleNode("//PropertyGroup/Version")?.InnerText ?? xdoc.SelectSingleNode("//PropertyGroup/Version")?.InnerText;
 
+                if (string.IsNullOrEmpty(packageId))
+                {
+                    if (projectfile.EndsWith("Amazon.Lambda.Annotations.csproj"))
+                    {
+                        packageId = "Amazon.Lambda.Annotations";
+                    }
+                }
+
                 if(!string.IsNullOrEmpty(packageId) && !string.IsNullOrEmpty(version))
                 {
                     Console.WriteLine($"\t{packageId}: {version}");
