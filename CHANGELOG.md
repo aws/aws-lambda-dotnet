@@ -1,3 +1,10 @@
+## Release 2025-12-12
+
+### Amazon.Lambda.Annotations (1.8.0)
+* Prepare Amazon.Lambda.Annotations for upcoming .NET 10 managed runtime
+### Amazon.Lambda.APIGatewayEvents (2.7.3)
+* Marked ProxyRequestContext.Error property as Obsolete for APIGatewayProxyRequest.
+
 ## Release 2025-11-21
 
 ### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (2.0.1)
