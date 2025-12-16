@@ -1,0 +1,14 @@
+{
+  "display-name": "ASP.NET Core Minimal API",
+  "system-name": "AspNetCoreMinimalAPI",
+  "description": "Serverless ASP.NET Core Minimal API",
+  "sort-order": 115,
+  "hidden-tags": [
+    "C#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "AspNetCore",
+    "TopLevelStatements"
+  ]
+}
