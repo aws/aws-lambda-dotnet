@@ -1,0 +1,14 @@
+{
+  "display-name": "Giraffe Web App",
+  "system-name": "GiraffeWebApp",
+  "description": "A functional ASP.NET Core application using the Giraffe framework",
+  "sort-order": 120,
+  "hidden-tags": [
+    "F#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "AspNetCore",
+    "Giraffe"
+  ]
+}

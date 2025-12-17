@@ -10,7 +10,7 @@
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Giraffe" Version="7.0.2" />
+    <PackageReference Include="Giraffe" Version="8.2.0" />
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="9.2.0" />
   </ItemGroup>
   <ItemGroup>

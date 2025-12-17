@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -31,7 +31,8 @@ namespace Packager
                         relativePath.StartsWith("obj/") ||
                         relativePath.Contains("/obj/") ||
                         relativePath.StartsWith(".vs/") ||
-                        relativePath.Contains("/.vs/"))
+                        relativePath.Contains("/.vs/") ||
+                        relativePath.Contains("/.template.config/"))
                         continue;
 
                     var entry = archive.CreateEntry(relativePath);

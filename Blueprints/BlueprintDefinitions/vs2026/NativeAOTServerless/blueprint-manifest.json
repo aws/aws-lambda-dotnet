@@ -1,0 +1,13 @@
+{
+  "display-name": "Native AOT (.NET 10)",
+  "system-name": "NativeAotFunction",
+  "description": "A project configured for deployment using .NET 10's Native AOT feature.",
+  "sort-order": 120,
+  "hidden-tags": [
+    "C#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "NativeAOT"
+  ]
+}

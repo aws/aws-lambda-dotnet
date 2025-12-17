@@ -1,0 +1,13 @@
+{
+  "display-name": ".NET 10 (Container Image) Serverless Application",
+  "system-name": "EmptyImageServerless",
+  "description": ".NET 10 Lambda function packaged as a container image and deploy through AWS CloudFormation.",
+  "sort-order": 225,
+  "hidden-tags": [
+    "F#",
+    "ServerlessProject"
+  ],
+  "tags": [
+    "Container"
+  ]
+}
