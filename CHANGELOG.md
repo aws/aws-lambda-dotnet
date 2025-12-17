@@ -1,3 +1,12 @@
+## Release 2025-12-17
+
+### Amazon.Lambda.Templates (8.0.0)
+* Update templates to target .NET 10
+* Add new lambda.FileBased template for C# file-based Lambda functions
+* Lambda projects will now be created directly in output directory instead of under src/<name>
+* Removed xUnit test projects to allow Lambda projects to be created in output directory
+* Removed lambda.OrderFlowersChatbot and lambda.LexBookTripSample templates
+
 ## Release 2025-12-12
 
 ### Amazon.Lambda.Annotations (1.8.0)
