@@ -32,7 +32,7 @@ set to `true` to strip debugging symbols from the deployed executable to reduce 
 
 When publishing with Native AOT the build OS and Architecture must match the target platform that the application will run. For AWS Lambda that target
 platform is Amazon Linux 2023. The AWS tooling for Lambda like the AWS Toolkit for Visual Studio, .NET Global Tool Amazon.Lambda.Tools and SAM CLI will 
-perform a container build using a .NET 8 Amazon Linux 2023 build image when `PublishAot` is set to `true`. This means **docker is a requirement**
+perform a container build using a .NET 10 Amazon Linux 2023 build image when `PublishAot` is set to `true`. This means **docker is a requirement**
 when packaging .NET Native AOT Lambda functions on non-Amazon Linux 2023 build environments. To install docker go to https://www.docker.com/.
 
 ### Trimming

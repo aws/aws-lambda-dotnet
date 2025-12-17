@@ -1,7 +1,7 @@
 {
-  "display-name": "ASP.NET Core 8 (Container Image)",
+  "display-name": "ASP.NET Core 10 (Container Image)",
   "system-name": "AspNetCoreWebAPIImage",
-  "description": "Serverless ASP.NET Core 8 Web API packaged as a container image.",
+  "description": "Serverless ASP.NET Core 10 Web API packaged as a container image.",
   "sort-order": 250,
   "hidden-tags": [
     "C#",
