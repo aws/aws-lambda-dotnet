@@ -1,7 +1,7 @@
 {
-  "display-name": ".NET 8 (Container Image)",
+  "display-name": ".NET 10 (Container Image)",
   "system-name": "EmptyImageFunction",
-  "description": "A .NET 8 Lambda function packaged as a container image.",
+  "description": "A .NET 10 Lambda function packaged as a container image.",
   "sort-order": 225,
   "hidden-tags": [
     "C#",
