@@ -46,12 +46,12 @@ jobs:
           token: ${{ env.AWS_SECRET_TOKEN }}
       # Install .NET9 which is needed for AutoVer
       - name: Setup .NET 9.0
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d #v5.0.0
+        uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 #v5.0.1
         with:
           dotnet-version: 9.0.x
       # Install .NET10 which is needed for building the solution
       - name: Setup .NET 10.0
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d #v5.0.0
+        uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 #v5.0.1
         with:
           dotnet-version: 10.0.x
       # Install AutoVer which is needed to retrieve information about the current release.
@@ -122,12 +122,12 @@ jobs:
           fetch-depth: 0
       # Install .NET9 which is needed for AutoVer
       - name: Setup .NET 9.0
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d #v5.0.0
+        uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 #v5.0.1
         with:
           dotnet-version: 9.0.x
       # Install .NET10 which is needed for building the solution
       - name: Setup .NET 10.0
-        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d #v5.0.0
+        uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 #v5.0.1
         with:
           dotnet-version: 10.0.x
       # Install AutoVer which is needed to retrieve information about the current release.
