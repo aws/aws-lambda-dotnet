@@ -1,3 +1,8 @@
+## Release 2026-01-08
+
+### Amazon.Lambda.Templates (8.0.1)
+* Fixed previous release issue to now include templates targeting .NET 10
+
 ## Release 2025-12-17
 
 ### Amazon.Lambda.Templates (8.0.0)
