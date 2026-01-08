@@ -134,7 +134,7 @@
     },
     {
       "Name": "Amazon.Lambda.Templates",
-      "Path": "Blueprints/BlueprintDefinitions/vs2022/Templates.csproj"
+      "Path": "Blueprints/BlueprintDefinitions/vs2026/Templates.csproj"
     },
     {
       "Name": "SnapshotRestore.Registry",
