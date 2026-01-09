@@ -1,5 +1,3 @@
-# Set update schedule for GitHub Actions
-
 version: 2
 updates:
 
@@ -11,3 +9,9 @@ updates:
     labels:
       - "Release Not Needed"
     target-branch: "dev"
+    # Group all github-actions updates into a single PR
+    groups:
+      all-github-actions:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
