@@ -28,7 +28,6 @@ namespace Amazon.Lambda.RuntimeSupport
         // .NET 10 considers adding RequiresUnreferencedCode on the entry point a warning. Our situation is different then the normal use case in that the only time
         // the Main exists in the Lambda class library mode which will never be used for Native AOT.
 #pragma warning disable IL2123
-#if ExecutableOutputType
 #if NET8_0_OR_GREATER
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(
             "The Main entry point is used in the managed runtime which loads Lambda functions as a class library. " +
@@ -50,7 +49,6 @@ namespace Amazon.Lambda.RuntimeSupport
             RuntimeSupportInitializer runtimeSupportInitializer = new RuntimeSupportInitializer(handler, lambdaBootstrapOptions);
             await runtimeSupportInitializer.RunLambdaBootstrap();
         }
-#endif
 #pragma warning restore IL2123
 
 #if NET8_0_OR_GREATER

@@ -170,7 +170,6 @@
     <Target Name="build-lambda-test-tool-package" DependsOnTargets="init">
         <Exec Command="dotnet msbuild aws-lambda-test-tool-netcore.sln /t:Rebuild /p:Configuration=$(Configuration) /p:AssemblyOriginatorKeyFile=$(AssemblyOriginatorKeyFile) /p:SignAssembly=$(SignAssembly)" WorkingDirectory="..\Tools\LambdaTestTool"/>	
 		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester60-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>		
-		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester70-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>
 		<Exec Command="$(PackCommand) Amazon.Lambda.TestTool.BlazorTester80-pack.csproj" WorkingDirectory="..\Tools\LambdaTestTool\src\Amazon.Lambda.TestTool.BlazorTester"/>		
     </Target>
     <Target Name="build-lambda-test-tool-package-cicd" DependsOnTargets="init">

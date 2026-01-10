@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0;net9.0;net10.0</TargetFrameworks>
-    <Version>1.14.1</Version>
+    <Version>1.14.1112</Version>
     <Description>Provides a bootstrap and Lambda Runtime API Client to help you to develop custom .NET Core Lambda Runtimes.</Description>
     <AssemblyTitle>Amazon.Lambda.RuntimeSupport</AssemblyTitle>
     <AssemblyName>Amazon.Lambda.RuntimeSupport</AssemblyName>
@@ -22,11 +22,21 @@
       ready to make a major version release of our libraries.
       -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
+
+    <!--
+    Build as a executable which is required for the managed runtime and when used via Amazon.Lambda.TestTool for
+    testing class library based Lambda functions. Letting it be built as a executable even for the executable
+    programming model where it is used as a library. This is because it is possible a user might have a
+    executable project that also has some class library like style functions. In that scenario Amazon.Lambda.RuntimeSupport
+    would come from project instead of Amazon.Lambda.TestTool when testing. If we didn't compile as a executable
+    the user gets a missing entry point exception.
+    https://github.com/aws/integrations-on-dotnet-aspire-for-aws/issues/138
+    -->
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(ExecutableOutputType)'=='true' ">
+  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <OutputType>Exe</OutputType>
-    <DefineConstants>$(DefineConstants);ExecutableOutputType</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net9.0' or '$(TargetFramework)' == 'net10.0'">

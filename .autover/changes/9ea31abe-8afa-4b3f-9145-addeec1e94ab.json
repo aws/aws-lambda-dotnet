@@ -1,0 +1,25 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Fixed missing entry point exception when used via Amazon.Lambda.TestTool for a class library based Lambda function that is also an executable with a dependency on Amazon.Lambda.RuntimeSupport."
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update to include version 1.14.2 of Amazon.Lambda.RuntimeSupport"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update to include version 1.14.2 of Amazon.Lambda.RuntimeSupport"
+      ]
+    }
+  ]
+}
