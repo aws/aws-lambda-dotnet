@@ -15,7 +15,7 @@
     <PackAsTool>true</PackAsTool>
     <PackageId>Amazon.Lambda.TestTool</PackageId>
     <ToolCommandName>dotnet-lambda-test-tool</ToolCommandName>
-    <Version>0.11.2222</Version>
+    <Version>0.11.0</Version>
     <NoWarn>NU5100</NoWarn>
     <RollForward>Major</RollForward>
     <PackageReadmeFile>README.md</PackageReadmeFile>
