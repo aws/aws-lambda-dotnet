@@ -1,3 +1,10 @@
+## Release 2026-01-12
+
+### Amazon.Lambda.AspNetCoreServer (9.2.1)
+* Fix scoped service resolution in SnapStart warmup requests
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.9.1)
+* Fix scoped service resolution in SnapStart warmup requests
+
 ## Release 2026-01-08
 
 ### Amazon.Lambda.Templates (8.0.1)
