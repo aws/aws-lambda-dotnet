@@ -320,9 +320,14 @@ namespace Amazon.Lambda.AspNetCoreServer
 
                     for (var i = 0; i < invokeTimes; i++)
                     {
+                        // Create a scope to properly handle scoped services (e.g., IAuthenticationHandlerProvider)
+                        // This matches the behavior in FunctionHandlerAsync and prevents InvalidOperationException
+                        // when resolving scoped services in Development mode where scope validation is enabled.
+                        using var scope = _hostServices.CreateScope();
+
                         InvokeFeatures features = new InvokeFeatures();
                         (features as IItemsFeature).Items = new Dictionary<object, object>();
-                        (features as IServiceProvidersFeature).RequestServices = _hostServices;
+                        (features as IServiceProvidersFeature).RequestServices = scope.ServiceProvider;
 
                         MarshallRequest(features, request, new SnapStartEmptyLambdaContext());
 
