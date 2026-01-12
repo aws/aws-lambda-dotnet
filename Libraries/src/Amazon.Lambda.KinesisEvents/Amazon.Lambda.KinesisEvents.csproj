@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.0' ">
+    <PackageReference Include="AWSSDK.Core" Version="4.0.3.3" />
     <Compile Include="Converters\DictionaryLongToStringJsonConverter.cs" />
   </ItemGroup>
 
