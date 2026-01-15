@@ -60,6 +60,7 @@ For executable mode, use `AssemblyName` as the handler (e.g., `MyLambdaProject`)
 ### Class Library Mode
 
 For class library mode, use `AssemblyName::ClassName::MethodName` as the handler. This mode works with traditional class-based handlers and uses reflection-based method invocation.
+<<<<<<< HEAD
 
 ### Common Configuration Issue
 
@@ -144,3 +145,5 @@ builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, options =>
         apiResponse.Headers["X-Request-Id"] = context.AwsRequestId;
     };
 });
+=======
+>>>>>>> 76224107 (Applied code review feedback)
