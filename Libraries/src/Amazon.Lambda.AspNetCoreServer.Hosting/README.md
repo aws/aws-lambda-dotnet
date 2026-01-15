@@ -52,12 +52,4 @@ app.Run();
 
 ## Handler Configuration
 
-When deploying your Lambda function, the handler configuration depends on your project structure.
-
-### Executable Mode (Recommended)
-
-For executable mode, use `AssemblyName` as the handler (e.g., `MyLambdaProject`). This mode works with top-level statements or a `Main()` method without parameters. The Lambda runtime client handles event routing automatically.
-
-### Class Library Mode
-
-For class library mode, use `AssemblyName::ClassName::MethodName` as the handler. This mode works with traditional class-based handlers and uses reflection-based method invocation.
+The Lambda function handler must be set to the assembly name (e.g., `MyLambdaProject`). The `AddAWSLambdaHosting` method sets up the Lambda runtime client and registers the callback for processing Lambda events, so the handler should not use the class library format (`<assembly-name>::<full-type-name>::<method-name>`).
