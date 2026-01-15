@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.KinesisEvents",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update AWSSDK.Core dependency version to 4.0.3.8"
+      ]
+    }
+  ]
+}
