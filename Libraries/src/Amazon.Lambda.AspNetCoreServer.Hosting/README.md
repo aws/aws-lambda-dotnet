@@ -51,38 +51,7 @@ app.Run();
 
 ## Handler Configuration
 
-When deploying your Lambda function, the handler configuration depends on your project structure.
-
-### Executable Mode (Recommended)
-
-For executable mode, use `AssemblyName` as the handler (e.g., `MyLambdaProject`). This mode works with top-level statements or a `Main()` method without parameters. The Lambda runtime client handles event routing automatically.
-
-### Class Library Mode
-
-For class library mode, use `AssemblyName::ClassName::MethodName` as the handler. This mode works with traditional class-based handlers and uses reflection-based method invocation.
-<<<<<<< HEAD
-
-### Common Configuration Issue
-
-When using `Main(string[] args)` with executable mode handler configuration, the Lambda runtime attempts to deserialize the incoming API Gateway event JSON into the `string[] args` parameter, which causes a `JsonSerializerException`.
-
-Incorrect usage:
-```csharp
-static void Main(string[] args)
-{
-    var builder = WebApplication.CreateBuilder(args);
-    // ... rest of setup
-}
-```
-
-Correct usage for executable mode:
-```csharp
-static void Main()
-{
-    var builder = WebApplication.CreateBuilder();
-    // ... rest of setup
-}
-```
+The Lambda function handler must be set to the assembly name (e.g., `MyLambdaProject`). The `AddAWSLambdaHosting` method sets up the Lambda runtime client and registers the callback for processing Lambda events, so the handler should not use the class library format (`<assembly-name>::<full-type-name>::<method-name>`).
 
 ## Extension Points
 
@@ -145,5 +114,3 @@ builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, options =>
         apiResponse.Headers["X-Request-Id"] = context.AwsRequestId;
     };
 });
-=======
->>>>>>> 76224107 (Applied code review feedback)
