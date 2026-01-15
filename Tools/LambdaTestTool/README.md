@@ -204,13 +204,34 @@ Remember when you update your version of the .NET Mock Lambda Test Tool to updat
 Follow the following steps to configure Rider
 * Select Run->Edit Configurations...
 * Push the `+` button to add a configuration and select `.NET Executable`
-* Set the `Exe path` field to the full path of `Amazon.Lambda.TestTool.BlazorTester.dll` as described above
-* Set the `Working directory` field to the .NET Core Lambda project root
+* Set the `Exe path` field to `dotnet`
+* Set the `Program Arguments` field to the full path of `Amazon.Lambda.TestTool.BlazorTester.dll` as described above
+* Set the `Working directory` field to the .NET Lambda project root
 * Push OK
 
 After following these steps, any time you start the debugger in Rider, it will subsequently launch the .NET Mock Lambda Test Tool.
 
 ![Rider Run/Debug Configuration](./Resources/RiderSetup.png)
+
+
+You can also specify a launchSettings.json configuration such as the following to provide this information to Rider:
+
+```
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "SimpleHttpApi": {
+      "commandName": "Executable",
+      "executablePath": "dotnet",
+      "commandLineArgs": "/home/<USER>/.dotnet/tools/.store/amazon.lambda.testtool-8.0/<nuget-version>/amazon.lambda.testtool-8.0/<nuget-version>/tools/net8.0/any/Amazon.Lambda.TestTool.BlazorTester.dll",
+      "workingDirectory": "$(ProjectDir)",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
+```
 
 ## Configure for Visual Studio for Mac
 
