@@ -1,3 +1,46 @@
+## Release 2026-01-15
+
+### Amazon.Lambda.KinesisEvents (3.0.1)
+* Update AWSSDK.Core dependency version to 4.0.3.8
+### Amazon.Lambda.ApplicationLoadBalancerEvents (2.2.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.CloudWatchEvents (4.4.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.CloudWatchLogsEvents (2.2.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.ConfigEvents (2.1.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.ConnectEvents (1.1.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.DynamoDBEvents (3.1.2)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.KafkaEvents (2.1.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.KinesisAnalyticsEvents (2.3.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.KinesisFirehoseEvents (2.3.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.LexEvents (3.1.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.LexV2Events (1.1.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.MQEvents (2.1.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.PowerShellHost (3.0.3)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.S3Events (3.1.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.Serialization.Json (2.2.5)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.Serialization.SystemTextJson (2.4.5)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.SimpleEmailEvents (3.1.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.SNSEvents (2.1.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+### Amazon.Lambda.SQSEvents (2.2.1)
+* Update NuGet package to use license expression. License was not change and remains Apache 2.
+
 ## Release 2026-01-12
 
 ### Amazon.Lambda.AspNetCoreServer (9.2.1)
