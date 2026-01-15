@@ -61,25 +61,3 @@ For executable mode, use `AssemblyName` as the handler (e.g., `MyLambdaProject`)
 ### Class Library Mode
 
 For class library mode, use `AssemblyName::ClassName::MethodName` as the handler. This mode works with traditional class-based handlers and uses reflection-based method invocation.
-
-### Common Configuration Issue
-
-When using `Main(string[] args)` with executable mode handler configuration, the Lambda runtime attempts to deserialize the incoming API Gateway event JSON into the `string[] args` parameter, which causes a `JsonSerializerException`.
-
-Incorrect usage:
-```csharp
-static void Main(string[] args)
-{
-    var builder = WebApplication.CreateBuilder(args);
-    // ... rest of setup
-}
-```
-
-Correct usage for executable mode:
-```csharp
-static void Main()
-{
-    var builder = WebApplication.CreateBuilder();
-    // ... rest of setup
-}
-```
