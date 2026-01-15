@@ -6,7 +6,7 @@
         <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
         <Description>Amazon Lambda .NET Core support - Application Load Balancer package.</Description>
         <AssemblyTitle>Amazon.Lambda.ApplicationLoadBalancerEvents</AssemblyTitle>
-        <Version>2.2.0</Version>
+        <Version>2.2.1</Version>
         <AssemblyName>Amazon.Lambda.ApplicationLoadBalancerEvents</AssemblyName>
         <PackageId>Amazon.Lambda.ApplicationLoadBalancerEvents</PackageId>
         <PackageTags>AWS;Amazon;Lambda</PackageTags>

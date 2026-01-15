@@ -6,7 +6,7 @@
     <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - KinesisEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.KinesisEvents</AssemblyTitle>
-    <Version>3.0.0</Version>
+    <Version>3.0.1</Version>
     <AssemblyName>Amazon.Lambda.KinesisEvents</AssemblyName>
     <PackageId>Amazon.Lambda.KinesisEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.0' ">
+    <PackageReference Include="AWSSDK.Core" Version="4.0.3.8" />
     <Compile Include="Converters\DictionaryLongToStringJsonConverter.cs" />
   </ItemGroup>
 

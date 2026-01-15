@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\..\..\buildtools\common.props" />    
 
@@ -9,7 +9,7 @@
         <AssemblyName>Amazon.Lambda.Serialization.SystemTextJson</AssemblyName>
         <PackageId>Amazon.Lambda.Serialization.SystemTextJson</PackageId>
         <PackageTags>AWS;Amazon;Lambda</PackageTags>
-        <Version>2.4.4</Version>
+        <Version>2.4.5</Version>
         <PackageReadmeFile>README.md</PackageReadmeFile>
       <!--
       Disabling the EOL check because when we remove support in our libraries is a different and slower cycle then the framework's cycle.
@@ -19,7 +19,7 @@
         <CheckEolTargetFramework>false</CheckEolTargetFramework>
     </PropertyGroup>
 	<ItemGroup>
-		<None Include="README.md" Pack="true" PackagePath="\"/>
+		<None Include="README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 	
     <ItemGroup>

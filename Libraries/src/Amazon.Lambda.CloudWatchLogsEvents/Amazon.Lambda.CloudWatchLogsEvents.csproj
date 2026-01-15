@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\..\buildtools\common.props" />
   <PropertyGroup>
     <Description>Amazon Lambda .NET Core support - CloudWatchLogsEvents package.</Description>
     <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.CloudWatchLogsEvents</AssemblyTitle>
-    <Version>2.2.0</Version>
+    <Version>2.2.1</Version>
     <AssemblyName>Amazon.Lambda.CloudWatchLogsEvents</AssemblyName>
     <PackageId>Amazon.Lambda.CloudWatchLogsEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
