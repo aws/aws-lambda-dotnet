@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - Amazon Kinesis Firehose package.</Description>
     <AssemblyTitle>Amazon.Lambda.KinesisFirehoseEvents</AssemblyTitle>
-    <Version>2.3.0</Version>
+    <Version>2.3.1</Version>
     <AssemblyName>Amazon.Lambda.KinesisFirehoseEvents</AssemblyName>
     <PackageId>Amazon.Lambda.KinesisFirehoseEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;KinesisFirehose</PackageTags>

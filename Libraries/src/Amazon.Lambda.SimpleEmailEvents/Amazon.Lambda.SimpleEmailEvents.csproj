@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - SimpleEmailEvents package.</Description>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.SimpleEmailEvents</AssemblyTitle>
-    <Version>3.1.0</Version>
+    <Version>3.1.1</Version>
     <AssemblyName>Amazon.Lambda.SimpleEmailEvents</AssemblyName>
     <PackageId>Amazon.Lambda.SimpleEmailEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>

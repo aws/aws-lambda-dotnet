@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
@@ -6,7 +6,7 @@
     <Description>Amazon Lambda .NET Core support - Amazon Connect package.</Description>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <AssemblyTitle>Amazon.Lambda.ConnectEvents</AssemblyTitle>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <AssemblyName>Amazon.Lambda.ConnectEvents</AssemblyName>
     <PackageId>Amazon.Lambda.ConnectEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda;Connect</PackageTags>
