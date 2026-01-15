@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\..\buildtools\common.props" />
 
@@ -6,7 +6,7 @@
     <TargetFrameworks>netcoreapp3.1;net8.0</TargetFrameworks>
     <Description>Amazon Lambda .NET Core support - DynamoDBEvents package.</Description>
     <AssemblyTitle>Amazon.Lambda.DynamoDBEvents</AssemblyTitle>
-    <Version>3.1.1</Version>
+    <Version>3.1.2</Version>
     <AssemblyName>Amazon.Lambda.DynamoDBEvents</AssemblyName>
     <PackageId>Amazon.Lambda.DynamoDBEvents</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
