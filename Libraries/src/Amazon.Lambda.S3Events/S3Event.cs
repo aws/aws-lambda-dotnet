@@ -57,8 +57,21 @@ namespace Amazon.Lambda.S3Events
         {
             /// <summary>
             /// Gets and sets the key for the object stored in S3.
+            /// <para>
+            /// Note: S3 events sent to Lambda will have the object key in the JSON document url encoded. For example if the object key name contains a space character it will be represented as +.
+            /// This property returns the object key exactly as it is received in the S3 event including being url encoded. To get the key decoded use the <see cref="KeyDecoded"/> property.
+            /// </para>
             /// </summary>
             public string Key { get; set; }
+
+            /// <summary>
+            /// Gets and the url decoded key for the object stored in S3.
+            /// <para>
+            /// Note: S3 events sent to Lambda will have the object key in the JSON document url encoded. For example if the object key name contains a space character it will be represented as +.
+            /// This read only property returns the value of <see cref="Key"/> property url decoded.
+            /// </para>
+            /// </summary>
+            public string KeyDecoded => System.Net.WebUtility.UrlDecode(Key);
 
             /// <summary>
             /// Gets and sets the size of the object in S3.
