@@ -256,7 +256,7 @@ namespace Amazon.Lambda.Tests
             {
                 var s3Event = serializer.Deserialize<S3Event>(fileStream);
 
-                Assert.Equal(s3Event.Records.Count, 1);
+                Assert.Equal(s3Event.Records.Count, 2);
                 var record = s3Event.Records[0];
                 Assert.Equal(record.EventVersion, "2.0");
                 Assert.Equal(record.EventTime.ToUniversalTime(), DateTime.Parse("1970-01-01T00:00:00.000Z").ToUniversalTime());
@@ -275,6 +275,9 @@ namespace Amazon.Lambda.Tests
                 Assert.Equal(record.EventName, "ObjectCreated:Put");
                 Assert.Equal(record.UserIdentity.PrincipalId, "EXAMPLE");
                 Assert.Equal(record.EventSource, "aws:s3");
+
+                // In the events file the key is New+File.jpg simulating the key being url encoded.
+                Assert.Equal("New File.jpg", s3Event.Records[1].S3.Object.KeyDecoded);
 
                 Handle(s3Event);
             }

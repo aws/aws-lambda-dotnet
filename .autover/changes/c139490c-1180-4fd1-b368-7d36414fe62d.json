@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.S3Events",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Add KeyDecoded property to get the S3 object key url decoded"
+      ]
+    }
+  ]
+}
