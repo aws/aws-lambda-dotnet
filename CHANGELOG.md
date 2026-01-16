@@ -1,3 +1,8 @@
+## Release 2026-01-16
+
+### Amazon.Lambda.S3Events (3.1.2)
+* Add KeyDecoded property to get the S3 object key url decoded
+
 ## Release 2026-01-15
 
 ### Amazon.Lambda.KinesisEvents (3.0.1)
