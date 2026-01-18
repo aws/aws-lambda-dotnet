@@ -49,3 +49,7 @@ app.MapControllers();
 app.Run();
 
 ```
+
+## Handler Configuration
+
+The Lambda function handler must be set to the assembly name (e.g., `MyLambdaProject`). The `AddAWSLambdaHosting` method sets up the Lambda runtime client and registers the callback for processing Lambda events, so the handler should not use the class library format (`<assembly-name>::<full-type-name>::<method-name>`).
