@@ -69,7 +69,9 @@ namespace Amazon.Lambda.TestTool.Runtime
                     info.Name = functionHandler;
                 }
 
-                if(configFile.EnvironmentVariables != null)
+                info.Timeout = GetFunctionTimeOut(configFile);
+
+                if (configFile.EnvironmentVariables != null)
                 {
                     ParseKeyValueOption(configFile.EnvironmentVariables, info.EnvironmentVariables);
                 }
@@ -366,6 +368,15 @@ namespace Amazon.Lambda.TestTool.Runtime
                     configInfo.FunctionInfos.Add(functionInfo);
                 }
             }
+        }
+
+        private static TimeSpan GetFunctionTimeOut(LambdaConfigFile configFile)
+        {
+            var configValue = configFile.FunctionDebugTimeOut ?? configFile.FunctionTimeOut;
+
+            return configValue.HasValue
+                    ? TimeSpan.FromSeconds(configValue.Value)
+                    : TimeSpan.FromMinutes(15);
         }
     }
 }
