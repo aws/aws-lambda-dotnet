@@ -4,25 +4,25 @@
   
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <Description>A tool to help debug and test your .NET 6.0 AWS Lambda functions locally.</Description>
+    <Description>A tool to help debug and test your .NET 10.0 AWS Lambda functions locally.</Description>
     <Version>0.16.3</Version>
     <Product>AWS .NET Lambda Test Tool</Product>
     <Copyright>Apache 2</Copyright>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-    <TargetFramework>net6.0</TargetFramework>
-    <ToolCommandName>dotnet-lambda-test-tool-6.0</ToolCommandName>	
+    <TargetFramework>net10.0</TargetFramework>
+    <ToolCommandName>dotnet-lambda-test-tool-10.0</ToolCommandName>	
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
-    <PackageId>Amazon.Lambda.TestTool-6.0</PackageId>
+    <PackageId>Amazon.Lambda.TestTool-10.0</PackageId>
 	<AssemblyName>Amazon.Lambda.TestTool.BlazorTester</AssemblyName>
 	<RootNamespace>Amazon.Lambda.TestTool.BlazorTester</RootNamespace>	
 	<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
-	<StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
+<!--	<StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>-->
   </PropertyGroup>
 
   <ItemGroup>
       <PackageReference Include="Blazored.Modal" Version="3.1.2" />
-	  <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="6.0.35" /> 
+	  <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.1" /> 
 	  <ProjectReference Include="..\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
   </ItemGroup>
 
