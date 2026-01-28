@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "Test application demonstrating FromCustomAuthorizer attribute with HTTP API Lambda Authorizer This template is partially managed by Amazon.Lambda.Annotations (v1.8.0.0).",
+  "Description": "Test application demonstrating FromCustomAuthorizer attribute with both HTTP API and REST API Lambda Authorizers. This template is partially managed by Amazon.Lambda.Annotations (v1.8.0.0).",
   "Globals": {
     "Function": {
       "Runtime": "dotnet8",
@@ -16,7 +16,9 @@
       "Properties": {
         "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction::HttpApiAuthorize",
         "Description": "Lambda Authorizer that validates requests and provides custom context values",
-        "Policies": ["AWSLambdaBasicExecutionRole"]
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ]
       }
     },
     "CustomAuthorizerPermission": {
@@ -53,23 +55,22 @@
         "AuthorizerPayloadFormatVersion": "2.0",
         "EnableSimpleResponses": true,
         "IdentitySource": [
-          "$request.header.Authorization"
+          "$request.header.authorization"
         ],
         "Name": "CustomLambdaAuthorizer"
       }
     },
     "ProtectedEndpoint": {
       "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
       "Properties": {
         "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetProtectedData_Generated::GetProtectedData",
         "Description": "Protected endpoint demonstrating FromCustomAuthorizer attribute",
         "PackageType": "Zip",
         "CodeUri": ".",
         "Runtime": "dotnet8",
-        "Policies": ["AWSLambdaBasicExecutionRole"]
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ]
       }
     },
     "ProtectedEndpointPermission": {
@@ -119,16 +120,15 @@
     },
     "GetUserInfo": {
       "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
       "Properties": {
         "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetUserInfo_Generated::GetUserInfo",
         "Description": "Returns user info from custom authorizer context",
         "PackageType": "Zip",
         "CodeUri": ".",
         "Runtime": "dotnet8",
-        "Policies": ["AWSLambdaBasicExecutionRole"]
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ]
       }
     },
     "GetUserInfoPermission": {
@@ -178,16 +178,15 @@
     },
     "HealthCheck": {
       "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
       "Properties": {
         "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_HealthCheck_Generated::HealthCheck",
         "Description": "Simple health check endpoint without authorizer",
         "PackageType": "Zip",
         "CodeUri": ".",
         "Runtime": "dotnet8",
-        "Policies": ["AWSLambdaBasicExecutionRole"]
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ]
       }
     },
     "HealthCheckPermission": {
@@ -240,6 +239,144 @@
         "StageName": "$default",
         "AutoDeploy": true
       }
+    },
+    "RestApiAuthorizer": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction::RestApiAuthorize",
+        "Description": "REST API Lambda Authorizer that validates requests and provides custom context values",
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ]
+      }
+    },
+    "ServerlessRestApi": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "TestCustomAuthorizerRestApi",
+        "Description": "REST API with custom Lambda authorizer for testing FromCustomAuthorizer attribute"
+      }
+    },
+    "RestApiLambdaAuthorizer": {
+      "Type": "AWS::ApiGateway::Authorizer",
+      "Properties": {
+        "Name": "RestApiLambdaAuthorizer",
+        "RestApiId": {
+          "Ref": "ServerlessRestApi"
+        },
+        "Type": "REQUEST",
+        "AuthorizerUri": {
+          "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RestApiAuthorizer.Arn}/invocations"
+        },
+        "IdentitySource": "method.request.header.Authorization"
+      }
+    },
+    "RestApiAuthorizerPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "RestApiAuthorizer"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ServerlessRestApi}/authorizers/*"
+        }
+      }
+    },
+    "RestUserInfo": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetRestUserInfo_Generated::GetRestUserInfo",
+        "Description": "REST API endpoint demonstrating FromCustomAuthorizer attribute",
+        "PackageType": "Zip",
+        "CodeUri": ".",
+        "Runtime": "dotnet8",
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ]
+      }
+    },
+    "RestUserInfoPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "RestUserInfo"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ServerlessRestApi}/*/*/*"
+        }
+      }
+    },
+    "RestApiResource": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ServerlessRestApi"
+        },
+        "ParentId": {
+          "Fn::GetAtt": ["ServerlessRestApi", "RootResourceId"]
+        },
+        "PathPart": "api"
+      }
+    },
+    "RestApiUserInfoResource": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ServerlessRestApi"
+        },
+        "ParentId": {
+          "Ref": "RestApiResource"
+        },
+        "PathPart": "rest-user-info"
+      }
+    },
+    "RestApiUserInfoMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ServerlessRestApi"
+        },
+        "ResourceId": {
+          "Ref": "RestApiUserInfoResource"
+        },
+        "HttpMethod": "GET",
+        "AuthorizationType": "CUSTOM",
+        "AuthorizerId": {
+          "Ref": "RestApiLambdaAuthorizer"
+        },
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RestUserInfo.Arn}/invocations"
+          }
+        }
+      }
+    },
+    "RestApiDeployment": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "DependsOn": ["RestApiUserInfoMethod"],
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ServerlessRestApi"
+        }
+      }
+    },
+    "RestApiStage": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ServerlessRestApi"
+        },
+        "DeploymentId": {
+          "Ref": "RestApiDeployment"
+        },
+        "StageName": "Prod"
+      }
     }
   },
   "Outputs": {
@@ -265,6 +402,18 @@
       "Description": "Health check endpoint URL (no auth required)",
       "Value": {
         "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/health"
+      }
+    },
+    "RestApiUrl": {
+      "Description": "REST API endpoint URL",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+      }
+    },
+    "RestUserInfoUrl": {
+      "Description": "REST API User info endpoint URL (requires Authorization header)",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/rest-user-info"
       }
     }
   }
