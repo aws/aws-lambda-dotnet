@@ -317,7 +317,10 @@
           "Ref": "ServerlessRestApi"
         },
         "ParentId": {
-          "Fn::GetAtt": ["ServerlessRestApi", "RootResourceId"]
+          "Fn::GetAtt": [
+            "ServerlessRestApi",
+            "RootResourceId"
+          ]
         },
         "PathPart": "api"
       }
@@ -359,7 +362,9 @@
     },
     "RestApiDeployment": {
       "Type": "AWS::ApiGateway::Deployment",
-      "DependsOn": ["RestApiUserInfoMethod"],
+      "DependsOn": [
+        "RestApiUserInfoMethod"
+      ],
       "Properties": {
         "RestApiId": {
           "Ref": "ServerlessRestApi"

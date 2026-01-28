@@ -276,15 +276,7 @@
             try
             {
                 var __authValue_<#= parameter.Name #>__ = __request__.RequestContext.Authorizer["<#= authKey #>"];
-                // Handle JsonElement from System.Text.Json deserialization
-                if (__authValue_<#= parameter.Name #>__ is System.Text.Json.JsonElement __jsonElement_<#= parameter.Name #>__)
-                {
-                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__jsonElement_<#= parameter.Name #>__.ToString(), typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
-                }
-                else
-                {
-                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__authValue_<#= parameter.Name #>__, typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
-                }
+                <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__authValue_<#= parameter.Name #>__?.ToString(), typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
@@ -321,15 +313,7 @@
             try
             {
                 var __authValue_<#= parameter.Name #>__ = __request__.RequestContext.Authorizer.Lambda["<#= authKey #>"];
-                // Handle JsonElement from System.Text.Json deserialization
-                if (__authValue_<#= parameter.Name #>__ is System.Text.Json.JsonElement __jsonElement_<#= parameter.Name #>__)
-                {
-                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__jsonElement_<#= parameter.Name #>__.ToString(), typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
-                }
-                else
-                {
-                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__authValue_<#= parameter.Name #>__, typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
-                }
+                <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__authValue_<#= parameter.Name #>__?.ToString(), typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
