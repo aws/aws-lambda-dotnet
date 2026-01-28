@@ -2,12 +2,10 @@ using Amazon.Lambda.TestTool.BlazorTester.Services;
 using Blazored.Modal;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -21,13 +19,8 @@ namespace Amazon.Lambda.TestTool.BlazorTester
     {
         public static void LaunchWebTester(LocalLambdaOptions lambdaOptions, bool openWindow)
         {
-#if NET10_0_OR_GREATER
             var host = StartWebTesterAsync(lambdaOptions, openWindow).GetAwaiter().GetResult();
             host.WaitForShutdown();
-#else
-            var host = StartWebTesterAsync(lambdaOptions, openWindow).GetAwaiter().GetResult();
-            host.WaitForShutdown();
-#endif
         }
 
 #if NET10_0_OR_GREATER
@@ -51,7 +44,7 @@ namespace Amazon.Lambda.TestTool.BlazorTester
                 ContentRootPath = contentPath,
             });
 
-            // When running as a end user we won't the console to only have the specific logs Console.Write calls.
+            // When running as an end user, we want the console to show only logs from Console.Write calls
             // and not be cluttered with framework logs.
 #if !DEBUG
             builder.Logging.ClearProviders();
@@ -66,7 +59,6 @@ namespace Amazon.Lambda.TestTool.BlazorTester
             builder.Services.AddSingleton(lambdaOptions);
 
             builder.Services.AddSingleton<IRuntimeApiDataStore, RuntimeApiDataStore>();
-            builder.Services.AddControllers();
             builder.Services.AddHttpContextAccessor();
 
             builder.Services.AddBlazoredModal();
@@ -84,8 +76,6 @@ namespace Amazon.Lambda.TestTool.BlazorTester
 
             app.UseAntiforgery();
             app.UseDeveloperExceptionPage();
-
-            app.MapGet("/custom-health", () => "Healthy");
 
             app.MapControllers();
             app.UseStaticFiles();
