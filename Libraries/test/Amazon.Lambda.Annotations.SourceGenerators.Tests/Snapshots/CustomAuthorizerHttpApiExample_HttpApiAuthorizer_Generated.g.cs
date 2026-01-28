@@ -53,11 +53,12 @@ namespace TestServerlessApp
             
             try
             {
-              authorizerValue = (string)Convert.ChangeType(__request__.RequestContext.Authorizer.Lambda["authKey"], typeof(string));
+                var __authValue_authorizerValue__ = __request__.RequestContext.Authorizer.Lambda["authKey"];
+                authorizerValue = (string)Convert.ChangeType(__authValue_authorizerValue__?.ToString(), typeof(string));
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
-              return new Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse
+                return new Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse
                 {                    
                     Headers = new Dictionary<string, string>
                     {
