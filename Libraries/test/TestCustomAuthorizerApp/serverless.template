@@ -1,0 +1,271 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "Test application demonstrating FromCustomAuthorizer attribute with HTTP API Lambda Authorizer This template is partially managed by Amazon.Lambda.Annotations (v1.8.0.0).",
+  "Globals": {
+    "Function": {
+      "Runtime": "dotnet8",
+      "MemorySize": 512,
+      "Timeout": 30,
+      "CodeUri": "."
+    }
+  },
+  "Resources": {
+    "CustomAuthorizer": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction::HttpApiAuthorize",
+        "Description": "Lambda Authorizer that validates requests and provides custom context values",
+        "Policies": ["AWSLambdaBasicExecutionRole"]
+      }
+    },
+    "CustomAuthorizerPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "CustomAuthorizer"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ServerlessHttpApi}/authorizers/*"
+        }
+      }
+    },
+    "ServerlessHttpApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": "TestCustomAuthorizerApi",
+        "ProtocolType": "HTTP",
+        "Description": "HTTP API with custom Lambda authorizer for testing FromCustomAuthorizer attribute"
+      }
+    },
+    "HttpApiAuthorizer": {
+      "Type": "AWS::ApiGatewayV2::Authorizer",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "AuthorizerType": "REQUEST",
+        "AuthorizerUri": {
+          "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CustomAuthorizer.Arn}/invocations"
+        },
+        "AuthorizerPayloadFormatVersion": "2.0",
+        "EnableSimpleResponses": true,
+        "IdentitySource": [
+          "$request.header.Authorization"
+        ],
+        "Name": "CustomLambdaAuthorizer"
+      }
+    },
+    "ProtectedEndpoint": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetProtectedData_Generated::GetProtectedData",
+        "Description": "Protected endpoint demonstrating FromCustomAuthorizer attribute",
+        "PackageType": "Zip",
+        "CodeUri": ".",
+        "Runtime": "dotnet8",
+        "Policies": ["AWSLambdaBasicExecutionRole"]
+      }
+    },
+    "ProtectedEndpointPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "ProtectedEndpoint"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ServerlessHttpApi}/*/*/api/protected"
+        }
+      }
+    },
+    "ProtectedEndpointIntegration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "ProtectedEndpoint",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0"
+      }
+    },
+    "ProtectedEndpointRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "RouteKey": "GET /api/protected",
+        "AuthorizationType": "CUSTOM",
+        "AuthorizerId": {
+          "Ref": "HttpApiAuthorizer"
+        },
+        "Target": {
+          "Fn::Sub": "integrations/${ProtectedEndpointIntegration}"
+        }
+      }
+    },
+    "GetUserInfo": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetUserInfo_Generated::GetUserInfo",
+        "Description": "Returns user info from custom authorizer context",
+        "PackageType": "Zip",
+        "CodeUri": ".",
+        "Runtime": "dotnet8",
+        "Policies": ["AWSLambdaBasicExecutionRole"]
+      }
+    },
+    "GetUserInfoPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "GetUserInfo"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ServerlessHttpApi}/*/*/api/user-info"
+        }
+      }
+    },
+    "GetUserInfoIntegration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "GetUserInfo",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0"
+      }
+    },
+    "GetUserInfoRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "RouteKey": "GET /api/user-info",
+        "AuthorizationType": "CUSTOM",
+        "AuthorizerId": {
+          "Ref": "HttpApiAuthorizer"
+        },
+        "Target": {
+          "Fn::Sub": "integrations/${GetUserInfoIntegration}"
+        }
+      }
+    },
+    "HealthCheck": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_HealthCheck_Generated::HealthCheck",
+        "Description": "Simple health check endpoint without authorizer",
+        "PackageType": "Zip",
+        "CodeUri": ".",
+        "Runtime": "dotnet8",
+        "Policies": ["AWSLambdaBasicExecutionRole"]
+      }
+    },
+    "HealthCheckPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HealthCheck"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ServerlessHttpApi}/*/*/api/health"
+        }
+      }
+    },
+    "HealthCheckIntegration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "HealthCheck",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0"
+      }
+    },
+    "HealthCheckRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "RouteKey": "GET /api/health",
+        "Target": {
+          "Fn::Sub": "integrations/${HealthCheckIntegration}"
+        }
+      }
+    },
+    "HttpApiStage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true
+      }
+    }
+  },
+  "Outputs": {
+    "ApiUrl": {
+      "Description": "HTTP API endpoint URL",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+      }
+    },
+    "ProtectedEndpointUrl": {
+      "Description": "Protected endpoint URL (requires Authorization header)",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/protected"
+      }
+    },
+    "UserInfoUrl": {
+      "Description": "User info endpoint URL (requires Authorization header)",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/user-info"
+      }
+    },
+    "HealthCheckUrl": {
+      "Description": "Health check endpoint URL (no auth required)",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/health"
+      }
+    }
+  }
+}
