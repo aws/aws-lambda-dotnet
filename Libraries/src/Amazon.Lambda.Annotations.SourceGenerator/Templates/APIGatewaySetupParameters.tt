@@ -250,6 +250,85 @@
 <#
                 }
             }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromCustomAuthorizerAttribute))
+            {
+                var fromAuthorizerAttribute = parameter.Attributes?.FirstOrDefault(att => att.Type.FullName == TypeFullNames.FromCustomAuthorizerAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromCustomAuthorizerAttribute>;
+
+                // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                var authKey = fromAuthorizerAttribute?.Data?.Name ?? parameter.Name;
+                if(restApiAttribute != null)
+                {
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            if (__request__.RequestContext?.Authorizer == null || __request__.RequestContext?.Authorizer.ContainsKey("<#= authKey #>") == false)
+            {
+                return new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                {                    
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "AccessDeniedException"}
+                    },
+                    StatusCode = 401
+                };
+            }
+            
+            try
+            {
+              <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.RequestContext.Authorizer["<#= authKey #>"], typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
+            }
+            catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+            {
+              return new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+              {                    
+                  Headers = new Dictionary<string, string>
+                  {
+                      {"Content-Type", "application/json"},
+                      {"x-amzn-ErrorType", "AccessDeniedException"}
+                  },
+                  StatusCode = 401
+              };
+            }
+
+<#
+                }
+                else
+                {
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            if (__request__.RequestContext?.Authorizer?.Lambda == null || __request__.RequestContext?.Authorizer?.Lambda.ContainsKey("<#= authKey #>") == false)
+            {
+                return new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                {                    
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "AccessDeniedException"}
+                    },
+                    StatusCode = 401
+                };
+            }
+            
+            try
+            {
+              <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.RequestContext.Authorizer.Lambda["<#= authKey #>"], typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
+            }
+            catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+            {
+              return new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                {                    
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "AccessDeniedException"}
+                    },
+                    StatusCode = 401
+                };
+            }
+
+<#
+                }
+            }
             else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) || routeParameters.Contains(parameter.Name))
             {
                 var fromRouteAttribute = parameter.Attributes?.FirstOrDefault(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromRouteAttribute>;
