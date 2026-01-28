@@ -1,0 +1,13 @@
+{
+  "Information": [
+    "This file provides default values for the deployment wizard inside Visual Studio and the AWS Lambda CLI.",
+    "To learn more about the Lambda CLI see: https://github.com/aws/aws-extensions-for-dotnet-cli#aws-lambda-amazonlambdatools"
+  ],
+  "profile": "",
+  "region": "",
+  "configuration": "Release",
+  "template": "serverless.template",
+  "template-parameters": "",
+  "s3-prefix": "TestCustomAuthorizerApp/",
+  "stack-name": "test-custom-authorizer"
+}
