@@ -22,7 +22,6 @@
 
   <ItemGroup>
       <PackageReference Include="Blazored.Modal" Version="3.1.2" />
-	  <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="9.0.0-rc.2.24474.3" /> 
 	  <ProjectReference Include="..\Amazon.Lambda.TestTool\Amazon.Lambda.TestTool.csproj" />
   </ItemGroup>
 

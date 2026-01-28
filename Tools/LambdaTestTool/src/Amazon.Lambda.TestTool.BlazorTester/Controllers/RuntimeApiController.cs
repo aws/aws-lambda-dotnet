@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
 {
-#if NET6_0_OR_GREATER
     public class RuntimeApiController : ControllerBase
     {
         private const string HEADER_BREAK = "-----------------------------------";
@@ -101,5 +100,4 @@ namespace Amazon.Lambda.TestTool.BlazorTester.Controllers
         [System.Text.Json.Serialization.JsonPropertyName("status")]
         public string Status { get; set; }
     }
-#endif
 }
