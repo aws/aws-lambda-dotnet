@@ -40,7 +40,7 @@ namespace TestServerlessApp
             var authorizerValue = default(string);
             if (__request__.RequestContext?.Authorizer == null || __request__.RequestContext?.Authorizer.ContainsKey("theAuthKey") == false)
             {
-                return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
+                var __unauthorized__ = new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
                 {                    
                     Headers = new Dictionary<string, string>
                     {
@@ -49,6 +49,7 @@ namespace TestServerlessApp
                     },
                     StatusCode = 401
                 };
+                return __unauthorized__;
             }
             
             try
@@ -58,7 +59,7 @@ namespace TestServerlessApp
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
-                return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
+                var __unauthorized__ = new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
                 {                    
                     Headers = new Dictionary<string, string>
                     {
@@ -67,6 +68,7 @@ namespace TestServerlessApp
                     },
                     StatusCode = 401
                 };
+                return __unauthorized__;
             }
 
             // return 400 Bad Request if there exists a validation error

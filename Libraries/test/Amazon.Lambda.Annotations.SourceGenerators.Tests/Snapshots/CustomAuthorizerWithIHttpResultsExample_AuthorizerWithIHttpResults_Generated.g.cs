@@ -7,12 +7,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.Annotations.APIGateway;
 
 namespace TestServerlessApp
 {
-    public class CustomAuthorizerHttpApiV1Example_HttpApiV1Authorizer_Generated
+    public class CustomAuthorizerWithIHttpResultsExample_AuthorizerWithIHttpResults_Generated
     {
-        private readonly CustomAuthorizerHttpApiV1Example customAuthorizerHttpApiV1Example;
+        private readonly CustomAuthorizerWithIHttpResultsExample customAuthorizerWithIHttpResultsExample;
         private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
         /// <summary>
@@ -20,27 +21,27 @@ namespace TestServerlessApp
         /// the AWS credentials will come from the IAM role associated with the function and the AWS region will be set to the
         /// region the Lambda function is executed in.
         /// </summary>
-        public CustomAuthorizerHttpApiV1Example_HttpApiV1Authorizer_Generated()
+        public CustomAuthorizerWithIHttpResultsExample_AuthorizerWithIHttpResults_Generated()
         {
             SetExecutionEnvironment();
-            customAuthorizerHttpApiV1Example = new CustomAuthorizerHttpApiV1Example();
+            customAuthorizerWithIHttpResultsExample = new CustomAuthorizerWithIHttpResultsExample();
             serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
         /// <summary>
-        /// The generated Lambda function handler for <see cref="HttpApiV1Authorizer(string, Amazon.Lambda.Core.ILambdaContext)"/>
+        /// The generated Lambda function handler for <see cref="AuthorizerWithIHttpResults(string, Amazon.Lambda.Core.ILambdaContext)"/>
         /// </summary>
         /// <param name="__request__">The API Gateway request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public async System.Threading.Tasks.Task<Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse> HttpApiV1Authorizer(Amazon.Lambda.APIGatewayEvents.APIGatewayProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
+        public System.IO.Stream AuthorizerWithIHttpResults(Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
             var validationErrors = new List<string>();
 
-            var authorizerValue = default(string);
-            if (__request__.RequestContext?.Authorizer == null || __request__.RequestContext?.Authorizer.ContainsKey("authKey") == false)
+            var userId = default(string);
+            if (__request__.RequestContext?.Authorizer?.Lambda == null || __request__.RequestContext?.Authorizer?.Lambda.ContainsKey("userId") == false)
             {
-                var __unauthorized__ = new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
+                var __unauthorized__ = new Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse
                 {                    
                     Headers = new Dictionary<string, string>
                     {
@@ -49,17 +50,20 @@ namespace TestServerlessApp
                     },
                     StatusCode = 401
                 };
-                return __unauthorized__;
+                var __unauthorizedStream__ = new System.IO.MemoryStream();
+                serializer.Serialize(__unauthorized__, __unauthorizedStream__);
+                __unauthorizedStream__.Position = 0;
+                return __unauthorizedStream__;
             }
             
             try
             {
-                var __authValue_authorizerValue__ = __request__.RequestContext.Authorizer["authKey"];
-                authorizerValue = (string)Convert.ChangeType(__authValue_authorizerValue__?.ToString(), typeof(string));
+                var __authValue_userId__ = __request__.RequestContext.Authorizer.Lambda["userId"];
+                userId = (string)Convert.ChangeType(__authValue_userId__?.ToString(), typeof(string));
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
-                var __unauthorized__ = new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
+                var __unauthorized__ = new Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse
                 {                    
                     Headers = new Dictionary<string, string>
                     {
@@ -68,13 +72,16 @@ namespace TestServerlessApp
                     },
                     StatusCode = 401
                 };
-                return __unauthorized__;
+                var __unauthorizedStream__ = new System.IO.MemoryStream();
+                serializer.Serialize(__unauthorized__, __unauthorizedStream__);
+                __unauthorizedStream__.Position = 0;
+                return __unauthorizedStream__;
             }
 
             // return 400 Bad Request if there exists a validation error
             if (validationErrors.Any())
             {
-                var errorResult = new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
+                var errorResult = new Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse
                 {
                     Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
                     Headers = new Dictionary<string, string>
@@ -84,15 +91,18 @@ namespace TestServerlessApp
                     },
                     StatusCode = 400
                 };
-                return errorResult;
+                var errorStream = new System.IO.MemoryStream();
+                serializer.Serialize(errorResult, errorStream);
+                errorStream.Position = 0;
+                return errorStream;
             }
 
-            await customAuthorizerHttpApiV1Example.HttpApiV1Authorizer(authorizerValue, __context__);
-
-            return new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
-            {
-                StatusCode = 200
-            };
+            var httpResults = customAuthorizerWithIHttpResultsExample.AuthorizerWithIHttpResults(userId, __context__);
+            HttpResultSerializationOptions.ProtocolFormat serializationFormat = HttpResultSerializationOptions.ProtocolFormat.HttpApi;
+            HttpResultSerializationOptions.ProtocolVersion serializationVersion = HttpResultSerializationOptions.ProtocolVersion.V2;
+            var serializationOptions = new HttpResultSerializationOptions { Format = serializationFormat, Version = serializationVersion, Serializer = serializer };
+            var response = httpResults.Serialize(serializationOptions);
+            return response;
         }
 
         private static void SetExecutionEnvironment()

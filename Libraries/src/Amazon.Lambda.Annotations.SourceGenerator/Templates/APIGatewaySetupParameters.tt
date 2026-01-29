@@ -264,7 +264,7 @@
             var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
             if (__request__.RequestContext?.Authorizer == null || __request__.RequestContext?.Authorizer.ContainsKey("<#= authKey #>") == false)
             {
-                return new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
                 {                    
                     Headers = new Dictionary<string, string>
                     {
@@ -273,6 +273,23 @@
                     },
                     StatusCode = 401
                 };
+<#
+                    if(_model.LambdaMethod.ReturnsIHttpResults)
+                    {
+#>
+                var __unauthorizedStream__ = new System.IO.MemoryStream();
+                serializer.Serialize(__unauthorized__, __unauthorizedStream__);
+                __unauthorizedStream__.Position = 0;
+                return __unauthorizedStream__;
+<#
+                    }
+                    else
+                    {
+#>
+                return __unauthorized__;
+<#
+                    }
+#>
             }
             
             try
@@ -282,7 +299,7 @@
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
-                return new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
                 {                    
                     Headers = new Dictionary<string, string>
                     {
@@ -291,6 +308,23 @@
                     },
                     StatusCode = 401
                 };
+<#
+                    if(_model.LambdaMethod.ReturnsIHttpResults)
+                    {
+#>
+                var __unauthorizedStream__ = new System.IO.MemoryStream();
+                serializer.Serialize(__unauthorized__, __unauthorizedStream__);
+                __unauthorizedStream__.Position = 0;
+                return __unauthorizedStream__;
+<#
+                    }
+                    else
+                    {
+#>
+                return __unauthorized__;
+<#
+                    }
+#>
             }
 
 <#
@@ -301,7 +335,7 @@
             var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
             if (__request__.RequestContext?.Authorizer?.Lambda == null || __request__.RequestContext?.Authorizer?.Lambda.ContainsKey("<#= authKey #>") == false)
             {
-                return new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
                 {                    
                     Headers = new Dictionary<string, string>
                     {
@@ -310,6 +344,23 @@
                     },
                     StatusCode = 401
                 };
+<#
+                    if(_model.LambdaMethod.ReturnsIHttpResults)
+                    {
+#>
+                var __unauthorizedStream__ = new System.IO.MemoryStream();
+                serializer.Serialize(__unauthorized__, __unauthorizedStream__);
+                __unauthorizedStream__.Position = 0;
+                return __unauthorizedStream__;
+<#
+                    }
+                    else
+                    {
+#>
+                return __unauthorized__;
+<#
+                    }
+#>
             }
             
             try
@@ -319,7 +370,7 @@
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
-                return new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
                 {                    
                     Headers = new Dictionary<string, string>
                     {
@@ -328,6 +379,23 @@
                     },
                     StatusCode = 401
                 };
+<#
+                    if(_model.LambdaMethod.ReturnsIHttpResults)
+                    {
+#>
+                var __unauthorizedStream__ = new System.IO.MemoryStream();
+                serializer.Serialize(__unauthorized__, __unauthorizedStream__);
+                __unauthorizedStream__.Position = 0;
+                return __unauthorizedStream__;
+<#
+                    }
+                    else
+                    {
+#>
+                return __unauthorized__;
+<#
+                    }
+#>
             }
 
 <#
