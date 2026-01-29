@@ -141,4 +141,30 @@ public class ProtectedFunction
             Message = "This data came from the REST API custom authorizer context!"
         };
     }
+
+    /// <summary>
+    /// HTTP API v1 endpoint demonstrating [FromCustomAuthorizer] with HTTP API v1 (payload format 1.0).
+    /// HTTP API v1 uses the same request structure as REST API (APIGatewayProxyRequest)
+    /// where RequestContext.Authorizer is a dictionary, not RequestContext.Authorizer.Lambda.
+    /// </summary>
+    [LambdaFunction(ResourceName = "HttpApiV1UserInfo")]
+    [HttpApi(LambdaHttpMethod.Get, "/api/http-v1-user-info", Version = HttpApiVersion.V1)]
+    public object GetHttpApiV1UserInfo(
+        [FromCustomAuthorizer(Name = "userId")] string userId,
+        [FromCustomAuthorizer(Name = "email")] string email,
+        [FromCustomAuthorizer(Name = "tenantId")] string tenantId,
+        ILambdaContext context)
+    {
+        context.Logger.LogLine($"[HTTP API V1] Getting user info for: {userId}");
+        
+        // Return a JSON object with user information
+        return new 
+        {
+            UserId = userId,
+            Email = email,
+            TenantId = tenantId,
+            ApiType = "HTTP API V1",
+            Message = "This data came from the HTTP API v1 custom authorizer context!"
+        };
+    }
 }

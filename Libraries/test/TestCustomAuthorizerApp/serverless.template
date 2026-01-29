@@ -382,6 +382,64 @@
         },
         "StageName": "Prod"
       }
+    },
+    "HttpApiV1UserInfo": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetHttpApiV1UserInfo_Generated::GetHttpApiV1UserInfo",
+        "Description": "HTTP API v1 endpoint demonstrating FromCustomAuthorizer attribute with payload format 1.0",
+        "PackageType": "Zip",
+        "CodeUri": ".",
+        "Runtime": "dotnet8",
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ]
+      }
+    },
+    "HttpApiV1UserInfoPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "HttpApiV1UserInfo"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ServerlessHttpApi}/*/*/api/http-v1-user-info"
+        }
+      }
+    },
+    "HttpApiV1UserInfoIntegration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "HttpApiV1UserInfo",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "1.0"
+      }
+    },
+    "HttpApiV1UserInfoRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "RouteKey": "GET /api/http-v1-user-info",
+        "AuthorizationType": "CUSTOM",
+        "AuthorizerId": {
+          "Ref": "HttpApiAuthorizer"
+        },
+        "Target": {
+          "Fn::Sub": "integrations/${HttpApiV1UserInfoIntegration}"
+        }
+      }
     }
   },
   "Outputs": {
@@ -419,6 +477,12 @@
       "Description": "REST API User info endpoint URL (requires Authorization header)",
       "Value": {
         "Fn::Sub": "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/rest-user-info"
+      }
+    },
+    "HttpApiV1UserInfoUrl": {
+      "Description": "HTTP API v1 User info endpoint URL (requires Authorization header, uses payload format 1.0)",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/http-v1-user-info"
       }
     }
   }

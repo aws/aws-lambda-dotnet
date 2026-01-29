@@ -256,7 +256,9 @@
 
                 // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
                 var authKey = fromAuthorizerAttribute?.Data?.Name ?? parameter.Name;
-                if(restApiAttribute != null)
+                // REST API and HTTP API v1 both use APIGatewayProxyRequest where RequestContext.Authorizer is a dictionary.
+                // Only HTTP API v2 uses APIGatewayHttpApiV2ProxyRequest with RequestContext.Authorizer.Lambda as the dictionary.
+                if(restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1)
                 {
 #>
             var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
