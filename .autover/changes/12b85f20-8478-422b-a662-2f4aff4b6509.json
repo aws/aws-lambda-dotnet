@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Exposing the extensions points from Amazon.Lambda.AspNetCoreServer onto the HostingOptions. For example customizing the serialization by adding a callback for PostMarshallResponseFeature."
+      ]
+    }
+  ]
+}

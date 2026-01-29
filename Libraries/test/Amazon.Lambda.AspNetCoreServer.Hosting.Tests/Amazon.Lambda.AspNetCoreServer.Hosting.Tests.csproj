@@ -1,5 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\..\buildtools\common.props" />
+  
   <PropertyGroup>
     <TargetFrameworks>net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -19,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Amazon.Lambda.AspNetCoreServer.Hosting\Amazon.Lambda.AspNetCoreServer.Hosting.csproj" />
+    <ProjectReference Include="..\..\src\Amazon.Lambda.TestUtilities\Amazon.Lambda.TestUtilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>
