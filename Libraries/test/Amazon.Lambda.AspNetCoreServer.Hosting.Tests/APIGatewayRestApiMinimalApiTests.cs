@@ -728,8 +728,8 @@ public class APIGatewayRestApiMinimalApiTests
         Assert.Equal(201, testResponseFeature.StatusCode);
         Assert.Equal("Created", testResponseFeature.ReasonPhrase);
         Assert.Equal(System.Net.IPAddress.Parse("192.168.1.100"), testConnectionFeature.RemoteIpAddress);
-        Assert.True(testItemsFeature.Items.ContainsKey("CustomKey"));
-        Assert.Equal("CustomValue", testItemsFeature.Items["CustomKey"]);
+        Assert.True(testItemsFeature.Items.TryGetValue("CustomKey", out var customValue));
+        Assert.Equal("CustomValue", customValue);
     }
 
     /// <summary>
