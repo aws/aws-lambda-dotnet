@@ -1478,6 +1478,50 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
 
+        /// <summary>
+        /// Tests that [FromCustomAuthorizer] without Name property uses the parameter name as the key.
+        /// This exercises the fallback behavior: authKey = Name ?? parameter.Name
+        /// </summary>
+        [Fact]
+        public async Task CustomAuthorizerAttributeParameterNameFallbackTest()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "authorizerParameterNameFallback.template"));
+            var expectedAuthorizerGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthNameFallback_GetUserId_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "AuthNameFallback.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AuthNameFallback.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthNameFallback_GetUserId_Generated.g.cs",
+                            SourceText.From(expectedAuthorizerGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthNameFallback_GetUserId_Generated.g.cs", expectedAuthorizerGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
         [Fact]
         public async Task CustomAuthorizerHttpApiV1Test()
         {
