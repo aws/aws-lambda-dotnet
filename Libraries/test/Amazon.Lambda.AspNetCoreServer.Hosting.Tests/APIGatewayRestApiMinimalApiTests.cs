@@ -766,10 +766,10 @@ public class APIGatewayRestApiMinimalApiTests
 
         // Assert - Verify callback was invoked and items are still present
         Assert.True(callbackInvoked);
-        Assert.True(testItemsFeature.Items.ContainsKey("LAMBDA_CONTEXT"));
-        Assert.True(testItemsFeature.Items.ContainsKey("LAMBDA_REQUEST_OBJECT"));
-        Assert.Same(testContext, testItemsFeature.Items["LAMBDA_CONTEXT"]);
-        Assert.Same(testRequest, testItemsFeature.Items["LAMBDA_REQUEST_OBJECT"]);
+        Assert.True(testItemsFeature.Items.TryGetValue("LAMBDA_CONTEXT", out var lambdaContext));
+        Assert.True(testItemsFeature.Items.TryGetValue("LAMBDA_REQUEST_OBJECT", out var lambdaRequestObject));
+        Assert.Same(testContext, lambdaContext);
+        Assert.Same(testRequest, lambdaRequestObject);
     }
 
 
