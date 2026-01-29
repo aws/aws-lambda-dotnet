@@ -99,8 +99,8 @@ public class HostingOptionsTests
         options.RegisterResponseContentEncodingForContentEncoding(contentEncoding, encoding);
 
         // Assert
-        Assert.True(options.ContentEncodingEncodings.ContainsKey(contentEncoding));
-        Assert.Equal(encoding, options.ContentEncodingEncodings[contentEncoding]);
+        Assert.True(options.ContentEncodingEncodings.TryGetValue(contentEncoding, out var actualEncoding));
+        Assert.Equal(encoding, actualEncoding);
     }
 
     [Fact]
