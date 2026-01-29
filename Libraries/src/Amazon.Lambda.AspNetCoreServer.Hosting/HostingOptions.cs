@@ -57,7 +57,7 @@ public class HostingOptions
     /// <summary>
     /// Callback invoked after response marshalling to customize the HTTP response feature.
     /// Receives the IHttpResponseFeature, Lambda response object, and ILambdaContext.
-    /// The Lambda response object object will need to be cast to the appropriate type based on the event source.
+    /// The Lambda response object will need to be cast to the appropriate type based on the event source.
     /// <para>
     /// <list type="table">
     ///   <listheader>

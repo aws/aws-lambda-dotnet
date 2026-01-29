@@ -48,7 +48,7 @@ public class AddAWSLambdaBeforeSnapshotRequestTests
         // let the server run for a max of 500 ms
         await Task.WhenAny(
             serverTask,
-            Task.Delay(TimeSpan.FromMilliseconds(5000)));
+            Task.Delay(TimeSpan.FromMilliseconds(500)));
 
         // shut down server
         await app.StopAsync();
