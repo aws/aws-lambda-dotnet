@@ -167,4 +167,26 @@ public class ProtectedFunction
             Message = "This data came from the HTTP API v1 custom authorizer context!"
         };
     }
+
+    /// <summary>
+    /// Demonstrates [FromCustomAuthorizer] with IHttpResult return type.
+    /// This tests that the generated handler properly serializes 401 responses
+    /// when authorizer context is missing (the handler returns Stream, not response object).
+    /// </summary>
+    [LambdaFunction(ResourceName = "IHttpResultUserInfo")]
+    [HttpApi(LambdaHttpMethod.Get, "/api/ihttpresult-user-info")]
+    public IHttpResult GetIHttpResult(
+        [FromCustomAuthorizer(Name = "userId")] string userId,
+        [FromCustomAuthorizer(Name = "email")] string email,
+        ILambdaContext context)
+    {
+        context.Logger.LogLine($"[IHttpResult] Getting user info for: {userId}");
+        
+        return HttpResults.Ok(new 
+        {
+            UserId = userId,
+            Email = email,
+            Message = "Success with IHttpResult return type!"
+        });
+    }
 }

@@ -440,6 +440,64 @@
           "Fn::Sub": "integrations/${HttpApiV1UserInfoIntegration}"
         }
       }
+    },
+    "IHttpResultUserInfo": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetIHttpResult_Generated::GetIHttpResult",
+        "Description": "IHttpResult endpoint demonstrating FromCustomAuthorizer with IHttpResult return type",
+        "PackageType": "Zip",
+        "CodeUri": ".",
+        "Runtime": "dotnet8",
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ]
+      }
+    },
+    "IHttpResultUserInfoPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "IHttpResultUserInfo"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ServerlessHttpApi}/*/*/api/ihttpresult-user-info"
+        }
+      }
+    },
+    "IHttpResultUserInfoIntegration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "IHttpResultUserInfo",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0"
+      }
+    },
+    "IHttpResultUserInfoRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "RouteKey": "GET /api/ihttpresult-user-info",
+        "AuthorizationType": "CUSTOM",
+        "AuthorizerId": {
+          "Ref": "HttpApiAuthorizer"
+        },
+        "Target": {
+          "Fn::Sub": "integrations/${IHttpResultUserInfoIntegration}"
+        }
+      }
     }
   },
   "Outputs": {
@@ -483,6 +541,12 @@
       "Description": "HTTP API v1 User info endpoint URL (requires Authorization header, uses payload format 1.0)",
       "Value": {
         "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/http-v1-user-info"
+      }
+    },
+    "IHttpResultUserInfoUrl": {
+      "Description": "IHttpResult User info endpoint URL (requires Authorization header, demonstrates IHttpResult return type)",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/ihttpresult-user-info"
       }
     }
   }
