@@ -1,3 +1,9 @@
+## Release 2026-01-30
+
+### Amazon.Lambda.TestTool.BlazorTester (0.17.0)
+* Add support for .NET 10
+* Removed support for .NET 6
+
 ## Release 2026-01-16
 
 ### Amazon.Lambda.S3Events (3.1.2)
