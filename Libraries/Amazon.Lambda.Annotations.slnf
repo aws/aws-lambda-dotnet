@@ -11,6 +11,9 @@
       "src\\Amazon.Lambda.Serialization.SystemTextJson\\Amazon.Lambda.Serialization.SystemTextJson.csproj",
       "test\\Amazon.Lambda.Annotations.SourceGenerators.Tests\\Amazon.Lambda.Annotations.SourceGenerators.Tests.csproj",
       "test\\TestExecutableServerlessApp\\TestExecutableServerlessApp.csproj",
+      "test\\IntegrationTests.Helpers\\IntegrationTests.Helpers.csproj",
+      "test\\TestCustomAuthorizerApp\\TestCustomAuthorizerApp.csproj",
+      "test\\TestCustomAuthorizerApp.IntegrationTests\\TestCustomAuthorizerApp.IntegrationTests.csproj",
       "test\\TestServerlessApp.IntegrationTests\\TestServerlessApp.IntegrationTests.csproj",
       "test\\TestServerlessApp.NET8\\TestServerlessApp.NET8.csproj",
       "test\\TestServerlessApp\\TestServerlessApp.csproj"

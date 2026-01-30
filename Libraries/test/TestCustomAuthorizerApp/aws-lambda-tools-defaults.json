@@ -4,10 +4,12 @@
     "To learn more about the Lambda CLI see: https://github.com/aws/aws-extensions-for-dotnet-cli#aws-lambda-amazonlambdatools"
   ],
   "profile": "",
-  "region": "",
+  "region": "us-west-2",
   "configuration": "Release",
   "template": "serverless.template",
   "template-parameters": "",
+"s3-bucket" : "test-custom-authorizer-ead23f8b",
   "s3-prefix": "TestCustomAuthorizerApp/",
-  "stack-name": "test-custom-authorizer"
+"stack-name" : "test-custom-authorizer-ead23f8b",
+"function-architecture" : "x86_64"
 }

@@ -7,9 +7,9 @@ using Amazon.CloudFormation;
 using Amazon.CloudWatchLogs;
 using Amazon.Lambda;
 using Amazon.S3;
+using IntegrationTests.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using TestServerlessApp.IntegrationTests.Helpers;
 using Xunit;
 
 namespace TestServerlessApp.IntegrationTests

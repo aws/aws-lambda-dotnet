@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AWSSDK.CloudFormation" Version="3.7.5.38" />
+        <PackageReference Include="AWSSDK.CloudWatchLogs" Version="3.7.1.70" />
+        <PackageReference Include="AWSSDK.Lambda" Version="3.7.305.33" />
+        <PackageReference Include="AWSSDK.S3" Version="3.7.4.1" />
+    </ItemGroup>
+
+</Project>

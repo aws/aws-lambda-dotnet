@@ -264,7 +264,7 @@
         "RestApiId": {
           "Ref": "ServerlessRestApi"
         },
-        "Type": "REQUEST",
+        "Type": "TOKEN",
         "AuthorizerUri": {
           "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RestApiAuthorizer.Arn}/invocations"
         },

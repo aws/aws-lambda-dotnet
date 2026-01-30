@@ -12,6 +12,15 @@ namespace TestCustomAuthorizerApp;
 /// </summary>
 public class AuthorizerFunction
 {
+    // Valid tokens that will be authorized (for testing purposes)
+    private static readonly HashSet<string> ValidTokens = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "allow",
+        "Bearer allow",
+        "valid-token",
+        "Bearer valid-token"
+    };
+
     /// <summary>
     /// HTTP API Lambda Authorizer (Payload format 2.0 with simple response)
     /// Returns authorized status along with custom context that can be accessed via [FromCustomAuthorizer]
@@ -26,10 +35,7 @@ public class AuthorizerFunction
             context.Logger.LogLine($"Request headers: {string.Join(", ", request.Headers.Keys)}");
         }
         
-        // In a real application, you would validate a token here
-        // For this demo, we always authorize and return test context values
-        
-        // Check for a demo "Authorization" header
+        // Check for Authorization header
         // Note: HTTP API v2 lowercases all header names
         var hasAuthHeader = request.Headers?.ContainsKey("authorization") == true;
         
@@ -38,32 +44,33 @@ public class AuthorizerFunction
             var authValue = request.Headers!["authorization"];
             context.Logger.LogLine($"Authorization header value: {authValue}");
             
-            // Demo: if the token is "deny", reject the request
-            if (authValue.Equals("deny", StringComparison.OrdinalIgnoreCase))
+            // Only authorize if the token is in our allow list
+            if (ValidTokens.Contains(authValue))
             {
-                context.Logger.LogLine("Denying request based on 'deny' token");
+                context.Logger.LogLine("Authorizing request with valid token");
+                
+                // Return authorized with context values that will be passed to the Lambda function
+                // These values can be accessed using [FromCustomAuthorizer(Name = "key")]
                 return new APIGatewayCustomAuthorizerV2SimpleResponse
                 {
-                    IsAuthorized = false
+                    IsAuthorized = true,
+                    Context = new Dictionary<string, object>
+                    {
+                        // These values will be available via [FromCustomAuthorizer]
+                        { "userId", "user-12345" },
+                        { "tenantId", "42" },
+                        { "userRole", "admin" },
+                        { "email", "test@example.com" }
+                    }
                 };
             }
         }
         
-        // Return authorized with context values that will be passed to the Lambda function
-        // These values can be accessed using [FromCustomAuthorizer(Name = "key")]
-        context.Logger.LogLine("Authorizing request with custom context values");
-        
+        // Deny by default - no valid token found
+        context.Logger.LogLine("Denying request - no valid token found");
         return new APIGatewayCustomAuthorizerV2SimpleResponse
         {
-            IsAuthorized = true,
-            Context = new Dictionary<string, object>
-            {
-                // These values will be available via [FromCustomAuthorizer]
-                { "userId", "user-12345" },
-                { "tenantId", "42" },
-                { "userRole", "admin" },
-                { "email", "test@example.com" }
-            }
+            IsAuthorized = false
         };
     }
 
@@ -79,17 +86,14 @@ public class AuthorizerFunction
         context.Logger.LogLine($"Authorization token: {request.AuthorizationToken}");
         context.Logger.LogLine($"Method ARN: {request.MethodArn}");
 
-        // In a real application, you would validate the token here
-        // For this demo, we authorize unless the token is "deny"
-        
-        if (string.Equals(request.AuthorizationToken, "deny", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(request.AuthorizationToken, "Bearer deny", StringComparison.OrdinalIgnoreCase))
+        // Only authorize if the token is in our allow list
+        if (!ValidTokens.Contains(request.AuthorizationToken ?? ""))
         {
-            context.Logger.LogLine("Denying request based on 'deny' token");
+            context.Logger.LogLine("Denying request - no valid token found");
             return GenerateDenyPolicy("user", request.MethodArn);
         }
 
-        context.Logger.LogLine("Authorizing request with custom context values");
+        context.Logger.LogLine("Authorizing request with valid token");
         
         // Parse the method ARN to create a policy
         // Format: arn:aws:execute-api:{region}:{accountId}:{apiId}/{stage}/{method}/{resourcePath}
