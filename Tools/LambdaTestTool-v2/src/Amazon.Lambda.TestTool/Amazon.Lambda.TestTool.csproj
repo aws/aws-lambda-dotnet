@@ -47,7 +47,7 @@
   </Target>
 
   <Target Name="PublishRuntimeSupportFiles" DependsOnTargets="GetRuntimeSupportTargetFrameworks" BeforeTargets="Build">
-    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj&quot; -c $(Configuration) -f %(TargetFrameworks.Identity) /p:ExecutableOutputType=true" />
+    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)../../../../Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj&quot; -c $(Configuration) -f %(TargetFrameworks.Identity) /p:ExecutableOutputType=true /p:AlternateAssemblyName=Amazon.Lambda.RuntimeSupport.TestTool" />
   </Target>
 
   <Target Name="CopyRuntimeSupportFiles" DependsOnTargets="GetRuntimeSupportTargetFrameworks" BeforeTargets="_GetPackageFiles">

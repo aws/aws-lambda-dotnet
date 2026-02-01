@@ -1,0 +1,25 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Add the InternalsVisibleToAttribute to the renamed version of Amazon.Lambda.RuntimeSupport embedded with the Lambda Test Tool"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Add defensive checks for older versions of Amazon.Lambda.Core being used in Lambda function using the renamed version embedded in the Lambda Test Tool"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Rename embedded Amazon.Lambda.RuntimeSupport assembly to Amazon.Lambda.RuntimeSupport.TestTool to avoid conflicts with Lambda function that might include Amazon.Lambda.RuntimeSupport"
+      ]
+    }
+  ]
+}
