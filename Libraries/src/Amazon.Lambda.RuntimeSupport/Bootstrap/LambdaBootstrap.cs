@@ -470,8 +470,7 @@ namespace Amazon.Lambda.RuntimeSupport
                     _disableTraceProvider = true;
                     _logger.LogInformation("Failed to set the trace id on Amazon.Lambda.Core.LambdaTraceProvider due to the version of " +
                                            "Amazon.Lambda.Core being provided by Lambda Function being out of date.");
-                }
-                
+                }                
             }
         }
 

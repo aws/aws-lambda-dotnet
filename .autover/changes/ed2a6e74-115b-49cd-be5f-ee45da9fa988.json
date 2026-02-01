@@ -11,7 +11,7 @@
       "Name": "Amazon.Lambda.RuntimeSupport",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Add defensive checks for older versions of Amazon.Lambda.Core being used in Lambda function using the renamed version embedded in the Lambda Test Tool"
+        "Add defensive checks for scenarios where a Lambda function uses an older Amazon.Lambda.Core together with the renamed Amazon.Lambda.RuntimeSupport.TestTool assembly embedded in the Lambda Test Tool"
       ]
     },
     {
