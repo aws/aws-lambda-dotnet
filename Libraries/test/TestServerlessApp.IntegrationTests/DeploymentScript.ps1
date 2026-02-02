@@ -63,6 +63,26 @@ try
     dotnet lambda deploy-serverless --template-parameters "ArchitectureTypeParameter=$arch"
     if (!$?)
     {
+        # Try to get detailed CloudFormation events for debugging
+        Write-Host "Deployment failed. Fetching CloudFormation stack events for debugging..."
+        try {
+            $events = aws cloudformation describe-stack-events --stack-name $identifier --query "StackEvents[?ResourceStatus=='CREATE_FAILED' || ResourceStatus=='UPDATE_FAILED' || ResourceStatus=='DELETE_FAILED']" --output json 2>&1
+            if ($events) {
+                Write-Host "CloudFormation failed events:"
+                Write-Host $events
+            }
+            
+            # Also try to get change set details if available
+            $changeSets = aws cloudformation list-change-sets --stack-name $identifier --output json 2>&1
+            if ($changeSets) {
+                Write-Host "CloudFormation change sets:"
+                Write-Host $changeSets
+            }
+        }
+        catch {
+            Write-Host "Could not fetch CloudFormation events: $_"
+        }
+        
         throw "Failed to create the following CloudFormation stack: $identifier"
     }
 }

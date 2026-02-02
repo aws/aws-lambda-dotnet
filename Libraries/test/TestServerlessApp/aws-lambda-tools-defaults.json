@@ -13,7 +13,7 @@
   "template": "serverless.template",
   "template-parameters": "",
   "docker-host-build-output-dir": "./bin/Release/lambda-publish",
-  "s3-bucket": "test-serverless-app",
-  "stack-name": "test-serverless-app",
-  "function-architecture": "x86_64"
+"s3-bucket" : "test-serverless-app-076dc2ac",
+"stack-name" : "test-serverless-app-076dc2ac",
+"function-architecture" : "x86_64"
 }

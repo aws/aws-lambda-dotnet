@@ -15,7 +15,7 @@ namespace TestServerlessApp
         /// When Name is not specified on [FromCustomAuthorizer], the parameter name 'userId' 
         /// should be used as the key to look up in the authorizer context.
         /// </summary>
-        [LambdaFunction(ResourceName = "AuthNameFallbackTest")]
+        [LambdaFunction(ResourceName = "AuthNameFallbackTest", PackageType = LambdaPackageType.Image)]
         [HttpApi(LambdaHttpMethod.Get, "/api/authorizer-fallback")]
         public async Task GetUserId([FromCustomAuthorizer] string userId, ILambdaContext context)
         {
