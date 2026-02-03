@@ -979,12 +979,6 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.AuthNameFallback_GetUserId_Generated::GetUserId"
-          ]
-        },
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
@@ -993,6 +987,12 @@
               "Method": "GET"
             }
           }
+        },
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.AuthNameFallback_GetUserId_Generated::GetUserId"
+          ]
         }
       }
     },

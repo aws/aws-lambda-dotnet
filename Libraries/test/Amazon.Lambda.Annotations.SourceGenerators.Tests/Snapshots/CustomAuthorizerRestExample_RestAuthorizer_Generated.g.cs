@@ -40,6 +40,11 @@ namespace TestServerlessApp
             var authorizerValue = default(string);
             if (__request__.RequestContext?.Authorizer == null || __request__.RequestContext?.Authorizer.ContainsKey("theAuthKey") == false)
             {
+#if NET6_0_OR_GREATER
+                __context__.Logger.LogDebug("Authorizer attribute 'theAuthKey' was missing, returning unauthorized.");
+#else
+                __context__.Logger.Log("Authorizer attribute 'theAuthKey' was missing, returning unauthorized.");
+#endif
                 var __unauthorized__ = new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
                 {                    
                     Headers = new Dictionary<string, string>
@@ -59,6 +64,11 @@ namespace TestServerlessApp
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
+#if NET6_0_OR_GREATER
+                __context__.Logger.LogError(e, "Failed to convert authorizer attribute 'theAuthKey', returning unauthorized.");
+#else
+                __context__.Logger.Log("Failed to convert authorizer attribute 'theAuthKey', returning unauthorized. Exception: " + e.ToString());
+#endif
                 var __unauthorized__ = new Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse
                 {                    
                     Headers = new Dictionary<string, string>

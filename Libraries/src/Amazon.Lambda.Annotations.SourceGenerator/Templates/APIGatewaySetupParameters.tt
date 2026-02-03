@@ -264,6 +264,11 @@
             var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
             if (__request__.RequestContext?.Authorizer == null || __request__.RequestContext?.Authorizer.ContainsKey("<#= authKey #>") == false)
             {
+<#= "#if NET6_0_OR_GREATER" #>
+                __context__.Logger.LogDebug("Authorizer attribute '<#= authKey #>' was missing, returning unauthorized.");
+<#= "#else" #>
+                __context__.Logger.Log("Authorizer attribute '<#= authKey #>' was missing, returning unauthorized.");
+<#= "#endif" #>
                 var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
                 {                    
                     Headers = new Dictionary<string, string>
@@ -299,6 +304,11 @@
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
+<#= "#if NET6_0_OR_GREATER" #>
+                __context__.Logger.LogError(e, "Failed to convert authorizer attribute '<#= authKey #>', returning unauthorized.");
+<#= "#else" #>
+                __context__.Logger.Log("Failed to convert authorizer attribute '<#= authKey #>', returning unauthorized. Exception: " + e.ToString());
+<#= "#endif" #>
                 var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
                 {                    
                     Headers = new Dictionary<string, string>
@@ -335,6 +345,11 @@
             var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
             if (__request__.RequestContext?.Authorizer?.Lambda == null || __request__.RequestContext?.Authorizer?.Lambda.ContainsKey("<#= authKey #>") == false)
             {
+<#= "#if NET6_0_OR_GREATER" #>
+                __context__.Logger.LogDebug("Authorizer attribute '<#= authKey #>' was missing, returning unauthorized.");
+<#= "#else" #>
+                __context__.Logger.Log("Authorizer attribute '<#= authKey #>' was missing, returning unauthorized.");
+<#= "#endif" #>
                 var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
                 {                    
                     Headers = new Dictionary<string, string>
@@ -370,6 +385,11 @@
             }
             catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
             {
+<#= "#if NET6_0_OR_GREATER" #>
+                __context__.Logger.LogError(e, "Failed to convert authorizer attribute '<#= authKey #>', returning unauthorized.");
+<#= "#else" #>
+                __context__.Logger.Log("Failed to convert authorizer attribute '<#= authKey #>', returning unauthorized. Exception: " + e.ToString());
+<#= "#endif" #>
                 var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
                 {                    
                     Headers = new Dictionary<string, string>

@@ -665,9 +665,44 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write("\") == false)\r\n            {\r\n                var __unauthorized__ = new ");
+            this.Write("\") == false)\r\n            {\r\n");
             
             #line 267 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET6_0_OR_GREATER"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                __context__.Logger.LogDebug(\"Authorizer attribute \'");
+            
+            #line 268 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(authKey));
+            
+            #line default
+            #line hidden
+            this.Write("\' was missing, returning unauthorized.\");\r\n");
+            
+            #line 269 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#else"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                __context__.Logger.Log(\"Authorizer attribute \'");
+            
+            #line 270 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(authKey));
+            
+            #line default
+            #line hidden
+            this.Write("\' was missing, returning unauthorized.\");\r\n");
+            
+            #line 271 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#endif"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                var __unauthorized__ = new ");
+            
+            #line 272 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse"));
             
             #line default
@@ -683,7 +718,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 };
 ");
             
-            #line 276 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 281 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     if(_model.LambdaMethod.ReturnsIHttpResults)
                     {
@@ -697,7 +732,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 return __unauthorizedStream__;
 ");
             
-            #line 284 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 289 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     }
                     else
@@ -708,7 +743,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("                return __unauthorized__;\r\n");
             
-            #line 290 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 295 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     }
 
@@ -718,51 +753,88 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("            }\r\n            \r\n            try\r\n            {\r\n                var " +
                     "__authValue_");
             
-            #line 297 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 302 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write("__ = __request__.RequestContext.Authorizer[\"");
             
-            #line 297 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 302 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(authKey));
             
             #line default
             #line hidden
             this.Write("\"];\r\n                ");
             
-            #line 298 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 303 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = (");
             
-            #line 298 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 303 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(")Convert.ChangeType(__authValue_");
             
-            #line 298 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 303 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write("__?.ToString(), typeof(");
             
-            #line 298 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 303 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullNameWithoutAnnotations));
             
             #line default
             #line hidden
             this.Write("));\r\n            }\r\n            catch (Exception e) when (e is InvalidCastExcepti" +
                     "on || e is FormatException || e is OverflowException || e is ArgumentException)\r" +
-                    "\n            {\r\n                var __unauthorized__ = new ");
+                    "\n            {\r\n");
             
-            #line 302 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 307 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET6_0_OR_GREATER"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                __context__.Logger.LogError(e, \"Failed to convert authorizer at" +
+                    "tribute \'");
+            
+            #line 308 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(authKey));
+            
+            #line default
+            #line hidden
+            this.Write("\', returning unauthorized.\");\r\n");
+            
+            #line 309 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#else"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                __context__.Logger.Log(\"Failed to convert authorizer attribute " +
+                    "\'");
+            
+            #line 310 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(authKey));
+            
+            #line default
+            #line hidden
+            this.Write("\', returning unauthorized. Exception: \" + e.ToString());\r\n");
+            
+            #line 311 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#endif"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                var __unauthorized__ = new ");
+            
+            #line 312 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse"));
             
             #line default
@@ -778,7 +850,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 };
 ");
             
-            #line 311 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 321 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     if(_model.LambdaMethod.ReturnsIHttpResults)
                     {
@@ -792,7 +864,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 return __unauthorizedStream__;
 ");
             
-            #line 319 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 329 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     }
                     else
@@ -803,7 +875,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("                return __unauthorized__;\r\n");
             
-            #line 325 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 335 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     }
 
@@ -812,7 +884,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            }\r\n\r\n");
             
-            #line 330 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 340 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                 }
                 else
@@ -823,14 +895,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            var ");
             
-            #line 335 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 345 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = default(");
             
-            #line 335 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 345 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
@@ -838,14 +910,49 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write(");\r\n            if (__request__.RequestContext?.Authorizer?.Lambda == null || __r" +
                     "equest__.RequestContext?.Authorizer?.Lambda.ContainsKey(\"");
             
-            #line 336 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 346 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(authKey));
             
             #line default
             #line hidden
-            this.Write("\") == false)\r\n            {\r\n                var __unauthorized__ = new ");
+            this.Write("\") == false)\r\n            {\r\n");
             
-            #line 338 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 348 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET6_0_OR_GREATER"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                __context__.Logger.LogDebug(\"Authorizer attribute \'");
+            
+            #line 349 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(authKey));
+            
+            #line default
+            #line hidden
+            this.Write("\' was missing, returning unauthorized.\");\r\n");
+            
+            #line 350 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#else"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                __context__.Logger.Log(\"Authorizer attribute \'");
+            
+            #line 351 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(authKey));
+            
+            #line default
+            #line hidden
+            this.Write("\' was missing, returning unauthorized.\");\r\n");
+            
+            #line 352 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#endif"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                var __unauthorized__ = new ");
+            
+            #line 353 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse"));
             
             #line default
@@ -861,7 +968,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 };
 ");
             
-            #line 347 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 362 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     if(_model.LambdaMethod.ReturnsIHttpResults)
                     {
@@ -875,7 +982,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 return __unauthorizedStream__;
 ");
             
-            #line 355 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 370 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     }
                     else
@@ -886,7 +993,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("                return __unauthorized__;\r\n");
             
-            #line 361 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 376 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     }
 
@@ -896,51 +1003,88 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("            }\r\n            \r\n            try\r\n            {\r\n                var " +
                     "__authValue_");
             
-            #line 368 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 383 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write("__ = __request__.RequestContext.Authorizer.Lambda[\"");
             
-            #line 368 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 383 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(authKey));
             
             #line default
             #line hidden
             this.Write("\"];\r\n                ");
             
-            #line 369 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 384 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = (");
             
-            #line 369 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 384 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(")Convert.ChangeType(__authValue_");
             
-            #line 369 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 384 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write("__?.ToString(), typeof(");
             
-            #line 369 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 384 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullNameWithoutAnnotations));
             
             #line default
             #line hidden
             this.Write("));\r\n            }\r\n            catch (Exception e) when (e is InvalidCastExcepti" +
                     "on || e is FormatException || e is OverflowException || e is ArgumentException)\r" +
-                    "\n            {\r\n                var __unauthorized__ = new ");
+                    "\n            {\r\n");
             
-            #line 373 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 388 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#if NET6_0_OR_GREATER"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                __context__.Logger.LogError(e, \"Failed to convert authorizer at" +
+                    "tribute \'");
+            
+            #line 389 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(authKey));
+            
+            #line default
+            #line hidden
+            this.Write("\', returning unauthorized.\");\r\n");
+            
+            #line 390 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#else"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                __context__.Logger.Log(\"Failed to convert authorizer attribute " +
+                    "\'");
+            
+            #line 391 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(authKey));
+            
+            #line default
+            #line hidden
+            this.Write("\', returning unauthorized. Exception: \" + e.ToString());\r\n");
+            
+            #line 392 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture("#endif"));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n                var __unauthorized__ = new ");
+            
+            #line 393 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse"));
             
             #line default
@@ -956,7 +1100,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 };
 ");
             
-            #line 382 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 402 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     if(_model.LambdaMethod.ReturnsIHttpResults)
                     {
@@ -970,7 +1114,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 return __unauthorizedStream__;
 ");
             
-            #line 390 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 410 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     }
                     else
@@ -981,7 +1125,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("                return __unauthorized__;\r\n");
             
-            #line 396 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 416 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                     }
 
@@ -990,7 +1134,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            }\r\n\r\n");
             
-            #line 401 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 421 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                 }
             }
@@ -1006,21 +1150,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            var ");
             
-            #line 411 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 431 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = default(");
             
-            #line 411 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 431 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(");\r\n            if (__request__.PathParameters?.ContainsKey(\"");
             
-            #line 412 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 432 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(routeKey));
             
             #line default
@@ -1028,28 +1172,28 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\") == true)\r\n            {\r\n                try\r\n                {\r\n             " +
                     "       ");
             
-            #line 416 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 436 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = (");
             
-            #line 416 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 436 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullName));
             
             #line default
             #line hidden
             this.Write(")Convert.ChangeType(__request__.PathParameters[\"");
             
-            #line 416 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 436 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(routeKey));
             
             #line default
             #line hidden
             this.Write("\"], typeof(");
             
-            #line 416 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 436 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Type.FullNameWithoutAnnotations));
             
             #line default
@@ -1060,14 +1204,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 {
                     validationErrors.Add($""Value {__request__.PathParameters[""");
             
-            #line 420 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 440 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(routeKey));
             
             #line default
             #line hidden
             this.Write("\"]} at \'");
             
-            #line 420 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 440 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(routeKey));
             
             #line default
@@ -1075,7 +1219,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write("\' failed to satisfy constraint: {e.Message}\");\r\n                }\r\n            }\r" +
                     "\n\r\n");
             
-            #line 424 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 444 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
             }
             else
@@ -1094,7 +1238,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "     if (validationErrors.Any())\r\n            {\r\n                var errorResult" +
                     " = new ");
             
-            #line 438 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 458 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse"));
             
             #line default
@@ -1111,7 +1255,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 };
 ");
             
-            #line 448 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 468 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                 if(_model.LambdaMethod.ReturnsIHttpResults)
                 {
@@ -1123,7 +1267,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                     "serializer.Serialize(errorResult, errorStream);\r\n                errorStream.Pos" +
                     "ition = 0;\r\n                return errorStream;\r\n");
             
-            #line 456 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 476 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                 }
                 else
@@ -1134,7 +1278,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("                return errorResult;\r\n");
             
-            #line 462 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 482 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
                 }
 
@@ -1143,7 +1287,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             #line hidden
             this.Write("            }\r\n\r\n");
             
-            #line 467 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
+            #line 487 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\APIGatewaySetupParameters.tt"
 
         }
 
