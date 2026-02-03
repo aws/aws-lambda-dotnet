@@ -7,7 +7,10 @@ namespace TestCustomAuthorizerApp.IntegrationTests;
 
 /// <summary>
 /// Tests for HTTP API v1 (payload format 1.0) endpoints with custom authorizer.
-/// HTTP API v1 uses the same request structure as REST API.
+/// HTTP API v1 uses the same request structure as REST API (APIGatewayProxyRequest).
+/// 
+/// These tests verify that the source-generated Lambda handler correctly extracts
+/// values from the authorizer context using [FromCustomAuthorizer] attributes.
 /// </summary>
 [Collection("Integration Tests")]
 public class HttpApiV1Tests
@@ -19,6 +22,14 @@ public class HttpApiV1Tests
         _fixture = fixture;
     }
 
+    /// <summary>
+    /// Tests that [FromCustomAuthorizer] correctly extracts values from the authorizer context.
+    /// 
+    /// Flow: Request with valid token → Authorizer returns IsAuthorized=true with context →
+    /// Generated Lambda handler extracts context values → Returns extracted values
+    /// 
+    /// This tests the core functionality of the .tt template's context extraction code.
+    /// </summary>
     [Fact]
     public async Task HttpApiV1UserInfo_WithValidAuth_ReturnsAuthorizerContext()
     {
@@ -41,32 +52,27 @@ public class HttpApiV1Tests
         Assert.Equal("HTTP API V1", json["ApiType"]?.ToString());
     }
 
+    /// <summary>
+    /// Tests that the generated Lambda handler returns 401 when expected authorizer context keys are missing.
+    /// 
+    /// Flow: Request with partial-context token → Authorizer returns IsAuthorized=true but 
+    /// WITHOUT expected context keys → Generated Lambda handler checks for required keys →
+    /// Returns 401 Unauthorized because expected [FromCustomAuthorizer] values are missing
+    /// 
+    /// This tests the defensive 401 handling in the .tt template when the authorizer
+    /// passes the request but doesn't provide all the context values the Lambda expects.
+    /// </summary>
     [Fact]
-    public async Task HttpApiV1UserInfo_WithoutAuth_ReturnsUnauthorized()
+    public async Task HttpApiV1UserInfo_WithMissingAuthorizerContextKey_ReturnsUnauthorized()
     {
-        // Arrange & Act
-        var response = await _fixture.HttpClient.GetAsync($"{_fixture.HttpApiUrl}/api/http-v1-user-info");
-
-        // Assert
-        Assert.True(
-            response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden,
-            $"Expected 401 or 403 but got {response.StatusCode}");
-    }
-
-    [Fact]
-    public async Task HttpApiV1UserInfo_WithInvalidToken_ReturnsForbidden()
-    {
-        // Arrange
+        // Arrange - use partial-context token that authorizes but omits expected context keys
         var request = new HttpRequestMessage(HttpMethod.Get, $"{_fixture.HttpApiUrl}/api/http-v1-user-info");
-        // Send an invalid token - authorizer uses allow-list approach
-        request.Headers.TryAddWithoutValidation("Authorization", "invalid-token");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "partial-context");
 
         // Act
         var response = await _fixture.HttpClient.SendAsync(request);
 
-        // Assert
-        Assert.True(
-            response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden,
-            $"Expected 401 or 403 but got {response.StatusCode}");
+        // Assert - generated Lambda handler returns 401 when context key is missing
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }

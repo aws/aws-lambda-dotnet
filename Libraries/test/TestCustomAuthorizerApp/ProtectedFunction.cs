@@ -189,4 +189,33 @@ public class ProtectedFunction
             Message = "Success with IHttpResult return type!"
         });
     }
+
+    /// <summary>
+    /// HTTP API v2 endpoint demonstrating [FromCustomAuthorizer] with non-string types.
+    /// Tests that int, bool, and double values are correctly extracted and converted from
+    /// the Lambda authorizer context.
+    /// </summary>
+    [LambdaFunction(ResourceName = "NonStringUserInfo")]
+    [HttpApi(LambdaHttpMethod.Get, "/api/nonstring-user-info")]
+    public object GetNonStringUserInfo(
+        [FromCustomAuthorizer(Name = "numericTenantId")] int tenantId,
+        [FromCustomAuthorizer(Name = "isAdmin")] bool isAdmin,
+        [FromCustomAuthorizer(Name = "score")] double score,
+        ILambdaContext context)
+    {
+        context.Logger.LogLine($"[NonString] Getting non-string user info - tenantId: {tenantId}, isAdmin: {isAdmin}, score: {score}");
+        
+        // Return a JSON object with the converted values
+        return new 
+        {
+            TenantId = tenantId,
+            IsAdmin = isAdmin,
+            Score = score,
+            // Include derived values to verify the types are correct
+            TenantIdPlusOne = tenantId + 1,
+            AdminStatus = isAdmin ? "Administrator" : "Regular User",
+            ScorePercentage = score / 100.0,
+            Message = "Successfully extracted non-string types from custom authorizer context!"
+        };
+    }
 }

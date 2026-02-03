@@ -7,6 +7,10 @@ namespace TestCustomAuthorizerApp.IntegrationTests;
 
 /// <summary>
 /// Tests for HTTP API v2 (payload format 2.0) endpoints with custom authorizer.
+/// HTTP API v2 uses APIGatewayHttpApiV2ProxyRequest with RequestContext.Authorizer.Lambda for context.
+/// 
+/// These tests verify that the source-generated Lambda handler correctly extracts
+/// values from the authorizer context using [FromCustomAuthorizer] attributes.
 /// </summary>
 [Collection("Integration Tests")]
 public class HttpApiV2Tests
@@ -18,6 +22,12 @@ public class HttpApiV2Tests
         _fixture = fixture;
     }
 
+    /// <summary>
+    /// Tests basic protected endpoint access with valid authorization.
+    /// 
+    /// Flow: Request with valid token → Authorizer returns IsAuthorized=true with context →
+    /// Generated Lambda handler extracts context values → Returns success with extracted values
+    /// </summary>
     [Fact]
     public async Task ProtectedEndpoint_WithValidAuth_ReturnsSuccess()
     {
@@ -35,36 +45,37 @@ public class HttpApiV2Tests
         Assert.Contains("user-12345", content);
     }
 
+    /// <summary>
+    /// Tests that the generated Lambda handler returns 401 when expected authorizer context keys are missing.
+    /// 
+    /// Flow: Request with partial-context token → Authorizer returns IsAuthorized=true but 
+    /// WITHOUT expected context keys → Generated Lambda handler checks for required keys →
+    /// Returns 401 Unauthorized because expected [FromCustomAuthorizer] values are missing
+    /// 
+    /// This tests the defensive 401 handling in the .tt template.
+    /// </summary>
     [Fact]
-    public async Task ProtectedEndpoint_WithoutAuth_ReturnsUnauthorized()
+    public async Task ProtectedEndpoint_WithMissingAuthorizerContextKey_ReturnsUnauthorized()
     {
-        // Arrange & Act
-        var response = await _fixture.HttpClient.GetAsync($"{_fixture.HttpApiUrl}/api/protected");
-
-        // Assert
-        // HTTP API with Lambda authorizer returns 401 when authorization header is missing
-        Assert.True(
-            response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden,
-            $"Expected 401 or 403 but got {response.StatusCode}");
-    }
-
-    [Fact]
-    public async Task ProtectedEndpoint_WithInvalidToken_ReturnsForbidden()
-    {
-        // Arrange
+        // Arrange - use partial-context token that authorizes but omits expected context keys
         var request = new HttpRequestMessage(HttpMethod.Get, $"{_fixture.HttpApiUrl}/api/protected");
-        // Send an invalid token - authorizer uses allow-list approach
-        request.Headers.TryAddWithoutValidation("Authorization", "invalid-token");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "partial-context");
 
         // Act
         var response = await _fixture.HttpClient.SendAsync(request);
 
-        // Assert
-        Assert.True(
-            response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden,
-            $"Expected 401 or 403 but got {response.StatusCode}");
+        // Assert - generated Lambda handler returns 401 when context key is missing
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    /// <summary>
+    /// Tests that [FromCustomAuthorizer] correctly extracts values from the authorizer context.
+    /// 
+    /// Flow: Request with valid token → Authorizer returns IsAuthorized=true with context →
+    /// Generated Lambda handler extracts context values → Returns extracted values
+    /// 
+    /// This tests the core functionality of the .tt template's context extraction code for HTTP API v2.
+    /// </summary>
     [Fact]
     public async Task UserInfo_WithValidAuth_ReturnsAuthorizerContext()
     {
@@ -86,18 +97,26 @@ public class HttpApiV2Tests
         Assert.Equal("42", json["TenantId"]?.ToString());
     }
 
+    /// <summary>
+    /// Tests that the generated Lambda handler returns 401 when expected authorizer context keys are missing.
+    /// </summary>
     [Fact]
-    public async Task UserInfo_WithoutAuth_ReturnsUnauthorized()
+    public async Task UserInfo_WithMissingAuthorizerContextKey_ReturnsUnauthorized()
     {
-        // Arrange & Act
-        var response = await _fixture.HttpClient.GetAsync($"{_fixture.HttpApiUrl}/api/user-info");
+        // Arrange - use partial-context token that authorizes but omits expected context keys
+        var request = new HttpRequestMessage(HttpMethod.Get, $"{_fixture.HttpApiUrl}/api/user-info");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "partial-context");
 
-        // Assert
-        Assert.True(
-            response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden,
-            $"Expected 401 or 403 but got {response.StatusCode}");
+        // Act
+        var response = await _fixture.HttpClient.SendAsync(request);
+
+        // Assert - generated Lambda handler returns 401 when context key is missing
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    /// <summary>
+    /// Tests IHttpResult return type with [FromCustomAuthorizer] context extraction.
+    /// </summary>
     [Fact]
     public async Task IHttpResult_WithValidAuth_ReturnsSuccess()
     {
@@ -118,15 +137,21 @@ public class HttpApiV2Tests
         Assert.Equal("test@example.com", json["Email"]?.ToString());
     }
 
+    /// <summary>
+    /// Tests that the generated Lambda handler returns 401 when expected authorizer context keys are missing
+    /// for endpoints returning IHttpResult.
+    /// </summary>
     [Fact]
-    public async Task IHttpResult_WithoutAuth_ReturnsUnauthorized()
+    public async Task IHttpResult_WithMissingAuthorizerContextKey_ReturnsUnauthorized()
     {
-        // Arrange & Act
-        var response = await _fixture.HttpClient.GetAsync($"{_fixture.HttpApiUrl}/api/ihttpresult-user-info");
+        // Arrange - use partial-context token that authorizes but omits expected context keys
+        var request = new HttpRequestMessage(HttpMethod.Get, $"{_fixture.HttpApiUrl}/api/ihttpresult-user-info");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "partial-context");
 
-        // Assert
-        Assert.True(
-            response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden,
-            $"Expected 401 or 403 but got {response.StatusCode}");
+        // Act
+        var response = await _fixture.HttpClient.SendAsync(request);
+
+        // Assert - generated Lambda handler returns 401 when context key is missing
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }

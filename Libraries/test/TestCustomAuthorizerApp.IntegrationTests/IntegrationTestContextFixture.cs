@@ -65,9 +65,9 @@ public class IntegrationTestContextFixture : IAsyncLifetime
         Assert.Equal(StackStatus.CREATE_COMPLETE, await _cloudFormationHelper.GetStackStatusAsync(_stackName));
         Assert.True(await _s3Helper.BucketExistsAsync(_bucketName), $"S3 bucket {_bucketName} should exist");
         
-        // There are 8 Lambda functions in TestCustomAuthorizerApp:
-        // CustomAuthorizer, RestApiAuthorizer, ProtectedEndpoint, GetUserInfo, HealthCheck, RestUserInfo, HttpApiV1UserInfo, IHttpResultUserInfo
-        Assert.Equal(8, LambdaFunctions.Count);
+        // There are 9 Lambda functions in TestCustomAuthorizerApp:
+        // CustomAuthorizer, RestApiAuthorizer, ProtectedEndpoint, GetUserInfo, HealthCheck, RestUserInfo, HttpApiV1UserInfo, IHttpResultUserInfo, NonStringUserInfo
+        Assert.Equal(9, LambdaFunctions.Count);
         Assert.False(string.IsNullOrEmpty(HttpApiUrl), "HTTP API URL should not be empty");
         Assert.False(string.IsNullOrEmpty(RestApiUrl), "REST API URL should not be empty");
 

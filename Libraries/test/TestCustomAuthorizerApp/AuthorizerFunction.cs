@@ -12,13 +12,22 @@ namespace TestCustomAuthorizerApp;
 /// </summary>
 public class AuthorizerFunction
 {
-    // Valid tokens that will be authorized (for testing purposes)
+    // Valid tokens that will be authorized with full context (for testing purposes)
     private static readonly HashSet<string> ValidTokens = new(StringComparer.OrdinalIgnoreCase)
     {
         "allow",
         "Bearer allow",
         "valid-token",
         "Bearer valid-token"
+    };
+
+    // Special tokens that authorize but return incomplete context (for testing .tt template's 401 handling)
+    // These tokens will authorize the request but omit expected context keys like "userId", "tenantId", etc.
+    // This allows testing the generated Lambda handler's defensive check for missing authorizer context keys
+    private static readonly HashSet<string> PartialContextTokens = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "partial-context",
+        "Bearer partial-context"
     };
 
     /// <summary>
@@ -44,7 +53,26 @@ public class AuthorizerFunction
             var authValue = request.Headers!["authorization"];
             context.Logger.LogLine($"Authorization header value: {authValue}");
             
-            // Only authorize if the token is in our allow list
+            // Check for partial-context tokens first - these authorize but return incomplete context
+            // This tests the .tt template's defensive 401 handling when expected context keys are missing
+            if (PartialContextTokens.Contains(authValue))
+            {
+                context.Logger.LogLine("Authorizing request with partial-context token (missing expected keys)");
+                
+                return new APIGatewayCustomAuthorizerV2SimpleResponse
+                {
+                    IsAuthorized = true,
+                    Context = new Dictionary<string, object>
+                    {
+                        // Intentionally return only unexpected keys, omitting userId, tenantId, email, etc.
+                        // This will cause the generated Lambda handler to return 401 when it tries to
+                        // extract [FromCustomAuthorizer] values that don't exist
+                        { "unexpectedKey", "some-value" }
+                    }
+                };
+            }
+
+            // Authorize with full context for valid tokens
             if (ValidTokens.Contains(authValue))
             {
                 context.Logger.LogLine("Authorizing request with valid token");
@@ -60,7 +88,11 @@ public class AuthorizerFunction
                         { "userId", "user-12345" },
                         { "tenantId", "42" },
                         { "userRole", "admin" },
-                        { "email", "test@example.com" }
+                        { "email", "test@example.com" },
+                        // Non-string types for testing type conversion
+                        { "numericTenantId", 42 },      // int
+                        { "isAdmin", true },            // bool
+                        { "score", 95.5 }               // double
                     }
                 };
             }
@@ -86,15 +118,15 @@ public class AuthorizerFunction
         context.Logger.LogLine($"Authorization token: {request.AuthorizationToken}");
         context.Logger.LogLine($"Method ARN: {request.MethodArn}");
 
-        // Only authorize if the token is in our allow list
-        if (!ValidTokens.Contains(request.AuthorizationToken ?? ""))
+        var authToken = request.AuthorizationToken ?? "";
+
+        // Deny if not a valid or partial-context token
+        if (!ValidTokens.Contains(authToken) && !PartialContextTokens.Contains(authToken))
         {
             context.Logger.LogLine("Denying request - no valid token found");
             return GenerateDenyPolicy("user", request.MethodArn);
         }
 
-        context.Logger.LogLine("Authorizing request with valid token");
-        
         // Parse the method ARN to create a policy
         // Format: arn:aws:execute-api:{region}:{accountId}:{apiId}/{stage}/{method}/{resourcePath}
         var arnParts = request.MethodArn.Split(':');
@@ -103,9 +135,38 @@ public class AuthorizerFunction
         var accountId = arnParts[4];
         var apiId = apiGatewayArnPart[0];
         var stage = apiGatewayArnPart[1];
-
-        // Create policy allowing all methods on this API
         var resourceArn = $"arn:aws:execute-api:{region}:{accountId}:{apiId}/{stage}/*";
+
+        // Check for partial-context tokens - authorize but return incomplete context
+        if (PartialContextTokens.Contains(authToken))
+        {
+            context.Logger.LogLine("Authorizing request with partial-context token (missing expected keys)");
+            
+            return new APIGatewayCustomAuthorizerResponse
+            {
+                PrincipalID = "partial-user",
+                PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+                {
+                    Version = "2012-10-17",
+                    Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
+                    {
+                        new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                        {
+                            Action = new HashSet<string> { "execute-api:Invoke" },
+                            Effect = "Allow",
+                            Resource = new HashSet<string> { resourceArn }
+                        }
+                    }
+                },
+                Context = new APIGatewayCustomAuthorizerContextOutput
+                {
+                    // Intentionally return only unexpected keys, omitting userId, tenantId, email
+                    ["unexpectedKey"] = "some-value"
+                }
+            };
+        }
+
+        context.Logger.LogLine("Authorizing request with valid token");
         
         return new APIGatewayCustomAuthorizerResponse
         {

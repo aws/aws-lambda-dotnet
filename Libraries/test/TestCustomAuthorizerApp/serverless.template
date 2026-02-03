@@ -498,6 +498,64 @@
           "Fn::Sub": "integrations/${IHttpResultUserInfoIntegration}"
         }
       }
+    },
+    "NonStringUserInfo": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetNonStringUserInfo_Generated::GetNonStringUserInfo",
+        "Description": "HTTP API v2 endpoint demonstrating FromCustomAuthorizer with non-string types (int, bool, double)",
+        "PackageType": "Zip",
+        "CodeUri": ".",
+        "Runtime": "dotnet8",
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ]
+      }
+    },
+    "NonStringUserInfoPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "NonStringUserInfo"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ServerlessHttpApi}/*/*/api/nonstring-user-info"
+        }
+      }
+    },
+    "NonStringUserInfoIntegration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "NonStringUserInfo",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0"
+      }
+    },
+    "NonStringUserInfoRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ServerlessHttpApi"
+        },
+        "RouteKey": "GET /api/nonstring-user-info",
+        "AuthorizationType": "CUSTOM",
+        "AuthorizerId": {
+          "Ref": "HttpApiAuthorizer"
+        },
+        "Target": {
+          "Fn::Sub": "integrations/${NonStringUserInfoIntegration}"
+        }
+      }
     }
   },
   "Outputs": {
@@ -547,6 +605,12 @@
       "Description": "IHttpResult User info endpoint URL (requires Authorization header, demonstrates IHttpResult return type)",
       "Value": {
         "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/ihttpresult-user-info"
+      }
+    },
+    "NonStringUserInfoUrl": {
+      "Description": "Non-string types User info endpoint URL (requires Authorization header, demonstrates int/bool/double type conversion)",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/nonstring-user-info"
       }
     }
   }
