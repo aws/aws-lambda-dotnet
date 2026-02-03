@@ -198,11 +198,37 @@ public class ProtectedFunction
     [LambdaFunction(ResourceName = "NonStringUserInfo")]
     [HttpApi(LambdaHttpMethod.Get, "/api/nonstring-user-info")]
     public object GetNonStringUserInfo(
+        APIGatewayHttpApiV2ProxyRequest request,
         [FromCustomAuthorizer(Name = "numericTenantId")] int tenantId,
         [FromCustomAuthorizer(Name = "isAdmin")] bool isAdmin,
         [FromCustomAuthorizer(Name = "score")] double score,
         ILambdaContext context)
     {
+        // DEBUG: Log the raw authorizer values to diagnose type conversion issues
+        context.Logger.LogLine("=== DEBUG: Raw Authorizer Context Values ===");
+        if (request.RequestContext?.Authorizer?.Lambda != null)
+        {
+            foreach (var kvp in request.RequestContext.Authorizer.Lambda)
+            {
+                var val = kvp.Value;
+                var typeName = val?.GetType().FullName ?? "null";
+                context.Logger.LogLine($"Key: '{kvp.Key}', Value: '{val}', Type: {typeName}");
+                
+                // If it's a JsonElement, log more details
+                if (val is System.Text.Json.JsonElement jsonElement)
+                {
+                    context.Logger.LogLine($"  JsonElement.ValueKind: {jsonElement.ValueKind}");
+                    context.Logger.LogLine($"  JsonElement.ToString(): '{jsonElement.ToString()}'");
+                    context.Logger.LogLine($"  JsonElement.GetRawText(): '{jsonElement.GetRawText()}'");
+                }
+            }
+        }
+        else
+        {
+            context.Logger.LogLine("RequestContext.Authorizer.Lambda is NULL");
+        }
+        context.Logger.LogLine("=== END DEBUG ===");
+        
         context.Logger.LogLine($"[NonString] Getting non-string user info - tenantId: {tenantId}, isAdmin: {isAdmin}, score: {score}");
         
         // Return a JSON object with the converted values
