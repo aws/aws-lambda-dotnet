@@ -1600,6 +1600,50 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
 
+        /// <summary>
+        /// Tests that [FromCustomAuthorizer] works with non-string types (int, bool, double).
+        /// The generated code should use Convert.ChangeType to handle these types.
+        /// </summary>
+        [Fact]
+        public async Task CustomAuthorizerNonStringTest()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "authorizerNonString.template"));
+            var expectedAuthorizerGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "CustomAuthorizerNonStringExample_HttpApiWithNonString_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "CustomAuthorizerNonStringExample.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "CustomAuthorizerNonStringExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), File.ReadAllText(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "CustomAuthorizerNonStringExample_HttpApiWithNonString_Generated.g.cs",
+                            SourceText.From(expectedAuthorizerGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("CustomAuthorizerNonStringExample_HttpApiWithNonString_Generated.g.cs", expectedAuthorizerGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    },
+                    ReferenceAssemblies = ReferenceAssemblies.Net.Net60
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
         public void Dispose()
         {
             File.Delete(Path.Combine("TestServerlessApp", "serverless.template"));

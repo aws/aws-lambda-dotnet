@@ -22,6 +22,56 @@
     }
   },
   "Resources": {
+    "TestServerlessAppVoidExampleVoidReturnGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestExecutableServerlessApp"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "VoidReturn"
+          }
+        }
+      }
+    },
+    "TestServerlessAppIntrinsicExampleHasIntrinsicGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestExecutableServerlessApp"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "HasIntrinsic"
+          }
+        }
+      }
+    },
     "TestServerlessAppCustomizeResponseExamplesOkResponseWithHeaderGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -284,92 +334,6 @@
         }
       }
     },
-    "TestExecutableServerlessAppSourceGenerationSerializationExampleGetPersonGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ],
-        "SyncedEventProperties": {
-          "RootGet": [
-            "Path",
-            "Method"
-          ]
-        }
-      },
-      "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestExecutableServerlessApp"
-          ]
-        },
-        "Environment": {
-          "Variables": {
-            "ANNOTATIONS_HANDLER": "GetPerson"
-          }
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "Api",
-            "Properties": {
-              "Path": "/",
-              "Method": "GET"
-            }
-          }
-        }
-      }
-    },
-    "TestServerlessAppNullableReferenceTypeExampleNullableHeaderHttpApiGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ],
-        "SyncedEventProperties": {
-          "RootGet": [
-            "Path",
-            "Method"
-          ]
-        }
-      },
-      "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestExecutableServerlessApp"
-          ]
-        },
-        "Environment": {
-          "Variables": {
-            "ANNOTATIONS_HANDLER": "NullableHeaderHttpApi"
-          }
-        },
-        "Events": {
-          "RootGet": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/nullableheaderhttpapi",
-              "Method": "GET"
-            }
-          }
-        }
-      }
-    },
     "TestServerlessAppDynamicExampleDynamicReturnGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -438,53 +402,6 @@
         "Environment": {
           "Variables": {
             "ANNOTATIONS_HANDLER": "ToLower"
-          }
-        }
-      }
-    },
-    "TestServerlessAppParameterlessMethodsNoParameterGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "Runtime": "provided.al2",
-        "CodeUri": ".",
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestExecutableServerlessApp",
-        "Environment": {
-          "Variables": {
-            "ANNOTATIONS_HANDLER": "NoParameter"
-          }
-        }
-      }
-    },
-    "TestServerlessAppIntrinsicExampleHasIntrinsicGenerated": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestExecutableServerlessApp"
-          ]
-        },
-        "Environment": {
-          "Variables": {
-            "ANNOTATIONS_HANDLER": "HasIntrinsic"
           }
         }
       }
@@ -579,7 +496,7 @@
         }
       }
     },
-    "TestServerlessAppVoidExampleVoidReturnGenerated": {
+    "ToUpper": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"
@@ -599,7 +516,93 @@
         },
         "Environment": {
           "Variables": {
-            "ANNOTATIONS_HANDLER": "VoidReturn"
+            "ANNOTATIONS_HANDLER": "ToUpper"
+          }
+        }
+      }
+    },
+    "TestServerlessAppNullableReferenceTypeExampleNullableHeaderHttpApiGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestExecutableServerlessApp"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "NullableHeaderHttpApi"
+          }
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/nullableheaderhttpapi",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "TestExecutableServerlessAppSourceGenerationSerializationExampleGetPersonGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestExecutableServerlessApp"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "ANNOTATIONS_HANDLER": "GetPerson"
+          }
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/",
+              "Method": "GET"
+            }
           }
         }
       }
@@ -626,27 +629,24 @@
         }
       }
     },
-    "ToUpper": {
+    "TestServerlessAppParameterlessMethodsNoParameterGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
+        "Runtime": "provided.al2",
+        "CodeUri": ".",
         "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestExecutableServerlessApp"
-          ]
-        },
+        "PackageType": "Zip",
+        "Handler": "TestExecutableServerlessApp",
         "Environment": {
           "Variables": {
-            "ANNOTATIONS_HANDLER": "ToUpper"
+            "ANNOTATIONS_HANDLER": "NoParameter"
           }
         }
       }
