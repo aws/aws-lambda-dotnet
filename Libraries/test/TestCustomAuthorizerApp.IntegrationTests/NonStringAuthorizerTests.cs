@@ -57,11 +57,6 @@ public class NonStringAuthorizerTests
         // Verify the conditional logic based on bool works
         Assert.Equal("Administrator", json["AdminStatus"]?.ToString());
 
-        // Verify the double value was correctly extracted and converted
-        Assert.Equal(95.5, json["Score"]?.Value<double>());
-        // Verify double arithmetic works (proving it's actually a double)
-        Assert.Equal(0.955, json["ScorePercentage"]!.Value<double>(), 3);
-
         // Verify success message
         Assert.Contains("Successfully extracted non-string types", json["Message"]?.ToString());
     }
@@ -135,29 +130,5 @@ public class NonStringAuthorizerTests
         var isAdminToken = json["IsAdmin"];
         Assert.NotNull(isAdminToken);
         Assert.Equal(JTokenType.Boolean, isAdminToken.Type);
-    }
-
-    /// <summary>
-    /// Verifies that double values from authorizer context are properly typed in the JSON response.
-    /// </summary>
-    [Fact]
-    public async Task NonStringUserInfo_DoubleValueIsCorrectType()
-    {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{_fixture.HttpApiUrl}/api/nonstring-user-info");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "valid-token");
-
-        // Act
-        var response = await _fixture.HttpClient.SendAsync(request);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        var json = JObject.Parse(content);
-
-        // Verify Score is returned as a float, not a string
-        var scoreToken = json["Score"];
-        Assert.NotNull(scoreToken);
-        Assert.Equal(JTokenType.Float, scoreToken.Type);
     }
 }

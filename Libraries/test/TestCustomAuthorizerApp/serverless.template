@@ -18,7 +18,12 @@
         "Description": "Lambda Authorizer that validates requests and provides custom context values",
         "Policies": [
           "AWSLambdaBasicExecutionRole"
-        ]
+        ],
+        "Environment": {
+          "Variables": {
+            "LAMBDA_NET_SERIALIZER_DEBUG": "true"
+          }
+        }
       }
     },
     "CustomAuthorizerPermission": {

@@ -8,8 +8,8 @@
   "configuration": "Release",
   "template": "serverless.template",
   "template-parameters": "",
-"s3-bucket" : "test-custom-authorizer-779d35ad",
+  "s3-bucket": "test-custom-authorizer-app",
   "s3-prefix": "TestCustomAuthorizerApp/",
-"stack-name" : "test-custom-authorizer-779d35ad",
-"function-architecture" : "x86_64"
+  "stack-name": "test-custom-authorizer",
+  "function-architecture": "x86_64"
 }
