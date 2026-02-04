@@ -144,9 +144,9 @@ public class PackagingTests : IDisposable
             var essentialFiles = new[]
             {
                 $"content/Amazon.Lambda.RuntimeSupport/{framework}/Amazon.Lambda.Core.dll",
-                $"content/Amazon.Lambda.RuntimeSupport/{framework}/Amazon.Lambda.RuntimeSupport.dll",
-                $"content/Amazon.Lambda.RuntimeSupport/{framework}/Amazon.Lambda.RuntimeSupport.deps.json",
-                $"content/Amazon.Lambda.RuntimeSupport/{framework}/Amazon.Lambda.RuntimeSupport.runtimeconfig.json"
+                $"content/Amazon.Lambda.RuntimeSupport/{framework}/Amazon.Lambda.RuntimeSupport.TestTool.dll",
+                $"content/Amazon.Lambda.RuntimeSupport/{framework}/Amazon.Lambda.RuntimeSupport.TestTool.deps.json",
+                $"content/Amazon.Lambda.RuntimeSupport/{framework}/Amazon.Lambda.RuntimeSupport.TestTool.runtimeconfig.json"
             };
 
             var missingFiles = essentialFiles.Where(f => !frameworkFiles.Contains(f)).ToList();
