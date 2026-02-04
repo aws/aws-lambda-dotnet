@@ -1,3 +1,12 @@
+## Release 2026-02-04
+
+### Amazon.Lambda.Core (2.8.1)
+* Add the InternalsVisibleToAttribute to the renamed version of Amazon.Lambda.RuntimeSupport embedded with the Lambda Test Tool
+### Amazon.Lambda.RuntimeSupport (1.14.2)
+* Add defensive checks for scenarios where a Lambda function uses an older Amazon.Lambda.Core together with the renamed Amazon.Lambda.RuntimeSupport.TestTool assembly embedded in the Lambda Test Tool
+### Amazon.Lambda.TestTool (0.12.0)
+* Rename embedded Amazon.Lambda.RuntimeSupport assembly to Amazon.Lambda.RuntimeSupport.TestTool to avoid conflicts with Lambda function that might include Amazon.Lambda.RuntimeSupport
+
 ## Release 2026-01-30
 
 ### Amazon.Lambda.TestTool.BlazorTester (0.17.0)
