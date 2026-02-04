@@ -8,7 +8,7 @@ ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
 
 FROM $AMAZON_LINUX AS base
 
-RUN dnf install libicu-67.1-7.amzn2023.0.3.aarch64 --assumeyes
+RUN dnf install libicu-67.1-7.amzn2023.0.4.aarch64 --assumeyes
 
 FROM base AS builder-net9
 ARG ASPNET_VERSION
