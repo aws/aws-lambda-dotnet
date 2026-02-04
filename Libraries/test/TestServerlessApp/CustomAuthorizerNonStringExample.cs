@@ -14,7 +14,7 @@ namespace TestServerlessApp
         /// <summary>
         /// HTTP API v2 endpoint with non-string types from custom authorizer.
         /// </summary>
-        [LambdaFunction(ResourceName = "HttpApiNonString")]
+        [LambdaFunction(ResourceName = "HttpApiNonString", PackageType = LambdaPackageType.Image)]
         [HttpApi(LambdaHttpMethod.Get, "/api/authorizer-non-string")]
         public async Task HttpApiWithNonString(
             [FromCustomAuthorizer(Name = "userId")] int userId,

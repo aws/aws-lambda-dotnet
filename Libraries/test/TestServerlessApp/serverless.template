@@ -276,15 +276,12 @@
         }
       },
       "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
         "MemorySize": 512,
         "Timeout": 30,
         "Policies": [
           "AWSLambdaBasicExecutionRole"
         ],
-        "PackageType": "Zip",
-        "Handler": "TestServerlessApp::TestServerlessApp.CustomAuthorizerNonStringExample_HttpApiWithNonString_Generated::HttpApiWithNonString",
+        "PackageType": "Image",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
@@ -293,6 +290,12 @@
               "Method": "GET"
             }
           }
+        },
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.CustomAuthorizerNonStringExample_HttpApiWithNonString_Generated::HttpApiWithNonString"
+          ]
         }
       }
     },
