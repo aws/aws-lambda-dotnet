@@ -96,14 +96,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                             PolicyArn = policy.PolicyArn
                         });
                     }
-                }
-                catch (Exception)
-                {
-                    // no problem - it's best effort
-                }
 
-                try
-                {
                     var deleteRoleRequest = new DeleteRoleRequest
                     {
                         RoleName = ExecutionRoleName
