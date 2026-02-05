@@ -5,6 +5,7 @@ using Xunit;
 using Amazon.Lambda.TestTool.Runtime;
 using Amazon.Lambda.AspNetCoreServer.Internal;
 using System.Collections.Generic;
+using System.Text.Json.Nodes;
 
 namespace Amazon.Lambda.TestTool.Tests
 {
@@ -154,6 +155,38 @@ namespace Amazon.Lambda.TestTool.Tests
             {
                 var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
                 Assert.Equal("us-west-2", configInfo.AWSRegion);            
+            }
+            finally
+            {
+                File.Delete(jsonFile);
+            }
+        }
+
+        [Theory]
+        [InlineData(null, null, 15*60)]
+        [InlineData(30, null, 30)]
+        [InlineData(null, 45, 45)]
+        [InlineData(30, 45, 45)]
+        public void SetTimeOut(int? timeOut, int? debugTimeout, int expectedSeconds)
+        {
+            var jsonObject = new JsonObject();
+
+            if (timeOut != null)
+            {
+                jsonObject.Add(KeyValuePair.Create<string, JsonNode>("function-timeout", timeOut.Value));
+            }
+            if (debugTimeout != null)
+            {
+                jsonObject.Add(KeyValuePair.Create<string, JsonNode>("function-debugtimeout", debugTimeout.Value));
+            }
+            jsonObject.Add(KeyValuePair.Create<string, JsonNode>("function-handler", "Assembly::Type::Method"));
+
+            var jsonFile = WriteTempConfigFile(jsonObject.ToString());
+            try
+            {
+                var configInfo = LambdaDefaultsConfigFileParser.LoadFromFile(jsonFile);
+                Assert.Single(configInfo.FunctionInfos);
+                Assert.Equal(TimeSpan.FromSeconds(expectedSeconds), configInfo.FunctionInfos[0].Timeout);
             }
             finally
             {

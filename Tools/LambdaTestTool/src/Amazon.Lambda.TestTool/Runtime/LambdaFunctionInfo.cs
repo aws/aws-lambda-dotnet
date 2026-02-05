@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Amazon.Lambda.TestTool.Runtime
 {
@@ -13,6 +14,11 @@ namespace Amazon.Lambda.TestTool.Runtime
         /// The Lambda function handler string.
         /// </summary>
         public string Handler { get; set; }
+
+        /// <summary>
+        /// The amount of time the lambda function has to run before it times out.
+        /// </summary>
+        public TimeSpan Timeout { get; set; }
 
         public IDictionary<string, string> EnvironmentVariables { get; }  = new Dictionary<string, string>();
     }
