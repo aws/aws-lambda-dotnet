@@ -79,7 +79,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
             if (!roleAlreadyExisted)
             {
-                // Detach managed policies
                 try
                 {
                     var listAttachedPoliciesRequest = new ListAttachedRolePoliciesRequest
