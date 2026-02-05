@@ -80,19 +80,26 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             if (!roleAlreadyExisted)
             {
                 // Detach managed policies
-                var listAttachedPoliciesRequest = new ListAttachedRolePoliciesRequest
+                try
                 {
-                    RoleName = ExecutionRoleName
-                };
-                var attachedPolicies = await iamClient.ListAttachedRolePoliciesAsync(listAttachedPoliciesRequest);
-
-                foreach (var policy in attachedPolicies.AttachedPolicies)
-                {
-                    await iamClient.DetachRolePolicyAsync(new DetachRolePolicyRequest
+                    var listAttachedPoliciesRequest = new ListAttachedRolePoliciesRequest
                     {
-                        RoleName = ExecutionRoleName,
-                        PolicyArn = policy.PolicyArn
-                    });
+                        RoleName = ExecutionRoleName
+                    };
+                    var attachedPolicies = await iamClient.ListAttachedRolePoliciesAsync(listAttachedPoliciesRequest);
+
+                    foreach (var policy in attachedPolicies.AttachedPolicies)
+                    {
+                        await iamClient.DetachRolePolicyAsync(new DetachRolePolicyRequest
+                        {
+                            RoleName = ExecutionRoleName,
+                            PolicyArn = policy.PolicyArn
+                        });
+                    }
+                }
+                catch (Exception)
+                {
+                    // no problem - it's best effort
                 }
 
                 try
