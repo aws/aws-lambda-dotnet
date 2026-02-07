@@ -16,7 +16,7 @@ jobs:
 
       - name: Get List of Changed Files
         id: changed-files
-        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 #v45
+        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323  # v47.0.5
 
       - name: Check for Change File(s) in .autover/changes/
         run: |
