@@ -25,7 +25,7 @@ jobs:
     if: (github.actor != 'dependabot[bot]')
     steps:
       # Fetch project source
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - run: semgrep ci --sarif > semgrep.sarif
         env:
