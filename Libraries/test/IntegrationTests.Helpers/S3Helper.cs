@@ -1,9 +1,9 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
 
-namespace TestServerlessApp.IntegrationTests.Helpers
+namespace IntegrationTests.Helpers
 {
     public class S3Helper
     {
@@ -19,13 +19,13 @@ namespace TestServerlessApp.IntegrationTests.Helpers
             if (!await BucketExistsAsync(bucketName))
                 return;
 
-            var response = await _s3Client.ListObjectsAsync(new ListObjectsRequest{BucketName = bucketName});
+            var response = await _s3Client.ListObjectsAsync(new ListObjectsRequest { BucketName = bucketName });
             foreach (var s3Object in response.S3Objects)
             {
-                await _s3Client.DeleteObjectAsync(new DeleteObjectRequest {BucketName = bucketName, Key = s3Object.Key});
+                await _s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = bucketName, Key = s3Object.Key });
             }
 
-            await _s3Client.DeleteBucketAsync(new DeleteBucketRequest {BucketName = bucketName});
+            await _s3Client.DeleteBucketAsync(new DeleteBucketRequest { BucketName = bucketName });
         }
 
         public async Task<bool> BucketExistsAsync(string bucketName)

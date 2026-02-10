@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.CloudWatchLogs;
 using Amazon.CloudWatchLogs.Model;
 
-namespace TestServerlessApp.IntegrationTests.Helpers
+namespace IntegrationTests.Helpers
 {
     public class CloudWatchHelper
     {
@@ -41,7 +41,7 @@ namespace TestServerlessApp.IntegrationTests.Helpers
             return logEvents;
         }
 
-        private async Task<string> GetLatestLogStreamNameAsync(string logGroupName, string logGroupNamePrefix)
+        private async Task<string?> GetLatestLogStreamNameAsync(string logGroupName, string logGroupNamePrefix)
         {
             var attemptCount = 0;
             const int maxAttempts = 5;
@@ -54,7 +54,7 @@ namespace TestServerlessApp.IntegrationTests.Helpers
                 await Task.Delay(StaticHelpers.GetWaitTime(attemptCount));
             }
 
-            var response =  await _cloudWatchlogsClient.DescribeLogStreamsAsync(
+            var response = await _cloudWatchlogsClient.DescribeLogStreamsAsync(
                 new DescribeLogStreamsRequest
                 {
                     LogGroupName = logGroupName,
@@ -65,8 +65,11 @@ namespace TestServerlessApp.IntegrationTests.Helpers
             return response.LogStreams.FirstOrDefault()?.LogStreamName;
         }
 
-        private async Task<List<OutputLogEvent>> GetLogEventsAsync(string logGroupName, string logStreamName)
+        private async Task<List<OutputLogEvent>> GetLogEventsAsync(string logGroupName, string? logStreamName)
         {
+            if (string.IsNullOrEmpty(logStreamName))
+                return new List<OutputLogEvent>();
+
             var response = await _cloudWatchlogsClient.GetLogEventsAsync(
                 new GetLogEventsRequest
                 {
@@ -80,7 +83,7 @@ namespace TestServerlessApp.IntegrationTests.Helpers
 
         private async Task<bool> LogGroupExistsAsync(string logGroupName, string logGroupNamePrefix)
         {
-            var response = await _cloudWatchlogsClient.DescribeLogGroupsAsync(new DescribeLogGroupsRequest{LogGroupNamePrefix = logGroupNamePrefix});
+            var response = await _cloudWatchlogsClient.DescribeLogGroupsAsync(new DescribeLogGroupsRequest { LogGroupNamePrefix = logGroupNamePrefix });
             return response.LogGroups.Any(x => string.Equals(x.LogGroupName, logGroupName));
         }
     }

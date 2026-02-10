@@ -2,11 +2,11 @@ $ErrorActionPreference = 'Stop'
 
 function Get-Architecture {
     $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
-    if ($arch -eq "Arm64" || $arch -eq "Arm") {
+    if ($arch -eq "Arm64" -or $arch -eq "Arm") {
         return "arm64"
     }
 
-    if ($arch -eq "X64" || $arch -eq "X86")  {
+    if ($arch -eq "X64" -or $arch -eq "X86")  {
         return "x86_64"
     }
 
@@ -18,8 +18,8 @@ try
     Push-Location $PSScriptRoot
     $guid = New-Guid
     $suffix = $guid.ToString().Split('-') | Select-Object -First 1
-    $identifier = "test-serverless-app-" + $suffix
-    cd ..\TestServerlessApp
+    $identifier = "test-custom-authorizer-" + $suffix
+    cd ..\TestCustomAuthorizerApp
 
     $arch = Get-Architecture
 
@@ -59,30 +59,10 @@ try
         throw "Failed to create the following bucket: $identifier"
     }
     dotnet restore
-    Write-Host "Creating CloudFormation Stack $identifier, Architecture $arch, Runtime $runtime"
-    dotnet lambda deploy-serverless --template-parameters "ArchitectureTypeParameter=$arch"
+    Write-Host "Creating CloudFormation Stack $identifier, Architecture $arch"
+    dotnet lambda deploy-serverless
     if (!$?)
     {
-        # Try to get detailed CloudFormation events for debugging
-        Write-Host "Deployment failed. Fetching CloudFormation stack events for debugging..."
-        try {
-            $events = aws cloudformation describe-stack-events --stack-name $identifier --query "StackEvents[?ResourceStatus=='CREATE_FAILED' || ResourceStatus=='UPDATE_FAILED' || ResourceStatus=='DELETE_FAILED']" --output json 2>&1
-            if ($events) {
-                Write-Host "CloudFormation failed events:"
-                Write-Host $events
-            }
-            
-            # Also try to get change set details if available
-            $changeSets = aws cloudformation list-change-sets --stack-name $identifier --output json 2>&1
-            if ($changeSets) {
-                Write-Host "CloudFormation change sets:"
-                Write-Host $changeSets
-            }
-        }
-        catch {
-            Write-Host "Could not fetch CloudFormation events: $_"
-        }
-        
         throw "Failed to create the following CloudFormation stack: $identifier"
     }
 }

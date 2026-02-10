@@ -168,6 +168,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Remove="Snapshots\ServerlessTemplates\authorizerHttpApi.template" />
+      <None Remove="Snapshots\ServerlessTemplates\authorizerHttpApiV1.template" />
+      <None Remove="Snapshots\ServerlessTemplates\authorizerRest.template" />
       <None Remove="Snapshots\ServerlessTemplates\customizeResponse.template" />
       <None Remove="Snapshots\ServerlessTemplates\dynamicexample.template" />
       <None Remove="Snapshots\ServerlessTemplates\intrinsicexample.template" />

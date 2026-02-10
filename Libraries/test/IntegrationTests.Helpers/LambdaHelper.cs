@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda;
 using Amazon.Lambda.Model;
 
-namespace TestServerlessApp.IntegrationTests.Helpers
+namespace IntegrationTests.Helpers
 {
     public class LambdaHelper
     {
@@ -23,7 +23,7 @@ namespace TestServerlessApp.IntegrationTests.Helpers
 
             await foreach (var function in paginator.Functions)
             {
-                var tags = (await _lambdaClient.ListTagsAsync(new ListTagsRequest {Resource = function.FunctionArn})).Tags;
+                var tags = (await _lambdaClient.ListTagsAsync(new ListTagsRequest { Resource = function.FunctionArn })).Tags;
                 if (tags.ContainsKey(stackNameKey) && string.Equals(tags[stackNameKey], stackName))
                 {
                     var lambdaFunction = new LambdaFunction
@@ -38,9 +38,9 @@ namespace TestServerlessApp.IntegrationTests.Helpers
             return lambdaFunctions;
         }
 
-        public async Task<InvokeResponse> InvokeFunctionAsync(string functionName, string payload = null)
+        public async Task<InvokeResponse> InvokeFunctionAsync(string functionName, string? payload = null)
         {
-            var request = new InvokeRequest {FunctionName = functionName};
+            var request = new InvokeRequest { FunctionName = functionName };
             if (!string.IsNullOrEmpty(payload))
                 request.Payload = payload;
             return await _lambdaClient.InvokeAsync(request);
@@ -48,21 +48,21 @@ namespace TestServerlessApp.IntegrationTests.Helpers
 
         public async Task<ListEventSourceMappingsResponse> ListEventSourceMappingsAsync(string functionName, string eventSourceArn)
         {
-            return await _lambdaClient.ListEventSourceMappingsAsync(new ListEventSourceMappingsRequest 
+            return await _lambdaClient.ListEventSourceMappingsAsync(new ListEventSourceMappingsRequest
             {
-                FunctionName = functionName, 
+                FunctionName = functionName,
                 EventSourceArn = eventSourceArn
             });
         }
 
         public async Task WaitTillNotPending(List<string> functions)
         {
-            foreach(var function in functions)
+            foreach (var function in functions)
             {
-                while(true)
+                while (true)
                 {
-                    var response = await _lambdaClient.GetFunctionConfigurationAsync(new GetFunctionConfigurationRequest {FunctionName = function });
-                    if(response.State == State.Pending)
+                    var response = await _lambdaClient.GetFunctionConfigurationAsync(new GetFunctionConfigurationRequest { FunctionName = function });
+                    if (response.State == State.Pending)
                     {
                         await Task.Delay(1000);
                     }
@@ -77,7 +77,7 @@ namespace TestServerlessApp.IntegrationTests.Helpers
 
     public class LambdaFunction
     {
-        public string LogicalId { get; set; }
-        public string Name { get; set; }
+        public string? LogicalId { get; set; }
+        public string? Name { get; set; }
     }
 }
