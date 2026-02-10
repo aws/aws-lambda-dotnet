@@ -1,0 +1,12 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.TestTool",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Add .NET 10 build target",
+		"Update to latest versions of the AWS SDK for .NET"
+      ]
+    }
+  ]
+}
