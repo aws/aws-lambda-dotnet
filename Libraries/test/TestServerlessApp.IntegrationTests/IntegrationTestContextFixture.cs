@@ -7,9 +7,9 @@ using Amazon.CloudFormation;
 using Amazon.CloudWatchLogs;
 using Amazon.Lambda;
 using Amazon.S3;
+using IntegrationTests.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using TestServerlessApp.IntegrationTests.Helpers;
 using Xunit;
 
 namespace TestServerlessApp.IntegrationTests
@@ -57,7 +57,7 @@ namespace TestServerlessApp.IntegrationTests
 
             Assert.Equal(StackStatus.CREATE_COMPLETE, await _cloudFormationHelper.GetStackStatusAsync(_stackName));
             Assert.True(await _s3Helper.BucketExistsAsync(_bucketName));
-            Assert.Equal(28, LambdaFunctions.Count);
+            Assert.Equal(34, LambdaFunctions.Count);
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix));
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix));
 

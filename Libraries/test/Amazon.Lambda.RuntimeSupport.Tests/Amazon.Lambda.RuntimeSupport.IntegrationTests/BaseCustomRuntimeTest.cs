@@ -81,6 +81,21 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             {
                 try
                 {
+                    var listAttachedPoliciesRequest = new ListAttachedRolePoliciesRequest
+                    {
+                        RoleName = ExecutionRoleName
+                    };
+                    var attachedPolicies = await iamClient.ListAttachedRolePoliciesAsync(listAttachedPoliciesRequest);
+
+                    foreach (var policy in attachedPolicies.AttachedPolicies)
+                    {
+                        await iamClient.DetachRolePolicyAsync(new DetachRolePolicyRequest
+                        {
+                            RoleName = ExecutionRoleName,
+                            PolicyArn = policy.PolicyArn
+                        });
+                    }
+
                     var deleteRoleRequest = new DeleteRoleRequest
                     {
                         RoleName = ExecutionRoleName

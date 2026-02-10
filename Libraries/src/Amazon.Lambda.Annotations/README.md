@@ -894,6 +894,22 @@ parameter to the `LambdaFunction` must be the event object and the event source 
     * Map method parameter to HTTP request body. If parameter is a complex type then request body will be assumed to be JSON and deserialized into the type.
 * FromServices
     * Map method parameter to registered service in IServiceProvider
+* FromCustomAuthorizer
+    * Map method parameter to a custom authorizer context value. Use the `Name` property to specify the key in the authorizer context if it differs from the parameter name. Returns HTTP 401 Unauthorized if the key is not found or type conversion fails.
+
+Example using `FromCustomAuthorizer` to access values set by a custom Lambda authorizer:
+```csharp
+[LambdaFunction]
+[HttpApi(LambdaHttpMethod.Get, "/api/protected")]
+public async Task ProtectedEndpoint(
+    [FromCustomAuthorizer(Name = "userId")] string userId,
+    [FromCustomAuthorizer(Name = "tenantId")] int tenantId,
+    ILambdaContext context)
+{
+    context.Logger.LogLine($"User {userId} from tenant {tenantId}");
+    // userId and tenantId are automatically extracted from the custom authorizer context
+}
+```
 
 ### Customizing responses for API Gateway Lambda functions
 
@@ -940,4 +956,4 @@ The content type is determined using the following rules.
 
 ## Project References
 
-If API Gateway event attributes, such as `RestAPI` or `HttpAPI`, are being used then a package reference to `Amazon.Lambda.APIGatewayEvents` must be added to the project, otherwise the project will not compile. We do not include it by default in order to keep the `Amazon.Lambda.Annotations` library lightweight. 
+If API Gateway event attributes, such as `RestAPI` or `HttpAPI`, are being used then a package reference to `Amazon.Lambda.APIGatewayEvents` must be added to the project, otherwise the project will not compile. We do not include it by default in order to keep the `Amazon.Lambda.Annotations` library lightweight.

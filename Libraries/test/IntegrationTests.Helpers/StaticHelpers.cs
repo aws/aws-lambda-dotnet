@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace TestServerlessApp.IntegrationTests.Helpers
+namespace IntegrationTests.Helpers
 {
     public static class StaticHelpers
     {

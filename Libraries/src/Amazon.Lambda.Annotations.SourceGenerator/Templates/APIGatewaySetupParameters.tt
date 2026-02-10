@@ -250,6 +250,177 @@
 <#
                 }
             }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromCustomAuthorizerAttribute))
+            {
+                var fromAuthorizerAttribute = parameter.Attributes?.FirstOrDefault(att => att.Type.FullName == TypeFullNames.FromCustomAuthorizerAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromCustomAuthorizerAttribute>;
+
+                // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                var authKey = fromAuthorizerAttribute?.Data?.Name ?? parameter.Name;
+                // REST API and HTTP API v1 both use APIGatewayProxyRequest where RequestContext.Authorizer is a dictionary.
+                // Only HTTP API v2 uses APIGatewayHttpApiV2ProxyRequest with RequestContext.Authorizer.Lambda as the dictionary.
+                if(restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1)
+                {
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            if (__request__.RequestContext?.Authorizer == null || __request__.RequestContext?.Authorizer.ContainsKey("<#= authKey #>") == false)
+            {
+<#= "#if NET6_0_OR_GREATER" #>
+                __context__.Logger.LogDebug("Authorizer attribute '<#= authKey #>' was missing, returning unauthorized.");
+<#= "#else" #>
+                __context__.Logger.Log("Authorizer attribute '<#= authKey #>' was missing, returning unauthorized.");
+<#= "#endif" #>
+                var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                {                    
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "AccessDeniedException"}
+                    },
+                    StatusCode = 401
+                };
+<#
+                    if(_model.LambdaMethod.ReturnsIHttpResults)
+                    {
+#>
+                var __unauthorizedStream__ = new System.IO.MemoryStream();
+                serializer.Serialize(__unauthorized__, __unauthorizedStream__);
+                __unauthorizedStream__.Position = 0;
+                return __unauthorizedStream__;
+<#
+                    }
+                    else
+                    {
+#>
+                return __unauthorized__;
+<#
+                    }
+#>
+            }
+            
+            try
+            {
+                var __authValue_<#= parameter.Name #>__ = __request__.RequestContext.Authorizer["<#= authKey #>"];
+                <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__authValue_<#= parameter.Name #>__?.ToString(), typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
+            }
+            catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+            {
+<#= "#if NET6_0_OR_GREATER" #>
+                __context__.Logger.LogError(e, "Failed to convert authorizer attribute '<#= authKey #>', returning unauthorized.");
+<#= "#else" #>
+                __context__.Logger.Log("Failed to convert authorizer attribute '<#= authKey #>', returning unauthorized. Exception: " + e.ToString());
+<#= "#endif" #>
+                var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                {                    
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "AccessDeniedException"}
+                    },
+                    StatusCode = 401
+                };
+<#
+                    if(_model.LambdaMethod.ReturnsIHttpResults)
+                    {
+#>
+                var __unauthorizedStream__ = new System.IO.MemoryStream();
+                serializer.Serialize(__unauthorized__, __unauthorizedStream__);
+                __unauthorizedStream__.Position = 0;
+                return __unauthorizedStream__;
+<#
+                    }
+                    else
+                    {
+#>
+                return __unauthorized__;
+<#
+                    }
+#>
+            }
+
+<#
+                }
+                else
+                {
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            if (__request__.RequestContext?.Authorizer?.Lambda == null || __request__.RequestContext?.Authorizer?.Lambda.ContainsKey("<#= authKey #>") == false)
+            {
+<#= "#if NET6_0_OR_GREATER" #>
+                __context__.Logger.LogDebug("Authorizer attribute '<#= authKey #>' was missing, returning unauthorized.");
+<#= "#else" #>
+                __context__.Logger.Log("Authorizer attribute '<#= authKey #>' was missing, returning unauthorized.");
+<#= "#endif" #>
+                var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                {                    
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "AccessDeniedException"}
+                    },
+                    StatusCode = 401
+                };
+<#
+                    if(_model.LambdaMethod.ReturnsIHttpResults)
+                    {
+#>
+                var __unauthorizedStream__ = new System.IO.MemoryStream();
+                serializer.Serialize(__unauthorized__, __unauthorizedStream__);
+                __unauthorizedStream__.Position = 0;
+                return __unauthorizedStream__;
+<#
+                    }
+                    else
+                    {
+#>
+                return __unauthorized__;
+<#
+                    }
+#>
+            }
+            
+            try
+            {
+                var __authValue_<#= parameter.Name #>__ = __request__.RequestContext.Authorizer.Lambda["<#= authKey #>"];
+                <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__authValue_<#= parameter.Name #>__?.ToString(), typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
+            }
+            catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+            {
+<#= "#if NET6_0_OR_GREATER" #>
+                __context__.Logger.LogError(e, "Failed to convert authorizer attribute '<#= authKey #>', returning unauthorized.");
+<#= "#else" #>
+                __context__.Logger.Log("Failed to convert authorizer attribute '<#= authKey #>', returning unauthorized. Exception: " + e.ToString());
+<#= "#endif" #>
+                var __unauthorized__ = new <#= restApiAttribute != null || httpApiAttribute?.Data.Version == Amazon.Lambda.Annotations.APIGateway.HttpApiVersion.V1 ? "Amazon.Lambda.APIGatewayEvents.APIGatewayProxyResponse" : "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse" #>
+                {                    
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"},
+                        {"x-amzn-ErrorType", "AccessDeniedException"}
+                    },
+                    StatusCode = 401
+                };
+<#
+                    if(_model.LambdaMethod.ReturnsIHttpResults)
+                    {
+#>
+                var __unauthorizedStream__ = new System.IO.MemoryStream();
+                serializer.Serialize(__unauthorized__, __unauthorizedStream__);
+                __unauthorizedStream__.Position = 0;
+                return __unauthorizedStream__;
+<#
+                    }
+                    else
+                    {
+#>
+                return __unauthorized__;
+<#
+                    }
+#>
+            }
+
+<#
+                }
+            }
             else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) || routeParameters.Contains(parameter.Name))
             {
                 var fromRouteAttribute = parameter.Attributes?.FirstOrDefault(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromRouteAttribute>;
