@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "Test application demonstrating FromCustomAuthorizer attribute with both HTTP API and REST API Lambda Authorizers. This template is partially managed by Amazon.Lambda.Annotations (v1.8.0.0).",
+  "Description": "Test application demonstrating FromCustomAuthorizer attribute with both HTTP API and REST API Lambda Authorizers. This template is partially managed by Amazon.Lambda.Annotations (v1.9.0.0).",
   "Globals": {
     "Function": {
       "Runtime": "dotnet8",
