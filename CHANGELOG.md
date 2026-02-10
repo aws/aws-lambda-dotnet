@@ -1,3 +1,8 @@
+## Release 2026-02-10
+
+### Amazon.Lambda.Annotations (1.9.0)
+* Added FromCustomAuthorizerAttribute
+
 ## Release 2026-02-04
 
 ### Amazon.Lambda.Core (2.8.1)
