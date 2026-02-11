@@ -36,7 +36,7 @@ public sealed class RunCommandSettings : CommandSettings
     /// for the host specified in <see cref="LambdaEmulatorHost"/>.
     /// </summary>
     [CommandOption("--lambda-emulator-https-port <PORT>")]
-    [Description("The port number used for the test tool's web interface.")]
+    [Description("The https port number used for the test tool's web interface.")]
     public int? LambdaEmulatorHttpsPort { get; set; }
 
     /// <summary>
@@ -58,20 +58,20 @@ public sealed class RunCommandSettings : CommandSettings
     public ApiGatewayEmulatorMode? ApiGatewayEmulatorMode { get; set; }
 
     /// <summary>
-    /// The port number used for the test tool's API Gateway emulator. If a port is specified the API Gateway emulator will be started. The --api-gateway-mode
-    /// also be set when setting the API Gateway emulator port.
+    /// The port number used for the test tool's API Gateway emulator. If a port is specified the API Gateway emulator will be started. The --api-gateway-emulator-mode
+    /// must also be set when setting the API Gateway emulator port.
     /// </summary>
     [CommandOption("--api-gateway-emulator-port <PORT>")]
     [Description("The port number used for the test tool's API Gateway emulator.")]
     public int? ApiGatewayEmulatorPort { get; set; }
 
     /// <summary>
-    /// The https port number used for the test tool's API Gateway emulator. If a port is specified the API Gateway emulator will be started. The --api-gateway-mode must
+    /// The https port number used for the test tool's API Gateway emulator. If a port is specified the API Gateway emulator will be started. The --api-gateway--emulator-mode must
     /// also be set when setting the API Gateway emulator port. To use HTTPS the environment must be configured with certs
     /// for the host specified in <see cref="LambdaEmulatorHost"/>.
     /// </summary>
     [CommandOption("--api-gateway-emulator-https-port <PORT>")]
-    [Description("The port number used for the test tool's API Gateway emulator.")]
+    [Description("The https port number used for the test tool's API Gateway emulator.")]
     public int? ApiGatewayEmulatorHttpsPort { get; set; }
 
     /// <summary>
