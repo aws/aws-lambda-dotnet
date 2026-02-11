@@ -66,8 +66,20 @@ public class TestToolProcess
         }
         builder.Services.AddSingleton<IDirectoryManager, DirectoryManager>();
 
-        var serviceUrl = $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
-        builder.WebHost.UseUrls(serviceUrl);
+        var serviceHttp = $"http://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorPort}";
+
+        string? serviceHttps = null;
+
+        if (settings.LambdaEmulatorHttpsPort.HasValue)
+        {
+            serviceHttps = $"https://{settings.LambdaEmulatorHost}:{settings.LambdaEmulatorHttpsPort}";
+            builder.WebHost.UseUrls(serviceHttp, serviceHttps);
+        }
+        else
+        {
+            builder.WebHost.UseUrls(serviceHttp);
+        }
+        
         builder.WebHost.SuppressStatusMessages(true);
 
         builder.Services.AddSingleton<IGlobalSettingsRepository, FileSettingsRepository>();
@@ -102,7 +114,7 @@ public class TestToolProcess
         {
             Services = app.Services,
             RunningTask = runTask,
-            ServiceUrl = serviceUrl
+            ServiceUrl = serviceHttps ?? serviceHttp
         };
 
         return startup;
