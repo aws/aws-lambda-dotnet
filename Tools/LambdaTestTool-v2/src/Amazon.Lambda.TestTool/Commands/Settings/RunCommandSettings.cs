@@ -31,6 +31,15 @@ public sealed class RunCommandSettings : CommandSettings
     public int? LambdaEmulatorPort { get; set; }
 
     /// <summary>
+    /// The https port number used for the test tool's web interface. This is only used for the web UI. Lambda functions making REST calls to the Lambda Runtime API
+    /// always use http configured by the port specified in <see cref="LambdaEmulatorPort"/>. To use HTTPS the environment must be configured with certs
+    /// for the host specified in <see cref="LambdaEmulatorHost"/>.
+    /// </summary>
+    [CommandOption("--lambda-emulator-https-port <PORT>")]
+    [Description("The https port number used for the test tool's web interface.")]
+    public int? LambdaEmulatorHttpsPort { get; set; }
+
+    /// <summary>
     /// Disable auto launching the test tool's web interface in a browser.
     /// </summary>
     [CommandOption("--no-launch-window")]
@@ -49,11 +58,21 @@ public sealed class RunCommandSettings : CommandSettings
     public ApiGatewayEmulatorMode? ApiGatewayEmulatorMode { get; set; }
 
     /// <summary>
-    /// The port number used for the test tool's API Gateway emulator. If a port is specified the API Gateway emulator will be started. The --api-gateway-mode muse also be set when setting the API Gateway emulator port.
+    /// The port number used for the test tool's API Gateway emulator. If a port is specified the API Gateway emulator will be started. The --api-gateway-emulator-mode
+    /// must also be set when setting the API Gateway emulator port.
     /// </summary>
     [CommandOption("--api-gateway-emulator-port <PORT>")]
     [Description("The port number used for the test tool's API Gateway emulator.")]
     public int? ApiGatewayEmulatorPort { get; set; }
+
+    /// <summary>
+    /// The https port number used for the test tool's API Gateway emulator. If a port is specified the API Gateway emulator will be started. The --api-gateway--emulator-mode must
+    /// also be set when setting the API Gateway emulator port. To use HTTPS the environment must be configured with certs
+    /// for the host specified in <see cref="LambdaEmulatorHost"/>.
+    /// </summary>
+    [CommandOption("--api-gateway-emulator-https-port <PORT>")]
+    [Description("The https port number used for the test tool's API Gateway emulator.")]
+    public int? ApiGatewayEmulatorHttpsPort { get; set; }
 
     /// <summary>
     /// The configuration for the SQS event source. The format of the config is a comma delimited key pairs. For example \"QueueUrl=queue-url,FunctionName=function-name,VisibilityTimeout=100\".

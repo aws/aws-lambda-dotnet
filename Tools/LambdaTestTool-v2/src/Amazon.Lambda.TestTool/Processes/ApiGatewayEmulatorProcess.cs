@@ -54,8 +54,22 @@ public class ApiGatewayEmulatorProcess
         builder.Services.AddApiGatewayEmulatorServices();
         builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
 
-        var serviceUrl = $"http://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorPort}";
-        builder.WebHost.UseUrls(serviceUrl);
+        string? serviceHttpUrl = null;
+        string? serviceHttpsUrl = null;
+        var serviceUrls = new List<string>();
+
+        if (settings.ApiGatewayEmulatorPort.HasValue)
+        {
+            serviceHttpUrl = $"http://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorPort}";
+            serviceUrls.Add(serviceHttpUrl);
+        }
+        if (settings.ApiGatewayEmulatorHttpsPort.HasValue)
+        {
+            serviceHttpsUrl = $"https://{settings.LambdaEmulatorHost}:{settings.ApiGatewayEmulatorHttpsPort}";
+            serviceUrls.Add(serviceHttpsUrl);
+        }
+
+        builder.WebHost.UseUrls(serviceUrls.ToArray());
         builder.WebHost.SuppressStatusMessages(true);
 
         builder.Services.AddHealthChecks();
@@ -66,7 +80,7 @@ public class ApiGatewayEmulatorProcess
 
         app.Lifetime.ApplicationStarted.Register(() =>
         {
-            app.Logger.LogInformation("The API Gateway Emulator is available at: {ServiceUrl}", serviceUrl);
+            app.Logger.LogInformation("The API Gateway Emulator is available at: {ServiceUrl}", serviceHttpsUrl ?? serviceHttpUrl);
         });
 
         app.Map("/{**catchAll}", async (HttpContext context, IApiGatewayRouteConfigService routeConfigService, ILambdaClient lambdaClient) =>
@@ -160,7 +174,7 @@ public class ApiGatewayEmulatorProcess
         {
             Services = app.Services,
             RunningTask = runTask,
-            ServiceUrl = serviceUrl
+            ServiceUrl = serviceHttpsUrl ?? serviceHttpUrl ?? throw new InvalidOperationException("No valid service URL was configured for the API Gateway emulator.")
         };
     }
 }
