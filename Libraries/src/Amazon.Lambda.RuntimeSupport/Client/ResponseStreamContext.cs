@@ -36,9 +36,8 @@ namespace Amazon.Lambda.RuntimeSupport
         public bool StreamCreated { get; set; }
 
         /// <summary>
-        /// The IResponseStream instance if created. Typed as IResponseStream for now;
-        /// will be used with the concrete ResponseStream internally.
+        /// The ResponseStream instance if created.
         /// </summary>
-        public IResponseStream Stream { get; set; }
+        public ResponseStream Stream { get; set; }
     }
 }
