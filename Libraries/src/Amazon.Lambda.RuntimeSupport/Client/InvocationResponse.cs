@@ -35,6 +35,18 @@ namespace Amazon.Lambda.RuntimeSupport
         public bool DisposeOutputStream { get; private set; } = true;
 
         /// <summary>
+        /// Indicates whether this response uses streaming mode.
+        /// Set internally by the runtime when ResponseStreamFactory.CreateStream() is called.
+        /// </summary>
+        internal bool IsStreaming { get; set; }
+
+        /// <summary>
+        /// The ResponseStream instance if streaming mode is used.
+        /// Set internally by the runtime.
+        /// </summary>
+        internal ResponseStream ResponseStream { get; set; }
+
+        /// <summary>
         /// Construct a InvocationResponse with an output stream that will be disposed by the Lambda Runtime Client. 
         /// </summary>
         /// <param name="outputStream"></param>
@@ -52,6 +64,20 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             OutputStream = outputStream ?? throw new ArgumentNullException(nameof(outputStream));
             DisposeOutputStream = disposeOutputStream;
+            IsStreaming = false;
+        }
+
+        /// <summary>
+        /// Creates an InvocationResponse for a streaming response.
+        /// Used internally by the runtime.
+        /// </summary>
+        internal static InvocationResponse CreateStreamingResponse(ResponseStream responseStream)
+        {
+            return new InvocationResponse(Stream.Null, false)
+            {
+                IsStreaming = true,
+                ResponseStream = responseStream
+            };
         }
     }
 }
