@@ -178,6 +178,47 @@ namespace Amazon.Lambda.RuntimeSupport
 
 
         /// <summary>
+        /// Start sending a streaming response to the Runtime API.
+        /// This initiates the HTTP POST with streaming headers. The actual data
+        /// is written by the handler via ResponseStream.WriteAsync, which flows
+        /// through StreamingHttpContent to the HTTP connection.
+        /// This Task completes when the stream is finalized (MarkCompleted or error).
+        /// </summary>
+        /// <param name="awsRequestId">The ID of the function request being responded to.</param>
+        /// <param name="responseStream">The ResponseStream that will provide the streaming data.</param>
+        /// <param name="cancellationToken">The optional cancellation token to use.</param>
+        /// <returns>A Task representing the in-flight HTTP POST.</returns>
+        internal virtual async Task StartStreamingResponseAsync(
+            string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+        {
+            if (awsRequestId == null) throw new ArgumentNullException(nameof(awsRequestId));
+            if (responseStream == null) throw new ArgumentNullException(nameof(responseStream));
+
+            var url = $"http://{LambdaEnvironment.RuntimeServerHostAndPort}/2018-06-01/runtime/invocation/{awsRequestId}/response";
+
+            using (var request = new HttpRequestMessage(HttpMethod.Post, url))
+            {
+                request.Headers.Add(StreamingConstants.ResponseModeHeader, StreamingConstants.StreamingResponseMode);
+                request.Headers.TransferEncodingChunked = true;
+
+                // Declare trailers upfront — we always declare them since we don't know
+                // at request start time whether an error will occur mid-stream.
+                request.Headers.Add("Trailer",
+                    $"{StreamingConstants.ErrorTypeTrailer}, {StreamingConstants.ErrorBodyTrailer}");
+
+                request.Content = new StreamingHttpContent(responseStream);
+
+                // SendAsync calls SerializeToStreamAsync, which blocks until the handler
+                // finishes writing. This is why this method runs concurrently with the handler.
+                var response = await _httpClient.SendAsync(
+                    request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                response.EnsureSuccessStatusCode();
+            }
+
+            responseStream.MarkCompleted();
+        }
+
+        /// <summary>
         /// Send a response to a function invocation to the Runtime API as an asynchronous operation.
         /// </summary>
         /// <param name="awsRequestId">The ID of the function request being responded to.</param>
