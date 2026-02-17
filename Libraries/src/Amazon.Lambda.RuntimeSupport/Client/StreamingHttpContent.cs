@@ -39,18 +39,24 @@ namespace Amazon.Lambda.RuntimeSupport
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
-            foreach (var chunk in _responseStream.Chunks)
-            {
-                await WriteChunkAsync(stream, chunk);
-            }
+            // Hand the HTTP output stream to ResponseStream so WriteAsync calls
+            // can write chunks directly to it.
+            _responseStream.SetHttpOutputStream(stream);
 
-            await WriteFinalChunkAsync(stream);
+            // Wait for the handler to finish writing (MarkCompleted or ReportErrorAsync)
+            await _responseStream.WaitForCompletionAsync();
 
+            // Write final chunk
+            await stream.WriteAsync(FinalChunkBytes, 0, FinalChunkBytes.Length);
+
+            // Write error trailers if present
             if (_responseStream.HasError)
             {
                 await WriteErrorTrailersAsync(stream, _responseStream.ReportedError);
             }
 
+            // Write final CRLF to end the chunked message
+            await stream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length);
             await stream.FlushAsync();
         }
 
@@ -58,22 +64,6 @@ namespace Amazon.Lambda.RuntimeSupport
         {
             length = -1;
             return false;
-        }
-
-        private async Task WriteChunkAsync(Stream stream, byte[] data)
-        {
-            var chunkSizeHex = data.Length.ToString("X");
-            var chunkSizeBytes = Encoding.ASCII.GetBytes(chunkSizeHex);
-
-            await stream.WriteAsync(chunkSizeBytes, 0, chunkSizeBytes.Length);
-            await stream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length);
-            await stream.WriteAsync(data, 0, data.Length);
-            await stream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length);
-        }
-
-        private async Task WriteFinalChunkAsync(Stream stream)
-        {
-            await stream.WriteAsync(FinalChunkBytes, 0, FinalChunkBytes.Length);
         }
 
         private async Task WriteErrorTrailersAsync(Stream stream, Exception exception)
@@ -88,8 +78,6 @@ namespace Amazon.Lambda.RuntimeSupport
             var errorBodyHeader = $"{StreamingConstants.ErrorBodyTrailer}: {errorBodyJson}\r\n";
             var errorBodyBytes = Encoding.UTF8.GetBytes(errorBodyHeader);
             await stream.WriteAsync(errorBodyBytes, 0, errorBodyBytes.Length);
-
-            await stream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length);
         }
     }
 }
