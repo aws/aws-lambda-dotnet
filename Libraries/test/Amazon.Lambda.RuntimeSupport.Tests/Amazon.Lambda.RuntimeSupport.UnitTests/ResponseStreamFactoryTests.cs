@@ -20,6 +20,7 @@ using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
+    [Collection("ResponseStreamFactory")]
     public class ResponseStreamFactoryTests : IDisposable
     {
         private const long MaxResponseSize = 20 * 1024 * 1024;

@@ -31,6 +31,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
     /// Tests to test LambdaBootstrap when it's constructed using its actual constructor.
     /// Tests of the static GetLambdaBootstrap methods can be found in LambdaBootstrapWrapperTests.
     /// </summary>
+    [Collection("ResponseStreamFactory")]
     public class LambdaBootstrapTests
     {
         readonly TestHandler _testFunction;
