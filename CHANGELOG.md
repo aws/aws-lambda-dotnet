@@ -1,3 +1,8 @@
+## Release 2026-02-18
+
+### AWSLambdaPSCore PowerShell Module (5.0.0)
+* Updated to target the .NET 10 Lambda runtime
+
 ## Release 2026-02-10
 
 ### Amazon.Lambda.Annotations (1.9.0)
