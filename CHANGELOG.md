@@ -5,8 +5,6 @@
 * Add .NET 10 build target
 * Update to latest versions of the AWS SDK for .NET
 
-## Release 2026-02-18
-
 ### AWSLambdaPSCore PowerShell Module (5.0.0)
 * Updated to target the .NET 10 Lambda runtime
 
