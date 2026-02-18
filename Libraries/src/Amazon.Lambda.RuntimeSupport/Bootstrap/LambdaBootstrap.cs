@@ -349,6 +349,7 @@ namespace Amazon.Lambda.RuntimeSupport
             _logger.LogInformation("Starting InvokeOnceAsync");
 
             var invocation = await Client.GetNextInvocationAsync(cancellationToken);
+            var isMultiConcurrency = Utils.IsUsingMultiConcurrency(_environmentVariables);
 
             Func<Task> processingFunc = async () =>
             {
@@ -356,6 +357,18 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     Client.ConsoleLogger.SetRuntimeHeaders(impl.RuntimeApiHeaders);
                     SetInvocationTraceId(impl.RuntimeApiHeaders.TraceId);
+                }
+
+                // Initialize ResponseStreamFactory — includes RuntimeApiClient reference
+                var runtimeApiClient = Client as RuntimeApiClient;
+                if (runtimeApiClient != null)
+                {
+                    ResponseStreamFactory.InitializeInvocation(
+                        invocation.LambdaContext.AwsRequestId,
+                        StreamingConstants.MaxResponseSize,
+                        isMultiConcurrency,
+                        runtimeApiClient,
+                        cancellationToken);
                 }
 
                 try
@@ -372,15 +385,39 @@ namespace Amazon.Lambda.RuntimeSupport
                     catch (Exception exception)
                     {
                         WriteUnhandledExceptionToLog(exception);
-                        await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception, cancellationToken);
+
+                        var streamIfCreated = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
+                        if (streamIfCreated != null && streamIfCreated.BytesWritten > 0)
+                        {
+                            // Midstream error — report via trailers on the already-open HTTP connection
+                            await streamIfCreated.ReportErrorAsync(exception);
+                        }
+                        else
+                        {
+                            // Error before streaming started — use standard error reporting
+                            await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception, cancellationToken);
+                        }
                     }
                     finally
                     {
                         _logger.LogInformation("Finished invoking handler");
                     }
 
-                    if (invokeSucceeded)
+                    // If streaming was started, await the HTTP send task to ensure it completes
+                    var sendTask = ResponseStreamFactory.GetSendTask(isMultiConcurrency);
+                    if (sendTask != null)
                     {
+                        var stream = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
+                        if (stream != null && !stream.IsCompleted && !stream.HasError)
+                        {
+                            // Handler returned successfully — signal stream completion
+                            stream.MarkCompleted();
+                        }
+                        await sendTask; // Wait for HTTP request to finish
+                    }
+                    else if (invokeSucceeded)
+                    {
+                        // No streaming — send buffered response
                         _logger.LogInformation("Starting sending response");
                         try
                         {
@@ -415,6 +452,10 @@ namespace Amazon.Lambda.RuntimeSupport
                 }
                 finally
                 {
+                    if (runtimeApiClient != null)
+                    {
+                        ResponseStreamFactory.CleanupInvocation(isMultiConcurrency);
+                    }
                     invocation.Dispose();
                 }
             };
