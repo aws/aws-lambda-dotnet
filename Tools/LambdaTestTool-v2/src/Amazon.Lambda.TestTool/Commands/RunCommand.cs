@@ -21,7 +21,9 @@ public sealed class RunCommand(
     IToolInteractiveService toolInteractiveService, IEnvironmentManager environmentManager) : CancellableAsyncCommand<RunCommandSettings>
 {
     public const string LAMBDA_RUNTIME_API_PORT = "LAMBDA_RUNTIME_API_PORT";
+    public const string LAMBDA_WEB_UI_HTTPS_PORT = "LAMBDA_WEB_UI_HTTPS_PORT";
     public const string API_GATEWAY_EMULATOR_PORT = "API_GATEWAY_EMULATOR_PORT";
+    public const string API_GATEWAY_EMULATOR_HTTPS_PORT = "API_GATEWAY_EMULATOR_HTTPS_PORT";
 
     /// <summary>
     /// Task for the Lambda Runtime API.
@@ -37,10 +39,10 @@ public sealed class RunCommand(
         {
             EvaluateEnvironmentVariables(settings);
 
-            if (!settings.LambdaEmulatorPort.HasValue && !settings.ApiGatewayEmulatorPort.HasValue && string.IsNullOrEmpty(settings.SQSEventSourceConfig))
+            if (!settings.LambdaEmulatorPort.HasValue && !settings.ApiGatewayEmulatorPort.HasValue && !settings.ApiGatewayEmulatorHttpsPort.HasValue && string.IsNullOrEmpty(settings.SQSEventSourceConfig))
             {
                 throw new ArgumentException("At least one of the following parameters must be set: " +
-                                            "--lambda-emulator-port, --api-gateway-emulator-port or --sqs-eventsource-config");
+                                            "--lambda-emulator-port, --api-gateway-emulator-port, --api-gateway-emulator-https-port or --sqs-eventsource-config");
             }
 
             var tasks = new List<Task>();
@@ -69,11 +71,11 @@ public sealed class RunCommand(
                 }
             }
 
-            if (settings.ApiGatewayEmulatorPort.HasValue)
+            if (settings.ApiGatewayEmulatorPort.HasValue || settings.ApiGatewayEmulatorHttpsPort.HasValue)
             {
                 if (settings.ApiGatewayEmulatorMode is null)
                 {
-                    throw new ArgumentException("When --api-gateway-emulator-port is set the --api-gateway-emulator-mode must be set to configure the mode for the API Gateway emulator.");
+                    throw new ArgumentException("When --api-gateway-emulator-port or --api-gateway-emulator-https-port is set the --api-gateway-emulator-mode must be set to configure the mode for the API Gateway emulator.");
                 }
 
                 var apiGatewayEmulatorProcess =
@@ -137,6 +139,18 @@ public sealed class RunCommand(
                 throw new ArgumentException($"Value for {LAMBDA_RUNTIME_API_PORT} environment variable was not a valid port number");
             }
         }
+        if (environmentVariables.Contains(LAMBDA_WEB_UI_HTTPS_PORT))
+        {
+            var envValue = environmentVariables[LAMBDA_WEB_UI_HTTPS_PORT]?.ToString();
+            if (int.TryParse(envValue, out var port))
+            {
+                settings.LambdaEmulatorHttpsPort = port;
+            }
+            else
+            {
+                throw new ArgumentException($"Value for {LAMBDA_WEB_UI_HTTPS_PORT} environment variable was not a valid port number");
+            }
+        }
         if (environmentVariables.Contains(API_GATEWAY_EMULATOR_PORT))
         {
             var envValue = environmentVariables[API_GATEWAY_EMULATOR_PORT]?.ToString();
@@ -147,6 +161,18 @@ public sealed class RunCommand(
             else
             {
                 throw new ArgumentException($"Value for {API_GATEWAY_EMULATOR_PORT} environment variable was not a valid port number");
+            }
+        }
+        if (environmentVariables.Contains(API_GATEWAY_EMULATOR_HTTPS_PORT))
+        {
+            var envValue = environmentVariables[API_GATEWAY_EMULATOR_HTTPS_PORT]?.ToString();
+            if (int.TryParse(envValue, out var port))
+            {
+                settings.ApiGatewayEmulatorHttpsPort = port;
+            }
+            else
+            {
+                throw new ArgumentException($"Value for {API_GATEWAY_EMULATOR_HTTPS_PORT} environment variable was not a valid port number");
             }
         }
 
