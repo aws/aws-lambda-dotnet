@@ -2,7 +2,7 @@
   "Projects": [
     {
       "Name": "Amazon.Lambda.TestTool",
-      "Type": "Patch",
+      "Type": "Minor",
       "ChangelogMessages": [
         "Add support for configuring HTTPS endpoints for the Lambda UI emulator and API Gateway emulator"
       ]
