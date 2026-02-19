@@ -1,3 +1,8 @@
+## Release 2026-02-19
+
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.10.0)
+* Exposing the extensions points from Amazon.Lambda.AspNetCoreServer onto the HostingOptions. For example customizing the serialization by adding a callback for PostMarshallResponseFeature.
+
 ## Release 2026-02-18
 
 ### Amazon.Lambda.TestTool (0.13.0)
