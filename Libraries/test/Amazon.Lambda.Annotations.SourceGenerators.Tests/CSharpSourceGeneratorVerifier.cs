@@ -38,7 +38,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
 
                 if (referencesMode == ReferencesMode.NoApiGatewayEvents)
                 {
-                    this.SolutionTransforms.Add((solution, projectId) =>
+                    SolutionTransforms.Add((solution, projectId) =>
                     {
                         return solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ILambdaContext).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location))
@@ -53,7 +53,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                 }
                 else
                 {
-                    this.SolutionTransforms.Add((solution, projectId) =>
+                    SolutionTransforms.Add((solution, projectId) =>
                     {
                         return solution.AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(ILambdaContext).Assembly.Location))
                             .AddMetadataReference(projectId, MetadataReference.CreateFromFile(typeof(APIGatewayProxyRequest).Assembly.Location))

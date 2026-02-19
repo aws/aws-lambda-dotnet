@@ -1,9 +1,9 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Threading.Tasks;
 using Amazon.CloudFormation;
 using Amazon.CloudFormation.Model;
 
-namespace TestServerlessApp.IntegrationTests.Helpers
+namespace IntegrationTests.Helpers
 {
     public class CloudFormationHelper
     {
@@ -28,7 +28,7 @@ namespace TestServerlessApp.IntegrationTests.Helpers
             while (attemptCount < maxAttempts)
             {
                 attemptCount += 1;
-                if (! await StackExistsAsync(stackName))
+                if (!await StackExistsAsync(stackName))
                     return true;
                 await Task.Delay(StaticHelpers.GetWaitTime(attemptCount));
             }
@@ -40,21 +40,21 @@ namespace TestServerlessApp.IntegrationTests.Helpers
             if (!await StackExistsAsync(stackName))
                 return;
 
-            await _cloudFormationClient.DeleteStackAsync(new DeleteStackRequest {StackName = stackName});
+            await _cloudFormationClient.DeleteStackAsync(new DeleteStackRequest { StackName = stackName });
         }
 
-        public async Task<string> GetOutputValueAsync(string stackName, string outputKey)
+        public async Task<string?> GetOutputValueAsync(string stackName, string outputKey)
         {
             var stack = await GetStackAsync(stackName);
             return stack?.Outputs.FirstOrDefault(x => string.Equals(x.OutputKey, outputKey))?.OutputValue;
         }
 
-        private async Task<Stack> GetStackAsync(string stackName)
+        private async Task<Stack?> GetStackAsync(string stackName)
         {
             if (!await StackExistsAsync(stackName))
                 return null;
 
-            var response = await _cloudFormationClient.DescribeStacksAsync(new DescribeStacksRequest {StackName = stackName});
+            var response = await _cloudFormationClient.DescribeStacksAsync(new DescribeStacksRequest { StackName = stackName });
             return response.Stacks.Count == 0 ? null : response.Stacks[0];
         }
 
@@ -62,7 +62,7 @@ namespace TestServerlessApp.IntegrationTests.Helpers
         {
             try
             {
-                await _cloudFormationClient.DescribeStacksAsync(new DescribeStacksRequest {StackName = stackName});
+                await _cloudFormationClient.DescribeStacksAsync(new DescribeStacksRequest { StackName = stackName });
             }
             catch (AmazonCloudFormationException exception) when (exception.ErrorCode.Equals("ValidationError") && exception.Message.Equals($"Stack with id {stackName} does not exist"))
             {

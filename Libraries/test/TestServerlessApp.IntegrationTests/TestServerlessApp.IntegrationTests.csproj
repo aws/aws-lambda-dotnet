@@ -6,18 +6,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AWSSDK.CloudFormation" Version="3.7.5.38" />
-        <PackageReference Include="AWSSDK.CloudWatchLogs" Version="3.7.1.70" />
-        <PackageReference Include="AWSSDK.Lambda" Version="3.7.305.33" />
-        <PackageReference Include="AWSSDK.S3" Version="3.7.4.1" />
         <!-- AWSSDK.SecurityToken is needed at runtime for environments which uses assume-role operation for credentials -->
         <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.99" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="xunit" Version="2.4.1" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\IntegrationTests.Helpers\IntegrationTests.Helpers.csproj" />
     </ItemGroup>
 
 </Project>

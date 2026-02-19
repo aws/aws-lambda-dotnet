@@ -235,6 +235,18 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     registry = SnapstartHelperCopySnapshotCallbacksIsolated.CopySnapshotCallbacks();
                 }
+                catch (MethodAccessException ex)
+                {
+                    // This would happen with the Lambda test tool when the Amazon.Lambda.RuntimeSupport assembly
+                    // was renamed when embedded into the test tool. The renamed assembly would cause this error
+                    // since older versions Amazon.Lambda.Core used in the customer's function would not have provided
+                    // access to the internals for the renamed assembly version.
+                    Client.ConsoleLogger.FormattedWriteLine(
+                        Amazon.Lambda.RuntimeSupport.Helpers.LogLevelLoggerWriter.LogLevel.Error.ToString(),
+                        "Failed to retrieve snapshot hooks from Amazon.Lambda.Core.SnapshotRestore, " +
+                        $"this can be fixed by updating the version of Amazon.Lambda.Core: {ex}",
+                        null);
+                }
                 catch (TypeLoadException ex)
                 {
                     Client.ConsoleLogger.FormattedWriteLine(
@@ -441,6 +453,16 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     TraceProviderIsolated.SetCurrentTraceId(traceId);
                 }
+                catch (MethodAccessException)
+                {
+                    // This would happen with the Lambda test tool when the Amazon.Lambda.RuntimeSupport assembly
+                    // was renamed when embedded into the test tool. The renamed assembly would cause this error
+                    // since older versions Amazon.Lambda.Core used in the customer's function would not have provided
+                    // access to the internals for the renamed assembly version.
+                    _disableTraceProvider = true;
+                    _logger.LogInformation("Failed to set the trace id on Amazon.Lambda.Core.LambdaTraceProvider due to the version of " +
+                                           "Amazon.Lambda.Core being provided by Lambda Function being out of date.");
+                }
                 catch (TypeLoadException)
                 {
                     // Disable attempting to set trace id in the future. If we got a TypeLoadException then setting the
@@ -448,7 +470,7 @@ namespace Amazon.Lambda.RuntimeSupport
                     _disableTraceProvider = true;
                     _logger.LogInformation("Failed to set the trace id on Amazon.Lambda.Core.LambdaTraceProvider due to the version of " +
                                            "Amazon.Lambda.Core being provided by Lambda Function being out of date.");
-                }
+                }                
             }
         }
 

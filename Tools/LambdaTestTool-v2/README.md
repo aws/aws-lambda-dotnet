@@ -268,7 +268,7 @@ Configure the Lambda function to use the test tool:
     "LambdaRuntimeClient_FunctionHandler": {
       "workingDirectory": ".\\bin\\$(Configuration)\\net8.0",
       "commandName": "Executable",
-      "commandLineArgs": "exec --depsfile ./MyLambdaFunction.deps.json  --runtimeconfig ./MyLambdaFunction.runtimeconfig.json %USERPROFILE%/.dotnet/tools/.store/amazon.lambda.testtool/{TEST_TOOL_VERSION}/amazon.lambda.testtool/{TEST_TOOL_VERSION}/content/Amazon.Lambda.RuntimeSupport/{TARGET_FRAMEWORK}/Amazon.Lambda.RuntimeSupport.dll MyLambdaFunction::MyLambdaFunction.Function::Add",
+      "commandLineArgs": "exec --depsfile ./MyLambdaFunction.deps.json  --runtimeconfig ./MyLambdaFunction.runtimeconfig.json %USERPROFILE%/.dotnet/tools/.store/amazon.lambda.testtool/{TEST_TOOL_VERSION}/amazon.lambda.testtool/{TEST_TOOL_VERSION}/content/Amazon.Lambda.RuntimeSupport/{TARGET_FRAMEWORK}/Amazon.Lambda.RuntimeSupport.TestTool.dll MyLambdaFunction::MyLambdaFunction.Function::Add",
       "executablePath": "dotnet",
       "environmentVariables": {
         "AWS_LAMBDA_RUNTIME_API": "localhost:5050/AddLambdaFunction"
@@ -288,7 +288,8 @@ There are three variables you need to update in the launch settings:
 2. `{TARGET_FRAMEWORK}` - Replace with your Lambda project's target framework version (e.g., `net8.0` in the example above)
    - This appears in two places:
      - The working directory: `.\\bin\\$(Configuration)\\{TARGET_FRAMEWORK}`
-     - The runtime support DLL path: `Amazon.Lambda.RuntimeSupport/{TARGET_FRAMEWORK}/Amazon.Lambda.RuntimeSupport.dll`
+     - The runtime support DLL path: `Amazon.Lambda.RuntimeSupport/{TARGET_FRAMEWORK}/Amazon.Lambda.RuntimeSupport.TestTool.dll`
+     - **Note: For the test tool the Amazon.Lambda.RuntimeSupport.dll assembly was renamed to Amazon.Lambda.RuntimeSupport.TestTool.dll to avoid conflicts with versions of Amazon.Lambda.RuntimeSupport used by the Lambda function itself.**
 
 3. `{FUNCTION_HANDLER}` - Replace with your function's handler using the format: `<project_name>::<namespace>.<class>::<method_name>`
    - Example: `MyLambdaFunction::MyLambdaFunction.Function::Add`

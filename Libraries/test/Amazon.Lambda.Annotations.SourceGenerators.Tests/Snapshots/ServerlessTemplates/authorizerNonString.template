@@ -1,0 +1,45 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v{ANNOTATIONS_ASSEMBLY_VERSION}).",
+  "Resources": {
+    "HttpApiNonString": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.CustomAuthorizerNonStringExample_HttpApiWithNonString_Generated::HttpApiWithNonString"
+          ]
+        },
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/api/authorizer-non-string",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    }
+  }
+}

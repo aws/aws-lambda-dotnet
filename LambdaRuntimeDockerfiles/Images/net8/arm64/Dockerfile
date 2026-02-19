@@ -1,14 +1,14 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=8.0.23
-ARG ASPNET_SHA512=c237c886b328a8b79fa6e341590ec6739325450d3f10be9c26bf908e4e1082b03bdf389ab794318187bb4694f261f87e3d4b466017b21980ffe7b4d70d028bb9
+ARG ASPNET_VERSION=8.0.24
+ARG ASPNET_SHA512=e269491953c552ecfd31e620052eec84e60b28da39ce06c2d64c322da9a164a6c896a1da9bf965df78e6dfdec6ab9e42ad5c36b2c641d6ea05a5243930a6391c
 
 ARG LAMBDA_RUNTIME_NAME=dotnet8
 ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
 
 FROM $AMAZON_LINUX AS base
 
-RUN dnf install libicu-67.1-7.amzn2023.0.3.aarch64 --assumeyes
+RUN dnf install libicu-67.1-7.amzn2023.0.4.aarch64 --assumeyes
 
 FROM base AS builder-net8
 ARG ASPNET_VERSION
