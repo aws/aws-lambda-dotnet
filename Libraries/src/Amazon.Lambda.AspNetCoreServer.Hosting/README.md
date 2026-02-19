@@ -49,3 +49,66 @@ app.MapControllers();
 app.Run();
 
 ```
+
+## Extension Points
+
+`AddAWSLambdaHosting` accepts an optional `HostingOptions` configuration action that exposes the same customization hooks available in the traditional `AbstractAspNetCoreFunction` base class approach.
+
+### Binary response handling
+
+By default, common binary content types like `image/png` and `application/pdf` are already configured for Base64 encoding. You can register additional types or override the default encoding:
+
+```csharp
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, options =>
+{
+    // Register a custom binary content type
+    options.RegisterResponseContentEncodingForContentType("application/x-custom-binary", ResponseContentEncoding.Base64);
+
+    // Ensure compressed responses are Base64-encoded (gzip, deflate, br are already defaults)
+    options.RegisterResponseContentEncodingForContentEncoding("zstd", ResponseContentEncoding.Base64);
+
+    // Change the fallback encoding for any unregistered content type
+    options.DefaultResponseContentEncoding = ResponseContentEncoding.Base64;
+});
+```
+
+### Exception details in responses
+
+Useful during development to surface unhandled exception details in the HTTP response body:
+
+```csharp
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, options =>
+{
+    options.IncludeUnhandledExceptionDetailInResponse = app.Environment.IsDevelopment();
+});
+```
+
+### Customizing request and response marshalling
+
+Callbacks let you inspect or modify the ASP.NET Core feature objects after the Lambda event has been marshalled into them. The second parameter is the raw Lambda request or response object — cast it to the appropriate type for your event source (`APIGatewayHttpApiV2ProxyRequest` for `HttpApi`, `APIGatewayProxyRequest` for `RestApi`, `ApplicationLoadBalancerRequest` for `ApplicationLoadBalancer`).
+
+```csharp
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, options =>
+{
+    // Add a custom header derived from the raw Lambda request
+    options.PostMarshallRequestFeature = (requestFeature, lambdaRequest, context) =>
+    {
+        var apiRequest = (APIGatewayHttpApiV2ProxyRequest)lambdaRequest;
+        requestFeature.Headers["X-Stage"] = apiRequest.RequestContext.Stage;
+    };
+
+    // Inject the Lambda context into HttpContext.Items for use in middleware or controllers
+    options.PostMarshallItemsFeature = (itemsFeature, lambdaRequest, context) =>
+    {
+        itemsFeature.Items["MyCustomKey"] = context.FunctionName;
+    };
+
+    // Modify the response after it has been marshalled back to a Lambda response
+    options.PostMarshallResponseFeature = (responseFeature, lambdaResponse, context) =>
+    {
+        var apiResponse = (APIGatewayHttpApiV2ProxyResponse)lambdaResponse;
+        apiResponse.Headers ??= new Dictionary<string, string>();
+        apiResponse.Headers["X-Request-Id"] = context.AwsRequestId;
+    };
+});
+```
