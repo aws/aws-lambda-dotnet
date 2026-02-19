@@ -17,11 +17,11 @@ If you are using Visual Studio Code on Windows as your IDE, you need to ensure i
 configured for PowerShell Core. To learn how to configure Visual Studio Code for 
 PowerShell Core, see the following: https://learn.microsoft.com/en-us/powershell/scripting/dev-cross-plat/vscode/using-vscode?view=powershell-7.4
 
-Next, we need to install the .NET 8 SDK. Because PowerShell Core is built on top of 
-.NET Core, the Lambda support for PowerShell uses the same .NET 8 Lambda runtime for 
-both .NET Core and PowerShell based Lambda functions. The .NET 8 SDK is used by 
+Next, we need to install the .NET 10 SDK. Because PowerShell Core is built on top of 
+.NET Core, the Lambda support for PowerShell uses the same .NET 10 Lambda runtime for 
+both .NET Core and PowerShell based Lambda functions. The .NET 10 SDK is used by 
 the new PowerShell publishing cmdlets for Lambda to create the Lambda deployment 
-package. You can find the .NET 8 SDK [here]( https://www.microsoft.com/net/download). Be 
+package. You can find the .NET 10 SDK [here]( https://www.microsoft.com/net/download). Be 
 sure to install the SDK, not the runtime installation.
 
 The last component we need for the development environment is the 
@@ -43,9 +43,9 @@ New-AWSPowerShellLambdaPackage|Creates the Lambda deployment package that can be
 
 ## Troubleshooting
 ### Enabling Debug output
-In PowerShell, [Write-Debug](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/write-debug?view=powershell-7.4) CmdLet could be used to write debug message to the console. However, by default, debug messages are not displayed in the console, but you can display them by using the **Debug** parameter or the **$DebugPreference** variable.
+In PowerShell, [Write-Debug](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/write-debug) CmdLet could be used to write debug message to the console. However, by default, debug messages are not displayed in the console, but you can display them by using the **Debug** parameter or the **$DebugPreference** variable.
 
-The default value of [DebugPreference](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_preference_variables?view=powershell-7.4#debugpreference) variable is `SilentlyContinue`, which means the debug message isn't displayed and execution continues without interruption. The `-Debug` parameter could be used to override the `$DebugPreference` value.
+The default value of [DebugPreference](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_preference_variables#debugpreference) variable is `SilentlyContinue`, which means the debug message isn't displayed and execution continues without interruption. The `-Debug` parameter could be used to override the `$DebugPreference` value.
 
 Enabling output of `Write-Debug` to CloudWatch logs is a 2 step process:
 - In PowerShell Lambda script, 
