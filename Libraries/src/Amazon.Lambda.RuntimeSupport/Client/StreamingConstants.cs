@@ -21,11 +21,6 @@ namespace Amazon.Lambda.RuntimeSupport
     internal static class StreamingConstants
     {
         /// <summary>
-        /// Maximum response size for Lambda streaming responses: 20 MiB.
-        /// </summary>
-        public const long MaxResponseSize = 20 * 1024 * 1024;
-
-        /// <summary>
         /// Header name for Lambda response mode.
         /// </summary>
         public const string ResponseModeHeader = "Lambda-Runtime-Function-Response-Mode";

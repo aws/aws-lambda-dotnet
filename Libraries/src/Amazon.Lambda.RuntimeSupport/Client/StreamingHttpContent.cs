@@ -30,9 +30,9 @@ namespace Amazon.Lambda.RuntimeSupport
         private static readonly byte[] CrlfBytes = Encoding.ASCII.GetBytes("\r\n");
         private static readonly byte[] FinalChunkBytes = Encoding.ASCII.GetBytes("0\r\n");
 
-        private readonly ResponseStream _responseStream;
+        private readonly LambdaResponseStream _responseStream;
 
-        public StreamingHttpContent(ResponseStream responseStream)
+        public StreamingHttpContent(LambdaResponseStream responseStream)
         {
             _responseStream = responseStream ?? throw new ArgumentNullException(nameof(responseStream));
         }

@@ -189,7 +189,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the in-flight HTTP POST.</returns>
         internal virtual async Task StartStreamingResponseAsync(
-            string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+            string awsRequestId, LambdaResponseStream responseStream, CancellationToken cancellationToken = default)
         {
             if (awsRequestId == null) throw new ArgumentNullException(nameof(awsRequestId));
             if (responseStream == null) throw new ArgumentNullException(nameof(responseStream));

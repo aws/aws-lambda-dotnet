@@ -25,15 +25,13 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
     public class ResponseStreamTests
     {
-        private const long MaxResponseSize = 20 * 1024 * 1024; // 20 MiB
-
         /// <summary>
         /// Helper: creates a ResponseStream and wires up a MemoryStream as the HTTP output stream.
         /// Returns both so tests can inspect what was written.
         /// </summary>
-        private static (ResponseStream stream, MemoryStream httpOutput) CreateWiredStream(long maxSize = MaxResponseSize)
+        private static (LambdaResponseStream stream, MemoryStream httpOutput) CreateWiredStream()
         {
-            var rs = new ResponseStream(maxSize);
+            var rs = new LambdaResponseStream();
             var output = new MemoryStream();
             rs.SetHttpOutputStream(output);
             return (rs, output);
@@ -44,7 +42,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void Constructor_InitializesStateCorrectly()
         {
-            var stream = new ResponseStream(MaxResponseSize);
+            var stream = new LambdaResponseStream();
 
             Assert.Equal(0, stream.BytesWritten);
             Assert.False(stream.IsCompleted);
@@ -100,27 +98,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Equal(expected, written);
         }
 
-        /// <summary>
-        /// Property 9: Chunked Encoding Format — ReadOnlyMemory overload.
-        /// Validates: Requirements 3.2, 10.1
-        /// </summary>
-        [Fact]
-        public async Task WriteAsync_ReadOnlyMemory_WritesChunkedFormat()
-        {
-            var (stream, httpOutput) = CreateWiredStream();
-            var data = new ReadOnlyMemory<byte>(new byte[] { 10, 20, 30 });
-
-            await stream.WriteAsync(data);
-
-            var written = httpOutput.ToArray();
-            var expected = Encoding.ASCII.GetBytes("3\r\n")
-                .Concat(new byte[] { 10, 20, 30 })
-                .Concat(Encoding.ASCII.GetBytes("\r\n"))
-                .ToArray();
-
-            Assert.Equal(expected, written);
-        }
-
         // ---- Property 5: Written Data Appears in HTTP Response Immediately ----
 
         /// <summary>
@@ -170,7 +147,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task WriteAsync_BlocksUntilSetHttpOutputStream()
         {
-            var rs = new ResponseStream(MaxResponseSize);
+            var rs = new LambdaResponseStream();
             var httpOutput = new MemoryStream();
             var writeStarted = new ManualResetEventSlim(false);
             var writeCompleted = new ManualResetEventSlim(false);
@@ -277,7 +254,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             await stream.WriteAsync(data);
 
-            Assert.Equal(MaxResponseSize, stream.BytesWritten);
+            Assert.Equal(data.Length, stream.BytesWritten);
         }
 
         // ---- Property 19: Writes After Completion Rejected ----
@@ -317,7 +294,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ReportErrorAsync_SetsErrorState()
         {
-            var stream = new ResponseStream(MaxResponseSize);
+            var stream = new LambdaResponseStream();
             var exception = new InvalidOperationException("something broke");
 
             await stream.ReportErrorAsync(exception);
@@ -329,7 +306,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ReportErrorAsync_AfterCompleted_Throws()
         {
-            var stream = new ResponseStream(MaxResponseSize);
+            var stream = new LambdaResponseStream();
             stream.MarkCompleted();
 
             await Assert.ThrowsAsync<InvalidOperationException>(
@@ -339,7 +316,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ReportErrorAsync_CalledTwice_Throws()
         {
-            var stream = new ResponseStream(MaxResponseSize);
+            var stream = new LambdaResponseStream();
             await stream.ReportErrorAsync(new Exception("first"));
 
             await Assert.ThrowsAsync<InvalidOperationException>(
@@ -349,7 +326,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void MarkCompleted_SetsCompletionState()
         {
-            var stream = new ResponseStream(MaxResponseSize);
+            var stream = new LambdaResponseStream();
 
             stream.MarkCompleted();
 
@@ -377,7 +354,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ReportErrorAsync_NullException_ThrowsArgumentNull()
         {
-            var stream = new ResponseStream(MaxResponseSize);
+            var stream = new LambdaResponseStream();
 
             await Assert.ThrowsAsync<ArgumentNullException>(() => stream.ReportErrorAsync(null));
         }
@@ -387,7 +364,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task Dispose_ReleasesCompletionSignalIfNotAlreadyReleased()
         {
-            var stream = new ResponseStream(MaxResponseSize);
+            var stream = new LambdaResponseStream();
 
             var waitTask = stream.WaitForCompletionAsync();
             Assert.False(waitTask.IsCompleted);

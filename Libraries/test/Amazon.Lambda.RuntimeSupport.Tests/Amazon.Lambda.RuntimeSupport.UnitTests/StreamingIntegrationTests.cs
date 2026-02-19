@@ -38,8 +38,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
     {
         public void Dispose()
         {
-            ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: false);
-            ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
+            LambdaResponseStreamFactory.CleanupInvocation(isMultiConcurrency: false);
+            LambdaResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
         }
 
         // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             public bool SendResponseCalled { get; private set; }
             public bool ReportInvocationErrorCalled { get; private set; }
             public byte[] CapturedHttpBytes { get; private set; }
-            public ResponseStream LastResponseStream { get; private set; }
+            public LambdaResponseStream LastResponseStream { get; private set; }
             public Stream LastBufferedOutputStream { get; private set; }
 
             public new Amazon.Lambda.RuntimeSupport.Helpers.IConsoleLoggerWriter ConsoleLogger { get; } = new Helpers.LogLevelLoggerWriter(new SystemEnvironmentVariables());
@@ -97,7 +97,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             }
 
             internal override async Task StartStreamingResponseAsync(
-                string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+                string awsRequestId, LambdaResponseStream responseStream, CancellationToken cancellationToken = default)
             {
                 StartStreamingCalled = true;
                 LastResponseStream = responseStream;
@@ -159,7 +159,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             LambdaBootstrapHandler handler = async (invocation) =>
             {
-                var stream = ResponseStreamFactory.CreateStream();
+                var stream = LambdaResponseStreamFactory.CreateStream();
                 foreach (var chunk in chunks)
                     await stream.WriteAsync(Encoding.UTF8.GetBytes(chunk));
                 return new InvocationResponse(Stream.Null, false);
@@ -196,7 +196,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             LambdaBootstrapHandler handler = async (invocation) =>
             {
-                var stream = ResponseStreamFactory.CreateStream();
+                var stream = LambdaResponseStreamFactory.CreateStream();
                 await stream.WriteAsync(payload);
                 return new InvocationResponse(Stream.Null, false);
             };
@@ -227,7 +227,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             LambdaBootstrapHandler handler = async (invocation) =>
             {
-                var stream = ResponseStreamFactory.CreateStream();
+                var stream = LambdaResponseStreamFactory.CreateStream();
                 await stream.WriteAsync(data);
                 return new InvocationResponse(Stream.Null, false);
             };
@@ -309,7 +309,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             LambdaBootstrapHandler handler = async (invocation) =>
             {
-                var stream = ResponseStreamFactory.CreateStream();
+                var stream = LambdaResponseStreamFactory.CreateStream();
                 await stream.WriteAsync(Encoding.UTF8.GetBytes("partial data"));
                 throw new InvalidOperationException("midstream failure");
             };
@@ -355,7 +355,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             LambdaBootstrapHandler handler = async (invocation) =>
             {
-                var stream = ResponseStreamFactory.CreateStream();
+                var stream = LambdaResponseStreamFactory.CreateStream();
                 // Throw before writing anything
                 throw new ArgumentException("pre-write failure");
             };
@@ -381,7 +381,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             LambdaBootstrapHandler handler = async (invocation) =>
             {
-                var stream = ResponseStreamFactory.CreateStream();
+                var stream = LambdaResponseStreamFactory.CreateStream();
                 await stream.WriteAsync(Encoding.UTF8.GetBytes("some data"));
                 throw new InvalidOperationException(errorMessage);
             };
@@ -419,27 +419,26 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 tasks.Add(Task.Run(async () =>
                 {
                     var mockClient = new MockMultiConcurrencyStreamingClient();
-                    ResponseStreamFactory.InitializeInvocation(
+                    LambdaResponseStreamFactory.InitializeInvocation(
                         requestId,
-                        StreamingConstants.MaxResponseSize,
                         isMultiConcurrency: true,
                         mockClient,
                         CancellationToken.None);
 
-                    var stream = ResponseStreamFactory.CreateStream();
+                    var stream = LambdaResponseStreamFactory.CreateStream();
                     allStarted.Release();
 
                     // Wait until all tasks have started (to ensure true concurrency)
                     await barrier.WaitAsync();
 
                     await stream.WriteAsync(Encoding.UTF8.GetBytes(payload));
-                    ((ResponseStream)stream).MarkCompleted();
+                    stream.MarkCompleted();
 
                     // Verify this invocation's stream is still accessible
-                    var retrieved = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true);
+                    var retrieved = LambdaResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true);
                     results[requestId] = retrieved != null ? payload : "MISSING";
 
-                    ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
+                    LambdaResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
                 }));
             }
 
@@ -477,20 +476,20 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 tasks.Add(Task.Run(async () =>
                 {
                     var mockClient = new MockMultiConcurrencyStreamingClient();
-                    ResponseStreamFactory.InitializeInvocation(
-                        requestId, StreamingConstants.MaxResponseSize,
+                    LambdaResponseStreamFactory.InitializeInvocation(
+                        requestId, 
                         isMultiConcurrency: true, mockClient, CancellationToken.None);
 
-                    var stream = ResponseStreamFactory.CreateStream();
+                    var stream = LambdaResponseStreamFactory.CreateStream();
                     allStarted.Release();
                     await barrier.WaitAsync();
 
                     await stream.WriteAsync(Encoding.UTF8.GetBytes("streaming data"));
-                    ((ResponseStream)stream).MarkCompleted();
+                    stream.MarkCompleted();
 
-                    var retrieved = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true);
+                    var retrieved = LambdaResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true);
                     streamingResults.Add(retrieved != null);
-                    ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
+                    LambdaResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
                 }));
             }
 
@@ -501,17 +500,17 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 tasks.Add(Task.Run(async () =>
                 {
                     var mockClient = new MockMultiConcurrencyStreamingClient();
-                    ResponseStreamFactory.InitializeInvocation(
-                        requestId, StreamingConstants.MaxResponseSize,
+                    LambdaResponseStreamFactory.InitializeInvocation(
+                        requestId, 
                         isMultiConcurrency: true, mockClient, CancellationToken.None);
 
                     allStarted.Release();
                     await barrier.WaitAsync();
 
                     // No CreateStream — buffered mode
-                    var retrieved = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true);
+                    var retrieved = LambdaResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true);
                     bufferedResults.Add(retrieved == null); // should be null (no stream created)
-                    ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
+                    LambdaResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
                 }));
             }
 
@@ -538,7 +537,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 : base(new TestEnvironmentVariables(), new NoOpInternalRuntimeApiClient()) { }
 
             internal override async Task StartStreamingResponseAsync(
-                string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+                string awsRequestId, LambdaResponseStream responseStream, CancellationToken cancellationToken = default)
             {
                 // Provide the HTTP output stream so writes don't block
                 responseStream.SetHttpOutputStream(new MemoryStream());

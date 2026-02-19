@@ -21,17 +21,12 @@ namespace Amazon.Lambda.RuntimeSupport
     /// <summary>
     /// Internal context class used by ResponseStreamFactory to track per-invocation streaming state.
     /// </summary>
-    internal class ResponseStreamContext
+    internal class LambdaResponseStreamContext
     {
         /// <summary>
         /// The AWS request ID for the current invocation.
         /// </summary>
         public string AwsRequestId { get; set; }
-
-        /// <summary>
-        /// Maximum allowed response size in bytes (20 MiB).
-        /// </summary>
-        public long MaxResponseSize { get; set; }
 
         /// <summary>
         /// Whether CreateStream() has been called for this invocation.
@@ -41,7 +36,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// The ResponseStream instance if created.
         /// </summary>
-        public ResponseStream Stream { get; set; }
+        public LambdaResponseStream Stream { get; set; }
 
         /// <summary>
         /// The RuntimeApiClient used to start the streaming HTTP POST.

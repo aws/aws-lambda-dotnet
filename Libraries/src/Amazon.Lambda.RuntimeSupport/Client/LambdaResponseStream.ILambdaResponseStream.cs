@@ -22,14 +22,13 @@ using System.Threading.Tasks;
 namespace Amazon.Lambda.RuntimeSupport
 {
     /// <summary>
-    /// Internal implementation of IResponseStream with true streaming.
-    /// Writes data directly to the HTTP output stream as chunked transfer encoding.
+    /// A write-only, non-seekable <see cref="Stream"/> subclass that streams response data
+    /// to the Lambda Runtime API. Returned by <see cref="LambdaResponseStreamFactory.CreateStream"/>.
     /// </summary>
-    internal class ResponseStream : IResponseStream
+    public partial class LambdaResponseStream : Stream, ILambdaResponseStream
     {
         private static readonly byte[] CrlfBytes = Encoding.ASCII.GetBytes("\r\n");
 
-        private readonly long _maxResponseSize;
         private long _bytesWritten;
         private bool _isCompleted;
         private bool _hasError;
@@ -41,14 +40,26 @@ namespace Amazon.Lambda.RuntimeSupport
         private readonly SemaphoreSlim _httpStreamReady = new SemaphoreSlim(0, 1);
         private readonly SemaphoreSlim _completionSignal = new SemaphoreSlim(0, 1);
 
+        /// <summary>
+        /// The number of bytes written to the Lambda response stream so far.
+        /// </summary>
         public long BytesWritten => _bytesWritten;
+
+        /// <summary>
+        /// Gets a value indicating whether the operation has completed.
+        /// </summary>
         public bool IsCompleted => _isCompleted;
+
+        /// <summary>
+        /// Gets a value indicating whether an error has occurred.
+        /// </summary>
         public bool HasError => _hasError;
+
+
         internal Exception ReportedError => _reportedError;
 
-        public ResponseStream(long maxResponseSize)
+        internal LambdaResponseStream()
         {
-            _maxResponseSize = maxResponseSize;
         }
 
         /// <summary>
@@ -69,6 +80,13 @@ namespace Amazon.Lambda.RuntimeSupport
             await _completionSignal.WaitAsync();
         }
 
+        /// <summary>
+        /// Asynchronously writes a byte array to the response stream.
+        /// </summary>
+        /// <param name="buffer">The byte array to write.</param>
+        /// <param name="cancellationToken">Optional cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has been reported.</exception>
         public async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default)
         {
             if (buffer == null)
@@ -77,7 +95,16 @@ namespace Amazon.Lambda.RuntimeSupport
             await WriteAsync(buffer, 0, buffer.Length, cancellationToken);
         }
 
-        public async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Asynchronously writes a portion of a byte array to the response stream.
+        /// </summary>
+        /// <param name="buffer">The byte array containing data to write.</param>
+        /// <param name="offset">The zero-based byte offset in buffer at which to begin copying bytes.</param>
+        /// <param name="count">The number of bytes to write.</param>
+        /// <param name="cancellationToken">Optional cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has been reported.</exception>
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
@@ -93,14 +120,6 @@ namespace Amazon.Lambda.RuntimeSupport
                 lock (_lock)
                 {
                     ThrowIfCompletedOrError();
-
-                    if (_bytesWritten + count > _maxResponseSize)
-                    {
-                        throw new InvalidOperationException(
-                            $"Writing {count} bytes would exceed the maximum response size of {_maxResponseSize} bytes (20 MiB). " +
-                            $"Current size: {_bytesWritten} bytes.");
-                    }
-
                     _bytesWritten += count;
                 }
 
@@ -120,13 +139,14 @@ namespace Amazon.Lambda.RuntimeSupport
             }
         }
 
-        public async Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            // Convert to array and delegate — small overhead but keeps the API simple
-            var array = buffer.ToArray();
-            await WriteAsync(array, 0, array.Length, cancellationToken);
-        }
-
+        /// <summary>
+        /// Reports an error that occurred during streaming.
+        /// This will send error information via HTTP trailing headers.
+        /// </summary>
+        /// <param name="exception">The exception to report.</param>
+        /// <param name="cancellationToken">Optional cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has already been reported.</exception>
         public Task ReportErrorAsync(Exception exception, CancellationToken cancellationToken = default)
         {
             if (exception == null)
@@ -145,6 +165,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
             // Signal completion so StreamingHttpContent can write error trailers and finish
             _completionSignal.Release();
+
             return Task.CompletedTask;
         }
 
@@ -166,10 +187,17 @@ namespace Amazon.Lambda.RuntimeSupport
                 throw new InvalidOperationException("Cannot write to a stream after an error has been reported.");
         }
 
-        public void Dispose()
+        // ── Dispose ──────────────────────────────────────────────────────────
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
         {
-            // Ensure completion is signaled if not already
-            try { _completionSignal.Release(); } catch (SemaphoreFullException) { }
+            if (disposing)
+            {
+                try { _completionSignal.Release(); } catch (SemaphoreFullException) { }
+            }
+
+            base.Dispose(disposing);
         }
     }
 }

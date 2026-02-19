@@ -54,7 +54,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public byte[] FunctionInput { get; set; }
         public Stream LastOutputStream { get; private set; }
         public Exception LastRecordedException { get; private set; }
-        public ResponseStream LastStreamingResponseStream { get; private set; }
+        public LambdaResponseStream LastStreamingResponseStream { get; private set; }
 
         public new async Task<InvocationRequest> GetNextInvocationAsync(CancellationToken cancellationToken = default)
         {
@@ -108,7 +108,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         internal override async Task StartStreamingResponseAsync(
-            string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+            string awsRequestId, LambdaResponseStream responseStream, CancellationToken cancellationToken = default)
         {
             StartStreamingResponseAsyncCalled = true;
             LastStreamingResponseStream = responseStream;

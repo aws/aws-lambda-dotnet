@@ -23,22 +23,25 @@ namespace Amazon.Lambda.RuntimeSupport
     /// Factory for creating streaming responses in AWS Lambda functions.
     /// Call CreateStream() within your handler to opt into response streaming for that invocation.
     /// </summary>
-    public static class ResponseStreamFactory
+    public static class LambdaResponseStreamFactory
     {
         // For on-demand mode (single invocation at a time)
-        private static ResponseStreamContext _onDemandContext;
+        private static LambdaResponseStreamContext _onDemandContext;
 
         // For multi-concurrency mode (multiple concurrent invocations)
-        private static readonly AsyncLocal<ResponseStreamContext> _asyncLocalContext = new AsyncLocal<ResponseStreamContext>();
+        private static readonly AsyncLocal<LambdaResponseStreamContext> _asyncLocalContext = new AsyncLocal<LambdaResponseStreamContext>();
 
         /// <summary>
         /// Creates a streaming response for the current invocation.
         /// Can only be called once per invocation.
         /// </summary>
-        /// <returns>An IResponseStream for writing response data.</returns>
+        /// <returns>
+        /// A <see cref="LambdaResponseStream"/> — a <see cref="System.IO.Stream"/> subclass — for writing
+        /// response data. The returned stream also implements <see cref="ILambdaResponseStream"/>.
+        /// </returns>
         /// <exception cref="InvalidOperationException">Thrown if called outside an invocation context.</exception>
         /// <exception cref="InvalidOperationException">Thrown if called more than once per invocation.</exception>
-        public static IResponseStream CreateStream()
+        public static LambdaResponseStream CreateStream()
         {
             var context = GetCurrentContext();
 
@@ -54,29 +57,28 @@ namespace Amazon.Lambda.RuntimeSupport
                     "ResponseStreamFactory.CreateStream() can only be called once per invocation.");
             }
 
-            var stream = new ResponseStream(context.MaxResponseSize);
-            context.Stream = stream;
+            var lambdaStream = new LambdaResponseStream();
+            context.Stream = lambdaStream;
             context.StreamCreated = true;
 
             // Start the HTTP POST to the Runtime API.
             // This runs concurrently — SerializeToStreamAsync will block
             // until the handler finishes writing or reports an error.
             context.SendTask = context.RuntimeApiClient.StartStreamingResponseAsync(
-                context.AwsRequestId, stream, context.CancellationToken);
+                context.AwsRequestId, lambdaStream, context.CancellationToken);
 
-            return stream;
+            return lambdaStream;
         }
 
         // Internal methods for LambdaBootstrap to manage state
 
         internal static void InitializeInvocation(
-            string awsRequestId, long maxResponseSize, bool isMultiConcurrency,
+            string awsRequestId, bool isMultiConcurrency,
             RuntimeApiClient runtimeApiClient, CancellationToken cancellationToken)
         {
-            var context = new ResponseStreamContext
+            var context = new LambdaResponseStreamContext
             {
                 AwsRequestId = awsRequestId,
-                MaxResponseSize = maxResponseSize,
                 StreamCreated = false,
                 Stream = null,
                 RuntimeApiClient = runtimeApiClient,
@@ -93,7 +95,7 @@ namespace Amazon.Lambda.RuntimeSupport
             }
         }
 
-        internal static ResponseStream GetStreamIfCreated(bool isMultiConcurrency)
+        internal static LambdaResponseStream GetStreamIfCreated(bool isMultiConcurrency)
         {
             var context = isMultiConcurrency ? _asyncLocalContext.Value : _onDemandContext;
             return context?.Stream;
@@ -121,7 +123,7 @@ namespace Amazon.Lambda.RuntimeSupport
             }
         }
 
-        private static ResponseStreamContext GetCurrentContext()
+        private static LambdaResponseStreamContext GetCurrentContext()
         {
             // Check multi-concurrency first (AsyncLocal), then on-demand
             return _asyncLocalContext.Value ?? _onDemandContext;

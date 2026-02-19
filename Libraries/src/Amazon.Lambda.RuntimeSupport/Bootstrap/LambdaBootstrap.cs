@@ -363,9 +363,8 @@ namespace Amazon.Lambda.RuntimeSupport
                 var runtimeApiClient = Client as RuntimeApiClient;
                 if (runtimeApiClient != null)
                 {
-                    ResponseStreamFactory.InitializeInvocation(
+                    LambdaResponseStreamFactory.InitializeInvocation(
                         invocation.LambdaContext.AwsRequestId,
-                        StreamingConstants.MaxResponseSize,
                         isMultiConcurrency,
                         runtimeApiClient,
                         cancellationToken);
@@ -386,7 +385,7 @@ namespace Amazon.Lambda.RuntimeSupport
                     {
                         WriteUnhandledExceptionToLog(exception);
 
-                        var streamIfCreated = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
+                        var streamIfCreated = LambdaResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
                         if (streamIfCreated != null && streamIfCreated.BytesWritten > 0)
                         {
                             // Midstream error — report via trailers on the already-open HTTP connection
@@ -404,10 +403,10 @@ namespace Amazon.Lambda.RuntimeSupport
                     }
 
                     // If streaming was started, await the HTTP send task to ensure it completes
-                    var sendTask = ResponseStreamFactory.GetSendTask(isMultiConcurrency);
+                    var sendTask = LambdaResponseStreamFactory.GetSendTask(isMultiConcurrency);
                     if (sendTask != null)
                     {
-                        var stream = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
+                        var stream = LambdaResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
                         if (stream != null && !stream.IsCompleted && !stream.HasError)
                         {
                             // Handler returned successfully — signal stream completion
@@ -454,7 +453,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 {
                     if (runtimeApiClient != null)
                     {
-                        ResponseStreamFactory.CleanupInvocation(isMultiConcurrency);
+                        LambdaResponseStreamFactory.CleanupInvocation(isMultiConcurrency);
                     }
                     invocation.Dispose();
                 }

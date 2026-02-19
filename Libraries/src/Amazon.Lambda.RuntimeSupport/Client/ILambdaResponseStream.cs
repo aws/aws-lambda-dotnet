@@ -23,7 +23,7 @@ namespace Amazon.Lambda.RuntimeSupport
     /// Interface for writing streaming responses in AWS Lambda functions.
     /// Obtained by calling ResponseStreamFactory.CreateStream() within a handler.
     /// </summary>
-    public interface IResponseStream : IDisposable
+    public interface ILambdaResponseStream : IDisposable
     {
         /// <summary>
         /// Asynchronously writes a byte array to the response stream.
@@ -32,7 +32,6 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="cancellationToken">Optional cancellation token.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has been reported.</exception>
-        /// <exception cref="InvalidOperationException">Thrown if writing would exceed the 20 MiB limit.</exception>
         Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -44,18 +43,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="cancellationToken">Optional cancellation token.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has been reported.</exception>
-        /// <exception cref="InvalidOperationException">Thrown if writing would exceed the 20 MiB limit.</exception>
         Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Asynchronously writes a memory buffer to the response stream.
-        /// </summary>
-        /// <param name="buffer">The memory buffer to write.</param>
-        /// <param name="cancellationToken">Optional cancellation token.</param>
-        /// <returns>A task representing the asynchronous operation.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has been reported.</exception>
-        /// <exception cref="InvalidOperationException">Thrown if writing would exceed the 20 MiB limit.</exception>
-        Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reports an error that occurred during streaming.
