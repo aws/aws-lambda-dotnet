@@ -21,7 +21,7 @@ namespace Amazon.Lambda.RuntimeSupport
 {
     /// <summary>
     /// Interface for writing streaming responses in AWS Lambda functions.
-    /// Obtained by calling ResponseStreamFactory.CreateStream() within a handler.
+    /// Obtained by calling <see cref="LambdaResponseStreamFactory.CreateStream"/> within a handler.
     /// </summary>
     public interface ILambdaResponseStream : IDisposable
     {
