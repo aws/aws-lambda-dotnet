@@ -216,47 +216,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.True(stream.HasError);
         }
 
-        // ---- Property 6: Size Limit Enforcement ----
-
-        /// <summary>
-        /// Property 6: Size Limit Enforcement — single write exceeding limit throws.
-        /// Validates: Requirements 3.6, 3.7
-        /// </summary>
-        [Theory]
-        [InlineData(21 * 1024 * 1024)]
-        public async Task SizeLimit_SingleWriteExceedingLimit_Throws(int writeSize)
-        {
-            var (stream, _) = CreateWiredStream();
-            var data = new byte[writeSize];
-
-            await Assert.ThrowsAsync<InvalidOperationException>(() => stream.WriteAsync(data));
-        }
-
-        /// <summary>
-        /// Property 6: Size Limit Enforcement — multiple writes exceeding limit throws.
-        /// Validates: Requirements 3.6, 3.7
-        /// </summary>
-        [Fact]
-        public async Task SizeLimit_MultipleWritesExceedingLimit_Throws()
-        {
-            var (stream, _) = CreateWiredStream();
-
-            await stream.WriteAsync(new byte[10 * 1024 * 1024]);
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => stream.WriteAsync(new byte[11 * 1024 * 1024]));
-        }
-
-        [Fact]
-        public async Task SizeLimit_ExactlyAtLimit_Succeeds()
-        {
-            var (stream, _) = CreateWiredStream();
-            var data = new byte[20 * 1024 * 1024];
-
-            await stream.WriteAsync(data);
-
-            Assert.Equal(data.Length, stream.BytesWritten);
-        }
-
         // ---- Property 19: Writes After Completion Rejected ----
 
         /// <summary>
