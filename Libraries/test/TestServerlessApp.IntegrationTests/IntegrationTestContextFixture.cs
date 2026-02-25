@@ -73,6 +73,7 @@ namespace TestServerlessApp.IntegrationTests
             // Get the SQS queue ARN from the physical resource ID (which is the queue URL)
             var queueUrl = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "TestQueue");
             Console.WriteLine($"[IntegrationTest] TestQueue URL: {queueUrl}");
+            Assert.False(string.IsNullOrEmpty(queueUrl), $"CloudFormation resource 'TestQueue' was not found in stack '{_stackName}'.");
             TestQueueARN = ConvertSqsUrlToArn(queueUrl);
             LambdaFunctions = await LambdaHelper.FilterByCloudFormationStackAsync(_stackName);
             Console.WriteLine($"[IntegrationTest] Found {LambdaFunctions.Count} Lambda functions: {string.Join(", ", LambdaFunctions.Select(f => f.Name ?? "(null)"))}");
