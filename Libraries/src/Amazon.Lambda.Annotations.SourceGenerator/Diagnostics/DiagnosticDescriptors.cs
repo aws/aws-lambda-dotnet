@@ -153,5 +153,70 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        // Authorizer diagnostics (ALA0019-ALA0027 per design document)
+        public static readonly DiagnosticDescriptor AuthorizerMissingName = new DiagnosticDescriptor(
+            id: "AWSLambda0120",
+            title: "Authorizer Name Required",
+            messageFormat: "The Name property is required on [{0}] attribute.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor HttpApiAuthorizerNotFound = new DiagnosticDescriptor(
+            id: "AWSLambda0121",
+            title: "HTTP API Authorizer Not Found",
+            messageFormat: "Authorizer '{0}' referenced in [HttpApi] attribute does not exist. Add [HttpApiAuthorizer(Name = \"{0}\")] to an authorizer function.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor RestApiAuthorizerNotFound = new DiagnosticDescriptor(
+            id: "AWSLambda0122",
+            title: "REST API Authorizer Not Found",
+            messageFormat: "Authorizer '{0}' referenced in [RestApi] attribute does not exist. Add [RestApiAuthorizer(Name = \"{0}\")] to an authorizer function.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor HttpApiAuthorizerTypeMismatch = new DiagnosticDescriptor(
+            id: "AWSLambda0123",
+            title: "Authorizer Type Mismatch",
+            messageFormat: "Cannot use REST API authorizer '{0}' with [HttpApi] attribute. Use an [HttpApiAuthorizer] instead.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor RestApiAuthorizerTypeMismatch = new DiagnosticDescriptor(
+            id: "AWSLambda0124",
+            title: "Authorizer Type Mismatch",
+            messageFormat: "Cannot use HTTP API authorizer '{0}' with [RestApi] attribute. Use a [RestApiAuthorizer] instead.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor DuplicateAuthorizerName = new DiagnosticDescriptor(
+            id: "AWSLambda0125",
+            title: "Duplicate Authorizer Name",
+            messageFormat: "Duplicate authorizer name '{0}'. Authorizer names must be unique within the same API type.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidAuthorizerPayloadFormatVersion = new DiagnosticDescriptor(
+            id: "AWSLambda0126",
+            title: "Invalid Payload Format Version",
+            messageFormat: "Invalid PayloadFormatVersion '{0}'. Must be \"1.0\" or \"2.0\".",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidAuthorizerResultTtl = new DiagnosticDescriptor(
+            id: "AWSLambda0127",
+            title: "Invalid Result TTL",
+            messageFormat: "Invalid ResultTtlInSeconds '{0}'. Must be between 0 and 3600.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

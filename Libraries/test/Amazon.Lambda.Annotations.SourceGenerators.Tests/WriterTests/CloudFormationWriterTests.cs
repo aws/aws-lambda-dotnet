@@ -839,6 +839,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         private AnnotationReport GetAnnotationReport(List<ILambdaFunctionSerializable> lambdaFunctionModels,
             string projectRootDirectory = ProjectRootDirectory, string cloudFormationTemplatePath = ServerlessTemplateFilePath, bool isTelemetrySuppressed = false)
         {
+            return GetAnnotationReport(lambdaFunctionModels, new List<AuthorizerModel>(), projectRootDirectory, cloudFormationTemplatePath, isTelemetrySuppressed);
+        }
+
+        private AnnotationReport GetAnnotationReport(List<ILambdaFunctionSerializable> lambdaFunctionModels,
+            List<AuthorizerModel> authorizers,
+            string projectRootDirectory = ProjectRootDirectory, string cloudFormationTemplatePath = ServerlessTemplateFilePath, bool isTelemetrySuppressed = false)
+        {
             var annotationReport = new AnnotationReport
             {
                 CloudFormationTemplatePath = cloudFormationTemplatePath,
@@ -848,6 +855,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             foreach (var model in lambdaFunctionModels)
             {
                 annotationReport.LambdaFunctions.Add(model);
+            }
+            foreach (var authorizer in authorizers)
+            {
+                annotationReport.Authorizers.Add(authorizer);
             }
 
             return annotationReport;
@@ -859,21 +870,553 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             return new CloudFormationWriter(fileManager, directoryManager, templateWriter, diagnosticReporter);
         }
 
-        public class LambdaFunctionModelTest : ILambdaFunctionSerializable
+        #region Authorizer Tests
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void HttpApiAuthorizerProcessing(CloudFormationTemplateFormat templateFormat)
         {
-            public string MethodName { get; set; }
-            public string Handler { get; set; }
-            public bool IsExecutable { get; set; }
-            public string ResourceName { get; set; }
-            public uint? Timeout { get; set; }
-            public uint? MemorySize { get; set; }
-            public string Role { get; set; }
-            public string Policies { get; set; }
-            public string Runtime { get; set; }
-            public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
-            public string SourceGeneratorVersion { get; set; }
-            public LambdaPackageType PackageType { get; set; } = LambdaPackageType.Zip;
-            public string ReturnTypeFullName { get; set; } = "void";
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+            var authorizer = new AuthorizerModel
+            {
+                Name = "MyHttpAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.HttpApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                EnableSimpleResponses = true,
+                PayloadFormatVersion = "2.0"
+            };
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            // Verify AnnotationsHttpApi resource was created
+            const string httpApiPath = "Resources.AnnotationsHttpApi";
+            Assert.True(templateWriter.Exists(httpApiPath));
+            Assert.Equal("AWS::Serverless::HttpApi", templateWriter.GetToken<string>($"{httpApiPath}.Type"));
+            Assert.Equal("Amazon.Lambda.Annotations", templateWriter.GetToken<string>($"{httpApiPath}.Metadata.Tool"));
+
+            // Verify authorizer configuration
+            const string authorizerPath = "Resources.AnnotationsHttpApi.Properties.Auth.Authorizers.MyHttpAuthorizer";
+            Assert.True(templateWriter.Exists(authorizerPath));
+            Assert.Equal(new List<string> { "AuthorizerFunction", "Arn" }, templateWriter.GetToken<List<string>>($"{authorizerPath}.FunctionArn.Fn::GetAtt"));
+            Assert.Equal("2.0", templateWriter.GetToken<string>($"{authorizerPath}.AuthorizerPayloadFormatVersion"));
+            Assert.True(templateWriter.GetToken<bool>($"{authorizerPath}.EnableSimpleResponses"));
+            Assert.Equal(new List<string> { "Authorization" }, templateWriter.GetToken<List<string>>($"{authorizerPath}.Identity.Headers"));
+            Assert.True(templateWriter.GetToken<bool>($"{authorizerPath}.EnableFunctionDefaultPermissions"));
         }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void RestApiAuthorizerProcessing(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+            var authorizer = new AuthorizerModel
+            {
+                Name = "MyRestAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.RestApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                RestApiAuthorizerType = RestApiAuthorizerType.Token
+            };
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            // Verify AnnotationsRestApi resource was created
+            const string restApiPath = "Resources.AnnotationsRestApi";
+            Assert.True(templateWriter.Exists(restApiPath));
+            Assert.Equal("AWS::Serverless::Api", templateWriter.GetToken<string>($"{restApiPath}.Type"));
+            Assert.Equal("Amazon.Lambda.Annotations", templateWriter.GetToken<string>($"{restApiPath}.Metadata.Tool"));
+            Assert.Equal("Prod", templateWriter.GetToken<string>($"{restApiPath}.Properties.StageName"));
+
+            // Verify authorizer configuration
+            const string authorizerPath = "Resources.AnnotationsRestApi.Properties.Auth.Authorizers.MyRestAuthorizer";
+            Assert.True(templateWriter.Exists(authorizerPath));
+            Assert.Equal(new List<string> { "AuthorizerFunction", "Arn" }, templateWriter.GetToken<List<string>>($"{authorizerPath}.FunctionArn.Fn::GetAtt"));
+            Assert.Equal("Authorization", templateWriter.GetToken<string>($"{authorizerPath}.Identity.Header"));
+            Assert.Equal("TOKEN", templateWriter.GetToken<string>($"{authorizerPath}.FunctionPayloadType"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void RestApiRequestAuthorizerProcessing(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+            var authorizer = new AuthorizerModel
+            {
+                Name = "MyRequestAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.RestApi,
+                IdentityHeader = "X-Custom-Header",
+                ResultTtlInSeconds = 0,
+                RestApiAuthorizerType = RestApiAuthorizerType.Request
+            };
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            const string authorizerPath = "Resources.AnnotationsRestApi.Properties.Auth.Authorizers.MyRequestAuthorizer";
+            Assert.True(templateWriter.Exists(authorizerPath));
+            Assert.Equal("REQUEST", templateWriter.GetToken<string>($"{authorizerPath}.FunctionPayloadType"));
+            Assert.Equal("X-Custom-Header", templateWriter.GetToken<string>($"{authorizerPath}.Identity.Header"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void HttpApiWithAuthorizerReference(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+
+            // Create the authorizer function
+            var authorizerFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+
+            // Create the protected function with HttpApi attribute referencing the authorizer
+            var protectedFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Protected",
+                "ProtectedFunction", 30, 512, null, null);
+            var httpApiAttribute = new AttributeModel<HttpApiAttribute>()
+            {
+                Data = new HttpApiAttribute(LambdaHttpMethod.Get, "/api/protected")
+                {
+                    Authorizer = "MyHttpAuthorizer"
+                }
+            };
+            protectedFunctionModel.Attributes = new List<AttributeModel> { httpApiAttribute };
+            protectedFunctionModel.Authorizer = "MyHttpAuthorizer";
+
+            var authorizer = new AuthorizerModel
+            {
+                Name = "MyHttpAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.HttpApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                EnableSimpleResponses = true,
+                PayloadFormatVersion = "2.0"
+            };
+
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { authorizerFunctionModel, protectedFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            // Verify the protected function's event has Auth configuration
+            const string eventPath = "Resources.ProtectedFunction.Properties.Events.RootGet";
+            Assert.True(templateWriter.Exists(eventPath));
+            Assert.Equal("HttpApi", templateWriter.GetToken<string>($"{eventPath}.Type"));
+            Assert.Equal("/api/protected", templateWriter.GetToken<string>($"{eventPath}.Properties.Path"));
+            Assert.Equal("GET", templateWriter.GetToken<string>($"{eventPath}.Properties.Method"));
+            Assert.Equal("MyHttpAuthorizer", templateWriter.GetToken<string>($"{eventPath}.Properties.Auth.Authorizer"));
+            Assert.Equal("AnnotationsHttpApi", templateWriter.GetToken<string>($"{eventPath}.Properties.ApiId.Ref"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void RestApiWithAuthorizerReference(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+
+            // Create the authorizer function
+            var authorizerFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+
+            // Create the protected function with RestApi attribute referencing the authorizer
+            var protectedFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Protected",
+                "ProtectedFunction", 30, 512, null, null);
+            var restApiAttribute = new AttributeModel<RestApiAttribute>()
+            {
+                Data = new RestApiAttribute(LambdaHttpMethod.Get, "/api/protected")
+                {
+                    Authorizer = "MyRestAuthorizer"
+                }
+            };
+            protectedFunctionModel.Attributes = new List<AttributeModel> { restApiAttribute };
+            protectedFunctionModel.Authorizer = "MyRestAuthorizer";
+
+            var authorizer = new AuthorizerModel
+            {
+                Name = "MyRestAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.RestApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                RestApiAuthorizerType = RestApiAuthorizerType.Token
+            };
+
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { authorizerFunctionModel, protectedFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            // Verify the protected function's event has Auth configuration
+            const string eventPath = "Resources.ProtectedFunction.Properties.Events.RootGet";
+            Assert.True(templateWriter.Exists(eventPath));
+            Assert.Equal("Api", templateWriter.GetToken<string>($"{eventPath}.Type"));
+            Assert.Equal("/api/protected", templateWriter.GetToken<string>($"{eventPath}.Properties.Path"));
+            Assert.Equal("GET", templateWriter.GetToken<string>($"{eventPath}.Properties.Method"));
+            Assert.Equal("MyRestAuthorizer", templateWriter.GetToken<string>($"{eventPath}.Properties.Auth.Authorizer"));
+            Assert.Equal("AnnotationsRestApi", templateWriter.GetToken<string>($"{eventPath}.Properties.RestApiId.Ref"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void HttpApiAuthorizerWithCustomTtl(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+            var authorizer = new AuthorizerModel
+            {
+                Name = "CachedAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.HttpApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 300,
+                EnableSimpleResponses = true,
+                PayloadFormatVersion = "2.0"
+            };
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            const string authorizerPath = "Resources.AnnotationsHttpApi.Properties.Auth.Authorizers.CachedAuthorizer";
+            Assert.True(templateWriter.Exists(authorizerPath));
+
+            // When TTL > 0, FunctionInvokeRole is set (to null, signaling SAM to auto-generate the role for caching)
+            // Verify the authorizer was created with expected properties
+            Assert.Equal(new List<string> { "AuthorizerFunction", "Arn" }, templateWriter.GetToken<List<string>>($"{authorizerPath}.FunctionArn.Fn::GetAtt"));
+            Assert.Equal("2.0", templateWriter.GetToken<string>($"{authorizerPath}.AuthorizerPayloadFormatVersion"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void HttpApiAuthorizerWithNoTtl_DoesNotSetFunctionInvokeRole(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+            var authorizer = new AuthorizerModel
+            {
+                Name = "NoCacheAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.HttpApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                EnableSimpleResponses = true,
+                PayloadFormatVersion = "2.0"
+            };
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            const string authorizerPath = "Resources.AnnotationsHttpApi.Properties.Auth.Authorizers.NoCacheAuthorizer";
+            Assert.True(templateWriter.Exists(authorizerPath));
+
+            // When TTL = 0, FunctionInvokeRole should NOT be set
+            Assert.False(templateWriter.Exists($"{authorizerPath}.FunctionInvokeRole"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void RemoveOrphanedHttpApiAuthorizer(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - Start with an authorizer
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+            var authorizer = new AuthorizerModel
+            {
+                Name = "OldAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.HttpApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                EnableSimpleResponses = true,
+                PayloadFormatVersion = "2.0"
+            };
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT - First pass: create the authorizer
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT - Authorizer exists
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.True(templateWriter.Exists("Resources.AnnotationsHttpApi.Properties.Auth.Authorizers.OldAuthorizer"));
+
+            // ACT - Second pass: remove the authorizer (empty authorizer list)
+            var reportWithoutAuthorizer = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel>());
+            cloudFormationWriter.ApplyReport(reportWithoutAuthorizer);
+
+            // ASSERT - Authorizer is removed
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.False(templateWriter.Exists("Resources.AnnotationsHttpApi.Properties.Auth.Authorizers.OldAuthorizer"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void RemoveOrphanedRestApiAuthorizer(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - Start with an authorizer
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+            var authorizer = new AuthorizerModel
+            {
+                Name = "OldRestAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.RestApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                RestApiAuthorizerType = RestApiAuthorizerType.Token
+            };
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT - First pass: create the authorizer
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT - Authorizer exists
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.True(templateWriter.Exists("Resources.AnnotationsRestApi.Properties.Auth.Authorizers.OldRestAuthorizer"));
+
+            // ACT - Second pass: remove the authorizer
+            var reportWithoutAuthorizer = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel>());
+            cloudFormationWriter.ApplyReport(reportWithoutAuthorizer);
+
+            // ASSERT - Authorizer is removed
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.False(templateWriter.Exists("Resources.AnnotationsRestApi.Properties.Auth.Authorizers.OldRestAuthorizer"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void CombinedAuthorizerAndProtectedFunction(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+
+            // Create the authorizer function
+            var authorizerFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.Auth::Authorize",
+                "MyAuthorizerFunction", 30, 512, null, null);
+
+            // Create a protected function
+            var protectedFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.Api::GetData",
+                "GetDataFunction", 30, 512, null, null);
+            var httpApiAttribute = new AttributeModel<HttpApiAttribute>()
+            {
+                Data = new HttpApiAttribute(LambdaHttpMethod.Get, "/data")
+                {
+                    Authorizer = "LambdaAuthorizer"
+                }
+            };
+            protectedFunctionModel.Attributes = new List<AttributeModel> { httpApiAttribute };
+            protectedFunctionModel.Authorizer = "LambdaAuthorizer";
+
+            // Create an unprotected function
+            var publicFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.Api::Health",
+                "HealthFunction", 30, 512, null, null);
+            var publicHttpApiAttribute = new AttributeModel<HttpApiAttribute>()
+            {
+                Data = new HttpApiAttribute(LambdaHttpMethod.Get, "/health")
+            };
+            publicFunctionModel.Attributes = new List<AttributeModel> { publicHttpApiAttribute };
+
+            var authorizer = new AuthorizerModel
+            {
+                Name = "LambdaAuthorizer",
+                LambdaResourceName = "MyAuthorizerFunction",
+                AuthorizerType = AuthorizerType.HttpApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                EnableSimpleResponses = true,
+                PayloadFormatVersion = "2.0"
+            };
+
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { authorizerFunctionModel, protectedFunctionModel, publicFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            // Verify all three Lambda functions exist
+            Assert.True(templateWriter.Exists("Resources.MyAuthorizerFunction"));
+            Assert.True(templateWriter.Exists("Resources.GetDataFunction"));
+            Assert.True(templateWriter.Exists("Resources.HealthFunction"));
+
+            // Verify AnnotationsHttpApi resource with authorizer
+            Assert.True(templateWriter.Exists("Resources.AnnotationsHttpApi"));
+            Assert.Equal("AWS::Serverless::HttpApi", templateWriter.GetToken<string>("Resources.AnnotationsHttpApi.Type"));
+            Assert.True(templateWriter.Exists("Resources.AnnotationsHttpApi.Properties.Auth.Authorizers.LambdaAuthorizer"));
+            Assert.Equal(new List<string> { "MyAuthorizerFunction", "Arn" },
+                templateWriter.GetToken<List<string>>("Resources.AnnotationsHttpApi.Properties.Auth.Authorizers.LambdaAuthorizer.FunctionArn.Fn::GetAtt"));
+
+            // Verify protected function references authorizer
+            const string protectedEventPath = "Resources.GetDataFunction.Properties.Events.RootGet";
+            Assert.Equal("LambdaAuthorizer", templateWriter.GetToken<string>($"{protectedEventPath}.Properties.Auth.Authorizer"));
+            Assert.Equal("AnnotationsHttpApi", templateWriter.GetToken<string>($"{protectedEventPath}.Properties.ApiId.Ref"));
+
+            // Verify public function does NOT reference authorizer
+            const string publicEventPath = "Resources.HealthFunction.Properties.Events.RootGet";
+            Assert.True(templateWriter.Exists(publicEventPath));
+            Assert.False(templateWriter.Exists($"{publicEventPath}.Properties.Auth"));
+            Assert.False(templateWriter.Exists($"{publicEventPath}.Properties.ApiId"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void HttpApiAuthorizerWithCustomSettings(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - Test non-default authorizer settings (V1 payload, simple responses disabled, custom header)
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+            var authorizer = new AuthorizerModel
+            {
+                Name = "CustomAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.HttpApi,
+                IdentityHeader = "X-Api-Key",
+                ResultTtlInSeconds = 0,
+                EnableSimpleResponses = false,
+                PayloadFormatVersion = "1.0"
+            };
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            const string authorizerPath = "Resources.AnnotationsHttpApi.Properties.Auth.Authorizers.CustomAuthorizer";
+            Assert.True(templateWriter.Exists(authorizerPath));
+            Assert.Equal("1.0", templateWriter.GetToken<string>($"{authorizerPath}.AuthorizerPayloadFormatVersion"));
+            Assert.False(templateWriter.GetToken<bool>($"{authorizerPath}.EnableSimpleResponses"));
+            Assert.Equal(new List<string> { "X-Api-Key" },
+                templateWriter.GetToken<List<string>>($"{authorizerPath}.Identity.Headers"));
+            Assert.True(templateWriter.GetToken<bool>($"{authorizerPath}.EnableFunctionDefaultPermissions"));
+        }
+
+        #endregion
+    }
+
+    public class LambdaFunctionModelTest : ILambdaFunctionSerializable
+    {
+        public string MethodName { get; set; }
+        public string Handler { get; set; }
+        public bool IsExecutable { get; set; }
+        public string ResourceName { get; set; }
+        public uint? Timeout { get; set; }
+        public uint? MemorySize { get; set; }
+        public string Role { get; set; }
+        public string Policies { get; set; }
+        public string Runtime { get; set; }
+        public IList<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
+        public string SourceGeneratorVersion { get; set; }
+        public LambdaPackageType PackageType { get; set; } = LambdaPackageType.Zip;
+        public string ReturnTypeFullName { get; set; } = "void";
+        public string Authorizer { get; set; }
     }
 }

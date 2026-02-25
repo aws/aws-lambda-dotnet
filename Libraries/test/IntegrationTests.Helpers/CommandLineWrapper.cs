@@ -47,6 +47,13 @@ namespace IntegrationTests.Helpers
 
             await process.WaitForExitAsync(cancelToken);
             var log = sb.ToString();
+
+            if (process.ExitCode != 0)
+            {
+                throw new Exception(
+                    $"Command '{command}' exited with code {process.ExitCode}.{Environment.NewLine}" +
+                    $"Output:{Environment.NewLine}{log}");
+            }
         }
 
         private static string GetSystemShell()

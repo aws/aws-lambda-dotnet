@@ -33,6 +33,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string FromRouteAttribute = "Amazon.Lambda.Annotations.APIGateway.FromRouteAttribute";
         public const string FromCustomAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.FromCustomAuthorizerAttribute";
 
+        public const string HttpApiAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.HttpApiAuthorizerAttribute";
+        public const string RestApiAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.RestApiAuthorizerAttribute";
+
         public const string SQSEvent = "Amazon.Lambda.SQSEvents.SQSEvent";
         public const string SQSBatchResponse = "Amazon.Lambda.SQSEvents.SQSBatchResponse";
         public const string SQSEventAttribute = "Amazon.Lambda.Annotations.SQS.SQSEventAttribute";

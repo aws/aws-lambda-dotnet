@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.CloudFormation;
@@ -37,6 +38,12 @@ namespace IntegrationTests.Helpers
 
         public async Task DeleteStackAsync(string stackName)
         {
+            if (string.IsNullOrEmpty(stackName))
+            {
+                Console.WriteLine("[CloudFormationHelper] WARNING: DeleteStackAsync called with null/empty stack name. Skipping.");
+                return;
+            }
+
             if (!await StackExistsAsync(stackName))
                 return;
 
@@ -47,6 +54,34 @@ namespace IntegrationTests.Helpers
         {
             var stack = await GetStackAsync(stackName);
             return stack?.Outputs.FirstOrDefault(x => string.Equals(x.OutputKey, outputKey))?.OutputValue;
+        }
+
+        public async Task<string?> GetResourcePhysicalIdAsync(string stackName, string logicalResourceId)
+        {
+            try
+            {
+               var response = await _cloudFormationClient.DescribeStackResourcesAsync(
+                    new DescribeStackResourcesRequest { StackName = stackName });
+
+                Console.WriteLine($"[CloudFormationHelper] Stack '{stackName}' has {response.StackResources.Count} resources: " +
+                    string.Join(", ", response.StackResources.Select(r => $"{r.LogicalResourceId}={r.PhysicalResourceId} ({r.ResourceStatus})")));
+
+                var physicalId = response.StackResources
+                    .FirstOrDefault(r => string.Equals(r.LogicalResourceId, logicalResourceId))
+                    ?.PhysicalResourceId;
+
+                if (physicalId == null)
+                {
+                    Console.WriteLine($"[CloudFormationHelper] WARNING: Logical resource '{logicalResourceId}' not found in stack '{stackName}'.");
+                }
+
+                return physicalId;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[CloudFormationHelper] ERROR querying resource '{logicalResourceId}' in stack '{stackName}': {ex.GetType().Name}: {ex.Message}");
+                throw;
+            }
         }
 
         private async Task<Stack?> GetStackAsync(string stackName)

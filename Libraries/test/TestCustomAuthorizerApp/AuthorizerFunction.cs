@@ -1,3 +1,5 @@
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 
@@ -34,6 +36,12 @@ public class AuthorizerFunction
     /// HTTP API Lambda Authorizer (Payload format 2.0 with simple response)
     /// Returns authorized status along with custom context that can be accessed via [FromCustomAuthorizer]
     /// </summary>
+    [LambdaFunction(ResourceName = "CustomAuthorizer")]
+    [HttpApiAuthorizer(
+        Name = "HttpApiLambdaAuthorizer",
+        IdentityHeader = "authorization",
+        EnableSimpleResponses = true,
+        PayloadFormatVersion = "2.0")]
     public APIGatewayCustomAuthorizerV2SimpleResponse HttpApiAuthorize(
         APIGatewayCustomAuthorizerV2Request request, 
         ILambdaContext context)
@@ -110,6 +118,11 @@ public class AuthorizerFunction
     /// REST API Lambda Authorizer (Token-based authorizer)
     /// Returns an IAM policy document along with custom context values
     /// </summary>
+    [LambdaFunction(ResourceName = "RestApiAuthorizer")]
+    [RestApiAuthorizer(
+        Name = "RestApiLambdaAuthorizer",
+        Type = RestApiAuthorizerType.Token,
+        IdentityHeader = "Authorization")]
     public APIGatewayCustomAuthorizerResponse RestApiAuthorize(
         APIGatewayCustomAuthorizerRequest request,
         ILambdaContext context)

@@ -58,6 +58,16 @@ try
     {
         throw "Failed to create the following bucket: $identifier"
     }
+    # Add TestQueue resource to serverless.template for integration testing
+    # The source generator creates an Fn::GetAtt reference to TestQueue but doesn't define the resource itself
+    $templatePath = ".\serverless.template"
+    $template = Get-Content $templatePath | Out-String | ConvertFrom-Json
+    if (-not $template.Resources.PSObject.Properties['TestQueue']) {
+        $template.Resources | Add-Member -NotePropertyName "TestQueue" -NotePropertyValue @{ Type = "AWS::SQS::Queue" } -Force
+        $template | ConvertTo-Json -Depth 100 | Set-Content $templatePath
+        Write-Host "Added TestQueue resource to serverless.template"
+    }
+
     dotnet restore
     Write-Host "Creating CloudFormation Stack $identifier, Architecture $arch, Runtime $runtime"
     dotnet lambda deploy-serverless --template-parameters "ArchitectureTypeParameter=$arch"
