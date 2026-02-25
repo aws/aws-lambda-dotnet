@@ -15,7 +15,7 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="2.8.1" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.5" />
     <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.1" />
-    <PackageReference Include="AWS.Messaging.Lambda" Version="0.21.0" />
+    <PackageReference Include="AWS.Messaging.Lambda" Version="1.0.3" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.3" />
   </ItemGroup>
 </Project>
