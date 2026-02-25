@@ -158,7 +158,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly DiagnosticDescriptor AuthorizerMissingName = new DiagnosticDescriptor(
             id: "AWSLambda0120",
             title: "Authorizer Name Required",
-            messageFormat: "The Name property is required on [{0}] attribute.",
+            messageFormat: "The Name property is required on [{0}] attribute",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

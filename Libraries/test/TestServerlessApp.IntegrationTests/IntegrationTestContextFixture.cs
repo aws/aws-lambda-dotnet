@@ -65,8 +65,8 @@ namespace TestServerlessApp.IntegrationTests
             var region = "us-west-2";
             Console.WriteLine($"[IntegrationTest] Querying stack resources for '{_stackName}'...");
             var httpApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "ServerlessHttpApi");
-            var restApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "AnnotationsRestApi");
-            Console.WriteLine($"[IntegrationTest] ServerlessHttpApi: {httpApiId}, AnnotationsRestApi: {restApiId}");
+            var restApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "ServerlessRestApi");
+            Console.WriteLine($"[IntegrationTest] ServerlessHttpApi: {httpApiId}, ServerlessRestApi: {restApiId}");
             HttpApiUrlPrefix = $"https://{httpApiId}.execute-api.{region}.amazonaws.com";
             RestApiUrlPrefix = $"https://{restApiId}.execute-api.{region}.amazonaws.com/Prod";
 
@@ -79,10 +79,10 @@ namespace TestServerlessApp.IntegrationTests
 
             Assert.True(await _s3Helper.BucketExistsAsync(_bucketName), $"S3 bucket {_bucketName} should exist");
             Assert.Equal(34, LambdaFunctions.Count);
-            Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix));
-            Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix));
+            Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix), "RestApiUrlPrefix should not be empty");
+            Assert.False(string.IsNullOrEmpty(HttpApiUrlPrefix), "HttpApiUrlPrefix should not be empty");
 
-            await LambdaHelper.WaitTillNotPending(LambdaFunctions.Select(x => x.Name).ToList());
+            await LambdaHelper.WaitTillNotPending(LambdaFunctions.Where(x => x.Name != null).Select(x => x.Name).ToList());
 
             // Wait an additional 10 seconds for any other eventually consistency state to finish up.
             await Task.Delay(10000);

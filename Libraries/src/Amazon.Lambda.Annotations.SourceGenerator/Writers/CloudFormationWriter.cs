@@ -63,7 +63,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             ProcessTemplateDescription(report);
 
             // Build authorizer lookup for processing events with Auth configuration
-            var authorizerLookup = report.Authorizers.ToDictionary(a => a.Name, a => a);
+            var authorizerLookup = new Dictionary<string, AuthorizerModel>(StringComparer.Ordinal);
+            foreach (var authorizer in report.Authorizers)
+            {
+                if (authorizerLookup.ContainsKey(authorizer.Name))
+                {
+                    _diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.DuplicateAuthorizerName, Location.None, authorizer.Name));
+                    continue;
+                }
+                authorizerLookup[authorizer.Name] = authorizer;
+            }
 
             // Process authorizers first (they need to exist before functions reference them)
             ProcessAuthorizers(report.Authorizers);
@@ -306,9 +315,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (!_templateWriter.Exists(httpApiResourcePath))
             {
                 _templateWriter.SetToken($"{httpApiResourcePath}.Type", "AWS::Serverless::HttpApi");
+                _templateWriter.SetToken($"{httpApiResourcePath}.Metadata.Tool", CREATION_TOOL);
             }
-            
-            _templateWriter.SetToken($"{httpApiResourcePath}.Metadata.Tool", CREATION_TOOL);
 
             // Add each authorizer to the Auth.Authorizers map
             foreach (var authorizer in authorizers)
@@ -333,11 +341,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 // https://github.com/aws/serverless-application-model/issues/2933
                 _templateWriter.SetToken($"{authorizerPath}.EnableFunctionDefaultPermissions", true);
 
-                // AuthorizerResultTtlInSeconds (only if caching is enabled)
-                if (authorizer.ResultTtlInSeconds > 0)
-                {
-                    _templateWriter.SetToken($"{authorizerPath}.FunctionInvokeRole", null); // Required for caching
-                }
+                // AuthorizerResultTtlInSeconds - always write this value so SAM does not apply its default TTL.
+                // A value of 0 disables caching, which matches the attribute default.
+                _templateWriter.SetToken($"{authorizerPath}.AuthorizerResultTtlInSeconds", authorizer.ResultTtlInSeconds);
             }
         }
 
@@ -355,9 +361,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _templateWriter.SetToken($"{restApiResourcePath}.Type", "AWS::Serverless::Api");
                 // REST API requires explicit stage name
                 _templateWriter.SetToken($"{restApiResourcePath}.Properties.StageName", "Prod");
+                _templateWriter.SetToken($"{restApiResourcePath}.Metadata.Tool", CREATION_TOOL);
             }
-
-            _templateWriter.SetToken($"{restApiResourcePath}.Metadata.Tool", CREATION_TOOL);
 
             // Add each authorizer to the Auth.Authorizers map
             foreach (var authorizer in authorizers)
@@ -378,6 +383,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 else
                 {
                     _templateWriter.SetToken($"{authorizerPath}.FunctionPayloadType", "REQUEST");
+                }
+
+                // AuthorizerResultTtlInSeconds - cache TTL for authorizer result (only when valid)
+                // API Gateway REST Lambda authorizer TTL must be between 1 and 3600 seconds.
+                var resultTtlInSeconds = authorizer.ResultTtlInSeconds;
+                const int minTtlInSeconds = 1;
+                const int maxTtlInSeconds = 3600;
+
+                if (resultTtlInSeconds >= minTtlInSeconds &&
+                    resultTtlInSeconds <= maxTtlInSeconds)
+                {
+                    _templateWriter.SetToken($"{authorizerPath}.AuthorizerResultTtlInSeconds", resultTtlInSeconds);
                 }
             }
         }

@@ -933,7 +933,7 @@ public string PublicEndpoint()
 }
 ```
 
-The source generator will produce CloudFormation that includes an `Auth` section on the `ServerlessHttpApi` resource with the authorizer configuration, and each protected function's event will reference the authorizer by name.
+The source generator will produce CloudFormation that includes an `Auth` section on the `AnnotationsHttpApi` resource with the authorizer configuration, and each protected function's event will reference the authorizer by name.
 
 ### REST API Authorizer
 

@@ -25,7 +25,8 @@
                   "authorization"
                 ]
               },
-              "EnableFunctionDefaultPermissions": true
+              "EnableFunctionDefaultPermissions": true,
+              "AuthorizerResultTtlInSeconds": 0
             }
           }
         }

@@ -215,6 +215,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     context.AddSource("Program.g.cs", SourceText.From(executableAssembly.TransformText().ToEnvironmentLineEndings(), Encoding.UTF8, SourceHashAlgorithm.Sha256));
                 }
 
+                // Validate authorizer models and references before syncing CloudFormation template
+                foreach (var authorizerModel in annotationReport.Authorizers)
+                {
+                    var attributeName = authorizerModel.AuthorizerType == AuthorizerType.HttpApi
+                        ? "HttpApiAuthorizer"
+                        : "RestApiAuthorizer";
+                    if (!ValidateAuthorizerModel(authorizerModel, attributeName, Location.None, diagnosticReporter))
+                    {
+                        foundFatalError = true;
+                    }
+                }
+
+                if (!ValidateAuthorizerReferences(annotationReport, diagnosticReporter))
+                {
+                    foundFatalError = true;
+                }
+
                 // Run the CloudFormation sync if any LambdaMethods exists. Also run if no LambdaMethods exists but there is a
                 // CloudFormation template in case orphaned functions in the template need to be removed.
                 // Both checks are required because if there is no template but there are LambdaMethods the CF template the template will be created.

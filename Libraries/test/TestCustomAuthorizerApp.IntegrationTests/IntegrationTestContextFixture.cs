@@ -79,6 +79,9 @@ public class IntegrationTestContextFixture : IAsyncLifetime
         var implicitHttpApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "ServerlessHttpApi");
         var restApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "AnnotationsRestApi");
         Console.WriteLine($"[IntegrationTest] AnnotationsHttpApi: {httpApiId}, ServerlessHttpApi: {implicitHttpApiId}, AnnotationsRestApi: {restApiId}");
+        Assert.False(string.IsNullOrEmpty(httpApiId), $"CloudFormation resource 'AnnotationsHttpApi' was not found in stack '{_stackName}'.");
+        Assert.False(string.IsNullOrEmpty(implicitHttpApiId), $"CloudFormation resource 'ServerlessHttpApi' was not found in stack '{_stackName}'.");
+        Assert.False(string.IsNullOrEmpty(restApiId), $"CloudFormation resource 'AnnotationsRestApi' was not found in stack '{_stackName}'.");
         HttpApiUrl = $"https://{httpApiId}.execute-api.{region}.amazonaws.com";
         ImplicitHttpApiUrl = $"https://{implicitHttpApiId}.execute-api.{region}.amazonaws.com";
         RestApiUrl = $"https://{restApiId}.execute-api.{region}.amazonaws.com/Prod";

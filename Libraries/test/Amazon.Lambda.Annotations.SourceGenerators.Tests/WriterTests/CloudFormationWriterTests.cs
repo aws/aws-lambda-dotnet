@@ -1153,6 +1153,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             // Verify the authorizer was created with expected properties
             Assert.Equal(new List<string> { "AuthorizerFunction", "Arn" }, templateWriter.GetToken<List<string>>($"{authorizerPath}.FunctionArn.Fn::GetAtt"));
             Assert.Equal("2.0", templateWriter.GetToken<string>($"{authorizerPath}.AuthorizerPayloadFormatVersion"));
+            Assert.Equal(300, templateWriter.GetToken<int>($"{authorizerPath}.AuthorizerResultTtlInSeconds"));
         }
 
         [Theory]
