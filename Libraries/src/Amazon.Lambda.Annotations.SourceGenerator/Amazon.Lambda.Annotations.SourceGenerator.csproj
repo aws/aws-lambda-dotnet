@@ -63,6 +63,11 @@
     <ItemGroup>
       <TargetPathWithTargetPlatformMoniker Include="$(PKGNewtonsoft_Json)\lib\netstandard2.0\Newtonsoft.Json.dll" IncludeRuntimeDependency="false" />
       <TargetPathWithTargetPlatformMoniker Include="$(PKGYamlDotNet)\lib\netstandard2.0\YamlDotNet.dll" IncludeRuntimeDependency="false" />
+      <!-- The source generator loads Amazon.Lambda.Annotations at runtime to inspect attribute types.
+           Without this, the generator fails with FileNotFoundException in Release builds (CS8785).
+           Use absolute path via $(MSBuildProjectDirectory) so the path resolves correctly when
+           propagated to consuming projects through the project reference chain. -->
+      <TargetPathWithTargetPlatformMoniker Include="$(MSBuildProjectDirectory)\$(OutputPath)Amazon.Lambda.Annotations.dll" IncludeRuntimeDependency="false" />
     </ItemGroup>
   </Target>
 
