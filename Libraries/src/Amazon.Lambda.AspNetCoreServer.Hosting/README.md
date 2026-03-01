@@ -50,6 +50,28 @@ app.Run();
 
 ```
 
+## Important Notes
+
+### Main Method Signature
+
+If you choose to use a `Main` method instead of top-level statements, ensure the method does not accept any parameters. The Lambda runtime attempts to bind the request object to the method parameters, which will cause deserialization errors if the signature includes `string[] args` or other parameters.
+
+```csharp
+// Correct - no parameters
+public static void Main()
+{
+    var builder = WebApplication.CreateBuilder([]);
+    // ... rest of the setup
+}
+
+// Incorrect - will cause deserialization errors
+public static void Main(string[] args)
+{
+    var builder = WebApplication.CreateBuilder(args);
+    // ... rest of the setup
+}
+```
+
 ## Extension Points
 
 `AddAWSLambdaHosting` accepts an optional `HostingOptions` configuration action that exposes the same customization hooks available in the traditional `AbstractAspNetCoreFunction` base class approach.
