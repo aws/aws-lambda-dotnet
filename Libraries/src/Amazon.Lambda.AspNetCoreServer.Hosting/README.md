@@ -1,3 +1,4 @@
+
 # Amazon.Lambda.AspNetCoreServer.Hosting
 
 This package allows ASP .NET Core applications written using the minimal api style to be deployed
@@ -114,3 +115,4 @@ builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi, options =>
         apiResponse.Headers["X-Request-Id"] = context.AwsRequestId;
     };
 });
+```
