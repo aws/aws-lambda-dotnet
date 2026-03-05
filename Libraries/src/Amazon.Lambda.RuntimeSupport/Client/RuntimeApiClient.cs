@@ -214,8 +214,6 @@ namespace Amazon.Lambda.RuntimeSupport
                     request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 response.EnsureSuccessStatusCode();
             }
-
-            responseStream.MarkCompleted();
         }
 
         /// <summary>

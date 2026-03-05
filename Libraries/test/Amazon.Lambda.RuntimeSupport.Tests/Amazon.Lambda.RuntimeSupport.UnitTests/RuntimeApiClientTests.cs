@@ -133,25 +133,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Contains(StreamingConstants.ErrorBodyTrailer, trailerValue);
         }
 
-        // --- Property 18: Stream Finalization ---
-
-        /// <summary>
-        /// Property 18: Stream Finalization
-        /// For any streaming response that completes successfully, the ResponseStream
-        /// should be marked as completed (IsCompleted = true) after the HTTP response succeeds.
-        /// **Validates: Requirements 8.3**
-        /// </summary>
-        [Fact]
-        public async Task StartStreamingResponseAsync_MarksStreamCompletedAfterSuccess()
-        {
-            var stream = new LambdaResponseStream();
-            var client = CreateClientWithMockHandler(stream, out _);
-
-            await client.StartStreamingResponseAsync("req-4", stream, CancellationToken.None);
-
-            Assert.True(stream.IsCompleted);
-        }
-
         // --- Property 10: Buffered Responses Exclude Streaming Headers ---
 
         /// <summary>

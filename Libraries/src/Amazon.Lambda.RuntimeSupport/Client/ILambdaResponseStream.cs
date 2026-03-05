@@ -45,25 +45,12 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has been reported.</exception>
         Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Reports an error that occurred during streaming.
-        /// This will send error information via HTTP trailing headers.
-        /// </summary>
-        /// <param name="exception">The exception to report.</param>
-        /// <param name="cancellationToken">Optional cancellation token.</param>
-        /// <returns>A task representing the asynchronous operation.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has already been reported.</exception>
-        Task ReportErrorAsync(Exception exception, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the total number of bytes written to the stream so far.
         /// </summary>
         long BytesWritten { get; }
 
-        /// <summary>
-        /// Gets whether the stream has been completed.
-        /// </summary>
-        bool IsCompleted { get; }
 
         /// <summary>
         /// Gets whether an error has been reported.

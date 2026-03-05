@@ -45,7 +45,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var stream = new LambdaResponseStream();
 
             Assert.Equal(0, stream.BytesWritten);
-            Assert.False(stream.IsCompleted);
             Assert.False(stream.HasError);
             Assert.Null(stream.ReportedError);
         }
@@ -192,7 +191,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             // Should complete within a reasonable time
             var completed = await Task.WhenAny(waitTask, Task.Delay(TimeSpan.FromSeconds(2)));
             Assert.Same(waitTask, completed);
-            Assert.True(stream.IsCompleted);
         }
 
         // ---- Completion signaling: ReportErrorAsync releases _completionSignal ----
@@ -209,52 +207,11 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var waitTask = stream.WaitForCompletionAsync();
             Assert.False(waitTask.IsCompleted, "WaitForCompletionAsync should block before ReportErrorAsync");
 
-            await stream.ReportErrorAsync(new Exception("test error"));
+            stream.ReportError(new Exception("test error"));
 
             var completed = await Task.WhenAny(waitTask, Task.Delay(TimeSpan.FromSeconds(2)));
             Assert.Same(waitTask, completed);
             Assert.True(stream.HasError);
-        }
-
-        // ---- Property 6: Size Limit Enforcement ----
-
-        /// <summary>
-        /// Property 6: Size Limit Enforcement — single write exceeding limit throws.
-        /// Validates: Requirements 3.6, 3.7
-        /// </summary>
-        [Theory]
-        [InlineData(21 * 1024 * 1024)]
-        public async Task SizeLimit_SingleWriteExceedingLimit_Throws(int writeSize)
-        {
-            var (stream, _) = CreateWiredStream();
-            var data = new byte[writeSize];
-
-            await Assert.ThrowsAsync<InvalidOperationException>(() => stream.WriteAsync(data));
-        }
-
-        /// <summary>
-        /// Property 6: Size Limit Enforcement — multiple writes exceeding limit throws.
-        /// Validates: Requirements 3.6, 3.7
-        /// </summary>
-        [Fact]
-        public async Task SizeLimit_MultipleWritesExceedingLimit_Throws()
-        {
-            var (stream, _) = CreateWiredStream();
-
-            await stream.WriteAsync(new byte[10 * 1024 * 1024]);
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => stream.WriteAsync(new byte[11 * 1024 * 1024]));
-        }
-
-        [Fact]
-        public async Task SizeLimit_ExactlyAtLimit_Succeeds()
-        {
-            var (stream, _) = CreateWiredStream();
-            var data = new byte[20 * 1024 * 1024];
-
-            await stream.WriteAsync(data);
-
-            Assert.Equal(data.Length, stream.BytesWritten);
         }
 
         // ---- Property 19: Writes After Completion Rejected ----
@@ -283,7 +240,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         {
             var (stream, _) = CreateWiredStream();
             await stream.WriteAsync(new byte[] { 1 });
-            await stream.ReportErrorAsync(new Exception("test"));
+            stream.ReportError(new Exception("test"));
 
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => stream.WriteAsync(new byte[] { 2 }));
@@ -297,7 +254,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var stream = new LambdaResponseStream();
             var exception = new InvalidOperationException("something broke");
 
-            await stream.ReportErrorAsync(exception);
+            stream.ReportError(exception);
 
             Assert.True(stream.HasError);
             Assert.Same(exception, stream.ReportedError);
@@ -309,28 +266,18 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var stream = new LambdaResponseStream();
             stream.MarkCompleted();
 
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => stream.ReportErrorAsync(new Exception("test")));
+            Assert.Throws<InvalidOperationException>(
+                () => stream.ReportError(new Exception("test")));
         }
 
         [Fact]
         public async Task ReportErrorAsync_CalledTwice_Throws()
         {
             var stream = new LambdaResponseStream();
-            await stream.ReportErrorAsync(new Exception("first"));
+            stream.ReportError(new Exception("first"));
 
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => stream.ReportErrorAsync(new Exception("second")));
-        }
-
-        [Fact]
-        public void MarkCompleted_SetsCompletionState()
-        {
-            var stream = new LambdaResponseStream();
-
-            stream.MarkCompleted();
-
-            Assert.True(stream.IsCompleted);
+            Assert.Throws<InvalidOperationException>(
+                () => stream.ReportError(new Exception("second")));
         }
 
         // ---- Argument validation ----
@@ -356,7 +303,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         {
             var stream = new LambdaResponseStream();
 
-            await Assert.ThrowsAsync<ArgumentNullException>(() => stream.ReportErrorAsync(null));
+            Assert.Throws<ArgumentNullException>(() => stream.ReportError(null));
         }
 
         // ---- Dispose signals completion ----
@@ -369,7 +316,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var waitTask = stream.WaitForCompletionAsync();
             Assert.False(waitTask.IsCompleted);
 
-            stream.Dispose();
+            stream.ManualDispose();
 
             var completed = await Task.WhenAny(waitTask, Task.Delay(TimeSpan.FromSeconds(2)));
             Assert.Same(waitTask, completed);

@@ -34,7 +34,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
     /// ResponseStream → StreamingHttpContent → captured HTTP output stream.
     /// </summary>
     [Collection("ResponseStreamFactory")]
-    public class StreamingIntegrationTests : IDisposable
+    public class StreamingE2EWithMoq : IDisposable
     {
         public void Dispose()
         {
@@ -238,7 +238,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             Assert.NotNull(client.LastResponseStream);
             Assert.Equal(data.Length, client.LastResponseStream.BytesWritten);
-            Assert.True(client.LastResponseStream.IsCompleted);
         }
 
         // ─── 10.2 End-to-end buffered response ──────────────────────────────────────
@@ -342,31 +341,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             // Standard error reporting should NOT be used (error went via trailers)
             Assert.False(client.ReportInvocationErrorCalled);
-        }
-
-        /// <summary>
-        /// End-to-end: handler throws before writing any data — standard error reporting is used.
-        /// Requirements: 5.6, 5.7
-        /// </summary>
-        [Fact]
-        public async Task PreStreamError_ExceptionBeforeAnyWrite_UsesStandardErrorReporting()
-        {
-            var client = CreateClient();
-
-            LambdaBootstrapHandler handler = async (invocation) =>
-            {
-                var stream = LambdaResponseStreamFactory.CreateStream();
-                // Throw before writing anything
-                throw new ArgumentException("pre-write failure");
-            };
-
-            using var bootstrap = new LambdaBootstrap(handler, null);
-            bootstrap.Client = client;
-            await bootstrap.InvokeOnceAsync();
-
-            // BytesWritten == 0, so standard error reporting should be used
-            Assert.True(client.ReportInvocationErrorCalled,
-                "Standard error reporting should be used when no bytes were written");
         }
 
         /// <summary>

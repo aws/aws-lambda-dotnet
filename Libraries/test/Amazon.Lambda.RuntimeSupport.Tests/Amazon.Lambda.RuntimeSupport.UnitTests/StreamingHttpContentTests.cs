@@ -117,7 +117,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             Assert.False(serializeTask.IsCompleted, "SerializeToStreamAsync should block until error is reported");
 
-            await rs.ReportErrorAsync(new Exception("test error"));
+            rs.ReportError(new Exception("test error"));
             await serializeTask;
 
             Assert.True(serializeTask.IsCompleted);
@@ -182,7 +182,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {
                 await stream.WriteAsync(new byte[] { 1 });
-                await stream.ReportErrorAsync(new Exception("fail"));
+                stream.ReportError(new Exception("fail"));
             });
 
             var outputStr = Encoding.UTF8.GetString(output);
@@ -216,7 +216,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             {
                 await stream.WriteAsync(new byte[] { 1 });
                 var exception = (Exception)Activator.CreateInstance(exceptionType, "test error");
-                await stream.ReportErrorAsync(exception);
+                stream.ReportError(exception);
             });
 
             var outputStr = Encoding.UTF8.GetString(output);
@@ -237,7 +237,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {
                 await stream.WriteAsync(new byte[] { 1 });
-                await stream.ReportErrorAsync(new InvalidOperationException("something went wrong"));
+                stream.ReportError(new InvalidOperationException("something went wrong"));
             });
 
             var outputStr = Encoding.UTF8.GetString(output);
@@ -280,7 +280,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {
                 await stream.WriteAsync(new byte[] { 1 });
-                await stream.ReportErrorAsync(new Exception("fail"));
+                stream.ReportError(new Exception("fail"));
             });
 
             var outputStr = Encoding.UTF8.GetString(output);

@@ -385,15 +385,13 @@ namespace Amazon.Lambda.RuntimeSupport
                     {
                         WriteUnhandledExceptionToLog(exception);
 
-                        var streamIfCreated = LambdaResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
-                        if (streamIfCreated != null && streamIfCreated.BytesWritten > 0)
+                        var responseStream = LambdaResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
+                        if (responseStream != null)
                         {
-                            // Midstream error — report via trailers on the already-open HTTP connection
-                            await streamIfCreated.ReportErrorAsync(exception);
+                            responseStream.ReportError(exception);
                         }
                         else
                         {
-                            // Error before streaming started — use standard error reporting
                             await Client.ReportInvocationErrorAsync(invocation.LambdaContext.AwsRequestId, exception, cancellationToken);
                         }
                     }
@@ -402,17 +400,20 @@ namespace Amazon.Lambda.RuntimeSupport
                         _logger.LogInformation("Finished invoking handler");
                     }
 
-                    // If streaming was started, await the HTTP send task to ensure it completes
-                    var sendTask = LambdaResponseStreamFactory.GetSendTask(isMultiConcurrency);
-                    if (sendTask != null)
+                    var streamIfCreated = LambdaResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
+                    if (streamIfCreated != null)
                     {
-                        var stream = LambdaResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency);
-                        if (stream != null && !stream.IsCompleted && !stream.HasError)
+                        streamIfCreated.MarkCompleted();
+
+                        // If streaming was started, await the HTTP send task to ensure it completes
+                        var sendTask = LambdaResponseStreamFactory.GetSendTask(isMultiConcurrency);
+                        if (sendTask != null)
                         {
-                            // Handler returned successfully — signal stream completion
-                            stream.MarkCompleted();
+                            // Wait for the streaming response to finish sending before allowing the next invocation to be processed. This ensures that responses are sent in the order the invocations were received.
+                            await sendTask;
                         }
-                        await sendTask; // Wait for HTTP request to finish
+
+                        streamIfCreated.ManualDispose();
                     }
                     else if (invokeSucceeded)
                     {

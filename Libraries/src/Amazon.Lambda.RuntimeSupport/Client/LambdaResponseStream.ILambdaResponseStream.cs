@@ -46,11 +46,6 @@ namespace Amazon.Lambda.RuntimeSupport
         public long BytesWritten => _bytesWritten;
 
         /// <summary>
-        /// Gets a value indicating whether the operation has completed.
-        /// </summary>
-        public bool IsCompleted => _isCompleted;
-
-        /// <summary>
         /// Gets a value indicating whether an error has occurred.
         /// </summary>
         public bool HasError => _hasError;
@@ -144,10 +139,8 @@ namespace Amazon.Lambda.RuntimeSupport
         /// This will send error information via HTTP trailing headers.
         /// </summary>
         /// <param name="exception">The exception to report.</param>
-        /// <param name="cancellationToken">Optional cancellation token.</param>
-        /// <returns>A task representing the asynchronous operation.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has already been reported.</exception>
-        public Task ReportErrorAsync(Exception exception, CancellationToken cancellationToken = default)
+        internal void ReportError(Exception exception)
         {
             if (exception == null)
                 throw new ArgumentNullException(nameof(exception));
@@ -161,22 +154,45 @@ namespace Amazon.Lambda.RuntimeSupport
 
                 _hasError = true;
                 _reportedError = exception;
-            }
 
+
+                _isCompleted = true;
+            }
             // Signal completion so StreamingHttpContent can write error trailers and finish
             _completionSignal.Release();
-
-            return Task.CompletedTask;
         }
 
         internal void MarkCompleted()
         {
+            bool shouldReleaseLock = false;
             lock (_lock)
             {
+                // Release lock if not already completed, otherwise do nothing (idempotent)
+                if (!_isCompleted)
+                {
+                    shouldReleaseLock = true;
+                }
                 _isCompleted = true;
             }
-            // Signal completion so StreamingHttpContent can write the final chunk and finish
-            _completionSignal.Release();
+
+            if (shouldReleaseLock)
+            {
+                // Signal completion so StreamingHttpContent can write the final chunk and finish
+                _completionSignal.Release();
+            }
+        }
+
+        /// <summary>
+        /// The resouces like the SemaphoreSlims are manually disposed by LambdaBootstrap after each invocation instead of relying on the
+        /// Dipose pattern because we don't want the user's Lambda function to trigger Releasing and disposing the semaphores when
+        /// invocation of the user's code ends.
+        /// </summary>
+        internal void ManualDispose()
+        {
+            try { _httpStreamReady.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
+            _httpStreamReady.Dispose();
+            try { _completionSignal.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
+            _completionSignal.Dispose();
         }
 
         private void ThrowIfCompletedOrError()
@@ -185,19 +201,6 @@ namespace Amazon.Lambda.RuntimeSupport
                 throw new InvalidOperationException("Cannot write to a completed stream.");
             if (_hasError)
                 throw new InvalidOperationException("Cannot write to a stream after an error has been reported.");
-        }
-
-        // ── Dispose ──────────────────────────────────────────────────────────
-
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                try { _completionSignal.Release(); } catch (SemaphoreFullException) { }
-            }
-
-            base.Dispose(disposing);
         }
     }
 }

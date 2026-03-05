@@ -19,6 +19,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -43,6 +44,7 @@ namespace Amazon.Lambda.RuntimeSupport
             // can write chunks directly to it.
             _responseStream.SetHttpOutputStream(stream);
 
+            InternalLogger.GetDefaultLogger().LogInformation("In SerializeToStreamAsync waiting for the undlying Lambda response stream in indicate it is complete.");
             // Wait for the handler to finish writing (MarkCompleted or ReportErrorAsync)
             await _responseStream.WaitForCompletionAsync();
 
@@ -52,6 +54,7 @@ namespace Amazon.Lambda.RuntimeSupport
             // Write error trailers if present
             if (_responseStream.HasError)
             {
+                InternalLogger.GetDefaultLogger().LogError(_responseStream.ReportedError, "An error occurred during Lambda execution. Writing error trailers to response.");
                 await WriteErrorTrailersAsync(stream, _responseStream.ReportedError);
             }
 
