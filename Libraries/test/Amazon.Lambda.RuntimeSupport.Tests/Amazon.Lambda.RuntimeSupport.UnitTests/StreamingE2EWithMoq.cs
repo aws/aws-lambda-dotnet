@@ -514,7 +514,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 string awsRequestId, LambdaResponseStream responseStream, CancellationToken cancellationToken = default)
             {
                 // Provide the HTTP output stream so writes don't block
-                responseStream.SetHttpOutputStream(new MemoryStream());
+                await responseStream.SetHttpOutputStreamAsync(new MemoryStream());
                 await responseStream.WaitForCompletionAsync();
             }
         }

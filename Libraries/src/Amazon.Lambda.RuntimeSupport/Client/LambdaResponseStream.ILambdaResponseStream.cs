@@ -18,6 +18,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.Helpers;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -50,29 +51,78 @@ namespace Amazon.Lambda.RuntimeSupport
         /// </summary>
         public bool HasError => _hasError;
 
+        private readonly byte[] _prelude;
+
 
         internal Exception ReportedError => _reportedError;
 
         internal LambdaResponseStream()
+            : this(Array.Empty<byte>())
         {
+        }
+
+        internal LambdaResponseStream(byte[] prelude)
+        {
+            _prelude = prelude;
         }
 
         /// <summary>
         /// Called by StreamingHttpContent.SerializeToStreamAsync to provide the HTTP output stream.
         /// </summary>
-        internal void SetHttpOutputStream(Stream httpOutputStream)
+        internal async Task SetHttpOutputStreamAsync(Stream httpOutputStream, CancellationToken cancellationToken = default)
         {
             _httpOutputStream = httpOutputStream;
             _httpStreamReady.Release();
+
+            InternalLogger.GetDefaultLogger().LogDebug($"Writing prelude of {_prelude.Length} bytes to HTTP stream.");
+            await WritePreludeAsync(cancellationToken);
+        }
+
+        private async Task WritePreludeAsync(CancellationToken cancellationToken = default)
+        {
+            if (_prelude?.Length > 0)
+            {
+                await _httpStreamReady.WaitAsync(cancellationToken);
+                try
+                {
+                    lock (_lock)
+                    {
+                        ThrowIfCompletedOrError();
+                    }
+
+                    // Write prelude JSON chunk
+                    var chunkSizeHex = _prelude.Length.ToString("X");
+                    var chunkSizeBytes = Encoding.ASCII.GetBytes(chunkSizeHex);
+                    await _httpOutputStream.WriteAsync(chunkSizeBytes, 0, chunkSizeBytes.Length, cancellationToken);
+                    await _httpOutputStream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, cancellationToken);
+                    await _httpOutputStream.WriteAsync(_prelude, 0, _prelude.Length, cancellationToken);
+                    await _httpOutputStream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, cancellationToken);
+
+                    // Write 8 null bytes delimiter chunk
+                    var delimiterBytes = new byte[8];
+                    chunkSizeHex = "8";
+                    chunkSizeBytes = Encoding.ASCII.GetBytes(chunkSizeHex);
+                    await _httpOutputStream.WriteAsync(chunkSizeBytes, 0, chunkSizeBytes.Length, cancellationToken);
+                    await _httpOutputStream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, cancellationToken);
+                    await _httpOutputStream.WriteAsync(delimiterBytes, 0, delimiterBytes.Length, cancellationToken);
+                    await _httpOutputStream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, cancellationToken);
+
+                    await _httpOutputStream.FlushAsync(cancellationToken);
+                }
+                finally
+                {
+                    _httpStreamReady.Release();
+                }
+            }
         }
 
         /// <summary>
         /// Called by StreamingHttpContent.SerializeToStreamAsync to wait until the handler
         /// finishes writing (MarkCompleted or ReportErrorAsync).
         /// </summary>
-        internal async Task WaitForCompletionAsync()
+        internal async Task WaitForCompletionAsync(CancellationToken cancellationToken = default)
         {
-            await _completionSignal.WaitAsync();
+            await _completionSignal.WaitAsync(cancellationToken);
         }
 
         /// <summary>

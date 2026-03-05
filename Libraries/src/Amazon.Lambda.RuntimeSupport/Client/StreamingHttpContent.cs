@@ -18,6 +18,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 
@@ -32,24 +33,26 @@ namespace Amazon.Lambda.RuntimeSupport
         private static readonly byte[] FinalChunkBytes = Encoding.ASCII.GetBytes("0\r\n");
 
         private readonly LambdaResponseStream _responseStream;
+        private readonly CancellationToken _cancellationToken;
 
-        public StreamingHttpContent(LambdaResponseStream responseStream)
+        public StreamingHttpContent(LambdaResponseStream responseStream, CancellationToken cancellationToken = default)
         {
             _responseStream = responseStream ?? throw new ArgumentNullException(nameof(responseStream));
+            _cancellationToken = cancellationToken;
         }
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
             // Hand the HTTP output stream to ResponseStream so WriteAsync calls
             // can write chunks directly to it.
-            _responseStream.SetHttpOutputStream(stream);
+            await _responseStream.SetHttpOutputStreamAsync(stream, _cancellationToken);
 
             InternalLogger.GetDefaultLogger().LogInformation("In SerializeToStreamAsync waiting for the undlying Lambda response stream in indicate it is complete.");
             // Wait for the handler to finish writing (MarkCompleted or ReportErrorAsync)
-            await _responseStream.WaitForCompletionAsync();
+            await _responseStream.WaitForCompletionAsync(_cancellationToken);
 
             // Write final chunk
-            await stream.WriteAsync(FinalChunkBytes, 0, FinalChunkBytes.Length);
+            await stream.WriteAsync(FinalChunkBytes, 0, FinalChunkBytes.Length, _cancellationToken);
 
             // Write error trailers if present
             if (_responseStream.HasError)
@@ -59,8 +62,8 @@ namespace Amazon.Lambda.RuntimeSupport
             }
 
             // Write final CRLF to end the chunked message
-            await stream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length);
-            await stream.FlushAsync();
+            await stream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, _cancellationToken);
+            await stream.FlushAsync(_cancellationToken);
         }
 
         protected override bool TryComputeLength(out long length)
@@ -75,12 +78,12 @@ namespace Amazon.Lambda.RuntimeSupport
 
             var errorTypeHeader = $"{StreamingConstants.ErrorTypeTrailer}: {exceptionInfo.ErrorType}\r\n";
             var errorTypeBytes = Encoding.UTF8.GetBytes(errorTypeHeader);
-            await stream.WriteAsync(errorTypeBytes, 0, errorTypeBytes.Length);
+            await stream.WriteAsync(errorTypeBytes, 0, errorTypeBytes.Length, _cancellationToken);
 
             var errorBodyJson = LambdaJsonExceptionWriter.WriteJson(exceptionInfo);
             var errorBodyHeader = $"{StreamingConstants.ErrorBodyTrailer}: {errorBodyJson}\r\n";
             var errorBodyBytes = Encoding.UTF8.GetBytes(errorBodyHeader);
-            await stream.WriteAsync(errorBodyBytes, 0, errorBodyBytes.Length);
+            await stream.WriteAsync(errorBodyBytes, 0, errorBodyBytes.Length, _cancellationToken);
         }
     }
 }

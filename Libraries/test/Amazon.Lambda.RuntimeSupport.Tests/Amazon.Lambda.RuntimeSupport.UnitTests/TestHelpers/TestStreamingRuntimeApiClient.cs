@@ -114,7 +114,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             LastStreamingResponseStream = responseStream;
 
             // Simulate the HTTP stream being available
-            responseStream.SetHttpOutputStream(new MemoryStream());
+            await responseStream.SetHttpOutputStreamAsync(new MemoryStream(), cancellationToken);
 
             // Wait for the handler to finish writing (mirrors real SerializeToStreamAsync behavior)
             await responseStream.WaitForCompletionAsync();

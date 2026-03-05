@@ -206,7 +206,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 request.Headers.Add("Trailer",
                     $"{StreamingConstants.ErrorTypeTrailer}, {StreamingConstants.ErrorBodyTrailer}");
 
-                request.Content = new StreamingHttpContent(responseStream);
+                request.Content = new StreamingHttpContent(responseStream, cancellationToken);
 
                 // SendAsync calls SerializeToStreamAsync, which blocks until the handler
                 // finishes writing. This is why this method runs concurrently with the handler.
