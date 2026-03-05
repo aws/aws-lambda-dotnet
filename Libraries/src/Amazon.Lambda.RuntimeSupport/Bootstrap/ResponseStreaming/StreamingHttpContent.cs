@@ -22,7 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 
-namespace Amazon.Lambda.RuntimeSupport
+namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 {
     /// <summary>
     /// HttpContent implementation for streaming responses with chunked transfer encoding.
@@ -32,10 +32,10 @@ namespace Amazon.Lambda.RuntimeSupport
         private static readonly byte[] CrlfBytes = Encoding.ASCII.GetBytes("\r\n");
         private static readonly byte[] FinalChunkBytes = Encoding.ASCII.GetBytes("0\r\n");
 
-        private readonly LambdaResponseStream _responseStream;
+        private readonly ResponseStream _responseStream;
         private readonly CancellationToken _cancellationToken;
 
-        public StreamingHttpContent(LambdaResponseStream responseStream, CancellationToken cancellationToken = default)
+        public StreamingHttpContent(ResponseStream responseStream, CancellationToken cancellationToken = default)
         {
             _responseStream = responseStream ?? throw new ArgumentNullException(nameof(responseStream));
             _cancellationToken = cancellationToken;

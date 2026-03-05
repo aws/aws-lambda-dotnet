@@ -16,8 +16,8 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
@@ -32,8 +32,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         /// Returns the bytes written to the HTTP output stream.
         /// </summary>
         private async Task<byte[]> SerializeWithConcurrentHandler(
-            LambdaResponseStream responseStream,
-            Func<LambdaResponseStream, Task> handlerAction)
+            ResponseStream responseStream,
+            Func<ResponseStream, Task> handlerAction)
         {
             var content = new StreamingHttpContent(responseStream);
             var outputStream = new MemoryStream();
@@ -63,7 +63,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task SerializeToStreamAsync_HandsOffHttpStream_WritesFlowThrough()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
 
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {
@@ -84,7 +84,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task SerializeToStreamAsync_BlocksUntilMarkCompleted()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
             var content = new StreamingHttpContent(rs);
             var outputStream = new MemoryStream();
 
@@ -108,7 +108,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task SerializeToStreamAsync_BlocksUntilReportErrorAsync()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
             var content = new StreamingHttpContent(rs);
             var outputStream = new MemoryStream();
 
@@ -132,7 +132,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task FinalChunk_WrittenAfterCompletion()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
 
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {
@@ -156,7 +156,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task FinalChunk_EmptyStream_StillWritten()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
 
             var output = await SerializeWithConcurrentHandler(rs, stream =>
             {
@@ -177,7 +177,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ErrorTrailers_AppearAfterFinalChunk()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
 
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {
@@ -210,7 +210,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [InlineData(typeof(NullReferenceException))]
         public async Task ErrorTrailer_IncludesErrorType(Type exceptionType)
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
 
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {
@@ -232,7 +232,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ErrorTrailer_IncludesJsonErrorBody()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
 
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {
@@ -255,7 +255,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task SuccessfulCompletion_EndsWithCrlf()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
 
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {
@@ -275,7 +275,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ErrorCompletion_EndsWithCrlf()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
 
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {
@@ -292,7 +292,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task NoError_NoTrailersWritten()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
 
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {
@@ -310,7 +310,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void TryComputeLength_ReturnsFalse()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
             var content = new StreamingHttpContent(stream);
 
             var result = content.Headers.ContentLength;
@@ -326,7 +326,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task CrlfTerminators_NoBareLineFeed()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
 
             var output = await SerializeWithConcurrentHandler(rs, async stream =>
             {

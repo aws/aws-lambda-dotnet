@@ -19,6 +19,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
@@ -29,9 +30,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         /// Helper: creates a ResponseStream and wires up a MemoryStream as the HTTP output stream.
         /// Returns both so tests can inspect what was written.
         /// </summary>
-        private static async Task<(LambdaResponseStream stream, MemoryStream httpOutput)> CreateWiredStreamAsync()
+        private static async Task<(ResponseStream stream, MemoryStream httpOutput)> CreateWiredStream()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
             var output = new MemoryStream();
             await rs.SetHttpOutputStreamAsync(output);
             return (rs, output);
@@ -42,7 +43,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void Constructor_InitializesStateCorrectly()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
 
             Assert.Equal(0, stream.BytesWritten);
             Assert.False(stream.HasError);
@@ -62,9 +63,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [InlineData(new byte[0], "0")]                       // 0 bytes → "0"
         public async Task WriteAsync_WritesChunkedEncodingFormat(byte[] data, string expectedHexSize)
         {
-            var (stream, httpOutput) = await CreateWiredStreamAsync();
+            var (stream, httpOutput) = await CreateWiredStream();
 
-            await stream.WriteAsync(data);
+            await stream.WriteAsync(data, 0, data.Length);
 
             var written = httpOutput.ToArray();
             var expected = Encoding.ASCII.GetBytes(expectedHexSize + "\r\n")
@@ -82,7 +83,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task WriteAsync_WithOffset_WritesCorrectSliceAsChunk()
         {
-            var (stream, httpOutput) = await CreateWiredStreamAsync();
+            var (stream, httpOutput) = await CreateWiredStream();
             var data = new byte[] { 0, 1, 2, 3, 0 };
 
             await stream.WriteAsync(data, 1, 3);
@@ -107,13 +108,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task WriteAsync_MultipleWrites_EachAppearsImmediately()
         {
-            var (stream, httpOutput) = await CreateWiredStreamAsync();
+            var (stream, httpOutput) = await CreateWiredStream();
 
-            await stream.WriteAsync(new byte[] { 0xAA });
+            var data = new byte[] { 0xAA };
+            await stream.WriteAsync(data, 0, data.Length);
             var afterFirst = httpOutput.ToArray().Length;
             Assert.True(afterFirst > 0, "First chunk should be on the HTTP stream immediately after WriteAsync returns");
 
-            await stream.WriteAsync(new byte[] { 0xBB, 0xCC });
+            await stream.WriteAsync(new byte[] { 0xBB, 0xCC }, 0, 2);
             var afterSecond = httpOutput.ToArray().Length;
             Assert.True(afterSecond > afterFirst, "Second chunk should appear on the HTTP stream immediately");
 
@@ -128,10 +130,10 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task WriteAsync_LargerPayload_HexSizeIsCorrect()
         {
-            var (stream, httpOutput) = await CreateWiredStreamAsync();
+            var (stream, httpOutput) = await CreateWiredStream();
             var data = new byte[256]; // 0x100
 
-            await stream.WriteAsync(data);
+            await stream.WriteAsync(data, 0, data.Length);
 
             var written = Encoding.ASCII.GetString(httpOutput.ToArray());
             Assert.StartsWith("100\r\n", written);
@@ -146,7 +148,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task WriteAsync_BlocksUntilSetHttpOutputStream()
         {
-            var rs = new LambdaResponseStream();
+            var rs = new ResponseStream(Array.Empty<byte>());
             var httpOutput = new MemoryStream();
             var writeStarted = new ManualResetEventSlim(false);
             var writeCompleted = new ManualResetEventSlim(false);
@@ -155,7 +157,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var writeTask = Task.Run(async () =>
             {
                 writeStarted.Set();
-                await rs.WriteAsync(new byte[] { 1, 2, 3 });
+                await rs.WriteAsync(new byte[] { 1, 2, 3 }, 0, 3);
                 writeCompleted.Set();
             });
 
@@ -181,7 +183,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task MarkCompleted_ReleasesCompletionSignal()
         {
-            var (stream, _) = await CreateWiredStreamAsync();
+            var (stream, _) = await CreateWiredStream();
 
             var waitTask = stream.WaitForCompletionAsync();
             Assert.False(waitTask.IsCompleted, "WaitForCompletionAsync should block before MarkCompleted");
@@ -202,7 +204,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ReportErrorAsync_ReleasesCompletionSignal()
         {
-            var (stream, _) = await CreateWiredStreamAsync();
+            var (stream, _) = await CreateWiredStream();
 
             var waitTask = stream.WaitForCompletionAsync();
             Assert.False(waitTask.IsCompleted, "WaitForCompletionAsync should block before ReportErrorAsync");
@@ -223,12 +225,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task WriteAsync_AfterMarkCompleted_Throws()
         {
-            var (stream, _) = await CreateWiredStreamAsync();
-            await stream.WriteAsync(new byte[] { 1 });
+            var (stream, _) = await CreateWiredStream();
+            await stream.WriteAsync(new byte[] { 1 }, 0, 1);
             stream.MarkCompleted();
 
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => stream.WriteAsync(new byte[] { 2 }));
+                () => stream.WriteAsync(new byte[] { 2 }, 0, 1));
         }
 
         /// <summary>
@@ -238,12 +240,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task WriteAsync_AfterReportError_Throws()
         {
-            var (stream, _) = await CreateWiredStreamAsync();
-            await stream.WriteAsync(new byte[] { 1 });
+            var (stream, _) = await CreateWiredStream();
+            await stream.WriteAsync(new byte[] { 1 }, 0, 1);
             stream.ReportError(new Exception("test"));
 
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => stream.WriteAsync(new byte[] { 2 }));
+                () => stream.WriteAsync(new byte[] { 2 }, 0, 1));
         }
 
         // ---- Error handling tests ----
@@ -251,7 +253,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ReportErrorAsync_SetsErrorState()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
             var exception = new InvalidOperationException("something broke");
 
             stream.ReportError(exception);
@@ -263,7 +265,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ReportErrorAsync_AfterCompleted_Throws()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
             stream.MarkCompleted();
 
             Assert.Throws<InvalidOperationException>(
@@ -273,7 +275,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ReportErrorAsync_CalledTwice_Throws()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
             stream.ReportError(new Exception("first"));
 
             Assert.Throws<InvalidOperationException>(
@@ -285,15 +287,15 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task WriteAsync_NullBuffer_ThrowsArgumentNull()
         {
-            var (stream, _) = await CreateWiredStreamAsync();
+            var (stream, _) = await CreateWiredStream();
 
-            await Assert.ThrowsAsync<ArgumentNullException>(() => stream.WriteAsync((byte[])null));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => stream.WriteAsync((byte[])null, 0, 0));
         }
 
         [Fact]
         public async Task WriteAsync_NullBufferWithOffset_ThrowsArgumentNull()
         {
-            var (stream, _) = await CreateWiredStreamAsync();
+            var (stream, _) = await CreateWiredStream();
 
             await Assert.ThrowsAsync<ArgumentNullException>(() => stream.WriteAsync(null, 0, 0));
         }
@@ -301,7 +303,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task ReportErrorAsync_NullException_ThrowsArgumentNull()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
 
             Assert.Throws<ArgumentNullException>(() => stream.ReportError(null));
         }
@@ -311,12 +313,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task Dispose_ReleasesCompletionSignalIfNotAlreadyReleased()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
 
             var waitTask = stream.WaitForCompletionAsync();
             Assert.False(waitTask.IsCompleted);
 
-            stream.ManualDispose();
+            stream.Dispose();
 
             var completed = await Task.WhenAny(waitTask, Task.Delay(TimeSpan.FromSeconds(2)));
             Assert.Same(waitTask, completed);

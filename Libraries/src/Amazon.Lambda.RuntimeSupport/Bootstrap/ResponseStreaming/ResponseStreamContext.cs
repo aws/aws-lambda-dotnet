@@ -16,12 +16,12 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Amazon.Lambda.RuntimeSupport
+namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 {
     /// <summary>
     /// Internal context class used by ResponseStreamFactory to track per-invocation streaming state.
     /// </summary>
-    internal class LambdaResponseStreamContext
+    internal class ResponseStreamContext
     {
         /// <summary>
         /// The AWS request ID for the current invocation.
@@ -36,7 +36,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <summary>
         /// The ResponseStream instance if created.
         /// </summary>
-        public LambdaResponseStream Stream { get; set; }
+        public ResponseStream Stream { get; set; }
 
         /// <summary>
         /// The RuntimeApiClient used to start the streaming HTTP POST.

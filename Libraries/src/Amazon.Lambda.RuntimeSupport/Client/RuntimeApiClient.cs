@@ -20,6 +20,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 
 namespace Amazon.Lambda.RuntimeSupport
 {
@@ -189,7 +190,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the in-flight HTTP POST.</returns>
         internal virtual async Task StartStreamingResponseAsync(
-            string awsRequestId, LambdaResponseStream responseStream, CancellationToken cancellationToken = default)
+            string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
         {
             if (awsRequestId == null) throw new ArgumentNullException(nameof(awsRequestId));
             if (responseStream == null) throw new ArgumentNullException(nameof(responseStream));

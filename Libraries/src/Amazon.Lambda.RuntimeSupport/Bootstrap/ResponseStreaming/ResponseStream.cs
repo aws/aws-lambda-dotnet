@@ -20,13 +20,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Lambda.RuntimeSupport.Helpers;
 
-namespace Amazon.Lambda.RuntimeSupport
+namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 {
     /// <summary>
-    /// A write-only, non-seekable <see cref="Stream"/> subclass that streams response data
-    /// to the Lambda Runtime API. Returned by <see cref="LambdaResponseStreamFactory.CreateStream"/>.
+    /// Represents the writable stream used by Lambda handlers to write response data for streaming invocations.
     /// </summary>
-    public partial class LambdaResponseStream : Stream, ILambdaResponseStream
+    internal class ResponseStream
     {
         private static readonly byte[] CrlfBytes = Encoding.ASCII.GetBytes("\r\n");
 
@@ -38,6 +37,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         // The live HTTP output stream, set by StreamingHttpContent when SerializeToStreamAsync is called.
         private Stream _httpOutputStream;
+        private bool _disposedValue;
         private readonly SemaphoreSlim _httpStreamReady = new SemaphoreSlim(0, 1);
         private readonly SemaphoreSlim _completionSignal = new SemaphoreSlim(0, 1);
 
@@ -56,12 +56,7 @@ namespace Amazon.Lambda.RuntimeSupport
 
         internal Exception ReportedError => _reportedError;
 
-        internal LambdaResponseStream()
-            : this(Array.Empty<byte>())
-        {
-        }
-
-        internal LambdaResponseStream(byte[] prelude)
+        internal ResponseStream(byte[] prelude)
         {
             _prelude = prelude;
         }
@@ -125,18 +120,10 @@ namespace Amazon.Lambda.RuntimeSupport
             await _completionSignal.WaitAsync(cancellationToken);
         }
 
-        /// <summary>
-        /// Asynchronously writes a byte array to the response stream.
-        /// </summary>
-        /// <param name="buffer">The byte array to write.</param>
-        /// <param name="cancellationToken">Optional cancellation token.</param>
-        /// <returns>A task representing the asynchronous operation.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has been reported.</exception>
-        public async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default)
+        internal async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
-
             await WriteAsync(buffer, 0, buffer.Length, cancellationToken);
         }
 
@@ -149,7 +136,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="cancellationToken">Optional cancellation token.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the stream is already completed or an error has been reported.</exception>
-        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+        public async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
@@ -232,25 +219,42 @@ namespace Amazon.Lambda.RuntimeSupport
             }
         }
 
-        /// <summary>
-        /// The resouces like the SemaphoreSlims are manually disposed by LambdaBootstrap after each invocation instead of relying on the
-        /// Dipose pattern because we don't want the user's Lambda function to trigger Releasing and disposing the semaphores when
-        /// invocation of the user's code ends.
-        /// </summary>
-        internal void ManualDispose()
-        {
-            try { _httpStreamReady.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
-            _httpStreamReady.Dispose();
-            try { _completionSignal.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
-            _completionSignal.Dispose();
-        }
-
         private void ThrowIfCompletedOrError()
         {
             if (_isCompleted)
                 throw new InvalidOperationException("Cannot write to a completed stream.");
             if (_hasError)
                 throw new InvalidOperationException("Cannot write to a stream after an error has been reported.");
+        }
+
+        /// <summary>
+        /// Disposes the stream. After calling Dispose, no further writes or error reports should be made.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    try { _httpStreamReady.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
+                    _httpStreamReady.Dispose();
+                    try { _completionSignal.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
+                    _completionSignal.Dispose();
+                }
+
+                _disposedValue = true;
+            }
+        }
+
+        /// <summary>
+        /// Dispose of the stream. After calling Dispose, no further writes or error reports should be made.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

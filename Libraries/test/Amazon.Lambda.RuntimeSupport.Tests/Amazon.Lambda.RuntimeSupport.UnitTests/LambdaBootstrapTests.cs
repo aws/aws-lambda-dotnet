@@ -18,10 +18,10 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
 using static Amazon.Lambda.RuntimeSupport.Bootstrap.Constants;
 
@@ -314,7 +314,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             LambdaBootstrapHandler handler = async (invocation) =>
             {
-                var stream = LambdaResponseStreamFactory.CreateStream();
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
                 await stream.WriteAsync(Encoding.UTF8.GetBytes("hello"));
                 return new InvocationResponse(Stream.Null, false);
             };
@@ -369,7 +369,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             LambdaBootstrapHandler handler = async (invocation) =>
             {
-                var stream = LambdaResponseStreamFactory.CreateStream();
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
                 await stream.WriteAsync(Encoding.UTF8.GetBytes("partial data"));
                 throw new InvalidOperationException("midstream failure");
             };
@@ -425,7 +425,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             LambdaBootstrapHandler handler = async (invocation) =>
             {
-                var stream = LambdaResponseStreamFactory.CreateStream();
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
                 await stream.WriteAsync(Encoding.UTF8.GetBytes("data"));
                 return new InvocationResponse(Stream.Null, false);
             };
@@ -437,8 +437,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             }
 
             // After invocation, factory state should be cleaned up
-            Assert.Null(LambdaResponseStreamFactory.GetStreamIfCreated(false));
-            Assert.Null(LambdaResponseStreamFactory.GetSendTask(false));
+            Assert.Null(ResponseStreamFactory.GetStreamIfCreated(false));
+            Assert.Null(ResponseStreamFactory.GetSendTask(false));
         }
     }
 }

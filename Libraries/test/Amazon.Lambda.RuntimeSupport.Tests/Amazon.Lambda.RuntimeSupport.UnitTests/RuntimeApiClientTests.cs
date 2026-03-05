@@ -20,6 +20,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
@@ -40,9 +41,9 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         private class MockHttpMessageHandler : HttpMessageHandler
         {
             public HttpRequestMessage CapturedRequest { get; private set; }
-            private readonly LambdaResponseStream _responseStream;
+            private readonly ResponseStream _responseStream;
 
-            public MockHttpMessageHandler(LambdaResponseStream responseStream)
+            public MockHttpMessageHandler(ResponseStream responseStream)
             {
                 _responseStream = responseStream;
             }
@@ -57,7 +58,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         private static RuntimeApiClient CreateClientWithMockHandler(
-            LambdaResponseStream stream, out MockHttpMessageHandler handler)
+            ResponseStream stream, out MockHttpMessageHandler handler)
         {
             handler = new MockHttpMessageHandler(stream);
             var httpClient = new HttpClient(handler);
@@ -77,7 +78,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task StartStreamingResponseAsync_IncludesStreamingResponseModeHeader()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
             var client = CreateClientWithMockHandler(stream, out var handler);
 
             await client.StartStreamingResponseAsync("req-1", stream, CancellationToken.None);
@@ -100,7 +101,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task StartStreamingResponseAsync_IncludesChunkedTransferEncodingHeader()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
             var client = CreateClientWithMockHandler(stream, out var handler);
 
             await client.StartStreamingResponseAsync("req-2", stream, CancellationToken.None);
@@ -121,7 +122,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task StartStreamingResponseAsync_DeclaresTrailerHeaderUpfront()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
             var client = CreateClientWithMockHandler(stream, out var handler);
 
             await client.StartStreamingResponseAsync("req-3", stream, CancellationToken.None);
@@ -184,7 +185,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task StartStreamingResponseAsync_NullRequestId_ThrowsArgumentNullException()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
             var client = CreateClientWithMockHandler(stream, out _);
 
             await Assert.ThrowsAsync<ArgumentNullException>(
@@ -194,7 +195,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task StartStreamingResponseAsync_NullResponseStream_ThrowsArgumentNullException()
         {
-            var stream = new LambdaResponseStream();
+            var stream = new ResponseStream(Array.Empty<byte>());
             var client = CreateClientWithMockHandler(stream, out _);
 
             await Assert.ThrowsAsync<ArgumentNullException>(

@@ -13,7 +13,7 @@
  * permissions and limitations under the License.
  */
 
-namespace Amazon.Lambda.RuntimeSupport
+namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 {
     /// <summary>
     /// Constants used for Lambda response streaming.

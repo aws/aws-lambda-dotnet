@@ -17,31 +17,29 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Amazon.Lambda.RuntimeSupport
+namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 {
     /// <summary>
     /// Factory for creating streaming responses in AWS Lambda functions.
     /// Call CreateStream() within your handler to opt into response streaming for that invocation.
     /// </summary>
-    public static class LambdaResponseStreamFactory
+    internal static class ResponseStreamFactory
     {
         // For on-demand mode (single invocation at a time)
-        private static LambdaResponseStreamContext _onDemandContext;
+        private static ResponseStreamContext _onDemandContext;
 
         // For multi-concurrency mode (multiple concurrent invocations)
-        private static readonly AsyncLocal<LambdaResponseStreamContext> _asyncLocalContext = new AsyncLocal<LambdaResponseStreamContext>();
+        private static readonly AsyncLocal<ResponseStreamContext> _asyncLocalContext = new AsyncLocal<ResponseStreamContext>();
 
         /// <summary>
         /// Creates a streaming response for the current invocation.
         /// Can only be called once per invocation.
         /// </summary>
         /// <returns>
-        /// A <see cref="LambdaResponseStream"/> — a <see cref="System.IO.Stream"/> subclass — for writing
-        /// response data. The returned stream also implements <see cref="ILambdaResponseStream"/>.
         /// </returns>
         /// <exception cref="InvalidOperationException">Thrown if called outside an invocation context.</exception>
         /// <exception cref="InvalidOperationException">Thrown if called more than once per invocation.</exception>
-        public static LambdaResponseStream CreateStream()
+        public static ResponseStream CreateStream(byte[] prelude)
         {
             var context = GetCurrentContext();
 
@@ -57,7 +55,7 @@ namespace Amazon.Lambda.RuntimeSupport
                     "ResponseStreamFactory.CreateStream() can only be called once per invocation.");
             }
 
-            var lambdaStream = new LambdaResponseStream();
+            var lambdaStream = new ResponseStream(prelude);
             context.Stream = lambdaStream;
             context.StreamCreated = true;
 
@@ -76,7 +74,7 @@ namespace Amazon.Lambda.RuntimeSupport
             string awsRequestId, bool isMultiConcurrency,
             RuntimeApiClient runtimeApiClient, CancellationToken cancellationToken)
         {
-            var context = new LambdaResponseStreamContext
+            var context = new ResponseStreamContext
             {
                 AwsRequestId = awsRequestId,
                 StreamCreated = false,
@@ -95,7 +93,7 @@ namespace Amazon.Lambda.RuntimeSupport
             }
         }
 
-        internal static LambdaResponseStream GetStreamIfCreated(bool isMultiConcurrency)
+        internal static ResponseStream GetStreamIfCreated(bool isMultiConcurrency)
         {
             var context = isMultiConcurrency ? _asyncLocalContext.Value : _onDemandContext;
             return context?.Stream;
@@ -123,7 +121,7 @@ namespace Amazon.Lambda.RuntimeSupport
             }
         }
 
-        private static LambdaResponseStreamContext GetCurrentContext()
+        private static ResponseStreamContext GetCurrentContext()
         {
             // Check multi-concurrency first (AsyncLocal), then on-demand
             return _asyncLocalContext.Value ?? _onDemandContext;
