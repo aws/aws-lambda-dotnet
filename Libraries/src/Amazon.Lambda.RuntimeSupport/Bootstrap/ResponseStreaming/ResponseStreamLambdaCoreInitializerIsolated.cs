@@ -5,7 +5,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon.Lambda.Core;
+using Amazon.Lambda.Core.ResponseStreaming;
 using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 #pragma warning disable CA2252
 namespace Amazon.Lambda.RuntimeSupport

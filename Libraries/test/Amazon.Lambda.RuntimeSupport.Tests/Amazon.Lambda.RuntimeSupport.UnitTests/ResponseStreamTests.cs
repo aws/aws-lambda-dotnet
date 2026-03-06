@@ -50,36 +50,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Null(stream.ReportedError);
         }
 
-        // ---- Chunked encoding format (Property 9, Property 22) ----
-
-        /// <summary>
-        /// Property 9: Chunked Encoding Format — each chunk is hex-size + CRLF + data + CRLF.
-        /// Property 22: CRLF Line Terminators — all line terminators are \r\n.
-        /// Validates: Requirements 3.2, 10.1, 10.5
-        /// </summary>
-        [Theory]
-        [InlineData(new byte[] { 1, 2, 3 }, "3")]           // 3 bytes → "3"
-        [InlineData(new byte[] { 0xFF }, "1")]               // 1 byte → "1"
-        [InlineData(new byte[0], "0")]                       // 0 bytes → "0"
-        public async Task WriteAsync_WritesChunkedEncodingFormat(byte[] data, string expectedHexSize)
-        {
-            var (stream, httpOutput) = await CreateWiredStream();
-
-            await stream.WriteAsync(data, 0, data.Length);
-
-            var written = httpOutput.ToArray();
-            var expected = Encoding.ASCII.GetBytes(expectedHexSize + "\r\n")
-                .Concat(data)
-                .Concat(Encoding.ASCII.GetBytes("\r\n"))
-                .ToArray();
-
-            Assert.Equal(expected, written);
-        }
-
-        /// <summary>
-        /// Property 9: Chunked Encoding Format — verify with offset/count overload.
-        /// Validates: Requirements 3.2, 10.1
-        /// </summary>
         [Fact]
         public async Task WriteAsync_WithOffset_WritesCorrectSliceAsChunk()
         {
@@ -90,21 +60,11 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             var written = httpOutput.ToArray();
             // 3 bytes → hex "3", data is {1,2,3}
-            var expected = Encoding.ASCII.GetBytes("3\r\n")
-                .Concat(new byte[] { 1, 2, 3 })
-                .Concat(Encoding.ASCII.GetBytes("\r\n"))
-                .ToArray();
+            var expected = new byte[] { 1, 2, 3 };
 
             Assert.Equal(expected, written);
         }
 
-        // ---- Property 5: Written Data Appears in HTTP Response Immediately ----
-
-        /// <summary>
-        /// Property 5: Written Data Appears in HTTP Response Immediately —
-        /// each WriteAsync call writes to the HTTP stream before returning.
-        /// Validates: Requirements 3.2
-        /// </summary>
         [Fact]
         public async Task WriteAsync_MultipleWrites_EachAppearsImmediately()
         {
@@ -122,29 +82,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Equal(3, stream.BytesWritten);
         }
 
-        /// <summary>
-        /// Property 5: Written Data Appears in HTTP Response Immediately —
-        /// verify with a larger payload that hex size is multi-character.
-        /// Validates: Requirements 3.2
-        /// </summary>
-        [Fact]
-        public async Task WriteAsync_LargerPayload_HexSizeIsCorrect()
-        {
-            var (stream, httpOutput) = await CreateWiredStream();
-            var data = new byte[256]; // 0x100
-
-            await stream.WriteAsync(data, 0, data.Length);
-
-            var written = Encoding.ASCII.GetString(httpOutput.ToArray());
-            Assert.StartsWith("100\r\n", written);
-        }
-
-        // ---- Semaphore coordination: _httpStreamReady blocks until SetHttpOutputStream ----
-
-        /// <summary>
-        /// Test that WriteAsync blocks until SetHttpOutputStream is called.
-        /// Validates: Requirements 3.2, 10.1
-        /// </summary>
         [Fact]
         public async Task WriteAsync_BlocksUntilSetHttpOutputStream()
         {
@@ -174,12 +111,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.True(httpOutput.ToArray().Length > 0);
         }
 
-        // ---- Completion signaling: MarkCompleted releases _completionSignal ----
-
-        /// <summary>
-        /// Test that MarkCompleted releases the completion signal (WaitForCompletionAsync unblocks).
-        /// Validates: Requirements 5.5, 8.3
-        /// </summary>
         [Fact]
         public async Task MarkCompleted_ReleasesCompletionSignal()
         {
@@ -195,12 +126,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Same(waitTask, completed);
         }
 
-        // ---- Completion signaling: ReportErrorAsync releases _completionSignal ----
-
-        /// <summary>
-        /// Test that ReportErrorAsync releases the completion signal.
-        /// Validates: Requirements 5.5
-        /// </summary>
         [Fact]
         public async Task ReportErrorAsync_ReleasesCompletionSignal()
         {
@@ -216,12 +141,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.True(stream.HasError);
         }
 
-        // ---- Property 19: Writes After Completion Rejected ----
-
-        /// <summary>
-        /// Property 19: Writes After Completion Rejected — writes after MarkCompleted throw.
-        /// Validates: Requirements 8.8
-        /// </summary>
         [Fact]
         public async Task WriteAsync_AfterMarkCompleted_Throws()
         {
@@ -233,10 +152,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 () => stream.WriteAsync(new byte[] { 2 }, 0, 1));
         }
 
-        /// <summary>
-        /// Property 19: Writes After Completion Rejected — writes after ReportErrorAsync throw.
-        /// Validates: Requirements 8.8
-        /// </summary>
         [Fact]
         public async Task WriteAsync_AfterReportError_Throws()
         {
@@ -247,8 +162,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => stream.WriteAsync(new byte[] { 2 }, 0, 1));
         }
-
-        // ---- Error handling tests ----
 
         [Fact]
         public async Task ReportErrorAsync_SetsErrorState()
@@ -282,8 +195,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 () => stream.ReportError(new Exception("second")));
         }
 
-        // ---- Argument validation ----
-
         [Fact]
         public async Task WriteAsync_NullBuffer_ThrowsArgumentNull()
         {
@@ -307,8 +218,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             Assert.Throws<ArgumentNullException>(() => stream.ReportError(null));
         }
-
-        // ---- Dispose signals completion ----
 
         [Fact]
         public async Task Dispose_ReleasesCompletionSignalIfNotAlreadyReleased()

@@ -27,8 +27,6 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
     /// </summary>
     internal class ResponseStream
     {
-        private static readonly byte[] CrlfBytes = Encoding.ASCII.GetBytes("\r\n");
-
         private long _bytesWritten;
         private bool _isCompleted;
         private bool _hasError;
@@ -40,6 +38,8 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         private bool _disposedValue;
         private readonly SemaphoreSlim _httpStreamReady = new SemaphoreSlim(0, 1);
         private readonly SemaphoreSlim _completionSignal = new SemaphoreSlim(0, 1);
+
+        private static readonly byte[] PreludeDelimiter = new byte[8];
 
         /// <summary>
         /// The number of bytes written to the Lambda response stream so far.
@@ -54,10 +54,14 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         private readonly byte[] _prelude;
 
 
+        private readonly InternalLogger _logger;
+
+
         internal Exception ReportedError => _reportedError;
 
         internal ResponseStream(byte[] prelude)
         {
+            _logger = InternalLogger.GetDefaultLogger();
             _prelude = prelude;
         }
 
@@ -69,7 +73,6 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             _httpOutputStream = httpOutputStream;
             _httpStreamReady.Release();
 
-            InternalLogger.GetDefaultLogger().LogDebug($"Writing prelude of {_prelude.Length} bytes to HTTP stream.");
             await WritePreludeAsync(cancellationToken);
         }
 
@@ -77,6 +80,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         {
             if (_prelude?.Length > 0)
             {
+                _logger.LogDebug($"Writing prelude of {_prelude.Length} bytes to HTTP stream.");
                 await _httpStreamReady.WaitAsync(cancellationToken);
                 try
                 {
@@ -85,22 +89,8 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
                         ThrowIfCompletedOrError();
                     }
 
-                    // Write prelude JSON chunk
-                    var chunkSizeHex = _prelude.Length.ToString("X");
-                    var chunkSizeBytes = Encoding.ASCII.GetBytes(chunkSizeHex);
-                    await _httpOutputStream.WriteAsync(chunkSizeBytes, 0, chunkSizeBytes.Length, cancellationToken);
-                    await _httpOutputStream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, cancellationToken);
                     await _httpOutputStream.WriteAsync(_prelude, 0, _prelude.Length, cancellationToken);
-                    await _httpOutputStream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, cancellationToken);
-
-                    // Write 8 null bytes delimiter chunk
-                    var delimiterBytes = new byte[8];
-                    chunkSizeHex = "8";
-                    chunkSizeBytes = Encoding.ASCII.GetBytes(chunkSizeHex);
-                    await _httpOutputStream.WriteAsync(chunkSizeBytes, 0, chunkSizeBytes.Length, cancellationToken);
-                    await _httpOutputStream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, cancellationToken);
-                    await _httpOutputStream.WriteAsync(delimiterBytes, 0, delimiterBytes.Length, cancellationToken);
-                    await _httpOutputStream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, cancellationToken);
+                    await _httpOutputStream.WriteAsync(PreludeDelimiter, 0, PreludeDelimiter.Length, cancellationToken);
 
                     await _httpOutputStream.FlushAsync(cancellationToken);
                 }
@@ -149,19 +139,15 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             await _httpStreamReady.WaitAsync(cancellationToken);
             try
             {
+                _logger.LogDebug($"Writing chuck of {count} bytes to HTTP stream.");
+
                 lock (_lock)
                 {
                     ThrowIfCompletedOrError();
                     _bytesWritten += count;
                 }
 
-                // Write chunk directly to the HTTP stream: size(hex) + CRLF + data + CRLF
-                var chunkSizeHex = count.ToString("X");
-                var chunkSizeBytes = Encoding.ASCII.GetBytes(chunkSizeHex);
-                await _httpOutputStream.WriteAsync(chunkSizeBytes, 0, chunkSizeBytes.Length, cancellationToken);
-                await _httpOutputStream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, cancellationToken);
                 await _httpOutputStream.WriteAsync(buffer, offset, count, cancellationToken);
-                await _httpOutputStream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, cancellationToken);
                 await _httpOutputStream.FlushAsync(cancellationToken);
             }
             finally

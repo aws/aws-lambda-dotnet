@@ -57,7 +57,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         /// <summary>
         /// A capturing RuntimeApiClient that records the raw bytes written to the HTTP output stream
-        /// by SerializeToStreamAsync, enabling assertions on chunked-encoding format.
+        /// by SerializeToStreamAsync.
         /// </summary>
         private class CapturingStreamingRuntimeApiClient : RuntimeApiClient, IRuntimeApiClient
         {
@@ -145,46 +145,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         private static CapturingStreamingRuntimeApiClient CreateClient(string requestId = "test-request-id")
             => new CapturingStreamingRuntimeApiClient(new TestEnvironmentVariables(), MakeHeaders(requestId));
 
-        // ─── 10.1 End-to-end streaming response ─────────────────────────────────────
-
-        /// <summary>
-        /// End-to-end: handler calls CreateStream, writes multiple chunks.
-        /// Verifies data flows through with correct chunked encoding and stream is finalized.
-        /// Requirements: 3.2, 4.3, 10.1
-        /// </summary>
-        [Fact]
-        public async Task Streaming_MultipleChunks_FlowThroughWithChunkedEncoding()
-        {
-            var client = CreateClient();
-            var chunks = new[] { "Hello", ", ", "World" };
-
-            LambdaBootstrapHandler handler = async (invocation) =>
-            {
-                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
-                foreach (var chunk in chunks)
-                    await stream.WriteAsync(Encoding.UTF8.GetBytes(chunk));
-                return new InvocationResponse(Stream.Null, false);
-            };
-
-            using var bootstrap = new LambdaBootstrap(handler, null);
-            bootstrap.Client = client;
-            await bootstrap.InvokeOnceAsync();
-
-            Assert.True(client.StartStreamingCalled);
-            Assert.NotNull(client.CapturedHttpBytes);
-
-            var output = Encoding.UTF8.GetString(client.CapturedHttpBytes);
-
-            // Each chunk should appear as: hex-size\r\ndata\r\n
-            Assert.Contains("5\r\nHello\r\n", output);
-            Assert.Contains("2\r\n, \r\n", output);
-            Assert.Contains("5\r\nWorld\r\n", output);
-
-            // Final chunk terminates the stream
-            Assert.Contains("0\r\n", output);
-            Assert.EndsWith("0\r\n\r\n", output);
-        }
-
         /// <summary>
         /// End-to-end: all data is transmitted correctly (content round-trip).
         /// Requirements: 3.2, 4.3, 10.1
@@ -209,10 +169,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var output = client.CapturedHttpBytes;
             Assert.NotNull(output);
 
-            // Decode the single chunk: hex-size\r\ndata\r\n
             var outputStr = Encoding.UTF8.GetString(output);
-            var hexSize = payload.Length.ToString("X");
-            Assert.Contains(hexSize + "\r\n", outputStr);
             Assert.Contains("integration test payload", outputStr);
         }
 
@@ -294,54 +251,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             var received = new MemoryStream();
             await client.LastBufferedOutputStream.CopyToAsync(received);
             Assert.Equal(responseBody, received.ToArray());
-        }
-
-        // ─── 10.3 Midstream error ────────────────────────────────────────────────────
-
-        /// <summary>
-        /// End-to-end: handler writes data then throws — error trailers appear after final chunk.
-        /// Requirements: 5.1, 5.2, 5.3, 5.6
-        /// </summary>
-        [Fact]
-        public async Task MidstreamError_ErrorTrailersIncludedAfterFinalChunk()
-        {
-            var client = CreateClient();
-
-            LambdaBootstrapHandler handler = async (invocation) =>
-            {
-                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
-                await stream.WriteAsync(Encoding.UTF8.GetBytes("partial data"));
-                throw new InvalidOperationException("midstream failure");
-            };
-
-            using var bootstrap = new LambdaBootstrap(handler, null);
-            bootstrap.Client = client;
-            await bootstrap.InvokeOnceAsync();
-
-            Assert.True(client.StartStreamingCalled);
-            Assert.NotNull(client.CapturedHttpBytes);
-
-            var output = Encoding.UTF8.GetString(client.CapturedHttpBytes);
-
-            // Data chunk should be present
-            Assert.Contains("partial data", output);
-
-            // Final chunk must appear
-            Assert.Contains("0\r\n", output);
-
-            // Error trailers must appear after the final chunk
-            var finalChunkIdx = output.LastIndexOf("0\r\n");
-            var errorTypeIdx = output.IndexOf(StreamingConstants.ErrorTypeTrailer + ":");
-            var errorBodyIdx = output.IndexOf(StreamingConstants.ErrorBodyTrailer + ":");
-
-            Assert.True(errorTypeIdx > finalChunkIdx, "Error-Type trailer should appear after final chunk");
-            Assert.True(errorBodyIdx > finalChunkIdx, "Error-Body trailer should appear after final chunk");
-
-            // Error type should reference the exception type
-            Assert.Contains("InvalidOperationException", output);
-
-            // Standard error reporting should NOT be used (error went via trailers)
-            Assert.False(client.ReportInvocationErrorCalled);
         }
 
         /// <summary>

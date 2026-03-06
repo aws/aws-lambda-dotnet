@@ -201,6 +201,10 @@ namespace Amazon.Lambda.RuntimeSupport
             {
                 request.Headers.Add(StreamingConstants.ResponseModeHeader, StreamingConstants.StreamingResponseMode);
                 request.Headers.TransferEncodingChunked = true;
+                request.Headers.TryAddWithoutValidation(
+                    "Content-Type",
+                    "application/vnd.awslambda.http-integration-response"
+                );
 
                 // Declare trailers upfront — we always declare them since we don't know
                 // at request start time whether an error will occur mid-stream.

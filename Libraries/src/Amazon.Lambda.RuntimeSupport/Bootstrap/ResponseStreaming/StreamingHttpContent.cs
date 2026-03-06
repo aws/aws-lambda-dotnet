@@ -29,9 +29,6 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
     /// </summary>
     internal class StreamingHttpContent : HttpContent
     {
-        private static readonly byte[] CrlfBytes = Encoding.ASCII.GetBytes("\r\n");
-        private static readonly byte[] FinalChunkBytes = Encoding.ASCII.GetBytes("0\r\n");
-
         private readonly ResponseStream _responseStream;
         private readonly CancellationToken _cancellationToken;
 
@@ -47,12 +44,9 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             // can write chunks directly to it.
             await _responseStream.SetHttpOutputStreamAsync(stream, _cancellationToken);
 
-            InternalLogger.GetDefaultLogger().LogInformation("In SerializeToStreamAsync waiting for the undlying Lambda response stream in indicate it is complete.");
+            InternalLogger.GetDefaultLogger().LogInformation("In SerializeToStreamAsync waiting for the underlying Lambda response stream in indicate it is complete.");
             // Wait for the handler to finish writing (MarkCompleted or ReportErrorAsync)
             await _responseStream.WaitForCompletionAsync(_cancellationToken);
-
-            // Write final chunk
-            await stream.WriteAsync(FinalChunkBytes, 0, FinalChunkBytes.Length, _cancellationToken);
 
             // Write error trailers if present
             if (_responseStream.HasError)
@@ -60,10 +54,6 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
                 InternalLogger.GetDefaultLogger().LogError(_responseStream.ReportedError, "An error occurred during Lambda execution. Writing error trailers to response.");
                 await WriteErrorTrailersAsync(stream, _responseStream.ReportedError);
             }
-
-            // Write final CRLF to end the chunked message
-            await stream.WriteAsync(CrlfBytes, 0, CrlfBytes.Length, _cancellationToken);
-            await stream.FlushAsync(_cancellationToken);
         }
 
         protected override bool TryComputeLength(out long length)
