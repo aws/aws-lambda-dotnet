@@ -51,18 +51,16 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
-        public async Task WriteAsync_WithOffset_WritesCorrectSliceAsChunk()
+        public async Task WriteAsync_WithOffset_WritesCorrectSlice()
         {
             var (stream, httpOutput) = await CreateWiredStream();
             var data = new byte[] { 0, 1, 2, 3, 0 };
 
             await stream.WriteAsync(data, 1, 3);
 
-            var written = httpOutput.ToArray();
-            // 3 bytes → hex "3", data is {1,2,3}
+            // Raw bytes {1,2,3} written directly — no chunked encoding
             var expected = new byte[] { 1, 2, 3 };
-
-            Assert.Equal(expected, written);
+            Assert.Equal(expected, httpOutput.ToArray());
         }
 
         [Fact]
@@ -231,6 +229,128 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             var completed = await Task.WhenAny(waitTask, Task.Delay(TimeSpan.FromSeconds(2)));
             Assert.Same(waitTask, completed);
+        }
+
+        [Fact]
+        public async Task Dispose_CalledTwice_DoesNotThrow()
+        {
+            var stream = new ResponseStream(Array.Empty<byte>());
+            stream.Dispose();
+            // Second dispose should be a no-op
+            stream.Dispose();
+        }
+
+        // ---- Prelude tests ----
+
+        [Fact]
+        public async Task SetHttpOutputStreamAsync_WithPrelude_WritesPreludeBeforeHandlerData()
+        {
+            var prelude = new byte[] { 0x01, 0x02, 0x03 };
+            var rs = new ResponseStream(prelude);
+            var output = new MemoryStream();
+
+            await rs.SetHttpOutputStreamAsync(output);
+
+            // Prelude bytes + 8-byte null delimiter should be written before any handler data
+            var written = output.ToArray();
+            Assert.True(written.Length >= prelude.Length + 8, "Prelude + delimiter should be written");
+            Assert.Equal(prelude, written[..prelude.Length]);
+            Assert.Equal(new byte[8], written[prelude.Length..(prelude.Length + 8)]);
+        }
+
+        [Fact]
+        public async Task SetHttpOutputStreamAsync_WithEmptyPrelude_WritesNoPreludeBytes()
+        {
+            var rs = new ResponseStream(Array.Empty<byte>());
+            var output = new MemoryStream();
+
+            await rs.SetHttpOutputStreamAsync(output);
+
+            // Empty prelude — nothing written yet (handler hasn't written anything)
+            Assert.Empty(output.ToArray());
+        }
+
+        [Fact]
+        public async Task SetHttpOutputStreamAsync_WithPrelude_HandlerDataAppendsAfterDelimiter()
+        {
+            var prelude = new byte[] { 0xAA, 0xBB };
+            var rs = new ResponseStream(prelude);
+            var output = new MemoryStream();
+
+            await rs.SetHttpOutputStreamAsync(output);
+            await rs.WriteAsync(new byte[] { 0xFF }, 0, 1);
+
+            var written = output.ToArray();
+            // Layout: [prelude][8 null bytes][handler data]
+            int expectedMinLength = prelude.Length + 8 + 1;
+            Assert.Equal(expectedMinLength, written.Length);
+            Assert.Equal(new byte[] { 0xFF }, written[^1..]);
+        }
+
+        [Fact]
+        public async Task SetHttpOutputStreamAsync_NullPrelude_WritesNoPreludeBytes()
+        {
+            var rs = new ResponseStream(null);
+            var output = new MemoryStream();
+
+            await rs.SetHttpOutputStreamAsync(output);
+
+            Assert.Empty(output.ToArray());
+        }
+
+        // ---- MarkCompleted idempotency ----
+
+        [Fact]
+        public async Task MarkCompleted_CalledTwice_DoesNotThrowOrDoubleRelease()
+        {
+            var (stream, _) = await CreateWiredStream();
+
+            stream.MarkCompleted();
+            // Second call should be a no-op — semaphore should not be double-released
+            stream.MarkCompleted();
+
+            // WaitForCompletionAsync should complete exactly once without hanging
+            var waitTask = stream.WaitForCompletionAsync();
+            var completed = await Task.WhenAny(waitTask, Task.Delay(TimeSpan.FromSeconds(2)));
+            Assert.Same(waitTask, completed);
+        }
+
+        [Fact]
+        public async Task ReportError_ThenMarkCompleted_MarkCompletedIsNoOp()
+        {
+            var stream = new ResponseStream(Array.Empty<byte>());
+            stream.ReportError(new Exception("error"));
+
+            // MarkCompleted after ReportError should not throw and not double-release
+            stream.MarkCompleted();
+
+            // WaitForCompletionAsync should complete (released by ReportError)
+            var waitTask = stream.WaitForCompletionAsync();
+            var completed = await Task.WhenAny(waitTask, Task.Delay(TimeSpan.FromSeconds(2)));
+            Assert.Same(waitTask, completed);
+        }
+
+        // ---- BytesWritten tracking ----
+
+        [Fact]
+        public async Task BytesWritten_TracksAcrossMultipleWrites()
+        {
+            var (stream, _) = await CreateWiredStream();
+
+            await stream.WriteAsync(new byte[10], 0, 10);
+            await stream.WriteAsync(new byte[5], 0, 5);
+
+            Assert.Equal(15, stream.BytesWritten);
+        }
+
+        [Fact]
+        public async Task BytesWritten_ReflectsOffsetAndCount()
+        {
+            var (stream, _) = await CreateWiredStream();
+
+            await stream.WriteAsync(new byte[10], 2, 6); // only 6 bytes
+
+            Assert.Equal(6, stream.BytesWritten);
         }
     }
 }
