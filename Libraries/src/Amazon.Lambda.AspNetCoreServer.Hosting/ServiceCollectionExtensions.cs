@@ -157,6 +157,9 @@ namespace Microsoft.Extensions.DependencyInjection
             if (configure != null)
                 configure.Invoke(hostingOptions);
 
+            // Register HostingOptions as singleton in service provider
+            services.TryAddSingleton(hostingOptions);
+
             var serverType = eventSource switch
             {
                 LambdaEventSource.HttpApi => typeof(APIGatewayHttpApiV2LambdaRuntimeSupportServer),

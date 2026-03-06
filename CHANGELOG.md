@@ -1,3 +1,18 @@
+## Release 2026-02-19
+
+### Amazon.Lambda.AspNetCoreServer.Hosting (1.10.0)
+* Exposing the extensions points from Amazon.Lambda.AspNetCoreServer onto the HostingOptions. For example customizing the serialization by adding a callback for PostMarshallResponseFeature.
+
+## Release 2026-02-18
+
+### Amazon.Lambda.TestTool (0.13.0)
+* Add support for configuring HTTPS endpoints for the Lambda UI emulator and API Gateway emulator
+* Add .NET 10 build target
+* Update to latest versions of the AWS SDK for .NET
+
+### AWSLambdaPSCore PowerShell Module (5.0.0)
+* Updated to target the .NET 10 Lambda runtime
+
 ## Release 2026-02-10
 
 ### Amazon.Lambda.Annotations (1.9.0)
