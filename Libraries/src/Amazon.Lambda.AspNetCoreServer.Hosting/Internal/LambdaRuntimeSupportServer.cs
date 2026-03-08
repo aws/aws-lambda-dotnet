@@ -78,8 +78,19 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new APIGatewayHttpApiV2MinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
+            var handler = new APIGatewayHttpApiV2MinimalApi(serviceProvider);
+#if NET8_0_OR_GREATER
+#pragma warning disable CA2252
+            var hostingOptions = serviceProvider.GetService<HostingOptions>();
+            if (hostingOptions?.EnableResponseStreaming == true)
+            {
+                return HandlerWrapper.GetHandlerWrapper<APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest>(
+                    handler.StreamingFunctionHandlerAsync, this.Serializer);
+            }
+#pragma warning restore CA2252
+#endif
+            Func<APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest, ILambdaContext, Task<APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse>> bufferedHandler = handler.FunctionHandlerAsync;
+            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, this.Serializer);
         }
 
         /// <summary>
@@ -208,8 +219,19 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new APIGatewayRestApiMinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
+            var handler = new APIGatewayRestApiMinimalApi(serviceProvider);
+#if NET8_0_OR_GREATER
+#pragma warning disable CA2252
+            var hostingOptions = serviceProvider.GetService<HostingOptions>();
+            if (hostingOptions?.EnableResponseStreaming == true)
+            {
+                return HandlerWrapper.GetHandlerWrapper<APIGatewayEvents.APIGatewayProxyRequest>(
+                    handler.StreamingFunctionHandlerAsync, this.Serializer);
+            }
+#pragma warning restore CA2252
+#endif
+            Func<APIGatewayEvents.APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayEvents.APIGatewayProxyResponse>> bufferedHandler = handler.FunctionHandlerAsync;
+            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, this.Serializer);
         }
 
         /// <summary>
@@ -338,8 +360,19 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new ApplicationLoadBalancerMinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
+            var handler = new ApplicationLoadBalancerMinimalApi(serviceProvider);
+#if NET8_0_OR_GREATER
+#pragma warning disable CA2252
+            var hostingOptions = serviceProvider.GetService<HostingOptions>();
+            if (hostingOptions?.EnableResponseStreaming == true)
+            {
+                return HandlerWrapper.GetHandlerWrapper<ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest>(
+                    handler.StreamingFunctionHandlerAsync, this.Serializer);
+            }
+#pragma warning restore CA2252
+#endif
+            Func<ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest, ILambdaContext, Task<ApplicationLoadBalancerEvents.ApplicationLoadBalancerResponse>> bufferedHandler = handler.FunctionHandlerAsync;
+            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, this.Serializer);
         }
 
         /// <summary>

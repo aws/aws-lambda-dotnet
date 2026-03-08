@@ -697,5 +697,174 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <param name="statusCodeIfNotSet"></param>
         /// <returns></returns>
         protected abstract TRESPONSE MarshallResponse(IHttpResponseFeature responseFeatures, ILambdaContext lambdaContext, int statusCodeIfNotSet = 200);
+
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// Builds an <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude"/> from the current
+        /// ASP.NET Core response feature. The status code defaults to 200 when <see cref="IHttpResponseFeature.StatusCode"/>
+        /// is 0. <c>Set-Cookie</c> header values are moved to <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude.Cookies"/>;
+        /// all other headers are placed in <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude.MultiValueHeaders"/>.
+        /// </summary>
+        /// <param name="responseFeature">The ASP.NET Core response feature for the current invocation.</param>
+        /// <returns>A populated <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude"/>.</returns>
+        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        protected virtual Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude BuildStreamingPrelude(IHttpResponseFeature responseFeature)
+        {
+            var prelude = new Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude
+            {
+                StatusCode = (System.Net.HttpStatusCode)(responseFeature.StatusCode != 0 ? responseFeature.StatusCode : 200)
+            };
+
+            foreach (var kvp in responseFeature.Headers)
+            {
+                if (string.Equals(kvp.Key, "Set-Cookie", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var value in kvp.Value)
+                    {
+                        prelude.Cookies.Add(value);
+                    }
+                }
+                else
+                {
+                    prelude.MultiValueHeaders[kvp.Key] = kvp.Value.ToArray();
+                }
+            }
+
+            return prelude;
+        }
+
+        /// <summary>
+        /// Creates a <see cref="System.IO.Stream"/> for writing the streaming Lambda response.
+        /// The default implementation calls <see cref="Amazon.Lambda.Core.ResponseStreaming.LambdaResponseStreamFactory.CreateHttpStream"/>.
+        /// Subclasses may override this method to substitute a different stream (e.g. a
+        /// <see cref="System.IO.MemoryStream"/> in unit tests).
+        /// </summary>
+        /// <param name="prelude">The HTTP response prelude containing status code and headers.</param>
+        /// <returns>A writable <see cref="System.IO.Stream"/> for the response body.</returns>
+        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        protected virtual System.IO.Stream CreateLambdaResponseStream(
+            Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude prelude)
+        {
+            return Amazon.Lambda.Core.ResponseStreaming.LambdaResponseStreamFactory.CreateHttpStream(prelude);
+        }
+
+        /// <summary>
+        /// Lambda entry-point for streaming responses. Processes the ASP.NET Core request pipeline
+        /// identically to <see cref="FunctionHandlerAsync"/> but writes the response directly to a
+        /// <see cref="Amazon.Lambda.Core.ResponseStreaming.LambdaResponseStream"/> instead of buffering it.
+        /// </summary>
+        /// <param name="request">The Lambda event request.</param>
+        /// <param name="lambdaContext">The Lambda execution context.</param>
+        [LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        public virtual async Task StreamingFunctionHandlerAsync(TREQUEST request, ILambdaContext lambdaContext)
+        {
+            if (!IsStarted)
+            {
+                Start();
+            }
+
+            InvokeFeatures features = new InvokeFeatures();
+            MarshallRequest(features, request, lambdaContext);
+
+            if (_logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug))
+            {
+                var httpRequestFeature = (IHttpRequestFeature)features;
+                _logger.LogDebug($"ASP.NET Core Request PathBase: {httpRequestFeature.PathBase}, Path: {httpRequestFeature.Path}");
+            }
+
+            {
+                var itemFeatures = (IItemsFeature)features;
+                itemFeatures.Items = new ItemsDictionary();
+                itemFeatures.Items[LAMBDA_CONTEXT] = lambdaContext;
+                itemFeatures.Items[LAMBDA_REQUEST_OBJECT] = request;
+                PostMarshallItemsFeatureFeature(itemFeatures, request, lambdaContext);
+            }
+
+            var responseFeature = (IHttpResponseFeature)features;
+            System.IO.Stream lambdaStream = null;
+            bool streamOpened = false;
+
+            // Stream opener delegate: builds the prelude from response headers and opens the Lambda stream.
+            async Task<System.IO.Stream> OpenStream()
+            {
+                var prelude = BuildStreamingPrelude(responseFeature);
+                _logger.LogDebug("Openging Lambda response stream with Status code {StatusCode}", prelude.StatusCode);
+                var stream = CreateLambdaResponseStream(prelude);
+                lambdaStream = stream;
+                streamOpened = true;
+                return stream;
+            }
+
+            var streamingBodyFeature = new Internal.StreamingResponseBodyFeature(_logger, responseFeature, OpenStream);
+            features[typeof(IHttpResponseBodyFeature)] = streamingBodyFeature;
+
+            var scope = this._hostServices.CreateScope();
+            Exception pipelineException = null;
+            try
+            {
+                ((IServiceProvidersFeature)features).RequestServices = scope.ServiceProvider;
+
+                var context = this.CreateContext(features);
+                try
+                {
+                    try
+                    {
+                        await this._server.Application.ProcessRequestAsync(context);
+                        // Ensure the stream is opened and any pre-start buffered bytes are flushed,
+                        // even if the pipeline never explicitly called StartAsync / CompleteAsync.
+                        await streamingBodyFeature.CompleteAsync();
+                    }
+                    catch (Exception e)
+                    {
+                        pipelineException = e;
+
+                        if (!streamOpened && IncludeUnhandledExceptionDetailInResponse)
+                        {
+                            // Write a 500 prelude + error body before the stream has been opened.
+                            var errorPrelude = new Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude
+                            {
+                                StatusCode = System.Net.HttpStatusCode.InternalServerError
+                            };
+                            var errorStream = CreateLambdaResponseStream(errorPrelude);
+                            lambdaStream = errorStream;
+                            streamOpened = true;
+                            var errorBytes = System.Text.Encoding.UTF8.GetBytes(ErrorReport(e));
+                            await errorStream.WriteAsync(errorBytes, 0, errorBytes.Length);
+                        }
+                        else if (streamOpened)
+                        {
+                            // Stream already open — can't send a new error response; just log.
+                            _logger.LogError(e, $"Unhandled exception after response stream was opened: {ErrorReport(e)}");
+                        }
+                        else
+                        {
+                            _logger.LogError(e, $"Unknown error responding to request: {ErrorReport(e)}");
+                        }
+                    }
+                }
+                finally
+                {
+                    // Always dispose the Lambda stream to signal end-of-response to the runtime.
+                    if (lambdaStream != null)
+                    {
+                        lambdaStream.Dispose();
+                    }
+
+                    // Fire OnCompleted callbacks after the stream is closed, matching buffered-mode lifecycle.
+                    if (features.ResponseCompletedEvents != null)
+                    {
+                        await features.ResponseCompletedEvents.ExecuteAsync();
+                    }
+
+                    this._server.Application.DisposeContext(context, pipelineException);
+                }
+            }
+            finally
+            {
+                scope.Dispose();
+            }
+        }
+#endif
     }
 }

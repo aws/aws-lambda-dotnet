@@ -27,6 +27,16 @@ public class HostingOptions
     /// </summary>
     public bool IncludeUnhandledExceptionDetailInResponse { get; set; } = false;
 
+#if NET8_0_OR_GREATER
+    /// <summary>
+    /// When true, the Lambda hosting server will invoke <c>StreamingFunctionHandlerAsync</c>
+    /// instead of <c>FunctionHandlerAsync</c>, enabling Lambda response streaming.
+    /// Requires net8.0 or later.
+    /// </summary>
+    [System.Runtime.Versioning.RequiresPreviewFeatures]
+    public bool EnableResponseStreaming { get; set; } = false;
+#endif
+
     /// <summary>
     /// Callback invoked after request marshalling to customize the HTTP request feature.
     /// Receives the IHttpRequestFeature, Lambda request object, and ILambdaContext.
