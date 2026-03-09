@@ -7,12 +7,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.Annotations.APIGateway;
 
-namespace TestCustomAuthorizerApp
+namespace TestServerlessApp
 {
-    public class AuthorizerFunction_HttpApiAuthorizeV1_Generated
+    public class IAuthorizerResultExample_SimpleHttpApiAuthorizer_Generated
     {
-        private readonly AuthorizerFunction authorizerFunction;
+        private readonly IAuthorizerResultExample iAuthorizerResultExample;
         private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
 
         /// <summary>
@@ -20,22 +21,41 @@ namespace TestCustomAuthorizerApp
         /// the AWS credentials will come from the IAM role associated with the function and the AWS region will be set to the
         /// region the Lambda function is executed in.
         /// </summary>
-        public AuthorizerFunction_HttpApiAuthorizeV1_Generated()
+        public IAuthorizerResultExample_SimpleHttpApiAuthorizer_Generated()
         {
             SetExecutionEnvironment();
-            authorizerFunction = new AuthorizerFunction();
+            iAuthorizerResultExample = new IAuthorizerResultExample();
             serializer = new Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer();
         }
 
         /// <summary>
-        /// The generated Lambda function handler for <see cref="HttpApiAuthorizeV1(Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerRequest, Amazon.Lambda.Core.ILambdaContext)"/>
+        /// The generated Lambda function handler for <see cref="SimpleHttpApiAuthorizer(string, Amazon.Lambda.Core.ILambdaContext)"/>
         /// </summary>
         /// <param name="__request__">The API Gateway authorizer request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerResponse HttpApiAuthorizeV1(Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
+        public System.IO.Stream SimpleHttpApiAuthorizer(Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2Request __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
-            var response = authorizerFunction.HttpApiAuthorizeV1(__request__, __context__);
+            var authorization = default(string);
+            if (__request__.Headers?.Any(x => string.Equals(x.Key, "Authorization", StringComparison.OrdinalIgnoreCase)) == true)
+            {
+                try
+                {
+                    authorization = (string)Convert.ChangeType(__request__.Headers.First(x => string.Equals(x.Key, "Authorization", StringComparison.OrdinalIgnoreCase)).Value, typeof(string));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    __context__.Logger.Log($"Failed to extract header 'Authorization': {e.Message}");
+                }
+            }
+
+            var authorizerResult = iAuthorizerResultExample.SimpleHttpApiAuthorizer(authorization, __context__);
+            var serializationOptions = new AuthorizerResultSerializationOptions
+            {
+                Format = AuthorizerResultSerializationOptions.AuthorizerFormat.HttpApiSimple,
+                MethodArn = __request__.RouteArn
+            };
+            var response = (System.IO.Stream)authorizerResult.Serialize(serializationOptions);
             return response;
         }
 

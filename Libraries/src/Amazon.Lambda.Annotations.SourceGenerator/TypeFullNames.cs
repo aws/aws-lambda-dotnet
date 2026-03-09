@@ -20,6 +20,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string APIGatewayHttpApiV2ProxyResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse";
 
         public const string IHttpResult = "Amazon.Lambda.Annotations.APIGateway.IHttpResult";
+        public const string IAuthorizerResult = "Amazon.Lambda.Annotations.APIGateway.IAuthorizerResult";
 
         public const string LambdaFunctionAttribute = "Amazon.Lambda.Annotations.LambdaFunctionAttribute";
         public const string FromServiceAttribute = "Amazon.Lambda.Annotations.FromServicesAttribute";
@@ -36,6 +37,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string HttpApiAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.HttpApiAuthorizerAttribute";
         public const string RestApiAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.RestApiAuthorizerAttribute";
 
+        public const string APIGatewayCustomAuthorizerV2Request = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2Request";
+        public const string APIGatewayCustomAuthorizerRequest = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerRequest";
+        public const string APIGatewayCustomAuthorizerV2SimpleResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2SimpleResponse";
+        public const string APIGatewayCustomAuthorizerResponse = "Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerResponse";
+
         public const string SQSEvent = "Amazon.Lambda.SQSEvents.SQSEvent";
         public const string SQSBatchResponse = "Amazon.Lambda.SQSEvents.SQSBatchResponse";
         public const string SQSEventAttribute = "Amazon.Lambda.Annotations.SQS.SQSEventAttribute";
@@ -48,7 +54,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public static HashSet<string> Requests = new HashSet<string>
         {
             APIGatewayProxyRequest,
-            APIGatewayHttpApiV2ProxyRequest
+            APIGatewayHttpApiV2ProxyRequest,
+            APIGatewayCustomAuthorizerV2Request,
+            APIGatewayCustomAuthorizerRequest
         };
 
         public static HashSet<string> Events = new HashSet<string>

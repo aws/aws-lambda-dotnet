@@ -1,0 +1,151 @@
+<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes" #>
+<#
+        // Build the parameter signature for calling the user's method
+        ParameterSignature = string.Join(", ", _model.LambdaMethod.Parameters
+            .Select(p =>
+            {
+                // Pass the same context parameter for ILambdaContext that comes from the generated method.
+                if (p.Type.FullName == TypeFullNames.ILambdaContext)
+                {
+                    return "__context__";
+                }
+
+                // Pass the same request parameter for Request Type that comes from the generated method.
+                if (TypeFullNames.Requests.Contains(p.Type.FullName))
+                {
+                    return "__request__";
+                }
+
+                return p.Name;
+            }));
+
+        var httpApiAuthorizerAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.HttpApiAuthorizerAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.HttpApiAuthorizerAttribute>;
+        var restApiAuthorizerAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.RestApiAuthorizerAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.RestApiAuthorizerAttribute>;
+
+        // Determine if the authorizer request type is V2 (has Headers as IDictionary<string,string>)
+        var isV2Request = httpApiAuthorizerAttribute != null && httpApiAuthorizerAttribute.Data.AuthorizerPayloadFormatVersion == Amazon.Lambda.Annotations.APIGateway.AuthorizerPayloadFormatVersion.V2;
+
+        foreach (var parameter in _model.LambdaMethod.Parameters)
+        {
+            if (parameter.Type.FullName == TypeFullNames.ILambdaContext || TypeFullNames.Requests.Contains(parameter.Type.FullName))
+            {
+                // No action required for ILambdaContext and RequestType, they are passed from the generated method parameter directly to the original method.
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromServiceAttribute))
+            {
+#>
+            var <#= parameter.Name #> = scope.ServiceProvider.GetRequiredService<<#= parameter.Type.FullName #>>();
+<#
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute))
+            {
+                var fromHeaderAttribute =
+                    parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute) as
+                        AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromHeaderAttribute>;
+
+                // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                var headerKey = fromHeaderAttribute?.Data?.Name ?? parameter.Name;
+
+                // For REST API TOKEN authorizers, API Gateway passes the identity source header value
+                // directly via request.AuthorizationToken (Headers dictionary is null).
+                // For all other authorizer types (HTTP API v2, HTTP API v1, REST API REQUEST),
+                // headers are available in request.Headers as IDictionary<string, string>.
+                var isRestApiTokenAuthorizer = restApiAuthorizerAttribute != null
+                    && restApiAuthorizerAttribute.Data.Type == Amazon.Lambda.Annotations.APIGateway.RestApiAuthorizerType.Token;
+                var identityHeader = restApiAuthorizerAttribute?.Data?.IdentityHeader ?? "Authorization";
+                var isIdentityHeader = isRestApiTokenAuthorizer
+                    && string.Equals(headerKey, identityHeader, StringComparison.OrdinalIgnoreCase);
+
+                if (isIdentityHeader)
+                {
+                    // REST API TOKEN authorizer: the identity header value is in AuthorizationToken
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            if (!string.IsNullOrEmpty(__request__.AuthorizationToken))
+            {
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.AuthorizationToken, typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    __context__.Logger.Log($"Failed to extract authorization token: {e.Message}");
+                }
+            }
+<#
+                }
+                else
+                {
+                    // HTTP API or REST API REQUEST authorizer: headers are in the Headers dictionary
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            if (__request__.Headers?.Any(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)) == true)
+            {
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.Headers.First(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)).Value, typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    __context__.Logger.Log($"Failed to extract header '<#= headerKey #>': {e.Message}");
+                }
+            }
+<#
+                }
+#>
+
+<#
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
+            {
+                var fromQueryAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromQueryAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromQueryAttribute>;
+                var parameterKey = fromQueryAttribute?.Data?.Name ?? parameter.Name;
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            if (__request__.QueryStringParameters?.ContainsKey("<#= parameterKey #>") == true)
+            {
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.QueryStringParameters["<#= parameterKey #>"], typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    __context__.Logger.Log($"Failed to extract query parameter '<#= parameterKey #>': {e.Message}");
+                }
+            }
+
+<#
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromRouteAttribute))
+            {
+                var fromRouteAttribute = parameter.Attributes?.FirstOrDefault(att => att.Type.FullName == TypeFullNames.FromRouteAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromRouteAttribute>;
+                var routeKey = fromRouteAttribute?.Data?.Name ?? parameter.Name;
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            if (__request__.PathParameters?.ContainsKey("<#= routeKey #>") == true)
+            {
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.PathParameters["<#= routeKey #>"], typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    __context__.Logger.Log($"Failed to extract route parameter '<#= routeKey #>': {e.Message}");
+                }
+            }
+
+<#
+            }
+            else
+            {
+                throw new NotSupportedException($"{parameter.Name} parameter of type {parameter.Type.FullName} passing is not supported for authorizer functions.");
+            }
+        }
+#>

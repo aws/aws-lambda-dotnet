@@ -30,12 +30,13 @@ namespace TestCustomAuthorizerApp
         /// <summary>
         /// The generated Lambda function handler for <see cref="HttpApiAuthorize(Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2Request, Amazon.Lambda.Core.ILambdaContext)"/>
         /// </summary>
-        /// <param name="__request__">The request object that will be processed by the Lambda function handler.</param>
+        /// <param name="__request__">The API Gateway authorizer request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
         /// <returns>Result of the Lambda function execution</returns>
         public Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2SimpleResponse HttpApiAuthorize(Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerV2Request __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
-            return authorizerFunction.HttpApiAuthorize(__request__, __context__);
+            var response = authorizerFunction.HttpApiAuthorize(__request__, __context__);
+            return response;
         }
 
         private static void SetExecutionEnvironment()
