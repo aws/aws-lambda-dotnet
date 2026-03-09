@@ -505,6 +505,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             {
                 _templateWriter.RemoveToken($"Resources.{resourceName}");
             }
+
+            // Remove the entire AnnotationsHttpApi resource if it was created by us and no longer has any HTTP API authorizers
+            if (!currentHttpApiAuthorizerNames.Any()
+                && _templateWriter.Exists($"Resources.{HTTP_API_RESOURCE_NAME}")
+                && string.Equals(
+                    _templateWriter.GetToken<string>($"Resources.{HTTP_API_RESOURCE_NAME}.Metadata.Tool", string.Empty),
+                    CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.RemoveToken($"Resources.{HTTP_API_RESOURCE_NAME}");
+            }
+
+            // Remove the entire AnnotationsRestApi resource if it was created by us and no longer has any REST API authorizers
+            if (!currentRestApiAuthorizerNames.Any()
+                && _templateWriter.Exists($"Resources.{REST_API_RESOURCE_NAME}")
+                && string.Equals(
+                    _templateWriter.GetToken<string>($"Resources.{REST_API_RESOURCE_NAME}.Metadata.Tool", string.Empty),
+                    CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.RemoveToken($"Resources.{REST_API_RESOURCE_NAME}");
+            }
         }
 
         /// <summary>

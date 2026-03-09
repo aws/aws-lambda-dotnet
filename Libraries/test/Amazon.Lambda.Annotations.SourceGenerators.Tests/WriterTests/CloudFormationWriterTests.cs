@@ -1282,6 +1282,118 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         [Theory]
         [InlineData(CloudFormationTemplateFormat.Json)]
         [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void SwitchFromRestApiToHttpApiAuthorizer_RemovesOrphanedRestApiResource(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - Start with a REST API authorizer
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+            var restAuthorizer = new AuthorizerModel
+            {
+                Name = "MyAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.RestApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                RestApiAuthorizerType = RestApiAuthorizerType.Token
+            };
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { restAuthorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT - First pass: create REST API authorizer
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT - AnnotationsRestApi exists, AnnotationsHttpApi does not
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.True(templateWriter.Exists("Resources.AnnotationsRestApi"));
+            Assert.False(templateWriter.Exists("Resources.AnnotationsHttpApi"));
+
+            // ARRANGE - Switch to HTTP API authorizer
+            var httpAuthorizer = new AuthorizerModel
+            {
+                Name = "MyAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.HttpApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                EnableSimpleResponses = true,
+                PayloadFormatVersion = "2.0"
+            };
+            var reportWithHttpApi = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { httpAuthorizer });
+
+            // ACT - Second pass: switch to HTTP API authorizer
+            cloudFormationWriter.ApplyReport(reportWithHttpApi);
+
+            // ASSERT - AnnotationsHttpApi exists, AnnotationsRestApi is removed
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.True(templateWriter.Exists("Resources.AnnotationsHttpApi"));
+            Assert.False(templateWriter.Exists("Resources.AnnotationsRestApi"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void SwitchFromHttpApiToRestApiAuthorizer_RemovesOrphanedHttpApiResource(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - Start with an HTTP API authorizer
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Authorize",
+                "AuthorizerFunction", 30, 512, null, null);
+            var httpAuthorizer = new AuthorizerModel
+            {
+                Name = "MyAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.HttpApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                EnableSimpleResponses = true,
+                PayloadFormatVersion = "2.0"
+            };
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { httpAuthorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT - First pass: create HTTP API authorizer
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT - AnnotationsHttpApi exists, AnnotationsRestApi does not
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.True(templateWriter.Exists("Resources.AnnotationsHttpApi"));
+            Assert.False(templateWriter.Exists("Resources.AnnotationsRestApi"));
+
+            // ARRANGE - Switch to REST API authorizer
+            var restAuthorizer = new AuthorizerModel
+            {
+                Name = "MyAuthorizer",
+                LambdaResourceName = "AuthorizerFunction",
+                AuthorizerType = AuthorizerType.RestApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                RestApiAuthorizerType = RestApiAuthorizerType.Token
+            };
+            var reportWithRestApi = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
+                new List<AuthorizerModel> { restAuthorizer });
+
+            // ACT - Second pass: switch to REST API authorizer
+            cloudFormationWriter.ApplyReport(reportWithRestApi);
+
+            // ASSERT - AnnotationsRestApi exists, AnnotationsHttpApi is removed
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.True(templateWriter.Exists("Resources.AnnotationsRestApi"));
+            Assert.False(templateWriter.Exists("Resources.AnnotationsHttpApi"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
         public void CombinedAuthorizerAndProtectedFunction(CloudFormationTemplateFormat templateFormat)
         {
             // ARRANGE
