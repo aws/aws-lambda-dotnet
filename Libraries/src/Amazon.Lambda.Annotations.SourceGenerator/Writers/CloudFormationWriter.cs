@@ -337,7 +337,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _templateWriter.SetToken($"{authorizerPath}.FunctionArn.{GET_ATTRIBUTE}", new List<string> { authorizer.LambdaResourceName, "Arn" }, TokenType.List);
 
                 // AuthorizerPayloadFormatVersion
-                _templateWriter.SetToken($"{authorizerPath}.AuthorizerPayloadFormatVersion", authorizer.PayloadFormatVersion);
+                var payloadFormatVersionString = authorizer.AuthorizerPayloadFormatVersion == AuthorizerPayloadFormatVersion.V1 ? "1.0" : "2.0";
+                _templateWriter.SetToken($"{authorizerPath}.AuthorizerPayloadFormatVersion", payloadFormatVersionString);
 
                 // EnableSimpleResponses
                 _templateWriter.SetToken($"{authorizerPath}.EnableSimpleResponses", authorizer.EnableSimpleResponses);

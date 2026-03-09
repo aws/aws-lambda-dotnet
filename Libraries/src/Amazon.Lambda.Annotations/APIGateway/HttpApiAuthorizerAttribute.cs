@@ -55,10 +55,10 @@ namespace Amazon.Lambda.Annotations.APIGateway
         public bool EnableSimpleResponses { get; set; } = true;
 
         /// <summary>
-        /// Authorizer payload format version. Valid values: "1.0" or "2.0".
-        /// Defaults to "2.0".
+        /// Authorizer payload format version. Defaults to <see cref="APIGateway.AuthorizerPayloadFormatVersion.V2"/>.
+        /// Maps to the <c>AuthorizerPayloadFormatVersion</c> property in the SAM template.
         /// </summary>
-        public string PayloadFormatVersion { get; set; } = "2.0";
+        public AuthorizerPayloadFormatVersion AuthorizerPayloadFormatVersion { get; set; } = AuthorizerPayloadFormatVersion.V2;
 
         /// <summary>
         /// TTL in seconds for caching authorizer results. 0 = no caching. Max = 3600.

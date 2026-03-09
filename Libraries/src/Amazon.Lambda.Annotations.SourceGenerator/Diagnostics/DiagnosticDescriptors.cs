@@ -203,20 +203,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static readonly DiagnosticDescriptor InvalidAuthorizerPayloadFormatVersion = new DiagnosticDescriptor(
-            id: "AWSLambda0126",
-            title: "Invalid Payload Format Version",
-            messageFormat: "Invalid PayloadFormatVersion '{0}'. Must be \"1.0\" or \"2.0\".",
-            category: "AWSLambdaCSharpGenerator",
-            DiagnosticSeverity.Error,
-            isEnabledByDefault: true);
-
         public static readonly DiagnosticDescriptor InvalidAuthorizerResultTtl = new DiagnosticDescriptor(
             id: "AWSLambda0127",
             title: "Invalid Result TTL",
             messageFormat: "Invalid ResultTtlInSeconds '{0}'. Must be between 0 and 3600.",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AuthorizerPayloadVersionMismatch = new DiagnosticDescriptor(
+            id: "AWSLambda0128",
+            title: "Authorizer Payload Version Mismatch",
+            messageFormat: "The authorizer '{0}' uses AuthorizerPayloadFormatVersion {1} but the endpoint uses HttpApiVersion {2}. This may cause unexpected behavior.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
     }
 }

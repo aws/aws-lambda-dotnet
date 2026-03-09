@@ -31,8 +31,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     case nameof(HttpApiAuthorizerAttribute.EnableSimpleResponses):
                         attribute.EnableSimpleResponses = namedArg.Value.Value is bool val ? val : true;
                         break;
-                    case nameof(HttpApiAuthorizerAttribute.PayloadFormatVersion):
-                        attribute.PayloadFormatVersion = namedArg.Value.Value as string ?? "2.0";
+                    case nameof(HttpApiAuthorizerAttribute.AuthorizerPayloadFormatVersion):
+                        attribute.AuthorizerPayloadFormatVersion = namedArg.Value.Value is int enumVal
+                            ? (AuthorizerPayloadFormatVersion)enumVal
+                            : AuthorizerPayloadFormatVersion.V2;
                         break;
                     case nameof(HttpApiAuthorizerAttribute.ResultTtlInSeconds):
                         attribute.ResultTtlInSeconds = namedArg.Value.Value is int ttl ? ttl : 0;
@@ -71,7 +73,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                 IdentityHeader = attribute.IdentityHeader,
                 ResultTtlInSeconds = attribute.ResultTtlInSeconds,
                 EnableSimpleResponses = attribute.EnableSimpleResponses,
-                PayloadFormatVersion = attribute.PayloadFormatVersion
+                AuthorizerPayloadFormatVersion = attribute.AuthorizerPayloadFormatVersion
             };
         }
     }

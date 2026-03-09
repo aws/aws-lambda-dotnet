@@ -368,16 +368,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 isValid = false;
             }
 
-            // Validate PayloadFormatVersion for HTTP API authorizers
-            if (model.AuthorizerType == AuthorizerType.HttpApi)
-            {
-                if (model.PayloadFormatVersion != "1.0" && model.PayloadFormatVersion != "2.0")
-                {
-                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.InvalidAuthorizerPayloadFormatVersion, methodLocation, model.PayloadFormatVersion));
-                    isValid = false;
-                }
-            }
-
             // Validate ResultTtlInSeconds
             if (model.ResultTtlInSeconds < 0 || model.ResultTtlInSeconds > 3600)
             {
@@ -458,6 +448,35 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                             diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.HttpApiAuthorizerNotFound, Location.None, authorizerName));
                         }
                         isValid = false;
+                    }
+                    else
+                    {
+                        // Check for payload format version mismatch between authorizer and endpoint
+                        var matchedAuthorizer = httpApiAuthorizers[authorizerName];
+                        var httpApiAttr = function.Attributes
+                            .OfType<AttributeModel<HttpApiAttribute>>()
+                            .Select(a => a.Data)
+                            .FirstOrDefault();
+
+                        if (httpApiAttr != null)
+                        {
+                            var endpointVersion = httpApiAttr.Version;
+                            var authorizerVersion = matchedAuthorizer.AuthorizerPayloadFormatVersion;
+
+                            // Compare: HttpApiVersion.V1 corresponds to AuthorizerPayloadFormatVersion.V1, etc.
+                            if ((endpointVersion == HttpApiVersion.V1 && authorizerVersion != AuthorizerPayloadFormatVersion.V1) ||
+                                (endpointVersion == HttpApiVersion.V2 && authorizerVersion != AuthorizerPayloadFormatVersion.V2))
+                            {
+                                var authorizerVersionStr = authorizerVersion == AuthorizerPayloadFormatVersion.V1 ? "1.0" : "2.0";
+                                var endpointVersionStr = endpointVersion == HttpApiVersion.V1 ? "V1" : "V2";
+                                diagnosticReporter.Report(Diagnostic.Create(
+                                    DiagnosticDescriptors.AuthorizerPayloadVersionMismatch,
+                                    Location.None,
+                                    authorizerName,
+                                    authorizerVersionStr,
+                                    endpointVersionStr));
+                            }
+                        }
                     }
                 }
 

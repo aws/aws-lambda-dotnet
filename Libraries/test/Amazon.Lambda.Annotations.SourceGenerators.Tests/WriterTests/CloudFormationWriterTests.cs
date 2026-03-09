@@ -889,7 +889,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 IdentityHeader = "Authorization",
                 ResultTtlInSeconds = 0,
                 EnableSimpleResponses = true,
-                PayloadFormatVersion = "2.0"
+                AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2
             };
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(
@@ -1033,7 +1033,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 IdentityHeader = "Authorization",
                 ResultTtlInSeconds = 0,
                 EnableSimpleResponses = true,
-                PayloadFormatVersion = "2.0"
+                AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2
             };
 
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
@@ -1132,7 +1132,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 IdentityHeader = "Authorization",
                 ResultTtlInSeconds = 300,
                 EnableSimpleResponses = true,
-                PayloadFormatVersion = "2.0"
+                AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2
             };
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(
@@ -1173,7 +1173,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 IdentityHeader = "Authorization",
                 ResultTtlInSeconds = 0,
                 EnableSimpleResponses = true,
-                PayloadFormatVersion = "2.0"
+                AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2
             };
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(
@@ -1211,7 +1211,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 IdentityHeader = "Authorization",
                 ResultTtlInSeconds = 0,
                 EnableSimpleResponses = true,
-                PayloadFormatVersion = "2.0"
+                AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2
             };
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(
@@ -1320,7 +1320,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 IdentityHeader = "Authorization",
                 ResultTtlInSeconds = 0,
                 EnableSimpleResponses = true,
-                PayloadFormatVersion = "2.0"
+                AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2
             };
             var reportWithHttpApi = GetAnnotationReport(
                 new List<ILambdaFunctionSerializable> { lambdaFunctionModel },
@@ -1352,7 +1352,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 IdentityHeader = "Authorization",
                 ResultTtlInSeconds = 0,
                 EnableSimpleResponses = true,
-                PayloadFormatVersion = "2.0"
+                AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2
             };
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(
@@ -1433,7 +1433,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 IdentityHeader = "Authorization",
                 ResultTtlInSeconds = 0,
                 EnableSimpleResponses = true,
-                PayloadFormatVersion = "2.0"
+                AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2
             };
 
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
@@ -1569,7 +1569,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
                 IdentityHeader = "X-Api-Key",
                 ResultTtlInSeconds = 0,
                 EnableSimpleResponses = false,
-                PayloadFormatVersion = "1.0"
+                AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V1
             };
             var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
             var report = GetAnnotationReport(

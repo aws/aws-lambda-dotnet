@@ -58,10 +58,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         public bool EnableSimpleResponses { get; set; }
 
         /// <summary>
-        /// Authorizer payload format version. Valid values: "1.0" or "2.0".
+        /// Authorizer payload format version.
         /// Only applicable for HTTP API authorizers.
         /// </summary>
-        public string PayloadFormatVersion { get; set; }
+        public AuthorizerPayloadFormatVersion AuthorizerPayloadFormatVersion { get; set; }
 
         // REST API specific properties
 

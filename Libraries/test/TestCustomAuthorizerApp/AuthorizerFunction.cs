@@ -43,7 +43,7 @@ public class AuthorizerFunction
         Name = "HttpApiLambdaAuthorizer",
         IdentityHeader = "authorization",
         EnableSimpleResponses = true,
-        PayloadFormatVersion = "2.0")]
+        AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2)]
     public APIGatewayCustomAuthorizerV2SimpleResponse HttpApiAuthorize(
         APIGatewayCustomAuthorizerV2Request request, 
         ILambdaContext context)
