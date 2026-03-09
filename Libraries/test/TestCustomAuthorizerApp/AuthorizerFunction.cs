@@ -117,6 +117,89 @@ public class AuthorizerFunction
     }
 
     /// <summary>
+    /// HTTP API Lambda Authorizer (Payload format 1.0)
+    /// Used by HTTP API V1 endpoints that need payload format 1.0
+    /// </summary>
+    [LambdaFunction(ResourceName = "CustomAuthorizerV1")]
+    [HttpApiAuthorizer(
+        Name = "HttpApiLambdaAuthorizerV1",
+        IdentityHeader = "authorization",
+        EnableSimpleResponses = false,
+        AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V1)]
+    public APIGatewayCustomAuthorizerResponse HttpApiAuthorizeV1(
+        APIGatewayCustomAuthorizerRequest request,
+        ILambdaContext context)
+    {
+        context.Logger.LogLine($"V1 Authorizer invoked");
+        context.Logger.LogLine($"Authorization token: {request.AuthorizationToken}");
+
+        var authToken = request.AuthorizationToken ?? "";
+
+        // Deny if not a valid or partial-context token
+        if (!ValidTokens.Contains(authToken) && !PartialContextTokens.Contains(authToken))
+        {
+            context.Logger.LogLine("V1 Authorizer: Denying request");
+            return GenerateDenyPolicy("anonymous", request.MethodArn);
+        }
+
+        // Check for partial-context tokens - authorize but return incomplete context
+        if (PartialContextTokens.Contains(authToken))
+        {
+            context.Logger.LogLine("V1 Authorizer: Authorizing with partial context (missing expected keys)");
+
+            return new APIGatewayCustomAuthorizerResponse
+            {
+                PrincipalID = "partial-user",
+                PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+                {
+                    Version = "2012-10-17",
+                    Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
+                    {
+                        new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                        {
+                            Action = new HashSet<string> { "execute-api:Invoke" },
+                            Effect = "Allow",
+                            Resource = new HashSet<string> { request.MethodArn }
+                        }
+                    }
+                },
+                Context = new APIGatewayCustomAuthorizerContextOutput
+                {
+                    // Intentionally return only unexpected keys, omitting userId, tenantId, email
+                    ["unexpectedKey"] = "some-value"
+                }
+            };
+        }
+
+        context.Logger.LogLine("V1 Authorizer: Authorizing request with valid token");
+
+        return new APIGatewayCustomAuthorizerResponse
+        {
+            PrincipalID = "user-12345",
+            PolicyDocument = new APIGatewayCustomAuthorizerPolicy
+            {
+                Version = "2012-10-17",
+                Statement = new List<APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement>
+                {
+                    new APIGatewayCustomAuthorizerPolicy.IAMPolicyStatement
+                    {
+                        Action = new HashSet<string> { "execute-api:Invoke" },
+                        Effect = "Allow",
+                        Resource = new HashSet<string> { request.MethodArn }
+                    }
+                }
+            },
+            Context = new APIGatewayCustomAuthorizerContextOutput
+            {
+                ["userId"] = "user-12345",
+                ["tenantId"] = "42",
+                ["userRole"] = "admin",
+                ["email"] = "test@example.com"
+            }
+        };
+    }
+
+    /// <summary>
     /// REST API Lambda Authorizer (Token-based authorizer)
     /// Returns an IAM policy document along with custom context values
     /// </summary>

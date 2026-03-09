@@ -20,7 +20,7 @@ public class HealthCheckTests
     public async Task HealthCheck_ReturnsOk_WithoutAuthorization()
     {
         // Arrange & Act
-        var response = await _fixture.HttpClient.GetAsync($"{_fixture.ImplicitHttpApiUrl}/api/health");
+        var response = await _fixture.HttpClient.GetAsync($"{_fixture.HttpApiUrl}/api/health");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

@@ -149,7 +149,7 @@ public class ProtectedFunction
     /// where RequestContext.Authorizer is a dictionary, not RequestContext.Authorizer.Lambda.
     /// </summary>
     [LambdaFunction(ResourceName = "HttpApiV1UserInfo")]
-    [HttpApi(LambdaHttpMethod.Get, "/api/http-v1-user-info", Version = HttpApiVersion.V1, Authorizer = "HttpApiLambdaAuthorizer")]
+    [HttpApi(LambdaHttpMethod.Get, "/api/http-v1-user-info", Version = HttpApiVersion.V1, Authorizer = "HttpApiLambdaAuthorizerV1")]
     public object GetHttpApiV1UserInfo(
         [FromCustomAuthorizer(Name = "userId")] string userId,
         [FromCustomAuthorizer(Name = "email")] string email,

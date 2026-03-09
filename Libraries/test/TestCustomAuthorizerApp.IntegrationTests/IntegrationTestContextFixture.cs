@@ -23,15 +23,9 @@ public class IntegrationTestContextFixture : IAsyncLifetime
     public readonly HttpClient HttpClient;
 
     /// <summary>
-    /// HTTP API base URL for endpoints explicitly attached to AnnotationsHttpApi (no trailing slash)
+    /// HTTP API base URL for endpoints attached to AnnotationsHttpApi (no trailing slash)
     /// </summary>
     public string HttpApiUrl = string.Empty;
-
-    /// <summary>
-    /// HTTP API base URL for endpoints using the implicit SAM-generated ServerlessHttpApi (no trailing slash).
-    /// Functions without an explicit ApiId (e.g. HealthCheck) are placed on this API.
-    /// </summary>
-    public string ImplicitHttpApiUrl = string.Empty;
 
     /// <summary>
     /// REST API base URL (no trailing slash)
@@ -76,14 +70,11 @@ public class IntegrationTestContextFixture : IAsyncLifetime
         var region = "us-west-2";
         Console.WriteLine($"[IntegrationTest] Querying stack resources for '{_stackName}'...");
         var httpApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "AnnotationsHttpApi");
-        var implicitHttpApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "ServerlessHttpApi");
         var restApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "AnnotationsRestApi");
-        Console.WriteLine($"[IntegrationTest] AnnotationsHttpApi: {httpApiId}, ServerlessHttpApi: {implicitHttpApiId}, AnnotationsRestApi: {restApiId}");
+        Console.WriteLine($"[IntegrationTest] AnnotationsHttpApi: {httpApiId}, AnnotationsRestApi: {restApiId}");
         Assert.False(string.IsNullOrEmpty(httpApiId), $"CloudFormation resource 'AnnotationsHttpApi' was not found in stack '{_stackName}'.");
-        Assert.False(string.IsNullOrEmpty(implicitHttpApiId), $"CloudFormation resource 'ServerlessHttpApi' was not found in stack '{_stackName}'.");
         Assert.False(string.IsNullOrEmpty(restApiId), $"CloudFormation resource 'AnnotationsRestApi' was not found in stack '{_stackName}'.");
         HttpApiUrl = $"https://{httpApiId}.execute-api.{region}.amazonaws.com";
-        ImplicitHttpApiUrl = $"https://{implicitHttpApiId}.execute-api.{region}.amazonaws.com";
         RestApiUrl = $"https://{restApiId}.execute-api.{region}.amazonaws.com/Prod";
         
         LambdaFunctions = await LambdaHelper.FilterByCloudFormationStackAsync(_stackName);
@@ -91,9 +82,9 @@ public class IntegrationTestContextFixture : IAsyncLifetime
 
         Assert.True(await _s3Helper.BucketExistsAsync(_bucketName), $"S3 bucket {_bucketName} should exist");
         
-        // There are 9 Lambda functions in TestCustomAuthorizerApp:
-        // CustomAuthorizer, RestApiAuthorizer, ProtectedEndpoint, GetUserInfo, HealthCheck, RestUserInfo, HttpApiV1UserInfo, IHttpResultUserInfo, NonStringUserInfo
-        Assert.Equal(9, LambdaFunctions.Count);
+        // There are 10 Lambda functions in TestCustomAuthorizerApp:
+        // CustomAuthorizer, CustomAuthorizerV1, RestApiAuthorizer, ProtectedEndpoint, GetUserInfo, HealthCheck, RestUserInfo, HttpApiV1UserInfo, IHttpResultUserInfo, NonStringUserInfo
+        Assert.Equal(10, LambdaFunctions.Count);
 
         await LambdaHelper.WaitTillNotPending(LambdaFunctions.Where(x => x.Name != null).Select(x => x.Name!).ToList());
 

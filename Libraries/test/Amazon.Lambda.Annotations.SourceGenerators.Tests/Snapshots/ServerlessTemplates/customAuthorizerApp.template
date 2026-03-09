@@ -27,6 +27,23 @@
               },
               "EnableFunctionDefaultPermissions": true,
               "AuthorizerResultTtlInSeconds": 0
+            },
+            "HttpApiLambdaAuthorizerV1": {
+              "FunctionArn": {
+                "Fn::GetAtt": [
+                  "CustomAuthorizerV1",
+                  "Arn"
+                ]
+              },
+              "AuthorizerPayloadFormatVersion": "1.0",
+              "EnableSimpleResponses": false,
+              "Identity": {
+                "Headers": [
+                  "authorization"
+                ]
+              },
+              "EnableFunctionDefaultPermissions": true,
+              "AuthorizerResultTtlInSeconds": 0
             }
           }
         }
@@ -72,6 +89,23 @@
         ],
         "PackageType": "Zip",
         "Handler": "TestProject::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorize_Generated::HttpApiAuthorize"
+      }
+    },
+    "CustomAuthorizerV1": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestProject::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorizeV1_Generated::HttpApiAuthorizeV1"
       }
     },
     "RestApiAuthorizer": {
@@ -187,7 +221,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -206,7 +241,10 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/api/health",
-              "Method": "GET"
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -290,7 +328,7 @@
               "Method": "GET",
               "PayloadFormatVersion": "1.0",
               "Auth": {
-                "Authorizer": "HttpApiLambdaAuthorizer"
+                "Authorizer": "HttpApiLambdaAuthorizerV1"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"

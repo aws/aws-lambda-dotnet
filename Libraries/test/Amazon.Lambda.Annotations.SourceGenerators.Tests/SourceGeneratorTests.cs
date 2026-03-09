@@ -1654,6 +1654,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "customAuthorizerApp.template"));
             var expectedHttpApiAuthorizeGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_HttpApiAuthorize_Generated.g.cs"));
+            var expectedHttpApiAuthorizeV1Generated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_HttpApiAuthorizeV1_Generated.g.cs"));
             var expectedRestApiAuthorizeGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "AuthorizerFunction_RestApiAuthorize_Generated.g.cs"));
             var expectedGetProtectedDataGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetProtectedData_Generated.g.cs"));
             var expectedGetUserInfoGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "ProtectedFunction_GetUserInfo_Generated.g.cs"));
@@ -1676,6 +1677,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "RestApiAuthorizerAttribute.cs"))),
                         (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"), File.ReadAllText(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FromCustomAuthorizerAttribute.cs"))),
                     },
@@ -1685,6 +1687,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                             typeof(SourceGenerator.Generator),
                             "AuthorizerFunction_HttpApiAuthorize_Generated.g.cs",
                             SourceText.From(expectedHttpApiAuthorizeGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "AuthorizerFunction_HttpApiAuthorizeV1_Generated.g.cs",
+                            SourceText.From(expectedHttpApiAuthorizeV1Generated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
                         ),
                         (
                             typeof(SourceGenerator.Generator),
@@ -1729,6 +1736,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     },
                     ExpectedDiagnostics =
                     {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_HttpApiAuthorizeV1_Generated.g.cs", expectedHttpApiAuthorizeV1Generated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_HttpApiAuthorize_Generated.g.cs", expectedHttpApiAuthorizeGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("AuthorizerFunction_RestApiAuthorize_Generated.g.cs", expectedRestApiAuthorizeGenerated),
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("ProtectedFunction_GetProtectedData_Generated.g.cs", expectedGetProtectedDataGenerated),
