@@ -176,13 +176,19 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
 
     }
 
-    if (_model.LambdaMethod.Events.Contains(EventType.API))
+    if (_model.LambdaMethod.Events.Contains(EventType.Authorizer))
+    {
+        var authorizerParameters = new AuthorizerSetupParameters(_model);
+        this.Write(authorizerParameters.TransformText());
+        this.Write(new AuthorizerInvoke(_model, authorizerParameters.ParameterSignature).TransformText());
+    }
+    else if (_model.LambdaMethod.Events.Contains(EventType.API))
     {
         var apiParameters = new APIGatewaySetupParameters(_model);
         this.Write(apiParameters.TransformText());
         this.Write(new APIGatewayInvoke(_model, apiParameters.ParameterSignature).TransformText());
     }
-    // Currently we only support 2 event types - APIGatewayEvents and SQSEvents.
+    // Currently we support 3 event types - Authorizer, APIGatewayEvents, and SQSEvents.
     // Since SQSEvents does not require any special code generation, the generated method body will be same as when the Lambda method contains no events.
     else
     {

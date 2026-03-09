@@ -65,8 +65,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
 
         internal static bool ValidateDependencies(GeneratorExecutionContext context, IMethodSymbol lambdaMethodSymbol, Location methodLocation, DiagnosticReporter diagnosticReporter)
         {
-            // Check for references to "Amazon.Lambda.APIGatewayEvents" if the Lambda method is annotated with RestApi or HttpApi attributes.
-            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute) || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute))
+            // Check for references to "Amazon.Lambda.APIGatewayEvents" if the Lambda method is annotated with RestApi, HttpApi, or authorizer attributes.
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute) || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute)
+                || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAuthorizerAttribute) || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAuthorizerAttribute))
             {
                 if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.APIGatewayEvents") == null)
                 {
@@ -90,8 +91,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
 
         private static void ValidateApiGatewayEvents(LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
         {
-            // If the method does not contain any APIGatewayEvents, then it cannot return IHttpResults and can also not have parameters that are annotated with HTTP API attributes
-            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.API))
+            // If the method does not contain any APIGatewayEvents or Authorizer events, then it cannot return IHttpResults
+            // and can also not have parameters that are annotated with HTTP API attributes.
+            // Authorizer functions also support FromHeader, FromQuery, FromRoute attributes.
+            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.API) && !lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.Authorizer))
             {
                 if (lambdaFunctionModel.LambdaMethod.ReturnsIHttpResults)
                 {
@@ -110,6 +113,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                     }
                 }
 
+                return;
+            }
+
+            // If this is an Authorizer event, skip the API Gateway-specific parameter validation below
+            if (lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.Authorizer))
+            {
                 return;
             }
 
