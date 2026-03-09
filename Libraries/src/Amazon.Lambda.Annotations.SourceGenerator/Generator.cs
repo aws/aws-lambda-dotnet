@@ -151,6 +151,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     configureMethodSymbol = configureHostBuilderMethodSymbol;
                 }
 
+                // Check for methods that have secondary attributes (HttpApi, RestApi, HttpApiAuthorizer, etc.)
+                // but are missing the required [LambdaFunction] attribute
+                foreach (var (method, attributeName) in receiver.MethodsWithMissingLambdaFunction)
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(
+                        DiagnosticDescriptors.MissingLambdaFunctionAttribute,
+                        Location.Create(method.SyntaxTree, method.Span),
+                        attributeName));
+                    foundFatalError = true;
+                }
+
                 var annotationReport = new AnnotationReport();
 
                 var templateHandler = new CloudFormationTemplateHandler(_fileManager, _directoryManager);

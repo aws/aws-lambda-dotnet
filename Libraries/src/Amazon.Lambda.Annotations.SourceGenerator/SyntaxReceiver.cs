@@ -11,11 +11,30 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
     internal class SyntaxReceiver : ISyntaxContextReceiver
     {
+        /// <summary>
+        /// Secondary attribute names that require the [LambdaFunction] attribute to also be present.
+        /// The key is the attribute class name, the value is the user-friendly name for diagnostics.
+        /// </summary>
+        private static readonly Dictionary<string, string> _secondaryAttributeNames = new Dictionary<string, string>
+        {
+            { "HttpApiAuthorizerAttribute", "HttpApiAuthorizer" },
+            { "RestApiAuthorizerAttribute", "RestApiAuthorizer" },
+            { "HttpApiAttribute", "HttpApi" },
+            { "RestApiAttribute", "RestApi" },
+            { "SQSEventAttribute", "SQSEvent" }
+        };
+
         public List<MethodDeclarationSyntax> LambdaMethods { get; } = new List<MethodDeclarationSyntax>();
 
         public List<ClassDeclarationSyntax> StartupClasses { get; private set; } = new List<ClassDeclarationSyntax>();
         
         public List<MethodDeclarationSyntax> MethodDeclarations { get; } = new List<MethodDeclarationSyntax>();
+
+        /// <summary>
+        /// Methods that have a secondary Lambda annotation attribute but are missing [LambdaFunction].
+        /// Each entry is a tuple of the method syntax, its location, and the friendly name of the secondary attribute found.
+        /// </summary>
+        public List<(MethodDeclarationSyntax Method, string AttributeName)> MethodsWithMissingLambdaFunction { get; } = new List<(MethodDeclarationSyntax, string)>();
 
         /// <summary>
         /// Path to the directory containing the .csproj file
@@ -57,9 +76,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                 var methodSymbol = ModelExtensions.GetDeclaredSymbol(
                     context.SemanticModel,
                     methodDeclarationSyntax);
-                if (methodSymbol.GetAttributes().Any(attr => attr.AttributeClass.Name == nameof(LambdaFunctionAttribute)))
+                var attributes = methodSymbol.GetAttributes();
+                if (attributes.Any(attr => attr.AttributeClass.Name == nameof(LambdaFunctionAttribute)))
                 {
                     LambdaMethods.Add(methodDeclarationSyntax);
+                }
+                else
+                {
+                    // Check if the method has a secondary attribute without [LambdaFunction]
+                    foreach (var attr in attributes)
+                    {
+                        var attrName = attr.AttributeClass?.Name;
+                        if (attrName != null && _secondaryAttributeNames.TryGetValue(attrName, out var friendlyName))
+                        {
+                            MethodsWithMissingLambdaFunction.Add((methodDeclarationSyntax, friendlyName));
+                            break; // Only report once per method
+                        }
+                    }
                 }
             }
 

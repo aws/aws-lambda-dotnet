@@ -1756,6 +1756,36 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
 
+        [Fact]
+        public async Task VerifyMissingLambdaFunctionWithAuthorizerAttribute()
+        {
+            var test = new VerifyCS.Test()
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "FromScratch", "MissingLambdaFunctionWithAuthorizer.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "FromScratch", "MissingLambdaFunctionWithAuthorizer.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "HttpApiAuthorizerAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "AuthorizerPayloadFormatVersion.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0129", DiagnosticSeverity.Error)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}FromScratch{Path.DirectorySeparatorChar}MissingLambdaFunctionWithAuthorizer.cs", 10, 9, 21, 10)
+                            .WithMessage("Method has [HttpApiAuthorizer] attribute but is missing the required [LambdaFunction] attribute. Add [LambdaFunction] to this method."),
+                    },
+                },
+            };
+
+            await test.RunAsync();
+        }
+
         public void Dispose()
         {
             File.Delete(Path.Combine("TestServerlessApp", "serverless.template"));

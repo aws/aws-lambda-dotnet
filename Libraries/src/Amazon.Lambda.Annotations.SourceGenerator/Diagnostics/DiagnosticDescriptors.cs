@@ -218,5 +218,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor MissingLambdaFunctionAttribute = new DiagnosticDescriptor(
+            id: "AWSLambda0129",
+            title: "Missing LambdaFunction Attribute",
+            messageFormat: "Method has [{0}] attribute but is missing the required [LambdaFunction] attribute. Add [LambdaFunction] to this method.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }
