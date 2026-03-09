@@ -14,15 +14,17 @@ namespace Amazon.Lambda.Annotations.APIGateway
     /// </remarks>
     /// <example>
     /// <code>
+    /// // The authorizer name is automatically derived from the method name ("Authorize").
     /// [LambdaFunction]
-    /// [HttpApiAuthorizer("MyAuthorizer")]
+    /// [HttpApiAuthorizer]
     /// public APIGatewayCustomAuthorizerV2SimpleResponse Authorize(APIGatewayCustomAuthorizerV2Request request)
     /// {
     ///     // Validate token and return authorization response
     /// }
     /// 
+    /// // Reference the authorizer using nameof for compile-time safety
     /// [LambdaFunction]
-    /// [HttpApi(LambdaHttpMethod.Get, "/api/protected", Authorizer = "MyAuthorizer")]
+    /// [HttpApi(LambdaHttpMethod.Get, "/api/protected", Authorizer = nameof(Authorize))]
     /// public string ProtectedEndpoint()
     /// {
     ///     return "Hello, authenticated user!";
@@ -32,22 +34,6 @@ namespace Amazon.Lambda.Annotations.APIGateway
     [AttributeUsage(AttributeTargets.Method)]
     public class HttpApiAuthorizerAttribute : Attribute
     {
-        /// <summary>
-        /// Creates a new HTTP API authorizer attribute with the specified name.
-        /// </summary>
-        /// <param name="name">Unique name to identify this authorizer. Other functions reference this name
-        /// via the <see cref="HttpApiAttribute.Authorizer"/> property.</param>
-        public HttpApiAuthorizerAttribute(string name)
-        {
-            Name = name;
-        }
-
-        /// <summary>
-        /// Required. Unique name to identify this authorizer. Other functions reference this name
-        /// via the <see cref="HttpApiAttribute.Authorizer"/> property.
-        /// </summary>
-        public string Name { get; set; }
-
         /// <summary>
         /// Header name to use as identity source. Defaults to "Authorization".
         /// The generator translates this to "$request.header.{IdentityHeader}" for CloudFormation.

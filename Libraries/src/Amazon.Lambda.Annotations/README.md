@@ -861,7 +861,7 @@ Two authorizer attributes are available:
 
 ### HTTP API Authorizer
 
-To create an HTTP API authorizer, decorate a Lambda function with the `[HttpApiAuthorizer]` attribute and give it a unique `Name`. Other functions can then reference that authorizer via the `Authorizer` property on `[HttpApi]`.
+To create an HTTP API authorizer, decorate a Lambda function with the `[HttpApiAuthorizer]` attribute. The authorizer name is automatically derived from the method name, so other functions can reference it using `nameof()` for compile-time safety.
 
 **Step 1: Define the authorizer function**
 
@@ -869,7 +869,7 @@ The authorizer function receives an `APIGatewayCustomAuthorizerV2Request` and re
 
 ```csharp
 [LambdaFunction(ResourceName = "HttpApiAuthorizer", PackageType = LambdaPackageType.Image)]
-[HttpApiAuthorizer("MyHttpAuthorizer")]
+[HttpApiAuthorizer]
 public APIGatewayCustomAuthorizerV2SimpleResponse AuthorizeHttpApi(
     APIGatewayCustomAuthorizerV2Request request,
     ILambdaContext context)
@@ -896,11 +896,11 @@ public APIGatewayCustomAuthorizerV2SimpleResponse AuthorizeHttpApi(
 
 **Step 2: Protect an endpoint with the authorizer**
 
-Reference the authorizer by name in the `Authorizer` property of `[HttpApi]`. Use `[FromCustomAuthorizer]` on method parameters to automatically extract values from the authorizer context.
+Reference the authorizer using `nameof()` in the `Authorizer` property of `[HttpApi]` for compile-time safety. If the authorizer method is renamed, both references update automatically. Use `[FromCustomAuthorizer]` on method parameters to automatically extract values from the authorizer context.
 
 ```csharp
 [LambdaFunction(ResourceName = "ProtectedHttpApiFunction", PackageType = LambdaPackageType.Image)]
-[HttpApi(LambdaHttpMethod.Get, "/api/protected", Authorizer = "MyHttpAuthorizer")]
+[HttpApi(LambdaHttpMethod.Get, "/api/protected", Authorizer = nameof(AuthorizeHttpApi))]
 public object GetProtectedResource(
     [FromCustomAuthorizer(Name = "userId")] string userId,
     [FromCustomAuthorizer(Name = "email")] string email)
@@ -913,7 +913,7 @@ Multiple endpoints can share the same authorizer:
 
 ```csharp
 [LambdaFunction(ResourceName = "AdminHttpApiFunction", PackageType = LambdaPackageType.Image)]
-[HttpApi(LambdaHttpMethod.Get, "/api/admin", Authorizer = "MyHttpAuthorizer")]
+[HttpApi(LambdaHttpMethod.Get, "/api/admin", Authorizer = nameof(AuthorizeHttpApi))]
 public object AdminEndpoint(
     [FromCustomAuthorizer(Name = "userId")] string userId,
     [FromCustomAuthorizer(Name = "role")] string role)
@@ -945,7 +945,7 @@ REST API authorizers work similarly but use `[RestApiAuthorizer]` and `[RestApi]
 
 ```csharp
 [LambdaFunction(ResourceName = "RestApiAuthorizer", PackageType = LambdaPackageType.Image)]
-[RestApiAuthorizer("MyRestAuthorizer", Type = RestApiAuthorizerType.Token)]
+[RestApiAuthorizer(Type = RestApiAuthorizerType.Token)]
 public APIGatewayCustomAuthorizerResponse AuthorizeRestApi(
     APIGatewayCustomAuthorizerRequest request,
     ILambdaContext context)
@@ -1002,7 +1002,7 @@ public APIGatewayCustomAuthorizerResponse AuthorizeRestApi(
 
 ```csharp
 [LambdaFunction(ResourceName = "ProtectedRestApiFunction", PackageType = LambdaPackageType.Image)]
-[RestApi(LambdaHttpMethod.Get, "/api/rest/protected", Authorizer = "MyRestAuthorizer")]
+[RestApi(LambdaHttpMethod.Get, "/api/rest/protected", Authorizer = nameof(AuthorizeRestApi))]
 public object GetRestProtectedResource(
     [FromCustomAuthorizer(Name = "userId")] string userId)
 {
@@ -1016,7 +1016,6 @@ public object GetRestProtectedResource(
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `Name` | `string` | *(required)* | Unique name to identify this authorizer. Referenced by `HttpApi.Authorizer`. |
 | `IdentityHeader` | `string` | `"Authorization"` | Header used as the identity source. Translated to `$request.header.{value}` in CloudFormation. |
 | `EnableSimpleResponses` | `bool` | `true` | When `true`, use simple responses (`IsAuthorized: true/false`). When `false`, use IAM policy responses. |
 | `PayloadFormatVersion` | `string` | `"2.0"` | Authorizer payload format version. Valid values: `"1.0"` or `"2.0"`. |
@@ -1026,7 +1025,6 @@ public object GetRestProtectedResource(
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `Name` | `string` | *(required)* | Unique name to identify this authorizer. Referenced by `RestApi.Authorizer`. |
 | `IdentityHeader` | `string` | `"Authorization"` | Header used as the identity source. Translated to `method.request.header.{value}` in CloudFormation. |
 | `Type` | `RestApiAuthorizerType` | `Token` | Type of authorizer: `Token` (receives just the token) or `Request` (receives full request context). |
 | `ResultTtlInSeconds` | `int` | `0` | TTL in seconds for caching authorizer results. `0` = no caching. Max = `3600`. |
@@ -1035,7 +1033,7 @@ public object GetRestProtectedResource(
 
 ```csharp
 [LambdaFunction(ResourceName = "ApiKeyAuthorizer", PackageType = LambdaPackageType.Image)]
-[HttpApiAuthorizer("ApiKeyAuth",
+[HttpApiAuthorizer(
     IdentityHeader = "X-Api-Key",
     ResultTtlInSeconds = 300)]
 public APIGatewayCustomAuthorizerV2SimpleResponse ValidateApiKey(
@@ -1103,9 +1101,9 @@ parameter to the `LambdaFunction` must be the event object and the event source 
 * HttpApi
     * Configures the Lambda function to be called from an API Gateway HTTP API. The HTTP method, HTTP API payload version and resource path are required to be set on the attribute. Use the `Authorizer` property to reference an `HttpApiAuthorizer` by name.
 * HttpApiAuthorizer
-    * Marks a Lambda function as an HTTP API (API Gateway V2) custom authorizer. Pass the authorizer name as the constructor argument to give it a unique name that can be referenced by `HttpApi.Authorizer`.
+    * Marks a Lambda function as an HTTP API (API Gateway V2) custom authorizer. The authorizer name is automatically derived from the method name. Other functions reference it via `HttpApi.Authorizer` using `nameof()` for compile-time safety.
 * RestApiAuthorizer
-    * Marks a Lambda function as a REST API (API Gateway V1) custom authorizer. Pass the authorizer name as the constructor argument to give it a unique name that can be referenced by `RestApi.Authorizer`. Use the `Type` property to choose between `Token` and `Request` authorizer types.
+    * Marks a Lambda function as a REST API (API Gateway V1) custom authorizer. The authorizer name is automatically derived from the method name. Other functions reference it via `RestApi.Authorizer` using `nameof()`. Use the `Type` property to choose between `Token` and `Request` authorizer types.
 * SQSEvent
     * Sets up event source mapping between the Lambda function and SQS queues. The SQS queue ARN is required to be set on the attribute. If users want to pass a reference to an existing SQS queue resource defined in their CloudFormation template, they can pass the SQS queue resource name prefixed with the '@' symbol. 
 

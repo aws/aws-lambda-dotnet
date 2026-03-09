@@ -39,7 +39,7 @@ public class AuthorizerFunction
     /// Returns authorized status along with custom context that can be accessed via [FromCustomAuthorizer]
     /// </summary>
     [LambdaFunction(ResourceName = "CustomAuthorizer")]
-    [HttpApiAuthorizer("HttpApiLambdaAuthorizer",
+    [HttpApiAuthorizer(
         IdentityHeader = "authorization",
         EnableSimpleResponses = true,
         AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2)]
@@ -120,7 +120,7 @@ public class AuthorizerFunction
     /// Used by HTTP API V1 endpoints that need payload format 1.0
     /// </summary>
     [LambdaFunction(ResourceName = "CustomAuthorizerV1")]
-    [HttpApiAuthorizer("HttpApiLambdaAuthorizerV1",
+    [HttpApiAuthorizer(
         IdentityHeader = "authorization",
         EnableSimpleResponses = false,
         AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V1)]
@@ -202,7 +202,7 @@ public class AuthorizerFunction
     /// Returns an IAM policy document along with custom context values
     /// </summary>
     [LambdaFunction(ResourceName = "RestApiAuthorizer")]
-    [RestApiAuthorizer("RestApiLambdaAuthorizer",
+    [RestApiAuthorizer(
         Type = RestApiAuthorizerType.Token,
         IdentityHeader = "Authorization")]
     public APIGatewayCustomAuthorizerResponse RestApiAuthorize(

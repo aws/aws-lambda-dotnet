@@ -11,7 +11,7 @@
       "Properties": {
         "Auth": {
           "Authorizers": {
-            "HttpApiLambdaAuthorizer": {
+            "HttpApiAuthorize": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "CustomAuthorizer",
@@ -28,7 +28,7 @@
               "EnableFunctionDefaultPermissions": true,
               "AuthorizerResultTtlInSeconds": 0
             },
-            "HttpApiLambdaAuthorizerV1": {
+            "HttpApiAuthorizeV1": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "CustomAuthorizerV1",
@@ -55,7 +55,7 @@
         "StageName": "Prod",
         "Auth": {
           "Authorizers": {
-            "RestApiLambdaAuthorizer": {
+            "RestApiAuthorize": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "RestApiAuthorizer",
@@ -158,7 +158,7 @@
               "Path": "/api/protected",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiLambdaAuthorizer"
+                "Authorizer": "HttpApiAuthorize"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -201,7 +201,7 @@
               "Path": "/api/user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiLambdaAuthorizer"
+                "Authorizer": "HttpApiAuthorize"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -283,7 +283,7 @@
               "Path": "/api/rest-user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "RestApiLambdaAuthorizer"
+                "Authorizer": "RestApiAuthorize"
               },
               "RestApiId": {
                 "Ref": "AnnotationsRestApi"
@@ -328,7 +328,7 @@
               "Method": "GET",
               "PayloadFormatVersion": "1.0",
               "Auth": {
-                "Authorizer": "HttpApiLambdaAuthorizerV1"
+                "Authorizer": "HttpApiAuthorizeV1"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -371,7 +371,7 @@
               "Path": "/api/ihttpresult-user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiLambdaAuthorizer"
+                "Authorizer": "HttpApiAuthorize"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -414,7 +414,7 @@
               "Path": "/api/nonstring-user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiLambdaAuthorizer"
+                "Authorizer": "HttpApiAuthorize"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"

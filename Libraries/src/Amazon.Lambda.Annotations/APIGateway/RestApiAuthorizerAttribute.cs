@@ -30,16 +30,18 @@ namespace Amazon.Lambda.Annotations.APIGateway
     /// </remarks>
     /// <example>
     /// <code>
+    /// // The authorizer name is automatically derived from the method name ("Authorize").
     /// [LambdaFunction]
-    /// [RestApiAuthorizer("TokenAuthorizer", Type = RestApiAuthorizerType.Token)]
+    /// [RestApiAuthorizer(Type = RestApiAuthorizerType.Token)]
     /// public APIGatewayCustomAuthorizerResponse Authorize(APIGatewayCustomAuthorizerRequest request)
     /// {
     ///     var token = request.AuthorizationToken;
     ///     // Validate token and return IAM policy response
     /// }
     /// 
+    /// // Reference the authorizer using nameof for compile-time safety
     /// [LambdaFunction]
-    /// [RestApi(LambdaHttpMethod.Get, "/api/protected", Authorizer = "TokenAuthorizer")]
+    /// [RestApi(LambdaHttpMethod.Get, "/api/protected", Authorizer = nameof(Authorize))]
     /// public string ProtectedEndpoint()
     /// {
     ///     return "Hello, authenticated user!";
@@ -49,22 +51,6 @@ namespace Amazon.Lambda.Annotations.APIGateway
     [AttributeUsage(AttributeTargets.Method)]
     public class RestApiAuthorizerAttribute : Attribute
     {
-        /// <summary>
-        /// Creates a new REST API authorizer attribute with the specified name.
-        /// </summary>
-        /// <param name="name">Unique name to identify this authorizer. Other functions reference this name
-        /// via the <see cref="RestApiAttribute.Authorizer"/> property.</param>
-        public RestApiAuthorizerAttribute(string name)
-        {
-            Name = name;
-        }
-
-        /// <summary>
-        /// Required. Unique name to identify this authorizer. Other functions reference this name
-        /// via the <see cref="RestApiAttribute.Authorizer"/> property.
-        /// </summary>
-        public string Name { get; set; }
-
         /// <summary>
         /// Header name to use as identity source. Defaults to "Authorization".
         /// The generator translates this to "method.request.header.{IdentityHeader}" for CloudFormation.

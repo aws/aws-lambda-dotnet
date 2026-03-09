@@ -346,14 +346,22 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             {
                 var attributeFullName = attribute.AttributeClass?.ToDisplayString();
 
+                AuthorizerModel model = null;
+
                 if (attributeFullName == TypeFullNames.HttpApiAuthorizerAttribute)
                 {
-                    return HttpApiAuthorizerAttributeBuilder.BuildModel(attribute, lambdaResourceName);
+                    model = HttpApiAuthorizerAttributeBuilder.BuildModel(attribute, lambdaResourceName);
+                }
+                else if (attributeFullName == TypeFullNames.RestApiAuthorizerAttribute)
+                {
+                    model = RestApiAuthorizerAttributeBuilder.BuildModel(attribute, lambdaResourceName);
                 }
 
-                if (attributeFullName == TypeFullNames.RestApiAuthorizerAttribute)
+                if (model != null)
                 {
-                    return RestApiAuthorizerAttributeBuilder.BuildModel(attribute, lambdaResourceName);
+                    // The authorizer name is always derived from the method name
+                    model.Name = methodSymbol.Name;
+                    return model;
                 }
             }
 

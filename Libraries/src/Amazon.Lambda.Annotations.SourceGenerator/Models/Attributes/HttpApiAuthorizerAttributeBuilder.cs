@@ -16,12 +16,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
         /// <returns>The populated attribute instance</returns>
         public static HttpApiAuthorizerAttribute Build(AttributeData att)
         {
-            // Name is the first constructor argument
-            var name = att.ConstructorArguments.Length > 0
-                ? att.ConstructorArguments[0].Value as string
-                : null;
-
-            var attribute = new HttpApiAuthorizerAttribute(name);
+            var attribute = new HttpApiAuthorizerAttribute();
 
             foreach (var namedArg in att.NamedArguments)
             {
@@ -69,7 +64,6 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
         {
             return new AuthorizerModel
             {
-                Name = attribute.Name,
                 LambdaResourceName = lambdaResourceName,
                 AuthorizerType = AuthorizerType.HttpApi,
                 IdentityHeader = attribute.IdentityHeader,
