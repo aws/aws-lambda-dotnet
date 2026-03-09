@@ -1353,11 +1353,91 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal("LambdaAuthorizer", templateWriter.GetToken<string>($"{protectedEventPath}.Properties.Auth.Authorizer"));
             Assert.Equal("AnnotationsHttpApi", templateWriter.GetToken<string>($"{protectedEventPath}.Properties.ApiId.Ref"));
 
-            // Verify public function does NOT reference authorizer
+            // Verify public function does NOT reference authorizer but DOES reference the shared API
             const string publicEventPath = "Resources.HealthFunction.Properties.Events.RootGet";
             Assert.True(templateWriter.Exists(publicEventPath));
             Assert.False(templateWriter.Exists($"{publicEventPath}.Properties.Auth"));
-            Assert.False(templateWriter.Exists($"{publicEventPath}.Properties.ApiId"));
+            Assert.Equal("AnnotationsHttpApi", templateWriter.GetToken<string>($"{publicEventPath}.Properties.ApiId.Ref"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void CombinedRestApiAuthorizerAndProtectedFunction(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+
+            // Create the authorizer function
+            var authorizerFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.Auth::Authorize",
+                "MyAuthorizerFunction", 30, 512, null, null);
+
+            // Create a protected function
+            var protectedFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.Api::GetData",
+                "GetDataFunction", 30, 512, null, null);
+            var restApiAttribute = new AttributeModel<RestApiAttribute>()
+            {
+                Data = new RestApiAttribute(LambdaHttpMethod.Get, "/data")
+                {
+                    Authorizer = "LambdaAuthorizer"
+                }
+            };
+            protectedFunctionModel.Attributes = new List<AttributeModel> { restApiAttribute };
+            protectedFunctionModel.Authorizer = "LambdaAuthorizer";
+
+            // Create an unprotected function
+            var publicFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.Api::Health",
+                "HealthFunction", 30, 512, null, null);
+            var publicRestApiAttribute = new AttributeModel<RestApiAttribute>()
+            {
+                Data = new RestApiAttribute(LambdaHttpMethod.Get, "/health")
+            };
+            publicFunctionModel.Attributes = new List<AttributeModel> { publicRestApiAttribute };
+
+            var authorizer = new AuthorizerModel
+            {
+                Name = "LambdaAuthorizer",
+                LambdaResourceName = "MyAuthorizerFunction",
+                AuthorizerType = AuthorizerType.RestApi,
+                IdentityHeader = "Authorization",
+                ResultTtlInSeconds = 0,
+                RestApiAuthorizerType = RestApiAuthorizerType.Token
+            };
+
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(
+                new List<ILambdaFunctionSerializable> { authorizerFunctionModel, protectedFunctionModel, publicFunctionModel },
+                new List<AuthorizerModel> { authorizer });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            // Verify all three Lambda functions exist
+            Assert.True(templateWriter.Exists("Resources.MyAuthorizerFunction"));
+            Assert.True(templateWriter.Exists("Resources.GetDataFunction"));
+            Assert.True(templateWriter.Exists("Resources.HealthFunction"));
+
+            // Verify AnnotationsRestApi resource with authorizer
+            Assert.True(templateWriter.Exists("Resources.AnnotationsRestApi"));
+            Assert.Equal("AWS::Serverless::Api", templateWriter.GetToken<string>("Resources.AnnotationsRestApi.Type"));
+            Assert.True(templateWriter.Exists("Resources.AnnotationsRestApi.Properties.Auth.Authorizers.LambdaAuthorizer"));
+            Assert.Equal(new List<string> { "MyAuthorizerFunction", "Arn" },
+                templateWriter.GetToken<List<string>>("Resources.AnnotationsRestApi.Properties.Auth.Authorizers.LambdaAuthorizer.FunctionArn.Fn::GetAtt"));
+
+            // Verify protected function references authorizer and shared API
+            const string protectedEventPath = "Resources.GetDataFunction.Properties.Events.RootGet";
+            Assert.Equal("LambdaAuthorizer", templateWriter.GetToken<string>($"{protectedEventPath}.Properties.Auth.Authorizer"));
+            Assert.Equal("AnnotationsRestApi", templateWriter.GetToken<string>($"{protectedEventPath}.Properties.RestApiId.Ref"));
+
+            // Verify public function does NOT reference authorizer but DOES reference the shared API
+            const string publicEventPath = "Resources.HealthFunction.Properties.Events.RootGet";
+            Assert.True(templateWriter.Exists(publicEventPath));
+            Assert.False(templateWriter.Exists($"{publicEventPath}.Properties.Auth"));
+            Assert.Equal("AnnotationsRestApi", templateWriter.GetToken<string>($"{publicEventPath}.Properties.RestApiId.Ref"));
         }
 
         [Theory]

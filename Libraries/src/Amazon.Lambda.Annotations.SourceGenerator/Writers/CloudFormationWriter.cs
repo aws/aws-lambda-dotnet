@@ -245,6 +245,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (!string.IsNullOrEmpty(restApiAttribute.Authorizer) && authorizerLookup.TryGetValue(restApiAttribute.Authorizer, out var authorizer))
             {
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Auth.Authorizer", authorizer.Name);
+            }
+
+            // Always reference the shared API resource if it exists, so all REST API functions share one endpoint
+            if (_templateWriter.Exists($"Resources.{REST_API_RESOURCE_NAME}"))
+            {
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"RestApiId.{REF}", REST_API_RESOURCE_NAME);
             }
 
@@ -274,6 +279,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (!string.IsNullOrEmpty(httpApiAttribute.Authorizer) && authorizerLookup.TryGetValue(httpApiAttribute.Authorizer, out var authorizer))
             {
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Auth.Authorizer", authorizer.Name);
+            }
+
+            // Always reference the shared API resource if it exists, so all HTTP API functions share one endpoint
+            if (_templateWriter.Exists($"Resources.{HTTP_API_RESOURCE_NAME}"))
+            {
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"ApiId.{REF}", HTTP_API_RESOURCE_NAME);
             }
 

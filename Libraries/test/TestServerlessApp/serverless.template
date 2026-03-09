@@ -2,5 +2,9 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
   "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.9.0.0).",
-  "Resources": {}
+  "Resources": {
+    "TestQueue": {
+      "Type": "AWS::SQS::Queue"
+    }
+  }
 }
