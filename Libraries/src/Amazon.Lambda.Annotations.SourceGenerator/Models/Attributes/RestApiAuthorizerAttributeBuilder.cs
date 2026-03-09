@@ -16,15 +16,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
         /// <returns>The populated attribute instance</returns>
         public static RestApiAuthorizerAttribute Build(AttributeData att)
         {
-            var attribute = new RestApiAuthorizerAttribute();
+            // Name is the first constructor argument
+            var name = att.ConstructorArguments.Length > 0
+                ? att.ConstructorArguments[0].Value as string
+                : null;
+
+            var attribute = new RestApiAuthorizerAttribute(name);
 
             foreach (var namedArg in att.NamedArguments)
             {
                 switch (namedArg.Key)
                 {
-                    case nameof(RestApiAuthorizerAttribute.Name):
-                        attribute.Name = namedArg.Value.Value as string;
-                        break;
                     case nameof(RestApiAuthorizerAttribute.IdentityHeader):
                         attribute.IdentityHeader = namedArg.Value.Value as string ?? "Authorization";
                         break;

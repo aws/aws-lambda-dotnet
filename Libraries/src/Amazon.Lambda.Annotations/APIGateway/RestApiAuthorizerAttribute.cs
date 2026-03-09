@@ -31,7 +31,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
     /// <example>
     /// <code>
     /// [LambdaFunction]
-    /// [RestApiAuthorizer(Name = "TokenAuthorizer", Type = RestApiAuthorizerType.Token)]
+    /// [RestApiAuthorizer("TokenAuthorizer", Type = RestApiAuthorizerType.Token)]
     /// public APIGatewayCustomAuthorizerResponse Authorize(APIGatewayCustomAuthorizerRequest request)
     /// {
     ///     var token = request.AuthorizationToken;
@@ -49,6 +49,16 @@ namespace Amazon.Lambda.Annotations.APIGateway
     [AttributeUsage(AttributeTargets.Method)]
     public class RestApiAuthorizerAttribute : Attribute
     {
+        /// <summary>
+        /// Creates a new REST API authorizer attribute with the specified name.
+        /// </summary>
+        /// <param name="name">Unique name to identify this authorizer. Other functions reference this name
+        /// via the <see cref="RestApiAttribute.Authorizer"/> property.</param>
+        public RestApiAuthorizerAttribute(string name)
+        {
+            Name = name;
+        }
+
         /// <summary>
         /// Required. Unique name to identify this authorizer. Other functions reference this name
         /// via the <see cref="RestApiAttribute.Authorizer"/> property.

@@ -15,7 +15,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
     /// <example>
     /// <code>
     /// [LambdaFunction]
-    /// [HttpApiAuthorizer(Name = "MyAuthorizer")]
+    /// [HttpApiAuthorizer("MyAuthorizer")]
     /// public APIGatewayCustomAuthorizerV2SimpleResponse Authorize(APIGatewayCustomAuthorizerV2Request request)
     /// {
     ///     // Validate token and return authorization response
@@ -32,6 +32,16 @@ namespace Amazon.Lambda.Annotations.APIGateway
     [AttributeUsage(AttributeTargets.Method)]
     public class HttpApiAuthorizerAttribute : Attribute
     {
+        /// <summary>
+        /// Creates a new HTTP API authorizer attribute with the specified name.
+        /// </summary>
+        /// <param name="name">Unique name to identify this authorizer. Other functions reference this name
+        /// via the <see cref="HttpApiAttribute.Authorizer"/> property.</param>
+        public HttpApiAuthorizerAttribute(string name)
+        {
+            Name = name;
+        }
+
         /// <summary>
         /// Required. Unique name to identify this authorizer. Other functions reference this name
         /// via the <see cref="HttpApiAttribute.Authorizer"/> property.

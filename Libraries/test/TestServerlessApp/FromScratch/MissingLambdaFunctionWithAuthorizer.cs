@@ -7,8 +7,7 @@ namespace TestServerlessApp.FromScratch
 {
     public class MissingLambdaFunctionWithAuthorizer
     {
-        [HttpApiAuthorizer(
-            Name = "MyAuthorizer",
+        [HttpApiAuthorizer("MyAuthorizer",
             AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2)]
         public APIGatewayCustomAuthorizerV2SimpleResponse Authorize(
             APIGatewayCustomAuthorizerV2Request request,

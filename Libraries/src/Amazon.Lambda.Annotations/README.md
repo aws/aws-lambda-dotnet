@@ -869,7 +869,7 @@ The authorizer function receives an `APIGatewayCustomAuthorizerV2Request` and re
 
 ```csharp
 [LambdaFunction(ResourceName = "HttpApiAuthorizer", PackageType = LambdaPackageType.Image)]
-[HttpApiAuthorizer(Name = "MyHttpAuthorizer")]
+[HttpApiAuthorizer("MyHttpAuthorizer")]
 public APIGatewayCustomAuthorizerV2SimpleResponse AuthorizeHttpApi(
     APIGatewayCustomAuthorizerV2Request request,
     ILambdaContext context)
@@ -945,7 +945,7 @@ REST API authorizers work similarly but use `[RestApiAuthorizer]` and `[RestApi]
 
 ```csharp
 [LambdaFunction(ResourceName = "RestApiAuthorizer", PackageType = LambdaPackageType.Image)]
-[RestApiAuthorizer(Name = "MyRestAuthorizer", Type = RestApiAuthorizerType.Token)]
+[RestApiAuthorizer("MyRestAuthorizer", Type = RestApiAuthorizerType.Token)]
 public APIGatewayCustomAuthorizerResponse AuthorizeRestApi(
     APIGatewayCustomAuthorizerRequest request,
     ILambdaContext context)
@@ -1035,8 +1035,7 @@ public object GetRestProtectedResource(
 
 ```csharp
 [LambdaFunction(ResourceName = "ApiKeyAuthorizer", PackageType = LambdaPackageType.Image)]
-[HttpApiAuthorizer(
-    Name = "ApiKeyAuth",
+[HttpApiAuthorizer("ApiKeyAuth",
     IdentityHeader = "X-Api-Key",
     ResultTtlInSeconds = 300)]
 public APIGatewayCustomAuthorizerV2SimpleResponse ValidateApiKey(
@@ -1104,9 +1103,9 @@ parameter to the `LambdaFunction` must be the event object and the event source 
 * HttpApi
     * Configures the Lambda function to be called from an API Gateway HTTP API. The HTTP method, HTTP API payload version and resource path are required to be set on the attribute. Use the `Authorizer` property to reference an `HttpApiAuthorizer` by name.
 * HttpApiAuthorizer
-    * Marks a Lambda function as an HTTP API (API Gateway V2) custom authorizer. Set the `Name` property to give the authorizer a unique name that can be referenced by `HttpApi.Authorizer`.
+    * Marks a Lambda function as an HTTP API (API Gateway V2) custom authorizer. Pass the authorizer name as the constructor argument to give it a unique name that can be referenced by `HttpApi.Authorizer`.
 * RestApiAuthorizer
-    * Marks a Lambda function as a REST API (API Gateway V1) custom authorizer. Set the `Name` property to give the authorizer a unique name that can be referenced by `RestApi.Authorizer`. Use the `Type` property to choose between `Token` and `Request` authorizer types.
+    * Marks a Lambda function as a REST API (API Gateway V1) custom authorizer. Pass the authorizer name as the constructor argument to give it a unique name that can be referenced by `RestApi.Authorizer`. Use the `Type` property to choose between `Token` and `Request` authorizer types.
 * SQSEvent
     * Sets up event source mapping between the Lambda function and SQS queues. The SQS queue ARN is required to be set on the attribute. If users want to pass a reference to an existing SQS queue resource defined in their CloudFormation template, they can pass the SQS queue resource name prefixed with the '@' symbol. 
 

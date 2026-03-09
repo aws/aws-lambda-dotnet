@@ -16,15 +16,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
         /// <returns>The populated attribute instance</returns>
         public static HttpApiAuthorizerAttribute Build(AttributeData att)
         {
-            var attribute = new HttpApiAuthorizerAttribute();
+            // Name is the first constructor argument
+            var name = att.ConstructorArguments.Length > 0
+                ? att.ConstructorArguments[0].Value as string
+                : null;
+
+            var attribute = new HttpApiAuthorizerAttribute(name);
 
             foreach (var namedArg in att.NamedArguments)
             {
                 switch (namedArg.Key)
                 {
-                    case nameof(HttpApiAuthorizerAttribute.Name):
-                        attribute.Name = namedArg.Value.Value as string;
-                        break;
                     case nameof(HttpApiAuthorizerAttribute.IdentityHeader):
                         attribute.IdentityHeader = namedArg.Value.Value as string ?? "Authorization";
                         break;
