@@ -1777,7 +1777,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     ExpectedDiagnostics =
                     {
                         new DiagnosticResult("AWSLambda0129", DiagnosticSeverity.Error)
-                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}FromScratch{Path.DirectorySeparatorChar}MissingLambdaFunctionWithAuthorizer.cs", 10, 9, 21, 10)
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}FromScratch{Path.DirectorySeparatorChar}MissingLambdaFunctionWithAuthorizer.cs", 10, 9, 20, 10)
                             .WithMessage("Method has [HttpApiAuthorizer] attribute but is missing the required [LambdaFunction] attribute. Add [LambdaFunction] to this method."),
                     },
                 },
