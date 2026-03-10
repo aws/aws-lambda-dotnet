@@ -65,7 +65,8 @@
               "Identity": {
                 "Header": "Authorization"
               },
-              "FunctionPayloadType": "TOKEN"
+              "FunctionPayloadType": "TOKEN",
+              "AuthorizerResultTtlInSeconds": 0
             }
           }
         }

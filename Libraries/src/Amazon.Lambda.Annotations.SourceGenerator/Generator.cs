@@ -407,38 +407,48 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         {
             var isValid = true;
 
-            // Build lookups for authorizers by type
+            // Check for duplicate authorizer names within the same API type BEFORE building dictionaries.
+            // ToDictionary will throw if there are duplicate keys, so duplicates must be detected first.
+            var httpApiAuthorizerDuplicates = annotationReport.Authorizers
+                .Where(a => a.AuthorizerType == AuthorizerType.HttpApi)
+                .GroupBy(a => a.Name)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            foreach (var duplicateName in httpApiAuthorizerDuplicates)
+            {
+                diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.DuplicateAuthorizerName, Location.None, duplicateName));
+                isValid = false;
+            }
+
+            var restApiAuthorizerDuplicates = annotationReport.Authorizers
+                .Where(a => a.AuthorizerType == AuthorizerType.RestApi)
+                .GroupBy(a => a.Name)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            foreach (var duplicateName in restApiAuthorizerDuplicates)
+            {
+                diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.DuplicateAuthorizerName, Location.None, duplicateName));
+                isValid = false;
+            }
+
+            // If duplicates were found, skip building lookups and further validation
+            // since ToDictionary would throw on duplicate keys
+            if (!isValid)
+            {
+                return false;
+            }
+
+            // Build lookups for authorizers by type (safe now that duplicates have been checked)
             var httpApiAuthorizers = annotationReport.Authorizers
                 .Where(a => a.AuthorizerType == AuthorizerType.HttpApi)
                 .ToDictionary(a => a.Name, a => a);
             var restApiAuthorizers = annotationReport.Authorizers
                 .Where(a => a.AuthorizerType == AuthorizerType.RestApi)
                 .ToDictionary(a => a.Name, a => a);
-
-            // Check for duplicate authorizer names within the same API type
-            var httpApiAuthorizerNames = annotationReport.Authorizers
-                .Where(a => a.AuthorizerType == AuthorizerType.HttpApi)
-                .GroupBy(a => a.Name)
-                .Where(g => g.Count() > 1)
-                .Select(g => g.Key);
-
-            foreach (var duplicateName in httpApiAuthorizerNames)
-            {
-                diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.DuplicateAuthorizerName, Location.None, duplicateName));
-                isValid = false;
-            }
-
-            var restApiAuthorizerNames = annotationReport.Authorizers
-                .Where(a => a.AuthorizerType == AuthorizerType.RestApi)
-                .GroupBy(a => a.Name)
-                .Where(g => g.Count() > 1)
-                .Select(g => g.Key);
-
-            foreach (var duplicateName in restApiAuthorizerNames)
-            {
-                diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.DuplicateAuthorizerName, Location.None, duplicateName));
-                isValid = false;
-            }
 
             // Validate authorizer references in functions
             foreach (var function in annotationReport.LambdaFunctions)

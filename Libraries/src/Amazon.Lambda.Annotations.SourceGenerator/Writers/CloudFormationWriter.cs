@@ -241,7 +241,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             // Set Auth configuration if authorizer is specified
             // Use the authorizer name directly (not a CloudFormation Ref) since authorizers are defined inline in the API
-            // Also set RestApiId to link to our explicit ServerlessRestApi resource where the authorizer is defined
+            // Also set RestApiId to link to our explicit AnnotationsRestApi resource where the authorizer is defined
             if (!string.IsNullOrEmpty(restApiAttribute.Authorizer) && authorizerLookup.TryGetValue(restApiAttribute.Authorizer, out var authorizer))
             {
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Auth.Authorizer", authorizer.Name);
@@ -275,7 +275,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             // Set Auth configuration if authorizer is specified
             // Use the authorizer name directly (not a CloudFormation Ref) since authorizers are defined inline in the API
-            // Also set ApiId to link to our explicit ServerlessHttpApi resource where the authorizer is defined
+            // Also set ApiId to link to our explicit AnnotationsHttpApi resource where the authorizer is defined
             if (!string.IsNullOrEmpty(httpApiAttribute.Authorizer) && authorizerLookup.TryGetValue(httpApiAttribute.Authorizer, out var authorizer))
             {
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Auth.Authorizer", authorizer.Name);
@@ -396,17 +396,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     _templateWriter.SetToken($"{authorizerPath}.FunctionPayloadType", "REQUEST");
                 }
 
-                // AuthorizerResultTtlInSeconds - cache TTL for authorizer result (only when valid)
-                // API Gateway REST Lambda authorizer TTL must be between 1 and 3600 seconds.
-                var resultTtlInSeconds = authorizer.ResultTtlInSeconds;
-                const int minTtlInSeconds = 1;
-                const int maxTtlInSeconds = 3600;
-
-                if (resultTtlInSeconds >= minTtlInSeconds &&
-                    resultTtlInSeconds <= maxTtlInSeconds)
-                {
-                    _templateWriter.SetToken($"{authorizerPath}.AuthorizerResultTtlInSeconds", resultTtlInSeconds);
-                }
+                // AuthorizerResultTtlInSeconds - always write this value so SAM does not apply its default TTL.
+                // A value of 0 disables caching, which matches the attribute default.
+                // API Gateway REST Lambda authorizer TTL must be between 0 and 3600 seconds.
+                _templateWriter.SetToken($"{authorizerPath}.AuthorizerResultTtlInSeconds", authorizer.ResultTtlInSeconds);
             }
         }
 

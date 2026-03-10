@@ -67,6 +67,8 @@ namespace TestServerlessApp.IntegrationTests
             var httpApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "ServerlessHttpApi");
             var restApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "ServerlessRestApi");
             Console.WriteLine($"[IntegrationTest] ServerlessHttpApi: {httpApiId}, ServerlessRestApi: {restApiId}");
+            Assert.False(string.IsNullOrEmpty(httpApiId), $"CloudFormation resource 'ServerlessHttpApi' was not found or has an empty physical ID for stack '{_stackName}'.");
+            Assert.False(string.IsNullOrEmpty(restApiId), $"CloudFormation resource 'ServerlessRestApi' was not found or has an empty physical ID for stack '{_stackName}'.");
             HttpApiUrlPrefix = $"https://{httpApiId}.execute-api.{region}.amazonaws.com";
             RestApiUrlPrefix = $"https://{restApiId}.execute-api.{region}.amazonaws.com/Prod";
 
@@ -140,6 +142,11 @@ namespace TestServerlessApp.IntegrationTests
         /// </summary>
         private static string ConvertSqsUrlToArn(string queueUrl)
         {
+            if (string.IsNullOrEmpty(queueUrl))
+            {
+                throw new ArgumentException("Queue URL cannot be null or empty. Ensure the CloudFormation resource exists and has a valid physical ID.", nameof(queueUrl));
+            }
+
             // SQS URL format: https://sqs.{region}.amazonaws.com/{account-id}/{queue-name}
             var uri = new Uri(queueUrl);
             var host = uri.Host; // sqs.us-west-2.amazonaws.com

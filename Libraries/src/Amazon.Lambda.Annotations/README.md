@@ -1018,7 +1018,7 @@ public object GetRestProtectedResource(
 |---|---|---|---|
 | `IdentityHeader` | `string` | `"Authorization"` | Header used as the identity source. Translated to `$request.header.{value}` in CloudFormation. |
 | `EnableSimpleResponses` | `bool` | `true` | When `true`, use simple responses (`IsAuthorized: true/false`). When `false`, use IAM policy responses. |
-| `PayloadFormatVersion` | `string` | `"2.0"` | Authorizer payload format version. Valid values: `"1.0"` or `"2.0"`. |
+| `AuthorizerPayloadFormatVersion` | `AuthorizerPayloadFormatVersion` | `V2` | Authorizer payload format version. Valid values: `V1` (`"1.0"`) or `V2` (`"2.0"`). |
 | `ResultTtlInSeconds` | `int` | `0` | TTL in seconds for caching authorizer results. `0` = no caching. Max = `3600`. |
 
 **`RestApiAuthorizerAttribute`** properties:
@@ -1059,7 +1059,7 @@ public APIGatewayCustomAuthorizerV2SimpleResponse ValidateApiKey(
 }
 
 [LambdaFunction(ResourceName = "ApiKeyProtectedFunction", PackageType = LambdaPackageType.Image)]
-[HttpApi(LambdaHttpMethod.Get, "/api/external", Authorizer = "ApiKeyAuth")]
+[HttpApi(LambdaHttpMethod.Get, "/api/external", Authorizer = nameof(ValidateApiKey))]
 public object ExternalEndpoint(
     [FromCustomAuthorizer(Name = "clientId")] string clientId,
     [FromCustomAuthorizer(Name = "tier")] string tier)

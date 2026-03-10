@@ -166,7 +166,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly DiagnosticDescriptor HttpApiAuthorizerNotFound = new DiagnosticDescriptor(
             id: "AWSLambda0121",
             title: "HTTP API Authorizer Not Found",
-            messageFormat: "Authorizer '{0}' referenced in [HttpApi] attribute does not exist. Add [HttpApiAuthorizer(Name = \"{0}\")] to an authorizer function.",
+            messageFormat: "Authorizer '{0}' referenced in [HttpApi] attribute does not exist. Add [HttpApiAuthorizer] to an authorizer Lambda function method named '{0}', or reference it using nameof().",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -174,7 +174,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
         public static readonly DiagnosticDescriptor RestApiAuthorizerNotFound = new DiagnosticDescriptor(
             id: "AWSLambda0122",
             title: "REST API Authorizer Not Found",
-            messageFormat: "Authorizer '{0}' referenced in [RestApi] attribute does not exist. Add [RestApiAuthorizer(Name = \"{0}\")] to an authorizer function.",
+            messageFormat: "Authorizer '{0}' referenced in [RestApi] attribute does not exist. Add [RestApiAuthorizer] to an authorizer Lambda function method named '{0}', or reference it using nameof().",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
