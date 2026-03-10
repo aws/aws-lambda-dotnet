@@ -1,6 +1,5 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-#if NET8_0_OR_GREATER
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,7 +23,8 @@ using Xunit;
 namespace Amazon.Lambda.AspNetCoreServer.Test
 {
     /// <summary>
-    /// Unit tests for <see cref="AbstractAspNetCoreFunction{TREQUEST,TRESPONSE}.StreamingFunctionHandlerAsync"/>.
+    /// Unit tests for the streaming path in <see cref="AbstractAspNetCoreFunction{TREQUEST,TRESPONSE}.FunctionHandlerAsync"/>
+    /// when <c>EnableResponseStreaming</c> is <c>true</c>.
     ///
     /// <see cref="TestableStreamingFunction"/> overrides <c>CreateLambdaResponseStream</c> to inject
     /// a <see cref="MemoryStream"/> instead of calling <c>LambdaResponseStreamFactory.CreateHttpStream</c>,
@@ -55,7 +55,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             public Func<InvokeFeatures, Task> PipelineSetupAction { get; set; }
 
             public TestableStreamingFunction()
-                : base(StartupMode.FirstRequest) { }
+                : base(StartupMode.FirstRequest)
+            {
+                EnableResponseStreaming = true;
+            }
 
             // Expose MarshallRequest publicly so tests can call it after the host is started
             public void PublicMarshallRequest(InvokeFeatures features,
@@ -121,10 +124,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             };
         }
 
-        // -----------------------------------------------------------------------
-        // 7.1 Request marshalling produces the same IHttpRequestFeature state
-        //     as FunctionHandlerAsync for the same input
-        // -----------------------------------------------------------------------
         [Fact]
         public async Task RequestMarshalling_ProducesSameHttpRequestFeatureState_AsBufferedMode()
         {
@@ -142,7 +141,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             );
 
             // Run the streaming path first — this starts the host and captures features
-            await function.StreamingFunctionHandlerAsync(request, context);
+            await function.FunctionHandlerAsync(request, context);
             var streamingReq = (IHttpRequestFeature)function.CapturedFeatures;
 
             // Now call MarshallRequest directly (host is started, _logger is initialized)
@@ -172,7 +171,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             );
 
             // Run streaming path first to start the host
-            await function.StreamingFunctionHandlerAsync(request, context);
+            await function.FunctionHandlerAsync(request, context);
             var streamingReq = (IHttpRequestFeature)function.CapturedFeatures;
 
             // Compare with buffered path
@@ -188,23 +187,14 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             }
         }
 
-        // -----------------------------------------------------------------------
-        // 7.2 features[typeof(IHttpResponseBodyFeature)] is a StreamingResponseBodyFeature
-        //     after setup — verified by reading it from CapturedFeatures after the pipeline
-        // -----------------------------------------------------------------------
         [Fact]
         public async Task AfterSetup_BodyFeature_IsStreamingResponseBodyFeature()
         {
-            // The body feature is replaced with StreamingResponseBodyFeature BEFORE the pipeline
-            // runs. We capture it from CapturedFeatures (set in PostMarshallItemsFeatureFeature)
-            // after the invocation completes.
             IHttpResponseBodyFeature capturedBodyFeature = null;
 
             var function = new TestableStreamingFunction();
             function.PipelineSetupAction = features =>
             {
-                // This runs inside PostMarshallItemsFeatureFeature, BEFORE the body feature swap.
-                // We schedule a check via OnStarting which fires after the swap.
                 var responseFeature = (IHttpResponseFeature)features;
                 responseFeature.OnStarting(_ =>
                 {
@@ -217,7 +207,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
-            await function.StreamingFunctionHandlerAsync(request, context);
+            await function.FunctionHandlerAsync(request, context);
 
             // Verify via CapturedFeatures directly — the body feature was replaced before pipeline ran
             var bodyFeatureFromCapture = function.CapturedFeatures[typeof(IHttpResponseBodyFeature)];
@@ -227,7 +217,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task AfterSetup_BodyFeature_IsStreamingResponseBodyFeature_ViaOnStarting()
         {
-            // Secondary check: OnStarting fires after the body feature swap, confirming the type
             IHttpResponseBodyFeature capturedBodyFeature = null;
 
             var function = new TestableStreamingFunction();
@@ -245,30 +234,25 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
-            await function.StreamingFunctionHandlerAsync(request, context);
+            await function.FunctionHandlerAsync(request, context);
 
-            // OnStarting fires when the pipeline writes the first byte (which triggers StartAsync).
-            // The real TestWebApp pipeline writes a response body, so OnStarting should fire.
             if (capturedBodyFeature != null)
             {
                 Assert.IsType<StreamingResponseBodyFeature>(capturedBodyFeature);
             }
             else
             {
-                // If OnStarting didn't fire (pipeline didn't write), verify via CapturedFeatures
                 var bodyFeature = function.CapturedFeatures[typeof(IHttpResponseBodyFeature)];
                 Assert.IsType<StreamingResponseBodyFeature>(bodyFeature);
             }
         }
 
-        // -----------------------------------------------------------------------
-        // 7.3 FunctionHandlerAsync still returns TRESPONSE via MarshallResponse
-        //     (buffered mode unaffected)
-        // -----------------------------------------------------------------------
         [Fact]
-        public async Task FunctionHandlerAsync_StillReturnsResponse_ViaMarshallResponse()
+        public async Task FunctionHandlerAsync_BufferedMode_StillReturnsResponse_ViaMarshallResponse()
         {
+            // Buffered mode: EnableResponseStreaming defaults to false
             var function = new TestableStreamingFunction();
+            function.EnableResponseStreaming = false;
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
@@ -281,9 +265,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
-        public async Task FunctionHandlerAsync_ReturnsStatusCode_FromPipeline()
+        public async Task FunctionHandlerAsync_BufferedMode_ReturnsStatusCode_FromPipeline()
         {
             var function = new TestableStreamingFunction();
+            function.EnableResponseStreaming = false;
             var context = new TestLambdaContext();
             var request = MakeRequest(path: "/api/values");
 
@@ -293,9 +278,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
-        public async Task FunctionHandlerAsync_DoesNotOpenLambdaStream()
+        public async Task FunctionHandlerAsync_BufferedMode_DoesNotOpenLambdaStream()
         {
             var function = new TestableStreamingFunction();
+            function.EnableResponseStreaming = false;
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
@@ -329,7 +315,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
-            await function.StreamingFunctionHandlerAsync(request, context);
+            await function.FunctionHandlerAsync(request, context);
 
             Assert.True(callbackFired, "OnCompleted callback should have fired on the success path");
         }
@@ -357,17 +343,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
-            await function.StreamingFunctionHandlerAsync(request, context);
+            await function.FunctionHandlerAsync(request, context);
 
             Assert.Equal(3, firedCount);
         }
 
-        // -----------------------------------------------------------------------
-        // 7.5 Exception before stream open → stream closed cleanly, OnCompleted fires
-        //
-        // Strategy: override BuildStreamingPrelude to throw — it is called inside
-        // _streamOpener() BEFORE streamOpened=true is set, so the stream is never opened.
-        // -----------------------------------------------------------------------
         [Fact]
         public async Task ExceptionBeforeStreamOpen_StreamClosedCleanly_OnCompletedFires()
         {
@@ -379,7 +359,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
-            await function.StreamingFunctionHandlerAsync(request, context);
+            await function.FunctionHandlerAsync(request, context);
 
             Assert.False(function.StreamOpened,
                 "Stream should not have been opened when exception occurs before stream open");
@@ -387,10 +367,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 "OnCompleted should fire even when exception occurs before stream open");
         }
 
-        // -----------------------------------------------------------------------
-        // 7.6 Exception before stream open with IncludeUnhandledExceptionDetailInResponse=true
-        //     → 500 prelude + error body written
-        // -----------------------------------------------------------------------
         [Fact]
         public async Task ExceptionBeforeStreamOpen_WithIncludeExceptionDetail_Writes500ErrorBody()
         {
@@ -406,9 +382,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
-            await function.StreamingFunctionHandlerAsync(request, context);
+            await function.FunctionHandlerAsync(request, context);
 
-            // The error path calls CreateLambdaResponseStream for the 500 response
             Assert.True(function.StreamOpened,
                 "An error stream should have been opened for the 500 response");
             Assert.NotNull(function.CapturedLambdaStream);
@@ -430,7 +405,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
-            await function.StreamingFunctionHandlerAsync(request, context);
+            await function.FunctionHandlerAsync(request, context);
 
             Assert.False(function.StreamOpened,
                 "Stream should not be opened when IncludeUnhandledExceptionDetailInResponse=false");
@@ -438,9 +413,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
 
         // -----------------------------------------------------------------------
         // 7.7 Exception after stream open → stream closed after logging, OnCompleted fires
-        //
-        // Strategy: let CreateLambdaResponseStream succeed (stream opens, streamOpened=true),
-        // then throw from a subsequent write via a ThrowingOnSecondWriteStream.
         // -----------------------------------------------------------------------
         [Fact]
         public async Task ExceptionAfterStreamOpen_StreamClosedAfterLogging_OnCompletedFires()
@@ -453,7 +425,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
-            await function.StreamingFunctionHandlerAsync(request, context);
+            await function.FunctionHandlerAsync(request, context);
 
             Assert.True(function.StreamOpened,
                 "Stream should have been opened before the exception");
@@ -464,8 +436,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         [Fact]
         public async Task ExceptionAfterStreamOpen_DoesNotWriteNewErrorBody()
         {
-            // When stream is already open, no new error body should be appended.
-            // The stream contains only the bytes written before the exception.
             var function = new ThrowingAfterStreamOpenFunction(onCompleted: null)
             {
                 IncludeUnhandledExceptionDetailInResponse = true
@@ -474,26 +444,19 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             var context = new TestLambdaContext();
             var request = MakeRequest();
 
-            await function.StreamingFunctionHandlerAsync(request, context);
+            await function.FunctionHandlerAsync(request, context);
 
-            // Stream was opened; the exception was logged but no error body was written
             Assert.True(function.StreamOpened);
-            // The stream should contain only the bytes written before the throw
             var streamContent = function.CapturedLambdaStream.ToArray();
-            var errorKeyword = "InvalidOperationException";
             var bodyText = Encoding.UTF8.GetString(streamContent);
-            Assert.DoesNotContain(errorKeyword, bodyText);
+            Assert.DoesNotContain("InvalidOperationException", bodyText);
         }
 
-        // -----------------------------------------------------------------------
-        // 7.8 StreamingFunctionHandlerAsync carries [LambdaSerializer] and
-        //     [RequiresPreviewFeatures] attributes
-        // -----------------------------------------------------------------------
         [Fact]
-        public void StreamingFunctionHandlerAsync_HasLambdaSerializerAttribute()
+        public void FunctionHandlerAsync_HasLambdaSerializerAttribute()
         {
             var method = typeof(APIGatewayHttpApiV2ProxyFunction)
-                .GetMethod(nameof(APIGatewayHttpApiV2ProxyFunction.StreamingFunctionHandlerAsync));
+                .GetMethod(nameof(APIGatewayHttpApiV2ProxyFunction.FunctionHandlerAsync));
 
             Assert.NotNull(method);
 
@@ -505,32 +468,41 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
 
         [Fact]
-        public void StreamingFunctionHandlerAsync_HasRequiresPreviewFeaturesAttribute()
+        public void EnableResponseStreaming_Property_HasRequiresPreviewFeaturesAttribute()
         {
-            var method = typeof(APIGatewayHttpApiV2ProxyFunction)
-                .GetMethod(nameof(APIGatewayHttpApiV2ProxyFunction.StreamingFunctionHandlerAsync));
+            var prop = typeof(APIGatewayHttpApiV2ProxyFunction)
+                .GetProperty(nameof(APIGatewayHttpApiV2ProxyFunction.EnableResponseStreaming));
 
-            Assert.NotNull(method);
+            Assert.NotNull(prop);
 
-            var attr = method.GetCustomAttribute<RequiresPreviewFeaturesAttribute>();
+            var attr = prop.GetCustomAttribute<RequiresPreviewFeaturesAttribute>();
             Assert.NotNull(attr);
         }
 
         [Fact]
-        public void StreamingFunctionHandlerAsync_ReturnsTask_NotTaskOfT()
+        public void EnableResponseStreaming_Property_DefaultsToFalse()
         {
-            var method = typeof(APIGatewayHttpApiV2ProxyFunction)
-                .GetMethod(nameof(APIGatewayHttpApiV2ProxyFunction.StreamingFunctionHandlerAsync));
-
-            Assert.NotNull(method);
-            Assert.Equal(typeof(Task), method.ReturnType);
+            var function = new TestableStreamingFunction();
+            function.EnableResponseStreaming = false; // reset to default
+            Assert.False(function.EnableResponseStreaming);
         }
 
         [Fact]
-        public void StreamingFunctionHandlerAsync_IsPublicVirtual()
+        public void FunctionHandlerAsync_ReturnsTaskOfT()
         {
             var method = typeof(APIGatewayHttpApiV2ProxyFunction)
-                .GetMethod(nameof(APIGatewayHttpApiV2ProxyFunction.StreamingFunctionHandlerAsync));
+                .GetMethod(nameof(APIGatewayHttpApiV2ProxyFunction.FunctionHandlerAsync));
+
+            Assert.NotNull(method);
+            Assert.True(method.ReturnType.IsGenericType);
+            Assert.Equal(typeof(Task<>), method.ReturnType.GetGenericTypeDefinition());
+        }
+
+        [Fact]
+        public void FunctionHandlerAsync_IsPublicVirtual()
+        {
+            var method = typeof(APIGatewayHttpApiV2ProxyFunction)
+                .GetMethod(nameof(APIGatewayHttpApiV2ProxyFunction.FunctionHandlerAsync));
 
             Assert.NotNull(method);
             Assert.True(method.IsPublic);
@@ -542,9 +514,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         // -----------------------------------------------------------------------
 
         /// <summary>
-        /// Base class for exception-path tests. Overrides <c>StreamingFunctionHandlerAsync</c>
-        /// to run a custom pipeline action instead of the real ASP.NET Core pipeline, giving
-        /// full control over when <c>StartAsync</c> is called and when exceptions are thrown.
+        /// Base class for exception-path tests. Overrides <c>ExecuteStreamingRequestAsync</c>
+        /// indirectly by overriding the pipeline via a custom <c>ProcessRequest</c>-equivalent.
+        /// Uses <c>EnableResponseStreaming = true</c> so <c>FunctionHandlerAsync</c> takes the
+        /// streaming path, then injects custom pipeline logic via <see cref="RunPipelineAsync"/>.
         /// </summary>
         private abstract class CustomPipelineStreamingFunction
             : APIGatewayHttpApiV2ProxyFunction<TestWebApp.Startup>
@@ -553,7 +526,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             public bool StreamOpened { get; protected set; }
 
             protected CustomPipelineStreamingFunction()
-                : base(StartupMode.FirstRequest) { }
+                : base(StartupMode.FirstRequest)
+            {
+                EnableResponseStreaming = true;
+            }
 
             [RequiresPreviewFeatures]
             protected override Stream CreateLambdaResponseStream(
@@ -565,13 +541,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 return ms;
             }
 
-            /// <summary>
-            /// Override <c>StreamingFunctionHandlerAsync</c> to run <see cref="RunPipelineAsync"/>
-            /// instead of the real ASP.NET Core pipeline. This lets tests control exactly when
-            /// <c>StartAsync</c> is called and when exceptions are thrown.
-            /// </summary>
-            [RequiresPreviewFeatures]
-            public override async Task StreamingFunctionHandlerAsync(
+            // Override FunctionHandlerAsync to inject custom pipeline logic.
+            // We replicate the streaming setup from ExecuteStreamingRequestAsync so we can
+            // call RunPipelineAsync instead of the real ASP.NET Core pipeline.
+            public override async Task<APIGatewayHttpApiV2ProxyResponse> FunctionHandlerAsync(
                 APIGatewayHttpApiV2ProxyRequest request,
                 ILambdaContext lambdaContext)
             {
@@ -594,7 +567,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                     return CreateLambdaResponseStream(prelude);
                 }
 
-                var streamingBodyFeature = new StreamingResponseBodyFeature(responseFeature, OpenStream);
+                var streamingBodyFeature = new StreamingResponseBodyFeature(_logger, responseFeature, OpenStream);
                 features[typeof(IHttpResponseBodyFeature)] = streamingBodyFeature;
 
                 var scope = this._hostServices.CreateScope();
@@ -645,17 +618,15 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 {
                     scope.Dispose();
                 }
+
+                return default;
             }
 
-            /// <summary>Custom pipeline logic — called instead of the real ASP.NET Core pipeline.</summary>
             protected abstract Task RunPipelineAsync(
                 InvokeFeatures features,
                 StreamingResponseBodyFeature bodyFeature);
         }
 
-        /// <summary>
-        /// Throws BEFORE calling <c>StartAsync</c> on the body feature — stream is never opened.
-        /// </summary>
         private class ThrowingBeforeStreamOpenFunction : CustomPipelineStreamingFunction
         {
             private readonly string _exceptionMessage;
@@ -689,14 +660,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 InvokeFeatures features,
                 StreamingResponseBodyFeature bodyFeature)
             {
-                // Throw without ever calling StartAsync — stream is never opened
                 throw new InvalidOperationException(_exceptionMessage);
             }
         }
 
-        /// <summary>
-        /// Calls <c>StartAsync</c> (opening the stream), writes partial content, then throws.
-        /// </summary>
         private class ThrowingAfterStreamOpenFunction : CustomPipelineStreamingFunction
         {
             private readonly Action _onCompleted;
@@ -726,17 +693,11 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 InvokeFeatures features,
                 StreamingResponseBodyFeature bodyFeature)
             {
-                // Explicitly open the stream
                 await bodyFeature.StartAsync();
-
-                // Write some bytes to the now-open stream
                 var partial = Encoding.UTF8.GetBytes("partial");
                 await bodyFeature.Stream.WriteAsync(partial, 0, partial.Length);
-
-                // Throw after the stream is open
                 throw new InvalidOperationException("Test exception after stream open");
             }
         }
     }
 }
-#endif

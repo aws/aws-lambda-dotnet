@@ -1,6 +1,5 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-#if NET8_0_OR_GREATER
 using System;
 using System.IO;
 using System.IO.Pipelines;
@@ -35,7 +34,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         private Stream _lambdaStream;         // null until StartAsync completes
         private MemoryStream _preStartBuffer; // accumulates bytes written before StartAsync
         private bool _started;
-        private PipeWriter _pipeWriter;
+        private PipeWriter _pipeWriter;       // lazily created; always wraps the live Stream
 
         /// <summary>
         /// Initializes a new instance of <see cref="StreamingResponseBodyFeature"/>.
@@ -59,6 +58,14 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             _streamOpener = streamOpener ?? throw new ArgumentNullException(nameof(streamOpener));
         }
 
+        /// <summary>
+        /// Initializes a new instance without a logger (for use in tests).
+        /// </summary>
+        internal StreamingResponseBodyFeature(
+            IHttpResponseFeature responseFeature,
+            Func<Task<Stream>> streamOpener)
+            : this(null, responseFeature, streamOpener) { }
+
         /// <inheritdoc />
         /// <remarks>
         /// Returns the <see cref="LambdaResponseStream"/> once <see cref="StartAsync"/> has been
@@ -68,8 +75,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         public Stream Stream => _lambdaStream ?? (_preStartBuffer ??= new MemoryStream());
 
         /// <inheritdoc />
-        /// <remarks>Lazily created; wraps <see cref="Stream"/>.</remarks>
-        public PipeWriter Writer => _pipeWriter ??= PipeWriter.Create(Stream);
+        /// <remarks>
+        /// Returns a <see cref="PipeWriter"/> that calls <see cref="StartAsync"/> on first
+        /// flush/write so that the Lambda stream is opened (and the HTTP prelude is sent)
+        /// as soon as the application first flushes, rather than waiting until the end.
+        /// </remarks>
+        public PipeWriter Writer => _pipeWriter ??= new StartOnFlushPipeWriter(this);
 
         /// <inheritdoc />
         /// <remarks>
@@ -79,7 +90,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         /// </remarks>
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation("Starting response streaming");
+            _logger?.LogInformation("Starting response streaming");
 
             if (_started) return;
             _started = true;
@@ -158,6 +169,70 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 await Utilities.CopyToAsync(fileStream, _lambdaStream, count, bufferSize, cancellationToken);
             }
         }
+
+        // -----------------------------------------------------------------------
+        // StartOnFlushPipeWriter
+        //
+        // A PipeWriter wrapper that ensures StartAsync is called (opening the Lambda
+        // stream and sending the HTTP prelude) the first time the application flushes
+        // or completes the writer — not just at the very end of the request.
+        //
+        // The inner PipeWriter is created lazily against the *live* Stream property
+        // so it always targets the correct underlying stream (Lambda stream after
+        // StartAsync, pre-start buffer before).
+        // -----------------------------------------------------------------------
+        private sealed class StartOnFlushPipeWriter : PipeWriter
+        {
+            private readonly StreamingResponseBodyFeature _feature;
+            private PipeWriter _inner;
+
+            // The inner writer must be recreated after StartAsync because Stream
+            // switches from _preStartBuffer to _lambdaStream at that point.
+            private PipeWriter Inner => _inner ??= PipeWriter.Create(_feature.Stream);
+
+            public StartOnFlushPipeWriter(StreamingResponseBodyFeature feature)
+            {
+                _feature = feature;
+            }
+
+            public override void Advance(int bytes) => Inner.Advance(bytes);
+
+            public override Memory<byte> GetMemory(int sizeHint = 0) => Inner.GetMemory(sizeHint);
+
+            public override Span<byte> GetSpan(int sizeHint = 0) => Inner.GetSpan(sizeHint);
+
+            public override async ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
+            {
+                if (!_feature._started)
+                {
+                    // Flush buffered bytes into the pre-start buffer first, then open the stream.
+                    await Inner.FlushAsync(cancellationToken);
+                    // Recreate inner writer against the Lambda stream after StartAsync.
+                    _inner = null;
+                    await _feature.StartAsync(cancellationToken);
+                    // Inner now wraps _lambdaStream; nothing extra to flush (StartAsync already
+                    // copied the pre-start buffer across).
+                    return new FlushResult(isCanceled: false, isCompleted: false);
+                }
+
+                return await Inner.FlushAsync(cancellationToken);
+            }
+
+            public override async ValueTask CompleteAsync(Exception exception = null)
+            {
+                if (!_feature._started)
+                {
+                    await Inner.FlushAsync();
+                    _inner = null;
+                    await _feature.StartAsync();
+                }
+                await Inner.CompleteAsync(exception);
+            }
+
+            // Complete (sync) — delegate
+            public override void Complete(Exception exception = null) => Inner.Complete(exception);
+
+            public override void CancelPendingFlush() => Inner.CancelPendingFlush();
+        }
     }
 }
-#endif

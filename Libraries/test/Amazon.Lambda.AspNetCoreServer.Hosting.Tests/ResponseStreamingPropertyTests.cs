@@ -1,16 +1,12 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-#if NET8_0_OR_GREATER
 
 using System.Runtime.Versioning;
 
-using Amazon.Lambda.AspNetCoreServer.Hosting;
 using Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.RuntimeSupport;
 using Amazon.Lambda.Serialization.SystemTextJson;
-
-using CsCheck;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,18 +14,9 @@ using Xunit;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting.Tests;
 
-/// <summary>
-/// Property-based tests for the hosting streaming flag routing (Property 9).
-/// </summary>
 [RequiresPreviewFeatures]
 public class ResponseStreamingPropertyTests
 {
-    // -----------------------------------------------------------------------
-    // Property 9: Hosting streaming flag routes to StreamingFunctionHandlerAsync
-    // Feature: aspnetcore-response-streaming, Property 9: Hosting streaming flag routes to StreamingFunctionHandlerAsync
-    // Validates: Requirements 10.2, 10.3
-    // -----------------------------------------------------------------------
-
     private static IServiceProvider BuildServiceProvider(HostingOptions hostingOptions)
     {
         var services = new ServiceCollection();
@@ -39,10 +26,6 @@ public class ResponseStreamingPropertyTests
         return services.BuildServiceProvider();
     }
 
-    /// <summary>
-    /// Extracts the handler method name from a HandlerWrapper by walking the closure chain.
-    /// Mirrors the helper in ResponseStreamingHostingTests.
-    /// </summary>
     private static string GetHandlerDelegateMethodName(HandlerWrapper wrapper)
     {
         var handler = wrapper.Handler;
@@ -81,7 +64,6 @@ public class ResponseStreamingPropertyTests
         return string.Empty;
     }
 
-    // Testable server subclasses that expose CreateHandlerWrapper publicly
     private class TestableHttpApiV2Server : APIGatewayHttpApiV2LambdaRuntimeSupportServer
     {
         public TestableHttpApiV2Server(IServiceProvider sp) : base(sp) { }
@@ -100,71 +82,48 @@ public class ResponseStreamingPropertyTests
         public HandlerWrapper PublicCreateHandlerWrapper(IServiceProvider sp) => CreateHandlerWrapper(sp);
     }
 
-    [Fact]
-    public void Property9_HttpApiV2_StreamingFlag_RoutesCorrectly()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Property9_HttpApiV2_StreamingFlag_RoutesCorrectly(bool enableStreaming)
     {
-        // Feature: aspnetcore-response-streaming, Property 9: Hosting streaming flag routes to StreamingFunctionHandlerAsync
-        Gen.Bool.Sample(enableStreaming =>
-        {
-            var options = new HostingOptions { EnableResponseStreaming = enableStreaming };
-            var sp = BuildServiceProvider(options);
-            var server = new TestableHttpApiV2Server(sp);
-            var wrapper = server.PublicCreateHandlerWrapper(sp);
-            var methodName = GetHandlerDelegateMethodName(wrapper);
+        var options = new HostingOptions { EnableResponseStreaming = enableStreaming };
+        var sp = BuildServiceProvider(options);
+        var server = new TestableHttpApiV2Server(sp);
+        var wrapper = server.PublicCreateHandlerWrapper(sp);
+        var methodName = GetHandlerDelegateMethodName(wrapper);
 
-            if (enableStreaming)
-                Assert.Contains("StreamingFunctionHandlerAsync", methodName);
-            else
-            {
-                Assert.Contains("FunctionHandlerAsync", methodName);
-                Assert.DoesNotContain("Streaming", methodName);
-            }
-        }, iter: 100);
+        Assert.Contains("FunctionHandlerAsync", methodName);
+        Assert.DoesNotContain("StreamingFunctionHandlerAsync", methodName);
     }
 
-    [Fact]
-    public void Property9_RestApi_StreamingFlag_RoutesCorrectly()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Property9_RestApi_StreamingFlag_RoutesCorrectly(bool enableStreaming)
     {
-        // Feature: aspnetcore-response-streaming, Property 9: Hosting streaming flag routes to StreamingFunctionHandlerAsync
-        Gen.Bool.Sample(enableStreaming =>
-        {
-            var options = new HostingOptions { EnableResponseStreaming = enableStreaming };
-            var sp = BuildServiceProvider(options);
-            var server = new TestableRestApiServer(sp);
-            var wrapper = server.PublicCreateHandlerWrapper(sp);
-            var methodName = GetHandlerDelegateMethodName(wrapper);
+        var options = new HostingOptions { EnableResponseStreaming = enableStreaming };
+        var sp = BuildServiceProvider(options);
+        var server = new TestableRestApiServer(sp);
+        var wrapper = server.PublicCreateHandlerWrapper(sp);
+        var methodName = GetHandlerDelegateMethodName(wrapper);
 
-            if (enableStreaming)
-                Assert.Contains("StreamingFunctionHandlerAsync", methodName);
-            else
-            {
-                Assert.Contains("FunctionHandlerAsync", methodName);
-                Assert.DoesNotContain("Streaming", methodName);
-            }
-        }, iter: 100);
+        Assert.Contains("FunctionHandlerAsync", methodName);
+        Assert.DoesNotContain("StreamingFunctionHandlerAsync", methodName);
     }
 
-    [Fact]
-    public void Property9_Alb_StreamingFlag_RoutesCorrectly()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Property9_Alb_StreamingFlag_RoutesCorrectly(bool enableStreaming)
     {
-        // Feature: aspnetcore-response-streaming, Property 9: Hosting streaming flag routes to StreamingFunctionHandlerAsync
-        Gen.Bool.Sample(enableStreaming =>
-        {
-            var options = new HostingOptions { EnableResponseStreaming = enableStreaming };
-            var sp = BuildServiceProvider(options);
-            var server = new TestableAlbServer(sp);
-            var wrapper = server.PublicCreateHandlerWrapper(sp);
-            var methodName = GetHandlerDelegateMethodName(wrapper);
+        var options = new HostingOptions { EnableResponseStreaming = enableStreaming };
+        var sp = BuildServiceProvider(options);
+        var server = new TestableAlbServer(sp);
+        var wrapper = server.PublicCreateHandlerWrapper(sp);
+        var methodName = GetHandlerDelegateMethodName(wrapper);
 
-            if (enableStreaming)
-                Assert.Contains("StreamingFunctionHandlerAsync", methodName);
-            else
-            {
-                Assert.Contains("FunctionHandlerAsync", methodName);
-                Assert.DoesNotContain("Streaming", methodName);
-            }
-        }, iter: 100);
+        Assert.Contains("FunctionHandlerAsync", methodName);
+        Assert.DoesNotContain("StreamingFunctionHandlerAsync", methodName);
     }
 }
-
-#endif

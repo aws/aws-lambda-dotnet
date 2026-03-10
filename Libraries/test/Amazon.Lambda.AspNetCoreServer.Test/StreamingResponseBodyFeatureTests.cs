@@ -1,6 +1,5 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-#if NET8_0_OR_GREATER
 using System;
 using System.IO;
 using System.Runtime.Versioning;
@@ -28,9 +27,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             return (feature, lambdaStream, invokeFeatures);
         }
 
-        // -----------------------------------------------------------------------
-        // 5.2 Bytes written before StartAsync are buffered and flushed after StartAsync
-        // -----------------------------------------------------------------------
         [Fact]
         public async Task PreStartBytes_AreBuffered_ThenFlushedToLambdaStream_OnStartAsync()
         {
@@ -50,9 +46,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal(preBytes, result);
         }
 
-        // -----------------------------------------------------------------------
-        // 5.3 Bytes written after StartAsync go directly to LambdaResponseStream
-        // -----------------------------------------------------------------------
         [Fact]
         public async Task PostStartBytes_GoDirectlyToLambdaStream()
         {
@@ -68,9 +61,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal(postBytes, result);
         }
 
-        // -----------------------------------------------------------------------
-        // 5.4 OnStarting callbacks fire before first byte reaches LambdaResponseStream
-        // -----------------------------------------------------------------------
         [Fact]
         public async Task OnStartingCallbacks_FireBeforeFirstByteReachesLambdaStream()
         {
@@ -112,9 +102,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
                 $"OnStarting callback (seq={callbackSequence}) should fire before first write (seq={writeSequence})");
         }
 
-        // -----------------------------------------------------------------------
-        // 5.5 DisableBuffering is a no-op
-        // -----------------------------------------------------------------------
         [Fact]
         public async Task DisableBuffering_IsNoOp_DoesNotThrow_DoesNotChangeBehavior()
         {
@@ -140,9 +127,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Null(ex);
         }
 
-        // -----------------------------------------------------------------------
-        // 5.6 SendFileAsync writes the correct byte range to LambdaResponseStream
-        // -----------------------------------------------------------------------
         [Fact]
         public async Task SendFileAsync_WritesFullFile_WhenNoOffsetOrCount()
         {
@@ -211,9 +195,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             }
         }
 
-        // -----------------------------------------------------------------------
-        // 5.7 CompleteAsync calls StartAsync if not already started
-        // -----------------------------------------------------------------------
         [Fact]
         public async Task CompleteAsync_CallsStartAsync_WhenNotYetStarted()
         {
@@ -257,9 +238,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal(1, streamOpenerCallCount);
         }
 
-        // -----------------------------------------------------------------------
-        // Additional: pre-start bytes + post-start bytes are all forwarded in order
-        // -----------------------------------------------------------------------
         [Fact]
         public async Task PreAndPostStartBytes_AreForwardedInOrder()
         {
@@ -277,9 +255,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Equal(new byte[] { 1, 2, 3, 4, 5, 6 }, result);
         }
 
-        // -----------------------------------------------------------------------
-        // Helper: a stream that fires a callback on the first write
-        // -----------------------------------------------------------------------
         private class SequenceTrackingStream : MemoryStream
         {
             public Action OnFirstWrite { get; set; }
@@ -309,4 +284,3 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
         }
     }
 }
-#endif

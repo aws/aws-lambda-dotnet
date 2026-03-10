@@ -3,7 +3,7 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <AssemblyName>Amazon.Lambda.AspNetCoreServer.Test</AssemblyName>
     <OutputType>Library</OutputType>
     <PackageId>Amazon.Lambda.AspNetCoreServer.Test</PackageId>

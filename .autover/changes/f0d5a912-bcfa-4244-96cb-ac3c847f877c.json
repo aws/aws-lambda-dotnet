@@ -1,0 +1,27 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "[Breaking] Update build targets from .NET 6 and 8 to .NET 8 and 10",
+		"[Preview] Add support Lambda Response Streaming enabled by setting the EnableResponseStreaming property from the base class AbstractAspNetCoreFunction"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.AspNetCoreServer.Hosting",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "[Breaking] Update build targets from .NET 6 and 8 to .NET 8 and 10",
+		"[Preview] Add support Lambda Response Streaming enabled by setting the EnableResponseStreaming property on the HostingOptions object passed into the AddAWSLambdaHosting method"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Logging.AspNetCore",
+      "Type": "Major",
+      "ChangelogMessages": [
+        "[Breaking] Update build targets from .NET 6 and 8 to .NET 8 and 10"
+      ]
+    }	
+  ]
+}

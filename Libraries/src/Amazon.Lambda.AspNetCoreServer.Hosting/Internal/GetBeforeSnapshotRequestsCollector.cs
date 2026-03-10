@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
 
-#if NET8_0_OR_GREATER
 /// <summary>
 /// Helper class for storing Requests for
 /// <see cref="ServiceCollectionExtensions.AddAWSLambdaBeforeSnapshotRequest"/>
@@ -14,4 +13,3 @@ internal class GetBeforeSnapshotRequestsCollector
 {
     public HttpRequestMessage? Request { get; set; }
 }
-#endif

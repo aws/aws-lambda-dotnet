@@ -1,12 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#if NET8_0_OR_GREATER
 
 using System.Runtime.Versioning;
-using Amazon.Lambda.APIGatewayEvents;
-using Amazon.Lambda.ApplicationLoadBalancerEvents;
-using Amazon.Lambda.AspNetCoreServer.Hosting;
 using Amazon.Lambda.AspNetCoreServer.Hosting.Internal;
 using Amazon.Lambda.AspNetCoreServer.Test;
 using Amazon.Lambda.Core;
@@ -23,10 +19,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Tests;
 [RequiresPreviewFeatures]
 public class ResponseStreamingHostingTests
 {
-    // -------------------------------------------------------------------------
-    // 8.2 – HostingOptions.EnableResponseStreaming defaults to false
-    // -------------------------------------------------------------------------
-
     [Fact]
     public void EnableResponseStreaming_DefaultsToFalse()
     {
@@ -40,10 +32,6 @@ public class ResponseStreamingHostingTests
         var options = new HostingOptions { EnableResponseStreaming = true };
         Assert.True(options.EnableResponseStreaming);
     }
-
-    // -------------------------------------------------------------------------
-    // 8.5 – AddAWSLambdaHosting configure callback can set EnableResponseStreaming=true
-    // -------------------------------------------------------------------------
 
     [Fact]
     public void AddAWSLambdaHosting_ConfigureCallback_CanSetEnableResponseStreamingTrue()
@@ -80,10 +68,6 @@ public class ResponseStreamingHostingTests
         Assert.False(hostingOptions.EnableResponseStreaming);
     }
 
-    // -------------------------------------------------------------------------
-    // 8.3 – CreateHandlerWrapper with EnableResponseStreaming=false wraps FunctionHandlerAsync
-    // 8.4 – CreateHandlerWrapper with EnableResponseStreaming=true wraps StreamingFunctionHandlerAsync
-    // -------------------------------------------------------------------------
 
     // Helper: build a minimal IServiceProvider with the given HostingOptions
     private static IServiceProvider BuildServiceProvider(HostingOptions hostingOptions)
@@ -113,7 +97,7 @@ public class ResponseStreamingHostingTests
     }
 
     [Fact]
-    public void HttpApiV2_CreateHandlerWrapper_StreamingTrue_TargetsStreamingFunctionHandlerAsync()
+    public void HttpApiV2_CreateHandlerWrapper_StreamingTrue_TargetsFunctionHandlerAsync()
     {
         var options = new HostingOptions { EnableResponseStreaming = true };
         var sp = BuildServiceProvider(options);
@@ -122,7 +106,7 @@ public class ResponseStreamingHostingTests
         var wrapper = server.PublicCreateHandlerWrapper(sp);
 
         var methodName = GetHandlerDelegateMethodName(wrapper);
-        Assert.Contains("StreamingFunctionHandlerAsync", methodName);
+        Assert.Contains("FunctionHandlerAsync", methodName);
     }
 
     // ---- APIGatewayRestApi ----
@@ -142,7 +126,7 @@ public class ResponseStreamingHostingTests
     }
 
     [Fact]
-    public void RestApi_CreateHandlerWrapper_StreamingTrue_TargetsStreamingFunctionHandlerAsync()
+    public void RestApi_CreateHandlerWrapper_StreamingTrue_TargetsFunctionHandlerAsync()
     {
         var options = new HostingOptions { EnableResponseStreaming = true };
         var sp = BuildServiceProvider(options);
@@ -151,7 +135,7 @@ public class ResponseStreamingHostingTests
         var wrapper = server.PublicCreateHandlerWrapper(sp);
 
         var methodName = GetHandlerDelegateMethodName(wrapper);
-        Assert.Contains("StreamingFunctionHandlerAsync", methodName);
+        Assert.Contains("FunctionHandlerAsync", methodName);
     }
 
     // ---- ApplicationLoadBalancer ----
@@ -171,7 +155,7 @@ public class ResponseStreamingHostingTests
     }
 
     [Fact]
-    public void Alb_CreateHandlerWrapper_StreamingTrue_TargetsStreamingFunctionHandlerAsync()
+    public void Alb_CreateHandlerWrapper_StreamingTrue_TargetsFunctionHandlerAsync()
     {
         var options = new HostingOptions { EnableResponseStreaming = true };
         var sp = BuildServiceProvider(options);
@@ -180,7 +164,7 @@ public class ResponseStreamingHostingTests
         var wrapper = server.PublicCreateHandlerWrapper(sp);
 
         var methodName = GetHandlerDelegateMethodName(wrapper);
-        Assert.Contains("StreamingFunctionHandlerAsync", methodName);
+        Assert.Contains("FunctionHandlerAsync", methodName);
     }
 
     // -------------------------------------------------------------------------
@@ -268,5 +252,3 @@ public class ResponseStreamingHostingTests
             => CreateHandlerWrapper(sp);
     }
 }
-
-#endif
