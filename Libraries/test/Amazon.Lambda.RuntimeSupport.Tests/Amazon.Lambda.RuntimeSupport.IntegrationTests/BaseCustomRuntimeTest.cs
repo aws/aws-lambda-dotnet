@@ -351,7 +351,16 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
             if (!File.Exists(deploymentZipFile))
             {
-                throw new NoDeploymentPackageFoundException();
+                var message = new StringBuilder();
+                message.AppendLine($"Deployment package not found at expected path: {deploymentZipFile}");
+                message.AppendLine("Available Test Bundles:");
+                foreach (var kvp in _fixture.TestAppPaths)
+                {
+                    message.AppendLine($"{kvp.Key}: {kvp.Value}");
+                }
+
+
+                throw new NoDeploymentPackageFoundException(message.ToString());
             }
 
             return deploymentZipFile;
@@ -380,7 +389,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
         protected class NoDeploymentPackageFoundException : Exception
         {
+            public NoDeploymentPackageFoundException() { }
 
+            public NoDeploymentPackageFoundException(string message) : base(message) { }
         }
 
         private ApplicationLogLevel ConvertRuntimeLogLevel(RuntimeLogLevel runtimeLogLevel)
