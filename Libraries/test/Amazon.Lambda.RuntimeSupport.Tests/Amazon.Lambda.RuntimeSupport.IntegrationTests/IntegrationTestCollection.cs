@@ -2,8 +2,8 @@ using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests;
 
-[CollectionDefinition("Integration Tests")]
-public class IntegrationTestCollection : ICollectionFixture<IntegrationTestFixture>
+[CollectionDefinition("Integration Tests", DisableParallelization = true)]
+public class IntegrationTestCollection : ICollectionFixture<IntegrationTestFixture>, ICollectionFixture<ResponseStreamingTestsFixture>
 {
     
 }
