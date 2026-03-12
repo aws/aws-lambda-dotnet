@@ -24,6 +24,12 @@ namespace Amazon.Lambda.AspNetCoreServer
     /// </summary>
     public abstract class AbstractAspNetCoreFunction
     {
+        internal const string ParameterizedPreviewMessage =
+            "Response streaming is in preview till a new version of .NET Lambda runtime client that supports response streaming " +
+            "has been deployed to the .NET Lambda managed runtime. Till deployment has been made the feature can be used by deploying as an " +
+            "executable including the latest version of Amazon.Lambda.RuntimeSupport and setting the \"EnablePreviewFeatures\" in the Lambda " +
+            "project file to \"true\"";
+
         /// <summary>
         /// Key to access the ILambdaContext object from the HttpContext.Items collection.
         /// </summary>
@@ -200,7 +206,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// buffering it and returning a typed response object (which will be <c>null</c>).
         /// Requires net8.0 or later.
         /// </summary>
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         public virtual bool EnableResponseStreaming { get; set; } = false;
 
 
@@ -683,7 +689,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         /// <param name="responseFeature">The ASP.NET Core response feature for the current invocation.</param>
         /// <returns>A populated <see cref="Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude"/>.</returns>
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         protected virtual Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude BuildStreamingPrelude(IHttpResponseFeature responseFeature)
         {
             var prelude = new Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude
@@ -717,7 +723,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// </summary>
         /// <param name="prelude">The HTTP response prelude containing status code and headers.</param>
         /// <returns>A writable <see cref="System.IO.Stream"/> for the response body.</returns>
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         protected virtual System.IO.Stream CreateLambdaResponseStream(
             Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude prelude)
         {
@@ -729,7 +735,7 @@ namespace Amazon.Lambda.AspNetCoreServer
         /// <see cref="EnableResponseStreaming"/> is <c>true</c>. Writes the response directly to a
         /// <see cref="Amazon.Lambda.Core.ResponseStreaming.LambdaResponseStream"/>.
         /// </summary>
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
         private async Task ExecuteStreamingRequestAsync(InvokeFeatures features, TREQUEST request, ILambdaContext lambdaContext)
         {
             var responseFeature = (IHttpResponseFeature)features;
