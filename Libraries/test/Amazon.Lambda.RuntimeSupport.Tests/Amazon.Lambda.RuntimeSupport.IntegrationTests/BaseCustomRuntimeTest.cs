@@ -352,7 +352,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             if (!File.Exists(deploymentZipFile))
             {
                 var message = new StringBuilder();
-                message.AppendLine($"Deployment package not found at expected path: {deploymentZipFile}");
+                message.AppendLine($"Deployment package for {DeploymentPackageZipRelativePath} not found at expected path: {deploymentZipFile}");
                 message.AppendLine("Available Test Bundles:");
                 foreach (var kvp in _fixture.TestAppPaths)
                 {

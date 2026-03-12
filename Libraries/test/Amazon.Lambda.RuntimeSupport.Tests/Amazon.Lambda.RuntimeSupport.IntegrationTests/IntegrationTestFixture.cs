@@ -42,7 +42,7 @@ public class IntegrationTestFixture : IAsyncLifetime
             "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/ResponseStreamingFunctionHandlers");
         _tempPaths.AddRange([testAppPath, toolPath]);
         await LambdaToolsHelper.LambdaPackage(toolPath, "net10.0", testAppPath);
-        TestAppPaths[@"ResponseStreamingFunctionHandlers\bin\Release\net10.0\ResponseStreamingFunctionHandlers.zip"] = Path.Combine(testAppPath, @"bin\Release\net10.0\ResponseStreamingFunctionHandlers.zip");
+        TestAppPaths[@"ResponseStreamingFunctionHandlers\bin\Release\net10.0\ResponseStreamingFunctionHandlers.zip"] = Path.Combine(testAppPath, "bin", "Release", "net10.0", "ResponseStreamingFunctionHandlers.zip"); ;
     }
 
 
