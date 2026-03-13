@@ -38,18 +38,18 @@ jobs:
           parse-json-secrets: true
       # Checkout a full clone of the repo
       - name: Checkout
-        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 #v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: "0"
           token: ${{ env.AWS_SECRET_TOKEN }}
       # Install .NET9 which is needed for AutoVer
       - name: Setup .NET 9.0
-        uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 #v5.0.1
+        uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309  # v5.1.0
         with:
           dotnet-version: 9.0.x
       # Install .NET10 which is needed for building the solution
       - name: Setup .NET 10.0
-        uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 #v5.0.1
+        uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309  # v5.1.0
         with:
           dotnet-version: 10.0.x
       # Install AutoVer to automate versioning and changelog creation
