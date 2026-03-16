@@ -3,7 +3,7 @@
   <Import Project="..\..\..\buildtools\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net10.0;net11.0</TargetFrameworks>
     <Version>1.0.1</Version>
     <Description>Provides a Restore Hooks library to help you register before snapshot and after restore hooks.</Description>
     <AssemblyTitle>SnapshotRestore.Registry</AssemblyTitle>

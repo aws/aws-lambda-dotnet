@@ -35,7 +35,7 @@ COPY ["Libraries/src/Amazon.Lambda.Core", "Repo/Libraries/src/Amazon.Lambda.Core
 COPY ["Libraries/src/SnapshotRestore.Registry", "Repo/Libraries/src/SnapshotRestore.Registry/"]
 COPY ["buildtools/", "Repo/buildtools/"]
 RUN dotnet restore "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj" /p:TargetFrameworks=net8.0
-WORKDIR "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport"
+WORKDIR /src/Repo/Libraries/src/Amazon.Lambda.RuntimeSupport
 RUN dotnet build "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net8.0 --runtime linux-x64 -c Release -o /app/build
 
 
