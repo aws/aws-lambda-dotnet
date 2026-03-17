@@ -77,5 +77,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// The assembly version of the Amazon.Lambda.Annotations.SourceGenerator package.
         /// </summary>
         string SourceGeneratorVersion { get; set; }
+
+        /// <summary>
+        /// The name of the authorizer protecting this Lambda function endpoint.
+        /// Null or empty for public (unauthenticated) endpoints.
+        /// </summary>
+        string Authorizer { get; }
     }
 }

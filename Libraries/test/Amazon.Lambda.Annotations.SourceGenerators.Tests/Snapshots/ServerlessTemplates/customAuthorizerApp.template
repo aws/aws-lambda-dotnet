@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.9.0.0).",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v{ANNOTATIONS_ASSEMBLY_VERSION}).",
   "Resources": {
     "AnnotationsHttpApi": {
       "Type": "AWS::Serverless::HttpApi",
@@ -65,7 +65,8 @@
               "Identity": {
                 "Header": "Authorization"
               },
-              "FunctionPayloadType": "TOKEN"
+              "FunctionPayloadType": "TOKEN",
+              "AuthorizerResultTtlInSeconds": 0
             }
           }
         }
@@ -88,7 +89,24 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorize_Generated::HttpApiAuthorize"
+        "Handler": "TestProject::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorize_Generated::HttpApiAuthorize"
+      }
+    },
+    "CustomAuthorizerV1": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestProject::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorizeV1_Generated::HttpApiAuthorizeV1"
       }
     },
     "RestApiAuthorizer": {
@@ -105,7 +123,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_RestApiAuthorize_Generated::RestApiAuthorize"
+        "Handler": "TestProject::TestCustomAuthorizerApp.AuthorizerFunction_RestApiAuthorize_Generated::RestApiAuthorize"
       }
     },
     "ProtectedEndpoint": {
@@ -133,7 +151,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetProtectedData_Generated::GetProtectedData",
+        "Handler": "TestProject::TestCustomAuthorizerApp.ProtectedFunction_GetProtectedData_Generated::GetProtectedData",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
@@ -176,7 +194,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetUserInfo_Generated::GetUserInfo",
+        "Handler": "TestProject::TestCustomAuthorizerApp.ProtectedFunction_GetUserInfo_Generated::GetUserInfo",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
@@ -218,7 +236,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_HealthCheck_Generated::HealthCheck",
+        "Handler": "TestProject::TestCustomAuthorizerApp.ProtectedFunction_HealthCheck_Generated::HealthCheck",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
@@ -258,7 +276,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetRestUserInfo_Generated::GetRestUserInfo",
+        "Handler": "TestProject::TestCustomAuthorizerApp.ProtectedFunction_GetRestUserInfo_Generated::GetRestUserInfo",
         "Events": {
           "RootGet": {
             "Type": "Api",
@@ -302,7 +320,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetHttpApiV1UserInfo_Generated::GetHttpApiV1UserInfo",
+        "Handler": "TestProject::TestCustomAuthorizerApp.ProtectedFunction_GetHttpApiV1UserInfo_Generated::GetHttpApiV1UserInfo",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
@@ -346,7 +364,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetIHttpResult_Generated::GetIHttpResult",
+        "Handler": "TestProject::TestCustomAuthorizerApp.ProtectedFunction_GetIHttpResult_Generated::GetIHttpResult",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
@@ -389,7 +407,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetNonStringUserInfo_Generated::GetNonStringUserInfo",
+        "Handler": "TestProject::TestCustomAuthorizerApp.ProtectedFunction_GetNonStringUserInfo_Generated::GetNonStringUserInfo",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
@@ -405,23 +423,6 @@
             }
           }
         }
-      }
-    },
-    "CustomAuthorizerV1": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorizeV1_Generated::HttpApiAuthorizeV1"
       }
     }
   }

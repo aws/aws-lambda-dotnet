@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Generated\**" />
+    <Compile Remove="FromScratch\MissingLambdaFunctionWithAuthorizer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Generated\**" />

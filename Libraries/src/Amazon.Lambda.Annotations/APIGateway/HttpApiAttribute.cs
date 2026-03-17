@@ -23,6 +23,13 @@ namespace Amazon.Lambda.Annotations.APIGateway
         public LambdaHttpMethod Method { get; set; }
 
         /// <summary>
+        /// Name of the HTTP API Lambda authorizer to protect this endpoint.
+        /// Must match the Name property of an <see cref="HttpApiAuthorizerAttribute"/> in this project.
+        /// Leave null/empty for public (unauthenticated) endpoints.
+        /// </summary>
+        public string Authorizer { get; set; }
+
+        /// <summary>
         /// Constructs a <see cref="HttpApiAttribute"/>
         /// </summary>
         public HttpApiAttribute(LambdaHttpMethod method, string template)

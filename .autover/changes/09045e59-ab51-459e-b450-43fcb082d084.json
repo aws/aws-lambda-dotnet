@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.Annotations",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "Developers can now define Lambda Authorizers and protect API endpoints entirely through C# attributes, eliminating the need for manual CloudFormation configuration."
+      ]
+    }
+  ]
+}

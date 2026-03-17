@@ -78,6 +78,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         /// <inheritdoc />
         public string SourceGeneratorVersion { get; set; }
 
+        /// <inheritdoc />
+        public string Authorizer { get; set; }
+
         /// <summary>
         /// Indicates if the model is valid.
         /// </summary>

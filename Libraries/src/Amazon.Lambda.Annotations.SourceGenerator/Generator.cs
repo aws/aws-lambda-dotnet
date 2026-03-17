@@ -1,7 +1,9 @@
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
+using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.SourceGenerator.Templates;
 using Amazon.Lambda.Annotations.SourceGenerator.Writers;
 using Microsoft.CodeAnalysis;
@@ -149,6 +151,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     configureMethodSymbol = configureHostBuilderMethodSymbol;
                 }
 
+                // Check for methods that have secondary attributes (HttpApi, RestApi, HttpApiAuthorizer, etc.)
+                // but are missing the required [LambdaFunction] attribute
+                foreach (var (method, attributeName) in receiver.MethodsWithMissingLambdaFunction)
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(
+                        DiagnosticDescriptors.MissingLambdaFunctionAttribute,
+                        Location.Create(method.SyntaxTree, method.Span),
+                        attributeName));
+                    foundFatalError = true;
+                }
+
                 var annotationReport = new AnnotationReport();
 
                 var templateHandler = new CloudFormationTemplateHandler(_fileManager, _directoryManager);
@@ -166,6 +179,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                         // If the model is not valid then skip it from further processing
                         foundFatalError = true;
                         continue;
+                    }
+
+                    // Check for authorizer attributes on this Lambda function
+                    var authorizerModel = ExtractAuthorizerModel(lambdaMethodSymbol, lambdaFunctionModel.ResourceName);
+                    if (authorizerModel != null)
+                    {
+                        annotationReport.Authorizers.Add(authorizerModel);
                     }
 
                     var template = new LambdaFunctionTemplate(lambdaFunctionModel);
@@ -204,6 +224,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
                     }
 
                     context.AddSource("Program.g.cs", SourceText.From(executableAssembly.TransformText().ToEnvironmentLineEndings(), Encoding.UTF8, SourceHashAlgorithm.Sha256));
+                }
+
+                // Validate authorizer models and references before syncing CloudFormation template
+                foreach (var authorizerModel in annotationReport.Authorizers)
+                {
+                    var attributeName = authorizerModel.AuthorizerType == AuthorizerType.HttpApi
+                        ? "HttpApiAuthorizer"
+                        : "RestApiAuthorizer";
+                    if (!ValidateAuthorizerModel(authorizerModel, attributeName, Location.None, diagnosticReporter))
+                    {
+                        foundFatalError = true;
+                    }
+                }
+
+                if (!ValidateAuthorizerReferences(annotationReport, diagnosticReporter))
+                {
+                    foundFatalError = true;
                 }
 
                 // Run the CloudFormation sync if any LambdaMethods exists. Also run if no LambdaMethods exists but there is a
@@ -295,6 +332,202 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         {
             // Register a syntax receiver that will be created for each generation pass
             context.RegisterForSyntaxNotifications(() => new SyntaxReceiver(_fileManager, _directoryManager));
+        }
+
+        /// <summary>
+        /// Extracts authorizer model from method symbol if it has HttpApiAuthorizer or RestApiAuthorizer attribute.
+        /// </summary>
+        /// <param name="methodSymbol">The method symbol to check for authorizer attributes</param>
+        /// <param name="lambdaResourceName">The CloudFormation resource name for the Lambda function</param>
+        /// <returns>AuthorizerModel if an authorizer attribute is found, null otherwise</returns>
+        private static AuthorizerModel ExtractAuthorizerModel(IMethodSymbol methodSymbol, string lambdaResourceName)
+        {
+            foreach (var attribute in methodSymbol.GetAttributes())
+            {
+                var attributeFullName = attribute.AttributeClass?.ToDisplayString();
+
+                AuthorizerModel model = null;
+
+                if (attributeFullName == TypeFullNames.HttpApiAuthorizerAttribute)
+                {
+                    model = HttpApiAuthorizerAttributeBuilder.BuildModel(attribute, lambdaResourceName);
+                }
+                else if (attributeFullName == TypeFullNames.RestApiAuthorizerAttribute)
+                {
+                    model = RestApiAuthorizerAttributeBuilder.BuildModel(attribute, lambdaResourceName);
+                }
+
+                if (model != null)
+                {
+                    // The authorizer name is always derived from the method name
+                    model.Name = methodSymbol.Name;
+                    return model;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Validates an authorizer model.
+        /// </summary>
+        /// <param name="model">The authorizer model to validate</param>
+        /// <param name="attributeName">The name of the attribute for error messages</param>
+        /// <param name="methodLocation">The location of the method for diagnostic reporting</param>
+        /// <param name="diagnosticReporter">The diagnostic reporter for validation errors</param>
+        /// <returns>True if valid, false otherwise</returns>
+        private static bool ValidateAuthorizerModel(AuthorizerModel model, string attributeName, Location methodLocation, DiagnosticReporter diagnosticReporter)
+        {
+            var isValid = true;
+
+            // Validate Name is provided
+            if (string.IsNullOrEmpty(model.Name))
+            {
+                diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.AuthorizerMissingName, methodLocation, attributeName));
+                isValid = false;
+            }
+
+            // Validate ResultTtlInSeconds
+            if (model.ResultTtlInSeconds < 0 || model.ResultTtlInSeconds > 3600)
+            {
+                diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.InvalidAuthorizerResultTtl, methodLocation, model.ResultTtlInSeconds.ToString()));
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        /// <summary>
+        /// Validates authorizer references in lambda functions.
+        /// </summary>
+        /// <param name="annotationReport">The annotation report containing all functions and authorizers</param>
+        /// <param name="diagnosticReporter">The diagnostic reporter for validation errors</param>
+        /// <returns>True if all authorizer references are valid, false otherwise</returns>
+        private static bool ValidateAuthorizerReferences(AnnotationReport annotationReport, DiagnosticReporter diagnosticReporter)
+        {
+            var isValid = true;
+
+            // Check for duplicate authorizer names within the same API type BEFORE building dictionaries.
+            // ToDictionary will throw if there are duplicate keys, so duplicates must be detected first.
+            var httpApiAuthorizerDuplicates = annotationReport.Authorizers
+                .Where(a => a.AuthorizerType == AuthorizerType.HttpApi)
+                .GroupBy(a => a.Name)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            foreach (var duplicateName in httpApiAuthorizerDuplicates)
+            {
+                diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.DuplicateAuthorizerName, Location.None, duplicateName));
+                isValid = false;
+            }
+
+            var restApiAuthorizerDuplicates = annotationReport.Authorizers
+                .Where(a => a.AuthorizerType == AuthorizerType.RestApi)
+                .GroupBy(a => a.Name)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            foreach (var duplicateName in restApiAuthorizerDuplicates)
+            {
+                diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.DuplicateAuthorizerName, Location.None, duplicateName));
+                isValid = false;
+            }
+
+            // If duplicates were found, skip building lookups and further validation
+            // since ToDictionary would throw on duplicate keys
+            if (!isValid)
+            {
+                return false;
+            }
+
+            // Build lookups for authorizers by type (safe now that duplicates have been checked)
+            var httpApiAuthorizers = annotationReport.Authorizers
+                .Where(a => a.AuthorizerType == AuthorizerType.HttpApi)
+                .ToDictionary(a => a.Name, a => a);
+            var restApiAuthorizers = annotationReport.Authorizers
+                .Where(a => a.AuthorizerType == AuthorizerType.RestApi)
+                .ToDictionary(a => a.Name, a => a);
+
+            // Validate authorizer references in functions
+            foreach (var function in annotationReport.LambdaFunctions)
+            {
+                var authorizerName = function.Authorizer;
+                if (string.IsNullOrEmpty(authorizerName))
+                {
+                    continue;
+                }
+
+                // Check if this function uses HttpApi or RestApi
+                var usesHttpApi = function.Attributes.Any(a => a is AttributeModel<HttpApiAttribute>);
+                var usesRestApi = function.Attributes.Any(a => a is AttributeModel<RestApiAttribute>);
+
+                if (usesHttpApi)
+                {
+                    if (!httpApiAuthorizers.ContainsKey(authorizerName))
+                    {
+                        // Check if it exists as a REST API authorizer (type mismatch)
+                        if (restApiAuthorizers.ContainsKey(authorizerName))
+                        {
+                            diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.HttpApiAuthorizerTypeMismatch, Location.None, authorizerName));
+                        }
+                        else
+                        {
+                            diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.HttpApiAuthorizerNotFound, Location.None, authorizerName));
+                        }
+                        isValid = false;
+                    }
+                    else
+                    {
+                        // Check for payload format version mismatch between authorizer and endpoint
+                        var matchedAuthorizer = httpApiAuthorizers[authorizerName];
+                        var httpApiAttr = function.Attributes
+                            .OfType<AttributeModel<HttpApiAttribute>>()
+                            .Select(a => a.Data)
+                            .FirstOrDefault();
+
+                        if (httpApiAttr != null)
+                        {
+                            var endpointVersion = httpApiAttr.Version;
+                            var authorizerVersion = matchedAuthorizer.AuthorizerPayloadFormatVersion;
+
+                            // Compare: HttpApiVersion.V1 corresponds to AuthorizerPayloadFormatVersion.V1, etc.
+                            if ((endpointVersion == HttpApiVersion.V1 && authorizerVersion != AuthorizerPayloadFormatVersion.V1) ||
+                                (endpointVersion == HttpApiVersion.V2 && authorizerVersion != AuthorizerPayloadFormatVersion.V2))
+                            {
+                                var authorizerVersionStr = authorizerVersion == AuthorizerPayloadFormatVersion.V1 ? "1.0" : "2.0";
+                                var endpointVersionStr = endpointVersion == HttpApiVersion.V1 ? "V1" : "V2";
+                                diagnosticReporter.Report(Diagnostic.Create(
+                                    DiagnosticDescriptors.AuthorizerPayloadVersionMismatch,
+                                    Location.None,
+                                    authorizerName,
+                                    authorizerVersionStr,
+                                    endpointVersionStr));
+                            }
+                        }
+                    }
+                }
+
+                if (usesRestApi)
+                {
+                    if (!restApiAuthorizers.ContainsKey(authorizerName))
+                    {
+                        // Check if it exists as an HTTP API authorizer (type mismatch)
+                        if (httpApiAuthorizers.ContainsKey(authorizerName))
+                        {
+                            diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.RestApiAuthorizerTypeMismatch, Location.None, authorizerName));
+                        }
+                        else
+                        {
+                            diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.RestApiAuthorizerNotFound, Location.None, authorizerName));
+                        }
+                        isValid = false;
+                    }
+                }
+            }
+
+            return isValid;
         }
     }
 }

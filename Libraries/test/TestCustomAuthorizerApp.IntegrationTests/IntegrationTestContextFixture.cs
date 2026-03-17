@@ -23,7 +23,7 @@ public class IntegrationTestContextFixture : IAsyncLifetime
     public readonly HttpClient HttpClient;
 
     /// <summary>
-    /// HTTP API base URL (no trailing slash)
+    /// HTTP API base URL for endpoints attached to AnnotationsHttpApi (no trailing slash)
     /// </summary>
     public string HttpApiUrl = string.Empty;
 
@@ -49,27 +49,42 @@ public class IntegrationTestContextFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         var scriptPath = Path.Combine("..", "..", "..", "DeploymentScript.ps1");
+        Console.WriteLine($"[IntegrationTest] Running deployment script: {scriptPath}");
         await CommandLineWrapper.RunAsync($"pwsh {scriptPath}");
+        Console.WriteLine("[IntegrationTest] Deployment script completed successfully.");
 
         _stackName = GetStackName();
         _bucketName = GetBucketName();
+        Console.WriteLine($"[IntegrationTest] Stack name: '{_stackName}', Bucket name: '{_bucketName}'");
         Assert.False(string.IsNullOrEmpty(_stackName), "Stack name should not be empty");
         Assert.False(string.IsNullOrEmpty(_bucketName), "Bucket name should not be empty");
 
-        // Get API URLs from CloudFormation outputs
-        HttpApiUrl = await _cloudFormationHelper.GetOutputValueAsync(_stackName, "ApiUrl") ?? string.Empty;
-        RestApiUrl = await _cloudFormationHelper.GetOutputValueAsync(_stackName, "RestApiUrl") ?? string.Empty;
+        // Check stack status before querying resources
+        var stackStatus = await _cloudFormationHelper.GetStackStatusAsync(_stackName);
+        Console.WriteLine($"[IntegrationTest] Stack status after deployment: {stackStatus}");
+        Assert.NotNull(stackStatus);
+        Assert.Equal(StackStatus.CREATE_COMPLETE, stackStatus);
+
+        // Dynamically construct API URLs from stack resource physical IDs
+        // since the serverless.template is managed by the source generator and may not have Outputs
+        var region = "us-west-2";
+        Console.WriteLine($"[IntegrationTest] Querying stack resources for '{_stackName}'...");
+        var httpApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "AnnotationsHttpApi");
+        var restApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "AnnotationsRestApi");
+        Console.WriteLine($"[IntegrationTest] AnnotationsHttpApi: {httpApiId}, AnnotationsRestApi: {restApiId}");
+        Assert.False(string.IsNullOrEmpty(httpApiId), $"CloudFormation resource 'AnnotationsHttpApi' was not found in stack '{_stackName}'.");
+        Assert.False(string.IsNullOrEmpty(restApiId), $"CloudFormation resource 'AnnotationsRestApi' was not found in stack '{_stackName}'.");
+        HttpApiUrl = $"https://{httpApiId}.execute-api.{region}.amazonaws.com";
+        RestApiUrl = $"https://{restApiId}.execute-api.{region}.amazonaws.com/Prod";
         
         LambdaFunctions = await LambdaHelper.FilterByCloudFormationStackAsync(_stackName);
+        Console.WriteLine($"[IntegrationTest] Found {LambdaFunctions.Count} Lambda functions: {string.Join(", ", LambdaFunctions.Select(f => f.Name ?? "(null)"))}");
 
-        Assert.Equal(StackStatus.CREATE_COMPLETE, await _cloudFormationHelper.GetStackStatusAsync(_stackName));
         Assert.True(await _s3Helper.BucketExistsAsync(_bucketName), $"S3 bucket {_bucketName} should exist");
         
-        // There are 9 Lambda functions in TestCustomAuthorizerApp:
-        // CustomAuthorizer, RestApiAuthorizer, ProtectedEndpoint, GetUserInfo, HealthCheck, RestUserInfo, HttpApiV1UserInfo, IHttpResultUserInfo, NonStringUserInfo
-        Assert.Equal(9, LambdaFunctions.Count);
-        Assert.False(string.IsNullOrEmpty(HttpApiUrl), "HTTP API URL should not be empty");
-        Assert.False(string.IsNullOrEmpty(RestApiUrl), "REST API URL should not be empty");
+        // There are 10 Lambda functions in TestCustomAuthorizerApp:
+        // CustomAuthorizer, CustomAuthorizerV1, RestApiAuthorizer, ProtectedEndpoint, GetUserInfo, HealthCheck, RestUserInfo, HttpApiV1UserInfo, IHttpResultUserInfo, NonStringUserInfo
+        Assert.Equal(10, LambdaFunctions.Count);
 
         await LambdaHelper.WaitTillNotPending(LambdaFunctions.Where(x => x.Name != null).Select(x => x.Name!).ToList());
 
@@ -79,11 +94,27 @@ public class IntegrationTestContextFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await _cloudFormationHelper.DeleteStackAsync(_stackName);
-        Assert.True(await _cloudFormationHelper.IsDeletedAsync(_stackName), $"The stack '{_stackName}' still exists and will have to be manually deleted from the AWS console.");
+        if (!string.IsNullOrEmpty(_stackName))
+        {
+            Console.WriteLine($"[IntegrationTest] Cleaning up stack '{_stackName}'...");
+            await _cloudFormationHelper.DeleteStackAsync(_stackName);
+            Assert.True(await _cloudFormationHelper.IsDeletedAsync(_stackName), $"The stack '{_stackName}' still exists and will have to be manually deleted from the AWS console.");
+        }
+        else
+        {
+            Console.WriteLine("[IntegrationTest] WARNING: Stack name is null/empty, skipping stack deletion.");
+        }
 
-        await _s3Helper.DeleteBucketAsync(_bucketName);
-        Assert.False(await _s3Helper.BucketExistsAsync(_bucketName), $"The bucket '{_bucketName}' still exists and will have to be manually deleted from the AWS console.");
+        if (!string.IsNullOrEmpty(_bucketName))
+        {
+            Console.WriteLine($"[IntegrationTest] Cleaning up bucket '{_bucketName}'...");
+            await _s3Helper.DeleteBucketAsync(_bucketName);
+            Assert.False(await _s3Helper.BucketExistsAsync(_bucketName), $"The bucket '{_bucketName}' still exists and will have to be manually deleted from the AWS console.");
+        }
+        else
+        {
+            Console.WriteLine("[IntegrationTest] WARNING: Bucket name is null/empty, skipping bucket deletion.");
+        }
 
         // Reset the aws-lambda-tools-defaults.json to original values
         var filePath = Path.Combine("..", "..", "..", "..", "TestCustomAuthorizerApp", "aws-lambda-tools-defaults.json");

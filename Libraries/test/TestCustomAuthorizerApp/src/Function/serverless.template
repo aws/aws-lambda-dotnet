@@ -11,7 +11,7 @@
       "Properties": {
         "Auth": {
           "Authorizers": {
-            "HttpApiAuthorize": {
+            "HttpApiLambdaAuthorizer": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "CustomAuthorizer",
@@ -28,7 +28,7 @@
               "EnableFunctionDefaultPermissions": true,
               "AuthorizerResultTtlInSeconds": 0
             },
-            "HttpApiAuthorizeV1": {
+            "HttpApiLambdaAuthorizerV1": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "CustomAuthorizerV1",
@@ -55,7 +55,7 @@
         "StageName": "Prod",
         "Auth": {
           "Authorizers": {
-            "RestApiAuthorize": {
+            "RestApiLambdaAuthorizer": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "RestApiAuthorizer",
@@ -72,40 +72,6 @@
       },
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations"
-      }
-    },
-    "CustomAuthorizer": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorize_Generated::HttpApiAuthorize"
-      }
-    },
-    "RestApiAuthorizer": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_RestApiAuthorize_Generated::RestApiAuthorize"
       }
     },
     "ProtectedEndpoint": {
@@ -141,7 +107,7 @@
               "Path": "/api/protected",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiAuthorize"
+                "Authorizer": "HttpApiLambdaAuthorizer"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -184,7 +150,7 @@
               "Path": "/api/user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiAuthorize"
+                "Authorizer": "HttpApiLambdaAuthorizer"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -266,7 +232,7 @@
               "Path": "/api/rest-user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "RestApiAuthorize"
+                "Authorizer": "RestApiLambdaAuthorizer"
               },
               "RestApiId": {
                 "Ref": "AnnotationsRestApi"
@@ -311,7 +277,7 @@
               "Method": "GET",
               "PayloadFormatVersion": "1.0",
               "Auth": {
-                "Authorizer": "HttpApiAuthorizeV1"
+                "Authorizer": "HttpApiLambdaAuthorizerV1"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -354,7 +320,7 @@
               "Path": "/api/ihttpresult-user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiAuthorize"
+                "Authorizer": "HttpApiLambdaAuthorizer"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -397,7 +363,7 @@
               "Path": "/api/nonstring-user-info",
               "Method": "GET",
               "Auth": {
-                "Authorizer": "HttpApiAuthorize"
+                "Authorizer": "HttpApiLambdaAuthorizer"
               },
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
@@ -405,6 +371,40 @@
             }
           }
         }
+      }
+    },
+    "CustomAuthorizer": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorize_Generated::HttpApiAuthorize"
+      }
+    },
+    "RestApiAuthorizer": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_RestApiAuthorize_Generated::RestApiAuthorize"
       }
     },
     "CustomAuthorizerV1": {
