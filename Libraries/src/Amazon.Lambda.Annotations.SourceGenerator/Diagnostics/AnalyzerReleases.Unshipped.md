@@ -12,5 +12,5 @@ AWSLambda0123 | AWSLambdaCSharpGenerator | Error | Authorizer Type Mismatch
 AWSLambda0124 | AWSLambdaCSharpGenerator | Error | Authorizer Type Mismatch
 AWSLambda0125 | AWSLambdaCSharpGenerator | Error | Duplicate Authorizer Name
 AWSLambda0127 | AWSLambdaCSharpGenerator | Error | Invalid Result TTL
-AWSLambda0128 | AWSLambdaCSharpGenerator | Warning | Authorizer Payload Version Mismatch
+AWSLambda0128 | AWSLambdaCSharpGenerator | Error | Authorizer Payload Version Mismatch
 AWSLambda0129 | AWSLambdaCSharpGenerator | Error | Missing LambdaFunction Attribute
