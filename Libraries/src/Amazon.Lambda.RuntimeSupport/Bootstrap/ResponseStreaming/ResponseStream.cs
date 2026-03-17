@@ -37,7 +37,13 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         private Stream _httpOutputStream;
         private bool _disposedValue;
         private readonly SemaphoreSlim _httpStreamReady = new SemaphoreSlim(0, 1);
+
+        // The wait time is a sanity timeout to avoid waiting indefinitely if SerializeToStreamAsync is not called or takes too long to call.
+        // Reality is that SerializeToStreamAsync should be called very quickly after CreateStream, so this timeout is generous to avoid false positives but still protects against hanging indefinitely.
+        private readonly static TimeSpan _httpStreamWaitTimeout = TimeSpan.FromSeconds(30);
+
         private readonly SemaphoreSlim _completionSignal = new SemaphoreSlim(0, 1);
+
 
         private static readonly byte[] PreludeDelimiter = new byte[8];
 
@@ -81,7 +87,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             if (_prelude?.Length > 0)
             {
                 _logger.LogDebug($"Writing prelude of {_prelude.Length} bytes to HTTP stream.");
-                await _httpStreamReady.WaitAsync(cancellationToken);
+                await _httpStreamReady.WaitAsync(_httpStreamWaitTimeout, cancellationToken);
                 try
                 {
                     lock (_lock)
@@ -136,10 +142,10 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
                 throw new ArgumentOutOfRangeException(nameof(count));
 
             // Wait for the HTTP stream to be ready (first write only blocks)
-            await _httpStreamReady.WaitAsync(cancellationToken);
+            await _httpStreamReady.WaitAsync(_httpStreamWaitTimeout, cancellationToken);
             try
             {
-                _logger.LogDebug($"Writing chuck of {count} bytes to HTTP stream.");
+                _logger.LogDebug($"Writing chunk of {count} bytes to HTTP stream.");
 
                 lock (_lock)
                 {

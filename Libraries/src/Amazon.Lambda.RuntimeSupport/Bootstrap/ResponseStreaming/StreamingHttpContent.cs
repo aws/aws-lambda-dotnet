@@ -44,7 +44,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             // can write chunks directly to it.
             await _responseStream.SetHttpOutputStreamAsync(stream, _cancellationToken);
 
-            InternalLogger.GetDefaultLogger().LogInformation("In SerializeToStreamAsync waiting for the underlying Lambda response stream in indicate it is complete.");
+            InternalLogger.GetDefaultLogger().LogInformation("In SerializeToStreamAsync waiting for the underlying Lambda response stream to indicate it is complete.");
             // Wait for the handler to finish writing (MarkCompleted or ReportErrorAsync)
             await _responseStream.WaitForCompletionAsync(_cancellationToken);
 

@@ -10,14 +10,18 @@ namespace Amazon.Lambda.Core.ResponseStreaming
     /// <summary>
     /// Factory to create Lambda response streams for writing streaming responses in AWS Lambda functions. The created streams are write-only and non-seekable.
     /// </summary>
-    [RequiresPreviewFeatures(LambdaResponseStreamFactory.ParameterizedPreviewMessage)]
+    [RequiresPreviewFeatures(LambdaResponseStreamFactory.PreviewMessage)]
     public class LambdaResponseStreamFactory
     {
-        internal const string ParameterizedPreviewMessage =
+        internal const string PreviewMessage =
             "Response streaming is in preview till a new version of .NET Lambda runtime client that supports response streaming " +
             "has been deployed to the .NET Lambda managed runtime. Till deployment has been made the feature can be used by deploying as an " +
             "executable including the latest version of Amazon.Lambda.RuntimeSupport and setting the \"EnablePreviewFeatures\" in the Lambda " +
             "project file to \"true\"";
+
+        internal const string UninitializedFactoryMessage =
+            "LambdaResponseStreamFactory is not initialized. This is caused by mismatch versions of Amazon.Lambda.Core and Amazon.Lambda.RuntimeSupport. " +
+            "Update both packages to the current version to address the issue.";
 
         private static Func<byte[], ILambdaResponseStream> _streamFactory;
 
@@ -34,6 +38,9 @@ namespace Amazon.Lambda.Core.ResponseStreaming
         /// <returns></returns>
         public static Stream CreateStream()
         {
+            if (_streamFactory == null)
+                throw new InvalidOperationException(UninitializedFactoryMessage);
+
             var runtimeResponseStream = _streamFactory(Array.Empty<byte>());
             return new LambdaResponseStream(runtimeResponseStream);
         }
@@ -51,6 +58,12 @@ namespace Amazon.Lambda.Core.ResponseStreaming
         /// <returns></returns>
         public static Stream CreateHttpStream(HttpResponseStreamPrelude prelude)
         {
+            if (_streamFactory == null)
+                throw new InvalidOperationException(UninitializedFactoryMessage);
+
+            if (prelude is null)
+                throw new ArgumentNullException(nameof(prelude));
+
             var runtimeResponseStream = _streamFactory(prelude.ToByteArray());
             return new LambdaResponseStream(runtimeResponseStream);
         }

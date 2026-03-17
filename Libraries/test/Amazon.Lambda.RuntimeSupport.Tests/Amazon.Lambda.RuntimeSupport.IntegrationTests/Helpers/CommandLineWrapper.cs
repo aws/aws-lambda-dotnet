@@ -82,6 +82,7 @@ public static class CommandLineWrapper
             catch (Exception ex)
             {
                 Console.WriteLine("Exception: " + ex);
+                Console.WriteLine(output.ToString());
                 if (!process.HasExited)
                 {
                     process.Kill();

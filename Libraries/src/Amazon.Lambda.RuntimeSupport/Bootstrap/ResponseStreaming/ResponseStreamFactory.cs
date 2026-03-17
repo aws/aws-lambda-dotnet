@@ -14,6 +14,7 @@
  */
 
 using System;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -103,7 +104,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         /// Returns the Task for the in-flight HTTP send, or null if streaming wasn't started.
         /// LambdaBootstrap awaits this after the handler returns to ensure the HTTP request completes.
         /// </summary>
-        internal static Task GetSendTask(bool isMultiConcurrency)
+        internal static Task<IDisposable> GetSendTask(bool isMultiConcurrency)
         {
             var context = isMultiConcurrency ? _asyncLocalContext.Value : _onDemandContext;
             return context?.SendTask;

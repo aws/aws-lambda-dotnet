@@ -189,7 +189,7 @@ namespace Amazon.Lambda.RuntimeSupport
         /// <param name="responseStream">The ResponseStream that will provide the streaming data.</param>
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
         /// <returns>A Task representing the in-flight HTTP POST.</returns>
-        internal virtual async Task StartStreamingResponseAsync(
+        internal virtual async Task<IDisposable> StartStreamingResponseAsync(
             string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
         {
             if (awsRequestId == null) throw new ArgumentNullException(nameof(awsRequestId));
@@ -213,11 +213,10 @@ namespace Amazon.Lambda.RuntimeSupport
 
                 request.Content = new StreamingHttpContent(responseStream, cancellationToken);
 
-                // SendAsync calls SerializeToStreamAsync, which blocks until the handler
-                // finishes writing. This is why this method runs concurrently with the handler.
                 var response = await _httpClient.SendAsync(
                     request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 response.EnsureSuccessStatusCode();
+                return response;
             }
         }
 
