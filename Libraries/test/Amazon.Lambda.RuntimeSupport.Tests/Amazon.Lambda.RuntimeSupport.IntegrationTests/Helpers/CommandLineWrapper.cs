@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -31,6 +32,7 @@ public static class CommandLineWrapper
                 tcs.TrySetResult(true);
             };
 
+            var output = new StringBuilder();
             try
             {
                 // Attach event handlers
@@ -39,6 +41,7 @@ public static class CommandLineWrapper
                     if (!string.IsNullOrEmpty(args.Data))
                     {
                         Console.WriteLine(args.Data);
+                        output.Append(args.Data);
                     }
                 };
 
@@ -47,6 +50,7 @@ public static class CommandLineWrapper
                     if (!string.IsNullOrEmpty(args.Data))
                     {
                         Console.WriteLine(args.Data);
+                        output.Append(args.Data);
                     }
                 };
 
@@ -78,6 +82,7 @@ public static class CommandLineWrapper
             catch (Exception ex)
             {
                 Console.WriteLine("Exception: " + ex);
+                Console.WriteLine(output.ToString());
                 if (!process.HasExited)
                 {
                     process.Kill();

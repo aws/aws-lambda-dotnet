@@ -10,6 +10,9 @@ public static class LambdaToolsHelper
 
     public static string GetTempTestAppDirectory(string workingDirectory, string testAppPath)
     {
+#if DEBUG
+        return Path.GetFullPath(Path.Combine(workingDirectory, testAppPath));
+#else
         var customTestAppPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(customTestAppPath);
 
@@ -17,6 +20,7 @@ public static class LambdaToolsHelper
         CopyDirectory(currentDir, customTestAppPath);
 
         return Path.Combine(customTestAppPath, testAppPath);
+#endif
     }
 
     public static async Task<string> InstallLambdaTools()

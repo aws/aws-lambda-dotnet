@@ -13,31 +13,31 @@
  * permissions and limitations under the License.
  */
 
-namespace Amazon.Lambda.RuntimeSupport
+namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 {
     /// <summary>
-    /// Internal context class used by ResponseStreamFactory to track per-invocation streaming state.
+    /// Constants used for Lambda response streaming.
     /// </summary>
-    internal class ResponseStreamContext
+    internal static class StreamingConstants
     {
         /// <summary>
-        /// The AWS request ID for the current invocation.
+        /// Header name for Lambda response mode.
         /// </summary>
-        public string AwsRequestId { get; set; }
+        public const string ResponseModeHeader = "Lambda-Runtime-Function-Response-Mode";
 
         /// <summary>
-        /// Maximum allowed response size in bytes (20 MiB).
+        /// Value for streaming response mode.
         /// </summary>
-        public long MaxResponseSize { get; set; }
+        public const string StreamingResponseMode = "streaming";
 
         /// <summary>
-        /// Whether CreateStream() has been called for this invocation.
+        /// Trailer header name for error type.
         /// </summary>
-        public bool StreamCreated { get; set; }
+        public const string ErrorTypeTrailer = "Lambda-Runtime-Function-Error-Type";
 
         /// <summary>
-        /// The ResponseStream instance if created.
+        /// Trailer header name for error body.
         /// </summary>
-        public ResponseStream Stream { get; set; }
+        public const string ErrorBodyTrailer = "Lambda-Runtime-Function-Error-Body";
     }
 }

@@ -31,7 +31,7 @@ using Xunit.Abstractions;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
-    [Collection("Bootstrap")]
+    [Collection("ResponseStreamFactory")]
     public class HandlerTests
     {
         private const string AggregateExceptionTestMarker = "AggregateExceptionTesting";

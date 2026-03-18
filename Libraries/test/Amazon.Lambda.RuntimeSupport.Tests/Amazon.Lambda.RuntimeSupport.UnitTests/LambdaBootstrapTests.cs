@@ -14,12 +14,14 @@
  */
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 using Amazon.Lambda.RuntimeSupport.Bootstrap;
 using static Amazon.Lambda.RuntimeSupport.Bootstrap.Constants;
 
@@ -29,6 +31,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
     /// Tests to test LambdaBootstrap when it's constructed using its actual constructor.
     /// Tests of the static GetLambdaBootstrap methods can be found in LambdaBootstrapWrapperTests.
     /// </summary>
+    [Collection("ResponseStreamFactory")]
     public class LambdaBootstrapTests
     {
         readonly TestHandler _testFunction;
@@ -282,6 +285,160 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_DOTNET_PREJIT, null);
             environmentVariables.SetEnvironmentVariable(ENVIRONMENT_VARIABLE_AWS_LAMBDA_INITIALIZATION_TYPE, AWS_LAMBDA_INITIALIZATION_TYPE_PC);
             Assert.True(UserCodeInit.IsCallPreJit(environmentVariables));
+        }
+
+        // --- Streaming Integration Tests ---
+
+        private TestStreamingRuntimeApiClient CreateStreamingClient()
+        {
+            var envVars = new TestEnvironmentVariables();
+            var headers = new Dictionary<string, IEnumerable<string>>
+            {
+                { RuntimeApiHeaders.HeaderAwsRequestId, new List<string> { "streaming-request-id" } },
+                { RuntimeApiHeaders.HeaderInvokedFunctionArn, new List<string> { "invoked_function_arn" } },
+                { RuntimeApiHeaders.HeaderAwsTenantId, new List<string> { "tenant_id" } }
+            };
+            return new TestStreamingRuntimeApiClient(envVars, headers);
+        }
+
+        /// <summary>
+        /// Property 2: CreateStream Enables Streaming Mode
+        /// When a handler calls ResponseStreamFactory.CreateStream(), the response is transmitted
+        /// using streaming mode. LambdaBootstrap awaits the send task.
+        /// **Validates: Requirements 1.4, 6.1, 6.2, 6.3, 6.4**
+        /// </summary>
+        [Fact]
+        public async Task StreamingMode_HandlerCallsCreateStream_SendTaskAwaited()
+        {
+            var streamingClient = CreateStreamingClient();
+
+            LambdaBootstrapHandler handler = async (invocation) =>
+            {
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+                await stream.WriteAsync(Encoding.UTF8.GetBytes("hello"));
+                return new InvocationResponse(Stream.Null, false);
+            };
+
+            using (var bootstrap = new LambdaBootstrap(handler, null))
+            {
+                bootstrap.Client = streamingClient;
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            Assert.True(streamingClient.StartStreamingResponseAsyncCalled);
+            Assert.False(streamingClient.SendResponseAsyncCalled);
+        }
+
+        /// <summary>
+        /// Property 3: Default Mode Is Buffered
+        /// When a handler does not call ResponseStreamFactory.CreateStream(), the response
+        /// is transmitted using buffered mode via SendResponseAsync.
+        /// **Validates: Requirements 1.5, 7.2**
+        /// </summary>
+        [Fact]
+        public async Task BufferedMode_HandlerDoesNotCallCreateStream_UsesSendResponse()
+        {
+            var streamingClient = CreateStreamingClient();
+
+            LambdaBootstrapHandler handler = async (invocation) =>
+            {
+                var outputStream = new MemoryStream(Encoding.UTF8.GetBytes("buffered response"));
+                return new InvocationResponse(outputStream);
+            };
+
+            using (var bootstrap = new LambdaBootstrap(handler, null))
+            {
+                bootstrap.Client = streamingClient;
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            Assert.False(streamingClient.StartStreamingResponseAsyncCalled);
+            Assert.True(streamingClient.SendResponseAsyncCalled);
+        }
+
+        /// <summary>
+        /// Property 14: Exception After Writes Uses Trailers
+        /// When a handler throws an exception after writing data to an IResponseStream,
+        /// the error is reported via trailers (ReportErrorAsync) rather than standard error reporting.
+        /// **Validates: Requirements 5.6, 5.7**
+        /// </summary>
+        [Fact]
+        public async Task MidstreamError_ExceptionAfterWrites_ReportsViaTrailers()
+        {
+            var streamingClient = CreateStreamingClient();
+
+            LambdaBootstrapHandler handler = async (invocation) =>
+            {
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+                await stream.WriteAsync(Encoding.UTF8.GetBytes("partial data"));
+                throw new InvalidOperationException("midstream failure");
+            };
+
+            using (var bootstrap = new LambdaBootstrap(handler, null))
+            {
+                bootstrap.Client = streamingClient;
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            // Error should be reported via trailers on the stream, not via standard error reporting
+            Assert.True(streamingClient.StartStreamingResponseAsyncCalled);
+            Assert.NotNull(streamingClient.LastStreamingResponseStream);
+            Assert.True(streamingClient.LastStreamingResponseStream.HasError);
+            Assert.False(streamingClient.ReportInvocationErrorAsyncExceptionCalled);
+        }
+
+        /// <summary>
+        /// Property 15: Exception Before CreateStream Uses Standard Error
+        /// When a handler throws an exception before calling ResponseStreamFactory.CreateStream(),
+        /// the error is reported using the standard Lambda error reporting mechanism.
+        /// **Validates: Requirements 5.7, 7.1**
+        /// </summary>
+        [Fact]
+        public async Task PreStreamError_ExceptionBeforeCreateStream_UsesStandardErrorReporting()
+        {
+            var streamingClient = CreateStreamingClient();
+
+            LambdaBootstrapHandler handler = async (invocation) =>
+            {
+                await Task.Yield();
+                throw new InvalidOperationException("pre-stream failure");
+            };
+
+            using (var bootstrap = new LambdaBootstrap(handler, null))
+            {
+                bootstrap.Client = streamingClient;
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            Assert.False(streamingClient.StartStreamingResponseAsyncCalled);
+            Assert.True(streamingClient.ReportInvocationErrorAsyncExceptionCalled);
+        }
+
+        /// <summary>
+        /// State Isolation: ResponseStreamFactory state is cleared after each invocation.
+        /// **Validates: Requirements 6.5, 8.9**
+        /// </summary>
+        [Fact]
+        public async Task Cleanup_ResponseStreamFactoryStateCleared_AfterInvocation()
+        {
+            var streamingClient = CreateStreamingClient();
+
+            LambdaBootstrapHandler handler = async (invocation) =>
+            {
+                var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+                await stream.WriteAsync(Encoding.UTF8.GetBytes("data"));
+                return new InvocationResponse(Stream.Null, false);
+            };
+
+            using (var bootstrap = new LambdaBootstrap(handler, null))
+            {
+                bootstrap.Client = streamingClient;
+                await bootstrap.InvokeOnceAsync();
+            }
+
+            // After invocation, factory state should be cleaned up
+            Assert.Null(ResponseStreamFactory.GetStreamIfCreated(false));
+            Assert.Null(ResponseStreamFactory.GetSendTask(false));
         }
     }
 }

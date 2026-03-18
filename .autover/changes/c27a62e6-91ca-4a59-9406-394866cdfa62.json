@@ -1,0 +1,18 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.RuntimeSupport",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "(Preview) Add response streaming support"
+      ]
+    },
+    {
+      "Name": "Amazon.Lambda.Core",
+      "Type": "Minor",
+      "ChangelogMessages": [
+        "(Preview) Add response streaming support"
+      ]
+    }	
+  ]
+}

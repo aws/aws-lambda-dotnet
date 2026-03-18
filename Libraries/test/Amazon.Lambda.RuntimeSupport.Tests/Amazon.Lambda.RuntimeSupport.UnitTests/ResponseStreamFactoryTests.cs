@@ -14,11 +14,14 @@
  */
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming;
 using Xunit;
 
 namespace Amazon.Lambda.RuntimeSupport.UnitTests
 {
+    [Collection("ResponseStreamFactory")]
     public class ResponseStreamFactoryTests : IDisposable
     {
         private const long MaxResponseSize = 20 * 1024 * 1024;
@@ -30,7 +33,40 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
         }
 
-        // --- Task 3.3: CreateStream tests ---
+        /// <summary>
+        /// A minimal RuntimeApiClient subclass for testing that overrides StartStreamingResponseAsync
+        /// to avoid real HTTP calls while tracking invocations.
+        /// </summary>
+        private class MockStreamingRuntimeApiClient : RuntimeApiClient
+        {
+            public bool StartStreamingCalled { get; private set; }
+            public string LastAwsRequestId { get; private set; }
+            public ResponseStream LastResponseStream { get; private set; }
+            public TaskCompletionSource<bool> SendTaskCompletion { get; } = new TaskCompletionSource<bool>();
+
+            public MockStreamingRuntimeApiClient()
+                : base(new TestEnvironmentVariables(), new TestHelpers.NoOpInternalRuntimeApiClient())
+            {
+            }
+
+            internal override async Task StartStreamingResponseAsync(
+                string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
+            {
+                StartStreamingCalled = true;
+                LastAwsRequestId = awsRequestId;
+                LastResponseStream = responseStream;
+                await SendTaskCompletion.Task;
+            }
+        }
+
+        private void InitializeWithMock(string requestId, bool isMultiConcurrency, MockStreamingRuntimeApiClient mockClient)
+        {
+            ResponseStreamFactory.InitializeInvocation(
+                requestId, isMultiConcurrency,
+                mockClient, CancellationToken.None);
+        }
+
+        // --- Property 1: CreateStream Returns Valid Stream ---
 
         /// <summary>
         /// Property 1: CreateStream Returns Valid Stream - on-demand mode.
@@ -39,12 +75,13 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void CreateStream_OnDemandMode_ReturnsValidStream()
         {
-            ResponseStreamFactory.InitializeInvocation("req-1", MaxResponseSize, isMultiConcurrency: false);
+            var mock = new MockStreamingRuntimeApiClient();
+            InitializeWithMock("req-1", isMultiConcurrency: false, mock);
 
-            var stream = ResponseStreamFactory.CreateStream();
+            var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
 
             Assert.NotNull(stream);
-            Assert.IsAssignableFrom<IResponseStream>(stream);
+            Assert.IsAssignableFrom<ResponseStream>(stream);
         }
 
         /// <summary>
@@ -54,13 +91,16 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void CreateStream_MultiConcurrencyMode_ReturnsValidStream()
         {
-            ResponseStreamFactory.InitializeInvocation("req-2", MaxResponseSize, isMultiConcurrency: true);
+            var mock = new MockStreamingRuntimeApiClient();
+            InitializeWithMock("req-2", isMultiConcurrency: true, mock);
 
-            var stream = ResponseStreamFactory.CreateStream();
+            var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
 
             Assert.NotNull(stream);
-            Assert.IsAssignableFrom<IResponseStream>(stream);
+            Assert.IsAssignableFrom<ResponseStream>(stream);
         }
+
+        // --- Property 4: Single Stream Per Invocation ---
 
         /// <summary>
         /// Property 4: Single Stream Per Invocation - calling CreateStream twice throws.
@@ -69,53 +109,107 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void CreateStream_CalledTwice_ThrowsInvalidOperationException()
         {
-            ResponseStreamFactory.InitializeInvocation("req-3", MaxResponseSize, isMultiConcurrency: false);
-            ResponseStreamFactory.CreateStream();
+            var mock = new MockStreamingRuntimeApiClient();
+            InitializeWithMock("req-3", isMultiConcurrency: false, mock);
+            ResponseStreamFactory.CreateStream(Array.Empty<byte>());
 
-            Assert.Throws<InvalidOperationException>(() => ResponseStreamFactory.CreateStream());
+            Assert.Throws<InvalidOperationException>(() => ResponseStreamFactory.CreateStream(Array.Empty<byte>()));
         }
 
         [Fact]
         public void CreateStream_OutsideInvocationContext_ThrowsInvalidOperationException()
         {
             // No InitializeInvocation called
-            Assert.Throws<InvalidOperationException>(() => ResponseStreamFactory.CreateStream());
+            Assert.Throws<InvalidOperationException>(() => ResponseStreamFactory.CreateStream(Array.Empty<byte>()));
         }
 
-        // --- Task 3.5: Internal methods tests ---
+        // --- CreateStream starts HTTP POST ---
+
+        /// <summary>
+        /// Validates that CreateStream calls StartStreamingResponseAsync on the RuntimeApiClient.
+        /// Validates: Requirements 1.3, 1.4, 2.2, 2.3, 2.4
+        /// </summary>
+        [Fact]
+        public void CreateStream_CallsStartStreamingResponseAsync()
+        {
+            var mock = new MockStreamingRuntimeApiClient();
+            InitializeWithMock("req-start", isMultiConcurrency: false, mock);
+
+            ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+
+            Assert.True(mock.StartStreamingCalled);
+            Assert.Equal("req-start", mock.LastAwsRequestId);
+            Assert.NotNull(mock.LastResponseStream);
+        }
+
+        // --- GetSendTask ---
+
+        /// <summary>
+        /// Validates that GetSendTask returns the task from the HTTP POST.
+        /// Validates: Requirements 5.1, 7.3
+        /// </summary>
+        [Fact]
+        public void GetSendTask_AfterCreateStream_ReturnsNonNullTask()
+        {
+            var mock = new MockStreamingRuntimeApiClient();
+            InitializeWithMock("req-send", isMultiConcurrency: false, mock);
+
+            ResponseStreamFactory.CreateStream(Array.Empty<byte>());
+
+            var sendTask = ResponseStreamFactory.GetSendTask(isMultiConcurrency: false);
+            Assert.NotNull(sendTask);
+        }
+
+        [Fact]
+        public void GetSendTask_BeforeCreateStream_ReturnsNull()
+        {
+            var mock = new MockStreamingRuntimeApiClient();
+            InitializeWithMock("req-nosend", isMultiConcurrency: false, mock);
+
+            var sendTask = ResponseStreamFactory.GetSendTask(isMultiConcurrency: false);
+            Assert.Null(sendTask);
+        }
+
+        [Fact]
+        public void GetSendTask_NoContext_ReturnsNull()
+        {
+            Assert.Null(ResponseStreamFactory.GetSendTask(isMultiConcurrency: false));
+        }
+
+        // --- Internal methods ---
 
         [Fact]
         public void InitializeInvocation_OnDemand_SetsUpContext()
         {
-            ResponseStreamFactory.InitializeInvocation("req-4", MaxResponseSize, isMultiConcurrency: false);
+            var mock = new MockStreamingRuntimeApiClient();
+            InitializeWithMock("req-4", isMultiConcurrency: false, mock);
 
-            // GetStreamIfCreated should return null since CreateStream hasn't been called
             Assert.Null(ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: false));
 
-            // But CreateStream should work (proving context was set up)
-            var stream = ResponseStreamFactory.CreateStream();
+            var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
             Assert.NotNull(stream);
         }
 
         [Fact]
         public void InitializeInvocation_MultiConcurrency_SetsUpContext()
         {
-            ResponseStreamFactory.InitializeInvocation("req-5", MaxResponseSize, isMultiConcurrency: true);
+            var mock = new MockStreamingRuntimeApiClient();
+            InitializeWithMock("req-5", isMultiConcurrency: true, mock);
 
             Assert.Null(ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true));
 
-            var stream = ResponseStreamFactory.CreateStream();
+            var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
             Assert.NotNull(stream);
         }
 
         [Fact]
         public void GetStreamIfCreated_AfterCreateStream_ReturnsStream()
         {
-            ResponseStreamFactory.InitializeInvocation("req-6", MaxResponseSize, isMultiConcurrency: false);
-            var created = ResponseStreamFactory.CreateStream();
+            var mock = new MockStreamingRuntimeApiClient();
+            InitializeWithMock("req-6", isMultiConcurrency: false, mock);
+            ResponseStreamFactory.CreateStream(Array.Empty<byte>());
 
             var retrieved = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: false);
-
             Assert.NotNull(retrieved);
         }
 
@@ -128,14 +222,17 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void CleanupInvocation_ClearsState()
         {
-            ResponseStreamFactory.InitializeInvocation("req-7", MaxResponseSize, isMultiConcurrency: false);
-            ResponseStreamFactory.CreateStream();
+            var mock = new MockStreamingRuntimeApiClient();
+            InitializeWithMock("req-7", isMultiConcurrency: false, mock);
+            ResponseStreamFactory.CreateStream(Array.Empty<byte>());
 
             ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: false);
 
             Assert.Null(ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: false));
-            Assert.Throws<InvalidOperationException>(() => ResponseStreamFactory.CreateStream());
+            Assert.Throws<InvalidOperationException>(() => ResponseStreamFactory.CreateStream(Array.Empty<byte>()));
         }
+
+        // --- Property 16: State Isolation Between Invocations ---
 
         /// <summary>
         /// Property 16: State Isolation Between Invocations - state from one invocation doesn't leak to the next.
@@ -144,18 +241,19 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public void StateIsolation_SequentialInvocations_NoLeakage()
         {
+            var mock = new MockStreamingRuntimeApiClient();
+
             // First invocation - streaming
-            ResponseStreamFactory.InitializeInvocation("req-8a", MaxResponseSize, isMultiConcurrency: false);
-            var stream1 = ResponseStreamFactory.CreateStream();
+            InitializeWithMock("req-8a", isMultiConcurrency: false, mock);
+            var stream1 = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
             Assert.NotNull(stream1);
             ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: false);
 
             // Second invocation - should start fresh
-            ResponseStreamFactory.InitializeInvocation("req-8b", MaxResponseSize, isMultiConcurrency: false);
+            InitializeWithMock("req-8b", isMultiConcurrency: false, mock);
             Assert.Null(ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: false));
 
-            // Should be able to create a new stream
-            var stream2 = ResponseStreamFactory.CreateStream();
+            var stream2 = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
             Assert.NotNull(stream2);
             ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: false);
         }
@@ -167,17 +265,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task StateIsolation_MultiConcurrency_UsesAsyncLocal()
         {
-            // Initialize in multi-concurrency mode on main thread
-            ResponseStreamFactory.InitializeInvocation("req-9", MaxResponseSize, isMultiConcurrency: true);
-            var stream = ResponseStreamFactory.CreateStream();
+            var mock = new MockStreamingRuntimeApiClient();
+            InitializeWithMock("req-9", isMultiConcurrency: true, mock);
+            var stream = ResponseStreamFactory.CreateStream(Array.Empty<byte>());
             Assert.NotNull(stream);
 
-            // A separate task should not see the main thread's context
-            // (AsyncLocal flows to child tasks, but a fresh Task.Run with new initialization should override)
             bool childSawNull = false;
             await Task.Run(() =>
             {
-                // Clean up the flowed context first
                 ResponseStreamFactory.CleanupInvocation(isMultiConcurrency: true);
                 childSawNull = ResponseStreamFactory.GetStreamIfCreated(isMultiConcurrency: true) == null;
             });
