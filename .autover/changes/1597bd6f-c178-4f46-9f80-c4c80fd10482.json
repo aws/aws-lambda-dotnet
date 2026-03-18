@@ -1,0 +1,11 @@
+{
+  "Projects": [
+    {
+      "Name": "Amazon.Lambda.DynamoDBEvents.SDK.Convertor",
+      "Type": "Patch",
+      "ChangelogMessages": [
+        "Update AWS .NET SDK dependencies"
+      ]
+    }
+  ]
+}
