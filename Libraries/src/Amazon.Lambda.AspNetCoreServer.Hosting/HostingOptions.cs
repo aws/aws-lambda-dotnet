@@ -9,6 +9,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting;
 /// </summary>
 public class HostingOptions
 {
+    internal const string ParameterizedPreviewMessage =
+        "Response streaming is in preview till a new version of .NET Lambda runtime client that supports response streaming " +
+        "has been deployed to the .NET Lambda managed runtime. Till deployment has been made the feature can be used by deploying as an " +
+        "executable including the latest version of Amazon.Lambda.RuntimeSupport and setting the \"EnablePreviewFeatures\" in the Lambda " +
+        "project file to \"true\"";
+
     /// <summary>
     /// The ILambdaSerializer used by Lambda to convert the incoming event JSON into the .NET event type and serialize the .NET response type
     /// back to JSON to return to Lambda.
@@ -26,6 +32,14 @@ public class HostingOptions
     /// Defaults to false for security.
     /// </summary>
     public bool IncludeUnhandledExceptionDetailInResponse { get; set; } = false;
+
+    /// <summary>
+    /// When true, the Lambda hosting server will invoke <c>StreamingFunctionHandlerAsync</c>
+    /// instead of <c>FunctionHandlerAsync</c>, enabling Lambda response streaming.
+    /// Requires net8.0 or later.
+    /// </summary>
+    [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
+    public bool EnableResponseStreaming { get; set; } = false;
 
     /// <summary>
     /// Callback invoked after request marshalling to customize the HTTP request feature.

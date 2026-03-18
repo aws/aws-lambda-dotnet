@@ -14,7 +14,6 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Tests;
 /// </summary>
 public class AddAWSLambdaBeforeSnapshotRequestTests
 {
-    #if NET8_0_OR_GREATER
     [Theory]
     [InlineData(LambdaEventSource.HttpApi)]
     [InlineData(LambdaEventSource.RestApi)]
@@ -55,5 +54,4 @@ public class AddAWSLambdaBeforeSnapshotRequestTests
 
         Assert.True(callbackDidTheCallback);
     }
-    #endif
 }

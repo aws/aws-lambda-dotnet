@@ -78,8 +78,13 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new APIGatewayHttpApiV2MinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
+            var handler = new APIGatewayHttpApiV2MinimalApi(serviceProvider);
+#pragma warning disable CA2252
+            var hostingOptions = serviceProvider.GetService<HostingOptions>();
+            handler.EnableResponseStreaming = hostingOptions?.EnableResponseStreaming ?? false;
+#pragma warning restore CA2252
+            Func<APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest, ILambdaContext, Task<APIGatewayEvents.APIGatewayHttpApiV2ProxyResponse>> bufferedHandler = handler.FunctionHandlerAsync;
+            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, this.Serializer);
         }
 
         /// <summary>
@@ -87,9 +92,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// </summary>
         public class APIGatewayHttpApiV2MinimalApi : APIGatewayHttpApiV2ProxyFunction
         {
-            #if NET8_0_OR_GREATER
             private readonly IEnumerable<GetBeforeSnapshotRequestsCollector> _beforeSnapshotRequestsCollectors;
-            #endif
             private readonly HostingOptions? _hostingOptions;
 
             /// <summary>
@@ -99,9 +102,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             public APIGatewayHttpApiV2MinimalApi(IServiceProvider serviceProvider)
                 : base(serviceProvider)
             {
-                #if NET8_0_OR_GREATER
                 _beforeSnapshotRequestsCollectors = serviceProvider.GetServices<GetBeforeSnapshotRequestsCollector>();
-                #endif
 
                 // Retrieve HostingOptions from service provider (may be null for backward compatibility)
                 _hostingOptions = serviceProvider.GetService<HostingOptions>();
@@ -127,14 +128,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 }
             }
 
-            #if NET8_0_OR_GREATER
             protected override IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests()
             {
                 foreach (var collector in _beforeSnapshotRequestsCollectors)
                     if (collector.Request != null)
                         yield return collector.Request;
             }
-            #endif
 
             protected override void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, APIGatewayEvents.APIGatewayHttpApiV2ProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
@@ -208,8 +207,13 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new APIGatewayRestApiMinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
+            var handler = new APIGatewayRestApiMinimalApi(serviceProvider);
+#pragma warning disable CA2252
+            var hostingOptions = serviceProvider.GetService<HostingOptions>();
+            handler.EnableResponseStreaming = hostingOptions?.EnableResponseStreaming ?? false;
+#pragma warning restore CA2252
+            Func<APIGatewayEvents.APIGatewayProxyRequest, ILambdaContext, Task<APIGatewayEvents.APIGatewayProxyResponse>> bufferedHandler = handler.FunctionHandlerAsync;
+            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, this.Serializer);
         }
 
         /// <summary>
@@ -217,9 +221,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// </summary>
         public class APIGatewayRestApiMinimalApi : APIGatewayProxyFunction
         {
-            #if NET8_0_OR_GREATER
             private readonly IEnumerable<GetBeforeSnapshotRequestsCollector> _beforeSnapshotRequestsCollectors;
-            #endif
             private readonly HostingOptions? _hostingOptions;
 
             /// <summary>
@@ -229,9 +231,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             public APIGatewayRestApiMinimalApi(IServiceProvider serviceProvider)
                 : base(serviceProvider)
             {
-                #if NET8_0_OR_GREATER
                 _beforeSnapshotRequestsCollectors = serviceProvider.GetServices<GetBeforeSnapshotRequestsCollector>();
-                #endif
 
                 // Retrieve HostingOptions from service provider (may be null for backward compatibility)
                 _hostingOptions = serviceProvider.GetService<HostingOptions>();
@@ -257,14 +257,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 }
             }
 
-            #if NET8_0_OR_GREATER
             protected override IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests()
             {
                 foreach (var collector in _beforeSnapshotRequestsCollectors)
                     if (collector.Request != null)
                         yield return collector.Request;
             }
-            #endif
 
             protected override void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, APIGatewayEvents.APIGatewayProxyRequest lambdaRequest, ILambdaContext lambdaContext)
             {
@@ -338,8 +336,13 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// <returns></returns>
         protected override HandlerWrapper CreateHandlerWrapper(IServiceProvider serviceProvider)
         {
-            var handler = new ApplicationLoadBalancerMinimalApi(serviceProvider).FunctionHandlerAsync;
-            return HandlerWrapper.GetHandlerWrapper(handler, this.Serializer);
+            var handler = new ApplicationLoadBalancerMinimalApi(serviceProvider);
+#pragma warning disable CA2252
+            var hostingOptions = serviceProvider.GetService<HostingOptions>();
+            handler.EnableResponseStreaming = hostingOptions?.EnableResponseStreaming ?? false;
+#pragma warning restore CA2252
+            Func<ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest, ILambdaContext, Task<ApplicationLoadBalancerEvents.ApplicationLoadBalancerResponse>> bufferedHandler = handler.FunctionHandlerAsync;
+            return HandlerWrapper.GetHandlerWrapper(bufferedHandler, this.Serializer);
         }
 
         /// <summary>
@@ -347,9 +350,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
         /// </summary>
         public class ApplicationLoadBalancerMinimalApi : ApplicationLoadBalancerFunction
         {
-            #if NET8_0_OR_GREATER
             private readonly IEnumerable<GetBeforeSnapshotRequestsCollector> _beforeSnapshotRequestsCollectors;
-            #endif
             private readonly HostingOptions? _hostingOptions;
 
             /// <summary>
@@ -359,9 +360,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
             public ApplicationLoadBalancerMinimalApi(IServiceProvider serviceProvider)
                 : base(serviceProvider)
             {
-                #if NET8_0_OR_GREATER
                 _beforeSnapshotRequestsCollectors = serviceProvider.GetServices<GetBeforeSnapshotRequestsCollector>();
-                #endif
 
                 // Retrieve HostingOptions from service provider (may be null for backward compatibility)
                 _hostingOptions = serviceProvider.GetService<HostingOptions>();
@@ -387,14 +386,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Hosting.Internal
                 }
             }
 
-            #if NET8_0_OR_GREATER
             protected override IEnumerable<HttpRequestMessage> GetBeforeSnapshotRequests()
             {
                 foreach (var collector in _beforeSnapshotRequestsCollectors)
                     if (collector.Request != null)
                         yield return collector.Request;
             }
-            #endif
 
             protected override void PostMarshallRequestFeature(IHttpRequestFeature aspNetCoreRequestFeature, ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest lambdaRequest, ILambdaContext lambdaContext)
             {

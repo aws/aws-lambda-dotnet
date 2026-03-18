@@ -88,7 +88,6 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
-        #if NET8_0_OR_GREATER
         /// <summary>
         /// Adds a <see cref="HttpRequestMessage"/>> that will be used to invoke
         /// Routes in your lambda function in order to initialize the ASP.NET Core and Lambda pipelines
@@ -142,7 +141,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return services;
         }
-        #endif
 
         private static bool TryLambdaSetup(IServiceCollection services, LambdaEventSource eventSource, Action<HostingOptions>? configure, out HostingOptions? hostingOptions)
         {
