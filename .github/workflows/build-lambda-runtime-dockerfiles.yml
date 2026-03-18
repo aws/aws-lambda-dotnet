@@ -1,0 +1,64 @@
+name: Build Lambda Runtime Images
+
+on:
+  pull_request:
+    paths:
+      - "LambdaRuntimeDockerfiles/**"
+  push:
+    paths:
+      - "LambdaRuntimeDockerfiles/**"
+
+permissions:
+  contents: read
+
+jobs:
+  build-runtime-images:
+    name: Build runtime image (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: NET 8 AMD64
+            dockerfile: LambdaRuntimeDockerfiles/Images/net8/amd64/Dockerfile
+            platform: linux/amd64
+          - name: NET 8 ARM64
+            dockerfile: LambdaRuntimeDockerfiles/Images/net8/arm64/Dockerfile
+            platform: linux/arm64
+          - name: NET 9 AMD64
+            dockerfile: LambdaRuntimeDockerfiles/Images/net9/amd64/Dockerfile
+            platform: linux/amd64
+          - name: NET 9 ARM64
+            dockerfile: LambdaRuntimeDockerfiles/Images/net9/arm64/Dockerfile
+            platform: linux/arm64
+          - name: NET 10 AMD64
+            dockerfile: LambdaRuntimeDockerfiles/Images/net10/amd64/Dockerfile
+            platform: linux/amd64
+          - name: NET 10 ARM64
+            dockerfile: LambdaRuntimeDockerfiles/Images/net10/arm64/Dockerfile
+            platform: linux/arm64
+          - name: NET 11 AMD64
+            dockerfile: LambdaRuntimeDockerfiles/Images/net11/amd64/Dockerfile
+            platform: linux/amd64
+          - name: NET 11 ARM64
+            dockerfile: LambdaRuntimeDockerfiles/Images/net11/arm64/Dockerfile
+            platform: linux/arm64
+
+    steps:
+      - uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 #v4.2.2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          push: false
+          provenance: false
+
