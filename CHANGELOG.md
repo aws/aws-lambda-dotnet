@@ -1,3 +1,12 @@
+## Release 2026-03-19
+
+### Amazon.Lambda.DynamoDBEvents.SDK.Convertor (2.0.2)
+* Update AWS .NET SDK dependencies
+### Amazon.Lambda.KinesisEvents (3.0.2)
+* Update AWS .NET SDK dependencies
+### Amazon.Lambda.Templates (8.0.2)
+* Update package references for Lambda templates
+
 ## Release 2026-02-19
 
 ### Amazon.Lambda.AspNetCoreServer.Hosting (1.10.0)
