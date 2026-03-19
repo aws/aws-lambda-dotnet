@@ -45,7 +45,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 }
 
                 // Pass the same request parameter for Request Type that comes from the generated method.
-                if (TypeFullNames.Requests.Contains(p.Type.FullName))
+                if (TypeFullNames.AuthorizerRequests.Contains(p.Type.FullName))
                 {
                     return "__request__";
                 }
@@ -61,7 +61,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
 
         foreach (var parameter in _model.LambdaMethod.Parameters)
         {
-            if (parameter.Type.FullName == TypeFullNames.ILambdaContext || TypeFullNames.Requests.Contains(parameter.Type.FullName))
+            if (parameter.Type.FullName == TypeFullNames.ILambdaContext || TypeFullNames.AuthorizerRequests.Contains(parameter.Type.FullName))
             {
                 // No action required for ILambdaContext and RequestType, they are passed from the generated method parameter directly to the original method.
             }

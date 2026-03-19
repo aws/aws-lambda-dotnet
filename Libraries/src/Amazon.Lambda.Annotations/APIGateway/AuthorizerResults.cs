@@ -98,8 +98,8 @@ namespace Amazon.Lambda.Annotations.APIGateway
         /// This method is called by the generated Lambda handler code.
         /// </summary>
         /// <param name="options">Serialization options that determine the output format.</param>
-        /// <returns>The serialized response object appropriate for the authorizer format.</returns>
-        public object Serialize(AuthorizerResultSerializationOptions options)
+        /// <returns>A Stream containing the serialized response in the appropriate authorizer format.</returns>
+        public Stream Serialize(AuthorizerResultSerializationOptions options)
         {
 #if NETSTANDARD2_0
             throw new NotImplementedException();

@@ -51,10 +51,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
         public const string LambdaSerializerAttributeWithoutNamespace = "LambdaSerializerAttribute";
 
-        public static HashSet<string> Requests = new HashSet<string>
+        public static HashSet<string> ApiGatewayRequests = new HashSet<string>
         {
             APIGatewayProxyRequest,
-            APIGatewayHttpApiV2ProxyRequest,
+            APIGatewayHttpApiV2ProxyRequest
+        };
+
+        public static HashSet<string> AuthorizerRequests = new HashSet<string>
+        {
             APIGatewayCustomAuthorizerV2Request,
             APIGatewayCustomAuthorizerRequest
         };

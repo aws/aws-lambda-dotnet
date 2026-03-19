@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 
 namespace Amazon.Lambda.Annotations.APIGateway
 {
@@ -16,7 +17,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
     /// <code>
     /// [LambdaFunction]
     /// [HttpApiAuthorizer(EnableSimpleResponses = true)]
-    /// public IAuthorizerResult Authorize([FromHeader("Authorization")] string auth, ILambdaContext context)
+    /// public IAuthorizerResult Authorize([FromHeader(Name = "Authorization")] string auth, ILambdaContext context)
     /// {
     ///     if (IsValid(auth))
     ///         return AuthorizerResults.Allow()
@@ -64,7 +65,7 @@ namespace Amazon.Lambda.Annotations.APIGateway
         /// This is called by the generated Lambda handler code.
         /// </summary>
         /// <param name="options">Serialization options that determine the output format</param>
-        /// <returns>The serialized response object (type depends on the authorizer format)</returns>
-        object Serialize(AuthorizerResultSerializationOptions options);
+        /// <returns>A Stream containing the serialized response in the appropriate authorizer format</returns>
+        Stream Serialize(AuthorizerResultSerializationOptions options);
     }
 }

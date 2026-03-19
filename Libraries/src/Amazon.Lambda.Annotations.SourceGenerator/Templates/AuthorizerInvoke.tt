@@ -37,7 +37,7 @@
                 Format = <#= format #>,
                 MethodArn = <#= methodArnExpression #>
             };
-            var response = (System.IO.Stream)authorizerResult.Serialize(serializationOptions);
+            var response = authorizerResult.Serialize(serializationOptions);
             return response;
 <#
         }

@@ -55,7 +55,7 @@ namespace TestCustomAuthorizerApp
                 Format = AuthorizerResultSerializationOptions.AuthorizerFormat.HttpApiSimple,
                 MethodArn = __request__.RouteArn
             };
-            var response = (System.IO.Stream)authorizerResult.Serialize(serializationOptions);
+            var response = authorizerResult.Serialize(serializationOptions);
             return response;
         }
 

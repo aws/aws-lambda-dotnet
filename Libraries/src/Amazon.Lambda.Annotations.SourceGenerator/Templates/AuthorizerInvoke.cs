@@ -103,8 +103,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             
             #line default
             #line hidden
-            this.Write("\r\n            };\r\n            var response = (System.IO.Stream)authorizerResult.S" +
-                    "erialize(serializationOptions);\r\n            return response;\r\n");
+            this.Write("\r\n            };\r\n            var response = authorizerResult.Serialize(serializa" +
+                    "tionOptions);\r\n            return response;\r\n");
             
             #line 42 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerInvoke.tt"
 

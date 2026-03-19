@@ -55,7 +55,7 @@ namespace TestServerlessApp
                 Format = AuthorizerResultSerializationOptions.AuthorizerFormat.RestApi,
                 MethodArn = __request__.MethodArn
             };
-            var response = (System.IO.Stream)authorizerResult.Serialize(serializationOptions);
+            var response = authorizerResult.Serialize(serializationOptions);
             return response;
         }
 
