@@ -9,15 +9,15 @@
     <AssemblyName>Amazon.Lambda.DynamoDBEvents.SDK.Convertor</AssemblyName>
     <PackageId>Amazon.Lambda.DynamoDBEvents.SDK.Convertor</PackageId>
     <PackageTags>AWS;Amazon;Lambda</PackageTags>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.0" />
-    <PackageReference Include="AWSSDK.DynamoDBStreams" Version="4.0.0" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.15.2" />
+    <PackageReference Include="AWSSDK.DynamoDBStreams" Version="4.0.4.17" />
   </ItemGroup>
 
   <ItemGroup>

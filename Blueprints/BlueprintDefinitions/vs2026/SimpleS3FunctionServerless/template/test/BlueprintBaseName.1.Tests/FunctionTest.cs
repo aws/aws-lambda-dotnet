@@ -23,7 +23,7 @@ public class FunctionTest
         var key = "text.txt";
 
         // Create a bucket an object to setup a test data.
-        await s3Client.PutBucketAsync(bucketName);
+        await s3Client.PutBucketAsync(bucketName, TestContext.Current.CancellationToken);
         try
         {
             await s3Client.PutObjectAsync(new PutObjectRequest
@@ -31,7 +31,7 @@ public class FunctionTest
                 BucketName = bucketName,
                 Key = key,
                 ContentBody = "sample data"
-            });
+            }, TestContext.Current.CancellationToken);
 
             // Setup the S3 event object that S3 notifications would create with the fields used by the Lambda function.
             var s3Event = new S3Event
@@ -59,7 +59,7 @@ public class FunctionTest
         finally
         {
             // Clean up the test data
-            await AmazonS3Util.DeleteS3BucketWithObjectsAsync(s3Client, bucketName);
+            await AmazonS3Util.DeleteS3BucketWithObjectsAsync(s3Client, bucketName, TestContext.Current.CancellationToken);
         }
     }
 }

@@ -24,7 +24,7 @@ public class FunctionsTest
             }
         };
         
-        var result = await handler.HandleAsync(envelope);
+        var result = await handler.HandleAsync(envelope, TestContext.Current.CancellationToken);
 
         Assert.Equal(MessageProcessStatus.Success(), result);
     }
@@ -46,7 +46,7 @@ public class FunctionsTest
             }
         };
 
-        var result = await handler.HandleAsync(envelope);
+        var result = await handler.HandleAsync(envelope, TestContext.Current.CancellationToken);
 
         Assert.Equal(MessageProcessStatus.Failed(), result);
     }

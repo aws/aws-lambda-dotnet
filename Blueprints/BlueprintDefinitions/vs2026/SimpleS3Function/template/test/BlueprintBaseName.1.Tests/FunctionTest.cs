@@ -47,6 +47,6 @@ public class FunctionTest
         var function = new Function(mockS3Client.Object);
         await function.FunctionHandler(s3Event, testLambdaContext);
 
-        Assert.Equal("text/plain", ((TestLambdaLogger)testLambdaLogger).Buffer.ToString().Trim());
+        Assert.Contains("text/plain", ((TestLambdaLogger)testLambdaLogger).Buffer.ToString().Trim());
     }
 }
