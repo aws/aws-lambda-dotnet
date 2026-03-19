@@ -46,14 +46,19 @@ jobs:
           token: ${{ env.AWS_SECRET_TOKEN }}
       # Install .NET9 which is needed for AutoVer
       - name: Setup .NET 9.0
-        uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 #v5.0.1
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 #v5.2.0
         with:
           dotnet-version: 9.0.x
       # Install .NET10 which is needed for building the solution
       - name: Setup .NET 10.0
-        uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 #v5.0.1
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 #v5.2.0
         with:
           dotnet-version: 10.0.x
+      # Install .NET11 which is needed for building the solution
+      - name: Setup .NET 11.0
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 #v5.2.0
+        with:
+          dotnet-version: 11.0.x
       # Install AutoVer which is needed to retrieve information about the current release.
       - name: Install AutoVer
         run: dotnet tool install --global AutoVer --version 0.0.25
@@ -122,14 +127,19 @@ jobs:
           fetch-depth: 0
       # Install .NET9 which is needed for AutoVer
       - name: Setup .NET 9.0
-        uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 #v5.0.1
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 #v5.2.0
         with:
           dotnet-version: 9.0.x
       # Install .NET10 which is needed for building the solution
       - name: Setup .NET 10.0
-        uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 #v5.0.1
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 #v5.2.0
         with:
           dotnet-version: 10.0.x
+      # Install .NET11 which is needed for building the solution
+      - name: Setup .NET 11.0
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 #v5.2.0
+        with:
+          dotnet-version: 11.0.x
       # Install AutoVer which is needed to retrieve information about the current release.
       - name: Install AutoVer
         run: dotnet tool install --global AutoVer --version 0.0.25
