@@ -7,10 +7,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.Annotations.APIGateway;
 
 namespace TestCustomAuthorizerApp
 {
-    public class AuthorizerFunction_RestApiAuthorize_Generated
+    public class AuthorizerFunction_SimpleRestApiAuthorize_Generated
     {
         private readonly AuthorizerFunction authorizerFunction;
         private readonly Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer serializer;
@@ -20,7 +21,7 @@ namespace TestCustomAuthorizerApp
         /// the AWS credentials will come from the IAM role associated with the function and the AWS region will be set to the
         /// region the Lambda function is executed in.
         /// </summary>
-        public AuthorizerFunction_RestApiAuthorize_Generated()
+        public AuthorizerFunction_SimpleRestApiAuthorize_Generated()
         {
             SetExecutionEnvironment();
             authorizerFunction = new AuthorizerFunction();
@@ -28,14 +29,33 @@ namespace TestCustomAuthorizerApp
         }
 
         /// <summary>
-        /// The generated Lambda function handler for <see cref="RestApiAuthorize(Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerRequest, Amazon.Lambda.Core.ILambdaContext)"/>
+        /// The generated Lambda function handler for <see cref="SimpleRestApiAuthorize(string, Amazon.Lambda.Core.ILambdaContext)"/>
         /// </summary>
         /// <param name="__request__">The API Gateway authorizer request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
         /// <returns>Result of the Lambda function execution</returns>
-        public Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerResponse RestApiAuthorize(Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
+        public System.IO.Stream SimpleRestApiAuthorize(Amazon.Lambda.APIGatewayEvents.APIGatewayCustomAuthorizerRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
-            var response = authorizerFunction.RestApiAuthorize(__request__, __context__);
+            var authorization = default(string);
+            if (!string.IsNullOrEmpty(__request__.AuthorizationToken))
+            {
+                try
+                {
+                    authorization = (string)Convert.ChangeType(__request__.AuthorizationToken, typeof(string));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    __context__.Logger.Log($"Failed to extract authorization token: {e.Message}");
+                }
+            }
+
+            var authorizerResult = authorizerFunction.SimpleRestApiAuthorize(authorization, __context__);
+            var serializationOptions = new AuthorizerResultSerializationOptions
+            {
+                Format = AuthorizerResultSerializationOptions.AuthorizerFormat.RestApi,
+                MethodArn = __request__.MethodArn
+            };
+            var response = authorizerResult.Serialize(serializationOptions);
             return response;
         }
 
@@ -51,7 +71,7 @@ namespace TestCustomAuthorizerApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("lib/amazon-lambda-annotations#1.9.0.0");
+            envValue.Append("lib/amazon-lambda-annotations#{ANNOTATIONS_ASSEMBLY_VERSION}");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }

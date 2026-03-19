@@ -216,7 +216,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             title: "Authorizer Payload Version Mismatch",
             messageFormat: "The authorizer '{0}' uses AuthorizerPayloadFormatVersion {1} but the endpoint uses HttpApiVersion {2}. This may cause unexpected behavior.",
             category: "AWSLambdaCSharpGenerator",
-            DiagnosticSeverity.Warning,
+            DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
         public static readonly DiagnosticDescriptor MissingLambdaFunctionAttribute = new DiagnosticDescriptor(
