@@ -1,0 +1,376 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Amazon.Lambda.TestTool.BlazorTester/0.15.2": {
+        "dependencies": {
+          "Amazon.Lambda.TestTool": "1.0.0",
+          "Blazored.Modal": "3.1.2",
+          "Microsoft.Extensions.FileProviders.Embedded": "8.0.0-rc.2.23480.2"
+        },
+        "runtime": {
+          "Amazon.Lambda.TestTool.BlazorTester.dll": {}
+        }
+      },
+      "Amazon.Lambda.Core/2.2.0": {
+        "runtime": {
+          "lib/net8.0/Amazon.Lambda.Core.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "AWSSDK.Core/3.7.303.20": {
+        "runtime": {
+          "lib/net8.0/AWSSDK.Core.dll": {
+            "assemblyVersion": "3.3.0.0",
+            "fileVersion": "3.7.303.20"
+          }
+        }
+      },
+      "AWSSDK.SQS/3.7.300.80": {
+        "dependencies": {
+          "AWSSDK.Core": "3.7.303.20"
+        },
+        "runtime": {
+          "lib/net8.0/AWSSDK.SQS.dll": {
+            "assemblyVersion": "3.3.0.0",
+            "fileVersion": "3.7.300.80"
+          }
+        }
+      },
+      "AWSSDK.SSO/3.7.300.80": {
+        "dependencies": {
+          "AWSSDK.Core": "3.7.303.20"
+        },
+        "runtime": {
+          "lib/net8.0/AWSSDK.SSO.dll": {
+            "assemblyVersion": "3.3.0.0",
+            "fileVersion": "3.7.300.80"
+          }
+        }
+      },
+      "AWSSDK.SSOOIDC/3.7.301.75": {
+        "dependencies": {
+          "AWSSDK.Core": "3.7.303.20"
+        },
+        "runtime": {
+          "lib/net8.0/AWSSDK.SSOOIDC.dll": {
+            "assemblyVersion": "3.3.0.0",
+            "fileVersion": "3.7.301.75"
+          }
+        }
+      },
+      "Blazored.Modal/3.1.2": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Components": "3.1.1",
+          "Microsoft.AspNetCore.Components.Web": "3.1.1",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "3.1.1"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Blazored.Modal.dll": {
+            "assemblyVersion": "3.1.2.0",
+            "fileVersion": "3.1.2.0"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Authorization/3.1.1": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Metadata": "3.1.1",
+          "Microsoft.Extensions.Logging.Abstractions": "3.1.1",
+          "Microsoft.Extensions.Options": "3.1.1"
+        }
+      },
+      "Microsoft.AspNetCore.Components/3.1.1": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Authorization": "3.1.1",
+          "Microsoft.AspNetCore.Components.Analyzers": "3.1.1",
+          "Microsoft.JSInterop": "3.1.1"
+        }
+      },
+      "Microsoft.AspNetCore.Components.Analyzers/3.1.1": {},
+      "Microsoft.AspNetCore.Components.Forms/3.1.1": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Components": "3.1.1"
+        }
+      },
+      "Microsoft.AspNetCore.Components.Web/3.1.1": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Components": "3.1.1",
+          "Microsoft.AspNetCore.Components.Forms": "3.1.1",
+          "Microsoft.Extensions.DependencyInjection": "3.1.1",
+          "Microsoft.JSInterop": "3.1.1"
+        }
+      },
+      "Microsoft.AspNetCore.Metadata/3.1.1": {},
+      "Microsoft.Extensions.DependencyInjection/3.1.1": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "3.1.1"
+        }
+      },
+      "Microsoft.Extensions.DependencyInjection.Abstractions/3.1.1": {},
+      "Microsoft.Extensions.DependencyModel/8.0.0-rc.2.23479.6": {
+        "dependencies": {
+          "System.Text.Encodings.Web": "8.0.0-rc.2.23479.6",
+          "System.Text.Json": "8.0.0-rc.2.23479.6"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.DependencyModel.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.23.47906"
+          }
+        }
+      },
+      "Microsoft.Extensions.FileProviders.Abstractions/8.0.0-rc.2.23479.6": {
+        "dependencies": {
+          "Microsoft.Extensions.Primitives": "8.0.0-rc.2.23479.6"
+        }
+      },
+      "Microsoft.Extensions.FileProviders.Embedded/8.0.0-rc.2.23480.2": {
+        "dependencies": {
+          "Microsoft.Extensions.FileProviders.Abstractions": "8.0.0-rc.2.23479.6"
+        }
+      },
+      "Microsoft.Extensions.Logging.Abstractions/3.1.1": {},
+      "Microsoft.Extensions.Options/3.1.1": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "3.1.1",
+          "Microsoft.Extensions.Primitives": "8.0.0-rc.2.23479.6"
+        }
+      },
+      "Microsoft.Extensions.Primitives/8.0.0-rc.2.23479.6": {},
+      "Microsoft.JSInterop/3.1.1": {},
+      "Newtonsoft.Json/13.0.1": {
+        "runtime": {
+          "lib/netstandard2.0/Newtonsoft.Json.dll": {
+            "assemblyVersion": "13.0.0.0",
+            "fileVersion": "13.0.1.25517"
+          }
+        }
+      },
+      "System.Text.Encodings.Web/8.0.0-rc.2.23479.6": {},
+      "System.Text.Json/8.0.0-rc.2.23479.6": {
+        "dependencies": {
+          "System.Text.Encodings.Web": "8.0.0-rc.2.23479.6"
+        }
+      },
+      "YamlDotNet.Signed/5.2.1": {
+        "runtime": {
+          "lib/netstandard1.3/YamlDotNet.dll": {
+            "assemblyVersion": "5.0.0.0",
+            "fileVersion": "5.2.1.0"
+          }
+        }
+      },
+      "Amazon.Lambda.TestTool/1.0.0": {
+        "dependencies": {
+          "AWSSDK.Core": "3.7.303.20",
+          "AWSSDK.SQS": "3.7.300.80",
+          "AWSSDK.SSO": "3.7.300.80",
+          "AWSSDK.SSOOIDC": "3.7.301.75",
+          "Amazon.Lambda.Core": "2.2.0",
+          "Microsoft.Extensions.DependencyModel": "8.0.0-rc.2.23479.6",
+          "Newtonsoft.Json": "13.0.1",
+          "YamlDotNet.Signed": "5.2.1"
+        },
+        "runtime": {
+          "Amazon.Lambda.TestTool.dll": {
+            "assemblyVersion": "0.0.0.0",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Amazon.Lambda.TestTool.BlazorTester/0.15.2": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Amazon.Lambda.Core/2.2.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-DHqKeD1CYocP0t1dJC/NaXfu+5k6AoqnQ1Hlu/J2mXpLpCyeJfY+tIqT5fpruDarUlU0NtdIH8zSkCjeinyb1A==",
+      "path": "amazon.lambda.core/2.2.0",
+      "hashPath": "amazon.lambda.core.2.2.0.nupkg.sha512"
+    },
+    "AWSSDK.Core/3.7.303.20": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-4qm4E63XIpms1nPKQ63hlxAMn8wnNVyXQGklIeuS81g3TJsJtu6L9FiG/dc+gISaVxiGsqGY9b++nuQfJMxRLw==",
+      "path": "awssdk.core/3.7.303.20",
+      "hashPath": "awssdk.core.3.7.303.20.nupkg.sha512"
+    },
+    "AWSSDK.SQS/3.7.300.80": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-qqY6APhBCWnFttYYvUEjAz+1eYoQikOQ7GLdXZgDqHDvHEysMM6jGkKS5XlY8Cpj3g1DTFrZEay832DdSvS5LA==",
+      "path": "awssdk.sqs/3.7.300.80",
+      "hashPath": "awssdk.sqs.3.7.300.80.nupkg.sha512"
+    },
+    "AWSSDK.SSO/3.7.300.80": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-RjUrn2v+w6hifmIrOZ5DdRkRbkT3m41e2JelE88V/mthvyfVyN5rFoILZX7LPG3GHITVm+2+pojP2SP+37zCSQ==",
+      "path": "awssdk.sso/3.7.300.80",
+      "hashPath": "awssdk.sso.3.7.300.80.nupkg.sha512"
+    },
+    "AWSSDK.SSOOIDC/3.7.301.75": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-VLeJ6e2rDMoEZAr1OVSknNvJX8Ji7LedmbOiCbRCqp2kcLOe5EFVw64YqfDwnQVYSis6G+yVPTwmh1wODkiZ8w==",
+      "path": "awssdk.ssooidc/3.7.301.75",
+      "hashPath": "awssdk.ssooidc.3.7.301.75.nupkg.sha512"
+    },
+    "Blazored.Modal/3.1.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-UguO9/MHbYI5l5CxjuxWMn27SJ/JYSbYt5R5bt9ODK7Ge5+NnqolRO2VCSKH0rrGaZ8PjIkPaEtdesybKg8hcg==",
+      "path": "blazored.modal/3.1.2",
+      "hashPath": "blazored.modal.3.1.2.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Authorization/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-z4VtFGjHPUACePEz25Q4btFs5jjWh/3sfO1ozCzUJebL/nq4J4kQUOhkSFZhlTikxbsYpqp6ZamH77btGzZA9w==",
+      "path": "microsoft.aspnetcore.authorization/3.1.1",
+      "hashPath": "microsoft.aspnetcore.authorization.3.1.1.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Components/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-CcbE+dq3U7+BIY5tYvjMmCn+fovTn/ZL+rFl8mkwJLgckudDCnGeoJXpO0oW1uI35Gu737wa2qE29z68/jcKzw==",
+      "path": "microsoft.aspnetcore.components/3.1.1",
+      "hashPath": "microsoft.aspnetcore.components.3.1.1.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Components.Analyzers/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-S//jhO3BHKZFEs1eVEvmxaQ0woUVbvzw6I0QEwIOl2r3hDqRIpYqBqDFM/Ha9Qs8y5BgqOETCHskAq0t9QX0zQ==",
+      "path": "microsoft.aspnetcore.components.analyzers/3.1.1",
+      "hashPath": "microsoft.aspnetcore.components.analyzers.3.1.1.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Components.Forms/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-FZ7IF9sTbfkeBlqBH/7aFIYv+I65hYQH/9hmw/ZpnmNp4yuyZvnr/1PQwlSKGHDYFrM5H4ccsrozwxoM0q1CrA==",
+      "path": "microsoft.aspnetcore.components.forms/3.1.1",
+      "hashPath": "microsoft.aspnetcore.components.forms.3.1.1.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Components.Web/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Qf/sWul2eAk2/Lop1DC3p637eWqGvbh0uxcQQXb45DPty4NEg9hf/bZlPPlSB1g9f2CaZIA56piM+CbRuLAzTg==",
+      "path": "microsoft.aspnetcore.components.web/3.1.1",
+      "hashPath": "microsoft.aspnetcore.components.web.3.1.1.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Metadata/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-jfe4+whbBwqTxKabSNf4zy9NdNqbrnmVcYjO8r1N2BomimcZS+LRr+OvTtZJwqqBLebvEgwv2Ei0ZbwFtDtW0g==",
+      "path": "microsoft.aspnetcore.metadata/3.1.1",
+      "hashPath": "microsoft.aspnetcore.metadata.3.1.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.DependencyInjection/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Jg48cM12C8iqjpFMNXWEmJR/2jnmScV8Y8txVOayycLqHatLV2Cn4wuwj56KSOc/xVWwlWmq9Y5ebDH6awnexw==",
+      "path": "microsoft.extensions.dependencyinjection/3.1.1",
+      "hashPath": "microsoft.extensions.dependencyinjection.3.1.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.DependencyInjection.Abstractions/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-uKZr5b4w9nQE6UAXS4PqBFbg2qe6kS+pdsCbDG2kHjUaWT/B7EOcDraoR52H/4BoBIEH3By5co6Wioru7+v9Zg==",
+      "path": "microsoft.extensions.dependencyinjection.abstractions/3.1.1",
+      "hashPath": "microsoft.extensions.dependencyinjection.abstractions.3.1.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.DependencyModel/8.0.0-rc.2.23479.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-TmxRse+FDFhu4Bp+izSrVJyu6JcwFhaDmb61LPRRFGLa0hh7nYm4SeryOEYKMWReuqlK9to6t8Tn1m5ySGK/8g==",
+      "path": "microsoft.extensions.dependencymodel/8.0.0-rc.2.23479.6",
+      "hashPath": "microsoft.extensions.dependencymodel.8.0.0-rc.2.23479.6.nupkg.sha512"
+    },
+    "Microsoft.Extensions.FileProviders.Abstractions/8.0.0-rc.2.23479.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-o7G1lHK9/gXYyVNh6AuUC5sCM6sWWbH1fgBlsju6ZSgG5dfrEQKJPxO7pTJNA2AGhjw7hi9MnuexbaBUg1gakg==",
+      "path": "microsoft.extensions.fileproviders.abstractions/8.0.0-rc.2.23479.6",
+      "hashPath": "microsoft.extensions.fileproviders.abstractions.8.0.0-rc.2.23479.6.nupkg.sha512"
+    },
+    "Microsoft.Extensions.FileProviders.Embedded/8.0.0-rc.2.23480.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-9+5zaN6OeIR43nFPoXekyFJIJhjXx34LY5lqeq+076extPrYW0fDoVdyIhwfEG1aCi7Pb2BNXyfnfB6BNdELuw==",
+      "path": "microsoft.extensions.fileproviders.embedded/8.0.0-rc.2.23480.2",
+      "hashPath": "microsoft.extensions.fileproviders.embedded.8.0.0-rc.2.23480.2.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Logging.Abstractions/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-4/1BLjd9Zvc87xlhfkIsAlHOgMnGJBQFIEmO3CUKLrf38nIFp3W7X+JoFiRmn20WAi5+l2sgUWS4ixaIuB3S0g==",
+      "path": "microsoft.extensions.logging.abstractions/3.1.1",
+      "hashPath": "microsoft.extensions.logging.abstractions.3.1.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Options/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-p2faCNhzXyG5oLLOV8n8dwg2rfqS4aRpIWu4qgwZMq+al3133mAQ+Hb822iwRoj3qnKM8zY4A6Jz/Vm/xWHvrA==",
+      "path": "microsoft.extensions.options/3.1.1",
+      "hashPath": "microsoft.extensions.options.3.1.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Primitives/8.0.0-rc.2.23479.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-I3fTiDmV+2cCR3VjH+oz49AMgrAqX1cmNiWXmEAituAI7jCLA16uXzvYQTwxhQzov5BTdPVXKGNTxsMb1GpcLQ==",
+      "path": "microsoft.extensions.primitives/8.0.0-rc.2.23479.6",
+      "hashPath": "microsoft.extensions.primitives.8.0.0-rc.2.23479.6.nupkg.sha512"
+    },
+    "Microsoft.JSInterop/3.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-icBxjPwn1iNkyvaiqZf03+Gxfrc6rOT+8a0/FKsDMZnpHPXe7p1Dianh4Kk9RI5Cyzf/6+e6+QMdOaKgwhhR5w==",
+      "path": "microsoft.jsinterop/3.1.1",
+      "hashPath": "microsoft.jsinterop.3.1.1.nupkg.sha512"
+    },
+    "Newtonsoft.Json/13.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A==",
+      "path": "newtonsoft.json/13.0.1",
+      "hashPath": "newtonsoft.json.13.0.1.nupkg.sha512"
+    },
+    "System.Text.Encodings.Web/8.0.0-rc.2.23479.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-n66ZIJjetmrMq9hJ61Xed2cp9O2zr/VdzhhURjkLDEFOZ38/VpOWnvM3CWCXA18NbM7x0tdKZYex9rj0NimpPA==",
+      "path": "system.text.encodings.web/8.0.0-rc.2.23479.6",
+      "hashPath": "system.text.encodings.web.8.0.0-rc.2.23479.6.nupkg.sha512"
+    },
+    "System.Text.Json/8.0.0-rc.2.23479.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-SXMjrmm/e0Om+731AEUgm+81dC+i9mV54nKJGOq9+zTYpzujMCmSQSMS1sgQb0gmiiAfTfRC5WgD3l92cfAP+g==",
+      "path": "system.text.json/8.0.0-rc.2.23479.6",
+      "hashPath": "system.text.json.8.0.0-rc.2.23479.6.nupkg.sha512"
+    },
+    "YamlDotNet.Signed/5.2.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-8eQmzaQjSnWEXaUT72ylWUkD/ESbv1n4XTqFeK4/K8SIzjScG64iYl9rYgmoFEEu6d9WhnePY5lYaRmAztdhAg==",
+      "path": "yamldotnet.signed/5.2.1",
+      "hashPath": "yamldotnet.signed.5.2.1.nupkg.sha512"
+    },
+    "Amazon.Lambda.TestTool/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

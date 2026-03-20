@@ -1,0 +1,211 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Amazon.Lambda.TestTool</name>
+    </assembly>
+    <members>
+        <member name="M:Amazon.Lambda.TestTool.LocalLambdaOptions.GetPreferenceDirectory(System.Boolean)">
+            <summary>
+            The directory to store in local settings for a Lambda project for example saved Lambda requests.
+            </summary>
+        </member>
+        <member name="T:Amazon.Lambda.TestTool.Runtime.ConsoleOutWrapper">
+            <summary>
+            This class is used to capture standard out and standard error when executing the Lambda function.
+            </summary>
+        </member>
+        <member name="T:Amazon.Lambda.TestTool.Runtime.DlqMonitor">
+            <summary>
+            This class will continually poll a SQS queue for more messages from a dead letter queue. If a message was read then the Lambda function 
+            will be invoked within the test tool.
+            </summary>
+        </member>
+        <member name="T:Amazon.Lambda.TestTool.Runtime.ExecutionRequest">
+            <summary>
+            The information used to execute the Lambda function within the test tool
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.Runtime.ExecutionRequest.Function">
+            <summary>
+            The container for the holds a reference to the code executed for the Lambda function.
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.Runtime.ExecutionRequest.AWSRegion">
+            <summary>
+            The AWS region that the AWS_REGION environment variable is set to so the AWS SDK for .NET will pick up.
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.Runtime.ExecutionRequest.AWSProfile">
+            <summary>
+            The AWS profile that the AWS_PROFILE environment variable is set to so the AWS SDK for .NET will pick up and use for credentials.
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.Runtime.ExecutionRequest.Payload">
+            <summary>
+            The JSON payload that will be the input of the Lambda function.
+            </summary>
+        </member>
+        <member name="T:Amazon.Lambda.TestTool.Runtime.ExecutionResponse">
+            <summary>
+            The class represents the output of an executed Lambda function.
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.Runtime.ExecutionResponse.Response">
+            <summary>
+            The return data from a Lambda function.
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.Runtime.ExecutionResponse.Logs">
+            <summary>
+            The logs captures from calls to ILambdaContext.Logger and Console.Write
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.Runtime.ExecutionResponse.Error">
+            <summary>
+            If an unhandled exception occured in the Lambda function this will contain the error message and stack trace.
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.Runtime.ExecutionResponse.IsSuccess">
+            <summary>
+            True if the Lambda function was executed without any unhandled exceptions.
+            </summary>
+        </member>
+        <member name="M:Amazon.Lambda.TestTool.Runtime.LambdaAssemblyLoadContext.SearchMicrosoftAspNetCoreApp(System.Reflection.AssemblyName)">
+            <summary>
+            See if the assembly being loaded is coming from the Microsoft.AspNetCore.App runtime. If so
+            then load that assembly. 
+            
+            This is done because if fallback to the Default AssemblyLoadContext is used then services added 
+            to the IServiceCollection will not be resolved. They will be added from the Lambda context but be 
+            attempted to resolved in the Default context. The Default context doesn't have access to the types in the
+            Lambda context and so they will fail to resolve.
+            </summary>
+            <param name="assemblyName"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Amazon.Lambda.TestTool.Runtime.LambdaConfigInfo">
+            <summary>
+            This class represents the config info for the available lambda functions gathered from the aws-lambda-tools-defaults.json or similiar files and possibly 
+            an associated CloudFormation template.
+            </summary>
+        </member>
+        <member name="M:Amazon.Lambda.TestTool.Runtime.LambdaExecutor.MakeGenericSerializerCall(Amazon.Lambda.Core.ILambdaSerializer,System.Object,System.IO.Stream)">
+            <summary>
+            Reflection is used to invoke the Lambda function which returns the response as an object. The 
+            Serialize method from ILambdaSerializer is a generic method based on the type of the response object.
+            This method converts the generic Serialize method to the specific type of the response. 
+            
+            If we don't do this the 'T' of the generic Serialize method is an object which will break
+            when using the source generator serializer SourceGeneratorLambdaJsonSerializer.
+            </summary>
+            <param name="serializer"></param>
+            <param name="lambdaReturnObject"></param>
+            <param name="lambdaReturnStream"></param>
+        </member>
+        <member name="M:Amazon.Lambda.TestTool.Runtime.LambdaExecutor.BuildParameters(Amazon.Lambda.TestTool.Runtime.ExecutionRequest,Amazon.Lambda.Core.ILambdaContext)">
+            <summary>
+            Create the parameter array that will be passed into the Invoke for the Lambda function.
+            </summary>
+            <param name="request"></param>
+            <param name="context"></param>
+            <returns></returns>
+            <exception cref="T:System.Exception"></exception>
+        </member>
+        <member name="T:Amazon.Lambda.TestTool.Runtime.LambdaFunction">
+            <summary>
+            The abstraction above the code that will be called when during a Lambda invocation.
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.Runtime.LambdaFunction.IsSuccess">
+            <summary>
+            False if the test tool was unable to find the reflection objects for the function handler.
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.Runtime.LambdaFunctionInfo.Name">
+            <summary>
+            Display friendly name of the Lambda Function.
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.Runtime.LambdaFunctionInfo.Handler">
+            <summary>
+            The Lambda function handler string.
+            </summary>
+        </member>
+        <member name="T:Amazon.Lambda.TestTool.Runtime.LambdaTemplateFileParser">
+            <summary>
+            This class handles getting the configuration information from aws-lambda-tools-defaults.json file 
+            and possibly a CloudFormation template. YAML CloudFormation templates aren't supported yet.
+            </summary>
+        </member>
+        <member name="T:Amazon.Lambda.TestTool.Runtime.LocalLambdaRuntime">
+            <summary>
+            A mock Lambda runtime to execute Lambda functions.
+            </summary>
+        </member>
+        <member name="M:Amazon.Lambda.TestTool.Runtime.LocalLambdaRuntime.LoadLambdaFunction(Amazon.Lambda.TestTool.Runtime.LambdaFunctionInfo)">
+            <summary>
+            Find the reflection objects for the code that will be executed for the Lambda function based on the
+            Lambda function handler.
+            </summary>
+            <param name="functionInfo"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Amazon.Lambda.TestTool.Runtime.LocalLambdaRuntime.ExecuteLambdaFunctionAsync(Amazon.Lambda.TestTool.Runtime.ExecutionRequest)">
+            <summary>
+            Execute the Lambda function.
+            </summary>
+            <param name="request"></param>
+            <returns></returns>        
+        </member>
+        <member name="T:Amazon.Lambda.TestTool.SampleRequests.SampleRequestManager">
+            <summary>
+            This class manages the sample Lambda input requests. This includes the precanned requests and saved requests.
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.TestToolStartup.RunConfiguration.Mode">
+            <summary>
+            If this is set to Test then that disables any interactive activity or any calls to Environment.Exit which wouldn't work well during a test run.
+            </summary>
+        </member>
+        <member name="P:Amazon.Lambda.TestTool.TestToolStartup.RunConfiguration.OutputWriter">
+            <summary>
+            Allows you to capture the output for tests to example instead of just writing to the console windows.
+            </summary>
+        </member>
+        <member name="F:Amazon.Lambda.TestTool.Utils.KNOWN_LOCATIONS">
+            <summary>
+            A collection of known paths for common utilities that are usually not found in the path
+            </summary>
+        </member>
+        <member name="M:Amazon.Lambda.TestTool.Utils.FindExecutableInPath(System.String)">
+            <summary>
+            Search the path environment variable for the command given.
+            </summary>
+            <param name="command">The command to search for in the path</param>
+            <returns>The full path to the command if found otherwise it will return null</returns>
+        </member>
+        <member name="M:Amazon.Lambda.TestTool.Utils.TryPrettyPrintJson(System.String)">
+            <summary>
+            Attempt to pretty print the input string. If pretty print fails return back the input string in its original form.
+            </summary>
+            <param name="data"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Amazon.Lambda.TestTool.Utils.SearchLatestCompilationDirectory(System.String)">
+            <summary>
+            From the debug directory look to see where the latest compilation occurred for debugging. This can vary between the
+            root debug directory and the runtime specific subfolders. Starting with .NET 7 SDK if ready 2 run is enabled then 
+            project compiles into the runtime specific folder.
+            </summary>
+            <param name="debugDirectory"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Amazon.Lambda.TestTool.Utils.FindLambdaAssemblyPath(System.String)">
+            <summary>
+            Returns the Lambda assembly file path that will debugged by the test tool.
+            It returns an empty string if no Lambda assembly path is found.
+            </summary>
+            <param name="debugDirectory">This points to the .../bin/{CONFIGURATION}/{TARGET_FRAMEWORK} directory</param>
+        </member>
+    </members>
+</doc>
