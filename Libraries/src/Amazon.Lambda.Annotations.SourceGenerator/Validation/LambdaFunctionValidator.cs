@@ -91,16 +91,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
 
         private static void ValidateApiGatewayEvents(LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
         {
-            // If the method does not contain any APIGatewayEvents or Authorizer events, then it cannot return IHttpResults
-            // and can also not have parameters that are annotated with HTTP API attributes.
-            // Authorizer functions also support FromHeader, FromQuery, FromRoute attributes.
-            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.API) && !lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.Authorizer))
-            {
-                if (lambdaFunctionModel.LambdaMethod.ReturnsIHttpResults)
-                {
-                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.HttpResultsOnNonApiFunction, methodLocation));
-                }
+            var isApiEvent = lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.API);
+            var isAuthorizerEvent = lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.Authorizer);
 
+            // IHttpResult is only valid for API Gateway events (not Authorizer events)
+            if (!isApiEvent && lambdaFunctionModel.LambdaMethod.ReturnsIHttpResults)
+            {
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.HttpResultsOnNonApiFunction, methodLocation));
+            }
+
+            // IAuthorizerResult is only valid for Authorizer events
+            if (!isAuthorizerEvent && lambdaFunctionModel.LambdaMethod.ReturnsIAuthorizerResult)
+            {
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.AuthorizerResultOnNonAuthorizerFunction, methodLocation));
+            }
+
+            // If the method does not contain any API or Authorizer events, then it cannot have
+            // parameters that are annotated with HTTP API attributes.
+            // Authorizer functions also support FromHeader, FromQuery, FromRoute attributes.
+            if (!isApiEvent && !isAuthorizerEvent)
+            {
                 foreach (var parameter in lambdaFunctionModel.LambdaMethod.Parameters)
                 {
                     if (parameter.Attributes.Any(att =>
@@ -116,9 +126,58 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 return;
             }
 
-            // If this is an Authorizer event, skip the API Gateway-specific parameter validation below
-            if (lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.Authorizer))
+            // Authorizer-specific parameter validation
+            if (isAuthorizerEvent)
             {
+                foreach (var parameter in lambdaFunctionModel.LambdaMethod.Parameters)
+                {
+                    // [FromBody] is not supported on authorizer functions
+                    if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromBodyAttribute))
+                    {
+                        diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.FromBodyNotSupportedOnAuthorizer, methodLocation));
+                    }
+
+                    // Validate [FromQuery] parameter types - only primitive types allowed
+                    if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
+                    {
+                        if (!parameter.Type.IsPrimitiveType() && !parameter.Type.IsPrimitiveEnumerableType())
+                        {
+                            diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.UnsupportedMethodParameterType, methodLocation, parameter.Name, parameter.Type.FullName));
+                        }
+                    }
+
+                    // Validate attribute names for FromQuery, FromRoute, and FromHeader
+                    foreach (var att in parameter.Attributes)
+                    {
+                        var parameterAttributeName = string.Empty;
+                        switch (att.Type.FullName)
+                        {
+                            case TypeFullNames.FromQueryAttribute:
+                                var fromQueryAttribute = (AttributeModel<APIGateway.FromQueryAttribute>)att;
+                                parameterAttributeName = fromQueryAttribute.Data.Name;
+                                break;
+
+                            case TypeFullNames.FromRouteAttribute:
+                                var fromRouteAttribute = (AttributeModel<APIGateway.FromRouteAttribute>)att;
+                                parameterAttributeName = fromRouteAttribute.Data.Name;
+                                break;
+
+                            case TypeFullNames.FromHeaderAttribute:
+                                var fromHeaderAttribute = (AttributeModel<APIGateway.FromHeaderAttribute>)att;
+                                parameterAttributeName = fromHeaderAttribute.Data.Name;
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        if (!string.IsNullOrEmpty(parameterAttributeName) && !_parameterAttributeNameRegex.IsMatch(parameterAttributeName))
+                        {
+                            diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidParameterAttributeName, methodLocation, parameterAttributeName, parameter.Name));
+                        }
+                    }
+                }
+
                 return;
             }
 

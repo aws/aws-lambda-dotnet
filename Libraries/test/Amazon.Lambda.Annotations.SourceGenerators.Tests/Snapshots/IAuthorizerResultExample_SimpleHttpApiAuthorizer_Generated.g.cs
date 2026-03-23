@@ -45,7 +45,11 @@ namespace TestServerlessApp
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    __context__.Logger.Log($"Failed to extract header 'Authorization': {e.Message}");
+#if NET6_0_OR_GREATER
+                    __context__.Logger.LogError(e, "Failed to extract header 'Authorization'.");
+#else
+                    __context__.Logger.Log("Failed to extract header 'Authorization'. Exception: " + e.ToString());
+#endif
                 }
             }
 

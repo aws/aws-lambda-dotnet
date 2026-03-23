@@ -226,5 +226,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AuthorizerResultOnNonAuthorizerFunction = new DiagnosticDescriptor(
+            id: "AWSLambda0130",
+            title: $"Invalid return type IAuthorizerResult",
+            messageFormat: "IAuthorizerResult is not a valid return type for LambdaFunctions without HttpApiAuthorizer or RestApiAuthorizer attributes",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor FromBodyNotSupportedOnAuthorizer = new DiagnosticDescriptor(
+            id: "AWSLambda0131",
+            title: "FromBody not supported on Authorizer functions",
+            messageFormat: "[FromBody] is not supported on authorizer functions. Authorizer functions only support [FromHeader], [FromQuery], and [FromRoute] parameter attributes.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

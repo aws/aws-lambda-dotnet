@@ -66,8 +66,6 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
         this.Write(apiParameters.TransformText());
         this.Write(new APIGatewayInvoke(_model, apiParameters.ParameterSignature).TransformText());
     }
-    // Currently we support 3 event types - Authorizer, APIGatewayEvents, and SQSEvents.
-    // Since SQSEvents does not require any special code generation, the generated method body will be same as when the Lambda method contains no events.
     else
     {
         this.Write(new NoEventMethodBody(_model).TransformText());

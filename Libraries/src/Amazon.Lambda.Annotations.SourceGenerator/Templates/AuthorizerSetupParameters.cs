@@ -156,7 +156,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    __context__.Logger.Log($""Failed to extract authorization token: {e.Message}"");
+#if NET6_0_OR_GREATER
+                    __context__.Logger.LogError(e, ""Failed to extract authorization token."");
+#else
+                    __context__.Logger.Log(""Failed to extract authorization token. Exception: "" + e.ToString());
+#endif
                 }
             }
 ");
@@ -225,14 +229,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    __context__.Logger.Log($""Failed to extract header '");
+#if NET6_0_OR_GREATER
+                    __context__.Logger.LogError(e, ""Failed to extract header '");
             
             #line 97 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
             
             #line default
             #line hidden
-            this.Write("\': {e.Message}\");\r\n                }\r\n            }\r\n");
+            this.Write("\'.\");\r\n#else\r\n                    __context__.Logger.Log(\"Failed to extract header" +
+                    " \'");
+            
+            #line 101 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(headerKey));
+            
+            #line default
+            #line hidden
+            this.Write("\'. Exception: \" + e.ToString());\r\n#endif\r\n                }\r\n            }\r\n");
             
             #line 100 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
 
@@ -308,14 +321,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    __context__.Logger.Log($""Failed to extract query parameter '");
+#if NET6_0_OR_GREATER
+                    __context__.Logger.LogError(e, ""Failed to extract query parameter '");
             
-            #line 120 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 122 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameterKey));
             
             #line default
             #line hidden
-            this.Write("\': {e.Message}\");\r\n                }\r\n            }\r\n\r\n");
+            this.Write("\'.\");\r\n#else\r\n                    __context__.Logger.Log(\"Failed to extract query" +
+                    " parameter \'");
+            
+            #line 124 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(parameterKey));
+            
+            #line default
+            #line hidden
+            this.Write("\'. Exception: \" + e.ToString());\r\n#endif\r\n                }\r\n            }\r\n\r\n");
             
             #line 124 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
 
@@ -382,14 +404,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 }
                 catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
                 {
-                    __context__.Logger.Log($""Failed to extract route parameter '");
+#if NET6_0_OR_GREATER
+                    __context__.Logger.LogError(e, ""Failed to extract route parameter '");
             
-            #line 140 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            #line 142 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(routeKey));
             
             #line default
             #line hidden
-            this.Write("\': {e.Message}\");\r\n                }\r\n            }\r\n\r\n");
+            this.Write("\'.\");\r\n#else\r\n                    __context__.Logger.Log(\"Failed to extract route" +
+                    " parameter \'");
+            
+            #line 144 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(routeKey));
+            
+            #line default
+            #line hidden
+            this.Write("\'. Exception: \" + e.ToString());\r\n#endif\r\n                }\r\n            }\r\n\r\n");
             
             #line 144 "C:\dev\repos\aws-lambda-dotnet\Libraries\src\Amazon.Lambda.Annotations.SourceGenerator\Templates\AuthorizerSetupParameters.tt"
 

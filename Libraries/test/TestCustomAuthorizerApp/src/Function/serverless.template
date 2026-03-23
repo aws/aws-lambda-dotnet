@@ -105,6 +105,91 @@
         "Tool": "Amazon.Lambda.Annotations"
       }
     },
+    "CustomAuthorizer": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorize_Generated::HttpApiAuthorize"
+      }
+    },
+    "CustomAuthorizerV1": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorizeV1_Generated::HttpApiAuthorizeV1"
+      }
+    },
+    "RestApiAuthorizer": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_RestApiAuthorize_Generated::RestApiAuthorize"
+      }
+    },
+    "SimpleAuthorizer": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_SimpleHttpApiAuthorize_Generated::SimpleHttpApiAuthorize"
+      }
+    },
+    "SimpleRestAuthorizer": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_SimpleRestApiAuthorize_Generated::SimpleRestApiAuthorize"
+      }
+    },
     "ProtectedEndpoint": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -361,100 +446,6 @@
         }
       }
     },
-    "NonStringUserInfo": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "RootGet"
-        ],
-        "SyncedEventProperties": {
-          "RootGet": [
-            "Path",
-            "Method",
-            "Auth.Authorizer",
-            "ApiId.Ref"
-          ]
-        }
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetNonStringUserInfo_Generated::GetNonStringUserInfo",
-        "Events": {
-          "RootGet": {
-            "Type": "HttpApi",
-            "Properties": {
-              "Path": "/api/nonstring-user-info",
-              "Method": "GET",
-              "Auth": {
-                "Authorizer": "HttpApiAuthorize"
-              },
-              "ApiId": {
-                "Ref": "AnnotationsHttpApi"
-              }
-            }
-          }
-        }
-      }
-    },
-    "CustomAuthorizer": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorize_Generated::HttpApiAuthorize"
-      }
-    },
-    "RestApiAuthorizer": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_RestApiAuthorize_Generated::RestApiAuthorize"
-      }
-    },
-    "CustomAuthorizerV1": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_HttpApiAuthorizeV1_Generated::HttpApiAuthorizeV1"
-      }
-    },
     "SimpleHttpApiUserInfo": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -541,10 +532,21 @@
         }
       }
     },
-    "SimpleAuthorizer": {
+    "NonStringUserInfo": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ],
+        "SyncedEventProperties": {
+          "RootGet": [
+            "Path",
+            "Method",
+            "Auth.Authorizer",
+            "ApiId.Ref"
+          ]
+        }
       },
       "Properties": {
         "Runtime": "dotnet6",
@@ -555,24 +557,22 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_SimpleHttpApiAuthorize_Generated::SimpleHttpApiAuthorize"
-      }
-    },
-    "SimpleRestAuthorizer": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
-      },
-      "Properties": {
-        "Runtime": "dotnet6",
-        "CodeUri": ".",
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole"
-        ],
-        "PackageType": "Zip",
-        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.AuthorizerFunction_SimpleRestApiAuthorize_Generated::SimpleRestApiAuthorize"
+        "Handler": "TestCustomAuthorizerApp::TestCustomAuthorizerApp.ProtectedFunction_GetNonStringUserInfo_Generated::GetNonStringUserInfo",
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/api/nonstring-user-info",
+              "Method": "GET",
+              "Auth": {
+                "Authorizer": "HttpApiAuthorize"
+              },
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
       }
     }
   }
