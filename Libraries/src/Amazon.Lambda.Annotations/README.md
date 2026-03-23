@@ -23,6 +23,7 @@ Topics:
     - [HTTP API Authorizer](#http-api-authorizer)
     - [REST API Authorizer](#rest-api-authorizer)
     - [Authorizer Attribute Properties](#authorizer-attribute-properties)
+    - [Simplified Authorizer with IAuthorizerResult](#simplified-authorizer-with-iauthorizerresult)
   - [Getting build information](#getting-build-information)
   - [Lambda .NET Attributes Reference](#lambda-net-attributes-reference)
     - [Event Attributes](#event-attributes)
@@ -1068,6 +1069,98 @@ public object ExternalEndpoint(
 }
 ```
 
+### Simplified Authorizer with IAuthorizerResult
+
+As an alternative to working with raw API Gateway authorizer request and response types, authorizer functions can use `IAuthorizerResult` and the `AuthorizerResults` factory class for a simplified developer experience. This follows the same pattern as `IHttpResult`/`HttpResults` for API Gateway endpoint responses.
+
+With this pattern:
+- **`[FromHeader]`, `[FromQuery]`, and `[FromRoute]`** attributes can be used on authorizer function parameters to extract values from the authorizer request, just like they work on `[HttpApi]`/`[RestApi]` endpoint functions.
+- **`AuthorizerResults.Allow()`** and **`AuthorizerResults.Deny()`** replace manual construction of API Gateway response objects and IAM policy documents.
+- **`.WithContext(key, value)`** adds context values that downstream functions can access via `[FromCustomAuthorizer]`.
+- **`.WithPrincipalId(id)`** sets the principal ID (used by REST API and HTTP API IAM policy authorizers).
+
+The source generator automatically handles serialization to the correct API Gateway response format based on the authorizer attribute configuration.
+
+**HTTP API authorizer using IAuthorizerResult:**
+
+```csharp
+[LambdaFunction]
+[HttpApiAuthorizer(
+    EnableSimpleResponses = true,
+    AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2)]
+public IAuthorizerResult SimpleHttpApiAuthorize(
+    [FromHeader(Name = "Authorization")] string authorization,
+    ILambdaContext context)
+{
+    if (string.IsNullOrEmpty(authorization))
+        return AuthorizerResults.Deny();
+
+    if (IsValidToken(authorization))
+    {
+        return AuthorizerResults.Allow()
+            .WithContext("userId", "user-12345")
+            .WithContext("email", "test@example.com");
+    }
+
+    return AuthorizerResults.Deny();
+}
+```
+
+**REST API authorizer using IAuthorizerResult:**
+
+For REST API authorizers, the source generator automatically constructs the IAM policy document from the `Allow()`/`Deny()` result. Use `WithPrincipalId()` to set the caller's principal ID.
+
+```csharp
+[LambdaFunction]
+[RestApiAuthorizer(
+    Type = RestApiAuthorizerType.Token,
+    IdentityHeader = "Authorization")]
+public IAuthorizerResult SimpleRestApiAuthorize(
+    [FromHeader(Name = "Authorization")] string authorization,
+    ILambdaContext context)
+{
+    if (string.IsNullOrEmpty(authorization))
+        return AuthorizerResults.Deny();
+
+    if (IsValidToken(authorization))
+    {
+        return AuthorizerResults.Allow()
+            .WithPrincipalId("user-12345")
+            .WithContext("userId", "user-12345")
+            .WithContext("email", "test@example.com");
+    }
+
+    return AuthorizerResults.Deny();
+}
+```
+
+Protected endpoints work the same way regardless of whether the authorizer uses raw types or `IAuthorizerResult`:
+
+```csharp
+[LambdaFunction]
+[HttpApi(LambdaHttpMethod.Get, "/api/user-info", Authorizer = nameof(SimpleHttpApiAuthorize))]
+public object GetUserInfo(
+    [FromCustomAuthorizer(Name = "userId")] string userId,
+    [FromCustomAuthorizer(Name = "email")] string email,
+    ILambdaContext context)
+{
+    return new { UserId = userId, Email = email };
+}
+```
+
+**`AuthorizerResults` API reference:**
+
+| Method | Description |
+|--------|-------------|
+| `AuthorizerResults.Allow()` | Creates a result that authorizes the request. |
+| `AuthorizerResults.Deny()` | Creates a result that denies the request. |
+| `.WithContext(key, value)` | Adds a context key-value pair passed to downstream functions (accessible via `[FromCustomAuthorizer]`). |
+| `.WithPrincipalId(id)` | Sets the principal ID for the caller (used by REST API and HTTP API IAM policy authorizers). |
+
+Async return types (`Task<IAuthorizerResult>`) are also supported.
+
+> **Backwards compatibility:** Both patterns — raw API Gateway types and `IAuthorizerResult` — are fully supported and can coexist in the same project. The source generator detects which pattern is used based on the return type.
+
 ## Getting build information
 
 The source generator integrates with MSBuild's compiler error and warning reporting when there are problems generating the boiler plate code. 
@@ -1110,11 +1203,11 @@ parameter to the `LambdaFunction` must be the event object and the event source 
 ### Parameter Attributes
 
 * FromHeader
-    * Map method parameter to HTTP header value
+    * Map method parameter to HTTP header value. Also supported on authorizer functions (see [Simplified Authorizer with IAuthorizerResult](#simplified-authorizer-with-iauthorizerresult)).
 * FromQuery
-    * Map method parameter to query string parameter
+    * Map method parameter to query string parameter. Also supported on authorizer functions.
 * FromRoute
-    * Map method parameter to resource path segment
+    * Map method parameter to resource path segment. Also supported on authorizer functions.
 * FromBody
     * Map method parameter to HTTP request body. If parameter is a complex type then request body will be assumed to be JSON and deserialized into the type.
 * FromServices
@@ -1141,6 +1234,8 @@ public async Task ProtectedEndpoint(
 The attributes `RestApi` or `HttpApi` configure a `LambdaFunction` method to use API Gateway as the event source for the function. By default these methods return an 
 HTTP status code of 200. To customize the HTTP response, including adding HTTP headers, the method signature must return an `Amazon.Lambda.Annotations.APIGateway.IHttpResult`
 or `Task<Amazon.Lambda.Annotations.APIGateway.IHttpResult>`.
+
+Similarly, authorizer functions can return `Amazon.Lambda.Annotations.APIGateway.IAuthorizerResult` or `Task<IAuthorizerResult>` to use the simplified authorizer response pattern instead of raw API Gateway types. See the [Simplified Authorizer with IAuthorizerResult](#simplified-authorizer-with-iauthorizerresult) section for details.
 The `Amazon.Lambda.Annotations.APIGateway.HttpResults` class contains static methods for creating an instance of `IHttpResult` with the appropriate HTTP status code and headers.
 
 The example below shows how to return a HTTP status code 404 with a response body and custom header.

@@ -216,13 +216,29 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             title: "Authorizer Payload Version Mismatch",
             messageFormat: "The authorizer '{0}' uses AuthorizerPayloadFormatVersion {1} but the endpoint uses HttpApiVersion {2}. This may cause unexpected behavior.",
             category: "AWSLambdaCSharpGenerator",
-            DiagnosticSeverity.Warning,
+            DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
         public static readonly DiagnosticDescriptor MissingLambdaFunctionAttribute = new DiagnosticDescriptor(
             id: "AWSLambda0129",
             title: "Missing LambdaFunction Attribute",
             messageFormat: "Method has [{0}] attribute but is missing the required [LambdaFunction] attribute. Add [LambdaFunction] to this method.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AuthorizerResultOnNonAuthorizerFunction = new DiagnosticDescriptor(
+            id: "AWSLambda0130",
+            title: $"Invalid return type IAuthorizerResult",
+            messageFormat: "IAuthorizerResult is not a valid return type for LambdaFunctions without HttpApiAuthorizer or RestApiAuthorizer attributes",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor FromBodyNotSupportedOnAuthorizer = new DiagnosticDescriptor(
+            id: "AWSLambda0131",
+            title: "FromBody not supported on Authorizer functions",
+            messageFormat: "[FromBody] is not supported on authorizer functions. Authorizer functions only support [FromHeader], [FromQuery], and [FromRoute] parameter attributes.",
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

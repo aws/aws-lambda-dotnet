@@ -1,0 +1,102 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v{ANNOTATIONS_ASSEMBLY_VERSION}).",
+  "Resources": {
+    "AnnotationsHttpApi": {
+      "Type": "AWS::Serverless::HttpApi",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Auth": {
+          "Authorizers": {
+            "SimpleHttpApiAuthorizer": {
+              "FunctionArn": {
+                "Fn::GetAtt": [
+                  "SimpleHttpApiAuth",
+                  "Arn"
+                ]
+              },
+              "AuthorizerPayloadFormatVersion": "2.0",
+              "EnableSimpleResponses": true,
+              "Identity": {
+                "Headers": [
+                  "Authorization"
+                ]
+              },
+              "EnableFunctionDefaultPermissions": true,
+              "AuthorizerResultTtlInSeconds": 0
+            }
+          }
+        }
+      }
+    },
+    "AnnotationsRestApi": {
+      "Type": "AWS::Serverless::Api",
+      "Properties": {
+        "StageName": "Prod",
+        "Auth": {
+          "Authorizers": {
+            "SimpleRestApiAuthorizer": {
+              "FunctionArn": {
+                "Fn::GetAtt": [
+                  "SimpleRestApiAuth",
+                  "Arn"
+                ]
+              },
+              "Identity": {
+                "Header": "Authorization"
+              },
+              "FunctionPayloadType": "TOKEN",
+              "AuthorizerResultTtlInSeconds": 0
+            }
+          }
+        }
+      },
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      }
+    },
+    "SimpleHttpApiAuth": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.IAuthorizerResultExample_SimpleHttpApiAuthorizer_Generated::SimpleHttpApiAuthorizer"
+          ]
+        }
+      }
+    },
+    "SimpleRestApiAuth": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestProject::TestServerlessApp.IAuthorizerResultExample_SimpleRestApiAuthorizer_Generated::SimpleRestApiAuthorizer"
+          ]
+        }
+      }
+    }
+  }
+}

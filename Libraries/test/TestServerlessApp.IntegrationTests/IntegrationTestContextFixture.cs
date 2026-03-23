@@ -64,11 +64,11 @@ namespace TestServerlessApp.IntegrationTests
             // since the serverless.template is managed by the source generator and may not have Outputs
             var region = "us-west-2";
             Console.WriteLine($"[IntegrationTest] Querying stack resources for '{_stackName}'...");
-            var httpApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "ServerlessHttpApi");
-            var restApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "ServerlessRestApi");
-            Console.WriteLine($"[IntegrationTest] ServerlessHttpApi: {httpApiId}, ServerlessRestApi: {restApiId}");
-            Assert.False(string.IsNullOrEmpty(httpApiId), $"CloudFormation resource 'ServerlessHttpApi' was not found or has an empty physical ID for stack '{_stackName}'.");
-            Assert.False(string.IsNullOrEmpty(restApiId), $"CloudFormation resource 'ServerlessRestApi' was not found or has an empty physical ID for stack '{_stackName}'.");
+            var httpApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "AnnotationsHttpApi");
+            var restApiId = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "AnnotationsRestApi");
+            Console.WriteLine($"[IntegrationTest] AnnotationsHttpApi: {httpApiId}, AnnotationsRestApi: {restApiId}");
+            Assert.False(string.IsNullOrEmpty(httpApiId), $"CloudFormation resource 'AnnotationsHttpApi' was not found or has an empty physical ID for stack '{_stackName}'.");
+            Assert.False(string.IsNullOrEmpty(restApiId), $"CloudFormation resource 'AnnotationsRestApi' was not found or has an empty physical ID for stack '{_stackName}'.");
             HttpApiUrlPrefix = $"https://{httpApiId}.execute-api.{region}.amazonaws.com";
             RestApiUrlPrefix = $"https://{restApiId}.execute-api.{region}.amazonaws.com/Prod";
 
@@ -81,7 +81,7 @@ namespace TestServerlessApp.IntegrationTests
             Console.WriteLine($"[IntegrationTest] Found {LambdaFunctions.Count} Lambda functions: {string.Join(", ", LambdaFunctions.Select(f => f.Name ?? "(null)"))}");
 
             Assert.True(await _s3Helper.BucketExistsAsync(_bucketName), $"S3 bucket {_bucketName} should exist");
-            Assert.Equal(34, LambdaFunctions.Count);
+            Assert.Equal(36, LambdaFunctions.Count);
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix), "RestApiUrlPrefix should not be empty");
             Assert.False(string.IsNullOrEmpty(HttpApiUrlPrefix), "HttpApiUrlPrefix should not be empty");
 

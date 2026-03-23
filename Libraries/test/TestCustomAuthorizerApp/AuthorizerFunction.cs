@@ -290,6 +290,69 @@ public class AuthorizerFunction
         };
     }
 
+    /// <summary>
+    /// HTTP API Lambda Authorizer using the simplified IAuthorizerResult pattern.
+    /// Demonstrates how FromHeader extracts the Authorization header and IAuthorizerResult
+    /// abstracts away the raw API Gateway response types.
+    /// </summary>
+    [LambdaFunction(ResourceName = "SimpleAuthorizer")]
+    [HttpApiAuthorizer(
+        EnableSimpleResponses = true,
+        AuthorizerPayloadFormatVersion = AuthorizerPayloadFormatVersion.V2)]
+    public IAuthorizerResult SimpleHttpApiAuthorize(
+        [FromHeader(Name = "Authorization")] string authorization,
+        ILambdaContext context)
+    {
+        context.Logger.LogLine($"Simple Authorizer invoked with authorization: {authorization}");
+
+        if (string.IsNullOrEmpty(authorization))
+        {
+            return AuthorizerResults.Deny();
+        }
+
+        if (ValidTokens.Contains(authorization))
+        {
+            return AuthorizerResults.Allow()
+                .WithContext("userId", "user-12345")
+                .WithContext("tenantId", "42")
+                .WithContext("userRole", "admin")
+                .WithContext("email", "test@example.com");
+        }
+
+        return AuthorizerResults.Deny();
+    }
+
+    /// <summary>
+    /// REST API Lambda Authorizer using the simplified IAuthorizerResult pattern.
+    /// The generator auto-builds the IAM policy document from the Allow/Deny result.
+    /// </summary>
+    [LambdaFunction(ResourceName = "SimpleRestAuthorizer")]
+    [RestApiAuthorizer(
+        Type = RestApiAuthorizerType.Token,
+        IdentityHeader = "Authorization")]
+    public IAuthorizerResult SimpleRestApiAuthorize(
+        [FromHeader(Name = "Authorization")] string authorization,
+        ILambdaContext context)
+    {
+        context.Logger.LogLine($"Simple REST Authorizer invoked with authorization: {authorization}");
+
+        if (string.IsNullOrEmpty(authorization))
+        {
+            return AuthorizerResults.Deny();
+        }
+
+        if (ValidTokens.Contains(authorization))
+        {
+            return AuthorizerResults.Allow()
+                .WithPrincipalId("user-12345")
+                .WithContext("userId", "user-12345")
+                .WithContext("tenantId", "42")
+                .WithContext("email", "test@example.com");
+        }
+
+        return AuthorizerResults.Deny();
+    }
+
     private APIGatewayCustomAuthorizerResponse GenerateDenyPolicy(string principalId, string methodArn)
     {
         return new APIGatewayCustomAuthorizerResponse

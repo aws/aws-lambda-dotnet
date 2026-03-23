@@ -6,6 +6,61 @@
     "TestQueue": {
       "Type": "AWS::SQS::Queue"
     },
+    "AnnotationsHttpApi": {
+      "Type": "AWS::Serverless::HttpApi",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Auth": {
+          "Authorizers": {
+            "SimpleHttpApiAuthorizer": {
+              "FunctionArn": {
+                "Fn::GetAtt": [
+                  "SimpleHttpApiAuth",
+                  "Arn"
+                ]
+              },
+              "AuthorizerPayloadFormatVersion": "2.0",
+              "EnableSimpleResponses": true,
+              "Identity": {
+                "Headers": [
+                  "Authorization"
+                ]
+              },
+              "EnableFunctionDefaultPermissions": true,
+              "AuthorizerResultTtlInSeconds": 0
+            }
+          }
+        }
+      }
+    },
+    "AnnotationsRestApi": {
+      "Type": "AWS::Serverless::Api",
+      "Properties": {
+        "StageName": "Prod",
+        "Auth": {
+          "Authorizers": {
+            "SimpleRestApiAuthorizer": {
+              "FunctionArn": {
+                "Fn::GetAtt": [
+                  "SimpleRestApiAuth",
+                  "Arn"
+                ]
+              },
+              "Identity": {
+                "Header": "Authorization"
+              },
+              "FunctionPayloadType": "TOKEN",
+              "AuthorizerResultTtlInSeconds": 0
+            }
+          }
+        }
+      },
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      }
+    },
     "AuthNameFallbackTest": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -16,7 +71,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -38,7 +94,10 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/api/authorizer-fallback",
-              "Method": "GET"
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -54,7 +113,8 @@
         "SyncedEventProperties": {
           "RootPost": [
             "Path",
-            "Method"
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -76,7 +136,10 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/ComplexCalculator/Add",
-              "Method": "POST"
+              "Method": "POST",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -92,7 +155,8 @@
         "SyncedEventProperties": {
           "RootPost": [
             "Path",
-            "Method"
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -114,7 +178,10 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/ComplexCalculator/Subtract",
-              "Method": "POST"
+              "Method": "POST",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -130,7 +197,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -152,7 +220,10 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/api/authorizer",
-              "Method": "GET"
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -169,7 +240,8 @@
           "RootGet": [
             "Path",
             "Method",
-            "PayloadFormatVersion"
+            "PayloadFormatVersion",
+            "ApiId.Ref"
           ]
         }
       },
@@ -192,7 +264,10 @@
             "Properties": {
               "Path": "/api/authorizer-v1",
               "Method": "GET",
-              "PayloadFormatVersion": "1.0"
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -208,7 +283,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -230,7 +306,10 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/api/authorizer-non-string",
-              "Method": "GET"
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -246,7 +325,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -268,7 +348,10 @@
             "Type": "Api",
             "Properties": {
               "Path": "/rest/authorizer",
-              "Method": "GET"
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
@@ -284,7 +367,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -306,7 +390,10 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/authorizerihttpresults",
-              "Method": "GET"
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -322,7 +409,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -344,7 +432,10 @@
             "Type": "Api",
             "Properties": {
               "Path": "/okresponsewithheader/{x}",
-              "Method": "GET"
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
@@ -360,7 +451,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -382,7 +474,10 @@
             "Type": "Api",
             "Properties": {
               "Path": "/okresponsewithheaderasync/{x}",
-              "Method": "GET"
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
@@ -398,7 +493,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -420,7 +516,10 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/notfoundwithheaderv2/{x}",
-              "Method": "GET"
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -436,7 +535,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -458,7 +558,10 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/notfoundwithheaderv2async/{x}",
-              "Method": "GET"
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -475,7 +578,8 @@
           "RootGet": [
             "Path",
             "Method",
-            "PayloadFormatVersion"
+            "PayloadFormatVersion",
+            "ApiId.Ref"
           ]
         }
       },
@@ -498,7 +602,10 @@
             "Properties": {
               "Path": "/notfoundwithheaderv1/{x}",
               "Method": "GET",
-              "PayloadFormatVersion": "1.0"
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -515,7 +622,8 @@
           "RootGet": [
             "Path",
             "Method",
-            "PayloadFormatVersion"
+            "PayloadFormatVersion",
+            "ApiId.Ref"
           ]
         }
       },
@@ -538,7 +646,10 @@
             "Properties": {
               "Path": "/notfoundwithheaderv1async/{x}",
               "Method": "GET",
-              "PayloadFormatVersion": "1.0"
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -555,7 +666,8 @@
           "RootGet": [
             "Path",
             "Method",
-            "PayloadFormatVersion"
+            "PayloadFormatVersion",
+            "ApiId.Ref"
           ]
         }
       },
@@ -578,7 +690,10 @@
             "Properties": {
               "Path": "/okresponsewithcustomserializerasync/{firstName}/{lastName}",
               "Method": "GET",
-              "PayloadFormatVersion": "1.0"
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -634,7 +749,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -656,7 +772,10 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/{text}",
-              "Method": "GET"
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -693,7 +812,8 @@
           "RootGet": [
             "Path",
             "Method",
-            "PayloadFormatVersion"
+            "PayloadFormatVersion",
+            "ApiId.Ref"
           ]
         }
       },
@@ -716,7 +836,10 @@
             "Properties": {
               "Path": "/Greeter/SayHello",
               "Method": "GET",
-              "PayloadFormatVersion": "1.0"
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -733,7 +856,8 @@
           "RootGet": [
             "Path",
             "Method",
-            "PayloadFormatVersion"
+            "PayloadFormatVersion",
+            "ApiId.Ref"
           ]
         }
       },
@@ -756,9 +880,52 @@
             "Properties": {
               "Path": "/Greeter/SayHelloAsync",
               "Method": "GET",
-              "PayloadFormatVersion": "1.0"
+              "PayloadFormatVersion": "1.0",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
+        }
+      }
+    },
+    "SimpleHttpApiAuth": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.IAuthorizerResultExample_SimpleHttpApiAuthorizer_Generated::SimpleHttpApiAuthorizer"
+          ]
+        }
+      }
+    },
+    "SimpleRestApiAuth": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.IAuthorizerResultExample_SimpleRestApiAuthorizer_Generated::SimpleRestApiAuthorizer"
+          ]
         }
       }
     },
@@ -792,7 +959,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "ApiId.Ref"
           ]
         }
       },
@@ -814,7 +982,10 @@
             "Type": "HttpApi",
             "Properties": {
               "Path": "/nullableheaderhttpapi",
-              "Method": "GET"
+              "Method": "GET",
+              "ApiId": {
+                "Ref": "AnnotationsHttpApi"
+              }
             }
           }
         }
@@ -830,7 +1001,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -852,7 +1024,10 @@
             "Type": "Api",
             "Properties": {
               "Path": "/SimpleCalculator/Add",
-              "Method": "GET"
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
@@ -868,7 +1043,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -890,7 +1066,10 @@
             "Type": "Api",
             "Properties": {
               "Path": "/SimpleCalculator/Subtract",
-              "Method": "GET"
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
@@ -906,7 +1085,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -928,7 +1108,10 @@
             "Type": "Api",
             "Properties": {
               "Path": "/SimpleCalculator/Multiply/{x}/{y}",
-              "Method": "GET"
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }
@@ -944,7 +1127,8 @@
         "SyncedEventProperties": {
           "RootGet": [
             "Path",
-            "Method"
+            "Method",
+            "RestApiId.Ref"
           ]
         }
       },
@@ -966,7 +1150,10 @@
             "Type": "Api",
             "Properties": {
               "Path": "/SimpleCalculator/DivideAsync/{x}/{y}",
-              "Method": "GET"
+              "Method": "GET",
+              "RestApiId": {
+                "Ref": "AnnotationsRestApi"
+              }
             }
           }
         }

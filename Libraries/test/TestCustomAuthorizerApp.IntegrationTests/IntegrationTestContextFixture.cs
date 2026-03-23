@@ -82,9 +82,11 @@ public class IntegrationTestContextFixture : IAsyncLifetime
 
         Assert.True(await _s3Helper.BucketExistsAsync(_bucketName), $"S3 bucket {_bucketName} should exist");
         
-        // There are 10 Lambda functions in TestCustomAuthorizerApp:
-        // CustomAuthorizer, CustomAuthorizerV1, RestApiAuthorizer, ProtectedEndpoint, GetUserInfo, HealthCheck, RestUserInfo, HttpApiV1UserInfo, IHttpResultUserInfo, NonStringUserInfo
-        Assert.Equal(10, LambdaFunctions.Count);
+        // There are 14 Lambda functions in TestCustomAuthorizerApp:
+        // CustomAuthorizer, CustomAuthorizerV1, RestApiAuthorizer, SimpleAuthorizer, SimpleRestAuthorizer,
+        // ProtectedEndpoint, GetUserInfo, HealthCheck, RestUserInfo, HttpApiV1UserInfo, IHttpResultUserInfo, NonStringUserInfo,
+        // SimpleHttpApiUserInfo, SimpleRestApiUserInfo
+        Assert.Equal(14, LambdaFunctions.Count);
 
         await LambdaHelper.WaitTillNotPending(LambdaFunctions.Where(x => x.Name != null).Select(x => x.Name!).ToList());
 

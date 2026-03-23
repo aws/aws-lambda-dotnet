@@ -65,6 +65,31 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         }
 
         /// <summary>
+        /// Returns true if the Lambda function returns either IAuthorizerResult or Task&lt;IAuthorizerResult&gt;
+        /// </summary>
+        public bool ReturnsIAuthorizerResult
+        {
+            get
+            {
+                if (ReturnsVoid)
+                {
+                    return false;
+                }
+
+                if (ReturnType.FullName == TypeFullNames.IAuthorizerResult)
+                {
+                    return true;
+                }
+                if (ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.IAuthorizerResult)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Returns true if the Lambda function returns either void, Task, SQSBatchResponse or Task<SQSBatchResponse>
         /// </summary>
         public bool ReturnsVoidTaskOrSqsBatchResponse

@@ -192,6 +192,56 @@ public class ProtectedFunction
     }
 
     /// <summary>
+    /// HTTP API v2 endpoint protected by the IAuthorizerResult-based simple HTTP API authorizer.
+    /// This tests the end-to-end flow: IAuthorizerResult.Serialize() → API Gateway accepts →
+    /// protected endpoint extracts context values via [FromCustomAuthorizer].
+    /// </summary>
+    [LambdaFunction(ResourceName = "SimpleHttpApiUserInfo")]
+    [HttpApi(LambdaHttpMethod.Get, "/api/simple-httpapi-user-info", Authorizer = nameof(AuthorizerFunction.SimpleHttpApiAuthorize))]
+    public object GetSimpleHttpApiUserInfo(
+        [FromCustomAuthorizer(Name = "userId")] string userId,
+        [FromCustomAuthorizer(Name = "email")] string email,
+        [FromCustomAuthorizer(Name = "tenantId")] string tenantId,
+        ILambdaContext context)
+    {
+        context.Logger.LogLine($"[Simple HTTP API] Getting user info for: {userId}");
+
+        return new
+        {
+            UserId = userId,
+            Email = email,
+            TenantId = tenantId,
+            ApiType = "Simple HTTP API (IAuthorizerResult)",
+            Message = "This data came from an IAuthorizerResult-based HTTP API authorizer!"
+        };
+    }
+
+    /// <summary>
+    /// REST API endpoint protected by the IAuthorizerResult-based REST API authorizer.
+    /// This tests the end-to-end flow: IAuthorizerResult.Serialize() produces IAM policy →
+    /// API Gateway accepts → protected endpoint extracts context values via [FromCustomAuthorizer].
+    /// </summary>
+    [LambdaFunction(ResourceName = "SimpleRestApiUserInfo")]
+    [RestApi(LambdaHttpMethod.Get, "/api/simple-restapi-user-info", Authorizer = nameof(AuthorizerFunction.SimpleRestApiAuthorize))]
+    public object GetSimpleRestApiUserInfo(
+        [FromCustomAuthorizer(Name = "userId")] string userId,
+        [FromCustomAuthorizer(Name = "email")] string email,
+        [FromCustomAuthorizer(Name = "tenantId")] string tenantId,
+        ILambdaContext context)
+    {
+        context.Logger.LogLine($"[Simple REST API] Getting user info for: {userId}");
+
+        return new
+        {
+            UserId = userId,
+            Email = email,
+            TenantId = tenantId,
+            ApiType = "Simple REST API (IAuthorizerResult)",
+            Message = "This data came from an IAuthorizerResult-based REST API authorizer!"
+        };
+    }
+
+    /// <summary>
     /// HTTP API v2 endpoint demonstrating [FromCustomAuthorizer] with non-string types.
     /// Tests that int, bool, and double values are correctly extracted and converted from
     /// the Lambda authorizer context.

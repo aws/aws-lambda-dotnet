@@ -14,3 +14,5 @@ AWSLambda0125 | AWSLambdaCSharpGenerator | Error | Duplicate Authorizer Name
 AWSLambda0127 | AWSLambdaCSharpGenerator | Error | Invalid Result TTL
 AWSLambda0128 | AWSLambdaCSharpGenerator | Error | Authorizer Payload Version Mismatch
 AWSLambda0129 | AWSLambdaCSharpGenerator | Error | Missing LambdaFunction Attribute
+AWSLambda0130 | AWSLambdaCSharpGenerator | Error | Invalid return type IAuthorizerResult
+AWSLambda0131 | AWSLambdaCSharpGenerator | Error | FromBody not supported on Authorizer functions
