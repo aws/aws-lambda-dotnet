@@ -20,8 +20,9 @@ namespace Amazon.Lambda.Annotations.APIGateway
         public LambdaHttpMethod Method { get; set; }
 
         /// <summary>
-        /// Name of the REST API Lambda authorizer to protect this endpoint.
-        /// Must match the Name property of a <see cref="RestApiAuthorizerAttribute"/> in this project.
+        /// The .NET method name of the REST API Lambda authorizer to protect this endpoint.
+        /// Must match the method name that has the <see cref="RestApiAuthorizerAttribute"/> applied to it.
+        /// Use the <c>nameof</c> operator for compile-time safety (e.g. <c>Authorizer = nameof(MyAuthorizerMethod)</c>).
         /// Leave null/empty for public (unauthenticated) endpoints.
         /// </summary>
         public string Authorizer { get; set; }
