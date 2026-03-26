@@ -18,7 +18,7 @@ public class ProtectedFunction
     /// Debug endpoint to see what's in the RequestContext.Authorizer
     /// </summary>
     [LambdaFunction(ResourceName = "ProtectedEndpoint")]
-    [HttpApi(LambdaHttpMethod.Get, "/api/protected", Authorizer = nameof(AuthorizerFunction.HttpApiAuthorize))]
+    [HttpApi(LambdaHttpMethod.Get, "/api/protected", Authorizer = "CustomAuthorizer")]
     public string GetProtectedData(
         APIGatewayHttpApiV2ProxyRequest request,
         ILambdaContext context)
@@ -88,7 +88,7 @@ public class ProtectedFunction
     /// Another protected endpoint showing different usage - just getting the email.
     /// </summary>
     [LambdaFunction(ResourceName = "GetUserInfo")]
-    [HttpApi(LambdaHttpMethod.Get, "/api/user-info", Authorizer = nameof(AuthorizerFunction.HttpApiAuthorize))]
+    [HttpApi(LambdaHttpMethod.Get, "/api/user-info", Authorizer = "CustomAuthorizer")]
     public object GetUserInfo(
         [FromCustomAuthorizer(Name = "userId")] string userId,
         [FromCustomAuthorizer(Name = "email")] string email,
@@ -123,7 +123,7 @@ public class ProtectedFunction
     /// REST API authorizers use a different context structure than HTTP API v2.
     /// </summary>
     [LambdaFunction(ResourceName = "RestUserInfo")]
-    [RestApi(LambdaHttpMethod.Get, "/api/rest-user-info", Authorizer = nameof(AuthorizerFunction.RestApiAuthorize))]
+    [RestApi(LambdaHttpMethod.Get, "/api/rest-user-info", Authorizer = "RestApiAuthorizer")]
     public object GetRestUserInfo(
         [FromCustomAuthorizer(Name = "userId")] string userId,
         [FromCustomAuthorizer(Name = "email")] string email,
@@ -149,7 +149,7 @@ public class ProtectedFunction
     /// where RequestContext.Authorizer is a dictionary, not RequestContext.Authorizer.Lambda.
     /// </summary>
     [LambdaFunction(ResourceName = "HttpApiV1UserInfo")]
-    [HttpApi(LambdaHttpMethod.Get, "/api/http-v1-user-info", Version = HttpApiVersion.V1, Authorizer = nameof(AuthorizerFunction.HttpApiAuthorizeV1))]
+    [HttpApi(LambdaHttpMethod.Get, "/api/http-v1-user-info", Version = HttpApiVersion.V1, Authorizer = "CustomAuthorizerV1")]
     public object GetHttpApiV1UserInfo(
         [FromCustomAuthorizer(Name = "userId")] string userId,
         [FromCustomAuthorizer(Name = "email")] string email,
@@ -175,7 +175,7 @@ public class ProtectedFunction
     /// when authorizer context is missing (the handler returns Stream, not response object).
     /// </summary>
     [LambdaFunction(ResourceName = "IHttpResultUserInfo")]
-    [HttpApi(LambdaHttpMethod.Get, "/api/ihttpresult-user-info", Authorizer = nameof(AuthorizerFunction.HttpApiAuthorize))]
+    [HttpApi(LambdaHttpMethod.Get, "/api/ihttpresult-user-info", Authorizer = "CustomAuthorizer")]
     public IHttpResult GetIHttpResult(
         [FromCustomAuthorizer(Name = "userId")] string userId,
         [FromCustomAuthorizer(Name = "email")] string email,
@@ -197,7 +197,7 @@ public class ProtectedFunction
     /// protected endpoint extracts context values via [FromCustomAuthorizer].
     /// </summary>
     [LambdaFunction(ResourceName = "SimpleHttpApiUserInfo")]
-    [HttpApi(LambdaHttpMethod.Get, "/api/simple-httpapi-user-info", Authorizer = nameof(AuthorizerFunction.SimpleHttpApiAuthorize))]
+    [HttpApi(LambdaHttpMethod.Get, "/api/simple-httpapi-user-info", Authorizer = "SimpleAuthorizer")]
     public object GetSimpleHttpApiUserInfo(
         [FromCustomAuthorizer(Name = "userId")] string userId,
         [FromCustomAuthorizer(Name = "email")] string email,
@@ -222,7 +222,7 @@ public class ProtectedFunction
     /// API Gateway accepts → protected endpoint extracts context values via [FromCustomAuthorizer].
     /// </summary>
     [LambdaFunction(ResourceName = "SimpleRestApiUserInfo")]
-    [RestApi(LambdaHttpMethod.Get, "/api/simple-restapi-user-info", Authorizer = nameof(AuthorizerFunction.SimpleRestApiAuthorize))]
+    [RestApi(LambdaHttpMethod.Get, "/api/simple-restapi-user-info", Authorizer = "SimpleRestAuthorizer")]
     public object GetSimpleRestApiUserInfo(
         [FromCustomAuthorizer(Name = "userId")] string userId,
         [FromCustomAuthorizer(Name = "email")] string email,
@@ -247,7 +247,7 @@ public class ProtectedFunction
     /// the Lambda authorizer context.
     /// </summary>
     [LambdaFunction(ResourceName = "NonStringUserInfo")]
-    [HttpApi(LambdaHttpMethod.Get, "/api/nonstring-user-info", Authorizer = nameof(AuthorizerFunction.HttpApiAuthorize))]
+    [HttpApi(LambdaHttpMethod.Get, "/api/nonstring-user-info", Authorizer = "CustomAuthorizer")]
     public object GetNonStringUserInfo(
         APIGatewayHttpApiV2ProxyRequest request,
         [FromCustomAuthorizer(Name = "numericTenantId")] int tenantId,

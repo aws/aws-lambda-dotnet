@@ -359,8 +359,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
 
                 if (model != null)
                 {
-                    // The authorizer name is always derived from the method name
-                    model.Name = methodSymbol.Name;
+                    // Use LambdaFunction's ResourceName if explicitly set, otherwise fall back to method name
+                    var lambdaFunctionAttr = methodSymbol.GetAttributes()
+                        .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == TypeFullNames.LambdaFunctionAttribute);
+                    var explicitResourceName = lambdaFunctionAttr?.NamedArguments
+                        .FirstOrDefault(arg => arg.Key == "ResourceName").Value.Value as string;
+                    model.Name = explicitResourceName ?? methodSymbol.Name;
                     return model;
                 }
             }

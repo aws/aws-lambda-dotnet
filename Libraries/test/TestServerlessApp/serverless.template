@@ -14,7 +14,7 @@
       "Properties": {
         "Auth": {
           "Authorizers": {
-            "SimpleHttpApiAuthorizer": {
+            "SimpleHttpApiAuth": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "SimpleHttpApiAuth",
@@ -41,7 +41,7 @@
         "StageName": "Prod",
         "Auth": {
           "Authorizers": {
-            "SimpleRestApiAuthorizer": {
+            "SimpleRestApiAuth": {
               "FunctionArn": {
                 "Fn::GetAtt": [
                   "SimpleRestApiAuth",
