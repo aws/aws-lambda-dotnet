@@ -51,7 +51,7 @@ namespace TestCustomAuthorizerApp
                 envValue.Append($"{Environment.GetEnvironmentVariable(envName)}_");
             }
 
-            envValue.Append("lib/amazon-lambda-annotations#1.9.0.0");
+            envValue.Append("lib/amazon-lambda-annotations#{ANNOTATIONS_ASSEMBLY_VERSION}");
 
             Environment.SetEnvironmentVariable(envName, envValue.ToString());
         }
