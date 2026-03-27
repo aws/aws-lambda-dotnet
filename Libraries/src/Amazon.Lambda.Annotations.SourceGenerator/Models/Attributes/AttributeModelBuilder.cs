@@ -90,6 +90,24 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
                 };
             }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.HttpApiAuthorizerAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = HttpApiAuthorizerAttributeBuilder.Build(att);
+                model = new AttributeModel<HttpApiAuthorizerAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.RestApiAuthorizerAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = RestApiAuthorizerAttributeBuilder.Build(att);
+                model = new AttributeModel<RestApiAuthorizerAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
             else
             {
                 model = new AttributeModel

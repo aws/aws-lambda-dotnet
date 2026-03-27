@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using AuthorizerType = Amazon.Lambda.Annotations.SourceGenerator.Models.AuthorizerType;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 {
@@ -25,6 +26,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         private const string PARAMETERS = "Parameters";
         private const string GET_ATTRIBUTE = "Fn::GetAtt";
         private const string REF = "Ref";
+        private const string HTTP_API_RESOURCE_NAME = "AnnotationsHttpApi";
+        private const string REST_API_RESOURCE_NAME = "AnnotationsRestApi";
 
         // Constants related to the message we append to the CloudFormation template description
         private const string BASE_DESCRIPTION = "This template is partially managed by Amazon.Lambda.Annotations";
@@ -59,17 +62,33 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
 
             ProcessTemplateDescription(report);
 
+            // Build authorizer lookup for processing events with Auth configuration
+            var authorizerLookup = new Dictionary<string, AuthorizerModel>(StringComparer.Ordinal);
+            foreach (var authorizer in report.Authorizers)
+            {
+                if (authorizerLookup.ContainsKey(authorizer.Name))
+                {
+                    _diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.DuplicateAuthorizerName, Location.None, authorizer.Name));
+                    continue;
+                }
+                authorizerLookup[authorizer.Name] = authorizer;
+            }
+
+            // Process authorizers first (they need to exist before functions reference them)
+            ProcessAuthorizers(report.Authorizers);
+
             var processedLambdaFunctions = new HashSet<string>();
 
             foreach (var lambdaFunction in report.LambdaFunctions)
             {
                 if (!ShouldProcessLambdaFunction(lambdaFunction))
                     continue;
-                ProcessLambdaFunction(lambdaFunction, relativeProjectUri);
+                ProcessLambdaFunction(lambdaFunction, relativeProjectUri, authorizerLookup);
                 processedLambdaFunctions.Add(lambdaFunction.ResourceName);
             }
 
             RemoveOrphanedLambdaFunctions(processedLambdaFunctions);
+            RemoveOrphanedAuthorizers(report.Authorizers);
             var content = _templateWriter.GetContent();
             _fileManager.WriteAllText(report.CloudFormationTemplatePath, content);
 
@@ -98,7 +117,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// Captures different properties specified by <see cref="ILambdaFunctionSerializable"/> and attributes specified by <see cref="AttributeModel{T}"/>
         /// and writes it to the serverless template.
         /// </summary>
-        private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction, string relativeProjectUri)
+        private void ProcessLambdaFunction(ILambdaFunctionSerializable lambdaFunction, string relativeProjectUri, Dictionary<string, AuthorizerModel> authorizerLookup)
         {
             var lambdaFunctionPath = $"Resources.{lambdaFunction.ResourceName}";
             var propertiesPath = $"{lambdaFunctionPath}.Properties";
@@ -107,7 +126,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 ApplyLambdaFunctionDefaults(lambdaFunctionPath, propertiesPath, lambdaFunction.Runtime);
 
             ProcessLambdaFunctionProperties(lambdaFunction, propertiesPath, relativeProjectUri);
-            ProcessLambdaFunctionEventAttributes(lambdaFunction);
+            ProcessLambdaFunctionEventAttributes(lambdaFunction, authorizerLookup);
         }
 
         /// <summary>
@@ -180,7 +199,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// It also removes all events that exist in the serverless template but were not encountered during the current source generation pass.
         /// All events are specified under 'Resources.FUNCTION_NAME.Properties.Events' path.
         /// </summary>
-        private void ProcessLambdaFunctionEventAttributes(ILambdaFunctionSerializable lambdaFunction)
+        private void ProcessLambdaFunctionEventAttributes(ILambdaFunctionSerializable lambdaFunction, Dictionary<string, AuthorizerModel> authorizerLookup)
         {
             var currentSyncedEvents = new List<string>();
             var currentSyncedEventProperties = new Dictionary<string, List<string>>();
@@ -191,11 +210,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 switch (attributeModel)
                 {
                     case AttributeModel<HttpApiAttribute> httpApiAttributeModel:
-                        eventName = ProcessHttpApiAttribute(lambdaFunction, httpApiAttributeModel.Data, currentSyncedEventProperties);
+                        eventName = ProcessHttpApiAttribute(lambdaFunction, httpApiAttributeModel.Data, currentSyncedEventProperties, authorizerLookup);
                         currentSyncedEvents.Add(eventName);
                         break;
                     case AttributeModel<RestApiAttribute> restApiAttributeModel:
-                        eventName = ProcessRestApiAttribute(lambdaFunction, restApiAttributeModel.Data, currentSyncedEventProperties);
+                        eventName = ProcessRestApiAttribute(lambdaFunction, restApiAttributeModel.Data, currentSyncedEventProperties, authorizerLookup);
                         currentSyncedEvents.Add(eventName);
                         break;
                     case AttributeModel<SQSEventAttribute> sqsAttributeModel:
@@ -211,7 +230,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// <summary>
         /// Writes all properties associated with <see cref="RestApiAttribute"/> to the serverless template.
         /// </summary>
-        private string ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute, Dictionary<string, List<string>> syncedEventProperties)
+        private string ProcessRestApiAttribute(ILambdaFunctionSerializable lambdaFunction, RestApiAttribute restApiAttribute, Dictionary<string, List<string>> syncedEventProperties, Dictionary<string, AuthorizerModel> authorizerLookup)
         {
             var eventName = $"Root{restApiAttribute.Method}";
             var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
@@ -220,13 +239,27 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Path", restApiAttribute.Template);
             SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Method", restApiAttribute.Method.ToString().ToUpper());
 
+            // Set Auth configuration if authorizer is specified
+            // Use the authorizer name directly (not a CloudFormation Ref) since authorizers are defined inline in the API
+            // Also set RestApiId to link to our explicit AnnotationsRestApi resource where the authorizer is defined
+            if (!string.IsNullOrEmpty(restApiAttribute.Authorizer) && authorizerLookup.TryGetValue(restApiAttribute.Authorizer, out var authorizer))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Auth.Authorizer", authorizer.Name);
+            }
+
+            // Always reference the shared API resource if it exists, so all REST API functions share one endpoint
+            if (_templateWriter.Exists($"Resources.{REST_API_RESOURCE_NAME}"))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"RestApiId.{REF}", REST_API_RESOURCE_NAME);
+            }
+
             return eventName;
         }
 
         /// <summary>
         /// Writes all properties associated with <see cref="HttpApiAttribute"/> to the serverless template.
         /// </summary>
-        private string ProcessHttpApiAttribute(ILambdaFunctionSerializable lambdaFunction, HttpApiAttribute httpApiAttribute, Dictionary<string, List<string>> syncedEventProperties)
+        private string ProcessHttpApiAttribute(ILambdaFunctionSerializable lambdaFunction, HttpApiAttribute httpApiAttribute, Dictionary<string, List<string>> syncedEventProperties, Dictionary<string, AuthorizerModel> authorizerLookup)
         {
             var eventName = $"Root{httpApiAttribute.Method}";
             var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
@@ -240,7 +273,252 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (httpApiAttribute.Version == HttpApiVersion.V1)
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "PayloadFormatVersion", "1.0");
 
+            // Set Auth configuration if authorizer is specified
+            // Use the authorizer name directly (not a CloudFormation Ref) since authorizers are defined inline in the API
+            // Also set ApiId to link to our explicit AnnotationsHttpApi resource where the authorizer is defined
+            if (!string.IsNullOrEmpty(httpApiAttribute.Authorizer) && authorizerLookup.TryGetValue(httpApiAttribute.Authorizer, out var authorizer))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Auth.Authorizer", authorizer.Name);
+            }
+
+            // Always reference the shared API resource if it exists, so all HTTP API functions share one endpoint
+            if (_templateWriter.Exists($"Resources.{HTTP_API_RESOURCE_NAME}"))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"ApiId.{REF}", HTTP_API_RESOURCE_NAME);
+            }
+
             return eventName;
+        }
+
+        /// <summary>
+        /// Processes all authorizers and writes them to the serverless template as inline authorizers within the API resources.
+        /// AWS SAM expects authorizers to be defined within the Auth.Authorizers property of AWS::Serverless::HttpApi or AWS::Serverless::Api resources.
+        /// </summary>
+        private void ProcessAuthorizers(IList<AuthorizerModel> authorizers)
+        {
+            // Group authorizers by type
+            var httpApiAuthorizers = authorizers.Where(a => a.AuthorizerType == AuthorizerType.HttpApi).ToList();
+            var restApiAuthorizers = authorizers.Where(a => a.AuthorizerType == AuthorizerType.RestApi).ToList();
+
+            // Process HTTP API authorizers (add to AnnotationsHttpApi resource)
+            if (httpApiAuthorizers.Any())
+            {
+                ProcessHttpApiAuthorizers(httpApiAuthorizers);
+            }
+
+            // Process REST API authorizers (add to AnnotationsRestApi resource)
+            if (restApiAuthorizers.Any())
+            {
+                ProcessRestApiAuthorizers(restApiAuthorizers);
+            }
+        }
+
+        /// <summary>
+        /// Writes HTTP API (API Gateway V2) authorizers to the AnnotationsHttpApi resource.
+        /// SAM expects authorizers to be defined inline in the Auth.Authorizers property.
+        /// </summary>
+        private void ProcessHttpApiAuthorizers(IList<AuthorizerModel> authorizers)
+        {
+            const string httpApiResourcePath = "Resources." + HTTP_API_RESOURCE_NAME;
+            
+            // Create the AnnotationsHttpApi resource if it doesn't exist
+            if (!_templateWriter.Exists(httpApiResourcePath))
+            {
+                _templateWriter.SetToken($"{httpApiResourcePath}.Type", "AWS::Serverless::HttpApi");
+                _templateWriter.SetToken($"{httpApiResourcePath}.Metadata.Tool", CREATION_TOOL);
+            }
+
+            // Add each authorizer to the Auth.Authorizers map
+            foreach (var authorizer in authorizers)
+            {
+                var authorizerPath = $"{httpApiResourcePath}.Properties.Auth.Authorizers.{authorizer.Name}";
+
+                // FunctionArn - Reference to the Lambda function ARN
+                _templateWriter.SetToken($"{authorizerPath}.FunctionArn.{GET_ATTRIBUTE}", new List<string> { authorizer.LambdaResourceName, "Arn" }, TokenType.List);
+
+                // AuthorizerPayloadFormatVersion
+                var payloadFormatVersionString = authorizer.AuthorizerPayloadFormatVersion == AuthorizerPayloadFormatVersion.V1 ? "1.0" : "2.0";
+                _templateWriter.SetToken($"{authorizerPath}.AuthorizerPayloadFormatVersion", payloadFormatVersionString);
+
+                // EnableSimpleResponses
+                _templateWriter.SetToken($"{authorizerPath}.EnableSimpleResponses", authorizer.EnableSimpleResponses);
+
+                // Identity.Headers - The header to use for identity source
+                _templateWriter.SetToken($"{authorizerPath}.Identity.Headers", new List<string> { authorizer.IdentityHeader }, TokenType.List);
+
+                // EnableFunctionDefaultPermissions tells SAM to automatically create the AWS::Lambda::Permission
+                // for the authorizer Lambda function. Unlike AWS::Serverless::Api (REST API), AWS::Serverless::HttpApi
+                // does NOT automatically create invoke permissions for Lambda authorizers defined in Auth.Authorizers.
+                // https://github.com/aws/serverless-application-model/issues/2933
+                _templateWriter.SetToken($"{authorizerPath}.EnableFunctionDefaultPermissions", true);
+
+                // AuthorizerResultTtlInSeconds - always write this value so SAM does not apply its default TTL.
+                // A value of 0 disables caching, which matches the attribute default.
+                _templateWriter.SetToken($"{authorizerPath}.AuthorizerResultTtlInSeconds", authorizer.ResultTtlInSeconds);
+            }
+        }
+
+        /// <summary>
+        /// Writes REST API (API Gateway V1) authorizers to the AnnotationsRestApi resource.
+        /// SAM expects authorizers to be defined inline in the Auth.Authorizers property.
+        /// </summary>
+        private void ProcessRestApiAuthorizers(IList<AuthorizerModel> authorizers)
+        {
+            const string restApiResourcePath = "Resources." + REST_API_RESOURCE_NAME;
+            
+            // Create the AnnotationsRestApi resource if it doesn't exist
+            if (!_templateWriter.Exists(restApiResourcePath))
+            {
+                _templateWriter.SetToken($"{restApiResourcePath}.Type", "AWS::Serverless::Api");
+                // REST API requires explicit stage name
+                _templateWriter.SetToken($"{restApiResourcePath}.Properties.StageName", "Prod");
+                _templateWriter.SetToken($"{restApiResourcePath}.Metadata.Tool", CREATION_TOOL);
+            }
+
+            // Add each authorizer to the Auth.Authorizers map
+            foreach (var authorizer in authorizers)
+            {
+                var authorizerPath = $"{restApiResourcePath}.Properties.Auth.Authorizers.{authorizer.Name}";
+
+                // FunctionArn - Reference to the Lambda function ARN using GetAtt
+                _templateWriter.SetToken($"{authorizerPath}.FunctionArn.{GET_ATTRIBUTE}", new List<string> { authorizer.LambdaResourceName, "Arn" }, TokenType.List);
+
+                // Identity.Header - The header to use for identity source
+                _templateWriter.SetToken($"{authorizerPath}.Identity.Header", authorizer.IdentityHeader);
+
+                // FunctionPayloadType - TOKEN or REQUEST
+                if (authorizer.RestApiAuthorizerType == RestApiAuthorizerType.Token)
+                {
+                    _templateWriter.SetToken($"{authorizerPath}.FunctionPayloadType", "TOKEN");
+                }
+                else
+                {
+                    _templateWriter.SetToken($"{authorizerPath}.FunctionPayloadType", "REQUEST");
+                }
+
+                // AuthorizerResultTtlInSeconds - always write this value so SAM does not apply its default TTL.
+                // A value of 0 disables caching, which matches the attribute default.
+                // API Gateway REST Lambda authorizer TTL must be between 0 and 3600 seconds.
+                _templateWriter.SetToken($"{authorizerPath}.AuthorizerResultTtlInSeconds", authorizer.ResultTtlInSeconds);
+            }
+        }
+
+        /// <summary>
+        /// Removes orphaned authorizers from the serverless template.
+        /// Authorizers are now defined inline within the API resources (AnnotationsHttpApi and AnnotationsRestApi).
+        /// This method removes authorizers that were created by Lambda Annotations but no longer exist in the current compilation.
+        /// It also cleans up legacy standalone authorizer resources (AWS::ApiGatewayV2::Authorizer, AWS::ApiGateway::Authorizer)
+        /// and their associated Lambda permissions.
+        /// </summary>
+        private void RemoveOrphanedAuthorizers(IList<AuthorizerModel> currentAuthorizers)
+        {
+            if (!_templateWriter.Exists("Resources"))
+            {
+                return;
+            }
+
+            // Get current authorizer names by type
+            var currentHttpApiAuthorizerNames = new HashSet<string>(
+                currentAuthorizers.Where(a => a.AuthorizerType == AuthorizerType.HttpApi).Select(a => a.Name));
+            var currentRestApiAuthorizerNames = new HashSet<string>(
+                currentAuthorizers.Where(a => a.AuthorizerType == AuthorizerType.RestApi).Select(a => a.Name));
+
+            // Clean up orphaned inline authorizers in AnnotationsHttpApi
+            const string httpApiAuthorizersPath = "Resources." + HTTP_API_RESOURCE_NAME + ".Properties.Auth.Authorizers";
+            if (_templateWriter.Exists(httpApiAuthorizersPath))
+            {
+                var httpApiCreationTool = _templateWriter.GetToken<string>($"Resources.{HTTP_API_RESOURCE_NAME}.Metadata.Tool", string.Empty);
+                if (string.Equals(httpApiCreationTool, CREATION_TOOL, StringComparison.Ordinal))
+                {
+                    var existingAuthorizerNames = _templateWriter.GetKeys(httpApiAuthorizersPath);
+                    foreach (var authorizerName in existingAuthorizerNames)
+                    {
+                        if (!currentHttpApiAuthorizerNames.Contains(authorizerName))
+                        {
+                            _templateWriter.RemoveToken($"{httpApiAuthorizersPath}.{authorizerName}");
+                        }
+                    }
+                    
+                    // Clean up empty Auth structure
+                    _templateWriter.RemoveTokenIfNullOrEmpty(httpApiAuthorizersPath);
+                    _templateWriter.RemoveTokenIfNullOrEmpty($"Resources.{HTTP_API_RESOURCE_NAME}.Properties.Auth");
+                }
+            }
+
+            // Clean up orphaned inline authorizers in AnnotationsRestApi
+            const string restApiAuthorizersPath = "Resources." + REST_API_RESOURCE_NAME + ".Properties.Auth.Authorizers";
+            if (_templateWriter.Exists(restApiAuthorizersPath))
+            {
+                var restApiCreationTool = _templateWriter.GetToken<string>($"Resources.{REST_API_RESOURCE_NAME}.Metadata.Tool", string.Empty);
+                if (string.Equals(restApiCreationTool, CREATION_TOOL, StringComparison.Ordinal))
+                {
+                    var existingAuthorizerNames = _templateWriter.GetKeys(restApiAuthorizersPath);
+                    foreach (var authorizerName in existingAuthorizerNames)
+                    {
+                        if (!currentRestApiAuthorizerNames.Contains(authorizerName))
+                        {
+                            _templateWriter.RemoveToken($"{restApiAuthorizersPath}.{authorizerName}");
+                        }
+                    }
+                    
+                    // Clean up empty Auth structure
+                    _templateWriter.RemoveTokenIfNullOrEmpty(restApiAuthorizersPath);
+                    _templateWriter.RemoveTokenIfNullOrEmpty($"Resources.{REST_API_RESOURCE_NAME}.Properties.Auth");
+                }
+            }
+
+            // Clean up legacy standalone authorizer resources and permissions from older versions
+            var toRemove = new List<string>();
+            foreach (var resourceName in _templateWriter.GetKeys("Resources"))
+            {
+                var resourcePath = $"Resources.{resourceName}";
+                var type = _templateWriter.GetToken<string>($"{resourcePath}.Type", string.Empty);
+                var creationTool = _templateWriter.GetToken<string>($"{resourcePath}.Metadata.Tool", string.Empty);
+
+                if (!string.Equals(creationTool, CREATION_TOOL, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                // Remove legacy standalone authorizer resources
+                if (string.Equals(type, "AWS::ApiGatewayV2::Authorizer", StringComparison.Ordinal) ||
+                    string.Equals(type, "AWS::ApiGateway::Authorizer", StringComparison.Ordinal))
+                {
+                    toRemove.Add(resourceName);
+                }
+
+                // Remove legacy authorizer Lambda permissions
+                if (string.Equals(type, "AWS::Lambda::Permission", StringComparison.Ordinal) &&
+                    resourceName.EndsWith("AuthorizerPermission"))
+                {
+                    toRemove.Add(resourceName);
+                }
+            }
+
+            foreach (var resourceName in toRemove)
+            {
+                _templateWriter.RemoveToken($"Resources.{resourceName}");
+            }
+
+            // Remove the entire AnnotationsHttpApi resource if it was created by us and no longer has any HTTP API authorizers
+            if (!currentHttpApiAuthorizerNames.Any()
+                && _templateWriter.Exists($"Resources.{HTTP_API_RESOURCE_NAME}")
+                && string.Equals(
+                    _templateWriter.GetToken<string>($"Resources.{HTTP_API_RESOURCE_NAME}.Metadata.Tool", string.Empty),
+                    CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.RemoveToken($"Resources.{HTTP_API_RESOURCE_NAME}");
+            }
+
+            // Remove the entire AnnotationsRestApi resource if it was created by us and no longer has any REST API authorizers
+            if (!currentRestApiAuthorizerNames.Any()
+                && _templateWriter.Exists($"Resources.{REST_API_RESOURCE_NAME}")
+                && string.Equals(
+                    _templateWriter.GetToken<string>($"Resources.{REST_API_RESOURCE_NAME}.Metadata.Tool", string.Empty),
+                    CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.RemoveToken($"Resources.{REST_API_RESOURCE_NAME}");
+            }
         }
 
         /// <summary>
