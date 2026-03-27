@@ -59,6 +59,14 @@
         <Content Remove="..\TestServerlessApp.NET8\bin\**" />
         <Content Remove="..\TestServerlessApp.NET8\serverless.template" />
 
+        <Content Include="..\TestCustomAuthorizerApp\**">
+            <Link>TestCustomAuthorizerApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Remove="..\TestCustomAuthorizerApp\obj\**" />
+        <Content Remove="..\TestCustomAuthorizerApp\bin\**" />
+        <Content Remove="..\TestCustomAuthorizerApp\serverless.template" />
+
         <Content Include="..\TestExecutableServerlessApp\**">
             <Link>TestExecutableServerlessApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>

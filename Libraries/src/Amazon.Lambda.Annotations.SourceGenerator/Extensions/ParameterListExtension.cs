@@ -12,7 +12,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
             return parameters.Any(p =>
             {
                 // All request types are forwarded to lambda method if specified, there is no parameter conversion required.
-                if (TypeFullNames.Requests.Contains(p.Type.FullName))
+                if (TypeFullNames.ApiGatewayRequests.Contains(p.Type.FullName))
                 {
                     return false;
                 }

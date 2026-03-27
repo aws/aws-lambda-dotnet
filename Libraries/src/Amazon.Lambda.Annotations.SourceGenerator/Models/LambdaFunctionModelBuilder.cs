@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
+using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.SourceGenerator.Validation;
 using Microsoft.CodeAnalysis;
 
@@ -40,9 +42,29 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                     ?.Version.ToString(),
                 IsExecutable = isExecutable,
                 Runtime = runtime,
+                Authorizer = GetAuthorizerFromAttributes(lambdaMethod)
             };
 
             return model;
+        }
+
+        /// <summary>
+        /// Extracts the Authorizer name from HttpApi or RestApi attributes.
+        /// </summary>
+        private static string GetAuthorizerFromAttributes(LambdaMethodModel lambdaMethod)
+        {
+            foreach (var attribute in lambdaMethod.Attributes)
+            {
+                if (attribute is AttributeModel<HttpApiAttribute> httpApiAttributeModel)
+                {
+                    return httpApiAttributeModel.Data.Authorizer;
+                }
+                if (attribute is AttributeModel<RestApiAttribute> restApiAttributeModel)
+                {
+                    return restApiAttributeModel.Data.Authorizer;
+                }
+            }
+            return null;
         }
 
         private static LambdaSerializerInfo GetSerializerInfoAttribute(GeneratorExecutionContext context, IMethodSymbol methodModel)
