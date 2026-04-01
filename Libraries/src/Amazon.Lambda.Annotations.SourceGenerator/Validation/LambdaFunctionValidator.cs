@@ -86,6 +86,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 }
             }
 
+            // Check for references to "Amazon.Lambda.ApplicationLoadBalancerEvents" if the Lambda method is annotated with ALBApi attribute.
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.ALBApiAttribute))
+            {
+                if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.ApplicationLoadBalancerEvents") == null)
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies, methodLocation, "Amazon.Lambda.ApplicationLoadBalancerEvents"));
+                    return false;
+                }
+            }
+
             return true;
         }
 

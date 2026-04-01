@@ -130,6 +130,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                         throw new ArgumentOutOfRangeException();
                 }
             }
+            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.ALBApiAttribute))
+            {
+                // ALB functions return ApplicationLoadBalancerResponse
+                // If the user already returns ApplicationLoadBalancerResponse, pass through the return type.
+                // Otherwise, wrap in ApplicationLoadBalancerResponse.
+                if (lambdaMethodModel.ReturnsApplicationLoadBalancerResponse)
+                {
+                    return lambdaMethodModel.ReturnType;
+                }
+                var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
+                    task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.ApplicationLoadBalancerResponse)):
+                    context.Compilation.GetTypeByMetadataName(TypeFullNames.ApplicationLoadBalancerResponse);
+                return TypeModelBuilder.Build(symbol, context);
+            }
             else
             {
                 return lambdaMethodModel.ReturnType;
