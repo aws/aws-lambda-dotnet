@@ -1,4 +1,5 @@
-﻿using Amazon.Lambda.Annotations.APIGateway;
+﻿using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
@@ -220,6 +221,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     case AttributeModel<SQSEventAttribute> sqsAttributeModel:
                         eventName = ProcessSqsAttribute(lambdaFunction, sqsAttributeModel.Data, currentSyncedEventProperties);
                         currentSyncedEvents.Add(eventName);
+                        break;
+                    case AttributeModel<ALBApiAttribute> albAttributeModel:
+                        ProcessAlbApiAttribute(lambdaFunction, albAttributeModel.Data);
                         break;
                 }
             }
@@ -597,8 +601,109 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         }
 
         /// <summary>
-        /// Writes all properties associated with <see cref="LambdaFunctionRoleAttribute"/> to the serverless template.
+        /// Generates CloudFormation resources for an Application Load Balancer target.
+        /// Unlike API Gateway events which map to SAM event types, ALB integration requires
+        /// generating standalone CloudFormation resources: a TargetGroup, a ListenerRule, and a Lambda Permission.
         /// </summary>
+        private void ProcessAlbApiAttribute(ILambdaFunctionSerializable lambdaFunction, ALBApiAttribute att)
+        {
+            var baseName = att.IsResourceNameSet ? att.ResourceName : $"{lambdaFunction.ResourceName}ALB";
+            var permissionName = $"{baseName}Permission";
+            var targetGroupName = $"{baseName}TargetGroup";
+            var listenerRuleName = $"{baseName}ListenerRule";
+
+            // 1. Lambda Permission - allows ELB to invoke the Lambda function
+            var permPath = $"Resources.{permissionName}";
+            if (!_templateWriter.Exists(permPath) ||
+                string.Equals(_templateWriter.GetToken<string>($"{permPath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.SetToken($"{permPath}.Type", "AWS::Lambda::Permission");
+                _templateWriter.SetToken($"{permPath}.Metadata.Tool", CREATION_TOOL);
+                _templateWriter.SetToken($"{permPath}.Properties.FunctionName.{GET_ATTRIBUTE}", new List<string> { lambdaFunction.ResourceName, "Arn" }, TokenType.List);
+                _templateWriter.SetToken($"{permPath}.Properties.Action", "lambda:InvokeFunction");
+                _templateWriter.SetToken($"{permPath}.Properties.Principal", "elasticloadbalancing.amazonaws.com");
+            }
+
+            // 2. Target Group - registers the Lambda function as a target
+            var tgPath = $"Resources.{targetGroupName}";
+            if (!_templateWriter.Exists(tgPath) ||
+                string.Equals(_templateWriter.GetToken<string>($"{tgPath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.SetToken($"{tgPath}.Type", "AWS::ElasticLoadBalancingV2::TargetGroup");
+                _templateWriter.SetToken($"{tgPath}.Metadata.Tool", CREATION_TOOL);
+                _templateWriter.SetToken($"{tgPath}.DependsOn", permissionName);
+                _templateWriter.SetToken($"{tgPath}.Properties.TargetType", "lambda");
+                _templateWriter.SetToken($"{tgPath}.Properties.MultiValueHeadersEnabled", att.MultiValueHeaders);
+                _templateWriter.SetToken($"{tgPath}.Properties.Targets", new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object>
+                    {
+                        { "Id", new Dictionary<string, List<string>> { { GET_ATTRIBUTE, new List<string> { lambdaFunction.ResourceName, "Arn" } } } }
+                    }
+                }, TokenType.List);
+            }
+
+            // 3. Listener Rule - routes traffic from the ALB listener to the target group
+            var rulePath = $"Resources.{listenerRuleName}";
+            if (!_templateWriter.Exists(rulePath) ||
+                string.Equals(_templateWriter.GetToken<string>($"{rulePath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+            {
+                _templateWriter.SetToken($"{rulePath}.Type", "AWS::ElasticLoadBalancingV2::ListenerRule");
+                _templateWriter.SetToken($"{rulePath}.Metadata.Tool", CREATION_TOOL);
+
+                // ListenerArn - handle @reference vs literal ARN
+                _templateWriter.RemoveToken($"{rulePath}.Properties.ListenerArn");
+                if (!string.IsNullOrEmpty(att.ListenerArn) && att.ListenerArn.StartsWith("@"))
+                {
+                    var refName = att.ListenerArn.Substring(1);
+                    _templateWriter.SetToken($"{rulePath}.Properties.ListenerArn.{REF}", refName);
+                }
+                else
+                {
+                    _templateWriter.SetToken($"{rulePath}.Properties.ListenerArn", att.ListenerArn);
+                }
+
+                // Priority
+                _templateWriter.SetToken($"{rulePath}.Properties.Priority", att.Priority);
+
+                // Conditions
+                var conditions = new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object>
+                    {
+                        { "Field", "path-pattern" },
+                        { "Values", new List<string> { att.PathPattern } }
+                    }
+                };
+                if (!string.IsNullOrEmpty(att.HostHeader))
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "host-header" },
+                        { "Values", new List<string> { att.HostHeader } }
+                    });
+                }
+                if (!string.IsNullOrEmpty(att.HttpMethod))
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "http-request-method" },
+                        { "Values", new List<string> { att.HttpMethod.ToUpper() } }
+                    });
+                }
+                _templateWriter.SetToken($"{rulePath}.Properties.Conditions", conditions, TokenType.List);
+
+                // Actions - forward to target group
+                _templateWriter.SetToken($"{rulePath}.Properties.Actions", new List<Dictionary<string, object>>
+                {
+                    new Dictionary<string, object>
+                    {
+                        { "Type", "forward" },
+                        { "TargetGroupArn", new Dictionary<string, string> { { REF, targetGroupName } } }
+                    }
+                }, TokenType.List);
+            }
+        }
 
         /// <summary>
         /// Writes the default values for the Lambda function's metadata and properties.
