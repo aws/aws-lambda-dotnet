@@ -1,0 +1,181 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v{ANNOTATIONS_ASSEMBLY_VERSION}).",
+  "Resources": {
+    "ALBHelloWorld": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestProject::TestServerlessApp.ALBEventExamples.ValidALBEvents_Hello_Generated::Hello"
+      }
+    },
+    "ALBHelloWorldALBPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ALBHelloWorld",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "elasticloadbalancing.amazonaws.com"
+      }
+    },
+    "ALBHelloWorldALBTargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "DependsOn": "ALBHelloWorldALBPermission",
+      "Properties": {
+        "TargetType": "lambda",
+        "MultiValueHeadersEnabled": false,
+        "Targets": [
+          {
+            "Id": {
+              "Fn::GetAtt": [
+                "ALBHelloWorld",
+                "Arn"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ALBHelloWorldALBListenerRule": {
+      "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "ListenerArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/my-alb/abc/def",
+        "Priority": 1,
+        "Conditions": [
+          {
+            "Field": "path-pattern",
+            "Values": [
+              "/hello"
+            ]
+          }
+        ],
+        "Actions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "ALBHelloWorldALBTargetGroup"
+            }
+          }
+        ]
+      }
+    },
+    "ALBWithOptions": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestProject::TestServerlessApp.ALBEventExamples.ValidALBEvents_HandleRequest_Generated::HandleRequest"
+      }
+    },
+    "ALBWithOptionsALBPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ALBWithOptions",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "elasticloadbalancing.amazonaws.com"
+      }
+    },
+    "ALBWithOptionsALBTargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "DependsOn": "ALBWithOptionsALBPermission",
+      "Properties": {
+        "TargetType": "lambda",
+        "MultiValueHeadersEnabled": true,
+        "Targets": [
+          {
+            "Id": {
+              "Fn::GetAtt": [
+                "ALBWithOptions",
+                "Arn"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ALBWithOptionsALBListenerRule": {
+      "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "ListenerArn": {
+          "Ref": "MyALBListener"
+        },
+        "Priority": 5,
+        "Conditions": [
+          {
+            "Field": "path-pattern",
+            "Values": [
+              "/api/*"
+            ]
+          },
+          {
+            "Field": "host-header",
+            "Values": [
+              "api.example.com"
+            ]
+          },
+          {
+            "Field": "http-request-method",
+            "Values": [
+              "POST"
+            ]
+          }
+        ],
+        "Actions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "ALBWithOptionsALBTargetGroup"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
