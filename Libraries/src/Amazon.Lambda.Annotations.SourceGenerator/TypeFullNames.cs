@@ -46,6 +46,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string SQSBatchResponse = "Amazon.Lambda.SQSEvents.SQSBatchResponse";
         public const string SQSEventAttribute = "Amazon.Lambda.Annotations.SQS.SQSEventAttribute";
 
+        public const string ApplicationLoadBalancerRequest = "Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest";
+        public const string ApplicationLoadBalancerResponse = "Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerResponse";
+        public const string ALBApiAttribute = "Amazon.Lambda.Annotations.ALB.ALBApiAttribute";
+
         public const string LambdaSerializerAttribute = "Amazon.Lambda.Core.LambdaSerializerAttribute";
         public const string DefaultLambdaSerializer = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
 
@@ -63,11 +67,17 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             APIGatewayCustomAuthorizerRequest
         };
 
+        public static HashSet<string> ALBRequests = new HashSet<string>
+        {
+            ApplicationLoadBalancerRequest
+        };
+
         public static HashSet<string> Events = new HashSet<string>
         {
             RestApiAttribute,
             HttpApiAttribute,
-            SQSEventAttribute
+            SQSEventAttribute,
+            ALBApiAttribute
         };
     }
 }

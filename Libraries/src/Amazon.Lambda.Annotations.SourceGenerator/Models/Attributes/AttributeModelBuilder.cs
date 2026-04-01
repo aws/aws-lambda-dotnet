@@ -1,4 +1,5 @@
 using System;
+using Amazon.Lambda.Annotations.ALB;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SQS;
 using Microsoft.CodeAnalysis;
@@ -103,6 +104,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             {
                 var data = RestApiAuthorizerAttributeBuilder.Build(att);
                 model = new AttributeModel<RestApiAuthorizerAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.ALBApiAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = ALBApiAttributeBuilder.Build(att);
+                model = new AttributeModel<ALBApiAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)

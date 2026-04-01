@@ -1,0 +1,48 @@
+using Amazon.Lambda.Annotations.ALB;
+using Microsoft.CodeAnalysis;
+using System;
+
+namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
+{
+    /// <summary>
+    /// Builder for <see cref="ALBApiAttribute"/>.
+    /// </summary>
+    public class ALBApiAttributeBuilder
+    {
+        public static ALBApiAttribute Build(AttributeData att)
+        {
+            if (att.ConstructorArguments.Length != 3)
+            {
+                throw new NotSupportedException($"{TypeFullNames.ALBApiAttribute} must have constructor with 3 arguments.");
+            }
+
+            var listenerArn = att.ConstructorArguments[0].Value as string;
+            var pathPattern = att.ConstructorArguments[1].Value as string;
+            var priority = (int)att.ConstructorArguments[2].Value;
+
+            var data = new ALBApiAttribute(listenerArn, pathPattern, priority);
+
+            foreach (var pair in att.NamedArguments)
+            {
+                if (pair.Key == nameof(data.MultiValueHeaders) && pair.Value.Value is bool multiValueHeaders)
+                {
+                    data.MultiValueHeaders = multiValueHeaders;
+                }
+                else if (pair.Key == nameof(data.HostHeader) && pair.Value.Value is string hostHeader)
+                {
+                    data.HostHeader = hostHeader;
+                }
+                else if (pair.Key == nameof(data.HttpMethod) && pair.Value.Value is string httpMethod)
+                {
+                    data.HttpMethod = httpMethod;
+                }
+                else if (pair.Key == nameof(data.ResourceName) && pair.Value.Value is string resourceName)
+                {
+                    data.ResourceName = resourceName;
+                }
+            }
+
+            return data;
+        }
+    }
+}
