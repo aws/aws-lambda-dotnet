@@ -1,0 +1,346 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "ALB Integration Test Stack - VPC and ALB infrastructure for testing Lambda ALB annotations This template is partially managed by Amazon.Lambda.Annotations (v1.10.0.0).",
+  "Resources": {
+    "ALBTestVPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "ALB-Integration-Test-VPC"
+          }
+        ]
+      }
+    },
+    "ALBTestInternetGateway": {
+      "Type": "AWS::EC2::InternetGateway"
+    },
+    "ALBTestGatewayAttachment": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ALBTestVPC"
+        },
+        "InternetGatewayId": {
+          "Ref": "ALBTestInternetGateway"
+        }
+      }
+    },
+    "ALBTestRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ALBTestVPC"
+        }
+      }
+    },
+    "ALBTestRoute": {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": "ALBTestGatewayAttachment",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "ALBTestRouteTable"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "ALBTestInternetGateway"
+        }
+      }
+    },
+    "ALBTestSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ALBTestVPC"
+        },
+        "CidrBlock": "10.0.1.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": true
+      }
+    },
+    "ALBTestSubnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ALBTestVPC"
+        },
+        "CidrBlock": "10.0.2.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": true
+      }
+    },
+    "ALBTestSubnet1RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "ALBTestSubnet1"
+        },
+        "RouteTableId": {
+          "Ref": "ALBTestRouteTable"
+        }
+      }
+    },
+    "ALBTestSubnet2RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "ALBTestSubnet2"
+        },
+        "RouteTableId": {
+          "Ref": "ALBTestRouteTable"
+        }
+      }
+    },
+    "ALBTestSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "ALB Integration Test Security Group",
+        "VpcId": {
+          "Ref": "ALBTestVPC"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "ALBTestLoadBalancer": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Type": "application",
+        "Scheme": "internet-facing",
+        "Subnets": [
+          {
+            "Ref": "ALBTestSubnet1"
+          },
+          {
+            "Ref": "ALBTestSubnet2"
+          }
+        ],
+        "SecurityGroups": [
+          {
+            "Ref": "ALBTestSecurityGroup"
+          }
+        ]
+      }
+    },
+    "ALBTestListener": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "LoadBalancerArn": {
+          "Ref": "ALBTestLoadBalancer"
+        },
+        "Port": 80,
+        "Protocol": "HTTP",
+        "DefaultAction": [
+          {
+            "Type": "fixed-response",
+            "FixedResponseConfig": {
+              "StatusCode": "404",
+              "ContentType": "application/json",
+              "MessageBody": "{\"error\": \"Not Found\"}"
+            }
+          }
+        ]
+      }
+    },
+    "ALBHello": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 15,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_Hello_Generated::Hello"
+      }
+    },
+    "ALBHelloALBPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ALBHello",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "elasticloadbalancing.amazonaws.com"
+      }
+    },
+    "ALBHelloALBTargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "DependsOn": "ALBHelloALBPermission",
+      "Properties": {
+        "TargetType": "lambda",
+        "MultiValueHeadersEnabled": false,
+        "Targets": [
+          {
+            "Id": {
+              "Fn::GetAtt": [
+                "ALBHello",
+                "Arn"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ALBHelloALBListenerRule": {
+      "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "ListenerArn": {
+          "Ref": "ALBTestListener"
+        },
+        "Priority": 1,
+        "Conditions": [
+          {
+            "Field": "path-pattern",
+            "Values": [
+              "/hello"
+            ]
+          }
+        ],
+        "Actions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "ALBHelloALBTargetGroup"
+            }
+          }
+        ]
+      }
+    },
+    "ALBHealth": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 128,
+        "Timeout": 5,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_Health_Generated::Health"
+      }
+    },
+    "ALBHealthALBPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ALBHealth",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "elasticloadbalancing.amazonaws.com"
+      }
+    },
+    "ALBHealthALBTargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "DependsOn": "ALBHealthALBPermission",
+      "Properties": {
+        "TargetType": "lambda",
+        "MultiValueHeadersEnabled": false,
+        "Targets": [
+          {
+            "Id": {
+              "Fn::GetAtt": [
+                "ALBHealth",
+                "Arn"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ALBHealthALBListenerRule": {
+      "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "ListenerArn": {
+          "Ref": "ALBTestListener"
+        },
+        "Priority": 2,
+        "Conditions": [
+          {
+            "Field": "path-pattern",
+            "Values": [
+              "/health"
+            ]
+          }
+        ],
+        "Actions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "ALBHealthALBTargetGroup"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "ALBDnsName": {
+      "Value": {
+        "Fn::GetAtt": [
+          "ALBTestLoadBalancer",
+          "DNSName"
+        ]
+      },
+      "Description": "ALB DNS Name for integration testing"
+    }
+  }
+}
