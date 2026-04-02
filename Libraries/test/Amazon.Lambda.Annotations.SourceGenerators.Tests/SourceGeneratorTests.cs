@@ -1380,7 +1380,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                         .WithArguments("ValidALBEvents_HandleRequest_Generated.g.cs", validALBEventsHandleRequestGeneratedContent),
 
                         new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
-                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+
+                        new DiagnosticResult("AWSLambda0133", DiagnosticSeverity.Error)
                     }
                 }
             }.RunAsync();
