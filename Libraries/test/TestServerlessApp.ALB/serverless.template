@@ -155,7 +155,7 @@
         },
         "Port": 80,
         "Protocol": "HTTP",
-        "DefaultAction": [
+        "DefaultActions": [
           {
             "Type": "fixed-response",
             "FixedResponseConfig": {

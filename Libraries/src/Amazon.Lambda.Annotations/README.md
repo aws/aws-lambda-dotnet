@@ -1065,7 +1065,7 @@ The `ALBApi` attribute requires an existing ALB listener. Here is a minimal exam
       "LoadBalancerArn": { "Ref": "MyALB" },
       "Port": 80,
       "Protocol": "HTTP",
-      "DefaultAction": [{ "Type": "fixed-response", "FixedResponseConfig": { "StatusCode": "404" } }]
+      "DefaultActions": [{ "Type": "fixed-response", "FixedResponseConfig": { "StatusCode": "404" } }]
     }
   }
 }
