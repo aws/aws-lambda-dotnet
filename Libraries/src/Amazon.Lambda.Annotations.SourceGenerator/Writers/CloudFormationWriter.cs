@@ -38,6 +38,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         private readonly IDirectoryManager _directoryManager;
         private readonly ITemplateWriter _templateWriter;
         private readonly IDiagnosticReporter _diagnosticReporter;
+        private bool _isNewTemplate;
 
         public CloudFormationWriter(IFileManager fileManager, IDirectoryManager directoryManager, ITemplateWriter templateWriter, IDiagnosticReporter diagnosticReporter)
         {
@@ -56,7 +57,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var templateDirectory = _directoryManager.GetDirectoryName(report.CloudFormationTemplatePath);
             var relativeProjectUri = _directoryManager.GetRelativePath(templateDirectory, report.ProjectRootDirectory);
 
-            if (string.IsNullOrEmpty(originalContent))
+            _isNewTemplate = string.IsNullOrEmpty(originalContent);
+            if (_isNewTemplate)
                 CreateNewTemplate();
             else
                 _templateWriter.Parse(originalContent);
@@ -680,6 +682,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 {
                     var refName = att.ListenerArn.Substring(1);
                     _templateWriter.SetToken($"{rulePath}.Properties.ListenerArn.{REF}", refName);
+
+                    // Warn if the referenced resource/parameter doesn't exist in the template.
+                    // Skip for new templates since the user hasn't had a chance to add the resource yet.
+                    if (!_isNewTemplate && !_templateWriter.Exists($"Resources.{refName}") && !_templateWriter.Exists($"{PARAMETERS}.{refName}"))
+                    {
+                        _diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.AlbListenerReferenceNotFound, Location.None, refName));
+                    }
                 }
                 else
                 {

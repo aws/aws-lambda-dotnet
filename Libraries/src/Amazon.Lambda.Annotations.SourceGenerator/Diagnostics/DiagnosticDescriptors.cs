@@ -250,5 +250,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AlbListenerReferenceNotFound = new DiagnosticDescriptor(
+            id: "AWSLambda0133",
+            title: "ALB Listener Reference Not Found",
+            messageFormat: "The ALBApi ListenerArn references '@{0}', but no resource or parameter named '{0}' was found in the CloudFormation template. The deployment may fail if this resource is not defined.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
     }
 }

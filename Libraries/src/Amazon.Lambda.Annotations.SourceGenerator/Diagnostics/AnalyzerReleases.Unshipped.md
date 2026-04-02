@@ -17,3 +17,4 @@ AWSLambda0129 | AWSLambdaCSharpGenerator | Error | Missing LambdaFunction Attrib
 AWSLambda0130 | AWSLambdaCSharpGenerator | Error | Invalid return type IAuthorizerResult
 AWSLambda0131 | AWSLambdaCSharpGenerator | Error | FromBody not supported on Authorizer functions
 AWSLambda0132 | AWSLambdaCSharpGenerator | Error | Invalid ALBApiAttribute
+AWSLambda0133 | AWSLambdaCSharpGenerator | Warning | ALB Listener Reference Not Found
