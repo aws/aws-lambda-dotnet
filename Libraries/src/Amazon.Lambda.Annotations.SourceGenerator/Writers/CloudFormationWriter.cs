@@ -204,6 +204,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         {
             var currentSyncedEvents = new List<string>();
             var currentSyncedEventProperties = new Dictionary<string, List<string>>();
+            var currentAlbResources = new List<string>();
 
             foreach (var attributeModel in lambdaFunction.Attributes)
             {
@@ -223,12 +224,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         currentSyncedEvents.Add(eventName);
                         break;
                     case AttributeModel<ALBApiAttribute> albAttributeModel:
-                        ProcessAlbApiAttribute(lambdaFunction, albAttributeModel.Data);
+                        var albResourceNames = ProcessAlbApiAttribute(lambdaFunction, albAttributeModel.Data);
+                        currentAlbResources.AddRange(albResourceNames);
                         break;
                 }
             }
 
             SynchronizeEventsAndProperties(currentSyncedEvents, currentSyncedEventProperties, lambdaFunction);
+            SynchronizeAlbResources(currentAlbResources, lambdaFunction);
         }
 
         /// <summary>
@@ -605,7 +608,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
         /// Unlike API Gateway events which map to SAM event types, ALB integration requires
         /// generating standalone CloudFormation resources: a TargetGroup, a ListenerRule, and a Lambda Permission.
         /// </summary>
-        private void ProcessAlbApiAttribute(ILambdaFunctionSerializable lambdaFunction, ALBApiAttribute att)
+        /// <returns>List of the three generated CloudFormation resource names for tracking/synchronization.</returns>
+        private List<string> ProcessAlbApiAttribute(ILambdaFunctionSerializable lambdaFunction, ALBApiAttribute att)
         {
             var baseName = att.IsResourceNameSet ? att.ResourceName : $"{lambdaFunction.ResourceName}ALB";
             var permissionName = $"{baseName}Permission";
@@ -722,6 +726,39 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     }
                 }, TokenType.List);
             }
+
+            return new List<string> { permissionName, targetGroupName, listenerRuleName };
+        }
+
+        /// <summary>
+        /// Synchronizes ALB resources for a given Lambda function. ALB resources (Permission, TargetGroup, ListenerRule)
+        /// are standalone top-level CloudFormation resources, so they need separate tracking from SAM events.
+        /// Previously generated ALB resources that are no longer present in the current compilation are removed.
+        /// </summary>
+        private void SynchronizeAlbResources(List<string> currentAlbResources, ILambdaFunctionSerializable lambdaFunction)
+        {
+            var syncedAlbResourcesPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedAlbResources";
+
+            // Get previously synced ALB resources
+            var previousAlbResources = _templateWriter.GetToken<List<string>>(syncedAlbResourcesPath, new List<string>());
+
+            // Remove orphaned ALB resources
+            var orphanedAlbResources = previousAlbResources.Except(currentAlbResources).ToList();
+            foreach (var resourceName in orphanedAlbResources)
+            {
+                var resourcePath = $"Resources.{resourceName}";
+                // Only remove if it was created by this tool
+                if (_templateWriter.Exists(resourcePath) &&
+                    string.Equals(_templateWriter.GetToken<string>($"{resourcePath}.Metadata.Tool", string.Empty), CREATION_TOOL, StringComparison.Ordinal))
+                {
+                    _templateWriter.RemoveToken(resourcePath);
+                }
+            }
+
+            // Update synced ALB resources in the template metadata
+            _templateWriter.RemoveToken(syncedAlbResourcesPath);
+            if (currentAlbResources.Any())
+                _templateWriter.SetToken(syncedAlbResourcesPath, currentAlbResources, TokenType.List);
         }
 
         /// <summary>

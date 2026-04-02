@@ -16,3 +16,4 @@ AWSLambda0128 | AWSLambdaCSharpGenerator | Error | Authorizer Payload Version Mi
 AWSLambda0129 | AWSLambdaCSharpGenerator | Error | Missing LambdaFunction Attribute
 AWSLambda0130 | AWSLambdaCSharpGenerator | Error | Invalid return type IAuthorizerResult
 AWSLambda0131 | AWSLambdaCSharpGenerator | Error | FromBody not supported on Authorizer functions
+AWSLambda0132 | AWSLambdaCSharpGenerator | Error | Invalid ALBApiAttribute

@@ -1,9 +1,11 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Amazon.CloudFormation;
 using Amazon.ElasticLoadBalancingV2;
+using Amazon.ElasticLoadBalancingV2.Model;
 using Amazon.Lambda;
 using Amazon.S3;
 using IntegrationTests.Helpers;
@@ -26,6 +28,7 @@ namespace TestServerlessApp.ALB.IntegrationTests
         public readonly HttpClient HttpClient;
 
         public string ALBDnsName;
+        public string LoadBalancerArn;
 
         public ALBIntegrationTestContextFixture()
         {
@@ -60,9 +63,73 @@ namespace TestServerlessApp.ALB.IntegrationTests
             Console.WriteLine($"[ALB IntegrationTest] ALB DNS Name: {ALBDnsName}");
             Assert.False(string.IsNullOrEmpty(ALBDnsName), "ALB DNS Name should not be empty");
 
-            // Wait for Lambda targets to become healthy
+            // Resolve the LoadBalancerArn from DNS name for scoped queries
+            var lbResponse = await ELBv2Client.DescribeLoadBalancersAsync(new DescribeLoadBalancersRequest());
+            var loadBalancer = lbResponse.LoadBalancers.FirstOrDefault(lb => lb.DNSName == ALBDnsName);
+            if (loadBalancer != null)
+            {
+                LoadBalancerArn = loadBalancer.LoadBalancerArn;
+                Console.WriteLine($"[ALB IntegrationTest] LoadBalancer ARN: {LoadBalancerArn}");
+            }
+
+            // Wait for Lambda targets to become healthy by polling target health
             Console.WriteLine("[ALB IntegrationTest] Waiting for targets to become healthy...");
-            await Task.Delay(30000); // Wait 30s for targets to register and become healthy
+            await WaitForTargetsHealthy(timeoutSeconds: 120, pollIntervalSeconds: 10);
+        }
+
+        /// <summary>
+        /// Polls ALB target group health until at least one target is healthy or the timeout is reached.
+        /// </summary>
+        private async Task WaitForTargetsHealthy(int timeoutSeconds, int pollIntervalSeconds)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+
+            while (DateTime.UtcNow < deadline)
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(LoadBalancerArn))
+                    {
+                        var tgResponse = await ELBv2Client.DescribeTargetGroupsAsync(new DescribeTargetGroupsRequest
+                        {
+                            LoadBalancerArn = LoadBalancerArn
+                        });
+
+                        var lambdaTgs = tgResponse.TargetGroups.Where(tg => tg.TargetType == TargetTypeEnum.Lambda).ToList();
+                        if (lambdaTgs.Count >= 2)
+                        {
+                            var allHealthy = true;
+                            foreach (var tg in lambdaTgs)
+                            {
+                                var healthResponse = await ELBv2Client.DescribeTargetHealthAsync(new DescribeTargetHealthRequest
+                                {
+                                    TargetGroupArn = tg.TargetGroupArn
+                                });
+                                if (!healthResponse.TargetHealthDescriptions.Any(t => t.TargetHealth.State == TargetHealthStateEnum.Healthy))
+                                {
+                                    allHealthy = false;
+                                    break;
+                                }
+                            }
+
+                            if (allHealthy)
+                            {
+                                Console.WriteLine("[ALB IntegrationTest] All targets are healthy.");
+                                return;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ALB IntegrationTest] Polling error (will retry): {ex.Message}");
+                }
+
+                Console.WriteLine($"[ALB IntegrationTest] Targets not yet healthy, retrying in {pollIntervalSeconds}s...");
+                await Task.Delay(pollIntervalSeconds * 1000);
+            }
+
+            Console.WriteLine("[ALB IntegrationTest] Warning: Timed out waiting for targets to become healthy. Proceeding anyway.");
         }
 
         public async Task DisposeAsync()
@@ -83,11 +150,12 @@ namespace TestServerlessApp.ALB.IntegrationTests
                     $"The bucket '{_bucketName}' still exists and will have to be manually deleted.");
             }
 
-            // Reset aws-lambda-tools-defaults.json
+            // Reset aws-lambda-tools-defaults.json to original values
             var filePath = Path.Combine("..", "..", "..", "..", "TestServerlessApp.ALB", "aws-lambda-tools-defaults.json");
             var token = JObject.Parse(await File.ReadAllTextAsync(filePath));
             token["s3-bucket"] = "test-serverless-app-alb";
             token["stack-name"] = "test-serverless-app-alb";
+            token["function-architecture"] = "x86_64";
             await File.WriteAllTextAsync(filePath, token.ToString(Formatting.Indented));
         }
 

@@ -242,5 +242,13 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidAlbApiAttribute = new DiagnosticDescriptor(
+            id: "AWSLambda0132",
+            title: "Invalid ALBApiAttribute",
+            messageFormat: "Invalid ALBApiAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

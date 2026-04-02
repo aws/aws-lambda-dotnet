@@ -57,15 +57,22 @@ namespace TestServerlessApp.ALB.IntegrationTests
         [Fact]
         public async Task VerifyTargetGroupsExist()
         {
-            // ACT - Describe all target groups and find ours
-            var describeResponse = await _fixture.ELBv2Client.DescribeTargetGroupsAsync(new DescribeTargetGroupsRequest());
+            // ACT - Describe only the target groups associated with this stack's load balancer
+            Assert.False(string.IsNullOrEmpty(_fixture.LoadBalancerArn),
+                "LoadBalancerArn should have been resolved during test initialization");
+
+            var describeResponse = await _fixture.ELBv2Client.DescribeTargetGroupsAsync(new DescribeTargetGroupsRequest
+            {
+                LoadBalancerArn = _fixture.LoadBalancerArn
+            });
+
             var albTargetGroups = describeResponse.TargetGroups
                 .Where(tg => tg.TargetType == TargetTypeEnum.Lambda)
                 .ToList();
 
-            // ASSERT - At least our Lambda target groups should exist
-            Assert.True(albTargetGroups.Count >= 2, 
-                $"Expected at least 2 Lambda target groups, found {albTargetGroups.Count}");
+            // ASSERT - At least our Lambda target groups should exist for this ALB
+            Assert.True(albTargetGroups.Count >= 2,
+                $"Expected at least 2 Lambda target groups for ALB '{_fixture.ALBDnsName}', found {albTargetGroups.Count}");
         }
     }
 }

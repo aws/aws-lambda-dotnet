@@ -1,4 +1,5 @@
-﻿using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
+﻿using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
@@ -59,6 +60,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             // Validate Events
             ValidateApiGatewayEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateSqsEvents(lambdaFunctionModel, methodLocation, diagnostics);
+            ValidateAlbEvents(lambdaFunctionModel, methodLocation, diagnostics);
 
             return ReportDiagnostics(diagnosticReporter, diagnostics);
         }
@@ -274,6 +276,48 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             if (!lambdaFunctionModel.LambdaMethod.ReturnsVoidTaskOrSqsBatchResponse)
             {
                 var errorMessage = $"When using the {nameof(SQSEventAttribute)}, the Lambda method can return either void, {TypeFullNames.Task}, {TypeFullNames.SQSBatchResponse} or Task<{TypeFullNames.SQSBatchResponse}>";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+            }
+        }
+
+        private static void ValidateAlbEvents(LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            // If the method does not contain any ALB events, then simply return early
+            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.ALB))
+            {
+                return;
+            }
+
+            // Validate ALBApiAttributes
+            foreach (var att in lambdaFunctionModel.Attributes)
+            {
+                if (att.Type.FullName != TypeFullNames.ALBApiAttribute)
+                    continue;
+
+                var albApiAttribute = ((AttributeModel<ALBApiAttribute>)att).Data;
+                var validationErrors = albApiAttribute.Validate();
+                validationErrors.ForEach(errorMessage => diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidAlbApiAttribute, methodLocation, errorMessage)));
+            }
+
+            // Validate method parameters - When using ALBApiAttribute, the method signature must be
+            // (ApplicationLoadBalancerRequest request) or (ApplicationLoadBalancerRequest request, ILambdaContext context)
+            var parameters = lambdaFunctionModel.LambdaMethod.Parameters;
+            if (parameters.Count == 0 ||
+                parameters.Count > 2 ||
+                (parameters.Count == 1 && parameters[0].Type.FullName != TypeFullNames.ApplicationLoadBalancerRequest) ||
+                (parameters.Count == 2 && (parameters[0].Type.FullName != TypeFullNames.ApplicationLoadBalancerRequest || parameters[1].Type.FullName != TypeFullNames.ILambdaContext)))
+            {
+                var errorMessage = $"When using the {nameof(ALBApiAttribute)}, the Lambda method can accept at most 2 parameters. " +
+                    $"The first parameter is required and must be of type {TypeFullNames.ApplicationLoadBalancerRequest}. " +
+                    $"The second parameter is optional and must be of type {TypeFullNames.ILambdaContext}.";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+            }
+
+            // Validate method return type - When using ALBApiAttribute, the return type must be
+            // ApplicationLoadBalancerResponse or Task<ApplicationLoadBalancerResponse>
+            if (!lambdaFunctionModel.LambdaMethod.ReturnsApplicationLoadBalancerResponse)
+            {
+                var errorMessage = $"When using the {nameof(ALBApiAttribute)}, the Lambda method must return {TypeFullNames.ApplicationLoadBalancerResponse} or Task<{TypeFullNames.ApplicationLoadBalancerResponse}>";
                 diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
             }
         }

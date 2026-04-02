@@ -977,7 +977,7 @@ For each `ALBApi` attribute, the source generator creates three CloudFormation r
     "Tool": "Amazon.Lambda.Annotations"
   },
   "Properties": {
-    "Runtime": "dotnet8",
+    "Runtime": "dotnet6",
     "CodeUri": ".",
     "MemorySize": 256,
     "Timeout": 15,
