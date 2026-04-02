@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System;
 using System.IO;
 using System.Text;
@@ -1914,6 +1917,44 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             }.RunAsync();
 
             var actualTemplateContent = File.ReadAllText(Path.Combine("TestServerlessApp", "serverless.template"));
+            Assert.Equal(expectedTemplateContent, actualTemplateContent);
+        }
+
+        [Fact]
+        public async Task FunctionUrlExample()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "functionUrlExample.template"));
+            var expectedGetItemsGenerated = await ReadSnapshotContent(Path.Combine("Snapshots", "FunctionUrlExample_GetItems_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "FunctionUrlExample.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "FunctionUrlExample.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaStartupAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FunctionUrlAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "APIGateway", "FunctionUrlAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "FunctionUrlExample_GetItems_Generated.g.cs",
+                            SourceText.From(expectedGetItemsGenerated, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments("FunctionUrlExample_GetItems_Generated.g.cs", expectedGetItemsGenerated),
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info).WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    }
+                }
+            }.RunAsync();
+
+            var actualTemplateContent = await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "serverless.template"));
             Assert.Equal(expectedTemplateContent, actualTemplateContent);
         }
 

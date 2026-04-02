@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System.Collections.Generic;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator
@@ -33,6 +36,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string FromBodyAttribute = "Amazon.Lambda.Annotations.APIGateway.FromBodyAttribute";
         public const string FromRouteAttribute = "Amazon.Lambda.Annotations.APIGateway.FromRouteAttribute";
         public const string FromCustomAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.FromCustomAuthorizerAttribute";
+
+        public const string FunctionUrlAttribute = "Amazon.Lambda.Annotations.APIGateway.FunctionUrlAttribute";
+        public const string FunctionUrlAuthType = "Amazon.Lambda.Annotations.APIGateway.FunctionUrlAuthType";
 
         public const string HttpApiAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.HttpApiAuthorizerAttribute";
         public const string RestApiAuthorizerAttribute = "Amazon.Lambda.Annotations.APIGateway.RestApiAuthorizerAttribute";
@@ -82,6 +88,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         {
             RestApiAttribute,
             HttpApiAttribute,
+            FunctionUrlAttribute,
             SQSEventAttribute,
             ALBApiAttribute,
             S3EventAttribute

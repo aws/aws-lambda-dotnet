@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda;
@@ -52,6 +55,14 @@ namespace IntegrationTests.Helpers
             {
                 FunctionName = functionName,
                 EventSourceArn = eventSourceArn
+            });
+        }
+
+        public async Task<GetFunctionUrlConfigResponse> GetFunctionUrlConfigAsync(string functionName)
+        {
+            return await _lambdaClient.GetFunctionUrlConfigAsync(new GetFunctionUrlConfigRequest
+            {
+                FunctionName = functionName
             });
         }
 
