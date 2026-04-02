@@ -44,7 +44,6 @@
       "DependsOn": "ALBHelloWorldALBPermission",
       "Properties": {
         "TargetType": "lambda",
-        "MultiValueHeadersEnabled": false,
         "Targets": [
           {
             "Id": {
@@ -124,7 +123,12 @@
       "DependsOn": "ALBWithOptionsALBPermission",
       "Properties": {
         "TargetType": "lambda",
-        "MultiValueHeadersEnabled": true,
+        "TargetGroupAttributes": [
+          {
+            "Key": "lambda.multi_value_headers.enabled",
+            "Value": "true"
+          }
+        ],
         "Targets": [
           {
             "Id": {

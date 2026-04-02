@@ -633,7 +633,26 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                 _templateWriter.SetToken($"{tgPath}.Metadata.Tool", CREATION_TOOL);
                 _templateWriter.SetToken($"{tgPath}.DependsOn", permissionName);
                 _templateWriter.SetToken($"{tgPath}.Properties.TargetType", "lambda");
-                _templateWriter.SetToken($"{tgPath}.Properties.MultiValueHeadersEnabled", att.MultiValueHeaders);
+
+                // MultiValueHeaders must be set via TargetGroupAttributes, not as a top-level property.
+                // The CFN property "MultiValueHeadersEnabled" does not exist on AWS::ElasticLoadBalancingV2::TargetGroup.
+                if (att.MultiValueHeaders)
+                {
+                    _templateWriter.SetToken($"{tgPath}.Properties.TargetGroupAttributes",
+                        new List<Dictionary<string, string>>
+                        {
+                            new Dictionary<string, string>
+                            {
+                                { "Key", "lambda.multi_value_headers.enabled" },
+                                { "Value", "true" }
+                            }
+                        }, TokenType.List);
+                }
+                else
+                {
+                    _templateWriter.RemoveToken($"{tgPath}.Properties.TargetGroupAttributes");
+                }
+
                 _templateWriter.SetToken($"{tgPath}.Properties.Targets", new List<Dictionary<string, object>>
                 {
                     new Dictionary<string, object>

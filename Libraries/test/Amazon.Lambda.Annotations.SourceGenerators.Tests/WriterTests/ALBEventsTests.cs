@@ -56,7 +56,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.Equal("Amazon.Lambda.Annotations", templateWriter.GetToken<string>("Resources.HelloWorldALBTargetGroup.Metadata.Tool"));
             Assert.Equal("HelloWorldALBPermission", templateWriter.GetToken<string>("Resources.HelloWorldALBTargetGroup.DependsOn"));
             Assert.Equal("lambda", templateWriter.GetToken<string>("Resources.HelloWorldALBTargetGroup.Properties.TargetType"));
-            Assert.False(templateWriter.GetToken<bool>("Resources.HelloWorldALBTargetGroup.Properties.MultiValueHeadersEnabled"));
+            // When MultiValueHeaders is false (default), no TargetGroupAttributes should be present
+            Assert.False(templateWriter.Exists("Resources.HelloWorldALBTargetGroup.Properties.TargetGroupAttributes"));
 
             // Verify ListenerRule resource
             Assert.True(templateWriter.Exists("Resources.HelloWorldALBListenerRule"));
@@ -99,7 +100,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
         [Theory]
         [InlineData(CloudFormationTemplateFormat.Json)]
         [InlineData(CloudFormationTemplateFormat.Yaml)]
-        public void ALBApiAttribute_WithMultiValueHeaders_SetsEnabled(CloudFormationTemplateFormat templateFormat)
+        public void ALBApiAttribute_WithMultiValueHeaders_SetsTargetGroupAttributes(CloudFormationTemplateFormat templateFormat)
         {
             // ARRANGE
             var mockFileManager = GetMockFileManager(string.Empty);
@@ -122,7 +123,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 
             // ASSERT
             templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
-            Assert.True(templateWriter.GetToken<bool>("Resources.MyFunctionALBTargetGroup.Properties.MultiValueHeadersEnabled"));
+            // When MultiValueHeaders is true, TargetGroupAttributes should contain the lambda.multi_value_headers.enabled attribute
+            Assert.True(templateWriter.Exists("Resources.MyFunctionALBTargetGroup.Properties.TargetGroupAttributes"));
         }
 
         [Theory]

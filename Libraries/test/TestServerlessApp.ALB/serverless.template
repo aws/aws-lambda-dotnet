@@ -208,7 +208,6 @@
       "DependsOn": "ALBHelloALBPermission",
       "Properties": {
         "TargetType": "lambda",
-        "MultiValueHeadersEnabled": false,
         "Targets": [
           {
             "Id": {
@@ -227,9 +226,6 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "ListenerArn": {
-          "Ref": "ALBTestListener"
-        },
         "Priority": 1,
         "Conditions": [
           {
@@ -246,7 +242,10 @@
               "Ref": "ALBHelloALBTargetGroup"
             }
           }
-        ]
+        ],
+        "ListenerArn": {
+          "Ref": "ALBTestListener"
+        }
       }
     },
     "ALBHealth": {
@@ -290,7 +289,6 @@
       "DependsOn": "ALBHealthALBPermission",
       "Properties": {
         "TargetType": "lambda",
-        "MultiValueHeadersEnabled": false,
         "Targets": [
           {
             "Id": {
@@ -309,9 +307,6 @@
         "Tool": "Amazon.Lambda.Annotations"
       },
       "Properties": {
-        "ListenerArn": {
-          "Ref": "ALBTestListener"
-        },
         "Priority": 2,
         "Conditions": [
           {
@@ -328,7 +323,10 @@
               "Ref": "ALBHealthALBTargetGroup"
             }
           }
-        ]
+        ],
+        "ListenerArn": {
+          "Ref": "ALBTestListener"
+        }
       }
     }
   },
