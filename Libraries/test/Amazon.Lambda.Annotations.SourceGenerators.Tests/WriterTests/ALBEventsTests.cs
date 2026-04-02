@@ -227,5 +227,148 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             Assert.True(templateWriter.Exists("Resources.MyFunctionALBListenerRule.Properties.Conditions"));
             Assert.Equal(10, templateWriter.GetToken<int>("Resources.MyFunctionALBListenerRule.Properties.Priority"));
         }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void ALBApiAttribute_TracksSyncedAlbResourcesInMetadata(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "HelloWorld", 30, 256, null, null);
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+
+            var albAttribute = new ALBApiAttribute("@MyListener", "/hello", 1);
+            lambdaFunctionModel.Attributes.Add(new AttributeModel<ALBApiAttribute> { Data = albAttribute });
+
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+
+            // Verify SyncedAlbResources metadata is persisted on the Lambda function
+            Assert.True(templateWriter.Exists("Resources.HelloWorld.Metadata.SyncedAlbResources"));
+            var syncedAlbResources = templateWriter.GetToken<List<string>>("Resources.HelloWorld.Metadata.SyncedAlbResources");
+            Assert.Contains("HelloWorldALBPermission", syncedAlbResources);
+            Assert.Contains("HelloWorldALBTargetGroup", syncedAlbResources);
+            Assert.Contains("HelloWorldALBListenerRule", syncedAlbResources);
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void ALBApiAttribute_RemovesOrphanedResourcesWhenAttributeRemoved(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - First, create a function with ALB attribute
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "HelloWorld", 30, 256, null, null);
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+
+            var albAttribute = new ALBApiAttribute("@MyListener", "/hello", 1);
+            lambdaFunctionModel.Attributes.Add(new AttributeModel<ALBApiAttribute> { Data = albAttribute });
+
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+
+            // First pass - creates ALB resources
+            cloudFormationWriter.ApplyReport(report);
+
+            // Verify resources exist after first pass
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.True(templateWriter.Exists("Resources.HelloWorldALBPermission"));
+            Assert.True(templateWriter.Exists("Resources.HelloWorldALBTargetGroup"));
+            Assert.True(templateWriter.Exists("Resources.HelloWorldALBListenerRule"));
+
+            // ACT - Second pass: remove the ALB attribute (function still exists, but no ALB)
+            var lambdaFunctionModelNoAlb = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "HelloWorld", 30, 256, null, null);
+            lambdaFunctionModelNoAlb.PackageType = LambdaPackageType.Zip;
+            // No ALB attribute added
+
+            var cloudFormationWriter2 = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report2 = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModelNoAlb });
+            cloudFormationWriter2.ApplyReport(report2);
+
+            // ASSERT - ALB resources should be removed
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.False(templateWriter.Exists("Resources.HelloWorldALBPermission"));
+            Assert.False(templateWriter.Exists("Resources.HelloWorldALBTargetGroup"));
+            Assert.False(templateWriter.Exists("Resources.HelloWorldALBListenerRule"));
+
+            // Lambda function should still exist
+            Assert.True(templateWriter.Exists("Resources.HelloWorld"));
+
+            // SyncedAlbResources metadata should be cleared
+            Assert.False(templateWriter.Exists("Resources.HelloWorld.Metadata.SyncedAlbResources"));
+        }
+
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void ALBApiAttribute_RemovesOldResourcesWhenResourceNameChanges(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - First, create a function with ALB attribute using custom ResourceName
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "HelloWorld", 30, 256, null, null);
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+
+            var albAttribute = new ALBApiAttribute("@MyListener", "/hello", 1)
+            {
+                ResourceName = "OldALB"
+            };
+            lambdaFunctionModel.Attributes.Add(new AttributeModel<ALBApiAttribute> { Data = albAttribute });
+
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+
+            // First pass - creates resources with "OldALB" prefix
+            cloudFormationWriter.ApplyReport(report);
+
+            ITemplateWriter templateWriter = templateFormat == CloudFormationTemplateFormat.Json ? new JsonWriter() : new YamlWriter();
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.True(templateWriter.Exists("Resources.OldALBPermission"));
+            Assert.True(templateWriter.Exists("Resources.OldALBTargetGroup"));
+            Assert.True(templateWriter.Exists("Resources.OldALBListenerRule"));
+
+            // ACT - Second pass: change ResourceName to "NewALB"
+            var lambdaFunctionModelNew = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "HelloWorld", 30, 256, null, null);
+            lambdaFunctionModelNew.PackageType = LambdaPackageType.Zip;
+
+            var albAttributeNew = new ALBApiAttribute("@MyListener", "/hello", 1)
+            {
+                ResourceName = "NewALB"
+            };
+            lambdaFunctionModelNew.Attributes.Add(new AttributeModel<ALBApiAttribute> { Data = albAttributeNew });
+
+            var cloudFormationWriter2 = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report2 = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModelNew });
+            cloudFormationWriter2.ApplyReport(report2);
+
+            // ASSERT - Old resources should be removed
+            templateWriter.Parse(mockFileManager.ReadAllText(ServerlessTemplateFilePath));
+            Assert.False(templateWriter.Exists("Resources.OldALBPermission"));
+            Assert.False(templateWriter.Exists("Resources.OldALBTargetGroup"));
+            Assert.False(templateWriter.Exists("Resources.OldALBListenerRule"));
+
+            // New resources should exist
+            Assert.True(templateWriter.Exists("Resources.NewALBPermission"));
+            Assert.True(templateWriter.Exists("Resources.NewALBTargetGroup"));
+            Assert.True(templateWriter.Exists("Resources.NewALBListenerRule"));
+
+            // SyncedAlbResources should reflect new names
+            var syncedAlbResources = templateWriter.GetToken<List<string>>("Resources.HelloWorld.Metadata.SyncedAlbResources");
+            Assert.Contains("NewALBPermission", syncedAlbResources);
+            Assert.DoesNotContain("OldALBPermission", syncedAlbResources);
+        }
     }
 }

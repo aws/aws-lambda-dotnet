@@ -6,7 +6,12 @@
     "ALBHelloWorld": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedAlbResources": [
+          "ALBHelloWorldALBPermission",
+          "ALBHelloWorldALBTargetGroup",
+          "ALBHelloWorldALBListenerRule"
+        ]
       },
       "Properties": {
         "Runtime": "dotnet6",
@@ -85,7 +90,12 @@
     "ALBWithOptions": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedAlbResources": [
+          "ALBWithOptionsALBPermission",
+          "ALBWithOptionsALBTargetGroup",
+          "ALBWithOptionsALBListenerRule"
+        ]
       },
       "Properties": {
         "Runtime": "dotnet6",
