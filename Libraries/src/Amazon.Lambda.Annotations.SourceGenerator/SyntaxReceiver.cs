@@ -22,7 +22,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             { "HttpApiAttribute", "HttpApi" },
             { "RestApiAttribute", "RestApi" },
             { "SQSEventAttribute", "SQSEvent" },
-            { "ALBApiAttribute", "ALBApi" }
+            { "ALBApiAttribute", "ALBApi" },
+            { "S3EventAttribute", "S3Event" }
         };
 
         public List<MethodDeclarationSyntax> LambdaMethods { get; } = new List<MethodDeclarationSyntax>();

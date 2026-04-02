@@ -4,6 +4,7 @@ using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
+using Amazon.Lambda.Annotations.S3;
 using Amazon.Lambda.Annotations.SQS;
 using Microsoft.CodeAnalysis;
 using System;
@@ -226,6 +227,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     case AttributeModel<ALBApiAttribute> albAttributeModel:
                         var albResourceNames = ProcessAlbApiAttribute(lambdaFunction, albAttributeModel.Data);
                         currentAlbResources.AddRange(albResourceNames);
+                        break;
+                    case AttributeModel<S3EventAttribute> s3AttributeModel:
+                        eventName = ProcessS3Attribute(lambdaFunction, s3AttributeModel.Data, currentSyncedEventProperties);
+                        currentSyncedEvents.Add(eventName);
                         break;
                 }
             }
@@ -598,6 +603,54 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (att.IsMaximumConcurrencySet)
             {
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "ScalingConfig.MaximumConcurrency", att.MaximumConcurrency);
+            }
+
+            return att.ResourceName;
+        }
+
+        /// <summary>
+        /// Writes all properties associated with <see cref="S3EventAttribute"/> to the serverless template.
+        /// </summary>
+        private string ProcessS3Attribute(ILambdaFunctionSerializable lambdaFunction, S3EventAttribute att, Dictionary<string, List<string>> syncedEventProperties)
+        {
+            var eventName = att.ResourceName;
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
+
+            _templateWriter.SetToken($"{eventPath}.Type", "S3");
+
+            // Bucket - always a Ref since S3 events require the bucket resource in the same template (validated to start with "@")
+            var bucketName = att.Bucket.Substring(1);
+            _templateWriter.RemoveToken($"{eventPath}.Properties.Bucket");
+            SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"Bucket.{REF}", bucketName);
+
+            // Events - list of S3 event types (always written since S3 SAM events require it; uses default "s3:ObjectCreated:*" if not explicitly set)
+            {
+                var events = att.Events.Split(';').Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Events", events, TokenType.List);
+            }
+
+            // Filter - S3 key filter rules
+            if (att.IsFilterPrefixSet || att.IsFilterSuffixSet)
+            {
+                var rules = new List<Dictionary<string, string>>();
+
+                if (att.IsFilterPrefixSet)
+                {
+                    rules.Add(new Dictionary<string, string> { { "Name", "prefix" }, { "Value", att.FilterPrefix } });
+                }
+
+                if (att.IsFilterSuffixSet)
+                {
+                    rules.Add(new Dictionary<string, string> { { "Name", "suffix" }, { "Value", att.FilterSuffix } });
+                }
+
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Filter.S3Key.Rules", rules, TokenType.List);
+            }
+
+            // Enabled
+            if (att.IsEnabledSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Enabled", att.Enabled);
             }
 
             return att.ResourceName;

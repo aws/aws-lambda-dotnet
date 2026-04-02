@@ -1,6 +1,7 @@
 using System;
 using Amazon.Lambda.Annotations.ALB;
 using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Annotations.S3;
 using Amazon.Lambda.Annotations.SQS;
 using Microsoft.CodeAnalysis;
 
@@ -86,6 +87,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             {
                 var data = SQSEventAttributeBuilder.Build(att);
                 model = new AttributeModel<SQSEventAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.S3EventAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = S3EventAttributeBuilder.Build(att);
+                model = new AttributeModel<S3EventAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)

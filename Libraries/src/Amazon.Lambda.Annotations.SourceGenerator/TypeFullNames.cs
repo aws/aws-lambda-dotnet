@@ -53,6 +53,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string ALBFromHeaderAttribute = "Amazon.Lambda.Annotations.ALB.FromHeaderAttribute";
         public const string ALBFromBodyAttribute = "Amazon.Lambda.Annotations.ALB.FromBodyAttribute";
 
+        public const string S3Event = "Amazon.Lambda.S3Events.S3Event";
+        public const string S3EventAttribute = "Amazon.Lambda.Annotations.S3.S3EventAttribute";
+
         public const string LambdaSerializerAttribute = "Amazon.Lambda.Core.LambdaSerializerAttribute";
         public const string DefaultLambdaSerializer = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
 
@@ -80,7 +83,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             RestApiAttribute,
             HttpApiAttribute,
             SQSEventAttribute,
-            ALBApiAttribute
+            ALBApiAttribute,
+            S3EventAttribute
         };
     }
 }

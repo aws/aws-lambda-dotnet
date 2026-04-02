@@ -1,0 +1,35 @@
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.S3;
+using Amazon.Lambda.S3Events;
+using System;
+using System.Threading.Tasks;
+
+namespace TestServerlessApp.S3EventExamples
+{
+    // This file represents valid usage of the S3EventAttribute. This is added as .txt file since we do not want to deploy these functions during our integration tests.
+    // This file is only sent as input to the source generator unit tests.
+
+    public class ValidS3Events
+    {
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [S3Event("@MyBucket")]
+        public void ProcessS3Event(S3Event evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [S3Event("@MyBucket", Events = "s3:ObjectCreated:*;s3:ObjectRemoved:*", FilterPrefix = "uploads/", FilterSuffix = ".jpg")]
+        public async Task ProcessS3EventWithFilters(S3Event evnt)
+        {
+            await Console.Out.WriteLineAsync($"Event processed: {evnt}");
+        }
+
+        [LambdaFunction(PackageType = LambdaPackageType.Image)]
+        [S3Event("@ImageBucket", ResourceName = "ImageBucketEvent", Enabled = false)]
+        public void ProcessS3EventDisabled(S3Event evnt)
+        {
+            Console.WriteLine($"Event processed: {evnt}");
+        }
+    }
+}
