@@ -14,6 +14,7 @@
  */
 
 using System;
+using System.Buffers;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -76,34 +77,37 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         internal async Task SetHttpOutputStreamAsync(Stream httpOutputStream, CancellationToken cancellationToken = default)
         {
             _httpOutputStream = httpOutputStream;
-            _httpStreamReady.Release();
 
-            await WritePreludeAsync(cancellationToken);
-        }
-
-        private async Task WritePreludeAsync(CancellationToken cancellationToken = default)
-        {
+            // Write the prelude BEFORE releasing _httpStreamReady. This prevents a race
+            // where a handler WriteAsync that is already waiting on the semaphore could
+            // sneak in and write body data before the prelude, causing intermittent
+            // "Failed to parse prelude JSON" errors from API Gateway.
             if (_prelude?.Length > 0)
             {
                 _logger.LogDebug($"Writing prelude of {_prelude.Length} bytes to HTTP stream.");
-                await _httpStreamReady.WaitAsync(_httpStreamWaitTimeout, cancellationToken);
+
+                lock (_lock)
+                {
+                    ThrowIfCompletedOrError();
+                }
+
+                var combinedLength = _prelude.Length + PreludeDelimiter.Length;
+                var combined = ArrayPool<byte>.Shared.Rent(combinedLength);
                 try
                 {
-                    lock (_lock)
-                    {
-                        ThrowIfCompletedOrError();
-                    }
+                    Buffer.BlockCopy(_prelude, 0, combined, 0, _prelude.Length);
+                    Buffer.BlockCopy(PreludeDelimiter, 0, combined, _prelude.Length, PreludeDelimiter.Length);
 
-                    await _httpOutputStream.WriteAsync(_prelude, 0, _prelude.Length, cancellationToken);
-                    await _httpOutputStream.WriteAsync(PreludeDelimiter, 0, PreludeDelimiter.Length, cancellationToken);
-
+                    await _httpOutputStream.WriteAsync(combined, 0, combinedLength, cancellationToken);
                     await _httpOutputStream.FlushAsync(cancellationToken);
                 }
                 finally
                 {
-                    _httpStreamReady.Release();
+                    ArrayPool<byte>.Shared.Return(combined);
                 }
             }
+
+            _httpStreamReady.Release();
         }
 
         /// <summary>

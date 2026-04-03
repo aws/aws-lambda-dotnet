@@ -284,6 +284,107 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Empty(output.ToArray());
         }
 
+        // ---- Prelude + delimiter single-chunk tests (via ChunkedStreamWriter) ----
+
+        [Fact]
+        public async Task SetHttpOutputStreamAsync_WithPrelude_ViaChunkedWriter_ProducesSingleChunk()
+        {
+            var preludeJson = Encoding.UTF8.GetBytes("{\"statusCode\":200}");
+            var rs = new ResponseStream(preludeJson);
+            var rawOutput = new MemoryStream();
+            var chunkedWriter = new ChunkedStreamWriter(rawOutput);
+
+            await rs.SetHttpOutputStreamAsync(chunkedWriter);
+
+            var wireBytes = Encoding.ASCII.GetString(rawOutput.ToArray());
+
+            // The prelude (18 bytes) + delimiter (8 bytes) = 26 bytes = 0x1A
+            // Should be exactly one chunk: "1A\r\n{prelude}{8 null bytes}\r\n"
+            var expectedDataLength = preludeJson.Length + 8; // 26
+            var expectedHex = expectedDataLength.ToString("X");
+            Assert.StartsWith($"{expectedHex}\r\n", wireBytes);
+
+            // Verify there is only one chunk header (only one hex size prefix)
+            var chunkCount = 0;
+            var remaining = wireBytes;
+            while (remaining.Length > 0)
+            {
+                var crlfIndex = remaining.IndexOf("\r\n", StringComparison.Ordinal);
+                if (crlfIndex < 0) break;
+                var sizeStr = remaining.Substring(0, crlfIndex);
+                if (int.TryParse(sizeStr, System.Globalization.NumberStyles.HexNumber, null, out var chunkSize) && chunkSize >= 0)
+                {
+                    chunkCount++;
+                    // Skip past: hex\r\n{data}\r\n
+                    remaining = remaining.Substring(crlfIndex + 2 + chunkSize + 2);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            Assert.Equal(1, chunkCount);
+        }
+
+        [Fact]
+        public async Task SetHttpOutputStreamAsync_WithPrelude_ViaChunkedWriter_DelimiterImmediatelyFollowsPrelude()
+        {
+            var preludeJson = Encoding.UTF8.GetBytes("{\"statusCode\":201}");
+            var rs = new ResponseStream(preludeJson);
+            var rawOutput = new MemoryStream();
+            var chunkedWriter = new ChunkedStreamWriter(rawOutput);
+
+            await rs.SetHttpOutputStreamAsync(chunkedWriter);
+
+            // Parse the chunk to get the raw data payload
+            var wireBytes = rawOutput.ToArray();
+            var wireStr = Encoding.ASCII.GetString(wireBytes);
+            var firstCrlf = wireStr.IndexOf("\r\n", StringComparison.Ordinal);
+            var dataStart = firstCrlf + 2;
+            var dataLength = preludeJson.Length + 8;
+            var chunkData = new byte[dataLength];
+            Array.Copy(wireBytes, dataStart, chunkData, 0, dataLength);
+
+            // First part should be the prelude JSON
+            Assert.Equal(preludeJson, chunkData[..preludeJson.Length]);
+            // Immediately followed by 8 null bytes (delimiter)
+            Assert.Equal(new byte[8], chunkData[preludeJson.Length..]);
+        }
+
+        [Fact]
+        public async Task SetHttpOutputStreamAsync_WithPrelude_ViaChunkedWriter_HandlerDataInSeparateChunk()
+        {
+            var preludeJson = Encoding.UTF8.GetBytes("{\"statusCode\":200}");
+            var rs = new ResponseStream(preludeJson);
+            var rawOutput = new MemoryStream();
+            var chunkedWriter = new ChunkedStreamWriter(rawOutput);
+
+            await rs.SetHttpOutputStreamAsync(chunkedWriter);
+            await rs.WriteAsync(Encoding.UTF8.GetBytes("body data"), 0, 9);
+
+            var wireStr = Encoding.ASCII.GetString(rawOutput.ToArray());
+
+            // Should have exactly 2 chunks: one for prelude+delimiter, one for body
+            var chunkCount = 0;
+            var remaining = wireStr;
+            while (remaining.Length > 0)
+            {
+                var crlfIndex = remaining.IndexOf("\r\n", StringComparison.Ordinal);
+                if (crlfIndex < 0) break;
+                var sizeStr = remaining.Substring(0, crlfIndex);
+                if (int.TryParse(sizeStr, System.Globalization.NumberStyles.HexNumber, null, out var chunkSize) && chunkSize >= 0)
+                {
+                    chunkCount++;
+                    remaining = remaining.Substring(crlfIndex + 2 + chunkSize + 2);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            Assert.Equal(2, chunkCount);
+        }
+
         // ---- MarkCompleted idempotency ----
 
         [Fact]
