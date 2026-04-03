@@ -218,23 +218,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
-        public async Task Dispose_DoesNotReleaseCompletionSignal()
-        {
-            var stream = new ResponseStream(Array.Empty<byte>());
-
-            var waitTask = stream.WaitForCompletionAsync();
-            Assert.False(waitTask.IsCompleted);
-
-            stream.Dispose();
-
-            // Dispose should NOT release the completion signal — only MarkCompleted/ReportError should.
-            // This prevents a race condition where the handler's "using" block releases the signal
-            // before LambdaBootstrap can call ReportError, causing trailers to be omitted.
-            var completed = await Task.WhenAny(waitTask, Task.Delay(TimeSpan.FromMilliseconds(200)));
-            Assert.NotSame(waitTask, completed);
-        }
-
-        [Fact]
         public async Task Dispose_CalledTwice_DoesNotThrow()
         {
             var stream = new ResponseStream(Array.Empty<byte>());

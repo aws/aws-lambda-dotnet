@@ -467,10 +467,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 }
                 finally
                 {
-                    if (runtimeApiClient != null)
-                    {
-                        ResponseStreamFactory.CleanupInvocation(isMultiConcurrency);
-                    }
+                    ResponseStreamFactory.CleanupInvocation(isMultiConcurrency);
                     invocation.Dispose();
                 }
             };
