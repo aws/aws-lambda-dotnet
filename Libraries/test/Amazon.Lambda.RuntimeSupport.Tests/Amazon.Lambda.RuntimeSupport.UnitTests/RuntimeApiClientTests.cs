@@ -68,7 +68,10 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         // --- Property 7: Streaming Response Mode Header ---
+        // Note: Properties 7, 8, 13 test the HttpClient-based streaming path which is only used on pre-NET8 targets.
+        // On NET8+, StartStreamingResponseAsync uses RawStreamingHttpClient (raw TCP) which doesn't go through HttpClient.
 
+#if !NET8_0_OR_GREATER
         /// <summary>
         /// Property 7: Streaming Response Mode Header
         /// For any streaming response, the HTTP request should include
@@ -133,6 +136,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             Assert.Contains(StreamingConstants.ErrorTypeTrailer, trailerValue);
             Assert.Contains(StreamingConstants.ErrorBodyTrailer, trailerValue);
         }
+#endif
 
         // --- Property 10: Buffered Responses Exclude Streaming Headers ---
 
@@ -182,6 +186,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
         // --- Argument validation ---
 
+#if NET8_0_OR_GREATER
         [Fact]
         public async Task StartStreamingResponseAsync_NullRequestId_ThrowsArgumentNullException()
         {
@@ -201,5 +206,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             await Assert.ThrowsAsync<ArgumentNullException>(
                 () => client.StartStreamingResponseAsync("req-5", null, CancellationToken.None));
         }
+#endif
     }
 }

@@ -12,9 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-
 using System;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -42,6 +40,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         /// <exception cref="InvalidOperationException">Thrown if called more than once per invocation.</exception>
         public static ResponseStream CreateStream(byte[] prelude)
         {
+#if NET8_0_OR_GREATER
             var context = GetCurrentContext();
 
             if (context == null)
@@ -67,6 +66,9 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
                 context.AwsRequestId, lambdaStream, context.CancellationToken);
 
             return lambdaStream;
+#else
+            throw new NotImplementedException();
+#endif
         }
 
         // Internal methods for LambdaBootstrap to manage state

@@ -108,7 +108,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             SendResponseAsyncCalled = true;
         }
 
-        internal override async Task StartStreamingResponseAsync(
+        internal override async Task<IDisposable> StartStreamingResponseAsync(
             string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
         {
             StartStreamingResponseAsyncCalled = true;
@@ -119,6 +119,8 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
             // Wait for the handler to finish writing (mirrors real SerializeToStreamAsync behavior)
             await responseStream.WaitForCompletionAsync();
+
+            return new NoOpDisposable();
         }
 
 #if NET8_0_OR_GREATER
@@ -128,5 +130,13 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         public new Task ReportRestoreErrorAsync(Exception exception, String errorType = null, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 #endif
+    }
+
+    /// <summary>
+    /// A no-op IDisposable for test overrides of StartStreamingResponseAsync.
+    /// </summary>
+    internal class NoOpDisposable : IDisposable
+    {
+        public void Dispose() { }
     }
 }

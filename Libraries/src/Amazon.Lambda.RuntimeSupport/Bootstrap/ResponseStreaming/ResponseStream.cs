@@ -33,7 +33,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         private Exception _reportedError;
         private readonly object _lock = new object();
 
-        // The live HTTP output stream, set by StreamingHttpContent when SerializeToStreamAsync is called.
+        // The live HTTP output stream, set by RawStreamingHttpClient when sending the streaming response.
         private Stream _httpOutputStream;
         private bool _disposedValue;
         private readonly SemaphoreSlim _httpStreamReady = new SemaphoreSlim(0, 1);
@@ -72,7 +72,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         }
 
         /// <summary>
-        /// Called by StreamingHttpContent.SerializeToStreamAsync to provide the HTTP output stream.
+        /// Called by RawStreamingHttpClient to provide the HTTP output stream (a ChunkedStreamWriter).
         /// </summary>
         internal async Task SetHttpOutputStreamAsync(Stream httpOutputStream, CancellationToken cancellationToken = default)
         {
@@ -108,8 +108,8 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         }
 
         /// <summary>
-        /// Called by StreamingHttpContent.SerializeToStreamAsync to wait until the handler
-        /// finishes writing (MarkCompleted or ReportErrorAsync).
+        /// Called by RawStreamingHttpClient to wait until the handler
+        /// finishes writing (MarkCompleted or ReportError).
         /// </summary>
         internal async Task WaitForCompletionAsync(CancellationToken cancellationToken = default)
         {
@@ -187,7 +187,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 
                 _isCompleted = true;
             }
-            // Signal completion so StreamingHttpContent can write error trailers and finish
+            // Signal completion so RawStreamingHttpClient can write error trailers and finish
             _completionSignal.Release();
         }
 
@@ -206,7 +206,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 
             if (shouldReleaseLock)
             {
-                // Signal completion so StreamingHttpContent can write the final chunk and finish
+                // Signal completion so RawStreamingHttpClient can write the final chunk and finish
                 _completionSignal.Release();
             }
         }
@@ -231,8 +231,22 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
                 {
                     try { _httpStreamReady.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
                     _httpStreamReady.Dispose();
-                    try { _completionSignal.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
-                    _completionSignal.Dispose();
+
+                    // Do NOT release or dispose _completionSignal here.
+                    //
+                    // When the handler uses "using var stream = ...", Dispose() runs during
+                    // stack unwinding BEFORE LambdaBootstrap's catch block can call ReportError().
+                    // If we release the signal here, RawStreamingHttpClient sees HasError=false
+                    // and writes the chunked terminator without error trailers, causing Lambda
+                    // to report Runtime.TruncatedResponse instead of the actual error.
+                    //
+                    // If we dispose the signal here, subsequent ReportError()/MarkCompleted()
+                    // calls and the WaitForCompletionAsync() in RawStreamingHttpClient will
+                    // throw ObjectDisposedException.
+                    //
+                    // The completion signal lifecycle is managed by MarkCompleted()/ReportError()
+                    // (which release it) and LambdaBootstrap (which awaits the send task after).
+                    // The SemaphoreSlim is a lightweight managed object that the GC will finalize.
                 }
 
                 _disposedValue = true;
