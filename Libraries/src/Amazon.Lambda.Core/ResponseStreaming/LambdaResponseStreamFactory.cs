@@ -31,12 +31,12 @@ namespace Amazon.Lambda.Core.ResponseStreaming
         }
 
         /// <summary>
-        /// Creates a <see cref="Stream"/> that can be used to write streaming responses back to callers of the Lambda function. Once
+        /// Creates a <see cref="LambdaResponseStream"/> a subclass of <see cref="Stream"/> that can be used to write streaming responses back to callers of the Lambda function. Once
         /// a Lambda function creates a response stream all output must be returned by writing to the stream; the Lambda function's handler
         /// return value will be ignored. The stream is write-only and non-seekable.
         /// </summary>
         /// <returns></returns>
-        public static Stream CreateStream()
+        public static LambdaResponseStream CreateStream()
         {
             if (_streamFactory == null)
                 throw new InvalidOperationException(UninitializedFactoryMessage);
@@ -46,7 +46,7 @@ namespace Amazon.Lambda.Core.ResponseStreaming
         }
 
         /// <summary>
-        /// Create a <see cref="Stream"/> for writing streaming responses, with an HTTP response prelude containing status code and headers. This should be used for
+        /// Creates a <see cref="LambdaResponseStream"/> a subclass of <see cref="Stream"/> for writing streaming responses, with an HTTP response prelude containing status code and headers. This should be used for
         /// Lambda functions using response streaming that are invoked via the Lambda Function URLs or API Gateway HTTP APIs, where the response format is expected to be an HTTP response.
         /// The prelude will be serialized and sent as the first chunk of the response stream, and should contain any necessary HTTP status code and headers.
         /// <para>
@@ -56,7 +56,7 @@ namespace Amazon.Lambda.Core.ResponseStreaming
         /// </summary>
         /// <param name="prelude">The HTTP response prelude including status code and headers.</param>
         /// <returns></returns>
-        public static Stream CreateHttpStream(HttpResponseStreamPrelude prelude)
+        public static LambdaResponseStream CreateHttpStream(HttpResponseStreamPrelude prelude)
         {
             if (_streamFactory == null)
                 throw new InvalidOperationException(UninitializedFactoryMessage);
