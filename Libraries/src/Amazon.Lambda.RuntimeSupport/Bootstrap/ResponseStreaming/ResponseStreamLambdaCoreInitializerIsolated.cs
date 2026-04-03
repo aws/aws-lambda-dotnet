@@ -54,7 +54,7 @@ namespace Amazon.Lambda.RuntimeSupport
             public void Dispose() => _innerStream.Dispose();
 
             /// <inheritdoc/>
-            public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default) => _innerStream.WriteAsync(buffer, offset, count);
+            public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default) => _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
     }
 }

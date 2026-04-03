@@ -33,9 +33,14 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         private Exception _reportedError;
         private readonly object _lock = new object();
 
-        // The live HTTP output stream, set by StreamingHttpContent when SerializeToStreamAsync is called.
+        // The live HTTP output stream, set by RawStreamingHttpClient when sending the streaming response.
         private Stream _httpOutputStream;
         private bool _disposedValue;
+
+        // The wait time is a sanity timeout to avoid waiting indefinitely if SetHttpOutputStreamAsync is not called or takes too long to call.
+        // Reality is that SetHttpOutputStreamAsync should be called very quickly after CreateStream, so this timeout is generous to avoid false positives but still protects against hanging indefinitely.
+        private readonly static TimeSpan _httpStreamWaitTimeout = TimeSpan.FromSeconds(30);
+
         private readonly SemaphoreSlim _httpStreamReady = new SemaphoreSlim(0, 1);
         private readonly SemaphoreSlim _completionSignal = new SemaphoreSlim(0, 1);
 
@@ -66,7 +71,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         }
 
         /// <summary>
-        /// Called by StreamingHttpContent.SerializeToStreamAsync to provide the HTTP output stream.
+        /// Called by RawStreamingHttpClient to provide the HTTP output stream (a ChunkedStreamWriter).
         /// </summary>
         internal async Task SetHttpOutputStreamAsync(Stream httpOutputStream, CancellationToken cancellationToken = default)
         {
@@ -81,7 +86,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             if (_prelude?.Length > 0)
             {
                 _logger.LogDebug($"Writing prelude of {_prelude.Length} bytes to HTTP stream.");
-                await _httpStreamReady.WaitAsync(cancellationToken);
+                await _httpStreamReady.WaitAsync(_httpStreamWaitTimeout, cancellationToken);
                 try
                 {
                     lock (_lock)
@@ -102,8 +107,8 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         }
 
         /// <summary>
-        /// Called by StreamingHttpContent.SerializeToStreamAsync to wait until the handler
-        /// finishes writing (MarkCompleted or ReportErrorAsync).
+        /// Called by RawStreamingHttpClient to wait until the handler
+        /// finishes writing (MarkCompleted or ReportError).
         /// </summary>
         internal async Task WaitForCompletionAsync(CancellationToken cancellationToken = default)
         {
@@ -136,10 +141,10 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
                 throw new ArgumentOutOfRangeException(nameof(count));
 
             // Wait for the HTTP stream to be ready (first write only blocks)
-            await _httpStreamReady.WaitAsync(cancellationToken);
+            await _httpStreamReady.WaitAsync(_httpStreamWaitTimeout, cancellationToken);
             try
             {
-                _logger.LogDebug($"Writing chuck of {count} bytes to HTTP stream.");
+                _logger.LogDebug("Writing chunk to HTTP response stream.");
 
                 lock (_lock)
                 {
@@ -177,11 +182,9 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 
                 _hasError = true;
                 _reportedError = exception;
-
-
                 _isCompleted = true;
             }
-            // Signal completion so StreamingHttpContent can write error trailers and finish
+            // Signal completion so RawStreamingHttpClient can write error trailers and finish
             _completionSignal.Release();
         }
 
@@ -200,7 +203,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 
             if (shouldReleaseLock)
             {
-                // Signal completion so StreamingHttpContent can write the final chunk and finish
+                // Signal completion so RawStreamingHttpClient can write the final chunk and finish
                 _completionSignal.Release();
             }
         }
@@ -225,6 +228,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
                 {
                     try { _httpStreamReady.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
                     _httpStreamReady.Dispose();
+
                     try { _completionSignal.Release(); } catch (SemaphoreFullException) { /* Ignore if already released */ }
                     _completionSignal.Dispose();
                 }

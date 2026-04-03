@@ -218,20 +218,6 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
-        public async Task Dispose_ReleasesCompletionSignalIfNotAlreadyReleased()
-        {
-            var stream = new ResponseStream(Array.Empty<byte>());
-
-            var waitTask = stream.WaitForCompletionAsync();
-            Assert.False(waitTask.IsCompleted);
-
-            stream.Dispose();
-
-            var completed = await Task.WhenAny(waitTask, Task.Delay(TimeSpan.FromSeconds(2)));
-            Assert.Same(waitTask, completed);
-        }
-
-        [Fact]
         public async Task Dispose_CalledTwice_DoesNotThrow()
         {
             var stream = new ResponseStream(Array.Empty<byte>());

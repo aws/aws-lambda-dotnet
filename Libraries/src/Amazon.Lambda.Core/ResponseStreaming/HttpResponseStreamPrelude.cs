@@ -11,7 +11,7 @@ namespace Amazon.Lambda.Core.ResponseStreaming
     /// <summary>
     /// The HTTP response prelude to be sent as the first chunk of a streaming response when using <see cref="LambdaResponseStreamFactory.CreateHttpStream"/>.
     /// </summary>
-    [RequiresPreviewFeatures(LambdaResponseStreamFactory.ParameterizedPreviewMessage)]
+    [RequiresPreviewFeatures(LambdaResponseStreamFactory.PreviewMessage)]
     public class HttpResponseStreamPrelude
     {
         /// <summary>

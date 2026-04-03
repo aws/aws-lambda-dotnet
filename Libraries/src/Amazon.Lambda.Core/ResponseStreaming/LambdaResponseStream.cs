@@ -15,7 +15,7 @@ namespace Amazon.Lambda.Core.ResponseStreaming
     /// to the Lambda Runtime API. Returned by <see cref="LambdaResponseStreamFactory.CreateStream"/>.
     /// Integrates with standard .NET stream consumers such as <see cref="System.IO.StreamWriter"/>.
     /// </summary>
-    [RequiresPreviewFeatures(LambdaResponseStreamFactory.ParameterizedPreviewMessage)]
+    [RequiresPreviewFeatures(LambdaResponseStreamFactory.PreviewMessage)]
     public class LambdaResponseStream : Stream
     {
         private readonly ILambdaResponseStream _responseStream;
@@ -82,24 +82,24 @@ namespace Amazon.Lambda.Core.ResponseStreaming
         /// <exception cref="NotSupportedException">Always thrown.</exception>
         public override long Position
         {
-            get => throw new NotSupportedException("LambdaResponseStream does not support seeking.");
-            set => throw new NotSupportedException("LambdaResponseStream does not support seeking.");
+            get => throw new NotSupportedException($"{nameof(LambdaResponseStream)} does not support seeking.");
+            set => throw new NotSupportedException($"{nameof(LambdaResponseStream)} does not support seeking.");
         }
 
         /// <summary>Not supported.</summary>
         /// <exception cref="NotImplementedException">Always thrown.</exception>
         public override long Seek(long offset, SeekOrigin origin)
-            => throw new NotImplementedException("LambdaResponseStream does not support seeking.");
+            => throw new NotImplementedException($"{nameof(LambdaResponseStream)} does not support seeking.");
 
         /// <summary>Not supported.</summary>
         /// <exception cref="NotImplementedException">Always thrown.</exception>
         public override int Read(byte[] buffer, int offset, int count)
-            => throw new NotImplementedException("LambdaResponseStream does not support reading.");
+            => throw new NotImplementedException($"{nameof(LambdaResponseStream)} does not support reading.");
 
         /// <summary>Not supported.</summary>
         /// <exception cref="NotImplementedException">Always thrown.</exception>
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            => throw new NotImplementedException("LambdaResponseStream does not support reading.");
+            => throw new NotImplementedException($"{nameof(LambdaResponseStream)} does not support reading.");
 
         /// <summary>
         /// Writes a sequence of bytes to the stream. Delegates to the async path synchronously.
@@ -116,7 +116,7 @@ namespace Amazon.Lambda.Core.ResponseStreaming
         /// <summary>Not supported.</summary>
         /// <exception cref="NotSupportedException">Always thrown.</exception>
         public override void SetLength(long value)
-            => throw new NotSupportedException("LambdaResponseStream does not support SetLength.");
+            => throw new NotSupportedException($"{nameof(LambdaResponseStream)} does not support SetLength.");
         #endregion
     }
 }

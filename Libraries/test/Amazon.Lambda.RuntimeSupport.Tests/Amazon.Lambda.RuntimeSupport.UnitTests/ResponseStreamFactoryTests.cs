@@ -49,13 +49,14 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             {
             }
 
-            internal override async Task StartStreamingResponseAsync(
+            internal override async Task<IDisposable> StartStreamingResponseAsync(
                 string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
             {
                 StartStreamingCalled = true;
                 LastAwsRequestId = awsRequestId;
                 LastResponseStream = responseStream;
                 await SendTaskCompletion.Task;
+                return new NoOpDisposable();
             }
         }
 

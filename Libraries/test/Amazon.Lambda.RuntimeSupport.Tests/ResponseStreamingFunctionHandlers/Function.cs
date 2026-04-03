@@ -8,7 +8,7 @@ using Amazon.Lambda.Serialization.SystemTextJson;
 // The function handler that will be called for each Lambda event
 var handler = async (string input, ILambdaContext context) =>
 {
-    var stream = LambdaResponseStreamFactory.CreateStream();
+    using var stream = LambdaResponseStreamFactory.CreateStream();
 
     switch(input)
     {

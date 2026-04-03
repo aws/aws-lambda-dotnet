@@ -178,48 +178,33 @@ namespace Amazon.Lambda.RuntimeSupport
 #endif
 
 
+#if NET8_0_OR_GREATER
         /// <summary>
-        /// Start sending a streaming response to the Runtime API.
-        /// This initiates the HTTP POST with streaming headers. The actual data
-        /// is written by the handler via ResponseStream.WriteAsync, which flows
-        /// through StreamingHttpContent to the HTTP connection.
+        /// Start sending a streaming response to the Lambda Runtime API.
+        /// Uses a raw TCP connection with chunked transfer encoding to support HTTP/1.1
+        /// trailing headers for error reporting, which .NET's HttpClient does not support.
+        /// The actual data is written by the handler via ResponseStream.WriteAsync, which flows
+        /// through a ChunkedStreamWriter to the TCP connection.
         /// This Task completes when the stream is finalized (MarkCompleted or error).
         /// </summary>
         /// <param name="awsRequestId">The ID of the function request being responded to.</param>
         /// <param name="responseStream">The ResponseStream that will provide the streaming data.</param>
         /// <param name="cancellationToken">The optional cancellation token to use.</param>
-        /// <returns>A Task representing the in-flight HTTP POST.</returns>
-        internal virtual async Task StartStreamingResponseAsync(
+        /// <returns>A Task representing the in-flight HTTP POST. The returned IDisposable is the RawStreamingHttpClient that owns the TCP connection.</returns>
+        internal virtual async Task<IDisposable> StartStreamingResponseAsync(
             string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
         {
             if (awsRequestId == null) throw new ArgumentNullException(nameof(awsRequestId));
             if (responseStream == null) throw new ArgumentNullException(nameof(responseStream));
 
-            var url = $"http://{LambdaEnvironment.RuntimeServerHostAndPort}/2018-06-01/runtime/invocation/{awsRequestId}/response";
+            var userAgent = _httpClient.DefaultRequestHeaders.UserAgent.ToString();
+            var rawClient = new RawStreamingHttpClient(LambdaEnvironment.RuntimeServerHostAndPort);
 
-            using (var request = new HttpRequestMessage(HttpMethod.Post, url))
-            {
-                request.Headers.Add(StreamingConstants.ResponseModeHeader, StreamingConstants.StreamingResponseMode);
-                request.Headers.TransferEncodingChunked = true;
-                request.Headers.TryAddWithoutValidation(
-                    "Content-Type",
-                    "application/vnd.awslambda.http-integration-response"
-                );
+            await rawClient.SendStreamingResponseAsync(awsRequestId, responseStream, userAgent, cancellationToken);
 
-                // Declare trailers upfront — we always declare them since we don't know
-                // at request start time whether an error will occur mid-stream.
-                request.Headers.Add("Trailer",
-                    $"{StreamingConstants.ErrorTypeTrailer}, {StreamingConstants.ErrorBodyTrailer}");
-
-                request.Content = new StreamingHttpContent(responseStream, cancellationToken);
-
-                // SendAsync calls SerializeToStreamAsync, which blocks until the handler
-                // finishes writing. This is why this method runs concurrently with the handler.
-                var response = await _httpClient.SendAsync(
-                    request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                response.EnsureSuccessStatusCode();
-            }
+            return rawClient;
         }
+#endif
 
         /// <summary>
         /// Send a response to a function invocation to the Runtime API as an asynchronous operation.

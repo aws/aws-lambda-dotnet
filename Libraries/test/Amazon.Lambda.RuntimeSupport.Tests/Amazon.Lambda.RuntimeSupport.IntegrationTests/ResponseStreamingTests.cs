@@ -61,13 +61,10 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var evnts = await InvokeFunctionAsync(nameof(UnhandledExceptionHandler));
             Assert.True(evnts.Any());
 
-            var content = GetCombinedStreamContent(evnts);
-            Assert.Contains("This method will fail", content);
-            Assert.Contains("This is an unhandled exception", content);
-            Assert.Contains("Lambda-Runtime-Function-Error-Type", content);
-            Assert.Contains("InvalidOperationException", content);
-            Assert.Contains("This is an unhandled exception", content);
-            Assert.Contains("stackTrace", content);
+            var completeEvent = evnts.Last() as InvokeWithResponseStreamCompleteEvent;
+            Assert.Equal("InvalidOperationException", completeEvent.ErrorCode);
+            Assert.Contains("This is an unhandled exception", completeEvent.ErrorDetails);
+            Assert.Contains("stackTrace", completeEvent.ErrorDetails);
         }
 
         private async Task<IEventStreamEvent[]> InvokeFunctionAsync(string handlerScenario)

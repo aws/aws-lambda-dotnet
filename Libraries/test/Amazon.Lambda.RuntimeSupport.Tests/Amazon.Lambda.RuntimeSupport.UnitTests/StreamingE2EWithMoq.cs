@@ -32,7 +32,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
     /// <summary>
     /// End-to-end integration tests for the true-streaming architecture.
     /// These tests exercise the full pipeline: LambdaBootstrap → ResponseStreamFactory →
-    /// ResponseStream → StreamingHttpContent → captured HTTP output stream.
+    /// ResponseStream → captured HTTP output stream.
     /// </summary>
     [Collection("ResponseStreamFactory")]
     public class StreamingE2EWithMoq : IDisposable
@@ -97,7 +97,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
                 };
             }
 
-            internal override async Task StartStreamingResponseAsync(
+            internal override async Task<IDisposable> StartStreamingResponseAsync(
                 string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
             {
                 StartStreamingCalled = true;
@@ -105,11 +105,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
 
                 // Use a real MemoryStream as the HTTP output stream so we capture actual bytes
                 var captureStream = new MemoryStream();
-                var content = new StreamingHttpContent(responseStream);
+                await responseStream.SetHttpOutputStreamAsync(captureStream, cancellationToken);
 
-                // SerializeToStreamAsync hands the stream to ResponseStream and waits for completion
-                await content.CopyToAsync(captureStream);
+                // Wait for the handler to finish writing (mirrors real RawStreamingHttpClient behavior)
+                await responseStream.WaitForCompletionAsync(cancellationToken);
                 CapturedHttpBytes = captureStream.ToArray();
+                return new NoOpDisposable();
             }
 
             public new async Task SendResponseAsync(string awsRequestId, Stream outputStream, CancellationToken cancellationToken = default)
@@ -254,11 +255,12 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         /// <summary>
-        /// End-to-end: error body trailer contains JSON with exception details.
+        /// End-to-end: midstream error sets error state on ResponseStream with exception details.
+        /// In production, RawStreamingHttpClient reads this state and writes trailing headers.
         /// Requirements: 5.2, 5.3
         /// </summary>
         [Fact]
-        public async Task MidstreamError_ErrorBodyTrailerContainsJsonDetails()
+        public async Task MidstreamError_SetsErrorStateWithExceptionDetails()
         {
             var client = CreateClient();
             const string errorMessage = "something went wrong mid-stream";
@@ -274,9 +276,16 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             bootstrap.Client = client;
             await bootstrap.InvokeOnceAsync();
 
+            Assert.True(client.StartStreamingCalled);
+            Assert.NotNull(client.LastResponseStream);
+            Assert.True(client.LastResponseStream.HasError);
+            Assert.NotNull(client.LastResponseStream.ReportedError);
+            Assert.IsType<InvalidOperationException>(client.LastResponseStream.ReportedError);
+            Assert.Equal(errorMessage, client.LastResponseStream.ReportedError.Message);
+
+            // Verify the handler's data was still captured before the error
             var output = Encoding.UTF8.GetString(client.CapturedHttpBytes);
-            Assert.Contains(StreamingConstants.ErrorBodyTrailer + ":", output);
-            Assert.Contains(errorMessage, output);
+            Assert.Contains("some data", output);
         }
 
         // ─── 10.4 Multi-concurrency ──────────────────────────────────────────────────
@@ -420,12 +429,13 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
             public MockMultiConcurrencyStreamingClient()
                 : base(new TestEnvironmentVariables(), new NoOpInternalRuntimeApiClient()) { }
 
-            internal override async Task StartStreamingResponseAsync(
+            internal override async Task<IDisposable> StartStreamingResponseAsync(
                 string awsRequestId, ResponseStream responseStream, CancellationToken cancellationToken = default)
             {
                 // Provide the HTTP output stream so writes don't block
                 await responseStream.SetHttpOutputStreamAsync(new MemoryStream());
                 await responseStream.WaitForCompletionAsync();
+                return new NoOpDisposable();
             }
         }
 

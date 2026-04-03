@@ -12,7 +12,6 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,6 +40,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         /// <exception cref="InvalidOperationException">Thrown if called more than once per invocation.</exception>
         public static ResponseStream CreateStream(byte[] prelude)
         {
+#if NET8_0_OR_GREATER
             var context = GetCurrentContext();
 
             if (context == null)
@@ -66,6 +66,9 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
                 context.AwsRequestId, lambdaStream, context.CancellationToken);
 
             return lambdaStream;
+#else
+            throw new NotImplementedException();
+#endif
         }
 
         // Internal methods for LambdaBootstrap to manage state
@@ -103,7 +106,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
         /// Returns the Task for the in-flight HTTP send, or null if streaming wasn't started.
         /// LambdaBootstrap awaits this after the handler returns to ensure the HTTP request completes.
         /// </summary>
-        internal static Task GetSendTask(bool isMultiConcurrency)
+        internal static Task<IDisposable> GetSendTask(bool isMultiConcurrency)
         {
             var context = isMultiConcurrency ? _asyncLocalContext.Value : _onDemandContext;
             return context?.SendTask;

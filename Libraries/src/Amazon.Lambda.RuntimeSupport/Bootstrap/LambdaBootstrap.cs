@@ -425,6 +425,7 @@ namespace Amazon.Lambda.RuntimeSupport
                         {
                             // Wait for the streaming response to finish sending before allowing the next invocation to be processed. This ensures that responses are sent in the order the invocations were received.
                             await sendTask;
+                            sendTask.Result.Dispose();
                         }
 
                         streamIfCreated.Dispose();
@@ -466,10 +467,7 @@ namespace Amazon.Lambda.RuntimeSupport
                 }
                 finally
                 {
-                    if (runtimeApiClient != null)
-                    {
-                        ResponseStreamFactory.CleanupInvocation(isMultiConcurrency);
-                    }
+                    ResponseStreamFactory.CleanupInvocation(isMultiConcurrency);
                     invocation.Dispose();
                 }
             };
