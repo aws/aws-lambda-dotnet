@@ -84,7 +84,7 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             // "Failed to parse prelude JSON" errors from API Gateway.
             if (_prelude?.Length > 0)
             {
-                _logger.LogDebug($"Writing prelude of {_prelude.Length} bytes to HTTP stream.");
+                _logger.LogDebug("Writing prelude to HTTP stream.");
 
                 lock (_lock)
                 {

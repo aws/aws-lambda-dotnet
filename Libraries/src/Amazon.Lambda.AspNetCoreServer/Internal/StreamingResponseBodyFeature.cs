@@ -35,6 +35,7 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         /// <summary>
         /// Initializes a new instance of <see cref="StreamingResponseBodyFeature"/>.
         /// </summary>
+        /// <param name="logger"></param>
         /// <param name="responseFeature">
         /// The <see cref="IHttpResponseFeature"/> for the current invocation. Used to fire
         /// <c>OnStarting</c> callbacks when <see cref="StartAsync"/> is called.
@@ -88,8 +89,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
         {
             _logger?.LogInformation("Starting response streaming");
 
-            if (_started) return;
-            _started = true;
+            if (_started)
+                return;
 
             // Fire OnStarting callbacks registered on the response feature.
             // InvokeFeatures (which implements IHttpResponseFeature) stores these in
@@ -109,6 +110,8 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 _preStartBuffer.Position = 0;
                 await _preStartBuffer.CopyToAsync(_lambdaStream, cancellationToken);
             }
+
+            _started = true;
         }
 
         /// <inheritdoc />
@@ -202,13 +205,12 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 if (!_feature._started)
                 {
                     // Flush buffered bytes into the pre-start buffer first, then open the stream.
-                    await Inner.FlushAsync(cancellationToken);
+                    var innerFlushResult = await Inner.FlushAsync(cancellationToken);
                     // Recreate inner writer against the Lambda stream after StartAsync.
                     _inner = null;
                     await _feature.StartAsync(cancellationToken);
-                    // Inner now wraps _lambdaStream; nothing extra to flush (StartAsync already
-                    // copied the pre-start buffer across).
-                    return new FlushResult(isCanceled: false, isCompleted: false);
+
+                    return innerFlushResult;
                 }
 
                 return await Inner.FlushAsync(cancellationToken);

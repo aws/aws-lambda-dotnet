@@ -773,7 +773,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                     {
                         pipelineException = e;
 
-                        if (!streamOpened && IncludeUnhandledExceptionDetailInResponse)
+                        if (!streamOpened)
                         {
                             var errorPrelude = new Amazon.Lambda.Core.ResponseStreaming.HttpResponseStreamPrelude
                             {
@@ -782,8 +782,11 @@ namespace Amazon.Lambda.AspNetCoreServer
                             var errorStream = CreateLambdaResponseStream(errorPrelude);
                             lambdaStream = errorStream;
                             streamOpened = true;
-                            var errorBytes = System.Text.Encoding.UTF8.GetBytes(ErrorReport(e));
-                            await errorStream.WriteAsync(errorBytes, 0, errorBytes.Length);
+                            if (IncludeUnhandledExceptionDetailInResponse)
+                            {
+                                var errorBytes = System.Text.Encoding.UTF8.GetBytes(ErrorReport(e));
+                                await errorStream.WriteAsync(errorBytes, 0, errorBytes.Length);
+                            }
                         }
                         else if (streamOpened)
                         {

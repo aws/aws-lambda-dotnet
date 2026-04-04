@@ -5,7 +5,7 @@
       "Type": "Major",
       "ChangelogMessages": [
         "[Breaking] Update build targets from .NET 6 and 8 to .NET 8 and 10",
-		"[Preview] Add support Lambda Response Streaming enabled by setting the EnableResponseStreaming property from the base class AbstractAspNetCoreFunction"
+		"[Preview] Add support for Lambda Response Streaming enabled by setting the EnableResponseStreaming property from the base class AbstractAspNetCoreFunction"
       ]
     },
     {
@@ -13,7 +13,7 @@
       "Type": "Major",
       "ChangelogMessages": [
         "[Breaking] Update build targets from .NET 6 and 8 to .NET 8 and 10",
-		"[Preview] Add support Lambda Response Streaming enabled by setting the EnableResponseStreaming property on the HostingOptions object passed into the AddAWSLambdaHosting method"
+		"[Preview] Add support for Lambda Response Streaming enabled by setting the EnableResponseStreaming property on the HostingOptions object passed into the AddAWSLambdaHosting method"
       ]
     },
     {
