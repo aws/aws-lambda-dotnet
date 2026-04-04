@@ -196,6 +196,10 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
 
             public override void Advance(int bytes) => Inner.Advance(bytes);
 
+            public override bool CanGetUnflushedBytes => true;
+
+            public override long UnflushedBytes => Inner.UnflushedBytes;
+
             public override Memory<byte> GetMemory(int sizeHint = 0) => Inner.GetMemory(sizeHint);
 
             public override Span<byte> GetSpan(int sizeHint = 0) => Inner.GetSpan(sizeHint);

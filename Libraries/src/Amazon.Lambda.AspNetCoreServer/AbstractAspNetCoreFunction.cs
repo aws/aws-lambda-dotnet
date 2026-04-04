@@ -699,6 +699,15 @@ namespace Amazon.Lambda.AspNetCoreServer
 
             foreach (var kvp in responseFeature.Headers)
             {
+                // Skip hop-by-hop and framing headers that are meaningless for streaming
+                // responses. Content-Length conflicts with chunked transfer encoding and
+                // can cause API Gateway to reject the response with a 502.
+                if (string.Equals(kvp.Key, "Content-Length", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(kvp.Key, "Transfer-Encoding", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 if (string.Equals(kvp.Key, "Set-Cookie", StringComparison.OrdinalIgnoreCase))
                 {
                     foreach (var value in kvp.Value)
@@ -772,6 +781,7 @@ namespace Amazon.Lambda.AspNetCoreServer
                     catch (Exception e)
                     {
                         pipelineException = e;
+                        _logger.LogError(e, "Error in streaming request pipeline");
 
                         if (!streamOpened)
                         {

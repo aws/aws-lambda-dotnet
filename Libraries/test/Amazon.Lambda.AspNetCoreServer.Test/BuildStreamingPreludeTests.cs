@@ -228,5 +228,40 @@ namespace Amazon.Lambda.AspNetCoreServer.Test
             Assert.Empty(prelude.MultiValueHeaders);
             Assert.Empty(prelude.Cookies);
         }
+
+        // -----------------------------------------------------------------------
+        // Content-Length and Transfer-Encoding are excluded from the prelude
+        // -----------------------------------------------------------------------
+        [Fact]
+        public void ContentLengthHeader_ExcludedFromPrelude()
+        {
+            var builder = CreateBuilder();
+            var rf = MakeResponseFeature(200, new System.Collections.Generic.Dictionary<string, string[]>
+            {
+                ["Content-Type"] = new[] { "application/json" },
+                ["Content-Length"] = new[] { "42" }
+            });
+
+            var prelude = builder.InvokeBuildStreamingPrelude(rf);
+
+            Assert.True(prelude.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.False(prelude.MultiValueHeaders.ContainsKey("Content-Length"));
+        }
+
+        [Fact]
+        public void TransferEncodingHeader_ExcludedFromPrelude()
+        {
+            var builder = CreateBuilder();
+            var rf = MakeResponseFeature(200, new System.Collections.Generic.Dictionary<string, string[]>
+            {
+                ["Content-Type"] = new[] { "text/plain" },
+                ["Transfer-Encoding"] = new[] { "chunked" }
+            });
+
+            var prelude = builder.InvokeBuildStreamingPrelude(rf);
+
+            Assert.True(prelude.MultiValueHeaders.ContainsKey("Content-Type"));
+            Assert.False(prelude.MultiValueHeaders.ContainsKey("Transfer-Encoding"));
+        }
     }
 }
