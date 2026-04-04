@@ -127,6 +127,91 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 _output.WriteLine($"Expected error: {ex.Message}");
             }
         }
+
+        [Fact]
+        public async Task OnCompletedCallback_IsExecuted()
+        {
+            var apiUrl = await _fixture.GetApiUrlAsync();
+            using var httpClient = new HttpClient();
+
+            // First request registers the OnCompleted callback
+            var response = await httpClient.GetWithRetryAsync($"{apiUrl}oncompleted-test");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var body = await response.Content.ReadAsStringAsync();
+            _output.WriteLine($"Body: {body}");
+            Assert.Contains("OnCompleted callback registered", body);
+
+            // Second request verifies the callback was executed
+            var verifyResponse = await httpClient.GetWithRetryAsync($"{apiUrl}oncompleted-verify");
+            Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
+            var verifyBody = await verifyResponse.Content.ReadAsStringAsync();
+            _output.WriteLine($"Verify body: {verifyBody}");
+
+            var doc = JsonDocument.Parse(verifyBody);
+            Assert.True(doc.RootElement.GetProperty("onCompletedExecuted").GetBoolean(),
+                "OnCompleted callback should have been executed");
+        }
+
+        [Fact]
+        public async Task CustomHeaders_PassedThroughApiGateway()
+        {
+            var apiUrl = await _fixture.GetApiUrlAsync();
+            using var httpClient = new HttpClient();
+
+            var response = await httpClient.GetWithRetryAsync($"{apiUrl}custom-headers", HttpStatusCode.Created);
+
+            _output.WriteLine($"Status: {response.StatusCode}");
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.Contains("Custom headers response", body);
+
+            // Verify custom headers are present in the response
+            Assert.True(response.Headers.Contains("X-Custom-Header"), "X-Custom-Header should be present");
+            Assert.Equal("custom-value", response.Headers.GetValues("X-Custom-Header").First());
+            Assert.True(response.Headers.Contains("X-Another-Header"), "X-Another-Header should be present");
+            Assert.Equal("another-value", response.Headers.GetValues("X-Another-Header").First());
+        }
+
+        [Fact]
+        public async Task SetCookie_PassedThroughApiGateway()
+        {
+            var apiUrl = await _fixture.GetApiUrlAsync();
+            var handler = new HttpClientHandler { UseCookies = false };
+            using var httpClient = new HttpClient(handler);
+
+            var response = await httpClient.GetWithRetryAsync($"{apiUrl}set-cookie");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var body = await response.Content.ReadAsStringAsync();
+            _output.WriteLine($"Body: {body}");
+            Assert.Contains("Cookies set", body);
+
+            // Verify Set-Cookie headers are present
+            Assert.True(response.Headers.Contains("Set-Cookie"), "Set-Cookie header should be present");
+            var cookies = response.Headers.GetValues("Set-Cookie").ToList();
+            _output.WriteLine($"Cookies: {string.Join("; ", cookies)}");
+            Assert.True(cookies.Any(c => c.Contains("session=abc123")), "session cookie should be present");
+            Assert.True(cookies.Any(c => c.Contains("theme=dark")), "theme cookie should be present");
+        }
+
+        [Fact]
+        public async Task PostWithBody_EchoesRequestBody()
+        {
+            var apiUrl = await _fixture.GetApiUrlAsync();
+            using var httpClient = new HttpClient();
+
+            var content = new StringContent("Hello from integration test", Encoding.UTF8, "text/plain");
+            var response = await httpClient.PostWithRetryAsync($"{apiUrl}echo-body", content);
+
+            _output.WriteLine($"Status: {response.StatusCode}");
+            var body = await response.Content.ReadAsStringAsync();
+            _output.WriteLine($"Body: {body}");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Contains("Echo: Hello from integration test", body);
+        }
     }
 
     internal static class HttpClientExtension
@@ -138,6 +223,27 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 try
                 {
                     var response = await httpClient.GetAsync(url);
+                    if (response.StatusCode == expectedCode)
+                    {
+                        return response;
+                    }
+                }
+                catch
+                {
+                    // Ignore and retry
+                }
+                await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+            }
+            throw new Exception($"Failed to get expected status code {expectedCode} from {url} after {maxRetries} attempts");
+        }
+
+        public static async Task<HttpResponseMessage> PostWithRetryAsync(this HttpClient httpClient, string url, HttpContent content, HttpStatusCode expectedCode = HttpStatusCode.OK, int maxRetries = 5, int delaySeconds = 5)
+        {
+            for (var i = 0; i < maxRetries; i++)
+            {
+                try
+                {
+                    var response = await httpClient.PostAsync(url, content);
                     if (response.StatusCode == expectedCode)
                     {
                         return response;
