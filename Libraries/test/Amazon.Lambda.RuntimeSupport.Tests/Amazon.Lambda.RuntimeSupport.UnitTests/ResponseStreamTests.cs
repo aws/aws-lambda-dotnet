@@ -140,14 +140,18 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         }
 
         [Fact]
-        public async Task WriteAsync_AfterMarkCompleted_Throws()
+        public async Task WriteAsync_AfterMarkCompleted_StillSucceeds()
         {
-            var (stream, _) = await CreateWiredStream();
+            var (stream, output) = await CreateWiredStream();
             await stream.WriteAsync(new byte[] { 1 }, 0, 1);
             stream.MarkCompleted();
 
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => stream.WriteAsync(new byte[] { 2 }, 0, 1));
+            // Writes after MarkCompleted are allowed — buffered ASP.NET Core responses
+            // (e.g. Results.Json) may flush pre-start buffer data after the pipeline
+            // completes and LambdaBootstrap calls MarkCompleted.
+            await stream.WriteAsync(new byte[] { 2 }, 0, 1);
+
+            Assert.Equal(new byte[] { 1, 2 }, output.ToArray());
         }
 
         [Fact]
