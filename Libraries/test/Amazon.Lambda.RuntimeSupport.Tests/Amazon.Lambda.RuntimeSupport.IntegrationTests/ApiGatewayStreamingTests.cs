@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -20,9 +19,9 @@ using Xunit.Abstractions;
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
     /// <summary>
-    /// Integration tests for ASP.NET Core response streaming through API Gateway.
-    /// Deploys an ASP.NET Core app using "dotnet lambda deploy-serverless" and
-    /// validates streaming responses through the API Gateway endpoint.
+    /// Integration tests for ASP.NET Core response streaming through API Gateway REST API.
+    /// API Gateway HTTP API (v2) does not support the /response-streaming-invocations
+    /// integration URI, so streaming through API Gateway is REST API only.
     /// </summary>
     public class ApiGatewayStreamingTests : IClassFixture<ApiGatewayStreamingFixture>
     {
@@ -64,7 +63,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var body = await response.Content.ReadAsStringAsync();
             _output.WriteLine($"Body length: {body.Length}");
 
-            // Verify all 100 lines are present
             Assert.Contains("Line 1", body);
             Assert.Contains("Line 50", body);
             Assert.Contains("Line 100", body);
@@ -106,8 +104,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var apiUrl = await _fixture.GetApiUrlAsync();
             using var httpClient = new HttpClient();
 
-            // When a midstream error occurs through API Gateway, the stream is truncated.
-            // The client may receive a partial response or an error depending on timing.
             try
             {
                 var response = await httpClient.GetWithRetryAsync($"{apiUrl}streaming-error");
@@ -115,7 +111,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 _output.WriteLine($"Status: {response.StatusCode}");
                 _output.WriteLine($"Body: {body}");
 
-                // If we got a response, verify we got at least some of the streamed data
                 if (response.StatusCode == HttpStatusCode.OK)
                 {
                     Assert.Contains("Line 1", body);
@@ -123,7 +118,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             }
             catch (HttpRequestException ex)
             {
-                // Expected — the stream may be truncated causing an HTTP protocol error
                 _output.WriteLine($"Expected error: {ex.Message}");
             }
         }
@@ -134,14 +128,12 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var apiUrl = await _fixture.GetApiUrlAsync();
             using var httpClient = new HttpClient();
 
-            // First request registers the OnCompleted callback
             var response = await httpClient.GetWithRetryAsync($"{apiUrl}oncompleted-test");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             var body = await response.Content.ReadAsStringAsync();
             _output.WriteLine($"Body: {body}");
             Assert.Contains("OnCompleted callback registered", body);
 
-            // Second request verifies the callback was executed
             var verifyResponse = await httpClient.GetWithRetryAsync($"{apiUrl}oncompleted-verify");
             Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
             var verifyBody = await verifyResponse.Content.ReadAsStringAsync();
@@ -166,7 +158,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var body = await response.Content.ReadAsStringAsync();
             Assert.Contains("Custom headers response", body);
 
-            // Verify custom headers are present in the response
             Assert.True(response.Headers.Contains("X-Custom-Header"), "X-Custom-Header should be present");
             Assert.Equal("custom-value", response.Headers.GetValues("X-Custom-Header").First());
             Assert.True(response.Headers.Contains("X-Another-Header"), "X-Another-Header should be present");
@@ -188,7 +179,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             _output.WriteLine($"Body: {body}");
             Assert.Contains("Cookies set", body);
 
-            // Verify Set-Cookie headers are present
             Assert.True(response.Headers.Contains("Set-Cookie"), "Set-Cookie header should be present");
             var cookies = response.Headers.GetValues("Set-Cookie").ToList();
             _output.WriteLine($"Cookies: {string.Join("; ", cookies)}");
@@ -203,7 +193,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             using var httpClient = new HttpClient();
 
             var content = new StringContent("Hello from integration test", Encoding.UTF8, "text/plain");
-            var response = await httpClient.PostWithRetryAsync($"{apiUrl}echo-body", content);
+            var response = await httpClient.PostAsync($"{apiUrl}echo-body", content);
 
             _output.WriteLine($"Status: {response.StatusCode}");
             var body = await response.Content.ReadAsStringAsync();
@@ -214,50 +204,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
     }
 
-    internal static class HttpClientExtension
-    {
-        public static async Task<HttpResponseMessage> GetWithRetryAsync(this HttpClient httpClient, string url, HttpStatusCode expectedCode = HttpStatusCode.OK, int maxRetries = 5, int delaySeconds = 5)
-        {
-            for (var i = 0; i < maxRetries; i++)
-            {
-                try
-                {
-                    var response = await httpClient.GetAsync(url);
-                    if (response.StatusCode == expectedCode)
-                    {
-                        return response;
-                    }
-                }
-                catch
-                {
-                    // Ignore and retry
-                }
-                await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
-            }
-            throw new Exception($"Failed to get expected status code {expectedCode} from {url} after {maxRetries} attempts");
-        }
-
-        public static async Task<HttpResponseMessage> PostWithRetryAsync(this HttpClient httpClient, string url, HttpContent content, HttpStatusCode expectedCode = HttpStatusCode.OK, int maxRetries = 5, int delaySeconds = 5)
-        {
-            for (var i = 0; i < maxRetries; i++)
-            {
-                try
-                {
-                    var response = await httpClient.PostAsync(url, content);
-                    if (response.StatusCode == expectedCode)
-                    {
-                        return response;
-                    }
-                }
-                catch
-                {
-                    // Ignore and retry
-                }
-                await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
-            }
-            throw new Exception($"Failed to get expected status code {expectedCode} from {url} after {maxRetries} attempts");
-        }
-    }
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Fixture and helpers
+    // ─────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Fixture that deploys the ASP.NET Core streaming test app to AWS using
@@ -266,7 +215,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     public class ApiGatewayStreamingFixture : IAsyncLifetime
     {
         private static readonly RegionEndpoint TestRegion = BaseCustomRuntimeTest.TestRegion;
-        private static readonly string StackName = "IntegTest-AspNetCoreStreaming-" + DateTime.UtcNow.Ticks;
+        private static readonly string StackName = $"IntegTest-Streaming-RestApi-{DateTime.UtcNow.Ticks}";
 
         private string _apiUrl;
         private string _toolPath;
@@ -274,13 +223,13 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         private bool _deployed;
         private string _s3BucketName;
 
-        public async Task<string> GetApiUrlAsync()
+        public Task<string> GetApiUrlAsync()
         {
             if (!_deployed)
             {
                 throw new System.InvalidOperationException("Test infrastructure not deployed. InitializeAsync must complete first.");
             }
-            return _apiUrl;
+            return Task.FromResult(_apiUrl);
         }
 
         public async Task InitializeAsync()
@@ -291,15 +240,13 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 "../../../../../../..",
                 "Libraries/test/Amazon.Lambda.RuntimeSupport.Tests/AspNetCoreStreamingApiGatewayTest");
 
-            // Deploy using dotnet lambda deploy-serverless
             var lambdaToolPath = Path.Combine(_toolPath, "dotnet-lambda");
             _s3BucketName = await GetOrCreateDeploymentBucketAsync();
             await CommandLineWrapper.Run(
                 lambdaToolPath,
-                $"deploy-serverless --stack-name {StackName} --s3-bucket {_s3BucketName} --region {TestRegion.SystemName} --disable-interactive true",
+                $"deploy-serverless --stack-name {StackName} --template serverless-restapi.template --s3-bucket {_s3BucketName} --region {TestRegion.SystemName} --disable-interactive true",
                 _testAppPath);
 
-            // Get the API URL from CloudFormation outputs
             _apiUrl = await GetStackOutputAsync(StackName, "ApiURL");
             if (!_apiUrl.EndsWith("/"))
             {
@@ -308,7 +255,6 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
             _deployed = true;
 
-            // Wait for API Gateway to be fully ready
             await WaitForApiGatewayAsync();
         }
 
@@ -326,9 +272,15 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
                     if (_s3BucketName != null)
                     {
-                        // Clean up the S3 bucket used for deployment artifacts
                         using var s3Client = new Amazon.S3.AmazonS3Client(TestRegion);
-                        await Amazon.S3.Util.AmazonS3Util.DeleteS3BucketWithObjectsAsync(s3Client, _s3BucketName);
+                        try
+                        {
+                            await Amazon.S3.Util.AmazonS3Util.DeleteS3BucketWithObjectsAsync(s3Client, _s3BucketName);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Warning: Failed to delete S3 bucket {_s3BucketName}: {ex.Message}");
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -366,12 +318,18 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var identity = await stsClient.GetCallerIdentityAsync(new Amazon.SecurityToken.Model.GetCallerIdentityRequest());
             var name = $"integ-test-streaming-{identity.Account}-{TestRegion.SystemName}";
             using var s3Client = new Amazon.S3.AmazonS3Client(TestRegion);
-            await s3Client.PutBucketAsync(new Amazon.S3.Model.PutBucketRequest
+            try
             {
-                BucketName = name,
-                UseClientRegion = true
-            });
-
+                await s3Client.PutBucketAsync(new Amazon.S3.Model.PutBucketRequest
+                {
+                    BucketName = name,
+                    UseClientRegion = true
+                });
+            }
+            catch (Amazon.S3.AmazonS3Exception ex) when (ex.ErrorCode == "BucketAlreadyOwnedByYou")
+            {
+                // Bucket already exists from a previous run — reuse it
+            }
 
             return name;
         }
@@ -396,6 +354,33 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 }
                 await Task.Delay(TimeSpan.FromSeconds(5));
             }
+        }
+    }
+
+    internal static class HttpClientExtension
+    {
+        public static async Task<HttpResponseMessage> GetWithRetryAsync(
+            this HttpClient httpClient, string url,
+            HttpStatusCode expectedCode = HttpStatusCode.OK,
+            int maxRetries = 5, int delaySeconds = 5)
+        {
+            for (var i = 0; i < maxRetries; i++)
+            {
+                try
+                {
+                    var response = await httpClient.GetAsync(url);
+                    if (response.StatusCode == expectedCode)
+                    {
+                        return response;
+                    }
+                }
+                catch
+                {
+                    // Ignore and retry
+                }
+                await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+            }
+            throw new Exception($"Failed to get expected status code {expectedCode} from {url} after {maxRetries} attempts");
         }
     }
 }

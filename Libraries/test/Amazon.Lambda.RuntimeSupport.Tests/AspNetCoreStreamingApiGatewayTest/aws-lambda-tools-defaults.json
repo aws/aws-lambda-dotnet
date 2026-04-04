@@ -11,7 +11,7 @@
   "function-memory-size": 512,
   "function-timeout": 30,
   "function-handler": "AspNetCoreStreamingApiGatewayTest",
-  "template": "serverless.template",
+  "template": "serverless-restapi.template",
   "template-parameters": "",
   "s3-prefix": "AspNetCoreStreamingApiGatewayTest/"
 }
