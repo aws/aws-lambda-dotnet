@@ -34,9 +34,10 @@ public class HostingOptions
     public bool IncludeUnhandledExceptionDetailInResponse { get; set; } = false;
 
     /// <summary>
-    /// When true, the Lambda hosting server will invoke <c>StreamingFunctionHandlerAsync</c>
-    /// instead of <c>FunctionHandlerAsync</c>, enabling Lambda response streaming.
-    /// Requires net8.0 or later.
+    /// When true, the Lambda hosting server enables Lambda response streaming behavior
+    /// when invoking <c>FunctionHandlerAsync</c>. In streaming mode,
+    /// <c>FunctionHandlerAsync</c> writes directly to the Lambda response stream and
+    /// returns <c>null</c>. Requires net8.0 or later.
     /// </summary>
     [System.Runtime.Versioning.RequiresPreviewFeatures(ParameterizedPreviewMessage)]
     public bool EnableResponseStreaming { get; set; } = false;

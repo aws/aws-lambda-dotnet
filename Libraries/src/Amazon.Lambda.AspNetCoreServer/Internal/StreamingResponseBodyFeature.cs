@@ -225,9 +225,19 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
                 await Inner.CompleteAsync(exception);
             }
 
-            // Complete (sync) — delegate
-            public override void Complete(Exception exception = null) => Inner.Complete(exception);
+            // Complete (sync) — mirror CompleteAsync behavior to ensure the response is started.
+            public override void Complete(Exception exception = null)
+            {
+                if (!_feature._started)
+                {
+                    // Flush buffered bytes into the pre-start buffer, then open the stream.
+                    Inner.FlushAsync().GetAwaiter().GetResult();
+                    _inner = null;
+                    _feature.StartAsync().GetAwaiter().GetResult();
+                }
 
+                Inner.Complete(exception);
+            }
             public override void CancelPendingFlush() => Inner.CancelPendingFlush();
         }
     }
