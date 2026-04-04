@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 #if NET8_0_OR_GREATER
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Runtime.Versioning;
@@ -80,6 +81,11 @@ namespace Amazon.Lambda.Core.ResponseStreaming
                 }
 
                 writer.WriteEndObject();
+            }
+
+            if (string.Equals(Environment.GetEnvironmentVariable("LAMBDA_NET_SERIALIZER_DEBUG"), "true", StringComparison.OrdinalIgnoreCase))
+            {
+                LambdaLogger.Log(LogLevel.Information, "HTTP Response Stream Prelude JSON: {Prelude}", System.Text.Encoding.UTF8.GetString(bufferWriter.WrittenSpan));
             }
 
             return bufferWriter.WrittenSpan.ToArray();

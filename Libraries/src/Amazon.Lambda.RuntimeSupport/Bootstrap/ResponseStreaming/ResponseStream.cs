@@ -82,14 +82,16 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
             // where a handler WriteAsync that is already waiting on the semaphore could
             // sneak in and write body data before the prelude, causing intermittent
             // "Failed to parse prelude JSON" errors from API Gateway.
+            //
+            // Note: we intentionally do NOT check ThrowIfCompletedOrError() here.
+            // SetHttpOutputStreamAsync is infrastructure setup called by RawStreamingHttpClient,
+            // not a handler write. For fast-completing responses (e.g. Results.Json),
+            // LambdaBootstrap may call MarkCompleted() before the TCP connection is established
+            // and this method is called. The prelude still needs to be written to the wire
+            // so the response is properly framed.
             if (_prelude?.Length > 0)
             {
                 _logger.LogDebug("Writing prelude to HTTP stream.");
-
-                lock (_lock)
-                {
-                    ThrowIfCompletedOrError();
-                }
 
                 var combinedLength = _prelude.Length + PreludeDelimiter.Length;
                 var combined = ArrayPool<byte>.Shared.Rent(combinedLength);
@@ -152,7 +154,12 @@ namespace Amazon.Lambda.RuntimeSupport.Client.ResponseStreaming
 
                 lock (_lock)
                 {
-                    ThrowIfCompletedOrError();
+                    // Only throw on error, not on completed. For buffered ASP.NET Core responses
+                    // (e.g. Results.Json), the pipeline completes and LambdaBootstrap calls
+                    // MarkCompleted() before the pre-start buffer has been flushed to the wire.
+                    // The buffered data still needs to be written even after MarkCompleted.
+                    if (_hasError)
+                        throw new InvalidOperationException("Cannot write to a stream after an error has been reported.");
                     _bytesWritten += count;
                 }
 
