@@ -8,7 +8,6 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using Amazon.CloudFormation;
 using Amazon.CloudFormation.Model;
@@ -16,22 +15,28 @@ using Amazon.Lambda.RuntimeSupport.IntegrationTests.Helpers;
 using Xunit;
 using Xunit.Abstractions;
 
+using InvalidOperationException = System.InvalidOperationException;
+
 namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 {
-    /// <summary>
-    /// Integration tests for ASP.NET Core response streaming through API Gateway REST API.
-    /// API Gateway HTTP API (v2) does not support the /response-streaming-invocations
-    /// integration URI, so streaming through API Gateway is REST API only.
-    /// </summary>
-    public class ApiGatewayStreamingTests : IClassFixture<ApiGatewayStreamingFixture>
-    {
-        private readonly ApiGatewayStreamingFixture _fixture;
-        private readonly ITestOutputHelper _output;
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Shared test logic
+    // ─────────────────────────────────────────────────────────────────────────────
 
-        public ApiGatewayStreamingTests(ApiGatewayStreamingFixture fixture, ITestOutputHelper output)
+    /// <summary>
+    /// Base class containing all streaming integration test scenarios.
+    /// Subclasses provide the fixture for a specific deployment type
+    /// (API Gateway REST API or Lambda Function URL).
+    /// </summary>
+    public abstract class StreamingTestBase
+    {
+        private readonly StreamingFixture _fixture;
+        protected readonly ITestOutputHelper Output;
+
+        protected StreamingTestBase(StreamingFixture fixture, ITestOutputHelper output)
         {
             _fixture = fixture;
-            _output = output;
+            Output = output;
         }
 
         [Fact]
@@ -42,9 +47,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
             var response = await httpClient.GetWithRetryAsync(apiUrl);
 
-            _output.WriteLine($"Status: {response.StatusCode}");
+            Output.WriteLine($"Status: {response.StatusCode}");
             var body = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"Body: {body}");
+            Output.WriteLine($"Body: {body}");
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Contains("Welcome to ASP.NET Core streaming on Lambda", body);
@@ -61,7 +66,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var body = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"Body length: {body.Length}");
+            Output.WriteLine($"Body length: {body.Length}");
 
             Assert.Contains("Line 1", body);
             Assert.Contains("Line 50", body);
@@ -91,7 +96,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var body = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"Body: {body}");
+            Output.WriteLine($"Body: {body}");
 
             var doc = JsonDocument.Parse(body);
             Assert.True(doc.RootElement.TryGetProperty("message", out var msg));
@@ -108,8 +113,8 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             {
                 var response = await httpClient.GetWithRetryAsync($"{apiUrl}streaming-error");
                 var body = await response.Content.ReadAsStringAsync();
-                _output.WriteLine($"Status: {response.StatusCode}");
-                _output.WriteLine($"Body: {body}");
+                Output.WriteLine($"Status: {response.StatusCode}");
+                Output.WriteLine($"Body: {body}");
 
                 if (response.StatusCode == HttpStatusCode.OK)
                 {
@@ -118,7 +123,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             }
             catch (HttpRequestException ex)
             {
-                _output.WriteLine($"Expected error: {ex.Message}");
+                Output.WriteLine($"Expected error: {ex.Message}");
             }
         }
 
@@ -131,13 +136,13 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var response = await httpClient.GetWithRetryAsync($"{apiUrl}oncompleted-test");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             var body = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"Body: {body}");
+            Output.WriteLine($"Body: {body}");
             Assert.Contains("OnCompleted callback registered", body);
 
             var verifyResponse = await httpClient.GetWithRetryAsync($"{apiUrl}oncompleted-verify");
             Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
             var verifyBody = await verifyResponse.Content.ReadAsStringAsync();
-            _output.WriteLine($"Verify body: {verifyBody}");
+            Output.WriteLine($"Verify body: {verifyBody}");
 
             var doc = JsonDocument.Parse(verifyBody);
             Assert.True(doc.RootElement.GetProperty("onCompletedExecuted").GetBoolean(),
@@ -145,14 +150,14 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
 
         [Fact]
-        public async Task CustomHeaders_PassedThroughApiGateway()
+        public async Task CustomHeaders_PassedThrough()
         {
             var apiUrl = await _fixture.GetApiUrlAsync();
             using var httpClient = new HttpClient();
 
             var response = await httpClient.GetWithRetryAsync($"{apiUrl}custom-headers", HttpStatusCode.Created);
 
-            _output.WriteLine($"Status: {response.StatusCode}");
+            Output.WriteLine($"Status: {response.StatusCode}");
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
             var body = await response.Content.ReadAsStringAsync();
@@ -165,7 +170,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         }
 
         [Fact]
-        public async Task SetCookie_PassedThroughApiGateway()
+        public async Task SetCookie_PassedThrough()
         {
             var apiUrl = await _fixture.GetApiUrlAsync();
             var handler = new HttpClientHandler { UseCookies = false };
@@ -176,12 +181,12 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var body = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"Body: {body}");
+            Output.WriteLine($"Body: {body}");
             Assert.Contains("Cookies set", body);
 
             Assert.True(response.Headers.Contains("Set-Cookie"), "Set-Cookie header should be present");
             var cookies = response.Headers.GetValues("Set-Cookie").ToList();
-            _output.WriteLine($"Cookies: {string.Join("; ", cookies)}");
+            Output.WriteLine($"Cookies: {string.Join("; ", cookies)}");
             Assert.True(cookies.Any(c => c.Contains("session=abc123")), "session cookie should be present");
             Assert.True(cookies.Any(c => c.Contains("theme=dark")), "theme cookie should be present");
         }
@@ -195,9 +200,9 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             var content = new StringContent("Hello from integration test", Encoding.UTF8, "text/plain");
             var response = await httpClient.PostAsync($"{apiUrl}echo-body", content);
 
-            _output.WriteLine($"Status: {response.StatusCode}");
+            Output.WriteLine($"Status: {response.StatusCode}");
             var body = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"Body: {body}");
+            Output.WriteLine($"Body: {body}");
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Contains("Echo: Hello from integration test", body);
@@ -205,17 +210,56 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // Fixture and helpers
+    // Concrete test classes
     // ─────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Fixture that deploys the ASP.NET Core streaming test app to AWS using
-    /// "dotnet lambda deploy-serverless" and tears it down after tests complete.
+    /// Tests streaming through API Gateway REST API.
     /// </summary>
-    public class ApiGatewayStreamingFixture : IAsyncLifetime
+    public class RestApiStreamingTests : StreamingTestBase, IClassFixture<RestApiStreamingFixture>
+    {
+        public RestApiStreamingTests(RestApiStreamingFixture fixture, ITestOutputHelper output)
+            : base(fixture, output) { }
+    }
+
+    /// <summary>
+    /// Tests streaming through Lambda Function URL.
+    /// Function URL uses the same payload format as HTTP API v2.
+    /// </summary>
+    public class FunctionUrlStreamingTests : StreamingTestBase, IClassFixture<FunctionUrlStreamingFixture>
+    {
+        public FunctionUrlStreamingTests(FunctionUrlStreamingFixture fixture, ITestOutputHelper output)
+            : base(fixture, output) { }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Fixtures
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    public class RestApiStreamingFixture : StreamingFixture
+    {
+        public RestApiStreamingFixture()
+            : base("serverless-restapi.template", "RestApi") { }
+    }
+
+    public class FunctionUrlStreamingFixture : StreamingFixture
+    {
+        public FunctionUrlStreamingFixture()
+            : base("serverless-functionurl.template", "FunctionUrl") { }
+    }
+
+    /// <summary>
+    /// Shared fixture that deploys the ASP.NET Core streaming test app to AWS using
+    /// "dotnet lambda deploy-serverless" and tears it down after tests complete.
+    /// Parameterized by template file and deployment type.
+    /// </summary>
+    public class StreamingFixture : IAsyncLifetime
     {
         private static readonly RegionEndpoint TestRegion = BaseCustomRuntimeTest.TestRegion;
-        private static readonly string StackName = $"IntegTest-Streaming-RestApi-{DateTime.UtcNow.Ticks}";
+
+        private readonly string _templateFile;
+        private readonly string _deploymentType;
+        private readonly string _stackName;
 
         private string _apiUrl;
         private string _toolPath;
@@ -223,11 +267,18 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
         private bool _deployed;
         private string _s3BucketName;
 
+        protected StreamingFixture(string templateFile, string deploymentType)
+        {
+            _templateFile = templateFile;
+            _deploymentType = deploymentType;
+            _stackName = $"IntegTest-Streaming-{deploymentType}-{DateTime.UtcNow.Ticks}";
+        }
+
         public Task<string> GetApiUrlAsync()
         {
             if (!_deployed)
             {
-                throw new System.InvalidOperationException("Test infrastructure not deployed. InitializeAsync must complete first.");
+                throw new InvalidOperationException("Test infrastructure not deployed. InitializeAsync must complete first.");
             }
             return Task.FromResult(_apiUrl);
         }
@@ -244,10 +295,10 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             _s3BucketName = await GetOrCreateDeploymentBucketAsync();
             await CommandLineWrapper.Run(
                 lambdaToolPath,
-                $"deploy-serverless --stack-name {StackName} --template serverless-restapi.template --s3-bucket {_s3BucketName} --region {TestRegion.SystemName} --disable-interactive true",
+                $"deploy-serverless --stack-name {_stackName} --template {_templateFile} --s3-bucket {_s3BucketName} --region {TestRegion.SystemName} --disable-interactive true",
                 _testAppPath);
 
-            _apiUrl = await GetStackOutputAsync(StackName, "ApiURL");
+            _apiUrl = await GetStackOutputAsync(_stackName, "ApiURL");
             if (!_apiUrl.EndsWith("/"))
             {
                 _apiUrl += "/";
@@ -255,7 +306,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
 
             _deployed = true;
 
-            await WaitForApiGatewayAsync();
+            await WaitForEndpointAsync();
         }
 
         public async Task DisposeAsync()
@@ -267,7 +318,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                     var lambdaToolPath = Path.Combine(_toolPath, "dotnet-lambda");
                     await CommandLineWrapper.Run(
                         lambdaToolPath,
-                        $"delete-serverless --stack-name {StackName} --region {TestRegion.SystemName}",
+                        $"delete-serverless --stack-name {_stackName} --region {TestRegion.SystemName}",
                         _testAppPath);
 
                     if (_s3BucketName != null)
@@ -285,7 +336,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Warning: Failed to delete stack {StackName}: {ex.Message}");
+                    Console.WriteLine($"Warning: Failed to delete stack {_stackName}: {ex.Message}");
                 }
             }
 
@@ -334,7 +385,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
             return name;
         }
 
-        private async Task WaitForApiGatewayAsync()
+        private async Task WaitForEndpointAsync()
         {
             using var httpClient = new HttpClient();
             var maxRetries = 10;
@@ -350,7 +401,7 @@ namespace Amazon.Lambda.RuntimeSupport.IntegrationTests
                 }
                 catch
                 {
-                    // Ignore — API Gateway may not be ready yet
+                    // Ignore — endpoint may not be ready yet
                 }
                 await Task.Delay(TimeSpan.FromSeconds(5));
             }

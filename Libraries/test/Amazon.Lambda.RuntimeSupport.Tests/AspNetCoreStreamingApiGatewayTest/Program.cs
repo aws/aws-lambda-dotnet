@@ -4,7 +4,15 @@ using Amazon.Lambda.AspNetCoreServer.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi, options =>
+// Determine the event source from environment variable.
+// RestApi for API Gateway REST API, HttpApi for Lambda Function URL
+// (Function URL uses the same payload format as HTTP API v2).
+var eventSourceType = Environment.GetEnvironmentVariable("LAMBDA_EVENT_SOURCE") ?? "RestApi";
+var eventSource = eventSourceType.Equals("HttpApi", StringComparison.OrdinalIgnoreCase)
+    ? LambdaEventSource.HttpApi
+    : LambdaEventSource.RestApi;
+
+builder.Services.AddAWSLambdaHosting(eventSource, options =>
 {
     options.EnableResponseStreaming = true;
 });
