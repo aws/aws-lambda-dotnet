@@ -720,6 +720,19 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         { "Values", new List<string> { att.HttpMethod.ToUpper() } }
                     });
                 }
+                if (!string.IsNullOrEmpty(att.HttpHeaderConditionName) && att.HttpHeaderConditionValues != null && att.HttpHeaderConditionValues.Length > 0)
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "http-header" },
+                        { "HttpHeaderConfig", new Dictionary<string, object>
+                            {
+                                { "HttpHeaderName", att.HttpHeaderConditionName },
+                                { "Values", att.HttpHeaderConditionValues.ToList() }
+                            }
+                        }
+                    });
+                }
                 _templateWriter.SetToken($"{rulePath}.Properties.Conditions", conditions, TokenType.List);
 
                 // Actions - forward to target group

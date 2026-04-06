@@ -316,5 +316,88 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var errors = attr.Validate();
             Assert.Empty(errors);
         }
+
+        // ===== HTTP Header Condition Tests =====
+
+        [Fact]
+        public void HttpHeaderCondition_DefaultValues_AreNull()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1);
+
+            Assert.Null(attr.HttpHeaderConditionName);
+            Assert.Null(attr.HttpHeaderConditionValues);
+        }
+
+        [Fact]
+        public void HttpHeaderCondition_BothSet_ReturnsNoErrors()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1)
+            {
+                HttpHeaderConditionName = "X-Environment",
+                HttpHeaderConditionValues = new[] { "dev", "staging" }
+            };
+
+            var errors = attr.Validate();
+            Assert.Empty(errors);
+            Assert.Equal("X-Environment", attr.HttpHeaderConditionName);
+            Assert.Equal(2, attr.HttpHeaderConditionValues.Length);
+            Assert.Equal("dev", attr.HttpHeaderConditionValues[0]);
+            Assert.Equal("staging", attr.HttpHeaderConditionValues[1]);
+        }
+
+        [Fact]
+        public void HttpHeaderCondition_NameSetWithoutValues_ReturnsError()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1)
+            {
+                HttpHeaderConditionName = "X-Environment"
+            };
+
+            var errors = attr.Validate();
+            Assert.Single(errors);
+            Assert.Contains("HttpHeaderConditionName", errors[0]);
+            Assert.Contains("HttpHeaderConditionValues", errors[0]);
+        }
+
+        [Fact]
+        public void HttpHeaderCondition_ValuesSetWithoutName_ReturnsError()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1)
+            {
+                HttpHeaderConditionValues = new[] { "dev" }
+            };
+
+            var errors = attr.Validate();
+            Assert.Single(errors);
+            Assert.Contains("HttpHeaderConditionValues", errors[0]);
+            Assert.Contains("HttpHeaderConditionName", errors[0]);
+        }
+
+        [Fact]
+        public void HttpHeaderCondition_NameSetWithEmptyValues_ReturnsError()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1)
+            {
+                HttpHeaderConditionName = "User-Agent",
+                HttpHeaderConditionValues = new string[0]
+            };
+
+            var errors = attr.Validate();
+            Assert.Single(errors);
+            Assert.Contains("HttpHeaderConditionName", errors[0]);
+        }
+
+        [Fact]
+        public void HttpHeaderCondition_WithWildcards_ReturnsNoErrors()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1)
+            {
+                HttpHeaderConditionName = "User-Agent",
+                HttpHeaderConditionValues = new[] { "*Chrome*", "*Safari*" }
+            };
+
+            var errors = attr.Validate();
+            Assert.Empty(errors);
+        }
     }
 }

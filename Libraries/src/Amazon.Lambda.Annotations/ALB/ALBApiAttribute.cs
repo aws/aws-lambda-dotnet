@@ -68,6 +68,20 @@ namespace Amazon.Lambda.Annotations.ALB
         public string HttpMethod { get; set; }
 
         /// <summary>
+        /// Optional HTTP header name for an http-header listener rule condition (e.g., "X-Environment", "User-Agent").
+        /// Must be used together with <see cref="HttpHeaderConditionValues"/>.
+        /// The header name is not case-sensitive.
+        /// </summary>
+        public string HttpHeaderConditionName { get; set; }
+
+        /// <summary>
+        /// Optional HTTP header values for an http-header listener rule condition (e.g., new[] { "dev", "*Chrome*" }).
+        /// Supports wildcards (* and ?). Must be used together with <see cref="HttpHeaderConditionName"/>.
+        /// Up to 3 match evaluations per condition.
+        /// </summary>
+        public string[] HttpHeaderConditionValues { get; set; }
+
+        /// <summary>
         /// The CloudFormation resource name prefix for the generated ALB resources
         /// (TargetGroup, ListenerRule, Permission). Defaults to "{LambdaResourceName}ALB".
         /// Must only contain alphanumeric characters.
@@ -138,6 +152,16 @@ namespace Amazon.Lambda.Annotations.ALB
                 {
                     validationErrors.Add($"{nameof(HttpMethod)} = {HttpMethod}. It must be a valid HTTP method (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS).");
                 }
+            }
+
+            // Validate http-header condition: both name and values must be set together
+            if (!string.IsNullOrEmpty(HttpHeaderConditionName) && (HttpHeaderConditionValues == null || HttpHeaderConditionValues.Length == 0))
+            {
+                validationErrors.Add($"{nameof(HttpHeaderConditionName)} is set to '{HttpHeaderConditionName}' but {nameof(HttpHeaderConditionValues)} is not set. Both must be specified together.");
+            }
+            if ((HttpHeaderConditionValues != null && HttpHeaderConditionValues.Length > 0) && string.IsNullOrEmpty(HttpHeaderConditionName))
+            {
+                validationErrors.Add($"{nameof(HttpHeaderConditionValues)} is set but {nameof(HttpHeaderConditionName)} is not set. Both must be specified together.");
             }
 
             return validationErrors;

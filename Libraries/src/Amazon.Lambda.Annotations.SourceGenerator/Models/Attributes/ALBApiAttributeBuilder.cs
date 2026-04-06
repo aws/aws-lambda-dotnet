@@ -1,6 +1,7 @@
 using Amazon.Lambda.Annotations.ALB;
 using Microsoft.CodeAnalysis;
 using System;
+using System.Linq;
 
 namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
 {
@@ -39,6 +40,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                 else if (pair.Key == nameof(data.ResourceName) && pair.Value.Value is string resourceName)
                 {
                     data.ResourceName = resourceName;
+                }
+                else if (pair.Key == nameof(data.HttpHeaderConditionName) && pair.Value.Value is string httpHeaderConditionName)
+                {
+                    data.HttpHeaderConditionName = httpHeaderConditionName;
+                }
+                else if (pair.Key == nameof(data.HttpHeaderConditionValues) && !pair.Value.IsNull)
+                {
+                    data.HttpHeaderConditionValues = pair.Value.Values.Select(v => v.Value as string).ToArray();
                 }
             }
 
