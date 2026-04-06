@@ -701,7 +701,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     new Dictionary<string, object>
                     {
                         { "Field", "path-pattern" },
-                        { "Values", new List<string> { att.PathPattern } }
+                        { "PathPatternConfig", new Dictionary<string, object>
+                            {
+                                { "Values", new List<string> { att.PathPattern } }
+                            }
+                        }
                     }
                 };
                 if (!string.IsNullOrEmpty(att.HostHeader))
@@ -709,7 +713,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     conditions.Add(new Dictionary<string, object>
                     {
                         { "Field", "host-header" },
-                        { "Values", new List<string> { att.HostHeader } }
+                        { "HostHeaderConfig", new Dictionary<string, object>
+                            {
+                                { "Values", new List<string> { att.HostHeader } }
+                            }
+                        }
                     });
                 }
                 if (!string.IsNullOrEmpty(att.HttpMethod))
@@ -717,7 +725,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                     conditions.Add(new Dictionary<string, object>
                     {
                         { "Field", "http-request-method" },
-                        { "Values", new List<string> { att.HttpMethod.ToUpper() } }
+                        { "HttpRequestMethodConfig", new Dictionary<string, object>
+                            {
+                                { "Values", new List<string> { att.HttpMethod.ToUpper() } }
+                            }
+                        }
                     });
                 }
                 if (!string.IsNullOrEmpty(att.HttpHeaderConditionName) && att.HttpHeaderConditionValues != null && att.HttpHeaderConditionValues.Length > 0)

@@ -194,6 +194,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
 
             // Verify conditions exist (path-pattern + host-header = 2 conditions)
             Assert.True(templateWriter.Exists("Resources.MyFunctionALBListenerRule.Properties.Conditions"));
+
+            // Verify the generated template uses *Config sub-objects (not flat Values)
+            var templateContent = mockFileManager.ReadAllText(ServerlessTemplateFilePath);
+            Assert.Contains("PathPatternConfig", templateContent);
+            Assert.Contains("HostHeaderConfig", templateContent);
         }
 
         [Theory]
@@ -226,6 +231,54 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests.WriterTests
             // Verify conditions and priority
             Assert.True(templateWriter.Exists("Resources.MyFunctionALBListenerRule.Properties.Conditions"));
             Assert.Equal(10, templateWriter.GetToken<int>("Resources.MyFunctionALBListenerRule.Properties.Priority"));
+
+            // Verify HttpRequestMethodConfig sub-object is used (not flat Values)
+            var templateContent = mockFileManager.ReadAllText(ServerlessTemplateFilePath);
+            Assert.Contains("HttpRequestMethodConfig", templateContent);
+        }
+
+        /// <summary>
+        /// Verifies that all ALB listener rule condition types use the proper CloudFormation *Config sub-objects
+        /// instead of flat Values arrays. CloudFormation rejects flat Values for condition types like
+        /// http-request-method, host-header, and path-pattern.
+        /// See: https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_RuleCondition.html
+        /// </summary>
+        [Theory]
+        [InlineData(CloudFormationTemplateFormat.Json)]
+        [InlineData(CloudFormationTemplateFormat.Yaml)]
+        public void ALBApiAttribute_ConditionsUseConfigSubObjects(CloudFormationTemplateFormat templateFormat)
+        {
+            // ARRANGE - use all condition types
+            var mockFileManager = GetMockFileManager(string.Empty);
+            var lambdaFunctionModel = GetLambdaFunctionModel("MyAssembly::MyNamespace.MyType::Handler",
+                "MyFunction", 30, 256, null, null);
+            lambdaFunctionModel.PackageType = LambdaPackageType.Zip;
+
+            var albAttribute = new ALBApiAttribute("@MyListener", "/api/*", 1)
+            {
+                HostHeader = "*.example.com",
+                HttpMethod = "POST",
+                HttpHeaderConditionName = "X-Custom",
+                HttpHeaderConditionValues = new[] { "val1" },
+                QueryStringConditions = new[] { "key=value" },
+                SourceIpConditions = new[] { "10.0.0.0/8" }
+            };
+            lambdaFunctionModel.Attributes.Add(new AttributeModel<ALBApiAttribute> { Data = albAttribute });
+
+            var cloudFormationWriter = GetCloudFormationWriter(mockFileManager, _directoryManager, templateFormat, _diagnosticReporter);
+            var report = GetAnnotationReport(new List<ILambdaFunctionSerializable> { lambdaFunctionModel });
+
+            // ACT
+            cloudFormationWriter.ApplyReport(report);
+
+            // ASSERT - verify all *Config sub-objects are present in the generated template
+            var templateContent = mockFileManager.ReadAllText(ServerlessTemplateFilePath);
+            Assert.Contains("PathPatternConfig", templateContent);
+            Assert.Contains("HostHeaderConfig", templateContent);
+            Assert.Contains("HttpRequestMethodConfig", templateContent);
+            Assert.Contains("HttpHeaderConfig", templateContent);
+            Assert.Contains("QueryStringConfig", templateContent);
+            Assert.Contains("SourceIpConfig", templateContent);
         }
 
         [Theory]

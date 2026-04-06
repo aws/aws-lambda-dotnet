@@ -72,9 +72,11 @@
         "Conditions": [
           {
             "Field": "path-pattern",
-            "Values": [
-              "/hello"
-            ]
+            "PathPatternConfig": {
+              "Values": [
+                "/hello"
+              ]
+            }
           }
         ],
         "Actions": [
@@ -164,21 +166,27 @@
         "Conditions": [
           {
             "Field": "path-pattern",
-            "Values": [
-              "/api/*"
-            ]
+            "PathPatternConfig": {
+              "Values": [
+                "/api/*"
+              ]
+            }
           },
           {
             "Field": "host-header",
-            "Values": [
-              "api.example.com"
-            ]
+            "HostHeaderConfig": {
+              "Values": [
+                "api.example.com"
+              ]
+            }
           },
           {
             "Field": "http-request-method",
-            "Values": [
-              "POST"
-            ]
+            "HttpRequestMethodConfig": {
+              "Values": [
+                "POST"
+              ]
+            }
           }
         ],
         "Actions": [
