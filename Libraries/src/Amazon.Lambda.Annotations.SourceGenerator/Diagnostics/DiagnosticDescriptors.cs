@@ -258,5 +258,21 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor FromRouteNotSupportedOnAlb = new DiagnosticDescriptor(
+            id: "AWSLambda0134",
+            title: "FromRoute not supported on ALB functions",
+            messageFormat: "[FromRoute] is not supported on ALB functions. ALB does not support route path template parameters. Use [FromHeader], [FromQuery], or [FromBody] instead.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor AlbUnmappedParameter = new DiagnosticDescriptor(
+            id: "AWSLambda0135",
+            title: "Unmapped parameter on ALB function",
+            messageFormat: "Parameter '{0}' on ALB function has no binding attribute. Use [FromHeader], [FromQuery], [FromBody], or [FromServices], or use the ApplicationLoadBalancerRequest or ILambdaContext types.",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }
