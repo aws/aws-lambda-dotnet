@@ -49,6 +49,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string ApplicationLoadBalancerRequest = "Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest";
         public const string ApplicationLoadBalancerResponse = "Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerResponse";
         public const string ALBApiAttribute = "Amazon.Lambda.Annotations.ALB.ALBApiAttribute";
+        public const string ALBFromQueryAttribute = "Amazon.Lambda.Annotations.ALB.FromQueryAttribute";
+        public const string ALBFromHeaderAttribute = "Amazon.Lambda.Annotations.ALB.FromHeaderAttribute";
+        public const string ALBFromBodyAttribute = "Amazon.Lambda.Annotations.ALB.FromBodyAttribute";
 
         public const string LambdaSerializerAttribute = "Amazon.Lambda.Core.LambdaSerializerAttribute";
         public const string DefaultLambdaSerializer = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";

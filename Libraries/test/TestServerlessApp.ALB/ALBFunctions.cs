@@ -1,6 +1,5 @@
 using Amazon.Lambda.Annotations;
 using Amazon.Lambda.Annotations.ALB;
-using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.ApplicationLoadBalancerEvents;
 using Amazon.Lambda.Core;
 using System.Collections.Generic;

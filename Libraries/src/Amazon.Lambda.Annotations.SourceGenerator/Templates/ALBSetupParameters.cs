@@ -74,9 +74,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
             this.Write(">();\r\n");
 
             }
-            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.ALBFromQueryAttribute))
             {
-                var fromQueryAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromQueryAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromQueryAttribute>;
+                var fromQueryAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.ALBFromQueryAttribute) as AttributeModel<Amazon.Lambda.Annotations.ALB.FromQueryAttribute>;
 
                 // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
                 var parameterKey = fromQueryAttribute?.Data?.Name ?? parameter.Name;
@@ -177,11 +177,11 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
                 }
 
             }
-            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute))
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.ALBFromHeaderAttribute))
             {
                 var fromHeaderAttribute =
-                    parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute) as
-                        AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromHeaderAttribute>;
+                    parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.ALBFromHeaderAttribute) as
+                        AttributeModel<Amazon.Lambda.Annotations.ALB.FromHeaderAttribute>;
 
                 // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
                 var headerKey = fromHeaderAttribute?.Data?.Name ?? parameter.Name;
@@ -281,7 +281,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Templates
 
                 }
             }
-            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromBodyAttribute))
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.ALBFromBodyAttribute))
             {
                 // string parameter does not need to be de-serialized
                 if (parameter.Type.IsString())

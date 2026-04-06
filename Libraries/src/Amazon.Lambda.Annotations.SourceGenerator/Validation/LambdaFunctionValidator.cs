@@ -312,7 +312,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 }
 
                 // Validate [FromQuery] parameter types - only primitive types allowed
-                if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
+                if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.ALBFromQueryAttribute))
                 {
                     if (!parameter.Type.IsPrimitiveType() && !parameter.Type.IsPrimitiveEnumerableType())
                     {
@@ -326,14 +326,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                     var parameterAttributeName = string.Empty;
                     switch (att.Type.FullName)
                     {
-                        case TypeFullNames.FromQueryAttribute:
-                            var fromQueryAttribute = (AttributeModel<APIGateway.FromQueryAttribute>)att;
-                            parameterAttributeName = fromQueryAttribute.Data.Name;
+                        case TypeFullNames.ALBFromQueryAttribute:
+                            if (att is AttributeModel<ALB.FromQueryAttribute> albFromQueryAttribute)
+                                parameterAttributeName = albFromQueryAttribute.Data.Name;
                             break;
 
-                        case TypeFullNames.FromHeaderAttribute:
-                            var fromHeaderAttribute = (AttributeModel<APIGateway.FromHeaderAttribute>)att;
-                            parameterAttributeName = fromHeaderAttribute.Data.Name;
+                        case TypeFullNames.ALBFromHeaderAttribute:
+                            if (att is AttributeModel<ALB.FromHeaderAttribute> albFromHeaderAttribute)
+                                parameterAttributeName = albFromHeaderAttribute.Data.Name;
                             break;
 
                         default:
@@ -352,9 +352,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                     !TypeFullNames.ALBRequests.Contains(parameter.Type.FullName) &&
                     !parameter.Attributes.Any(att =>
                         att.Type.FullName == TypeFullNames.FromServiceAttribute ||
-                        att.Type.FullName == TypeFullNames.FromQueryAttribute ||
-                        att.Type.FullName == TypeFullNames.FromHeaderAttribute ||
-                        att.Type.FullName == TypeFullNames.FromBodyAttribute ||
+                        att.Type.FullName == TypeFullNames.ALBFromQueryAttribute ||
+                        att.Type.FullName == TypeFullNames.ALBFromHeaderAttribute ||
+                        att.Type.FullName == TypeFullNames.ALBFromBodyAttribute ||
                         att.Type.FullName == TypeFullNames.FromRouteAttribute)) // FromRoute already has its own error
                 {
                     diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.AlbUnmappedParameter, methodLocation, parameter.Name));

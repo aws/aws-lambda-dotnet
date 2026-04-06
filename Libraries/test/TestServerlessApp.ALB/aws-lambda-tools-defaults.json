@@ -9,9 +9,9 @@
   "region": "us-west-2",
   "configuration": "Release",
   "framework": "net6.0",
-  "s3-bucket": "test-serverless-app-alb",
-  "stack-name": "test-serverless-app-alb",
+"s3-bucket" : "test-alb-app-dce31eae",
+"stack-name" : "test-alb-app-dce31eae",
   "template": "serverless.template",
   "template-parameters": "",
-  "function-architecture": "x86_64"
+"function-architecture" : "x86_64"
 }

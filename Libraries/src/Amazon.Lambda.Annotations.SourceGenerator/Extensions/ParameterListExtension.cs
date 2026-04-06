@@ -30,7 +30,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
                 }
 
                 // Body parameter with target type as string doesn't require conversion because body is string by nature.
-                if (p.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromBodyAttribute) && p.Type.IsString())
+                if (p.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromBodyAttribute || att.Type.FullName == TypeFullNames.ALBFromBodyAttribute) && p.Type.IsString())
                 {
                     return false;
                 }

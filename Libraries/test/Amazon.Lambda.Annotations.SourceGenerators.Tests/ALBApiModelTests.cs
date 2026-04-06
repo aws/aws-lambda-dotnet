@@ -1,5 +1,3 @@
-using Amazon.Lambda.Annotations.ALB;
-using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
@@ -51,7 +49,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         {
             // This tests the attribute builder by constructing an ALBApiAttribute directly
             // (since we can't easily mock Roslyn AttributeData in unit tests, we test the attribute itself)
-            var attr = new ALBApiAttribute("@MyListener", "/api/*", 5);
+            var attr = new Annotations.ALB.ALBApiAttribute("@MyListener", "/api/*", 5);
 
             Assert.Equal("@MyListener", attr.ListenerArn);
             Assert.Equal("/api/*", attr.PathPattern);
@@ -61,7 +59,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public void ALBApiAttributeBuilder_BuildsWithAllOptionalProperties()
         {
-            var attr = new ALBApiAttribute("arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/my-alb/abc/def", "/api/v1/*", 10)
+            var attr = new Annotations.ALB.ALBApiAttribute("arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/my-alb/abc/def", "/api/v1/*", 10)
             {
                 MultiValueHeaders = true,
                 HostHeader = "api.example.com",
@@ -180,9 +178,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Type = new TypeModel { FullName = "System.String" },
                     Attributes = new List<AttributeModel>
                     {
-                        new AttributeModel<FromQueryAttribute>
+                        new AttributeModel<Annotations.APIGateway.FromQueryAttribute>
                         {
-                            Data = new FromQueryAttribute(),
+                            Data = new Annotations.APIGateway.FromQueryAttribute(),
                             Type = new TypeModel { FullName = TypeFullNames.FromQueryAttribute }
                         }
                     }
@@ -220,9 +218,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
                     Type = new TypeModel { FullName = "string" },
                     Attributes = new List<AttributeModel>
                     {
-                        new AttributeModel<FromBodyAttribute>
+                        new AttributeModel<Annotations.APIGateway.FromBodyAttribute>
                         {
-                            Data = new FromBodyAttribute(),
+                            Data = new Annotations.APIGateway.FromBodyAttribute(),
                             Type = new TypeModel { FullName = TypeFullNames.FromBodyAttribute }
                         }
                     }
@@ -249,22 +247,22 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         [Fact]
         public void ALBFromQuery_ParameterName_DefaultsToParameterName()
         {
-            // When Name is not set, FromQueryAttribute should default to parameter name
-            var attr = new FromQueryAttribute();
+            // When Name is not set, ALB FromQueryAttribute should default to parameter name
+            var attr = new Annotations.ALB.FromQueryAttribute();
             Assert.Null(attr.Name);
         }
 
         [Fact]
         public void ALBFromQuery_ParameterName_UsesExplicitName()
         {
-            var attr = new FromQueryAttribute { Name = "custom_name" };
+            var attr = new Annotations.ALB.FromQueryAttribute { Name = "custom_name" };
             Assert.Equal("custom_name", attr.Name);
         }
 
         [Fact]
         public void ALBFromHeader_ParameterName_UsesExplicitName()
         {
-            var attr = new FromHeaderAttribute { Name = "X-Custom-Header" };
+            var attr = new Annotations.ALB.FromHeaderAttribute { Name = "X-Custom-Header" };
             Assert.Equal("X-Custom-Header", attr.Name);
         }
     }

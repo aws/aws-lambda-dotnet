@@ -170,7 +170,12 @@
     "ALBHello": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedAlbResources": [
+          "ALBHelloALBPermission",
+          "ALBHelloALBTargetGroup",
+          "ALBHelloALBListenerRule"
+        ]
       },
       "Properties": {
         "Runtime": "dotnet6",
@@ -251,7 +256,12 @@
     "ALBHealth": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations"
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedAlbResources": [
+          "ALBHealthALBPermission",
+          "ALBHealthALBTargetGroup",
+          "ALBHealthALBListenerRule"
+        ]
       },
       "Properties": {
         "Runtime": "dotnet6",
@@ -327,6 +337,184 @@
         "ListenerArn": {
           "Ref": "ALBTestListener"
         }
+      }
+    },
+    "ALBGreeting": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedAlbResources": [
+          "ALBGreetingALBPermission",
+          "ALBGreetingALBTargetGroup",
+          "ALBGreetingALBListenerRule"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 15,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_Greeting_Generated::Greeting"
+      }
+    },
+    "ALBGreetingALBPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ALBGreeting",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "elasticloadbalancing.amazonaws.com"
+      }
+    },
+    "ALBGreetingALBTargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "DependsOn": "ALBGreetingALBPermission",
+      "Properties": {
+        "TargetType": "lambda",
+        "Targets": [
+          {
+            "Id": {
+              "Fn::GetAtt": [
+                "ALBGreeting",
+                "Arn"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ALBGreetingALBListenerRule": {
+      "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "ListenerArn": {
+          "Ref": "ALBTestListener"
+        },
+        "Priority": 3,
+        "Conditions": [
+          {
+            "Field": "path-pattern",
+            "Values": [
+              "/greeting"
+            ]
+          }
+        ],
+        "Actions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "ALBGreetingALBTargetGroup"
+            }
+          }
+        ]
+      }
+    },
+    "ALBCreateItem": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedAlbResources": [
+          "ALBCreateItemALBPermission",
+          "ALBCreateItemALBTargetGroup",
+          "ALBCreateItemALBListenerRule"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 15,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "TestServerlessApp.ALB::TestServerlessApp.ALB.ALBFunctions_CreateItem_Generated::CreateItem"
+      }
+    },
+    "ALBCreateItemALBPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "ALBCreateItem",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "elasticloadbalancing.amazonaws.com"
+      }
+    },
+    "ALBCreateItemALBTargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "DependsOn": "ALBCreateItemALBPermission",
+      "Properties": {
+        "TargetType": "lambda",
+        "Targets": [
+          {
+            "Id": {
+              "Fn::GetAtt": [
+                "ALBCreateItem",
+                "Arn"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ALBCreateItemALBListenerRule": {
+      "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "ListenerArn": {
+          "Ref": "ALBTestListener"
+        },
+        "Priority": 4,
+        "Conditions": [
+          {
+            "Field": "path-pattern",
+            "Values": [
+              "/items"
+            ]
+          },
+          {
+            "Field": "http-request-method",
+            "Values": [
+              "POST"
+            ]
+          }
+        ],
+        "Actions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "ALBCreateItemALBTargetGroup"
+            }
+          }
+        ]
       }
     }
   },

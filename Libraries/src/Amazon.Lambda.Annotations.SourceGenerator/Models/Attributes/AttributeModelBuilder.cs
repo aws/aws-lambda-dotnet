@@ -31,7 +31,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.FromQueryAttribute), SymbolEqualityComparer.Default))
             {
                 var data = FromQueryAttributeBuilder.Build(att);
-                model = new AttributeModel<FromQueryAttribute>
+                model = new AttributeModel<APIGateway.FromQueryAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
@@ -40,7 +40,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.FromHeaderAttribute), SymbolEqualityComparer.Default))
             {
                 var data = FromHeaderAttributeBuilder.Build(att);
-                model = new AttributeModel<FromHeaderAttribute>
+                model = new AttributeModel<APIGateway.FromHeaderAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
@@ -113,6 +113,33 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             {
                 var data = ALBApiAttributeBuilder.Build(att);
                 model = new AttributeModel<ALBApiAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.ALBFromQueryAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = ALBFromQueryAttributeBuilder.Build(att);
+                model = new AttributeModel<ALB.FromQueryAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.ALBFromHeaderAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = ALBFromHeaderAttributeBuilder.Build(att);
+                model = new AttributeModel<ALB.FromHeaderAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.ALBFromBodyAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = new ALB.FromBodyAttribute();
+                model = new AttributeModel<ALB.FromBodyAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)
