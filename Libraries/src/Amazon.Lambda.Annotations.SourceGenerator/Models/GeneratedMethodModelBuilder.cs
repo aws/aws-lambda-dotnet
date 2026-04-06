@@ -291,6 +291,19 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 parameters.Add(requestParameter);
                 parameters.Add(contextParameter);
             }
+            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.ALBApiAttribute))
+            {
+                var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.ApplicationLoadBalancerRequest);
+                var type = TypeModelBuilder.Build(symbol, context);
+                var requestParameter = new ParameterModel
+                {
+                    Name = "__request__",
+                    Type = type,
+                    Documentation = "The ALB request object that will be processed by the Lambda function handler."
+                };
+                parameters.Add(requestParameter);
+                parameters.Add(contextParameter);
+            }
             else
             {
                 // Lambda method with no event attribute are plain lambda functions, therefore, generated method will have
