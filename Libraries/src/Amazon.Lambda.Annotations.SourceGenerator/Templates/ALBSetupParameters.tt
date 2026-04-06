@@ -1,0 +1,303 @@
+<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Extensions" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models" #>
+<#@ import namespace="Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes" #>
+<#
+        ParameterSignature = string.Join(", ", _model.LambdaMethod.Parameters
+            .Select(p =>
+            {
+                // Pass the same context parameter for ILambdaContext that comes from the generated method.
+                if (p.Type.FullName == TypeFullNames.ILambdaContext)
+                {
+                    return "__context__";
+                }
+
+                // Pass the same request parameter for ALB Request Type that comes from the generated method.
+                if (TypeFullNames.ALBRequests.Contains(p.Type.FullName))
+                {
+                    return "__request__";
+                }
+
+                return p.Name;
+            }));
+
+        var albApiAttribute = _model.LambdaMethod.Attributes.FirstOrDefault(att => att.Type.FullName == TypeFullNames.ALBApiAttribute) as AttributeModel<Amazon.Lambda.Annotations.ALB.ALBApiAttribute>;
+
+        // Determine whether multi-value headers are enabled
+        var useMultiValue = albApiAttribute?.Data?.IsMultiValueHeadersSet == true && albApiAttribute.Data.MultiValueHeaders;
+
+        if (_model.LambdaMethod.Parameters.HasConvertibleParameter())
+        {
+#>
+            var validationErrors = new List<string>();
+
+<#
+        }
+
+        foreach (var parameter in _model.LambdaMethod.Parameters)
+        {
+            if (parameter.Type.FullName == TypeFullNames.ILambdaContext || TypeFullNames.ALBRequests.Contains(parameter.Type.FullName))
+            {
+                // No action required for ILambdaContext and ALB RequestType, they are passed from the generated method parameter directly to the original method.
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromServiceAttribute))
+            {
+#>
+            var <#= parameter.Name #> = scope.ServiceProvider.GetRequiredService<<#= parameter.Type.FullName #>>();
+<#
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
+            {
+                var fromQueryAttribute = parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromQueryAttribute) as AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromQueryAttribute>;
+
+                // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                var parameterKey = fromQueryAttribute?.Data?.Name ?? parameter.Name;
+
+                var queryStringParameters = useMultiValue ? "MultiValueQueryStringParameters" : "QueryStringParameters";
+
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+<#
+
+                if (parameter.Type.IsEnumerable && parameter.Type.IsGenericType)
+                {
+                    if (useMultiValue)
+                    {
+                        // Multi-value mode: MultiValueQueryStringParameters is IDictionary<string, IList<string>>
+                        if (parameter.Type.TypeArguments.Count != 1)
+                        {
+                            throw new NotSupportedException("Only one type argument is supported for generic types.");
+                        }
+
+                        var typeArgument = parameter.Type.TypeArguments.First();
+#>
+            if (__request__.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
+            {
+                <#= parameter.Name #> = __request__.<#= queryStringParameters #>["<#= parameterKey #>"]
+                    .Select(q =>
+                    {
+                        try
+                        {
+                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullNameWithoutAnnotations #>));
+                        }
+                        catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                        {
+                            validationErrors.Add($"Value {q} at '<#= parameterKey #>' failed to satisfy constraint: {e.Message}");
+                            return default;
+                        }
+                    })
+                    .ToList();
+            }
+
+<#
+                    }
+                    else
+                    {
+                        // Single-value mode: QueryStringParameters is IDictionary<string, string>
+                        // Split by comma to support multiple values
+                        if (parameter.Type.TypeArguments.Count != 1)
+                        {
+                            throw new NotSupportedException("Only one type argument is supported for generic types.");
+                        }
+
+                        var typeArgument = parameter.Type.TypeArguments.First();
+#>
+            if (__request__.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
+            {
+                <#= parameter.Name #> = __request__.<#= queryStringParameters #>["<#= parameterKey #>"].Split(",")
+                    .Select(q =>
+                    {
+                        try
+                        {
+                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullNameWithoutAnnotations #>));
+                        }
+                        catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                        {
+                            validationErrors.Add($"Value {q} at '<#= parameterKey #>' failed to satisfy constraint: {e.Message}");
+                            return default;
+                        }
+                    })
+                    .ToList();
+            }
+
+<#
+                    }
+                }
+                else
+                {
+                    // Non-generic types are mapped directly to the target parameter.
+#>
+            if (__request__.<#= queryStringParameters #>?.ContainsKey("<#= parameterKey #>") == true)
+            {
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.<#= queryStringParameters #>["<#= parameterKey #>"], typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {__request__.<#= queryStringParameters #>["<#= parameterKey #>"]} at '<#= parameterKey #>' failed to satisfy constraint: {e.Message}");
+                }
+            }
+
+<#
+                }
+
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute))
+            {
+                var fromHeaderAttribute =
+                    parameter.Attributes.First(att => att.Type.FullName == TypeFullNames.FromHeaderAttribute) as
+                        AttributeModel<Amazon.Lambda.Annotations.APIGateway.FromHeaderAttribute>;
+
+                // Use parameter name as key, if Name has not specified explicitly in the attribute definition.
+                var headerKey = fromHeaderAttribute?.Data?.Name ?? parameter.Name;
+
+                var headers = useMultiValue ? "MultiValueHeaders" : "Headers";
+
+#>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+<#
+
+                if (parameter.Type.IsEnumerable && parameter.Type.IsGenericType)
+                {
+                    if (useMultiValue)
+                    {
+                        // Multi-value mode: MultiValueHeaders is IDictionary<string, IList<string>>
+                        if (parameter.Type.TypeArguments.Count != 1)
+                        {
+                            throw new NotSupportedException("Only one type argument is supported for generic types.");
+                        }
+
+                        var typeArgument = parameter.Type.TypeArguments.First();
+#>
+            if (__request__.<#= headers #>?.Any(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)) == true)
+            {
+                <#= parameter.Name #> = __request__.<#= headers #>.First(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)).Value
+                    .Select(q =>
+                    {
+                        try
+                        {
+                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullNameWithoutAnnotations #>));
+                        }
+                        catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                        {
+                            validationErrors.Add($"Value {q} at '<#= headerKey #>' failed to satisfy constraint: {e.Message}");
+                            return default;
+                        }
+                    })
+                    .ToList();
+            }
+
+<#
+                    }
+                    else
+                    {
+                        // Single-value mode: Headers is IDictionary<string, string>
+                        // Split by comma to support multiple values
+                        if (parameter.Type.TypeArguments.Count != 1)
+                        {
+                            throw new NotSupportedException("Only one type argument is supported for generic types.");
+                        }
+
+                        var typeArgument = parameter.Type.TypeArguments.First();
+#>
+            if (__request__.<#= headers #>?.Any(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)) == true)
+            {
+                <#= parameter.Name #> = __request__.<#= headers #>.First(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)).Value.Split(",")
+                    .Select(q =>
+                    {
+                        try
+                        {
+                            return (<#= typeArgument.FullName #>)Convert.ChangeType(q, typeof(<#= typeArgument.FullNameWithoutAnnotations #>));
+                        }
+                        catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                        {
+                            validationErrors.Add($"Value {q} at '<#= headerKey #>' failed to satisfy constraint: {e.Message}");
+                            return default;
+                        }
+                    })
+                    .ToList();
+            }
+
+<#
+                    }
+                }
+                else
+                {
+                    // Non-generic types are mapped directly to the target parameter.
+#>
+            if (__request__.<#= headers #>?.Any(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)) == true)
+            {
+                try
+                {
+                    <#= parameter.Name #> = (<#= parameter.Type.FullName #>)Convert.ChangeType(__request__.<#= headers #>.First(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)).Value, typeof(<#= parameter.Type.FullNameWithoutAnnotations #>));
+                }
+                catch (Exception e) when (e is InvalidCastException || e is FormatException || e is OverflowException || e is ArgumentException)
+                {
+                    validationErrors.Add($"Value {__request__.<#= headers #>.First(x => string.Equals(x.Key, "<#= headerKey #>", StringComparison.OrdinalIgnoreCase)).Value} at '<#= headerKey #>' failed to satisfy constraint: {e.Message}");
+                }
+            }
+
+<#
+                }
+            }
+            else if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromBodyAttribute))
+            {
+                // string parameter does not need to be de-serialized
+                if (parameter.Type.IsString())
+                {
+ #>
+            var <#= parameter.Name #> = __request__.Body;
+
+<#
+                }
+                else
+                {
+ #>
+            var <#= parameter.Name #> = default(<#= parameter.Type.FullName #>);
+            try
+            {
+                // convert string to stream
+                var byteArray = Encoding.UTF8.GetBytes(__request__.Body);
+                var stream = new MemoryStream(byteArray);
+                <#= parameter.Name #> = serializer.Deserialize<<#= parameter.Type.FullName #>>(stream);
+            }
+            catch (Exception e)
+            {
+                validationErrors.Add($"Value {__request__.Body} at 'body' failed to satisfy constraint: {e.Message}");
+            }
+
+<#
+                }
+            }
+            else
+            {
+                throw new NotSupportedException($"{parameter.Name} parameter of type {parameter.Type.FullName} passing is not supported for ALB functions. Use [FromHeader], [FromQuery], [FromBody], or [FromServices] attributes.");
+            }
+        }
+
+        if (_model.LambdaMethod.Parameters.HasConvertibleParameter())
+        {
+#>
+            // return 400 Bad Request if there exists a validation error
+            if (validationErrors.Any())
+            {
+                var errorResult = new Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerResponse
+                {
+                    Body = @$"{{""message"": ""{validationErrors.Count} validation error(s) detected: {string.Join(",", validationErrors)}""}}",
+                    Headers = new Dictionary<string, string>
+                    {
+                        {"Content-Type", "application/json"}
+                    },
+                    StatusCode = 400
+                };
+                return errorResult;
+            }
+
+<#
+        }
+#>
