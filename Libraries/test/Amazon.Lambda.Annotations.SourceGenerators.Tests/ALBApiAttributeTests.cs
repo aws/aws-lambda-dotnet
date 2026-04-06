@@ -399,5 +399,94 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             var errors = attr.Validate();
             Assert.Empty(errors);
         }
+
+        // ===== Query String Condition Tests =====
+
+        [Fact]
+        public void QueryStringConditions_DefaultValue_IsNull()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1);
+            Assert.Null(attr.QueryStringConditions);
+        }
+
+        [Fact]
+        public void QueryStringConditions_WithKeyValuePairs_ReturnsNoErrors()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1)
+            {
+                QueryStringConditions = new[] { "version=v1", "=*example*" }
+            };
+
+            var errors = attr.Validate();
+            Assert.Empty(errors);
+            Assert.Equal(2, attr.QueryStringConditions.Length);
+            Assert.Equal("version=v1", attr.QueryStringConditions[0]);
+            Assert.Equal("=*example*", attr.QueryStringConditions[1]);
+        }
+
+        [Fact]
+        public void QueryStringConditions_WithSingleEntry_ReturnsNoErrors()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1)
+            {
+                QueryStringConditions = new[] { "env=prod" }
+            };
+
+            var errors = attr.Validate();
+            Assert.Empty(errors);
+        }
+
+        // ===== Source IP Condition Tests =====
+
+        [Fact]
+        public void SourceIpConditions_DefaultValue_IsNull()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1);
+            Assert.Null(attr.SourceIpConditions);
+        }
+
+        [Fact]
+        public void SourceIpConditions_WithCidrBlocks_ReturnsNoErrors()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1)
+            {
+                SourceIpConditions = new[] { "192.0.2.0/24", "198.51.100.10/32" }
+            };
+
+            var errors = attr.Validate();
+            Assert.Empty(errors);
+            Assert.Equal(2, attr.SourceIpConditions.Length);
+        }
+
+        [Fact]
+        public void SourceIpConditions_WithIPv6_ReturnsNoErrors()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1)
+            {
+                SourceIpConditions = new[] { "2001:db8::/32" }
+            };
+
+            var errors = attr.Validate();
+            Assert.Empty(errors);
+        }
+
+        // ===== Combined Condition Tests =====
+
+        [Fact]
+        public void AllConditions_CanBeSetTogether_ReturnsNoErrors()
+        {
+            var attr = new ALBApiAttribute("@MyListener", "/api/*", 1)
+            {
+                HostHeader = "api.example.com",
+                HttpMethod = "POST",
+                HttpHeaderConditionName = "X-Environment",
+                HttpHeaderConditionValues = new[] { "dev" },
+                QueryStringConditions = new[] { "version=v1" },
+                SourceIpConditions = new[] { "10.0.0.0/8" }
+            };
+
+            var errors = attr.Validate();
+            Assert.Empty(errors);
+        }
     }
 }

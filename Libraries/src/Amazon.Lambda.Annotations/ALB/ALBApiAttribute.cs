@@ -82,6 +82,21 @@ namespace Amazon.Lambda.Annotations.ALB
         public string[] HttpHeaderConditionValues { get; set; }
 
         /// <summary>
+        /// Optional query string key/value pairs for a query-string listener rule condition.
+        /// Format: "key=value" pairs. Use "=value" (empty key) to match any key with that value.
+        /// Supports wildcards (* and ?).
+        /// Example: new[] { "version=v1", "=*example*" }
+        /// </summary>
+        public string[] QueryStringConditions { get; set; }
+
+        /// <summary>
+        /// Optional source IP CIDR blocks for a source-ip listener rule condition.
+        /// Example: new[] { "192.0.2.0/24", "198.51.100.10/32" }
+        /// Supports both IPv4 and IPv6 addresses in CIDR format.
+        /// </summary>
+        public string[] SourceIpConditions { get; set; }
+
+        /// <summary>
         /// The CloudFormation resource name prefix for the generated ALB resources
         /// (TargetGroup, ListenerRule, Permission). Defaults to "{LambdaResourceName}ALB".
         /// Must only contain alphanumeric characters.

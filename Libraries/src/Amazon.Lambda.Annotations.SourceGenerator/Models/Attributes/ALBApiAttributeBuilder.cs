@@ -49,6 +49,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
                 {
                     data.HttpHeaderConditionValues = pair.Value.Values.Select(v => v.Value as string).ToArray();
                 }
+                else if (pair.Key == nameof(data.QueryStringConditions) && !pair.Value.IsNull)
+                {
+                    data.QueryStringConditions = pair.Value.Values.Select(v => v.Value as string).ToArray();
+                }
+                else if (pair.Key == nameof(data.SourceIpConditions) && !pair.Value.IsNull)
+                {
+                    data.SourceIpConditions = pair.Value.Values.Select(v => v.Value as string).ToArray();
+                }
             }
 
             return data;

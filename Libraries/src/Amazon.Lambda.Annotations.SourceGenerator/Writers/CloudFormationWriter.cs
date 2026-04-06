@@ -733,6 +733,50 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         }
                     });
                 }
+                if (att.QueryStringConditions != null && att.QueryStringConditions.Length > 0)
+                {
+                    var keyValuePairs = new List<Dictionary<string, string>>();
+                    foreach (var entry in att.QueryStringConditions)
+                    {
+                        var separatorIndex = entry.IndexOf('=');
+                        if (separatorIndex >= 0)
+                        {
+                            var key = entry.Substring(0, separatorIndex);
+                            var value = entry.Substring(separatorIndex + 1);
+                            var kvp = new Dictionary<string, string>();
+                            if (!string.IsNullOrEmpty(key))
+                            {
+                                kvp["Key"] = key;
+                            }
+                            kvp["Value"] = value;
+                            keyValuePairs.Add(kvp);
+                        }
+                    }
+                    if (keyValuePairs.Any())
+                    {
+                        conditions.Add(new Dictionary<string, object>
+                        {
+                            { "Field", "query-string" },
+                            { "QueryStringConfig", new Dictionary<string, object>
+                                {
+                                    { "Values", keyValuePairs }
+                                }
+                            }
+                        });
+                    }
+                }
+                if (att.SourceIpConditions != null && att.SourceIpConditions.Length > 0)
+                {
+                    conditions.Add(new Dictionary<string, object>
+                    {
+                        { "Field", "source-ip" },
+                        { "SourceIpConfig", new Dictionary<string, object>
+                            {
+                                { "Values", att.SourceIpConditions.ToList() }
+                            }
+                        }
+                    });
+                }
                 _templateWriter.SetToken($"{rulePath}.Properties.Conditions", conditions, TokenType.List);
 
                 // Actions - forward to target group
