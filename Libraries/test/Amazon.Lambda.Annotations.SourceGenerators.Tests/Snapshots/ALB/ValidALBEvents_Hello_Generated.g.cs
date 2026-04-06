@@ -30,12 +30,13 @@ namespace TestServerlessApp.ALBEventExamples
         /// <summary>
         /// The generated Lambda function handler for <see cref="Hello(Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest, Amazon.Lambda.Core.ILambdaContext)"/>
         /// </summary>
-        /// <param name="__request__">The request object that will be processed by the Lambda function handler.</param>
+        /// <param name="__request__">The ALB request object that will be processed by the Lambda function handler.</param>
         /// <param name="__context__">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
         /// <returns>Result of the Lambda function execution</returns>
         public Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerResponse Hello(Amazon.Lambda.ApplicationLoadBalancerEvents.ApplicationLoadBalancerRequest __request__, Amazon.Lambda.Core.ILambdaContext __context__)
         {
-            return validALBEvents.Hello(__request__, __context__);
+            var response = validALBEvents.Hello(__request__, __context__);
+            return response;
         }
 
         private static void SetExecutionEnvironment()

@@ -1,5 +1,8 @@
 using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator;
+using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
+using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using System.Collections.Generic;
@@ -146,6 +149,123 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
             };
 
             Assert.False(model.ReturnsApplicationLoadBalancerResponse);
+        }
+
+        [Fact]
+        public void ParameterListExtension_ALBRequest_IsNotConvertible()
+        {
+            // ApplicationLoadBalancerRequest parameters should be treated as pass-through
+            var parameters = new List<ParameterModel>
+            {
+                new ParameterModel
+                {
+                    Name = "request",
+                    Type = new TypeModel { FullName = TypeFullNames.ApplicationLoadBalancerRequest },
+                    Attributes = new List<AttributeModel>()
+                }
+            };
+
+            Assert.False(parameters.HasConvertibleParameter());
+        }
+
+        [Fact]
+        public void ParameterListExtension_FromQuery_IsConvertible()
+        {
+            // A [FromQuery] string parameter should be convertible
+            var parameters = new List<ParameterModel>
+            {
+                new ParameterModel
+                {
+                    Name = "name",
+                    Type = new TypeModel { FullName = "System.String" },
+                    Attributes = new List<AttributeModel>
+                    {
+                        new AttributeModel<FromQueryAttribute>
+                        {
+                            Data = new FromQueryAttribute(),
+                            Type = new TypeModel { FullName = TypeFullNames.FromQueryAttribute }
+                        }
+                    }
+                }
+            };
+
+            Assert.True(parameters.HasConvertibleParameter());
+        }
+
+        [Fact]
+        public void ParameterListExtension_ILambdaContext_IsNotConvertible()
+        {
+            var parameters = new List<ParameterModel>
+            {
+                new ParameterModel
+                {
+                    Name = "context",
+                    Type = new TypeModel { FullName = TypeFullNames.ILambdaContext },
+                    Attributes = new List<AttributeModel>()
+                }
+            };
+
+            Assert.False(parameters.HasConvertibleParameter());
+        }
+
+        [Fact]
+        public void ParameterListExtension_FromBodyString_IsNotConvertible()
+        {
+            // A [FromBody] string parameter should NOT be convertible (string body is pass-through)
+            var parameters = new List<ParameterModel>
+            {
+                new ParameterModel
+                {
+                    Name = "body",
+                    Type = new TypeModel { FullName = "string" },
+                    Attributes = new List<AttributeModel>
+                    {
+                        new AttributeModel<FromBodyAttribute>
+                        {
+                            Data = new FromBodyAttribute(),
+                            Type = new TypeModel { FullName = TypeFullNames.FromBodyAttribute }
+                        }
+                    }
+                }
+            };
+
+            Assert.False(parameters.HasConvertibleParameter());
+        }
+
+        [Fact]
+        public void DiagnosticDescriptors_FromRouteNotSupportedOnAlb_Exists()
+        {
+            Assert.Equal("AWSLambda0134", DiagnosticDescriptors.FromRouteNotSupportedOnAlb.Id);
+            Assert.Equal(Microsoft.CodeAnalysis.DiagnosticSeverity.Error, DiagnosticDescriptors.FromRouteNotSupportedOnAlb.DefaultSeverity);
+        }
+
+        [Fact]
+        public void DiagnosticDescriptors_AlbUnmappedParameter_Exists()
+        {
+            Assert.Equal("AWSLambda0135", DiagnosticDescriptors.AlbUnmappedParameter.Id);
+            Assert.Equal(Microsoft.CodeAnalysis.DiagnosticSeverity.Error, DiagnosticDescriptors.AlbUnmappedParameter.DefaultSeverity);
+        }
+
+        [Fact]
+        public void ALBFromQuery_ParameterName_DefaultsToParameterName()
+        {
+            // When Name is not set, FromQueryAttribute should default to parameter name
+            var attr = new FromQueryAttribute();
+            Assert.Null(attr.Name);
+        }
+
+        [Fact]
+        public void ALBFromQuery_ParameterName_UsesExplicitName()
+        {
+            var attr = new FromQueryAttribute { Name = "custom_name" };
+            Assert.Equal("custom_name", attr.Name);
+        }
+
+        [Fact]
+        public void ALBFromHeader_ParameterName_UsesExplicitName()
+        {
+            var attr = new FromHeaderAttribute { Name = "X-Custom-Header" };
+            Assert.Equal("X-Custom-Header", attr.Name);
         }
     }
 }
