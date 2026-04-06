@@ -118,10 +118,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.AuthorizerResultOnNonAuthorizerFunction, methodLocation));
             }
 
-            // If the method does not contain any API or Authorizer events, then it cannot have
+            // If the method does not contain any API, Authorizer, or ALB events, then it cannot have
             // parameters that are annotated with HTTP API attributes.
             // Authorizer functions also support FromHeader, FromQuery, FromRoute attributes.
-            if (!isApiEvent && !isAuthorizerEvent)
+            // ALB functions also support FromHeader, FromQuery, FromBody attributes.
+            var isAlbEvent = lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.ALB);
+            if (!isApiEvent && !isAuthorizerEvent && !isAlbEvent)
             {
                 foreach (var parameter in lambdaFunctionModel.LambdaMethod.Parameters)
                 {
@@ -299,26 +301,64 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 validationErrors.ForEach(errorMessage => diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidAlbApiAttribute, methodLocation, errorMessage)));
             }
 
-            // Validate method parameters - When using ALBApiAttribute, the method signature must be
-            // (ApplicationLoadBalancerRequest request) or (ApplicationLoadBalancerRequest request, ILambdaContext context)
+            // Validate method parameters
             var parameters = lambdaFunctionModel.LambdaMethod.Parameters;
-            if (parameters.Count == 0 ||
-                parameters.Count > 2 ||
-                (parameters.Count == 1 && parameters[0].Type.FullName != TypeFullNames.ApplicationLoadBalancerRequest) ||
-                (parameters.Count == 2 && (parameters[0].Type.FullName != TypeFullNames.ApplicationLoadBalancerRequest || parameters[1].Type.FullName != TypeFullNames.ILambdaContext)))
+            foreach (var parameter in parameters)
             {
-                var errorMessage = $"When using the {nameof(ALBApiAttribute)}, the Lambda method can accept at most 2 parameters. " +
-                    $"The first parameter is required and must be of type {TypeFullNames.ApplicationLoadBalancerRequest}. " +
-                    $"The second parameter is optional and must be of type {TypeFullNames.ILambdaContext}.";
-                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
-            }
+                // [FromRoute] is not supported on ALB functions
+                if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromRouteAttribute))
+                {
+                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.FromRouteNotSupportedOnAlb, methodLocation));
+                }
 
-            // Validate method return type - When using ALBApiAttribute, the return type must be
-            // ApplicationLoadBalancerResponse or Task<ApplicationLoadBalancerResponse>
-            if (!lambdaFunctionModel.LambdaMethod.ReturnsApplicationLoadBalancerResponse)
-            {
-                var errorMessage = $"When using the {nameof(ALBApiAttribute)}, the Lambda method must return {TypeFullNames.ApplicationLoadBalancerResponse} or Task<{TypeFullNames.ApplicationLoadBalancerResponse}>";
-                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+                // Validate [FromQuery] parameter types - only primitive types allowed
+                if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
+                {
+                    if (!parameter.Type.IsPrimitiveType() && !parameter.Type.IsPrimitiveEnumerableType())
+                    {
+                        diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.UnsupportedMethodParameterType, methodLocation, parameter.Name, parameter.Type.FullName));
+                    }
+                }
+
+                // Validate attribute names for FromQuery and FromHeader
+                foreach (var att in parameter.Attributes)
+                {
+                    var parameterAttributeName = string.Empty;
+                    switch (att.Type.FullName)
+                    {
+                        case TypeFullNames.FromQueryAttribute:
+                            var fromQueryAttribute = (AttributeModel<APIGateway.FromQueryAttribute>)att;
+                            parameterAttributeName = fromQueryAttribute.Data.Name;
+                            break;
+
+                        case TypeFullNames.FromHeaderAttribute:
+                            var fromHeaderAttribute = (AttributeModel<APIGateway.FromHeaderAttribute>)att;
+                            parameterAttributeName = fromHeaderAttribute.Data.Name;
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    if (!string.IsNullOrEmpty(parameterAttributeName) && !_parameterAttributeNameRegex.IsMatch(parameterAttributeName))
+                    {
+                        diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidParameterAttributeName, methodLocation, parameterAttributeName, parameter.Name));
+                    }
+                }
+
+                // Validate that every parameter has a recognized binding
+                // Allowed: ILambdaContext, ApplicationLoadBalancerRequest, [FromServices], [FromQuery], [FromHeader], [FromBody]
+                if (parameter.Type.FullName != TypeFullNames.ILambdaContext &&
+                    !TypeFullNames.ALBRequests.Contains(parameter.Type.FullName) &&
+                    !parameter.Attributes.Any(att =>
+                        att.Type.FullName == TypeFullNames.FromServiceAttribute ||
+                        att.Type.FullName == TypeFullNames.FromQueryAttribute ||
+                        att.Type.FullName == TypeFullNames.FromHeaderAttribute ||
+                        att.Type.FullName == TypeFullNames.FromBodyAttribute ||
+                        att.Type.FullName == TypeFullNames.FromRouteAttribute)) // FromRoute already has its own error
+                {
+                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.AlbUnmappedParameter, methodLocation, parameter.Name));
+                }
             }
         }
 
