@@ -17,6 +17,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Extensions
                     return false;
                 }
 
+                // ALB request types are forwarded to lambda method if specified, there is no parameter conversion required.
+                if (TypeFullNames.ALBRequests.Contains(p.Type.FullName))
+                {
+                    return false;
+                }
+
                 // ILambdaContext is forwarded to lambda method if specified, there is no parameter conversion required.
                 if (p.Type.FullName == TypeFullNames.ILambdaContext)
                 {
