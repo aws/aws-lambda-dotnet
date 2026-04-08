@@ -1,3 +1,8 @@
+## Release 2026-04-08
+
+### Amazon.Lambda.Annotations (1.11.0)
+* Added [ALBApi] attribute for configuring Lambda functions as targets behind an Application Load Balancer
+
 ## Release 2026-03-27
 
 ### Amazon.Lambda.Annotations (1.10.0)
