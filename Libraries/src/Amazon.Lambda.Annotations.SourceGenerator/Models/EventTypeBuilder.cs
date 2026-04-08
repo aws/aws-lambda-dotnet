@@ -31,6 +31,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 {
                     events.Add(EventType.Authorizer);
                 }
+                else if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.ALBApiAttribute)
+                {
+                    events.Add(EventType.ALB);
+                }
             }
 
             return events;

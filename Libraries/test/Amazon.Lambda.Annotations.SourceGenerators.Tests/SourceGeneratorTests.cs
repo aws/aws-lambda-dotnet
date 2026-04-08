@@ -1340,6 +1340,55 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         }
 
         [Fact]
+        public async Task VerifyValidALBEvents()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "albEvents.template"));
+            var validALBEventsHelloGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ALB", "ValidALBEvents_Hello_Generated.g.cs"));
+            var validALBEventsHandleRequestGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ALB", "ValidALBEvents_HandleRequest_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "ALBEventExamples", "ValidALBEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ALBEventExamples", "ValidALBEvents.cs.txt"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "ALB", "ALBApiAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "ALB", "ALBApiAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidALBEvents_Hello_Generated.g.cs",
+                            SourceText.From(validALBEventsHelloGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidALBEvents_HandleRequest_Generated.g.cs",
+                            SourceText.From(validALBEventsHandleRequestGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidALBEvents_Hello_Generated.g.cs", validALBEventsHelloGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidALBEvents_HandleRequest_Generated.g.cs", validALBEventsHandleRequestGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent),
+
+                        new DiagnosticResult("AWSLambda0133", DiagnosticSeverity.Error)
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
         public async Task ExceededMaximumHandlerLength()
         {
             await new VerifyCS.Test
