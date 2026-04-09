@@ -66,6 +66,12 @@ this.Write(new FieldsAndConstructor(_model).TransformText());
         this.Write(apiParameters.TransformText());
         this.Write(new APIGatewayInvoke(_model, apiParameters.ParameterSignature).TransformText());
     }
+    else if (_model.LambdaMethod.Events.Contains(EventType.ALB))
+    {
+        var albParameters = new ALBSetupParameters(_model);
+        this.Write(albParameters.TransformText());
+        this.Write(new ALBInvoke(_model, albParameters.ParameterSignature).TransformText());
+    }
     else
     {
         this.Write(new NoEventMethodBody(_model).TransformText());

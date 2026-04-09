@@ -90,6 +90,31 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
         }
 
         /// <summary>
+        /// Returns true if the Lambda function returns either ApplicationLoadBalancerResponse or Task&lt;ApplicationLoadBalancerResponse&gt;
+        /// </summary>
+        public bool ReturnsApplicationLoadBalancerResponse
+        {
+            get
+            {
+                if (ReturnsVoid)
+                {
+                    return false;
+                }
+
+                if (ReturnType.FullName == TypeFullNames.ApplicationLoadBalancerResponse)
+                {
+                    return true;
+                }
+                if (ReturnsGenericTask && ReturnType.TypeArguments.Count == 1 && ReturnType.TypeArguments[0].FullName == TypeFullNames.ApplicationLoadBalancerResponse)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Returns true if the Lambda function returns either void, Task, SQSBatchResponse or Task<SQSBatchResponse>
         /// </summary>
         public bool ReturnsVoidTaskOrSqsBatchResponse
