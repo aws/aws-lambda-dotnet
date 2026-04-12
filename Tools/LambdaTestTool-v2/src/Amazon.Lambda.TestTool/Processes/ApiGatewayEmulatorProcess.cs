@@ -53,6 +53,7 @@ public class ApiGatewayEmulatorProcess
 
         builder.Services.AddApiGatewayEmulatorServices();
         builder.Services.AddSingleton<ILambdaClient, LambdaClient>();
+        builder.Services.AddHttpClient();
 
         string? serviceHttpUrl = null;
         string? serviceHttpsUrl = null;
@@ -83,7 +84,7 @@ public class ApiGatewayEmulatorProcess
             app.Logger.LogInformation("The API Gateway Emulator is available at: {ServiceUrl}", serviceHttpsUrl ?? serviceHttpUrl);
         });
 
-        app.Map("/{**catchAll}", async (HttpContext context, IApiGatewayRouteConfigService routeConfigService, ILambdaClient lambdaClient) =>
+        app.Map("/{**catchAll}", async (HttpContext context, IApiGatewayRouteConfigService routeConfigService, ILambdaClient lambdaClient, IHttpClientFactory httpClientFactory) =>
         {
             var routeConfig = routeConfigService.GetRouteConfig(context.Request.Method, context.Request.Path);
             if (routeConfig == null)
@@ -94,7 +95,35 @@ public class ApiGatewayEmulatorProcess
                 return;
             }
 
-            // Convert ASP.NET Core request to API Gateway event object
+            // HTTP integration: proxy request to the backend URL
+            if (string.Equals(routeConfig.IntegrationType, "Http", StringComparison.OrdinalIgnoreCase))
+            {
+                var endpoint = routeConfig.Endpoint ?? throw new InvalidOperationException($"HTTP route {routeConfig.LambdaResourceName} requires Endpoint.");
+                var targetUrl = $"{endpoint.TrimEnd('/')}{context.Request.Path}{context.Request.QueryString}";
+                var httpClient = httpClientFactory.CreateClient();
+                using var request = new HttpRequestMessage(new HttpMethod(context.Request.Method), targetUrl);
+                if (context.Request.ContentLength > 0 && (context.Request.Method == "POST" || context.Request.Method == "PUT" || context.Request.Method == "PATCH"))
+                {
+                    request.Content = new StreamContent(context.Request.Body);
+                    if (context.Request.ContentType != null)
+                        request.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(context.Request.ContentType);
+                }
+                foreach (var header in context.Request.Headers.Where(h => !string.Equals(h.Key, "Host", StringComparison.OrdinalIgnoreCase)))
+                {
+                    if (!request.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray()))
+                        request.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
+                }
+                var response = await httpClient.SendAsync(request, context.RequestAborted);
+                context.Response.StatusCode = (int)response.StatusCode;
+                foreach (var header in response.Headers)
+                    context.Response.Headers[header.Key] = string.Join(", ", header.Value);
+                if (response.Content.Headers.ContentType != null)
+                    context.Response.ContentType = response.Content.Headers.ContentType.ToString();
+                await response.Content.CopyToAsync(context.Response.Body, context.RequestAborted);
+                return;
+            }
+
+            // Convert ASP.NET Core request to API Gateway event object (Lambda integration)
             var lambdaRequestStream = new MemoryStream();
             if (settings.ApiGatewayEmulatorMode.Equals(ApiGatewayEmulatorMode.HttpV2))
             {

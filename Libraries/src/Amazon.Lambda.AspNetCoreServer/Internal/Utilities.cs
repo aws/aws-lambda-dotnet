@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
@@ -190,14 +190,21 @@ namespace Amazon.Lambda.AspNetCoreServer.Internal
             {
                 foreach (var kvp in multiValues)
                 {
-                    headers[kvp.Key] = new StringValues(kvp.Value.ToArray());
+                    var values = kvp.Value?.Where(v => v != null).ToArray() ?? Array.Empty<string>();
+                    if (values.Length > 0)
+                    {
+                        headers[kvp.Key] = new StringValues(values);
+                    }
                 }
             }
             else if (singleValues?.Count > 0)
             {
                 foreach (var kvp in singleValues)
                 {
-                    headers[kvp.Key] = new StringValues(kvp.Value);
+                    if (kvp.Value != null)
+                    {
+                        headers[kvp.Key] = new StringValues(kvp.Value);
+                    }
                 }
             }
         }

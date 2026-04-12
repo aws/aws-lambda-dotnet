@@ -27,4 +27,9 @@ public class ApiGatewayRouteConfig
     /// The API Gateway HTTP Path of the Lambda function
     /// </summary>
     public required string Path { get; set; }
+
+    /// <summary>
+    /// The integration type: "Lambda" (default) or "Http". When "Http", the request is proxied to the Endpoint URL instead of invoking a Lambda.
+    /// </summary>
+    public string? IntegrationType { get; set; }
 }
