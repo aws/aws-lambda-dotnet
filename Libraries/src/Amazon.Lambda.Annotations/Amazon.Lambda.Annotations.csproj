@@ -12,6 +12,7 @@
     <SignAssembly>true</SignAssembly>
     
     <Version>1.11.0</Version>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">

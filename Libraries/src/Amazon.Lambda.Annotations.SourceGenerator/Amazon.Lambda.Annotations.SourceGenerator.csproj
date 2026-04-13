@@ -21,6 +21,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     
     <Version>1.11.0</Version>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   
   <!-- Delay setting the package id till after resolving dependencies to avoid ambigious errors. -->
