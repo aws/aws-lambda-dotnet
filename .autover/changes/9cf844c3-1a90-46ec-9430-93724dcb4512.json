@@ -4,7 +4,7 @@
       "Name": "Amazon.Lambda.TestTool.BlazorTester",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Minor fixes and improvements"
+        "Minor fixes to improve the testability of the package"
       ]
     }
   ]

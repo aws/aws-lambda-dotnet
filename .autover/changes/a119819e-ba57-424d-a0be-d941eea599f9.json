@@ -4,7 +4,7 @@
       "Name": "Amazon.Lambda.RuntimeSupport",
       "Type": "Patch",
       "ChangelogMessages": [
-        "Minor fixes and improvements"
+        "Minor fixes to improve the testability of the package"
       ]
     }
   ]
