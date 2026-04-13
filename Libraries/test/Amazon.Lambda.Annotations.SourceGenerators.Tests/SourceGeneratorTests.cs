@@ -1606,6 +1606,107 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         }
 
         [Fact]
+        public async Task VerifyValidScheduleEvents()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "scheduleEvents.template"));
+            var validScheduleEventsProcessScheduledEventGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "Schedule", "ValidScheduleEvents_ProcessScheduledEvent_Generated.g.cs"));
+            var validScheduleEventsProcessScheduledEventAsyncGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "Schedule", "ValidScheduleEvents_ProcessScheduledEventAsync_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "ScheduleEventExamples", "ValidScheduleEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ScheduleEventExamples", "ValidScheduleEvents.cs.txt"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidScheduleEvents_ProcessScheduledEvent_Generated.g.cs",
+                            SourceText.From(validScheduleEventsProcessScheduledEventGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidScheduleEvents_ProcessScheduledEventAsync_Generated.g.cs",
+                            SourceText.From(validScheduleEventsProcessScheduledEventAsyncGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidScheduleEvents_ProcessScheduledEvent_Generated.g.cs", validScheduleEventsProcessScheduledEventGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidScheduleEvents_ProcessScheduledEventAsync_Generated.g.cs", validScheduleEventsProcessScheduledEventAsyncGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyInvalidScheduleEvents_ThrowsCompilationErrors()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "ScheduleEventExamples", "InvalidScheduleEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "ScheduleEventExamples", "InvalidScheduleEvents.cs.error"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "Schedule", "ScheduleEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        // ProcessMessageWithInvalidScheduleExpression: invalid schedule expression
+                        DiagnosticResult.CompilerError("AWSLambda0139")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 17, 9, 22, 10)
+                            .WithArguments("Schedule = every 5 minutes. It must start with 'rate(' or 'cron('"),
+
+                        // ProcessMessageWithInvalidParameters: too many parameters
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 24, 9, 29, 10)
+                            .WithArguments("When using the ScheduleEventAttribute, the Lambda method can accept at most 2 parameters. " +
+                            "The first parameter is required and must be of type Amazon.Lambda.CloudWatchEvents.ScheduledEvents.ScheduledEvent. " +
+                            "The second parameter is optional and must be of type Amazon.Lambda.Core.ILambdaContext."),
+
+                        // ProcessMessageWithInvalidReturnType: returns bool
+                        DiagnosticResult.CompilerError("AWSLambda0117")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 31, 9, 37, 10)
+                            .WithArguments("When using the ScheduleEventAttribute, the Lambda method can return either void or System.Threading.Tasks.Task"),
+
+                        // ProcessMessageWithMultipleEventTypes: multiple events
+                        DiagnosticResult
+                            .CompilerError("AWSLambda0102")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 39, 9, 45, 10)
+                            .WithMessage("Multiple event attributes on LambdaFunction are not supported"),
+
+                        // ProcessMessageWithInvalidResourceName: invalid characters
+                        DiagnosticResult.CompilerError("AWSLambda0139")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 47, 9, 52, 10)
+                            .WithArguments("ResourceName = invalid-name!. It must only contain alphanumeric characters and must not be an empty string"),
+
+                        // ProcessMessageWithEmptyResourceName: empty string
+                        DiagnosticResult.CompilerError("AWSLambda0139")
+                            .WithSpan($"TestServerlessApp{Path.DirectorySeparatorChar}ScheduleEventExamples{Path.DirectorySeparatorChar}InvalidScheduleEvents.cs", 54, 9, 59, 10)
+                            .WithArguments("ResourceName = . It must only contain alphanumeric characters and must not be an empty string"),
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
         public async Task ExceededMaximumHandlerLength()
         {
             await new VerifyCS.Test

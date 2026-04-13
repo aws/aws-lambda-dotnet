@@ -33,7 +33,7 @@ Read these files to understand existing patterns before creating new ones:
 
 Key patterns:
 - Add copyright header: `// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.` + `// SPDX-License-Identifier: Apache-2.0`
-- Inherit from `Attribute` with `[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]`
+- Inherit from `Attribute` with `[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]` (use `AllowMultiple = false` for event types where multiple triggers on the same function don't make sense, e.g., Schedule events)
 - Constructor takes the primary resource identifier as a required `string` parameter
 - All optional properties use nullable backing fields with `Is<PropertyName>Set` internal properties
 - Include auto-derived `ResourceName` property (strips `@` prefix or extracts name from ARN)
