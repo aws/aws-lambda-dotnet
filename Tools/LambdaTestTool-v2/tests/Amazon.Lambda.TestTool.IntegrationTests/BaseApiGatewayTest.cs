@@ -48,6 +48,7 @@ public abstract class BaseApiGatewayTest
             CancellationTokenSource.Dispose();
             CancellationTokenSource = new CancellationTokenSource();
         }
+        Environment.SetEnvironmentVariable("APIGATEWAY_EMULATOR_ROUTE_CONFIG", null);
     }
 
     protected async Task StartTestToolProcessAsync(ApiGatewayEmulatorMode apiGatewayMode, string routeName, int lambdaPort, int apiGatewayPort, CancellationTokenSource cancellationTokenSource, string httpMethod = "POST")

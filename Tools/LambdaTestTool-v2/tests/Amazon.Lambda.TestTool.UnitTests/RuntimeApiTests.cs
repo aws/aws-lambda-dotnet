@@ -39,6 +39,8 @@ public class RuntimeApiTests(ITestOutputHelper testOutputHelper)
         var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
         try
         {
+            Assert.True(await TestHelpers.WaitForApiToStartAsync($"{testToolProcess.ServiceUrl}/lambda-runtime-api/healthcheck"));
+
             var lambdaClient = ConstructLambdaServiceClient(testToolProcess.ServiceUrl);
             var invokeFunction = new InvokeRequest
             {
@@ -92,6 +94,8 @@ public class RuntimeApiTests(ITestOutputHelper testOutputHelper)
         var testToolProcess = TestToolProcess.Startup(options, cancellationTokenSource.Token);
         try
         {
+            Assert.True(await TestHelpers.WaitForApiToStartAsync($"{testToolProcess.ServiceUrl}/lambda-runtime-api/healthcheck"));
+
             var handler = (string input, ILambdaContext context) =>
             {
                 Thread.Sleep(1000); // Add a sleep to prove the LambdaRuntimeApi waited for the completion.
