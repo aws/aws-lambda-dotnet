@@ -21,4 +21,5 @@ AWSLambda0133 | AWSLambdaCSharpGenerator | Error | ALB Listener Reference Not Fo
 AWSLambda0134 | AWSLambdaCSharpGenerator | Error | FromRoute not supported on ALB functions
 AWSLambda0135 | AWSLambdaCSharpGenerator | Error | Unmapped parameter on ALB function
 AWSLambda0136 | AWSLambdaCSharpGenerator | Error | Invalid S3EventAttribute
+AWSLambda0137 | AWSLambdaCSharpGenerator | Error | Invalid DynamoDBEventAttribute
 AWSLambda0138 | AWSLambdaCSharpGenerator | Error | Invalid SNSEventAttribute

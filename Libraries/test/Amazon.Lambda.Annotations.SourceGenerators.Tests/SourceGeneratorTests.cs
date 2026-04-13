@@ -1392,6 +1392,53 @@ namespace Amazon.Lambda.Annotations.SourceGenerators.Tests
         }
 
         [Fact]
+        public async Task VerifyValidDynamoDBEvents()
+        {
+            var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "dynamoDBEvents.template"));
+            var validDynamoDBEventsProcessMessagesGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "DynamoDB", "ValidDynamoDBEvents_ProcessMessages_Generated.g.cs"));
+            var validDynamoDBEventsProcessMessagesAsyncGeneratedContent = await ReadSnapshotContent(Path.Combine("Snapshots", "DynamoDB", "ValidDynamoDBEvents_ProcessMessagesAsync_Generated.g.cs"));
+
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        (Path.Combine("TestServerlessApp", "PlaceholderClass.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "PlaceholderClass.cs"))),
+                        (Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "ValidDynamoDBEvents.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "DynamoDBEventExamples", "ValidDynamoDBEvents.cs.txt"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "LambdaFunctionAttribute.cs"))),
+                        (Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"), await File.ReadAllTextAsync(Path.Combine("Amazon.Lambda.Annotations", "DynamoDB", "DynamoDBEventAttribute.cs"))),
+                        (Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"), await File.ReadAllTextAsync(Path.Combine("TestServerlessApp", "AssemblyAttributes.cs"))),
+                    },
+                    GeneratedSources =
+                    {
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidDynamoDBEvents_ProcessMessages_Generated.g.cs",
+                            SourceText.From(validDynamoDBEventsProcessMessagesGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        ),
+                        (
+                            typeof(SourceGenerator.Generator),
+                            "ValidDynamoDBEvents_ProcessMessagesAsync_Generated.g.cs",
+                            SourceText.From(validDynamoDBEventsProcessMessagesAsyncGeneratedContent, Encoding.UTF8, SourceHashAlgorithm.Sha256)
+                        )
+                    },
+                    ExpectedDiagnostics =
+                    {
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidDynamoDBEvents_ProcessMessages_Generated.g.cs", validDynamoDBEventsProcessMessagesGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments("ValidDynamoDBEvents_ProcessMessagesAsync_Generated.g.cs", validDynamoDBEventsProcessMessagesAsyncGeneratedContent),
+
+                        new DiagnosticResult("AWSLambda0103", DiagnosticSeverity.Info)
+                        .WithArguments($"TestServerlessApp{Path.DirectorySeparatorChar}serverless.template", expectedTemplateContent)
+                    }
+                }
+            }.RunAsync();
+        }
+
+        [Fact]
         public async Task VerifyValidSNSEvents()
         {
             var expectedTemplateContent = await ReadSnapshotContent(Path.Combine("Snapshots", "ServerlessTemplates", "snsEvents.template"));

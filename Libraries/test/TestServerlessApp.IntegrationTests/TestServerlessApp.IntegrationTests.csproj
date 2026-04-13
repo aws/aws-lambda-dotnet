@@ -8,6 +8,7 @@
     <ItemGroup>
         <!-- AWSSDK.SecurityToken is needed at runtime for environments which uses assume-role operation for credentials -->
         <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.99" />
+        <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.513.1" />
         <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.1.99" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

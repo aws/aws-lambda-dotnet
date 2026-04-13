@@ -28,6 +28,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             { "SQSEventAttribute", "SQSEvent" },
             { "ALBApiAttribute", "ALBApi" },
             { "S3EventAttribute", "S3Event" },
+            { "DynamoDBEventAttribute", "DynamoDBEvent" },
             { "SNSEventAttribute", "SNSEvent" }
         };
 
