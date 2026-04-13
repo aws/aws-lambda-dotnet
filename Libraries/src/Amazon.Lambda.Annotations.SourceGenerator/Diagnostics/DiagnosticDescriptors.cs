@@ -281,5 +281,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidSnsEventAttribute = new DiagnosticDescriptor(id: "AWSLambda0138",
+            title: "Invalid SNSEventAttribute",
+            messageFormat: "Invalid SNSEventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

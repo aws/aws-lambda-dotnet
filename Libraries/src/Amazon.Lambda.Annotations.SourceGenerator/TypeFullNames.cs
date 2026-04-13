@@ -62,6 +62,9 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
         public const string S3Event = "Amazon.Lambda.S3Events.S3Event";
         public const string S3EventAttribute = "Amazon.Lambda.Annotations.S3.S3EventAttribute";
 
+        public const string SNSEvent = "Amazon.Lambda.SNSEvents.SNSEvent";
+        public const string SNSEventAttribute = "Amazon.Lambda.Annotations.SNS.SNSEventAttribute";
+
         public const string LambdaSerializerAttribute = "Amazon.Lambda.Core.LambdaSerializerAttribute";
         public const string DefaultLambdaSerializer = "Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer";
 
@@ -91,7 +94,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator
             FunctionUrlAttribute,
             SQSEventAttribute,
             ALBApiAttribute,
-            S3EventAttribute
+            S3EventAttribute,
+            SNSEventAttribute
         };
     }
 }

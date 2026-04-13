@@ -34,6 +34,7 @@ namespace TestServerlessApp.IntegrationTests
         public string RestApiUrlPrefix;
         public string HttpApiUrlPrefix;
         public string FunctionUrlPrefix;
+        public string TestTopicARN;
         public string TestQueueARN;
         public string TestS3BucketName;
         public List<LambdaFunction> LambdaFunctions;
@@ -85,6 +86,10 @@ namespace TestServerlessApp.IntegrationTests
             Assert.False(string.IsNullOrEmpty(queueUrl), $"CloudFormation resource 'TestQueue' was not found in stack '{_stackName}'.");
             TestQueueARN = ConvertSqsUrlToArn(queueUrl);
 
+            // Get the SNS test topic ARN (physical ID is the ARN for SNS topics)
+            TestTopicARN = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "TestTopic");
+            Console.WriteLine($"[IntegrationTest] TestTopic ARN: {TestTopicARN}");
+
             // Get the S3 bucket name from the physical resource ID
             TestS3BucketName = await _cloudFormationHelper.GetResourcePhysicalIdAsync(_stackName, "TestS3Bucket");
             Console.WriteLine($"[IntegrationTest] TestS3Bucket: {TestS3BucketName}");
@@ -94,7 +99,7 @@ namespace TestServerlessApp.IntegrationTests
             Console.WriteLine($"[IntegrationTest] Found {LambdaFunctions.Count} Lambda functions: {string.Join(", ", LambdaFunctions.Select(f => f.Name ?? "(null)"))}");
 
             Assert.True(await _s3Helper.BucketExistsAsync(_bucketName), $"S3 bucket {_bucketName} should exist");
-            Assert.Equal(38, LambdaFunctions.Count);
+            Assert.Equal(39, LambdaFunctions.Count);
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix), "RestApiUrlPrefix should not be empty");
             Assert.False(string.IsNullOrEmpty(HttpApiUrlPrefix), "HttpApiUrlPrefix should not be empty");
 

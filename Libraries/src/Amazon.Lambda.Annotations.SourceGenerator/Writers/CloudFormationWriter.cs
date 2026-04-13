@@ -6,6 +6,7 @@ using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
+using Amazon.Lambda.Annotations.SNS;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
 using Amazon.Lambda.Annotations.S3;
 using Amazon.Lambda.Annotations.SQS;
@@ -240,6 +241,10 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         ProcessFunctionUrlAttribute(lambdaFunction, functionUrlAttributeModel.Data);
                         _templateWriter.SetToken($"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedFunctionUrlConfig", true);
                         hasFunctionUrl = true;
+                        break;
+                    case AttributeModel<SNSEventAttribute> snsAttributeModel:
+                        eventName = ProcessSnsAttribute(lambdaFunction, snsAttributeModel.Data, currentSyncedEventProperties);
+                        currentSyncedEvents.Add(eventName);
                         break;
                 }
             }
@@ -668,6 +673,43 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             if (att.IsMaximumConcurrencySet)
             {
                 SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "ScalingConfig.MaximumConcurrency", att.MaximumConcurrency);
+            }
+
+            return att.ResourceName;
+        }
+
+        /// <summary>
+        /// Writes all properties associated with <see cref="SNSEventAttribute"/> to the serverless template.
+        /// </summary>
+        private string ProcessSnsAttribute(ILambdaFunctionSerializable lambdaFunction, SNSEventAttribute att, Dictionary<string, List<string>> syncedEventProperties)
+        {
+            var eventName = att.ResourceName;
+            var eventPath = $"Resources.{lambdaFunction.ResourceName}.Properties.Events.{eventName}";
+
+            _templateWriter.SetToken($"{eventPath}.Type", "SNS");
+
+            // Topic - SNS topics use Ref to get the ARN
+            _templateWriter.RemoveToken($"{eventPath}.Properties.Topic");
+            if (!att.Topic.StartsWith("@"))
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Topic", att.Topic);
+            }
+            else
+            {
+                var topic = att.Topic.Substring(1);
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, $"Topic.{REF}", topic);
+            }
+
+            // FilterPolicy
+            if (att.IsFilterPolicySet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "FilterPolicy", att.FilterPolicy);
+            }
+
+            // Enabled
+            if (att.IsEnabledSet)
+            {
+                SetEventProperty(syncedEventProperties, lambdaFunction.ResourceName, eventName, "Enabled", att.Enabled);
             }
 
             return att.ResourceName;
