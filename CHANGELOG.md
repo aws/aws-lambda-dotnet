@@ -1,3 +1,8 @@
+## Release 2026-04-13
+
+### Amazon.Lambda.Annotations (1.12.0)
+* Added [S3Event] annotation attribute for declaratively configuring S3 event-triggered Lambda functions with support for bucket reference, event types, key prefix/suffix filters, and enabled state.
+
 ## Release 2026-04-08
 
 ### Amazon.Lambda.Annotations (1.11.0)
