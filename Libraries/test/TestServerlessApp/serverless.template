@@ -1339,6 +1339,63 @@
           ]
         }
       }
+    },
+    "S3EventHandler": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestS3Bucket"
+        ],
+        "SyncedEventProperties": {
+          "TestS3Bucket": [
+            "Bucket.Ref",
+            "Events",
+            "Filter.S3Key.Rules"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole",
+          "AmazonS3ReadOnlyAccess"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.S3EventExamples.S3EventProcessing_ProcessS3Event_Generated::ProcessS3Event"
+          ]
+        },
+        "Events": {
+          "TestS3Bucket": {
+            "Type": "S3",
+            "Properties": {
+              "Events": [
+                "s3:ObjectCreated:*"
+              ],
+              "Filter": {
+                "S3Key": {
+                  "Rules": [
+                    {
+                      "Name": "suffix",
+                      "Value": ".json"
+                    }
+                  ]
+                }
+              },
+              "Bucket": {
+                "Ref": "TestS3Bucket"
+              }
+            }
+          }
+        }
+      }
+    },
+    "TestS3Bucket": {
+      "Type": "AWS::S3::Bucket"
     }
   }
 }

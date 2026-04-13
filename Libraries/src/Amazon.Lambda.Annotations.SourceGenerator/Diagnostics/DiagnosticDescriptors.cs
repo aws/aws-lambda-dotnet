@@ -274,5 +274,12 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Diagnostics
             category: "AWSLambdaCSharpGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InvalidS3EventAttribute = new DiagnosticDescriptor(id: "AWSLambda0136",
+            title: "Invalid S3EventAttribute",
+            messageFormat: "Invalid S3EventAttribute encountered: {0}",
+            category: "AWSLambdaCSharpGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }
