@@ -183,7 +183,7 @@ public class SQSEventSourceTests : BaseApiGatewayTest
             await sqsClient.SendMessageAsync(queueUrl2, "MessageFromQueue2");
 
             var startTime = DateTime.UtcNow;
-            while (listOfProcessedMessages.Count == 0 && DateTime.UtcNow < startTime.AddMinutes(2))
+            while (listOfProcessedMessages.Count < 2 && DateTime.UtcNow < startTime.AddMinutes(2))
             {
                 Assert.False(lambdaTask.IsFaulted, "Lambda function failed: " + lambdaTask.Exception?.ToString());
                 await Task.Delay(500);

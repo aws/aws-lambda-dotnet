@@ -20,7 +20,8 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     
-    <Version>1.11.0</Version>
+    <Version>1.12.0</Version>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   
   <!-- Delay setting the package id till after resolving dependencies to avoid ambigious errors. -->

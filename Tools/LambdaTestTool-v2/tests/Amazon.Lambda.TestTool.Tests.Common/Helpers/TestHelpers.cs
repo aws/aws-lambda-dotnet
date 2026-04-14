@@ -1,6 +1,9 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Net;
+using System.Net.Sockets;
+
 namespace Amazon.Lambda.TestTool.Tests.Common.Helpers;
 
 public static class TestHelpers
@@ -39,16 +42,22 @@ public static class TestHelpers
         }
     }
 
-    private static int _maxLambdaRuntimePort = 6000;
-    private static int _maxApiGatewayPort = 9000;
+    private static int GetFreePort()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
+    }
 
     public static int GetNextLambdaRuntimePort()
     {
-        return Interlocked.Increment(ref _maxLambdaRuntimePort);
+        return GetFreePort();
     }
 
     public static int GetNextApiGatewayPort()
     {
-        return Interlocked.Increment(ref _maxApiGatewayPort);
+        return GetFreePort();
     }
 }

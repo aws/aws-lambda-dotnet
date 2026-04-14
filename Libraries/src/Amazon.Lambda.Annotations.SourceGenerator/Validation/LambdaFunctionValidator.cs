@@ -1,4 +1,5 @@
 ﻿using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.Annotations.S3;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
@@ -61,6 +62,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             ValidateApiGatewayEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateSqsEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateAlbEvents(lambdaFunctionModel, methodLocation, diagnostics);
+            ValidateS3Events(lambdaFunctionModel, methodLocation, diagnostics);
 
             return ReportDiagnostics(diagnosticReporter, diagnostics);
         }
@@ -94,6 +96,16 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.ApplicationLoadBalancerEvents") == null)
                 {
                     diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies, methodLocation, "Amazon.Lambda.ApplicationLoadBalancerEvents"));
+                    return false;
+                }
+            }
+
+            // Check for references to "Amazon.Lambda.S3Events" if the Lambda method is annotated with S3Event attribute.
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.S3EventAttribute))
+            {
+                if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.S3Events") == null)
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies, methodLocation, "Amazon.Lambda.S3Events"));
                     return false;
                 }
             }
@@ -359,6 +371,52 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 {
                     diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.AlbUnmappedParameter, methodLocation, parameter.Name));
                 }
+            }
+        }
+
+        private static void ValidateS3Events(LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.S3))
+                return;
+
+            // Validate S3EventAttributes
+            var seenResourceNames = new HashSet<string>();
+            foreach (var att in lambdaFunctionModel.Attributes)
+            {
+                if (att.Type.FullName != TypeFullNames.S3EventAttribute)
+                    continue;
+
+                var s3EventAttribute = ((AttributeModel<S3EventAttribute>)att).Data;
+                var validationErrors = s3EventAttribute.Validate();
+                validationErrors.ForEach(errorMessage => diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidS3EventAttribute, methodLocation, errorMessage)));
+
+                // Check for duplicate resource names (only when ResourceName is safe to evaluate)
+                var derivedResourceName = s3EventAttribute.ResourceName;
+                if (!string.IsNullOrEmpty(derivedResourceName) && !seenResourceNames.Add(derivedResourceName))
+                {
+                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidS3EventAttribute, methodLocation,
+                        $"Duplicate S3 event resource name '{derivedResourceName}'. Each [S3Event] attribute on the same method must have a unique ResourceName."));
+                }
+            }
+
+            // Validate method parameters - first param must be S3Event, optional second param ILambdaContext
+            var parameters = lambdaFunctionModel.LambdaMethod.Parameters;
+            if (parameters.Count == 0 ||
+                parameters.Count > 2 ||
+                (parameters.Count == 1 && parameters[0].Type.FullName != TypeFullNames.S3Event) ||
+                (parameters.Count == 2 && (parameters[0].Type.FullName != TypeFullNames.S3Event || parameters[1].Type.FullName != TypeFullNames.ILambdaContext)))
+            {
+                var errorMessage = $"When using the {nameof(S3EventAttribute)}, the Lambda method can accept at most 2 parameters. " +
+                    $"The first parameter is required and must be of type {TypeFullNames.S3Event}. " +
+                    $"The second parameter is optional and must be of type {TypeFullNames.ILambdaContext}.";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+            }
+
+            // Validate method return type - must be void or Task
+            if (!lambdaFunctionModel.LambdaMethod.ReturnsVoid && !lambdaFunctionModel.LambdaMethod.ReturnsVoidTask)
+            {
+                var errorMessage = $"When using the {nameof(S3EventAttribute)}, the Lambda method can return either void or {TypeFullNames.Task}";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
             }
         }
 
