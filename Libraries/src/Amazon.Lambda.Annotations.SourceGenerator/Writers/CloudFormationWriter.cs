@@ -1,4 +1,7 @@
-﻿using Amazon.Lambda.Annotations.ALB;
+﻿// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Annotations.ALB;
 using Amazon.Lambda.Annotations.APIGateway;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.FileIO;
@@ -206,6 +209,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             var currentSyncedEvents = new List<string>();
             var currentSyncedEventProperties = new Dictionary<string, List<string>>();
             var currentAlbResources = new List<string>();
+            var hasFunctionUrl = false;
 
             foreach (var attributeModel in lambdaFunction.Attributes)
             {
@@ -232,6 +236,23 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
                         eventName = ProcessS3Attribute(lambdaFunction, s3AttributeModel.Data, currentSyncedEventProperties);
                         currentSyncedEvents.Add(eventName);
                         break;
+                    case AttributeModel<FunctionUrlAttribute> functionUrlAttributeModel:
+                        ProcessFunctionUrlAttribute(lambdaFunction, functionUrlAttributeModel.Data);
+                        _templateWriter.SetToken($"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedFunctionUrlConfig", true);
+                        hasFunctionUrl = true;
+                        break;
+                }
+            }
+
+            // Remove FunctionUrlConfig only if it was previously created by Annotations (tracked via metadata).
+            // This preserves any manually-added FunctionUrlConfig that was not created by the source generator.
+            if (!hasFunctionUrl)
+            {
+                var syncedFunctionUrlConfigPath = $"Resources.{lambdaFunction.ResourceName}.Metadata.SyncedFunctionUrlConfig";
+                if (_templateWriter.GetToken<bool>(syncedFunctionUrlConfigPath, false))
+                {
+                    _templateWriter.RemoveToken($"Resources.{lambdaFunction.ResourceName}.Properties.FunctionUrlConfig");
+                    _templateWriter.RemoveToken(syncedFunctionUrlConfigPath);
                 }
             }
 
@@ -300,6 +321,50 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Writers
             }
 
             return eventName;
+        }
+
+        /// <summary>
+        /// Writes the <see cref="FunctionUrlAttribute"/> configuration to the serverless template.
+        /// Unlike HttpApi/RestApi, Function URLs are configured as a property on the function resource
+        /// rather than as an event source.
+        /// </summary>
+        private void ProcessFunctionUrlAttribute(ILambdaFunctionSerializable lambdaFunction, FunctionUrlAttribute functionUrlAttribute)
+        {
+            var functionUrlConfigPath = $"Resources.{lambdaFunction.ResourceName}.Properties.FunctionUrlConfig";
+            _templateWriter.SetToken($"{functionUrlConfigPath}.AuthType", functionUrlAttribute.AuthType.ToString());
+
+            // Always remove the existing Cors block first to clear any stale properties
+            // from a previous generation pass, then re-emit only the currently configured values.
+            var corsPath = $"{functionUrlConfigPath}.Cors";
+            _templateWriter.RemoveToken(corsPath);
+
+            var hasCors = functionUrlAttribute.AllowOrigins != null
+                || functionUrlAttribute.AllowMethods != null
+                || functionUrlAttribute.AllowHeaders != null
+                || functionUrlAttribute.ExposeHeaders != null
+                || functionUrlAttribute.AllowCredentials
+                || functionUrlAttribute.MaxAge > 0;
+
+            if (hasCors)
+            {
+                if (functionUrlAttribute.AllowOrigins != null)
+                    _templateWriter.SetToken($"{corsPath}.AllowOrigins", new List<string>(functionUrlAttribute.AllowOrigins), TokenType.List);
+
+                if (functionUrlAttribute.AllowMethods != null)
+                    _templateWriter.SetToken($"{corsPath}.AllowMethods", functionUrlAttribute.AllowMethods.Select(m => m == LambdaHttpMethod.Any ? "*" : m.ToString().ToUpper()).ToList(), TokenType.List);
+
+                if (functionUrlAttribute.AllowHeaders != null)
+                    _templateWriter.SetToken($"{corsPath}.AllowHeaders", new List<string>(functionUrlAttribute.AllowHeaders), TokenType.List);
+
+                if (functionUrlAttribute.ExposeHeaders != null)
+                    _templateWriter.SetToken($"{corsPath}.ExposeHeaders", new List<string>(functionUrlAttribute.ExposeHeaders), TokenType.List);
+
+                if (functionUrlAttribute.AllowCredentials)
+                    _templateWriter.SetToken($"{corsPath}.AllowCredentials", true);
+
+                if (functionUrlAttribute.MaxAge > 0)
+                    _templateWriter.SetToken($"{corsPath}.MaxAge", functionUrlAttribute.MaxAge);
+            }
         }
 
         /// <summary>

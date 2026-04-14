@@ -20,6 +20,7 @@ Topics:
   - [Amazon S3 example](#amazon-s3-example)
   - [SQS Event Example](#sqs-event-example)
   - [Application Load Balancer (ALB) Example](#application-load-balancer-alb-example)
+  - [Lambda Function URL Example](#lambda-function-url-example)
   - [Custom Lambda Authorizer Example](#custom-lambda-authorizer-example)
     - [HTTP API Authorizer](#http-api-authorizer)
     - [REST API Authorizer](#rest-api-authorizer)
@@ -1073,6 +1074,110 @@ The `ALBApi` attribute requires an existing ALB listener. Here is a minimal exam
 
 Then your Lambda function references `@MyListener` in the `ALBApi` attribute.
 
+## Lambda Function URL Example
+
+[Lambda Function URLs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html) provide a dedicated HTTPS endpoint for your Lambda function without needing API Gateway or an Application Load Balancer. The `FunctionUrl` attribute configures the function to be invoked via a Function URL. Function URLs use the same payload format as HTTP API v2 (`APIGatewayHttpApiV2ProxyRequest`/`APIGatewayHttpApiV2ProxyResponse`).
+
+The `FunctionUrl` attribute contains the following properties:
+
+| Property | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `AuthType` | `FunctionUrlAuthType` | No | `NONE` | The authentication type: `NONE` (public) or `AWS_IAM` (IAM-authenticated). |
+| `AllowOrigins` | `string[]` | No | `null` | Allowed origins for CORS requests (e.g., `new[] { "https://example.com" }`). |
+| `AllowMethods` | `LambdaHttpMethod[]` | No | `null` | Allowed HTTP methods for CORS requests, using the `LambdaHttpMethod` enum (e.g., `new[] { LambdaHttpMethod.Get, LambdaHttpMethod.Post }`). |
+| `AllowHeaders` | `string[]` | No | `null` | Allowed headers for CORS requests. |
+| `ExposeHeaders` | `string[]` | No | `null` | Headers to expose in CORS responses. |
+| `AllowCredentials` | `bool` | No | `false` | Whether credentials are included in the CORS request. |
+| `MaxAge` | `int` | No | `0` | Maximum time in seconds that a browser can cache the CORS preflight response. `0` means not set. |
+
+### Basic Example
+
+A simple function with a public Function URL (no authentication):
+
+```csharp
+using Amazon.Lambda.Annotations;
+using Amazon.Lambda.Annotations.APIGateway;
+using Amazon.Lambda.Core;
+
+public class Functions
+{
+    [LambdaFunction(PackageType = LambdaPackageType.Image)]
+    [FunctionUrl(AuthType = FunctionUrlAuthType.NONE)]
+    public IHttpResult GetItems([FromQuery] string category, ILambdaContext context)
+    {
+        context.Logger.LogLine($"Getting items for category: {category}");
+        return HttpResults.Ok(new { items = new[] { "item1", "item2" }, category });
+    }
+}
+```
+
+### With IAM Authentication
+
+Use `FunctionUrlAuthType.AWS_IAM` to require IAM authentication for the Function URL:
+
+```csharp
+[LambdaFunction(PackageType = LambdaPackageType.Image)]
+[FunctionUrl(AuthType = FunctionUrlAuthType.AWS_IAM)]
+public IHttpResult SecureEndpoint(ILambdaContext context)
+{
+    return HttpResults.Ok(new { message = "This endpoint requires IAM auth" });
+}
+```
+
+### With CORS Configuration
+
+Configure CORS settings directly on the attribute. The `AllowMethods` property uses the type-safe `LambdaHttpMethod` enum, consistent with the `HttpApi` and `RestApi` attributes:
+
+```csharp
+[LambdaFunction(PackageType = LambdaPackageType.Image)]
+[FunctionUrl(
+    AuthType = FunctionUrlAuthType.NONE,
+    AllowOrigins = new[] { "https://example.com", "https://app.example.com" },
+    AllowMethods = new[] { LambdaHttpMethod.Get, LambdaHttpMethod.Post },
+    AllowHeaders = new[] { "Content-Type", "Authorization" },
+    AllowCredentials = true,
+    MaxAge = 3600)]
+public IHttpResult GetData([FromQuery] string id, ILambdaContext context)
+{
+    return HttpResults.Ok(new { id, data = "some data" });
+}
+```
+
+### Generated CloudFormation
+
+The source generator creates a `FunctionUrlConfig` property on the Lambda function resource (not a SAM event source). Here is an example with CORS:
+
+```json
+"GetDataFunction": {
+  "Type": "AWS::Serverless::Function",
+  "Metadata": {
+    "Tool": "Amazon.Lambda.Annotations",
+    "SyncedFunctionUrlConfig": true
+  },
+  "Properties": {
+    "PackageType": "Image",
+    "ImageUri": ".",
+    "ImageConfig": {
+      "Command": ["MyAssembly::MyNamespace.Functions_GetData_Generated::GetData"]
+    },
+    "MemorySize": 512,
+    "Timeout": 30,
+    "FunctionUrlConfig": {
+      "AuthType": "NONE",
+      "Cors": {
+        "AllowOrigins": ["https://example.com", "https://app.example.com"],
+        "AllowMethods": ["GET", "POST"],
+        "AllowHeaders": ["Content-Type", "Authorization"],
+        "AllowCredentials": true,
+        "MaxAge": 3600
+      }
+    }
+  }
+}
+```
+
+> **Note:** Unlike `HttpApi` and `RestApi` which create SAM event sources, `FunctionUrl` configures the `FunctionUrlConfig` property directly on the function resource. If the `FunctionUrl` attribute is removed from the code, the source generator will automatically clean up the `FunctionUrlConfig` from the CloudFormation template.
+
 ## Custom Lambda Authorizer Example
 
 Lambda Annotations supports defining custom Lambda authorizers using attributes. Custom authorizers let you control access to your API Gateway endpoints by running a Lambda function that validates tokens or request parameters before the target function is invoked. The source generator automatically wires up the authorizer resources and references in the CloudFormation template.
@@ -1422,6 +1527,8 @@ parameter to the `LambdaFunction` must be the event object and the event source 
     * Sets up event source mapping between the Lambda function and SQS queues. The SQS queue ARN is required to be set on the attribute. If users want to pass a reference to an existing SQS queue resource defined in their CloudFormation template, they can pass the SQS queue resource name prefixed with the '@' symbol.
 * ALBApi
     * Configures the Lambda function to be called from an Application Load Balancer. The listener ARN (or `@ResourceName` template reference), path pattern, and priority are required. The source generator creates standalone CloudFormation resources (TargetGroup, ListenerRule, Lambda Permission) rather than SAM event types.
+* FunctionUrl
+    * Configures the Lambda function to be invoked via a Lambda Function URL. Supports `AuthType` (`NONE` or `AWS_IAM`) and CORS configuration including `AllowMethods` (using the `LambdaHttpMethod` enum), `AllowOrigins`, `AllowHeaders`, `AllowCredentials`, and `MaxAge`. The source generator writes a `FunctionUrlConfig` property on the function resource rather than a SAM event source.
 
 ### Parameter Attributes
 

@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System;
 using Amazon.Lambda.Annotations.ALB;
 using Amazon.Lambda.Annotations.APIGateway;
@@ -96,6 +99,15 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes
             {
                 var data = S3EventAttributeBuilder.Build(att);
                 model = new AttributeModel<S3EventAttribute>
+                {
+                    Data = data,
+                    Type = TypeModelBuilder.Build(att.AttributeClass, context)
+                };
+            }
+            else if (att.AttributeClass.Equals(context.Compilation.GetTypeByMetadataName(TypeFullNames.FunctionUrlAttribute), SymbolEqualityComparer.Default))
+            {
+                var data = FunctionUrlAttributeBuilder.Build(att);
+                model = new AttributeModel<FunctionUrlAttribute>
                 {
                     Data = data,
                     Type = TypeModelBuilder.Build(att.AttributeClass, context)

@@ -1,11 +1,8 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Transform": "AWS::Serverless-2016-10-31",
-  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.12.0.0).",
+  "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.13.0.0).",
   "Resources": {
-    "TestQueue": {
-      "Type": "AWS::SQS::Queue"
-    },
     "AnnotationsHttpApi": {
       "Type": "AWS::Serverless::HttpApi",
       "Metadata": {
@@ -801,6 +798,30 @@
         }
       }
     },
+    "TestServerlessAppFunctionUrlExampleGetItemsGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedFunctionUrlConfig": true
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.FunctionUrlExample_GetItems_Generated::GetItems"
+          ]
+        },
+        "FunctionUrlConfig": {
+          "AuthType": "NONE"
+        }
+      }
+    },
     "GreeterSayHello": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
@@ -985,6 +1006,60 @@
               "Method": "GET",
               "ApiId": {
                 "Ref": "AnnotationsHttpApi"
+              }
+            }
+          }
+        }
+      }
+    },
+    "S3EventHandler": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "TestS3Bucket"
+        ],
+        "SyncedEventProperties": {
+          "TestS3Bucket": [
+            "Bucket.Ref",
+            "Events",
+            "Filter.S3Key.Rules"
+          ]
+        }
+      },
+      "Properties": {
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole",
+          "AmazonS3ReadOnlyAccess"
+        ],
+        "PackageType": "Image",
+        "ImageUri": ".",
+        "ImageConfig": {
+          "Command": [
+            "TestServerlessApp::TestServerlessApp.S3EventExamples.S3EventProcessing_ProcessS3Event_Generated::ProcessS3Event"
+          ]
+        },
+        "Events": {
+          "TestS3Bucket": {
+            "Type": "S3",
+            "Properties": {
+              "Events": [
+                "s3:ObjectCreated:*"
+              ],
+              "Filter": {
+                "S3Key": {
+                  "Rules": [
+                    {
+                      "Name": "suffix",
+                      "Value": ".json"
+                    }
+                  ]
+                }
+              },
+              "Bucket": {
+                "Ref": "TestS3Bucket"
               }
             }
           }
@@ -1339,63 +1414,6 @@
           ]
         }
       }
-    },
-    "S3EventHandler": {
-      "Type": "AWS::Serverless::Function",
-      "Metadata": {
-        "Tool": "Amazon.Lambda.Annotations",
-        "SyncedEvents": [
-          "TestS3Bucket"
-        ],
-        "SyncedEventProperties": {
-          "TestS3Bucket": [
-            "Bucket.Ref",
-            "Events",
-            "Filter.S3Key.Rules"
-          ]
-        }
-      },
-      "Properties": {
-        "MemorySize": 512,
-        "Timeout": 30,
-        "Policies": [
-          "AWSLambdaBasicExecutionRole",
-          "AmazonS3ReadOnlyAccess"
-        ],
-        "PackageType": "Image",
-        "ImageUri": ".",
-        "ImageConfig": {
-          "Command": [
-            "TestServerlessApp::TestServerlessApp.S3EventExamples.S3EventProcessing_ProcessS3Event_Generated::ProcessS3Event"
-          ]
-        },
-        "Events": {
-          "TestS3Bucket": {
-            "Type": "S3",
-            "Properties": {
-              "Events": [
-                "s3:ObjectCreated:*"
-              ],
-              "Filter": {
-                "S3Key": {
-                  "Rules": [
-                    {
-                      "Name": "suffix",
-                      "Value": ".json"
-                    }
-                  ]
-                }
-              },
-              "Bucket": {
-                "Ref": "TestS3Bucket"
-              }
-            }
-          }
-        }
-      }
-    },
-    "TestS3Bucket": {
-      "Type": "AWS::S3::Bucket"
     }
   }
 }

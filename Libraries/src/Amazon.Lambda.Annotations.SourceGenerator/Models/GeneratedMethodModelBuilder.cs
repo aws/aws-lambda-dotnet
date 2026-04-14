@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -142,6 +145,14 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                 var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
                     task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.ApplicationLoadBalancerResponse)):
                     context.Compilation.GetTypeByMetadataName(TypeFullNames.ApplicationLoadBalancerResponse);
+                return TypeModelBuilder.Build(symbol, context);
+            }
+            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.FunctionUrlAttribute))
+            {
+                // Function URLs use the same payload format as HTTP API v2
+                var symbol = lambdaMethodModel.ReturnsVoidOrGenericTask ?
+                    task.Construct(context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse)):
+                    context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyResponse);
                 return TypeModelBuilder.Build(symbol, context);
             }
             else
@@ -300,6 +311,20 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
                     Name = "__request__",
                     Type = type,
                     Documentation = "The ALB request object that will be processed by the Lambda function handler."
+                };
+                parameters.Add(requestParameter);
+                parameters.Add(contextParameter);
+            }
+            else if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.FunctionUrlAttribute))
+            {
+                // Function URLs use the same payload format as HTTP API v2
+                var symbol = context.Compilation.GetTypeByMetadataName(TypeFullNames.APIGatewayHttpApiV2ProxyRequest);
+                var type = TypeModelBuilder.Build(symbol, context);
+                var requestParameter = new ParameterModel
+                {
+                    Name = "__request__",
+                    Type = type,
+                    Documentation = "The Function URL request object that will be processed by the Lambda function handler."
                 };
                 parameters.Add(requestParameter);
                 parameters.Add(contextParameter);
