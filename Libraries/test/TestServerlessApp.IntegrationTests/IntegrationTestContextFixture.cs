@@ -94,7 +94,7 @@ namespace TestServerlessApp.IntegrationTests
             Console.WriteLine($"[IntegrationTest] Found {LambdaFunctions.Count} Lambda functions: {string.Join(", ", LambdaFunctions.Select(f => f.Name ?? "(null)"))}");
 
             Assert.True(await _s3Helper.BucketExistsAsync(_bucketName), $"S3 bucket {_bucketName} should exist");
-            Assert.Equal(37, LambdaFunctions.Count);
+            Assert.Equal(38, LambdaFunctions.Count);
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix), "RestApiUrlPrefix should not be empty");
             Assert.False(string.IsNullOrEmpty(HttpApiUrlPrefix), "HttpApiUrlPrefix should not be empty");
 
