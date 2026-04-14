@@ -1,4 +1,7 @@
-﻿using Amazon.Lambda.Annotations.ALB;
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Annotations.ALB;
 using Amazon.Lambda.Annotations.S3;
 using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
@@ -71,6 +74,7 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
         {
             // Check for references to "Amazon.Lambda.APIGatewayEvents" if the Lambda method is annotated with RestApi, HttpApi, or authorizer attributes.
             if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute) || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute)
+                || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.FunctionUrlAttribute)
                 || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAuthorizerAttribute) || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAuthorizerAttribute))
             {
                 if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.APIGatewayEvents") == null)

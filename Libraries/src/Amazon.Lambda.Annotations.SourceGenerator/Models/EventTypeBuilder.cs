@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +21,8 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Models
             foreach (var attribute in lambdaMethodSymbol.GetAttributes())
             {
                 if (attribute.AttributeClass.ToDisplayString() == TypeFullNames.RestApiAttribute
-                    || attribute.AttributeClass.ToDisplayString() == TypeFullNames.HttpApiAttribute)
+                    || attribute.AttributeClass.ToDisplayString() == TypeFullNames.HttpApiAttribute
+                    || attribute.AttributeClass.ToDisplayString() == TypeFullNames.FunctionUrlAttribute)
                 {
                     events.Add(EventType.API);
                 }

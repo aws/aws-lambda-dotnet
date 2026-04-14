@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,6 +33,7 @@ namespace TestServerlessApp.IntegrationTests
 
         public string RestApiUrlPrefix;
         public string HttpApiUrlPrefix;
+        public string FunctionUrlPrefix;
         public string TestQueueARN;
         public string TestS3BucketName;
         public List<LambdaFunction> LambdaFunctions;
@@ -90,11 +94,21 @@ namespace TestServerlessApp.IntegrationTests
             Console.WriteLine($"[IntegrationTest] Found {LambdaFunctions.Count} Lambda functions: {string.Join(", ", LambdaFunctions.Select(f => f.Name ?? "(null)"))}");
 
             Assert.True(await _s3Helper.BucketExistsAsync(_bucketName), $"S3 bucket {_bucketName} should exist");
-            Assert.Equal(37, LambdaFunctions.Count);
+            Assert.Equal(38, LambdaFunctions.Count);
             Assert.False(string.IsNullOrEmpty(RestApiUrlPrefix), "RestApiUrlPrefix should not be empty");
             Assert.False(string.IsNullOrEmpty(HttpApiUrlPrefix), "HttpApiUrlPrefix should not be empty");
 
             await LambdaHelper.WaitTillNotPending(LambdaFunctions.Where(x => x.Name != null).Select(x => x.Name).ToList());
+
+            // Discover the Function URL for the FunctionUrlExample function
+            var functionUrlLambdaName = LambdaFunctions
+                .FirstOrDefault(x => string.Equals(x.LogicalId, "TestServerlessAppFunctionUrlExampleGetItemsGenerated"))?.Name;
+            if (!string.IsNullOrEmpty(functionUrlLambdaName))
+            {
+                var functionUrlConfig = await LambdaHelper.GetFunctionUrlConfigAsync(functionUrlLambdaName);
+                FunctionUrlPrefix = functionUrlConfig.FunctionUrl.TrimEnd('/');
+                Console.WriteLine($"[IntegrationTest] FunctionUrlPrefix: {FunctionUrlPrefix}");
+            }
 
             // Wait an additional 10 seconds for any other eventually consistency state to finish up.
             await Task.Delay(10000);
