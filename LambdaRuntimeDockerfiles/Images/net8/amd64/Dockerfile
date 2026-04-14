@@ -1,7 +1,7 @@
 # Based on Docker image from: https://github.com/dotnet/dotnet-docker/
 
-ARG ASPNET_VERSION=8.0.24
-ARG ASPNET_SHA512=9a5cb25990649fc1c75675e94e2e4699dfc5979a99a2eec36babb240ca5278f1ac2552ecfec16834449ac3d5482a0fd303ac4ba53ca4749fabfb2b0194ba4635
+ARG ASPNET_VERSION=8.0.25
+ARG ASPNET_SHA512=ddb66ac366252ab382271241b3e53a75201d2c848c9ec870a27fb178a6db18e4d949b9896a3d8530d03d255f4fd51d635367bedda3d9f3c677cb596784dbcb9c
 
 ARG LAMBDA_RUNTIME_NAME=dotnet8
 ARG AMAZON_LINUX=public.ecr.aws/lambda/provided:al2023
@@ -35,7 +35,7 @@ COPY ["Libraries/src/Amazon.Lambda.Core", "Repo/Libraries/src/Amazon.Lambda.Core
 COPY ["Libraries/src/SnapshotRestore.Registry", "Repo/Libraries/src/SnapshotRestore.Registry/"]
 COPY ["buildtools/", "Repo/buildtools/"]
 RUN dotnet restore "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Amazon.Lambda.RuntimeSupport.csproj" /p:TargetFrameworks=net8.0
-WORKDIR "Repo/Libraries/src/Amazon.Lambda.RuntimeSupport"
+WORKDIR /src/Repo/Libraries/src/Amazon.Lambda.RuntimeSupport
 RUN dotnet build "Amazon.Lambda.RuntimeSupport.csproj" /p:ExecutableOutputType=true /p:GenerateDocumentationFile=false /p:TargetFrameworks=net8.0 --runtime linux-x64 -c Release -o /app/build
 
 

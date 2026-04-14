@@ -20,7 +20,8 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     
-    <Version>1.9.0</Version>
+    <Version>1.13.0</Version>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   
   <!-- Delay setting the package id till after resolving dependencies to avoid ambigious errors. -->
@@ -98,6 +99,14 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ExecutableAssembly.cs</LastGenOutput>
     </None>
+    <None Update="Templates\AuthorizerSetupParameters.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>AuthorizerSetupParameters.cs</LastGenOutput>
+    </None>
+    <None Update="Templates\AuthorizerInvoke.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>AuthorizerInvoke.cs</LastGenOutput>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -130,6 +139,16 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>ExecutableAssembly.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Templates\AuthorizerSetupParameters.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AuthorizerSetupParameters.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Templates\AuthorizerInvoke.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AuthorizerInvoke.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 

@@ -1,4 +1,9 @@
-﻿using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+using Amazon.Lambda.Annotations.ALB;
+using Amazon.Lambda.Annotations.S3;
+using Amazon.Lambda.Annotations.SourceGenerator.Diagnostics;
 using Amazon.Lambda.Annotations.SourceGenerator.Extensions;
 using Amazon.Lambda.Annotations.SourceGenerator.Models;
 using Amazon.Lambda.Annotations.SourceGenerator.Models.Attributes;
@@ -59,14 +64,18 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             // Validate Events
             ValidateApiGatewayEvents(lambdaFunctionModel, methodLocation, diagnostics);
             ValidateSqsEvents(lambdaFunctionModel, methodLocation, diagnostics);
+            ValidateAlbEvents(lambdaFunctionModel, methodLocation, diagnostics);
+            ValidateS3Events(lambdaFunctionModel, methodLocation, diagnostics);
 
             return ReportDiagnostics(diagnosticReporter, diagnostics);
         }
 
         internal static bool ValidateDependencies(GeneratorExecutionContext context, IMethodSymbol lambdaMethodSymbol, Location methodLocation, DiagnosticReporter diagnosticReporter)
         {
-            // Check for references to "Amazon.Lambda.APIGatewayEvents" if the Lambda method is annotated with RestApi or HttpApi attributes.
-            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute) || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute))
+            // Check for references to "Amazon.Lambda.APIGatewayEvents" if the Lambda method is annotated with RestApi, HttpApi, or authorizer attributes.
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAttribute) || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAttribute)
+                || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.FunctionUrlAttribute)
+                || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.HttpApiAuthorizerAttribute) || lambdaMethodSymbol.HasAttribute(context, TypeFullNames.RestApiAuthorizerAttribute))
             {
                 if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.APIGatewayEvents") == null)
                 {
@@ -85,19 +94,53 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                 }
             }
 
+            // Check for references to "Amazon.Lambda.ApplicationLoadBalancerEvents" if the Lambda method is annotated with ALBApi attribute.
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.ALBApiAttribute))
+            {
+                if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.ApplicationLoadBalancerEvents") == null)
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies, methodLocation, "Amazon.Lambda.ApplicationLoadBalancerEvents"));
+                    return false;
+                }
+            }
+
+            // Check for references to "Amazon.Lambda.S3Events" if the Lambda method is annotated with S3Event attribute.
+            if (lambdaMethodSymbol.HasAttribute(context, TypeFullNames.S3EventAttribute))
+            {
+                if (context.Compilation.ReferencedAssemblyNames.FirstOrDefault(x => x.Name == "Amazon.Lambda.S3Events") == null)
+                {
+                    diagnosticReporter.Report(Diagnostic.Create(DiagnosticDescriptors.MissingDependencies, methodLocation, "Amazon.Lambda.S3Events"));
+                    return false;
+                }
+            }
+
             return true;
         }
 
         private static void ValidateApiGatewayEvents(LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
         {
-            // If the method does not contain any APIGatewayEvents, then it cannot return IHttpResults and can also not have parameters that are annotated with HTTP API attributes
-            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.API))
-            {
-                if (lambdaFunctionModel.LambdaMethod.ReturnsIHttpResults)
-                {
-                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.HttpResultsOnNonApiFunction, methodLocation));
-                }
+            var isApiEvent = lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.API);
+            var isAuthorizerEvent = lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.Authorizer);
 
+            // IHttpResult is only valid for API Gateway events (not Authorizer events)
+            if (!isApiEvent && lambdaFunctionModel.LambdaMethod.ReturnsIHttpResults)
+            {
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.HttpResultsOnNonApiFunction, methodLocation));
+            }
+
+            // IAuthorizerResult is only valid for Authorizer events
+            if (!isAuthorizerEvent && lambdaFunctionModel.LambdaMethod.ReturnsIAuthorizerResult)
+            {
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.AuthorizerResultOnNonAuthorizerFunction, methodLocation));
+            }
+
+            // If the method does not contain any API, Authorizer, or ALB events, then it cannot have
+            // parameters that are annotated with HTTP API attributes.
+            // Authorizer functions also support FromHeader, FromQuery, FromRoute attributes.
+            // ALB functions also support FromHeader, FromQuery, FromBody attributes.
+            var isAlbEvent = lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.ALB);
+            if (!isApiEvent && !isAuthorizerEvent && !isAlbEvent)
+            {
                 foreach (var parameter in lambdaFunctionModel.LambdaMethod.Parameters)
                 {
                     if (parameter.Attributes.Any(att =>
@@ -107,6 +150,61 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
                         att.Type.FullName == TypeFullNames.FromQueryAttribute))
                     {
                         diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.ApiParametersOnNonApiFunction, methodLocation));
+                    }
+                }
+
+                return;
+            }
+
+            // Authorizer-specific parameter validation
+            if (isAuthorizerEvent)
+            {
+                foreach (var parameter in lambdaFunctionModel.LambdaMethod.Parameters)
+                {
+                    // [FromBody] is not supported on authorizer functions
+                    if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromBodyAttribute))
+                    {
+                        diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.FromBodyNotSupportedOnAuthorizer, methodLocation));
+                    }
+
+                    // Validate [FromQuery] parameter types - only primitive types allowed
+                    if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromQueryAttribute))
+                    {
+                        if (!parameter.Type.IsPrimitiveType() && !parameter.Type.IsPrimitiveEnumerableType())
+                        {
+                            diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.UnsupportedMethodParameterType, methodLocation, parameter.Name, parameter.Type.FullName));
+                        }
+                    }
+
+                    // Validate attribute names for FromQuery, FromRoute, and FromHeader
+                    foreach (var att in parameter.Attributes)
+                    {
+                        var parameterAttributeName = string.Empty;
+                        switch (att.Type.FullName)
+                        {
+                            case TypeFullNames.FromQueryAttribute:
+                                var fromQueryAttribute = (AttributeModel<APIGateway.FromQueryAttribute>)att;
+                                parameterAttributeName = fromQueryAttribute.Data.Name;
+                                break;
+
+                            case TypeFullNames.FromRouteAttribute:
+                                var fromRouteAttribute = (AttributeModel<APIGateway.FromRouteAttribute>)att;
+                                parameterAttributeName = fromRouteAttribute.Data.Name;
+                                break;
+
+                            case TypeFullNames.FromHeaderAttribute:
+                                var fromHeaderAttribute = (AttributeModel<APIGateway.FromHeaderAttribute>)att;
+                                parameterAttributeName = fromHeaderAttribute.Data.Name;
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        if (!string.IsNullOrEmpty(parameterAttributeName) && !_parameterAttributeNameRegex.IsMatch(parameterAttributeName))
+                        {
+                            diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidParameterAttributeName, methodLocation, parameterAttributeName, parameter.Name));
+                        }
                     }
                 }
 
@@ -196,6 +294,132 @@ namespace Amazon.Lambda.Annotations.SourceGenerator.Validation
             if (!lambdaFunctionModel.LambdaMethod.ReturnsVoidTaskOrSqsBatchResponse)
             {
                 var errorMessage = $"When using the {nameof(SQSEventAttribute)}, the Lambda method can return either void, {TypeFullNames.Task}, {TypeFullNames.SQSBatchResponse} or Task<{TypeFullNames.SQSBatchResponse}>";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+            }
+        }
+
+        private static void ValidateAlbEvents(LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            // If the method does not contain any ALB events, then simply return early
+            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.ALB))
+            {
+                return;
+            }
+
+            // Validate ALBApiAttributes
+            foreach (var att in lambdaFunctionModel.Attributes)
+            {
+                if (att.Type.FullName != TypeFullNames.ALBApiAttribute)
+                    continue;
+
+                var albApiAttribute = ((AttributeModel<ALBApiAttribute>)att).Data;
+                var validationErrors = albApiAttribute.Validate();
+                validationErrors.ForEach(errorMessage => diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidAlbApiAttribute, methodLocation, errorMessage)));
+            }
+
+            // Validate method parameters
+            var parameters = lambdaFunctionModel.LambdaMethod.Parameters;
+            foreach (var parameter in parameters)
+            {
+                // [FromRoute] is not supported on ALB functions
+                if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.FromRouteAttribute))
+                {
+                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.FromRouteNotSupportedOnAlb, methodLocation));
+                }
+
+                // Validate [FromQuery] parameter types - only primitive types allowed
+                if (parameter.Attributes.Any(att => att.Type.FullName == TypeFullNames.ALBFromQueryAttribute))
+                {
+                    if (!parameter.Type.IsPrimitiveType() && !parameter.Type.IsPrimitiveEnumerableType())
+                    {
+                        diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.UnsupportedMethodParameterType, methodLocation, parameter.Name, parameter.Type.FullName));
+                    }
+                }
+
+                // Validate attribute names for FromQuery and FromHeader
+                foreach (var att in parameter.Attributes)
+                {
+                    var parameterAttributeName = string.Empty;
+                    switch (att.Type.FullName)
+                    {
+                        case TypeFullNames.ALBFromQueryAttribute:
+                            if (att is AttributeModel<ALB.FromQueryAttribute> albFromQueryAttribute)
+                                parameterAttributeName = albFromQueryAttribute.Data.Name;
+                            break;
+
+                        case TypeFullNames.ALBFromHeaderAttribute:
+                            if (att is AttributeModel<ALB.FromHeaderAttribute> albFromHeaderAttribute)
+                                parameterAttributeName = albFromHeaderAttribute.Data.Name;
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    if (!string.IsNullOrEmpty(parameterAttributeName) && !_parameterAttributeNameRegex.IsMatch(parameterAttributeName))
+                    {
+                        diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidParameterAttributeName, methodLocation, parameterAttributeName, parameter.Name));
+                    }
+                }
+
+                // Validate that every parameter has a recognized binding
+                // Allowed: ILambdaContext, ApplicationLoadBalancerRequest, [FromServices], [FromQuery], [FromHeader], [FromBody]
+                if (parameter.Type.FullName != TypeFullNames.ILambdaContext &&
+                    !TypeFullNames.ALBRequests.Contains(parameter.Type.FullName) &&
+                    !parameter.Attributes.Any(att =>
+                        att.Type.FullName == TypeFullNames.FromServiceAttribute ||
+                        att.Type.FullName == TypeFullNames.ALBFromQueryAttribute ||
+                        att.Type.FullName == TypeFullNames.ALBFromHeaderAttribute ||
+                        att.Type.FullName == TypeFullNames.ALBFromBodyAttribute ||
+                        att.Type.FullName == TypeFullNames.FromRouteAttribute)) // FromRoute already has its own error
+                {
+                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.AlbUnmappedParameter, methodLocation, parameter.Name));
+                }
+            }
+        }
+
+        private static void ValidateS3Events(LambdaFunctionModel lambdaFunctionModel, Location methodLocation, List<Diagnostic> diagnostics)
+        {
+            if (!lambdaFunctionModel.LambdaMethod.Events.Contains(EventType.S3))
+                return;
+
+            // Validate S3EventAttributes
+            var seenResourceNames = new HashSet<string>();
+            foreach (var att in lambdaFunctionModel.Attributes)
+            {
+                if (att.Type.FullName != TypeFullNames.S3EventAttribute)
+                    continue;
+
+                var s3EventAttribute = ((AttributeModel<S3EventAttribute>)att).Data;
+                var validationErrors = s3EventAttribute.Validate();
+                validationErrors.ForEach(errorMessage => diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidS3EventAttribute, methodLocation, errorMessage)));
+
+                // Check for duplicate resource names (only when ResourceName is safe to evaluate)
+                var derivedResourceName = s3EventAttribute.ResourceName;
+                if (!string.IsNullOrEmpty(derivedResourceName) && !seenResourceNames.Add(derivedResourceName))
+                {
+                    diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidS3EventAttribute, methodLocation,
+                        $"Duplicate S3 event resource name '{derivedResourceName}'. Each [S3Event] attribute on the same method must have a unique ResourceName."));
+                }
+            }
+
+            // Validate method parameters - first param must be S3Event, optional second param ILambdaContext
+            var parameters = lambdaFunctionModel.LambdaMethod.Parameters;
+            if (parameters.Count == 0 ||
+                parameters.Count > 2 ||
+                (parameters.Count == 1 && parameters[0].Type.FullName != TypeFullNames.S3Event) ||
+                (parameters.Count == 2 && (parameters[0].Type.FullName != TypeFullNames.S3Event || parameters[1].Type.FullName != TypeFullNames.ILambdaContext)))
+            {
+                var errorMessage = $"When using the {nameof(S3EventAttribute)}, the Lambda method can accept at most 2 parameters. " +
+                    $"The first parameter is required and must be of type {TypeFullNames.S3Event}. " +
+                    $"The second parameter is optional and must be of type {TypeFullNames.ILambdaContext}.";
+                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
+            }
+
+            // Validate method return type - must be void or Task
+            if (!lambdaFunctionModel.LambdaMethod.ReturnsVoid && !lambdaFunctionModel.LambdaMethod.ReturnsVoidTask)
+            {
+                var errorMessage = $"When using the {nameof(S3EventAttribute)}, the Lambda method can return either void or {TypeFullNames.Task}";
                 diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidLambdaMethodSignature, methodLocation, errorMessage));
             }
         }

@@ -59,6 +59,14 @@
         <Content Remove="..\TestServerlessApp.NET8\bin\**" />
         <Content Remove="..\TestServerlessApp.NET8\serverless.template" />
 
+        <Content Include="..\TestCustomAuthorizerApp\**">
+            <Link>TestCustomAuthorizerApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Remove="..\TestCustomAuthorizerApp\obj\**" />
+        <Content Remove="..\TestCustomAuthorizerApp\bin\**" />
+        <Content Remove="..\TestCustomAuthorizerApp\serverless.template" />
+
         <Content Include="..\TestExecutableServerlessApp\**">
             <Link>TestExecutableServerlessApp\%(RecursiveDir)/%(FileName)%(Extension)</Link>
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -200,6 +208,8 @@
       <ProjectReference Include="..\..\src\Amazon.Lambda.Annotations\Amazon.Lambda.Annotations.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.APIGatewayEvents\Amazon.Lambda.APIGatewayEvents.csproj" />
       <ProjectReference Include="..\..\src\Amazon.Lambda.SQSEvents\Amazon.Lambda.SQSEvents.csproj" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.ApplicationLoadBalancerEvents\Amazon.Lambda.ApplicationLoadBalancerEvents.csproj" />
+      <ProjectReference Include="..\..\src\Amazon.Lambda.S3Events\Amazon.Lambda.S3Events.csproj" />
       <!-- 
 	    We need to force using the .NET Standard 2.0 version because the source generator test framework will complain
 		about using newer versions of System.Runtime then it can handle. This is not an issue in a end user scenario.

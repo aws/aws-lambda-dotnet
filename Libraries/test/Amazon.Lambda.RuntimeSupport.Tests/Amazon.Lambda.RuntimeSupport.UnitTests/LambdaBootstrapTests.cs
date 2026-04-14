@@ -168,7 +168,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task HandlerThrowsException()
         {
-            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerThrowsAsync, null))
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerThrowsAsync, null, null, _environmentVariables))
             {
                 bootstrap.Client = _testRuntimeApiClient;
                 Assert.Null(_environmentVariables.GetEnvironmentVariable(LambdaEnvironment.EnvVarTraceId));
@@ -186,7 +186,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         {
             const string testInput = "a MiXeD cAsE sTrInG";
 
-            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerToUpperAsync, null))
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerToUpperAsync, null, null, _environmentVariables))
             {
                 _testRuntimeApiClient.FunctionInput = Encoding.UTF8.GetBytes(testInput);
                 bootstrap.Client = _testRuntimeApiClient;
@@ -204,7 +204,7 @@ namespace Amazon.Lambda.RuntimeSupport.UnitTests
         [Fact]
         public async Task HandlerReturnsNull()
         {
-            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerReturnsNullAsync, null))
+            using (var bootstrap = new LambdaBootstrap(_testFunction.BaseHandlerReturnsNullAsync, null, null, _environmentVariables))
             {
                 _testRuntimeApiClient.FunctionInput = new byte[0];
                 bootstrap.Client = _testRuntimeApiClient;
