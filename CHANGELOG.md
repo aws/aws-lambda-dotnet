@@ -1,3 +1,12 @@
+## Release 2026-04-14
+
+### Amazon.Lambda.TestTool.BlazorTester (0.17.1)
+* Minor fixes to improve the testability of the package
+### Amazon.Lambda.RuntimeSupport (1.14.3)
+* Minor fixes to improve the testability of the package
+### Amazon.Lambda.Annotations (1.13.0)
+* Added [FunctionUrl] attribute for configuring Lambda functions with Function URL endpoints, including optional CORS support
+
 ## Release 2026-04-13 #2
 
 ### Amazon.Lambda.Annotations (1.12.0)
